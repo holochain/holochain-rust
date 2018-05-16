@@ -12,7 +12,12 @@ We want to have holochain run in the browser (for Holo).
 
 Rust can compile to WASM. Rust is language for experts. Rust is trending.
 
-There is a WASM interpretor in Rust (WASMI).
+There is a WASM interpreter in Rust (WASMI).
+
+Only problem might be problems integration with Promether / linking against C++:
+* https://doc.rust-lang.org/nomicon/ffi.html
+* https://users.rust-lang.org/t/linking-with-custom-c-library/637
+
 
 ## Decision
 

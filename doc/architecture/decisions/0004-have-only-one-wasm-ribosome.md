@@ -8,13 +8,21 @@ Accepted
 
 ## Context
 
-There is a WASM intepretor in Rust which can enable hApps in many different languages. WASM is more performant than any other interpretor.
+There is a WASM intepretor in Rust.
+There seems to be a lot of momentum behind WASM: 
+* all big browser support WASM since of Feb 2018
+* recent blockchain projects jump on WASM
 
+We will get more languages for Holochain for free just by those communities building WASM support
+JS, C++ and Rust already with stable support.
+
+By writing one WASM Ribosome we support more languages than sticking to a JS and Zygo Ribosome each.
 
 ## Decision
 
-Implement only one WASM ribosome for holochain and have it working for 2 different toolchains (Javascript and Rust or C++)
+Implement only one WASM ribosome for holochain and have it working for 2 different toolchains/languages (Javascript and Rust or C++ - to bo decided)
+
 
 ## Consequences
 
-Might do another ribosome non-wasm compatible languages like Closurescript, Python or Ruby
+Non WASM-able languages like Python or Ruby will not be supported.

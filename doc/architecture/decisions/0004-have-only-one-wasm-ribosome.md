@@ -26,3 +26,4 @@ Implement only one WASM ribosome for holochain and have it working for 2 differe
 ## Consequences
 
 Non WASM-able languages like Python or Ruby will not be supported.
+We will need to write toolchains to support more languages that are compiled into WASM.

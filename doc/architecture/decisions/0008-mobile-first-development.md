@@ -8,11 +8,14 @@ Accepted
 
 ## Context
 
-Mobile is the main platform today. We want to reach as much users as possible.
+Mobile is the main platform today. We want to reach as many users as possible.
+Mobile use has two big constraints:  battery life (and consequent sleeping of apps), and bandwidth because of costs
+Go platform development ignored mobile from the start and we found out late about the problems of compiling to mobile.
 
 ## Decision
 
-Support only 64bits platforms and not any 32bits platforms because we may have issues with cryptography on 32bits.
+Target a mobile build from the start.
+Do not initially worry about battery/bandwidth constraints, assuming that ADR 0006 will handle solve this issue in the medium term, and that advance in technology will handle it in the long-term.
 
 ## Consequences
 

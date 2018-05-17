@@ -15,7 +15,7 @@ In February 2018, Arthur, Eric and Nico discussed this during a co-creative sess
 With this separation, the reasoning in February was to rewrite (only) the front-house in JS to be able to run this piece in a web browser, as needed for Holo.
 
 Eric and Nico continued to map out the specifics of how these two modules would interface. In that process it became apparent that dividing an agent in these two pieces and have them run on different remote machines has a huge disadvantage:
-  * every network communication that the back-house is doing has to be signed with the agent's keys
+  * every network communication (including the world model which happens on an ongoing basis) that the back-house is doing has to be signed with the agent's keys
   * the agent's keys are by definition part of the front-house
   * -> the back-house can't live up to its main accountability without communicating with the front-house and requesting a signature for every packet of communication
 
@@ -33,4 +33,6 @@ The Holo user uses their local key to sign a statement that grants another agent
 
 * The Holo user stays in full control over their own keys and source chain
 * We don't need to implement the back-house DHT handling in the Holo browser part
+* We don't need to think about how these two pieces interface and interact
 * We need to implement these authorization statements and their handling in Holochain itself -> it affects routing, metrics and the DHT lookup process (the user's entries can be retrieved from the HoloPorts address -> the lookup mechanism needs to know this somehow)
+* The same mechanism can be used in other cases as well, especially solving the multi-device problem (a user with laptop, phone and tablet that all are different agents but that all should be treated as the same identity)

@@ -4,27 +4,31 @@ Date: 2018-05-16
 
 ## Status
 
-Accepted
+Pending
 
 ## Context
 
 We need to make Holo work with having keys and source chain on the client machine and the rest of Holochain be held by a HoloPorts
 
-## Problem:
-every interaction the back-house is having with other agents needs to be signed
-key is hold in front-house (by definition of this partitioning)
-if front-house lives in Holo-front-end in the browser, HoloPort would need to tunnel everything through client
--> meh
--> we can't to this
--> we need to check-in with @artbrock
-solution: user signs agreement that another agent can act on his behalf
--> we basically introduce an identity that consist of several agents, of which one is the HoloPort
--> might also solve the multiple-device problem
+### Problem:
+- every interaction the "back-house" has with other agents needs to be signed, i.e. including continued gossip and world-model interactions
+- if key held in front-house (by definition of this partitioning), this means:
+  - if front-house lives in Holo-front-end in the browser, HoloPort would need to tunnel everything through client for all signing interactions.
+  - doesn't work for mobile because node wants to shut down for memory and bandwith reasons
+
+### Possible Solution:
+
+user signs agreement that another agent can act on his behalf (at least for gossip related actions)
+
+- we basically introduce an identity that consist of several agents, of which one is the HoloPort
+- might also solve the multiple-device problem
 
 ## Decision
 
-For Holo, seperating the back end networking part of the agent from the front-end UI & logic part of the agent.
+Use Front-House/Back-House distinction with some system for tunneling signing
+or
+Assume no Front-House/Back-House architectural split and handle passing of signing duty to proxy as part of compound-identity.
 
 ## Consequences
 
-Consequences here...
+-> we need to check-in with @artbrock

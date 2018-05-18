@@ -30,3 +30,5 @@ We have to recode all holochain in Rust which will delay the next version releas
 It is an opportunity to refactor the architecture.
 
 We must have clear coding practice on how we manage memory ownership in Rust.
+
+We need to figure out how we will package and deploy rust binaries on different system targets, see ADR:0011

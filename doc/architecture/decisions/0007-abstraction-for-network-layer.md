@@ -4,19 +4,24 @@ Date: 2018-05-16
 
 ## Status
 
-Accepted
+Proposed
 
 ## Context
 
-libp2p has issues. DHT is too tied to network.
-What we want from a network library: Public Key cryptography: Hash public key that corresponds to identity on the network. Seemless port use.
-Handles routing tables?
+In switching to Rust, we can no longer use libp2p directly, and we want our own Kademlia implementation anyways (see ADR: 0010)
+What we want from a network library:
+* Public Key cryptography for end-to-end encryption.
+* Hash of public key as network address which wraps the transport layer for use by DHT.
+* Possibility of multiple transport layers.
+* Built in support for NAT/firewall traversal for case of IP transport. However: This may need to be handled by us explicitly as a Topology issue, i.e. having some holochain nodes act as routers (volunteering, or special nodes).
 
 ## Decision
 
-Have an abstraction layer for the networking library so we are not dependent on a specific one.
-Investigate Promether and see if it fits all our needs, including beeing network protocol agnostic (not just IP).
+Write our own abstraction layer for the networking library which describes the API of our needs, and thus makes it easier to choose/switch a networking stack.
+Investigate Promether and see if it fits all our needs, including being network protocol agnostic (not just IP) [we think it is].
 
 ## Consequences
 
-Consequences here...
+* More flexibility in replacing low-level network layer
+* Work overhead of defining and implementing layer
+* More clarity about what we really need

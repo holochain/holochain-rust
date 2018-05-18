@@ -4,19 +4,31 @@ Date: 2018-05-16
 
 ## Status
 
-Accepted
+proposed
 
 ## Context
 
-HCadmin app needs:
-Crossplatform, including mobile. Systems tray. Handle processes
-HCD a 'hidden' thing.
-Keep HCDev and app more features.
+In the alpha version we had *hcd* that runs a single Holochain app/agent as a background demon.
+
+Going forward we need a more sophisticated container of several Holochain apps for several reasons:
+* UX
+* coalescing of the network layer / having one network manager, to handle ports etc.
+* Mid-term roadmap entails having a generalized Holochain UI / browser that would act as an app container as well
+
+Since with ADR 8 we want to go mobile first, we need to have an easy way to run Holochain apps on mobile phones.
+
+Qt sports QML for rapid UI development and compiles the same code natively to Windows/Linux/MacOS/Android/iOS/Blackberry.
+For system and network capabilities, C++ would be at our disposal.
 
 ## Decision
 
-Use QT framework for building the crossplatform HcAdmin - HC app manager app for end users
+Use Qt framework for building a cross platform Holochain app container as a replacement for *hcadmin* for Holochain app managament & deployment, and possiblly integrating *hcd* into it if we can manage the Rust integration.
 
 ## Consequences
 
-Dependence on QT
+* We could have a system tray app to manage/start/stop HC apps.
+* We could have the exact same UI on all relevant platforms including mobile with only one code base.
+* -> a mobile app would be easy to build.
+* C++ code needs to be maintained.
+* UI/UX needs to be considered re conforming to different platform standards vs. creating one HC design & feel.  
+* We need to figure out how to incorporate the rust based binary.

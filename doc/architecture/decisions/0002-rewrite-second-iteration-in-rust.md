@@ -21,7 +21,7 @@ Only problem might be problems integration with Promether / linking against C++:
 
 ## Decision
 
-Refactor Holochain in the Rust programming language
+Rewrite Holochain in the Rust programming language
 
 ## Consequences
 

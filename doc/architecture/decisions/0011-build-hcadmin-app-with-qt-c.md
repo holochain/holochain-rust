@@ -11,7 +11,7 @@ proposed
 In the alpha version we had *hcd* that runs a single Holochain app/agent as a background demon.
 
 Going forward we need a more sophisticated container of several Holochain apps for several reasons:
-* UX
+* UX - One end-user friendly tool with GUI to administer all installed and running Holochain apps
 * coalescing of the network layer / having one network manager, to handle ports etc.
 * Mid-term roadmap entails having a generalized Holochain UI / browser that would act as an app container as well
 
@@ -22,13 +22,13 @@ For system and network capabilities, C++ would be at our disposal.
 
 ## Decision
 
-Use Qt framework for building a cross platform Holochain app container as a replacement for *hcadmin* for Holochain app managament & deployment, and possiblly integrating *hcd* into it if we can manage the Rust integration.
+Use Qt framework for building a cross platform Holochain app container as a replacement for *hcadmin* for Holochain app management & deployment, and possiblly integrating *hcd* into it if we can manage the Rust integration.
 
 ## Consequences
 
 * We could have a system tray app to manage/start/stop HC apps.
 * We could have the exact same UI on all relevant platforms including mobile with only one code base.
 * -> a mobile app would be easy to build.
-* C++ code needs to be maintained.
-* UI/UX needs to be considered re conforming to different platform standards vs. creating one HC design & feel.  
+* Cross-platform C++ code needs to be maintained.
+* UI/UX needs to be considered regarding conforming to different platform standards vs. creating one HC design & feel.  
 * We need to figure out how to incorporate the rust based binary.

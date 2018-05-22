@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-We are doing a rebuild.
+We are doing a rewrite.
 
 Holochain Go code shows many implicit dependencies between different modules and stateful objects. In conjunction with the complexity of a p2p network of agents, this leads to a level of overall complexity that feels too much to manage. A clean and fitting architecture for this Rust rebuild is needed.
 
@@ -23,7 +23,6 @@ We will apply nested state objects which represent a state tree, with sub states
 We use reference counting smart pointers for the sub
 states such that it is possible for each module's
 reducer to decide if the sub state is to be mutated or reused.
-
 
 ## Consequences
 

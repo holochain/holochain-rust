@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-A complete Rust rewrite is planned (see ADR #0)
+A complete Rust rewrite is planned (see ADR #0002)
 
 Go code has code debt -> substantial effort to refactor
 Go implementation would not be reusable in Holo front-end (whereas portions of rust compilable into WASM could be)

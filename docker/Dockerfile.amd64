@@ -1,9 +1,10 @@
-FROM phusion/baseimage
+FROM ubuntu
 
 # UID argument specified by docker build --build-arg uid=<uid> and defaults to 1000
 ARG uid=${UID_MIN:-1000}
 
-RUN useradd -mUu $uid holochain && adduser holochain sudo
+RUN uname -a
+RUN useradd -mUu $uid holochain && usermod -a -G sudo holochain
 
 # This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive

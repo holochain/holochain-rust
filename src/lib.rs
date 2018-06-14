@@ -1,9 +1,10 @@
-mod agent;
+#![cfg_attr(feature = "strict", deny(warnings))]
+pub mod agent;
 mod common;
-mod instance;
+pub mod instance;
 mod network;
 mod nucleus;
-mod state;
+pub mod state;
 
 #[cfg(test)]
 mod tests {

@@ -5,6 +5,6 @@ cache: cargo
 install:
   - rustup component add rustfmt-preview
 script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
+  - cargo build --verbose --all --features "strict"
+  - cargo test --verbose --all --features "strict"
   - cargo fmt -- --write-mode=diff

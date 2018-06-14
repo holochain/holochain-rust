@@ -2,3 +2,5 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+demo/wasm/target
+src/nucleus/ribosome/target

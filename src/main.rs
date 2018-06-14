@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "strict", deny(warnings))]
 pub mod agent;
 mod common;
 pub mod instance;

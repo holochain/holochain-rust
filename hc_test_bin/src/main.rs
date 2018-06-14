@@ -12,7 +12,7 @@ use hc_core::state::Action::*;
 
 fn main() {
     println!("Creating instance..");
-    let mut instance = Instance::create();
+    let mut instance = Instance::new();
 
     let dna = nucleus::dna::DNA {};
     println!("adding action: {:?}", InitApplication(dna));

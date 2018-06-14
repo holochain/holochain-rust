@@ -13,7 +13,7 @@ pub struct NucleusState {
 }
 
 impl NucleusState {
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         NucleusState {
             dna: None,
             inits: 0,

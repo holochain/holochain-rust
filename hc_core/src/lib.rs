@@ -16,7 +16,7 @@ mod tests {
 
     #[test]
     fn adding_messages_to_queue() {
-        let mut instance = Instance::create();
+        let mut instance = Instance::new();
 
         let dna = DNA {};
         instance.dispatch(Nucleus(InitApplication(dna.clone())));
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn consuming_actions_and_checking_state_mutation() {
-        let mut instance = Instance::create();
+        let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(instance.state().nucleus().inits(), 0);
 

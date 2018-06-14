@@ -22,9 +22,9 @@ impl Instance {
         }
     }
 
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         Instance {
-            state: State::create(),
+            state: State::new(),
             pending_actions: VecDeque::new(),
         }
     }

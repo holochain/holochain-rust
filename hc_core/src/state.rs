@@ -16,10 +16,10 @@ pub struct State {
 }
 
 impl State {
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         State {
-            nucleus: Rc::new(NucleusState::create()),
-            agent: Rc::new(AgentState::create()),
+            nucleus: Rc::new(NucleusState::new()),
+            agent: Rc::new(AgentState::new()),
         }
     }
 

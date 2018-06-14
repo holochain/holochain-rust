@@ -14,7 +14,7 @@ pub struct AgentState {
 }
 
 impl AgentState {
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         AgentState {
             keys: None,
             source_chain: None,

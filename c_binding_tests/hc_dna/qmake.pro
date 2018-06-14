@@ -7,6 +7,9 @@ TARGET = test_executable
 INCLUDEPATH += .
 LIBS += -L../../target/debug/ -lhc_dna_c_binding -ldl
 QT += testlib
+QT -= gui
+CONFIG += console
+CONFIG -= app_bundle
 
 # Input
 HEADERS += test.h

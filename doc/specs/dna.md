@@ -27,7 +27,7 @@ commit("tag_link",[
 ])
 
 // New Way:
-// NOte: that validation code is in the entry type `links-to` block
+// Note: that validation code is in the entry type `links-to` block
 // which gets found by lookup via the type of the base and the tag.
 let bundle = startBundle()
 let post = commit("post",{content:"my post"})
@@ -43,6 +43,7 @@ closeBundle(bundle)
 ``` javascript
 {
     "name": "Example app",
+    "description: "this app does very cool stuff",
     "version": "0.0.1",
     "uuid": "123e4567-e89b-12d3-a456-426655440000",
     "dna_spec_version": "2.0",
@@ -64,6 +65,7 @@ closeBundle(bundle)
 
                 {
                     "name": "post",
+                    "description": "this entry stores the post and acts as a base for links back to the author",
                     "schema": {}, // maybe NOT because happens inside WASM validations and it's fast enought.
 
                     "validation": ".." // WASM code

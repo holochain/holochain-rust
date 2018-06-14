@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 
 pub struct Instance {
     state: State,
-    pending_actions: VecDeque<Action>
+    pending_actions: VecDeque<Action>,
 }
 
 impl Instance {
@@ -25,7 +25,7 @@ impl Instance {
     pub fn create() -> Self {
         Instance {
             state: State::create(),
-            pending_actions: VecDeque::new()
+            pending_actions: VecDeque::new(),
         }
     }
 

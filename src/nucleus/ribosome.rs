@@ -1,3 +1,1 @@
-trait Ribosome {
-
-}
+trait Ribosome {}

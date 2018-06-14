@@ -91,3 +91,39 @@ pub fn reduce(old_state: Rc<AgentState>, action: &_Action) -> Rc<AgentState> {
 ```
 
 With every module handling its state which is read-only for everything else and providing actions to be created from anywhere else that are processed through the reducer hierarchy I hope to decouple modules effectively. Actions being logged make already for a great debugging tool, if that is not enough, the state history could be stored and in a future debugging tool even switched back and forth (time-machine debugging for Holochain :D).
+
+## Local development & testing
+
+CI builds are happening on circle CI.
+
+### Code style
+
+There is a linter enforcing code style.
+
+Install:
+
+```
+rustup update
+rustup component add rustfmt-preview
+```
+
+Run:
+
+```
+cargo fmt -- --write-mode=diff
+```
+
+### Watch tests
+
+For better productivity, watch your cargo tests/check while you work.
+
+Install:
+
+`cargo install cargo-watch`
+
+Run:
+
+```
+cargo watch # check
+cargo watch -x test # test
+```

@@ -1,4 +1,4 @@
-use ::common::entry::*;
+use common::entry::*;
 
 pub trait SourceChainInterface {
     fn get(h: Hash) -> Entry;
@@ -6,14 +6,10 @@ pub trait SourceChainInterface {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SourceChain {
-
-}
+pub struct SourceChain {}
 
 impl SourceChain {
-    pub fn push(_e: Entry) {
-
-    }
+    pub fn push(_e: Entry) {}
     //fn serialize() -> str {}
     //fn deseriealize(input: str) {}
 }

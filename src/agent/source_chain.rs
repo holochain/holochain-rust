@@ -11,8 +11,8 @@ pub struct SourceChain {
 }
 
 impl SourceChain {
-    pub fn push(e: Entry) -> Entry{
-        e
+    pub fn push(_e: Entry) {
+
     }
     //fn serialize() -> str {}
     //fn deseriealize(input: str) {}

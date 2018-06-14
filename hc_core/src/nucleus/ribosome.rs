@@ -3,13 +3,10 @@
 extern crate wasmi;
 extern crate wabt;
 
-use std::env::args;
-use std::fs::File;
-
 use self::wasmi::{
-	Error as InterpreterError, NopExternals, ModuleInstance, ModuleRef,
+	Error as InterpreterError, ModuleInstance,
 	Externals, RuntimeValue, FuncRef, ModuleImportResolver,
-	FuncInstance, HostError, ImportsBuilder, Signature, ValueType,
+	FuncInstance, ImportsBuilder, Signature, ValueType,
 	RuntimeArgs, Trap,
 };
 
@@ -18,12 +15,9 @@ struct Runtime {
     print_output: Vec<u32>
 }
 
-fn call(wasm: Vec<u8>, function_name: &str) -> Runtime {
-    println!("wasm len: {}", wasm.len());
+#[allow(dead_code)]
+fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError> {
     let module = wasmi::Module::from_buffer(wasm).unwrap();
-
-
-
 
     const PRINT_FUNC_INDEX: usize = 0;
 
@@ -33,11 +27,9 @@ fn call(wasm: Vec<u8>, function_name: &str) -> Runtime {
     		index: usize,
     		args: RuntimeArgs,
     	) -> Result<Option<RuntimeValue>, Trap> {
-            println!("invoke_index: {}", index);
     		match index {
                 PRINT_FUNC_INDEX => {
                     let arg: u32 = args.nth(0);
-                    println!("{:?}", arg);
                     self.print_output.push(arg);
                     Ok(None)
                 }
@@ -54,10 +46,8 @@ fn call(wasm: Vec<u8>, function_name: &str) -> Runtime {
     		field_name: &str,
     		_signature: &Signature,
     	) -> Result<FuncRef, InterpreterError> {
-            println!("resolve_func: {}", field_name);
     		let func_ref = match field_name {
                 "print" => {
-                    println!("match!");
     				FuncInstance::alloc_host(Signature::new(&[ValueType::I32][..], None), PRINT_FUNC_INDEX)
     			},
                 _ => return Err(
@@ -85,19 +75,19 @@ fn call(wasm: Vec<u8>, function_name: &str) -> Runtime {
 			.clone();
 
     let parameters = vec![6u8,7u8,8u8];
-    memory.set(0, &parameters);
+    memory.set(0, &parameters)
+        .expect("memory should be writable");
 
     let mut runtime = Runtime{print_output: vec![]};
-    //println!("{:?}", main.invoke_export(function_name, &[], &mut runtime));
-    main.invoke_export(function_name, &[], &mut runtime);
-    println!("{}", runtime.print_output.len());
-    return runtime.clone();
+    main.invoke_export(function_name, &[], &mut runtime)?;
+    return Ok(runtime.clone());
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
 
     fn test_wasm() -> Vec<u8> {
         use std::io::prelude::*;
@@ -109,8 +99,7 @@ mod tests {
 
     #[test]
     fn test_print() {
-        println!("From test_wasm: {}", test_wasm().len());
-        let runtime = call(test_wasm(), "test_print");
+        let runtime = call(test_wasm(), "test_print").expect("test_print should be callable");
         assert_eq!(runtime.print_output.len(), 1);
     }
 }

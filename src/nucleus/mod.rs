@@ -3,9 +3,8 @@ pub mod ribosome;
 
 use self::dna::DNA;
 //use self::ribosome::*;
-use state::Action as _Action;
+use state;
 use std::rc::Rc;
-use std::cmp::PartialEq;
 
 #[derive(Clone, Debug)]
 pub struct NucleusState {
@@ -38,9 +37,9 @@ pub enum Action {
 
 
 
-pub fn reduce(old_state: Rc<NucleusState>, action: &_Action) -> Rc<NucleusState> {
+pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Rc<NucleusState> {
     match *action {
-        _Action::Nucleus(ref nucleus_action) => {
+        state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
             match *nucleus_action {
                 Action::InitApplication(ref dna) => {

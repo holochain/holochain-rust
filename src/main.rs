@@ -1,9 +1,9 @@
-mod agent;
+pub mod agent;
 mod common;
 mod network;
 mod nucleus;
-mod state;
-mod instance;
+pub mod state;
+pub mod instance;
 
 use instance::Instance;
 use state::Action::*;

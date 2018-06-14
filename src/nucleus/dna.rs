@@ -1,4 +1,3 @@
-use std::cmp::PartialEq;
 
 #[derive(Clone, Debug)]
 pub struct Code {

@@ -1,6 +1,6 @@
 language: rust
 rust:
-  - stable
+  - 1.26.2
 cache: cargo
 install:
   - rustup component add rustfmt-preview

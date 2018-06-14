@@ -4,9 +4,19 @@ Holochain build in Rust with the intention to have
 1. some modules be compiled to WebAssembly to be reused in Holo's front-end part and
 2. be able to use a somewhat mature WebAssembly interperter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
 
-## Build
-First [install Rust](https://www.rust-lang.org/en-US/install.html) and then
-just run
+## Build/install
+First [install rustup](https://www.rust-lang.org/en-US/install.html).
+
+We are pinning the rust version to ensure predictable behaviour.
+
+To install this specific version and set it as the default.
+
+```
+rustup install 1.26.2
+rustup default 1.26.2
+```
+
+and then just run
 
 ```
 cargo build

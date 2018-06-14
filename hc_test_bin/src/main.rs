@@ -2,8 +2,8 @@
 
 extern crate hc_core;
 
-use hc_core::nucleus;
 use hc_core::common;
+use hc_core::nucleus;
 
 use hc_core::agent::Action::*;
 use hc_core::instance::Instance;

@@ -1,15 +1,14 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
-pub mod agent;
-mod common;
-pub mod instance;
-mod network;
-mod nucleus;
-pub mod state;
 
-use agent::Action::*;
-use instance::Instance;
-use nucleus::Action::*;
-use state::Action::*;
+extern crate hc_core;
+
+use hc_core::common;
+use hc_core::nucleus;
+
+use hc_core::agent::Action::*;
+use hc_core::instance::Instance;
+use hc_core::nucleus::Action::*;
+use hc_core::state::Action::*;
 
 fn main() {
     println!("Creating instance..");

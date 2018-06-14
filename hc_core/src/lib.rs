@@ -1,9 +1,9 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 pub mod agent;
-mod common;
+pub mod common;
 pub mod instance;
-mod network;
-mod nucleus;
+pub mod network;
+pub mod nucleus;
 pub mod state;
 
 #[cfg(test)]

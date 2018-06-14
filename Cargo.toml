@@ -4,9 +4,6 @@ members = [
   "hc_core",
   "hc_test_bin",
 ]
-[dependencies]
-wasmi = { git = "https://github.com/paritytech/wasmi.git"}
-wabt = "0.2.0"
 
 [features]
 # Treat warnings as a build error.

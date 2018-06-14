@@ -3,6 +3,6 @@
 /**/Cargo.lock
 !/Cargo.lock
 demo/wasm/target
-src/nucleus/ribosome/target
-src/nucleus/wasm-test/target
+hc_core/src/nucleus/ribosome/target
+hc_core/src/nucleus/wasm-test/target
 .idea

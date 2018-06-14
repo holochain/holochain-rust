@@ -1,9 +1,0 @@
-[package]
-name = "wasm-ribosome"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.org>"]
-
-[dependencies]
-#wasmi = "0.0.0"
-wasmi = { git = "https://github.com/paritytech/wasmi.git"}
-wabt = "0.2.0"

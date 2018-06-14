@@ -9,15 +9,15 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
-    keys : Option<Keys>,
-    source_chain : Option<Box<SourceChain>>
+    keys: Option<Keys>,
+    source_chain: Option<Box<SourceChain>>,
 }
 
 impl AgentState {
     pub fn create() -> Self {
         AgentState {
             keys: None,
-            source_chain: None
+            source_chain: None,
         }
     }
 }
@@ -25,7 +25,6 @@ impl AgentState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     Commit(Entry),
-
 }
 
 pub fn reduce(old_state: Rc<AgentState>, action: &state::Action) -> Rc<AgentState> {
@@ -33,12 +32,10 @@ pub fn reduce(old_state: Rc<AgentState>, action: &state::Action) -> Rc<AgentStat
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {
-
-                }
+                Action::Commit(ref _entry) => {}
             }
             Rc::new(new_state)
-        },
-        _ => old_state
+        }
+        _ => old_state,
     }
 }

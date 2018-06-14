@@ -4,9 +4,19 @@ Holochain build in Rust with the intention to have
 1. some modules be compiled to WebAssembly to be reused in Holo's front-end part and
 2. be able to use a somewhat mature WebAssembly interperter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
 
-## Build
-First [install Rust](https://www.rust-lang.org/en-US/install.html) and then
-just run
+## Build/install
+First [install rustup](https://www.rust-lang.org/en-US/install.html).
+
+We are pinning the rust version to ensure predictable behaviour.
+
+To install this specific version and set it as the default.
+
+```
+rustup install 1.26.2
+rustup default 1.26.2
+```
+
+and then just run
 
 ```
 cargo build
@@ -91,3 +101,39 @@ pub fn reduce(old_state: Rc<AgentState>, action: &_Action) -> Rc<AgentState> {
 ```
 
 With every module handling its state which is read-only for everything else and providing actions to be created from anywhere else that are processed through the reducer hierarchy I hope to decouple modules effectively. Actions being logged make already for a great debugging tool, if that is not enough, the state history could be stored and in a future debugging tool even switched back and forth (time-machine debugging for Holochain :D).
+
+## Local development & testing
+
+CI builds are happening on circle CI.
+
+### Code style
+
+There is a linter enforcing code style.
+
+Install:
+
+```
+rustup update
+rustup component add rustfmt-preview
+```
+
+Run:
+
+```
+cargo fmt -- --write-mode=diff
+```
+
+### Watch tests
+
+For better productivity, watch your cargo tests/check while you work.
+
+Install:
+
+`cargo install cargo-watch`
+
+Run:
+
+```
+cargo watch # check
+cargo watch -x test # test
+```

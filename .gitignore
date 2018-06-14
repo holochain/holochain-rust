@@ -4,3 +4,5 @@
 Cargo.lock
 demo/wasm/target
 src/nucleus/ribosome/target
+src/nucleus/wasm-test/target
+.idea

@@ -2,7 +2,7 @@ pub mod agent;
 mod common;
 mod network;
 mod nucleus;
-mod state;
+pub mod state;
 pub mod instance;
 
 use instance::Instance;

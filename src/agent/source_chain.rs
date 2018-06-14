@@ -1,5 +1,4 @@
 use ::common::entry::*;
-use std::cmp::PartialEq;
 
 pub trait SourceChainInterface {
     fn get(h: Hash) -> Entry;

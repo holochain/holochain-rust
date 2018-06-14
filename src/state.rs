@@ -1,7 +1,6 @@
 use nucleus::NucleusState;
 use agent::AgentState;
 use std::rc::Rc;
-use std::cmp::PartialEq;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {

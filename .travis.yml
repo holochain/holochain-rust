@@ -3,7 +3,7 @@ rust:
   - stable
 cache: cargo
 install:
-  - rustup component add fmt-preview
+  - rustup component add rustfmt-preview
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all

@@ -8,7 +8,7 @@ pub struct Key {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Keys {
-    pubKey: Key,
-    privKey: Key,
-    nodeID: Hash
+    pub_key: Key,
+    priv_key: Key,
+    node_id: Hash
 }

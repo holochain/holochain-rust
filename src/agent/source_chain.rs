@@ -3,7 +3,7 @@ use std::cmp::PartialEq;
 
 pub trait SourceChainInterface {
     fn get(h: Hash) -> Entry;
-    fn getHeader(h: Hash) -> Hash;
+    fn get_header(h: Hash) -> Hash;
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,0 +1,11 @@
+[[package]]
+name = "hc_core"
+version = "0.1.0"
+
+[[package]]
+name = "hc_test_bin"
+version = "0.1.0"
+dependencies = [
+ "hc_core 0.1.0",
+]
+

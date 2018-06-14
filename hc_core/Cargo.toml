@@ -1,0 +1,10 @@
+[package]
+name = "hc_core"
+version = "0.1.0"
+authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+
+[dependencies]
+
+[features]
+# Treat warnings as a build error.
+strict = []

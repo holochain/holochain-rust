@@ -1,7 +1,6 @@
-use nucleus::NucleusState;
 use agent::AgentState;
+use nucleus::NucleusState;
 use std::rc::Rc;
-use std::cmp::PartialEq;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
@@ -12,24 +11,22 @@ pub enum Action {
 
 #[derive(Clone)]
 pub struct State {
-    nucleus : Rc<NucleusState>,
-    agent : Rc<AgentState>
+    nucleus: Rc<NucleusState>,
+    agent: Rc<AgentState>,
 }
-
 
 impl State {
     pub fn create() -> Self {
         State {
             nucleus: Rc::new(NucleusState::create()),
-            agent: Rc::new(AgentState::create())
+            agent: Rc::new(AgentState::create()),
         }
     }
 
     pub fn reduce(&mut self, action: &Action) -> Self {
         State {
             nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action),
-            agent: ::agent::reduce(Rc::clone(&self.agent), action)
-
+            agent: ::agent::reduce(Rc::clone(&self.agent), action),
         }
     }
 

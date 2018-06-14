@@ -1,32 +1,32 @@
-mod agent;
-mod common;
-mod network;
-mod nucleus;
-mod state;
-mod instance;
+#![cfg_attr(feature = "strict", deny(warnings))]
 
-use instance::Instance;
-use state::Action::*;
-use nucleus::Action::*;
-use agent::Action::*;
+extern crate hc_core;
+
+use hc_core::common;
+use hc_core::nucleus;
+
+use hc_core::agent::Action::*;
+use hc_core::instance::Instance;
+use hc_core::nucleus::Action::*;
+use hc_core::state::Action::*;
 
 fn main() {
     println!("Creating instance..");
     let mut instance = Instance::create();
 
-    let dna = nucleus::dna::DNA{};
+    let dna = nucleus::dna::DNA {};
     println!("adding action: {:?}", InitApplication(dna));
-    let dna = nucleus::dna::DNA{};
+    let dna = nucleus::dna::DNA {};
     instance.dispatch(Nucleus(InitApplication(dna)));
     println!("pending actions: {:?}", instance.pending_actions());
 
-    let entry = common::entry::Entry{};
+    let entry = common::entry::Entry {};
     let action = Agent(Commit(entry));
     println!("adding action: {:?}", action);
     instance.dispatch(action);
     println!("pending actions: {:?}", instance.pending_actions());
 
-    let dna = nucleus::dna::DNA{};
+    let dna = nucleus::dna::DNA {};
     instance.dispatch(Nucleus(InitApplication(dna)));
 
     println!("consuming action...");

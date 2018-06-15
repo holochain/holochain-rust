@@ -1,3 +1,8 @@
+/*!
+hc_agent provides a library for managing holochain agent info, including identities, keys etc..
+
+*/
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Identity {
     content: String,

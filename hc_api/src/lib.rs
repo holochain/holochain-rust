@@ -129,7 +129,7 @@ mod tests {
         let result = Holochain::new(dna.clone(), agent.clone());
         let hc = result.clone().unwrap();
         assert!(!hc.active);
-        assert_eq!(hc.context.agent,agent);
+        assert_eq!(hc.context.agent, agent);
 
         match result {
             Ok(hc) => {

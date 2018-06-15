@@ -1,7 +1,6 @@
 extern crate hc_dna;
 use hc_dna::Dna;
 
-pub mod dna;
 pub mod fncall;
 pub mod ribosome;
 

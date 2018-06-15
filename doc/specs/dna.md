@@ -61,7 +61,7 @@ closeBundle(bundle)
             },
             //"RibosomeType":"WASM", #do we just commit to WASM only at
             //  at this stage?
-            "entry-types": [
+            "entry_types": [
 
                 {
                     "name": "post",

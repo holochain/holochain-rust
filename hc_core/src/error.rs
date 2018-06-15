@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
-/// starter module for holding Holochain specific errors
+/// module for holding Holochain specific errors
 
 #[derive(Debug, PartialEq)]
 pub enum HolochainError {

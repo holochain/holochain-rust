@@ -32,11 +32,15 @@ name = "hc_api"
 version = "0.1.0"
 dependencies = [
  "hc_core 0.1.0",
+ "hc_dna 0.1.0",
 ]
 
 [[package]]
 name = "hc_core"
 version = "0.1.0"
+dependencies = [
+ "hc_dna 0.1.0",
+]
 
 [[package]]
 name = "hc_dna"
@@ -60,6 +64,7 @@ name = "hc_test_bin"
 version = "0.1.0"
 dependencies = [
  "hc_core 0.1.0",
+ "hc_dna 0.1.0",
 ]
 
 [[package]]

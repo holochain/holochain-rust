@@ -6,8 +6,9 @@ hc_api provides a library for container applications to instantiate and run holo
 ``` rust
 extern crate hc_core;
 extern crate hc_api;
+extern crate hc_dna;
 use hc_api::*;
-use hc_core::nucleus::dna::*;
+use hc_dna::Dna;
 
 // instantiate a new app
 
@@ -16,7 +17,7 @@ use hc_core::nucleus::dna::*;
 //let agent = get_the_agent_somehow();
 //let hc = App::new(dna,agent);
 // but for now:
-let dna = DNA {};
+let dna = Dna::new();
 let mut hc = App::new(dna).expect("initialization failed");
 
 // and then call a function
@@ -28,20 +29,21 @@ let call = hc.call("some_fn");
 */
 
 extern crate hc_core;
+extern crate hc_dna;
 
 /// App contains a Holochain application instance
 pub struct App {
     instance: hc_core::instance::Instance,
 }
 
+use hc_dna::Dna;
 use hc_core::error::HolochainError;
-use hc_core::nucleus::dna::*;
 use hc_core::nucleus::Action::*;
 use hc_core::state::Action::*;
 use hc_core::nucleus::fncall;
 
 impl App {
-    pub fn new(dna: DNA) -> Result<Self, HolochainError> {
+    pub fn new(dna: Dna) -> Result<Self, HolochainError> {
         let mut instance = hc_core::instance::Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action);
@@ -64,7 +66,7 @@ mod tests {
 
     #[test]
     fn can_instantiate() {
-        let dna = DNA {};
+        let dna = Dna::new();
         let hc = App::new(dna.clone());
         match hc {
             Ok(app) => assert_eq!(app.instance.state().nucleus().dna(), Some(dna)),
@@ -75,7 +77,7 @@ mod tests {
 
     #[test]
     fn can_call() {
-        let dna = DNA {};
+        let dna = Dna::new();
         let mut hc = App::new(dna.clone()).unwrap();
         let call = hc.call("bogusfn");
         // allways returns not implemented error for now!

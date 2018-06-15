@@ -1,9 +1,12 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+extern crate hc_dna;
+
+use hc_dna::Dna;
+
 extern crate hc_core;
 
 use hc_core::common;
-use hc_core::nucleus;
 
 use hc_core::agent::Action::*;
 use hc_core::instance::Instance;
@@ -14,9 +17,9 @@ fn main() {
     println!("Creating instance..");
     let mut instance = Instance::new();
 
-    let dna = nucleus::dna::DNA {};
+    let dna = Dna::new();;
     println!("adding action: {:?}", InitApplication(dna));
-    let dna = nucleus::dna::DNA {};
+    let dna = Dna::new();
     instance.dispatch(Nucleus(InitApplication(dna)));
     println!("pending actions: {:?}", instance.pending_actions());
 
@@ -26,7 +29,7 @@ fn main() {
     instance.dispatch(action);
     println!("pending actions: {:?}", instance.pending_actions());
 
-    let dna = nucleus::dna::DNA {};
+    let dna = Dna::new();
     instance.dispatch(Nucleus(InitApplication(dna)));
 
     println!("consuming action...");

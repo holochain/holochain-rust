@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
+extern crate hc_dna;
 pub mod agent;
 pub mod common;
 pub mod error;
@@ -11,7 +12,7 @@ pub mod state;
 mod tests {
     use agent::Action::*;
     use instance::Instance;
-    use nucleus::dna::*;
+    use hc_dna::Dna;
     use nucleus::Action::*;
     use state::Action::*;
     use error::*;
@@ -20,7 +21,7 @@ mod tests {
     fn adding_messages_to_queue() {
         let mut instance = Instance::new();
 
-        let dna = DNA {};
+        let dna = Dna::new();
         instance.dispatch(Nucleus(InitApplication(dna.clone())));
         assert_eq!(
             *instance.pending_actions().back().unwrap(),
@@ -39,7 +40,7 @@ mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(instance.state().nucleus().initialized(), false);
 
-        let dna = DNA {};
+        let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action.clone());
 

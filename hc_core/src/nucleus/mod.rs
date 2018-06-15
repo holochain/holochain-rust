@@ -1,8 +1,10 @@
+extern crate hc_dna;
+use hc_dna::Dna;
+
 pub mod dna;
 pub mod fncall;
 pub mod ribosome;
 
-use self::dna::DNA;
 use error::HolochainError;
 //use self::ribosome::*;
 use state;
@@ -10,7 +12,7 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub struct NucleusState {
-    dna: Option<DNA>,
+    dna: Option<Dna>,
     initialized: bool,
 }
 
@@ -22,7 +24,7 @@ impl NucleusState {
         }
     }
 
-    pub fn dna(&self) -> Option<DNA> {
+    pub fn dna(&self) -> Option<Dna> {
         self.dna.clone()
     }
 
@@ -33,7 +35,7 @@ impl NucleusState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
-    InitApplication(DNA),
+    InitApplication(Dna),
     Call(fncall::Call),
 }
 
@@ -76,7 +78,7 @@ mod tests {
     #[test]
     fn can_reduce_initialize_action() {
         let state = NucleusState::new();
-        let dna = DNA {};
+        let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
         let mut new_state = Rc::new(NucleusState::new()); // initialize to bogus value
         match reduce(Rc::new(state), &action) {

@@ -5,3 +5,4 @@ authors = ["neonphog <neonphog@gmail.com>"]
 
 [dependencies]
 hc_core = { path = "../hc_core" }
+hc_dna = { path = "../hc_dna" }

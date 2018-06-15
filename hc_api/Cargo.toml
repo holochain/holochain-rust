@@ -5,3 +5,4 @@ authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 
 [dependencies]
 hc_core = { path = "../hc_core" }
+hc_dna = { path = "../hc_dna" }

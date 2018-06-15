@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Nicolas Luck <nicolas@lucksus.org>"]
 
 [dependencies]
+hc_dna = { path = "../hc_dna" }
 
 [features]
 # Treat warnings as a build error.

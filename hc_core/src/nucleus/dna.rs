@@ -12,6 +12,3 @@ pub struct Entry {}
 pub struct Zome {
     entry_definitions: Vec<Entry>,
 }
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct DNA {}

@@ -5,6 +5,7 @@ pub mod instance;
 pub mod network;
 pub mod nucleus;
 pub mod state;
+pub mod error;
 
 #[cfg(test)]
 mod tests {

@@ -17,7 +17,13 @@ use hc_core::nucleus::dna::*;
 //let hc = App::new(dna,agent);
 // but for now:
 let dna = DNA {};
-let hc = App::new(dna);
+let mut hc = App::new(dna).expect("initialization failed");
+
+// and then call a function
+let call = hc.call("some_fn");
+
+// ...
+
 ```
 */
 
@@ -32,7 +38,7 @@ use hc_core::error::HolochainError;
 use hc_core::nucleus::dna::*;
 use hc_core::nucleus::Action::*;
 use hc_core::state::Action::*;
-//use hc_core::nucleus::fncall;
+use hc_core::nucleus::fncall;
 
 impl App {
     pub fn new(dna: DNA) -> Result<Self, HolochainError> {
@@ -44,12 +50,12 @@ impl App {
         Ok(app)
     }
 
-    /* not working yet
-    pub fn call(&self,fn_name:&str) {
+    pub fn call(&mut self,fn_name:&str)  -> Result<(), HolochainError> {
         let call_data = fncall::Call::new(fn_name);
         let action = Nucleus(Call(call_data));
-        self.instance.dispatch(action.clone())
-    }*/
+        self.instance.dispatch(action.clone());
+        self.instance.consume_next_action()
+    }
 }
 
 #[cfg(test)]
@@ -66,13 +72,16 @@ mod tests {
         };
     }
 
-    /*
+
     #[test]
     fn can_call() {
         let dna = DNA {};
-        let hc = App::new(dna.clone()).unwrap();
-        let call = fncall::Call::new("bogusfn");
-
-
-    }*/
+        let mut hc = App::new(dna.clone()).unwrap();
+        let call = hc.call("bogusfn");
+        // allways returns not implemented error for now!
+        match call {
+            Ok(_) =>  assert!(false),
+            Err(_) => assert!(true),
+        };
+    }
 }

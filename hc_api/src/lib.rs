@@ -28,10 +28,10 @@ hc.call("some_fn");
 
 // get the state
 {
-//let state = hc.state();
+    let state = hc.state();
 
-// do some other stuff with the state here
-// ...
+    // do some other stuff with the state here
+    // ...
 }
 
 // stop the app

@@ -18,19 +18,24 @@ use hc_dna::Dna;
 //let hc = App::new(dna,agent);
 // but for now:
 let dna = Dna::new();
-let mut hc = App::new(dna).expect("initialization failed");
+let mut hc = App::new(dna).unwrap();
 
 // start up the app
 hc.start().expect("couldn't start the app");
 
-// and then call a function
-let call = hc.call("some_fn");
+// call a function in the app
+hc.call("some_fn");
 
-// do some other stuff
+// get the state
+{
+//let state = hc.state();
+
+// do some other stuff with the state here
 // ...
+}
 
 // stop the app
-hc.stop().expect("couldn't stop the app");;
+hc.stop().expect("couldn't stop the app");
 
 ```
 */
@@ -49,6 +54,7 @@ use hc_dna::Dna;
 use hc_core::error::HolochainError;
 use hc_core::nucleus::Action::*;
 use hc_core::state::Action::*;
+use hc_core::state::State;
 use hc_core::nucleus::fncall;
 
 impl App {
@@ -90,6 +96,11 @@ impl App {
         self.active = false;
         Ok(())
     }
+
+    pub fn state(&mut self) ->  Result<&State, HolochainError> {
+        Ok(self.instance.state())
+    }
+
 }
 
 #[cfg(test)]
@@ -167,5 +178,20 @@ mod tests {
             Ok(_) =>  assert!(false),
             Err(_) => assert!(false),
         };
+    }
+
+    #[test]
+    fn can_get_state() {
+        let dna = Dna::new();
+        let mut hc = App::new(dna.clone()).unwrap();
+
+        let result = hc.state();
+        match result {
+            Ok(state) => {
+                assert_eq!(state.nucleus().dna(), Some(dna));
+            },
+            Err(_) => assert!(false),
+        };
+
     }
 }

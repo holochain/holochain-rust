@@ -17,7 +17,7 @@ fn main() {
     println!("Creating instance..");
     let mut instance = Instance::new();
 
-    let dna = Dna::new();;
+    let dna = Dna::new();
     println!("adding action: {:?}", InitApplication(dna));
     let dna = Dna::new();
     instance.dispatch(Nucleus(InitApplication(dna)));

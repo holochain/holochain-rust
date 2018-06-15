@@ -28,9 +28,14 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "hc_agent"
+version = "0.1.0"
+
+[[package]]
 name = "hc_api"
 version = "0.1.0"
 dependencies = [
+ "hc_agent 0.1.0",
  "hc_core 0.1.0",
  "hc_dna 0.1.0",
 ]

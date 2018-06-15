@@ -10,10 +10,8 @@ pub enum HolochainError {
     InstanceNotActive,
     InstanceActive,
     NotImplemented,
-    Dummy
-   //  SerdeError(serde_json::error::Error), TODO
+    Dummy, //  SerdeError(serde_json::error::Error), TODO
 }
-
 
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
@@ -58,7 +56,7 @@ mod tests {
     fn can_instantiate() {
         let err = HolochainError::new("borked");
         if let HolochainError::ErrorGeneric(err_msg) = err {
-            assert_eq!(err_msg,"borked")
+            assert_eq!(err_msg, "borked")
         } else {
             assert!(false)
         }
@@ -71,8 +69,8 @@ mod tests {
             Ok(_) => assert!(false),
             Err(err) => match err {
                 HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "borked"),
-                _=>assert!(false)
-            }
+                _ => assert!(false),
+            },
         };
     }
 

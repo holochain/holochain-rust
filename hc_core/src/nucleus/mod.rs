@@ -93,7 +93,7 @@ mod tests {
             Ok(_) => assert!(false),
             Err(err) => match err {
                 HolochainError::AllreadyInitialized => assert!(true),
-                _=>assert!(false)
+                _ => assert!(false),
             },
         };
     }

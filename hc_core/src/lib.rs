@@ -11,11 +11,11 @@ pub mod state;
 #[cfg(test)]
 mod tests {
     use agent::Action::*;
-    use instance::Instance;
+    use error::*;
     use hc_dna::Dna;
+    use instance::Instance;
     use nucleus::Action::*;
     use state::Action::*;
-    use error::*;
 
     #[test]
     fn adding_messages_to_queue() {
@@ -57,7 +57,7 @@ mod tests {
             Ok(()) => assert!(true),
             Err(err) => match err {
                 HolochainError::AllreadyInitialized => assert!(true),
-                _=>assert!(false)
+                _ => assert!(false),
             },
         };
 

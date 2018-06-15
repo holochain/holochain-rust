@@ -6,6 +6,8 @@ use std::fmt;
 #[derive(Debug, PartialEq)]
 pub enum HolochainError {
     ErrorGeneric(String),
+    AllreadyInitialized,
+    NotImplemented,
     Dummy
    //  SerdeError(serde_json::error::Error), TODO
 }
@@ -23,12 +25,15 @@ impl fmt::Display for HolochainError {
     }
 }
 
+use self::HolochainError::*;
+
 impl Error for HolochainError {
     fn description(&self) -> &str {
-        if let HolochainError::ErrorGeneric(err_msg) = self {
-           &err_msg
-        } else {
-            panic!("unimplemented error type!")
+        match self {
+            ErrorGeneric(err_msg) => &err_msg,
+            AllreadyInitialized => "already initialized",
+            NotImplemented => "not implemented",
+            _ => "unknown error type",
         }
     }
 }

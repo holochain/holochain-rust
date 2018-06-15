@@ -49,12 +49,12 @@ pub fn reduce(
             match *nucleus_action {
                 Action::InitApplication(ref dna) => {
                     if new_state.initialized {
-                        return Err(HolochainError::new("already initialized"));
+                        return Err(HolochainError::AllreadyInitialized);
                     }
                     new_state.dna = Some(dna.clone());
                     new_state.initialized = true;
                 }
-                Action::Call(_) => return Err(HolochainError::new("not implemented yet")),
+                Action::Call(_) => return Err(HolochainError::NotImplemented),
             }
             Ok(Rc::new(new_state))
         }
@@ -93,7 +93,7 @@ mod tests {
         match reduce(new_state, &action) {
             Ok(_) => assert!(false),
             Err(err) => match err {
-                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "already initialized"),
+                HolochainError::AllreadyInitialized => assert!(true),
                 _=>assert!(false)
             },
         };

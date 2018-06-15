@@ -56,7 +56,7 @@ mod tests {
         match instance.consume_next_action() {
             Ok(()) => assert!(true),
             Err(err) => match err {
-                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "already initialized"),
+                HolochainError::AllreadyInitialized => assert!(true),
                 _=>assert!(false)
             },
         };

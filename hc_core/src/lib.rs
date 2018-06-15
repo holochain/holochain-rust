@@ -1,11 +1,11 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 pub mod agent;
 pub mod common;
+pub mod error;
 pub mod instance;
 pub mod network;
 pub mod nucleus;
 pub mod state;
-pub mod error;
 
 #[cfg(test)]
 mod tests {
@@ -53,7 +53,7 @@ mod tests {
         instance.dispatch(action.clone());
         match instance.consume_next_action() {
             Ok(()) => assert!(true),
-            Err(err) => assert_eq!(format!("{}",err),"already initialized"),
+            Err(err) => assert_eq!(format!("{}", err), "already initialized"),
         };
 
         assert_eq!(instance.state().nucleus().initialized(), true);

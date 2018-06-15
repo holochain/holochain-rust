@@ -5,21 +5,19 @@ pub struct App {
     instance: hc_core::instance::Instance,
 }
 
-use hc_core::state::Action::*;
-use hc_core::nucleus::Action::*;
-use hc_core::nucleus::dna::*;
 use hc_core::error::HolochainError;
+use hc_core::nucleus::dna::*;
+use hc_core::nucleus::Action::*;
+use hc_core::state::Action::*;
 //use hc_core::nucleus::fncall;
 
 impl App {
-    pub fn new(dna: DNA) -> Result<Self,HolochainError> {
+    pub fn new(dna: DNA) -> Result<Self, HolochainError> {
         let mut instance = hc_core::instance::Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action);
         instance.consume_next_action()?;
-        let app = App {
-            instance: instance
-        };
+        let app = App { instance: instance };
         Ok(app)
     }
 

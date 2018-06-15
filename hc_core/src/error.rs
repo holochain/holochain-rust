@@ -3,20 +3,22 @@ use std::fmt;
 
 /// starter module for holding Holochain specific errors
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct HolochainError {
-    details: String
+    details: String,
 }
 
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
-        HolochainError{details: msg.to_string()}
+        HolochainError {
+            details: msg.to_string(),
+        }
     }
 }
 
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}",self.details)
+        write!(f, "{}", self.details)
     }
 }
 
@@ -30,7 +32,7 @@ impl Error for HolochainError {
 mod tests {
     use super::*;
     // a test function that returns our error result
-    fn raises_hc_error(yes: bool) -> Result<(),HolochainError> {
+    fn raises_hc_error(yes: bool) -> Result<(), HolochainError> {
         if yes {
             Err(HolochainError::new("borked"))
         } else {
@@ -43,9 +45,9 @@ mod tests {
         let result = raises_hc_error(true);
         let result = match result {
             Ok(_) => panic!(),
-            Err(y) => y
+            Err(y) => y,
         };
-        assert_eq!(result.details,"borked")
+        assert_eq!(result.details, "borked")
     }
 
     #[test]
@@ -55,6 +57,6 @@ mod tests {
             Ok(x) => x,
             Err(_) => panic!(),
         };
-        assert_eq!(result,())
+        assert_eq!(result, ())
     }
 }

@@ -1,6 +1,6 @@
+use error::HolochainError;
 use state::*;
 use std::collections::VecDeque;
-use error::HolochainError;
 
 pub struct Instance {
     state: State,
@@ -16,9 +16,8 @@ impl Instance {
         &self.pending_actions
     }
 
-    pub fn consume_next_action(&mut self) -> Result<(),HolochainError> {
+    pub fn consume_next_action(&mut self) -> Result<(), HolochainError> {
         if self.pending_actions.len() > 0 {
-
             // TODO: convert the unwrap to return a converted error
             let action = self.pending_actions.pop_front().unwrap();
             self.state = self.state.clone().reduce(&action)?;

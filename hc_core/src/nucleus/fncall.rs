@@ -1,8 +1,7 @@
 /// Represents a function call, with the function name and its parameters
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Params {
-}
+pub struct Params {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Call {
@@ -12,6 +11,9 @@ pub struct Call {
 
 impl Call {
     pub fn new(name: &str) -> Self {
-        Call{name:name.to_string(), params: Params{}}
+        Call {
+            name: name.to_string(),
+            params: Params {},
+        }
     }
 }

@@ -1,6 +1,6 @@
 use agent::AgentState;
-use nucleus::NucleusState;
 use error::HolochainError;
+use nucleus::NucleusState;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -24,7 +24,7 @@ impl State {
         }
     }
 
-    pub fn reduce(&mut self, action: &Action) -> Result<Self,HolochainError> {
+    pub fn reduce(&mut self, action: &Action) -> Result<Self, HolochainError> {
         let nucleus = ::nucleus::reduce(Rc::clone(&self.nucleus), action)?;
 
         Ok(State {

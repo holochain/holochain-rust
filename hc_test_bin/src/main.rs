@@ -30,11 +30,11 @@ fn main() {
     instance.dispatch(Nucleus(InitApplication(dna)));
 
     println!("consuming action...");
-    instance.consume_next_action();
+    instance.consume_next_action().expect("consume failed");
     println!("pending actions: {:?}", instance.pending_actions());
 
     println!("consuming action...");
-    instance.consume_next_action();
+    instance.consume_next_action().expect("consume failed");
     println!("pending actions: {:?}", instance.pending_actions());
-    instance.consume_next_action();
+    instance.consume_next_action().expect("consume failed");
 }

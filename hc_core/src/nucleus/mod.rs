@@ -1,5 +1,7 @@
 pub mod dna;
 pub mod ribosome;
+pub mod fncall;
+
 
 use error::HolochainError;
 use self::dna::DNA;
@@ -33,6 +35,7 @@ impl NucleusState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     InitApplication(DNA),
+    Call(fncall::Call),
 }
 
 pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Result<Rc<NucleusState>,HolochainError> {
@@ -47,6 +50,7 @@ pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Result<Rc<
                     new_state.dna = Some(dna.clone());
                     new_state.initialized = true;
                 },
+                Action::Call(_) => return Err(HolochainError::new("not implemented yet"))
             }
             Ok(Rc::new(new_state))
         }
@@ -88,3 +92,15 @@ mod tests {
             Err(err) => assert_eq!(format!("{}",err),"already initialized"),
         };
     }
+
+    #[test]
+    fn can_reduce_call_action() {
+        let state = NucleusState::new();
+        let call = fncall::Call::new("bogusfn");
+        let action = Nucleus(Call(call));
+        match reduce(Rc::new(state),&action) {
+            Ok(_) => assert!(false),
+            Err(_)=> assert!(true)
+        };
+    }
+}

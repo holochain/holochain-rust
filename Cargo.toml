@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+  "api",    
   "hc_core",
   "hc_test_bin",
 ]

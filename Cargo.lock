@@ -1,4 +1,11 @@
 [[package]]
+name = "api"
+version = "0.1.0"
+dependencies = [
+ "hc_core 0.1.0",
+]
+
+[[package]]
 name = "hc_core"
 version = "0.1.0"
 

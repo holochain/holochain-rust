@@ -11,17 +11,18 @@ use self::wasmi::{
 };
 
 #[derive(Clone)]
-struct Runtime {
-    print_output: Vec<u32>
+pub struct Runtime<'a> {
+    print_output: Vec<u32>,
+    result: &'a str
 }
 
 #[allow(dead_code)]
-fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError> {
+pub fn call<'a>(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError> {
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
     const PRINT_FUNC_INDEX: usize = 0;
 
-    impl Externals for Runtime {
+    impl<'a> Externals for Runtime<'a> {
     	fn invoke_index(
     		&mut self,
     		index: usize,
@@ -78,7 +79,7 @@ fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError>
     memory.set(0, &parameters)
         .expect("memory should be writable");
 
-    let mut runtime = Runtime{print_output: vec![]};
+    let mut runtime = Runtime{print_output: vec![], result: ""};
     main.invoke_export(function_name, &[], &mut runtime)?;
     return Ok(runtime.clone());
 }

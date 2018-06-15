@@ -20,10 +20,17 @@ use hc_dna::Dna;
 let dna = Dna::new();
 let mut hc = App::new(dna).expect("initialization failed");
 
+// start up the app
+hc.start().expect("couldn't start the app");
+
 // and then call a function
 let call = hc.call("some_fn");
 
+// do some other stuff
 // ...
+
+// stop the app
+hc.stop().expect("couldn't stop the app");;
 
 ```
 */
@@ -32,8 +39,10 @@ extern crate hc_core;
 extern crate hc_dna;
 
 /// App contains a Holochain application instance
+#[derive(Clone)]
 pub struct App {
     instance: hc_core::instance::Instance,
+    active: bool,
 }
 
 use hc_dna::Dna;
@@ -48,15 +57,38 @@ impl App {
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action);
         instance.consume_next_action()?;
-        let app = App { instance: instance };
+        let app = App { instance: instance, active: false };
         Ok(app)
     }
 
     pub fn call(&mut self,fn_name:&str)  -> Result<(), HolochainError> {
+        if !self.active {
+            return Err(HolochainError::InstanceNotActive);
+        }
         let call_data = fncall::Call::new(fn_name);
         let action = Nucleus(Call(call_data));
         self.instance.dispatch(action.clone());
         self.instance.consume_next_action()
+    }
+
+    pub fn active(&self) -> bool {
+        self.active
+    }
+
+    pub fn start(&mut self) -> Result<(), HolochainError> {
+        if self.active {
+            return Err(HolochainError::InstanceActive);
+        }
+        self.active = true;
+        Ok(())
+    }
+
+    pub fn stop(&mut self) -> Result<(), HolochainError> {
+        if !self.active {
+            return Err(HolochainError::InstanceNotActive);
+        }
+        self.active = false;
+        Ok(())
     }
 }
 
@@ -68,22 +100,72 @@ mod tests {
     fn can_instantiate() {
         let dna = Dna::new();
         let hc = App::new(dna.clone());
+        assert!(!hc.clone().unwrap().active);
         match hc {
-            Ok(app) => assert_eq!(app.instance.state().nucleus().dna(), Some(dna)),
+            Ok(app) => {
+                assert_eq!(app.instance.state().nucleus().dna(), Some(dna));
+            },
             Err(_) => assert!(false),
         };
+
     }
 
+    #[test]
+    fn can_start_and_stop() {
+        let dna = Dna::new();
+        let mut hc = App::new(dna.clone()).unwrap();
+        assert!(!hc.clone().active());
+
+        // stop when not active returns error
+        let result = hc.stop();
+        match result {
+            Err(HolochainError::InstanceNotActive) => assert!(true),
+            Ok(_) => assert!(false),
+            Err(_) => assert!(false),
+        }
+
+        let result = hc.start();
+        match result {
+            Ok(_) => assert!(true),
+            Err(_) => assert!(false),
+        }
+        assert!(hc.active());
+
+        // start when active returns error
+        let result = hc.start();
+        match result {
+            Err(HolochainError::InstanceActive) => assert!(true),
+            Ok(_) => assert!(false),
+            Err(_) => assert!(false),
+        }
+
+        let result = hc.stop();
+        match result {
+            Ok(_) => assert!(true),
+            Err(_) => assert!(false),
+        }
+        assert!(!hc.active());
+    }
 
     #[test]
     fn can_call() {
         let dna = Dna::new();
         let mut hc = App::new(dna.clone()).unwrap();
-        let call = hc.call("bogusfn");
-        // allways returns not implemented error for now!
-        match call {
+        let result = hc.call("bogusfn");
+        match result {
+            Err(HolochainError::InstanceNotActive) => assert!(true),
+            Ok(_) => assert!(false),
+            Err(_) => assert!(false),
+        }
+
+        hc.start().expect("couldn't start");
+
+        // always returns not implemented error for now!
+        let result = hc.call("bogusfn");
+        match result {
+            Err(HolochainError::NotImplemented) => assert!(true),
             Ok(_) =>  assert!(false),
-            Err(_) => assert!(true),
+            Err(_) => assert!(false),
         };
     }
 }

@@ -2,6 +2,7 @@ use error::HolochainError;
 use state::*;
 use std::collections::VecDeque;
 
+#[derive(Clone)]
 pub struct Instance {
     state: State,
     pending_actions: VecDeque<Action>,

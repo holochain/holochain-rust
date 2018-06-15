@@ -3,10 +3,12 @@ use std::fmt;
 
 /// module for holding Holochain specific errors
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum HolochainError {
     ErrorGeneric(String),
     AllreadyInitialized,
+    InstanceNotActive,
+    InstanceActive,
     NotImplemented,
     Dummy
    //  SerdeError(serde_json::error::Error), TODO
@@ -33,6 +35,8 @@ impl Error for HolochainError {
             ErrorGeneric(err_msg) => &err_msg,
             AllreadyInitialized => "already initialized",
             NotImplemented => "not implemented",
+            InstanceNotActive => "the instance is not active",
+            InstanceActive => "the instance is active",
             _ => "unknown error type",
         }
     }

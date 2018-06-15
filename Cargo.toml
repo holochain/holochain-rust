@@ -3,6 +3,8 @@
 members = [
   "hc_api",    
   "hc_core",
+  "hc_dna",
+  "hc_dna_c_binding",
   "hc_test_bin",
 ]
 

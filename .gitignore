@@ -1,4 +1,7 @@
+.qmake.stash
 /target/
 **/*.rs.bk
 /**/Cargo.lock
 !/Cargo.lock
+/**/Makefile
+!/Makefile

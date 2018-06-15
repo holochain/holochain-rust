@@ -36,19 +36,26 @@ mod tests {
     fn consuming_actions_and_checking_state_mutation() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(instance.state().nucleus().inits(), 0);
+        assert_eq!(instance.state().nucleus().initialized(), false);
 
         let dna = DNA {};
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action.clone());
-        instance.consume_next_action();
+
+        match instance.consume_next_action() {
+            Ok(()) => assert!(true),
+            Err(_) => assert!(false),
+        };
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(instance.state().nucleus().inits(), 1);
+        assert_eq!(instance.state().nucleus().initialized(), true);
 
         instance.dispatch(action.clone());
-        instance.consume_next_action();
+        match instance.consume_next_action() {
+            Ok(()) => assert!(true),
+            Err(err) => assert_eq!(format!("{}",err),"already initialized"),
+        };
 
-        assert_eq!(instance.state().nucleus().inits(), 2);
+        assert_eq!(instance.state().nucleus().initialized(), true);
     }
 }

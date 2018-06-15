@@ -4,27 +4,32 @@ use std::fmt;
 /// starter module for holding Holochain specific errors
 
 #[derive(Debug, PartialEq)]
-pub struct HolochainError {
-    details: String,
+pub enum HolochainError {
+    ErrorGeneric(String),
+    Dummy
+   //  SerdeError(serde_json::error::Error), TODO
 }
+
 
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
-        HolochainError {
-            details: msg.to_string(),
-        }
+        HolochainError::ErrorGeneric(msg.to_string())
     }
 }
 
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.details)
+        write!(f, "{}", self)
     }
 }
 
 impl Error for HolochainError {
     fn description(&self) -> &str {
-        &self.details
+        if let HolochainError::ErrorGeneric(err_msg) = self {
+           &err_msg
+        } else {
+            panic!("unimplemented error type!")
+        }
     }
 }
 
@@ -41,13 +46,25 @@ mod tests {
     }
 
     #[test]
+    fn can_instantiate() {
+        let err = HolochainError::new("borked");
+        if let HolochainError::ErrorGeneric(err_msg) = err {
+            assert_eq!(err_msg,"borked")
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
     fn can_raise_hc_error() {
         let result = raises_hc_error(true);
-        let result = match result {
-            Ok(_) => panic!(),
-            Err(y) => y,
+        match result {
+            Ok(_) => assert!(false),
+            Err(err) => match err {
+                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "borked"),
+                _=>assert!(false)
+            }
         };
-        assert_eq!(result.details, "borked")
     }
 
     #[test]

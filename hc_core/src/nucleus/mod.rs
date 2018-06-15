@@ -90,7 +90,10 @@ mod tests {
         // on second reduction it should throw error
         match reduce(new_state, &action) {
             Ok(_) => assert!(false),
-            Err(err) => assert_eq!(format!("{}", err), "already initialized"),
+            Err(err) => match err {
+                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "already initialized"),
+                _=>assert!(false)
+            },
         };
     }
 

@@ -14,6 +14,7 @@ mod tests {
     use nucleus::dna::*;
     use nucleus::Action::*;
     use state::Action::*;
+    use error::*;
 
     #[test]
     fn adding_messages_to_queue() {
@@ -53,7 +54,10 @@ mod tests {
         instance.dispatch(action.clone());
         match instance.consume_next_action() {
             Ok(()) => assert!(true),
-            Err(err) => assert_eq!(format!("{}", err), "already initialized"),
+            Err(err) => match err {
+                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "already initialized"),
+                _=>assert!(false)
+            },
         };
 
         assert_eq!(instance.state().nucleus().initialized(), true);

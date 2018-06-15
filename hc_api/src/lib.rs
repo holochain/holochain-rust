@@ -1,3 +1,26 @@
+/*!
+hc_api provides a library for container applications to instantiate and run holochain applications.
+
+# Examples
+
+``` rust
+extern crate hc_core;
+extern crate hc_api;
+use hc_api::*;
+use hc_core::nucleus::dna::*;
+
+// instantiate a new app
+
+// need to get to something like this:
+//let dna = hc_dna::from_package_file("mydna.hcpkg");
+//let agent = get_the_agent_somehow();
+//let hc = App::new(dna,agent);
+// but for now:
+let dna = DNA {};
+let hc = App::new(dna);
+```
+*/
+
 extern crate hc_core;
 
 /// App contains a Holochain application instance

@@ -15,10 +15,10 @@ use hc_dna::Dna;
 // need to get to something like this:
 //let dna = hc_dna::from_package_file("mydna.hcpkg");
 //let agent = get_the_agent_somehow();
-//let hc = App::new(dna,agent);
+//let hc = Holochain::new(dna,agent);
 // but for now:
 let dna = Dna::new();
-let mut hc = App::new(dna).unwrap();
+let mut hc = Holochain::new(dna).unwrap();
 
 // start up the app
 hc.start().expect("couldn't start the app");
@@ -43,9 +43,9 @@ hc.stop().expect("couldn't stop the app");
 extern crate hc_core;
 extern crate hc_dna;
 
-/// App contains a Holochain application instance
+/// contains a Holochain application instance
 #[derive(Clone)]
-pub struct App {
+pub struct Holochain {
     instance: hc_core::instance::Instance,
     active: bool,
 }
@@ -57,13 +57,13 @@ use hc_core::state::Action::*;
 use hc_core::state::State;
 use hc_core::nucleus::fncall;
 
-impl App {
+impl Holochain {
     pub fn new(dna: Dna) -> Result<Self, HolochainError> {
         let mut instance = hc_core::instance::Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action);
         instance.consume_next_action()?;
-        let app = App { instance: instance, active: false };
+        let app = Holochain { instance: instance, active: false };
         Ok(app)
     }
 
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn can_instantiate() {
         let dna = Dna::new();
-        let hc = App::new(dna.clone());
+        let hc = Holochain::new(dna.clone());
         assert!(!hc.clone().unwrap().active);
         match hc {
             Ok(app) => {
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn can_start_and_stop() {
         let dna = Dna::new();
-        let mut hc = App::new(dna.clone()).unwrap();
+        let mut hc = Holochain::new(dna.clone()).unwrap();
         assert!(!hc.clone().active());
 
         // stop when not active returns error
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn can_call() {
         let dna = Dna::new();
-        let mut hc = App::new(dna.clone()).unwrap();
+        let mut hc = Holochain::new(dna.clone()).unwrap();
         let result = hc.call("bogusfn");
         match result {
             Err(HolochainError::InstanceNotActive) => assert!(true),
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn can_get_state() {
         let dna = Dna::new();
-        let mut hc = App::new(dna.clone()).unwrap();
+        let mut hc = Holochain::new(dna.clone()).unwrap();
 
         let result = hc.state();
         match result {

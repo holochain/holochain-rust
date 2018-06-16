@@ -1,43 +1,57 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+extern crate hc_agent;
+extern crate hc_api;
+extern crate hc_core;
 extern crate hc_dna;
 
+use hc_agent::Agent;
+use hc_api::*;
 use hc_dna::Dna;
 
-extern crate hc_core;
+use std::env;
 
-use hc_core::common;
-
-use hc_core::agent::Action::*;
-use hc_core::instance::Instance;
-use hc_core::nucleus::Action::*;
-use hc_core::state::Action::*;
+fn usage() {
+    println!("Usage: hc_test_bin <identity>");
+    std::process::exit(1);
+}
 
 fn main() {
-    println!("Creating instance..");
-    let mut instance = Instance::new();
+    let args: Vec<String> = env::args().collect();
 
+    if args.len() < 2 {
+        usage();
+    }
+
+    let identity = &args[1];
+
+    if identity == "" {
+        usage();
+    }
+
+    //let dna = hc_dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
-    println!("adding action: {:?}", InitApplication(dna));
-    let dna = Dna::new();
-    instance.dispatch(Nucleus(InitApplication(dna)));
-    println!("pending actions: {:?}", instance.pending_actions());
+    let agent = Agent::from_string(identity);
+    let mut hc = Holochain::new(dna, agent).unwrap();
+    println!("Created a new instance with identity: {}", identity);
 
-    let entry = common::entry::Entry {};
-    let action = Agent(Commit(entry));
-    println!("adding action: {:?}", action);
-    instance.dispatch(action);
-    println!("pending actions: {:?}", instance.pending_actions());
+    // start up the app
+    hc.start().expect("couldn't start the app");
+    println!("Started the app..");
 
-    let dna = Dna::new();
-    instance.dispatch(Nucleus(InitApplication(dna)));
+    // call a function in the app
+    //hc.call("some_fn");
 
-    println!("consuming action...");
-    instance.consume_next_action().expect("consume failed");
-    println!("pending actions: {:?}", instance.pending_actions());
+    // get the state
+    {
+        let state = hc.state().unwrap();
+        println!("Agent State: {:?}", state.agent());
 
-    println!("consuming action...");
-    instance.consume_next_action().expect("consume failed");
-    println!("pending actions: {:?}", instance.pending_actions());
-    instance.consume_next_action().expect("consume failed");
+        // do some other stuff with the state here
+        // ...
+    }
+
+    // stop the app
+    hc.stop().expect("couldn't stop the app");
+    println!("Stopped the app..");
 }

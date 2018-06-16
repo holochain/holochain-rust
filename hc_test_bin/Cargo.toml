@@ -6,3 +6,5 @@ authors = ["neonphog <neonphog@gmail.com>"]
 [dependencies]
 hc_core = { path = "../hc_core" }
 hc_dna = { path = "../hc_dna" }
+hc_agent = { path = "../hc_agent" }
+hc_api = { path = "../hc_api" }

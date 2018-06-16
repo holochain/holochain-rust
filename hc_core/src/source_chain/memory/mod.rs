@@ -14,4 +14,15 @@ impl IntoIterator for SourceChain {
 }
 
 impl super::SourceChain for SourceChain {
+    fn push (mut self, pair: super::Pair) {
+        self.pairs.push(pair)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn round_trip() {
+        let _chain = super::SourceChain { pairs: Vec::new() };
+    }
 }

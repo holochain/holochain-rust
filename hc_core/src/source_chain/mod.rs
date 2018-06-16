@@ -9,6 +9,7 @@ pub struct Pair{
 }
 
 pub trait SourceChain: IntoIterator {
+    fn push(self, Pair);
 }
 
 // pub struct Pair {

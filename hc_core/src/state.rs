@@ -19,7 +19,7 @@ impl State {
     pub fn create() -> Self {
         State {
             nucleus: Rc::new(NucleusState::create()),
-            agent: Rc::new(AgentState::create()),
+            agent: Rc::new(AgentState::new()),
         }
     }
 

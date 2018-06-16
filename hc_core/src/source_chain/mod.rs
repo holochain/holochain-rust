@@ -1,3 +1,5 @@
+pub mod memory;
+
 use common::entry::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -6,9 +8,7 @@ pub struct Pair{
     entry: Entry,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct SourceChain {
-    pairs: Vec<Pair>
+pub trait SourceChain: IntoIterator {
 }
 
 // pub struct Pair {

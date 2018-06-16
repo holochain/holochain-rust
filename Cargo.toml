@@ -10,16 +10,3 @@ members = [
 [features]
 # Treat warnings as a build error.
 strict = []
-
-[dependencies]
-# The core APIs, including the Serialize and Deserialize traits. Always
-# required when using Serde.
-serde = "1.0"
-
-# Support for #[derive(Serialize, Deserialize)]. Required if you want Serde
-# to work for structs and enums defined in your crate.
-serde_derive = "1.0"
-
-# Each data format lives in its own crate; the sample code below uses JSON
-# but you may be using a different one.
-serde_json = "1.0"

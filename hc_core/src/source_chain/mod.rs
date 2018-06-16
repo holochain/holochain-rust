@@ -1,26 +1,27 @@
-use agent;
-
 use common::entry::*;
 
-pub trait SourceChainInterface {
-    fn get(h: Hash) -> Entry;
-    fn get_header(h: Hash) -> Hash;
+#[derive(Clone, Debug, PartialEq)]
+pub struct Pair{
+    header: Header,
+    entry: Entry,
 }
 
-pub struct Header {}
-pub struct Entry {}
-
-pub struct Pair {
-    pub header: Header,
-    pub entry: Entry,
-}
-
+#[derive(Clone, Debug, PartialEq)]
 pub struct SourceChain {
-    pub pairs: Vec<Pair>, // an ordered sequence of headers
-    pub agent: agent::AgentState // a reference back to the agent this chain is for
+    pairs: Vec<Pair>
 }
 
-impl SourceChain {
+// pub struct Pair {
+//     pub header: Header,
+//     pub entry: Entry,
+// }
+//
+// pub struct SourceChain {
+//     pub pairs: Vec<Pair>, // an ordered sequence of headers
+//     pub agent: agent::AgentState // a reference back to the agent this chain is for
+// }
+
+// impl SourceChain {
     // // returns the latest header
     // pub fn top(self) -> Option<Header> {
     //     self.headers.last()
@@ -70,4 +71,4 @@ impl SourceChain {
     // fn deserialize(input: str) {
     //     serde_json:from_str(input).unwrap()
     // }
-}
+// }

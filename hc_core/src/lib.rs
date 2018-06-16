@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 pub mod agent;
-pub mod chain;
+pub mod source_chain;
 pub mod common;
 pub mod instance;
 pub mod network;

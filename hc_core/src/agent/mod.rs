@@ -1,8 +1,7 @@
 pub mod keys;
-pub mod source_chain;
 
 use self::keys::Keys;
-use self::source_chain::SourceChain;
+// use self::source_chain::SourceChain;
 use common::entry::Entry;
 use state;
 use std::rc::Rc;
@@ -10,14 +9,14 @@ use std::rc::Rc;
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
     keys: Option<Keys>,
-    source_chain: Option<Box<SourceChain>>,
+    // source_chain: Option<Box<SourceChain>>,
 }
 
 impl AgentState {
     pub fn create() -> Self {
         AgentState {
             keys: None,
-            source_chain: None,
+            // source_chain: None,
         }
     }
 }

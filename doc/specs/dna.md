@@ -151,7 +151,8 @@ closeBundle(bundle)
                         "membrane": "zome"
                     },
                     ,
-                    "fn_functions": [
+                    "fn_declarations": [
+                        // see above
                     ],
                      "code": ".." //s-expresion encoded wasm or Base64 encoded WASM bytecode
                 },

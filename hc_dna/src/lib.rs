@@ -21,7 +21,6 @@ assert_eq!(name, dna2.name);
 ```
 */
 
-extern crate base64;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -29,207 +28,18 @@ extern crate serde;
 extern crate serde_json;
 extern crate uuid;
 
-use serde::de::{Deserializer, Visitor};
-use serde::ser::Serializer;
 use uuid::Uuid;
 
-fn _vec_u8_to_b64_str<S>(data: &Vec<u8>, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let b64 = base64::encode(data);
-    s.serialize_str(&b64)
-}
+pub mod wasm;
 
-fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Vec<u8>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct Z;
+pub mod zome;
 
-    impl<'de> Visitor<'de> for Z {
-        type Value = Vec<u8>;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("string")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Vec<u8>, E>
-        where
-            E: serde::de::Error,
-        {
-            match base64::decode(value) {
-                Ok(v) => Ok(v),
-                Err(_) => Err(serde::de::Error::custom(String::from("nope"))),
-            }
-        }
-    }
-
-    d.deserialize_any(Z)
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct DnaWasm {
-    #[serde(serialize_with = "_vec_u8_to_b64_str", deserialize_with = "_b64_str_to_vec_u8")]
-    code: Vec<u8>,
-    // using a struct gives us the flexibility to extend it later
-    // should we need additional properties, like:
-    // `filename: String,`
-}
-
-impl Default for DnaWasm {
-    /// Provide defaults for wasm entries in dna structs.
-    fn default() -> Self {
-        DnaWasm {
-            code: vec![0, 1, 2, 3],
-        }
-    }
-}
-
-impl DnaWasm {
-    /// Allow sane defaults for `DnaWasm::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-/// Enum for "zome" "config" "error_handling" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub enum ZomeConfigErrorHandling {
-    #[serde(rename = "throw-errors")]
-    ThrowErrors,
-}
-
-impl Default for ZomeConfigErrorHandling {
-    /// Default zome config error_handling is "throw-errors"
-    fn default() -> Self {
-        ZomeConfigErrorHandling::ThrowErrors
-    }
-}
-
-/// Represents the "config" object on a "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ZomeConfig {
-    /// How errors should be handled within this zome.
-    #[serde(default)]
-    pub error_handling: ZomeConfigErrorHandling,
-}
-
-impl Default for ZomeConfig {
-    /// Provide defaults for the "zome" "config" object.
-    fn default() -> Self {
-        ZomeConfig {
-            error_handling: ZomeConfigErrorHandling::ThrowErrors,
-        }
-    }
-}
-
-impl ZomeConfig {
-    /// Allow sane defaults for `ZomeConfig::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-/// Enum for Zome EntryType "sharing" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub enum ZomeEntryTypeSharing {
-    #[serde(rename = "public")]
-    Public,
-    #[serde(rename = "private")]
-    Private,
-    #[serde(rename = "encrypted")]
-    Encrypted,
-}
-
-impl Default for ZomeEntryTypeSharing {
-    /// Default zome entry_type sharing is "public"
-    fn default() -> Self {
-        ZomeEntryTypeSharing::Public
-    }
-}
-
-/// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ZomeEntryType {
-    /// The name of this entry type.
-    #[serde(default)]
-    pub name: String,
-
-    /// A description of this entry type.
-    #[serde(default)]
-    pub description: String,
-
-    /// The sharing model of this entry type (public, private, encrypted).
-    #[serde(default)]
-    pub sharing: ZomeEntryTypeSharing,
-
-    #[serde(default)]
-    pub validation: DnaWasm,
-}
-
-impl Default for ZomeEntryType {
-    /// Provide defaults for a "zome"s "entry_types" object.
-    fn default() -> Self {
-        ZomeEntryType {
-            name: String::from(""),
-            description: String::from(""),
-            sharing: ZomeEntryTypeSharing::Public,
-            validation: DnaWasm::new(),
-        }
-    }
-}
-
-impl ZomeEntryType {
-    /// Allow sane defaults for `ZomeEntryType::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-/// Represents an individual "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Zome {
-    /// The name of this zome.
-    #[serde(default)]
-    pub name: String,
-
-    /// A description of this zome.
-    #[serde(default)]
-    pub description: String,
-
-    /// Configuration associated with this zome.
-    #[serde(default)]
-    pub config: ZomeConfig,
-
-    /// An array of entry_types associated with this zome.
-    #[serde(default)]
-    pub entry_types: Vec<ZomeEntryType>,
-}
-
-impl Default for Zome {
-    /// Provide defaults for an individual "zome".
-    fn default() -> Self {
-        Zome {
-            name: String::from(""),
-            description: String::from(""),
-            config: ZomeConfig::new(),
-            entry_types: Vec::new(),
-        }
-    }
-}
-
-impl Zome {
-    /// Allow sane defaults for `Zome::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
+/// serde helper, provides a default empty object
 fn _def_empty_object() -> serde_json::Value {
     json!({})
 }
 
+/// serde helper, provides a default newly generated v4 uuid
 fn _def_new_uuid() -> String {
     Uuid::new_v4().to_string()
 }
@@ -263,7 +73,7 @@ pub struct Dna {
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
-    pub zomes: Vec<Zome>,
+    pub zomes: Vec<zome::Zome>,
 }
 
 impl Default for Dna {
@@ -382,16 +192,82 @@ mod tests {
     }
 
     #[test]
+    fn parse_and_serialize_compare() {
+        let fixture = String::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": [
+                    {
+                        "name": "test",
+                        "description": "test",
+                        "config": {
+                            "error_handling": "throw-errors"
+                        },
+                        "entry_types": [
+                            {
+                                "name": "test",
+                                "description": "test",
+                                "sharing": "public",
+                                "validation": {
+                                    "code": "AAECAw=="
+                                },
+                                "links_to": [
+                                    {
+                                        "target_type": "test",
+                                        "tag": "test",
+                                        "validation": {
+                                            "code": "AAECAw=="
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "capabilities": [
+                            {
+                                "name": "test",
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [
+                                    {
+                                        "name": "test"
+                                    }
+                                ],
+                                "code": {
+                                    "code": "AAECAw=="
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }"#,
+        ).replace(char::is_whitespace, "");
+
+        let dna = Dna::new_from_json(&fixture).unwrap();
+
+        println!("{}", dna.to_json_pretty().unwrap());
+
+        let serialized = dna.to_json().unwrap().replace(char::is_whitespace, "");
+
+        assert_eq!(fixture, serialized);
+    }
+
+    #[test]
     fn default_value_test() {
         let mut dna = Dna {
             uuid: String::from(UNIT_UUID),
             ..Default::default()
         };
-        let mut zome = Zome::new();
-        zome.entry_types.push(ZomeEntryType::new());
+        let mut zome = zome::Zome::new();
+        zome.entry_types.push(zome::entry_types::EntryType::new());
         dna.zomes.push(zome);
-
-        println!("oeu {}", dna.to_json_pretty().unwrap());
 
         let fixture = Dna::new_from_json(
             r#"{
@@ -445,7 +321,7 @@ mod tests {
 
         assert_eq!(
             dna.zomes[0].config.error_handling,
-            ZomeConfigErrorHandling::ThrowErrors
+            zome::ErrorHandling::ThrowErrors
         )
     }
 
@@ -465,7 +341,7 @@ mod tests {
 
         assert_eq!(
             dna.zomes[0].entry_types[0].sharing,
-            ZomeEntryTypeSharing::Public
+            zome::entry_types::Sharing::Public
         );
     }
 

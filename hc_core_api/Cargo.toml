@@ -1,5 +1,5 @@
 [package]
-name = "hc_api"
+name = "hc_core_api"
 version = "0.1.0"
 authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 

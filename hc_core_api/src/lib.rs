@@ -1,15 +1,15 @@
 /*!
-hc_api provides a library for container applications to instantiate and run holochain applications.
+hc_core_api provides a library for container applications to instantiate and run holochain applications.
 
 # Examples
 
 ``` rust
 extern crate hc_core;
-extern crate hc_api;
+extern crate hc_core_api;
 extern crate hc_dna;
 extern crate hc_agent;
 
-use hc_api::*;
+use hc_core_api::*;
 use hc_dna::Dna;
 use hc_agent::Agent;
 use std::sync::{Arc, Mutex};

@@ -1,15 +1,15 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 extern crate hc_agent;
-extern crate hc_api;
 extern crate hc_core;
+extern crate hc_core_api;
 extern crate hc_dna;
 
 use hc_agent::Agent;
-use hc_api::*;
 use hc_core::context::Context;
 use hc_core::logger::SimpleLogger;
 use hc_core::persister::SimplePersister;
+use hc_core_api::*;
 use hc_dna::Dna;
 use std::sync::{Arc, Mutex};
 

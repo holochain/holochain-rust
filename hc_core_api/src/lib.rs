@@ -81,7 +81,7 @@ impl Holochain {
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action);
         instance.consume_next_action()?;
-        context.log("instantiated")?;
+        context.log(&format!("{} instantiated", dna.name))?;
         let app = Holochain {
             instance: instance,
             context: context,
@@ -137,9 +137,10 @@ mod tests {
     use hc_core::context::Context;
     use hc_core::logger::Logger;
     use hc_core::persister::SimplePersister;
+    use std::fmt;
     use std::sync::{Arc, Mutex};
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     struct TestLogger {
         log: Vec<String>,
     }
@@ -148,31 +149,40 @@ mod tests {
         fn log(&mut self, msg: String) {
             self.log.push(msg);
         }
-        fn read(&self) -> String {
-            self.log[0].clone()
+    }
+
+    // trying to get a way to print out what has been logged for tests without a read function.
+    // this currently fails
+    impl fmt::Debug for TestLogger {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:?}", self.log[0])
         }
     }
 
-    fn test_context(agent: hc_agent::Agent) -> Arc<Context> {
-        Arc::new(Context {
-            agent: agent,
-            logger: Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-            persister: Arc::new(Mutex::new(SimplePersister {})),
-        })
+    fn test_context(agent: hc_agent::Agent) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
+        (
+            Arc::new(Context {
+                agent: agent,
+                logger: logger.clone(),
+                persister: Arc::new(Mutex::new(SimplePersister {})),
+            }),
+            logger,
+        )
     }
 
     #[test]
     fn can_instantiate() {
-        let dna = Dna::new();
+        let mut dna = Dna::new();
+        dna.name = "TestApp".to_string();
         let agent = HCAgent::from_string("bob");
-        let context = test_context(agent.clone());
+        let (context, test_logger) = test_context(agent.clone());
         let result = Holochain::new(dna.clone(), context.clone());
         let hc = result.clone().unwrap();
         assert!(!hc.active);
         assert_eq!(hc.context.agent, agent);
-        let logger = context.logger.lock().unwrap();
-        assert_eq!(logger.read(), "instantiated");
-        //assert_eq!(format!("{:?}", logger), "instantiated");
+        let test_logger = test_logger.lock().unwrap();
+        assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
 
         match result {
             Ok(hc) => {
@@ -186,7 +196,7 @@ mod tests {
     fn can_start_and_stop() {
         let dna = Dna::new();
         let agent = HCAgent::from_string("bob");
-        let context = test_context(agent.clone());
+        let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.clone().active());
 
@@ -225,7 +235,7 @@ mod tests {
     fn can_call() {
         let dna = Dna::new();
         let agent = HCAgent::from_string("bob");
-        let context = test_context(agent.clone());
+        let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         let result = hc.call("bogusfn");
         match result {
@@ -249,7 +259,7 @@ mod tests {
     fn can_get_state() {
         let dna = Dna::new();
         let agent = HCAgent::from_string("bob");
-        let context = test_context(agent.clone());
+        let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();

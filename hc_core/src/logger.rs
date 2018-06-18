@@ -1,10 +1,19 @@
+//use std::sync::{Arc, Mutex};
+
+/*!
+This logger is the logger that's attached to each Holochain application
+which is separate from standard logging via the log crate warn! info! debug! logging that
+gets emitted globaly from the container.
+*/
+
+use std::fmt;
+
 /// trait that defines the logging functionality that hc_core requires
-pub trait Logger {
+pub trait Logger: fmt::Debug {
     fn log(&mut self, msg: String);
-    fn read(&self) -> String;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SimpleLogger {
     //    log: Vec<String>,
 }
@@ -18,7 +27,13 @@ impl Logger for SimpleLogger {
         let date = Local::now();
         println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
     }
-    fn read(&self) -> String {
-        "".to_string()
+    /*    fn new() -> SimpleLogger {
+        SimpleLogger {}
+    }*/
+}
+
+impl fmt::Debug for SimpleLogger {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", "<empty>")
     }
 }

@@ -9,7 +9,7 @@ use error::HolochainError;
 use state;
 use std::rc::Rc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NucleusState {
     dna: Option<Dna>,
     initialized: bool,

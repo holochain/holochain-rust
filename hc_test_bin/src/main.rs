@@ -39,7 +39,7 @@ fn main() {
     let context = Context {
         agent: agent,
         logger: Arc::new(Mutex::new(SimpleLogger {})),
-        persister: Arc::new(Mutex::new(SimplePersister {})),
+        persister: Arc::new(Mutex::new(SimplePersister::new())),
     };
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

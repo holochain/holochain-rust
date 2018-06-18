@@ -10,7 +10,7 @@ pub enum Action {
     Nucleus(::nucleus::Action),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Rc<NucleusState>,
     agent: Rc<AgentState>,

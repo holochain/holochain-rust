@@ -28,7 +28,7 @@ let agent = Agent::from_string("bob");
 let context = Context {
     agent: agent,
     logger: Arc::new(Mutex::new(SimpleLogger {})),
-    persister: Arc::new(Mutex::new(SimplePersister {})),
+    persister: Arc::new(Mutex::new(SimplePersister::new())),
 };
 let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 
@@ -165,7 +165,7 @@ mod tests {
             Arc::new(Context {
                 agent: agent,
                 logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister {})),
+                persister: Arc::new(Mutex::new(SimplePersister::new())),
             }),
             logger,
         )

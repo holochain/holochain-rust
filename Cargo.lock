@@ -42,20 +42,20 @@ name = "hc_agent"
 version = "0.1.0"
 
 [[package]]
-name = "hc_core_api"
-version = "0.1.0"
-dependencies = [
- "hc_agent 0.1.0",
- "hc_core 0.1.0",
- "hc_dna 0.1.0",
-]
-
-[[package]]
 name = "hc_core"
 version = "0.1.0"
 dependencies = [
  "chrono 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hc_agent 0.1.0",
+ "hc_dna 0.1.0",
+]
+
+[[package]]
+name = "hc_core_api"
+version = "0.1.0"
+dependencies = [
+ "hc_agent 0.1.0",
+ "hc_core 0.1.0",
  "hc_dna 0.1.0",
 ]
 
@@ -81,8 +81,8 @@ name = "hc_test_bin"
 version = "0.1.0"
 dependencies = [
  "hc_agent 0.1.0",
- "hc_core_api 0.1.0",
  "hc_core 0.1.0",
+ "hc_core_api 0.1.0",
  "hc_dna 0.1.0",
 ]
 

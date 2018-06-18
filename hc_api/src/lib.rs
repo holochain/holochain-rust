@@ -15,6 +15,7 @@ use hc_agent::Agent;
 use std::sync::{Arc, Mutex};
 use hc_core::context::Context;
 use hc_core::logger::SimpleLogger;
+use hc_core::persister::SimplePersister;
 
 // instantiate a new app
 
@@ -27,6 +28,7 @@ let agent = Agent::from_string("bob");
 let context = Context {
     agent: agent,
     logger: Arc::new(Mutex::new(SimpleLogger {})),
+    persister: Arc::new(Mutex::new(SimplePersister {})),
 };
 let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 
@@ -134,6 +136,7 @@ mod tests {
     use hc_agent::Agent as HCAgent;
     use hc_core::context::Context;
     use hc_core::logger::Logger;
+    use hc_core::persister::SimplePersister;
     use std::sync::{Arc, Mutex};
 
     #[derive(Clone, Debug)]
@@ -154,6 +157,7 @@ mod tests {
         Arc::new(Context {
             agent: agent,
             logger: Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+            persister: Arc::new(Mutex::new(SimplePersister {})),
         })
     }
 

@@ -9,6 +9,7 @@ use hc_agent::Agent;
 use hc_api::*;
 use hc_core::context::Context;
 use hc_core::logger::SimpleLogger;
+use hc_core::persister::SimplePersister;
 use hc_dna::Dna;
 use std::sync::{Arc, Mutex};
 
@@ -38,6 +39,7 @@ fn main() {
     let context = Context {
         agent: agent,
         logger: Arc::new(Mutex::new(SimpleLogger {})),
+        persister: Arc::new(Mutex::new(SimplePersister {})),
     };
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

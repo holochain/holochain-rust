@@ -5,6 +5,14 @@ pub struct SourceChain {
     pairs: Vec<super::Pair>
 }
 
+impl SourceChain {
+    pub fn new(pairs: &Vec<super::Pair>) -> SourceChain {
+        SourceChain {
+            pairs: pairs.clone(),
+        }
+    }
+}
+
 impl IntoIterator for SourceChain {
     type Item = super::Pair;
     type IntoIter = std::vec::IntoIter<super::Pair>;
@@ -21,21 +29,24 @@ impl super::SourceChain for SourceChain {
 
 #[cfg(test)]
 mod tests {
-    use common;
+    use common::entry::Entry;
+    use common::entry::Header;
     use source_chain::Pair;
     use source_chain::SourceChain;
 
     #[test]
     fn round_trip() {
-        let mut chain = super::SourceChain { pairs: Vec::new() };
+        let mut chain = super::SourceChain::new(&Vec::new());
 
-        let e1 = common::entry::Entry {};
-        let h1 = common::entry::Header::new(None, &e1);
+        let e1 = Entry::new(&String::from("some content"));
+        println!("{:?}", e1);
+        let h1 = Header::new(None, &e1);
+        println!("{:?}", h1);
         let p1 = &Pair::new(h1, e1);
         chain.push(p1);
-
-        for pair in chain {
-            println!("{:?}", pair)
-        }
+        //
+        // for pair in chain {
+        //     println!("{:?}", pair)
+        // }
     }
 }

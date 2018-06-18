@@ -26,7 +26,7 @@ mod tests {
             Nucleus(InitApplication(dna.clone()))
         );
 
-        let entry = ::common::entry::Entry {};
+        let entry = ::common::entry::Entry::new(&String::new());
         let action = Agent(Commit(entry));
         instance.dispatch(action.clone());
         assert_eq!(*instance.pending_actions().back().unwrap(), action);

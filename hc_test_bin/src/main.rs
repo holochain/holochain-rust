@@ -20,7 +20,7 @@ fn main() {
     instance.dispatch(Nucleus(InitApplication(dna)));
     println!("pending actions: {:?}", instance.pending_actions());
 
-    let entry = common::entry::Entry {};
+    let entry = common::entry::Entry::new(&String::new());
     let action = Agent(Commit(entry));
     println!("adding action: {:?}", action);
     instance.dispatch(action);

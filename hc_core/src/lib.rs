@@ -2,8 +2,10 @@
 extern crate hc_dna;
 pub mod agent;
 pub mod common;
+pub mod context;
 pub mod error;
 pub mod instance;
+pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod state;

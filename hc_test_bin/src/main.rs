@@ -7,7 +7,10 @@ extern crate hc_dna;
 
 use hc_agent::Agent;
 use hc_api::*;
+use hc_core::context::Context;
+use hc_core::logger::SimpleLogger;
 use hc_dna::Dna;
+use std::sync::{Arc, Mutex};
 
 use std::env;
 
@@ -32,7 +35,11 @@ fn main() {
     //let dna = hc_dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
     let agent = Agent::from_string(identity);
-    let mut hc = Holochain::new(dna, agent).unwrap();
+    let context = Context {
+        agent: agent,
+        logger: Arc::new(Mutex::new(SimpleLogger {})),
+    };
+    let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 
     // start up the app

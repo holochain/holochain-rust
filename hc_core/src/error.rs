@@ -10,6 +10,7 @@ pub enum HolochainError {
     InstanceNotActive,
     InstanceActive,
     NotImplemented,
+    LoggingError,
     Dummy, //  SerdeError(serde_json::error::Error), TODO
 }
 
@@ -35,6 +36,7 @@ impl Error for HolochainError {
             NotImplemented => "not implemented",
             InstanceNotActive => "the instance is not active",
             InstanceActive => "the instance is active",
+            LoggingError => "logging failed",
             _ => "unknown error type",
         }
     }

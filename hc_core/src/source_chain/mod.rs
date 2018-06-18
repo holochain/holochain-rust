@@ -1,6 +1,7 @@
 pub mod memory;
 
-use common::entry::*;
+use common::entry::Header;
+use common::entry::Entry;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pair{
@@ -8,8 +9,17 @@ pub struct Pair{
     entry: Entry,
 }
 
+impl Pair {
+    pub fn new(header: Header, entry: Entry) -> Pair {
+        Pair{
+            header,
+            entry,
+        }
+    }
+}
+
 pub trait SourceChain: IntoIterator {
-    fn push(self, Pair);
+    fn push(&mut self, &Pair);
 }
 
 // pub struct Pair {

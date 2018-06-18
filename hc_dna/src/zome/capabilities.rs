@@ -20,9 +20,9 @@ pub enum Membrane {
 }
 
 impl Default for Membrane {
-    /// Default zome capability membrane is "public"
+    /// Default zome capability membrane is "agent"
     fn default() -> Self {
-        Membrane::Public
+        Membrane::Agent
     }
 }
 
@@ -38,7 +38,7 @@ impl Default for CapabilityType {
     /// Defaults for a "capability" sub-object on a "zome" "capabilities" object.
     fn default() -> Self {
         CapabilityType {
-            membrane: Membrane::Public,
+            membrane: Membrane::Agent,
         }
     }
 }
@@ -124,7 +124,7 @@ mod tests {
             r#"{
                 "name": "test",
                 "capability": {
-                    "membrane": "public"
+                    "membrane": "agent"
                 },
                 "fn_declarations": [
                     {

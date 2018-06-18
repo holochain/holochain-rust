@@ -56,7 +56,11 @@ pub struct Zome {
     #[serde(default)]
     pub description: String,
 
-    /// Configuration associated with this zome.
+    /**
+    Configuration associated with this zome.
+    Note, this should perhaps be a more free-form serde_json::Value,
+    "throw-errors" may not make sense for wasm, or other ribosome types.
+    */
     #[serde(default)]
     pub config: Config,
 

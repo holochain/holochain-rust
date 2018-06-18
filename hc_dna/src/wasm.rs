@@ -46,7 +46,7 @@ where
         {
             match base64::decode(value) {
                 Ok(v) => Ok(v),
-                Err(_) => Err(serde::de::Error::custom(String::from("nope"))),
+                Err(e) => Err(serde::de::Error::custom(e)),
             }
         }
     }

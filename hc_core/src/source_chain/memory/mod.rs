@@ -42,8 +42,15 @@ mod tests {
         println!("{:?}", e1);
         let h1 = Header::new(None, &e1);
         println!("{:?}", h1);
-        let p1 = &Pair::new(h1, e1);
-        chain.push(p1);
+        let p1 = Pair::new(&h1, &e1);
+        chain.push(&p1);
+        println!("{:?}", chain);
+
+        let e2 = Entry::new(&String::from("some more content"));
+        let h2 = Header::new(Some(h1.hash()), &e2);
+        let p2 = Pair::new(&h2, &e2);
+        chain.push(&p2);
+        println!("{:?}", chain);
         //
         // for pair in chain {
         //     println!("{:?}", pair)

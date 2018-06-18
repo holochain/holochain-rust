@@ -10,10 +10,10 @@ pub struct Pair{
 }
 
 impl Pair {
-    pub fn new(header: Header, entry: Entry) -> Pair {
+    pub fn new(header: &Header, entry: &Entry) -> Pair {
         Pair{
-            header,
-            entry,
+            header: header.clone(),
+            entry: entry.clone(),
         }
     }
 }

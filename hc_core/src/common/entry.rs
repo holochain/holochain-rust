@@ -16,7 +16,7 @@ impl Entry {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Header {
-    previous: Option<String>,
+    previous: Option<u64>,
     entry: Entry,
     hash: u64,
 }
@@ -29,19 +29,20 @@ impl _Hash for Header {
 }
 
 impl Header {
-    pub fn new(previous: Option<&String>, entry: &Entry) -> Header {
+    pub fn new(previous: Option<u64>, entry: &Entry) -> Header {
         let mut h = Header {
-            previous: match previous {
-                Some(p) => Some(p.clone()),
-                None => None,
-            },
+            previous: previous,
             entry: entry.clone(),
             hash: 0,
         };
         let mut hasher = DefaultHasher::new();
-        h.hash(&mut hasher);
+        _Hash::hash(&h, &mut hasher);
         h.hash = hasher.finish();
         h
+    }
+
+    pub fn hash(&self) -> u64 {
+        self.hash
     }
 }
 

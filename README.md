@@ -123,6 +123,22 @@ Run:
 cargo fmt -- --write-mode=diff
 ```
 
+There is _another_ linter enforcing code style (clippy).
+
+
+Install:
+
+```
+rustup update
+cargo +nightly install clippy
+```
+
+Run:
+
+```
+cargo +nightly clippy
+```
+
 ### Watch tests
 
 For better productivity, watch your cargo tests/check while you work.

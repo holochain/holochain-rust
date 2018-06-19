@@ -13,7 +13,7 @@ use serde::ser::Serializer;
 /**
 Private helper for converting binary WebAssembly into base64 serialized string.
 */
-fn _vec_u8_to_b64_str<S>(data: &Vec<u8>, s: S) -> Result<S::Ok, S::Error>
+fn _vec_u8_to_b64_str<S>(data: &[u8], s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

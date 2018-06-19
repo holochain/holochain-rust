@@ -4,7 +4,6 @@ use hc_dna::Dna;
 pub mod fncall;
 pub mod ribosome;
 
-use error::HolochainError;
 //use self::ribosome::*;
 use state;
 use std::rc::Rc;

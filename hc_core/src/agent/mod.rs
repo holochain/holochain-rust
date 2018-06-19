@@ -6,7 +6,7 @@ use common::entry::Entry;
 use state;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
     source_chain: Option<Box<SourceChain>>,

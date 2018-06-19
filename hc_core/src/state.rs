@@ -1,5 +1,4 @@
 use agent::AgentState;
-use error::HolochainError;
 use nucleus::NucleusState;
 use std::rc::Rc;
 

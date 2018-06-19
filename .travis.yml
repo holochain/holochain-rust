@@ -4,5 +4,6 @@ rust:
 cache: cargo
 install:
   - rustup component add rustfmt-preview
+  - rustup update nightly
 script:
   - make test

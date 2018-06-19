@@ -19,9 +19,15 @@ impl Instance {
 
     pub fn consume_next_action(&mut self) -> Result<(), HolochainError> {
         if self.pending_actions.len() > 0 {
-            // TODO: convert the unwrap to return a converted error
-            let action = self.pending_actions.pop_front().unwrap();
-            self.state = self.state.clone().reduce(&action)?;
+            let result = self.pending_actions.pop_front();
+            match result {
+                None => {
+                    return Err(HolochainError::ErrorGeneric(
+                        "nothing to consume".to_string(),
+                    ))
+                }
+                Some(action) => self.state = self.state.clone().reduce(&action)?,
+            }
         }
         Ok(())
     }

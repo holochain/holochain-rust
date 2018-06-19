@@ -1,5 +1,4 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
-#![deny(clippy)]
 extern crate hc_core;
 
 use hc_core::common;

@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
+#![deny(clippy)]
 pub mod agent;
 pub mod source_chain;
 pub mod common;

@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "strict", deny(warnings))]
+#![deny(clippy)]
 /*!
 This crate is an ffi wrapper to provide a c-compatible dna library.
 

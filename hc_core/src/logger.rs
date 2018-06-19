@@ -34,6 +34,6 @@ impl Logger for SimpleLogger {
 
 impl fmt::Debug for SimpleLogger {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "<empty>")
+        write!(f, "<empty>")
     }
 }

@@ -37,7 +37,7 @@ fn main() {
     let dna = Dna::new();
     let agent = Agent::from_string(identity);
     let context = Context {
-        agent: agent,
+        agent,
         logger: Arc::new(Mutex::new(SimpleLogger {})),
         persister: Arc::new(Mutex::new(SimplePersister::new())),
     };

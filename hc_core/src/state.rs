@@ -28,7 +28,7 @@ impl State {
         let nucleus = ::nucleus::reduce(Rc::clone(&self.nucleus), action)?;
 
         Ok(State {
-            nucleus: nucleus,
+            nucleus,
             agent: ::agent::reduce(Rc::clone(&self.agent), action),
         })
     }

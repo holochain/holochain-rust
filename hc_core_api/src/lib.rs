@@ -78,13 +78,14 @@ impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut instance = hc_core::instance::Instance::new();
-        let action = Nucleus(InitApplication(dna.clone()));
+        let name = dna.name.clone();
+        let action = Nucleus(InitApplication(dna));
         instance.dispatch(action);
         instance.consume_next_action()?;
-        context.log(&format!("{} instantiated", dna.name))?;
+        context.log(&format!("{} instantiated", name))?;
         let app = Holochain {
-            instance: instance,
-            context: context,
+            instance,
+            context,
             active: false,
         };
         Ok(app)

@@ -7,7 +7,7 @@ pub trait Persister {
     fn load(&self) -> Result<Option<State>, HolochainError>;
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct SimplePersister {
     state: Option<State>,
 }

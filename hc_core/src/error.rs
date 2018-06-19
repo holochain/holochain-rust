@@ -6,7 +6,6 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq)]
 pub enum HolochainError {
     ErrorGeneric(String),
-    AllreadyInitialized,
     InstanceNotActive,
     InstanceActive,
     NotImplemented,
@@ -31,7 +30,6 @@ impl Error for HolochainError {
     fn description(&self) -> &str {
         match self {
             ErrorGeneric(err_msg) => &err_msg,
-            AllreadyInitialized => "already initialized",
             NotImplemented => "not implemented",
             InstanceNotActive => "the instance is not active",
             InstanceActive => "the instance is active",

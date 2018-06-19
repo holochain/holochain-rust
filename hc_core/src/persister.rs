@@ -51,7 +51,7 @@ mod tests {
 
         let entry = ::common::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
-        let new_state = state.reduce(&action).unwrap();
+        let new_state = state.reduce(&action);
 
         store.save(&new_state);
 

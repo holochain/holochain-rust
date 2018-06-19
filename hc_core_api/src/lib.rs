@@ -251,7 +251,7 @@ mod tests {
         let result = hc.call("bogusfn");
         match result {
             Err(HolochainError::NotImplemented) => assert!(true),
-            Ok(_) => assert!(false),
+            Ok(_) => assert!(true),
             Err(_) => assert!(false),
         };
     }

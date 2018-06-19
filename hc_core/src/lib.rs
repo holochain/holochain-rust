@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 extern crate hc_dna;
 pub mod agent;
-pub mod source_chain;
 pub mod common;
 pub mod context;
 pub mod error;
@@ -10,12 +9,12 @@ pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
+pub mod source_chain;
 pub mod state;
 
 #[cfg(test)]
 mod tests {
     use agent::Action::*;
-    use error::*;
     use hc_dna::Dna;
     use instance::Instance;
     use nucleus::Action::*;
@@ -59,10 +58,7 @@ mod tests {
         instance.dispatch(action.clone());
         match instance.consume_next_action() {
             Ok(()) => assert!(true),
-            Err(err) => match err {
-                HolochainError::AllreadyInitialized => assert!(true),
-                _ => assert!(false),
-            },
+            Err(_) => assert!(false),
         };
 
         assert_eq!(instance.state().nucleus().initialized(), true);

@@ -38,26 +38,22 @@ pub enum Action {
     Call(fncall::Call),
 }
 
-pub fn reduce(
-    old_state: Rc<NucleusState>,
-    action: &state::Action,
-) -> Result<Rc<NucleusState>, HolochainError> {
+pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Rc<NucleusState> {
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
             match *nucleus_action {
                 Action::InitApplication(ref dna) => {
-                    if new_state.initialized {
-                        return Err(HolochainError::AllreadyInitialized);
+                    if !new_state.initialized {
+                        new_state.dna = Some(dna.clone());
+                        new_state.initialized = true;
                     }
-                    new_state.dna = Some(dna.clone());
-                    new_state.initialized = true;
                 }
-                Action::Call(_) => return Err(HolochainError::NotImplemented),
+                Action::Call(_) => {}
             }
-            Ok(Rc::new(new_state))
+            Rc::new(new_state)
         }
-        _ => Ok(old_state),
+        _ => old_state,
     }
 }
 
@@ -76,36 +72,23 @@ mod tests {
 
     #[test]
     fn can_reduce_initialize_action() {
-        let state = NucleusState::new();
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
-        let mut new_state = Rc::new(NucleusState::new()); // initialize to bogus value
-        match reduce(Rc::new(state), &action) {
-            Ok(state) => {
-                new_state = state;
-                assert!(new_state.initialized, true)
-            }
-            Err(_) => assert!(false),
-        };
+        let state = Rc::new(NucleusState::new()); // initialize to bogus value
+        let reduced_state = reduce(state.clone(), &action);
+        assert!(reduced_state.initialized, true);
 
-        // on second reduction it should throw error
-        match reduce(new_state, &action) {
-            Ok(_) => assert!(false),
-            Err(err) => match err {
-                HolochainError::AllreadyInitialized => assert!(true),
-                _ => assert!(false),
-            },
-        };
+        // on second reduction it still works.
+        let second_reduced_state = reduce(reduced_state.clone(), &action);
+        assert_eq!(second_reduced_state, reduced_state);
     }
 
     #[test]
     fn can_reduce_call_action() {
-        let state = NucleusState::new();
         let call = fncall::Call::new("bogusfn");
         let action = Nucleus(Call(call));
-        match reduce(Rc::new(state), &action) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
-        };
+        let mut state = Rc::new(NucleusState::new()); // initialize to bogus value
+        let reduced_state = reduce(state.clone(), &action);
+        assert_eq!(state, reduced_state);
     }
 }

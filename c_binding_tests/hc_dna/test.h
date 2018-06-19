@@ -7,5 +7,7 @@ class TestHcDna: public QObject
 private slots:
 
   void serializeAndDeserialize();
+  void canGetName();
+  void canSetName();
 };
 

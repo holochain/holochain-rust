@@ -61,7 +61,7 @@ closeBundle(bundle)
             },
             //"RibosomeType":"WASM", #do we just commit to WASM only at
             //  at this stage?
-            "entry-types": [
+            "entry_types": [
 
                 {
                     "name": "post",
@@ -151,7 +151,8 @@ closeBundle(bundle)
                         "membrane": "zome"
                     },
                     ,
-                    "fn_functions": [
+                    "fn_declarations": [
+                        // see above
                     ],
                      "code": ".." //s-expresion encoded wasm or Base64 encoded WASM bytecode
                 },

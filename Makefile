@@ -39,6 +39,8 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
+	rustup target add wasm32-unknown-unknown --toolchain nightly
+	cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
 	cargo test --verbose --all --features "strict"
 
 # execute all the found "C" binding tests

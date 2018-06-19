@@ -2,7 +2,7 @@ use std;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SourceChain {
-    pairs: Vec<super::Pair>
+    pairs: Vec<super::Pair>,
 }
 
 impl SourceChain {
@@ -16,13 +16,13 @@ impl SourceChain {
 impl IntoIterator for SourceChain {
     type Item = super::Pair;
     type IntoIter = std::vec::IntoIter<super::Pair>;
-    fn into_iter (self) -> Self::IntoIter {
+    fn into_iter(self) -> Self::IntoIter {
         self.pairs.into_iter()
     }
 }
 
 impl super::SourceChain for SourceChain {
-    fn push (&mut self, pair: &super::Pair) {
+    fn push(&mut self, pair: &super::Pair) {
         self.pairs.insert(0, pair.clone())
     }
 }
@@ -65,7 +65,10 @@ mod tests {
         assert_eq!(p1, i2);
 
         let iter3 = chain.clone().into_iter();
-        let f = iter3.filter(|p| p.entry.content() == "some content").last().unwrap();
+        let f = iter3
+            .filter(|p| p.entry.content() == "some content")
+            .last()
+            .unwrap();
         assert_eq!(f, p1)
     }
 }

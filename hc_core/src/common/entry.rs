@@ -14,7 +14,7 @@ impl _Hash for Entry {
 }
 
 impl Entry {
-    pub fn new (content: &str) -> Entry {
+    pub fn new(content: &str) -> Entry {
         let mut e = Entry {
             content: content.to_string(),
             hash: 0,

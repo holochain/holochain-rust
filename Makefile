@@ -26,7 +26,8 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines, and build the rust project
 main:
 	cargo fmt
-	cargo +nightly clippy -- --deny clippy
+#	cargo +nightly clippy -- --deny clippy
+# TODO: clippy causing prolbems, disabled for now until issues fixed see #27: https://waffle.io/holochain/org/cards/5b297aa42e3a9d002f6d055d
 	cargo build --verbose --all --features "strict"
 
 # list all our found "C" binding tests

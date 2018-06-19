@@ -11,15 +11,13 @@ pub mod state;
 
 #[cfg(test)]
 mod tests {
-    use agent::Action::*;
+    //use agent::Action::*;
     use instance::Instance;
     use nucleus::dna::*;
     use nucleus::Action::*;
     use state::Action::*;
     use state::State;
     use std::sync::mpsc::channel;
-    use std::sync::Arc;
-    use std::sync::Mutex;
 
     #[test]
     fn adding_messages_to_queue() {
@@ -28,7 +26,6 @@ mod tests {
 
         let dna = DNA {};
         let (sender, receiver) = channel();
-        let s = sender.clone();
         instance.dispatch_with_observer(Nucleus(InitApplication(dna.clone())), move |state: &State| {
             match state.nucleus().dna() {
                 Some(dna) => {

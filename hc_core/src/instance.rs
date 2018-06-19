@@ -46,7 +46,7 @@ impl Instance {
 
     pub fn consume_next_action(&mut self) {
         if !self.pending_actions.is_empty() {
-            let action = self.pending_actions.pop_front().unwrap();
+            let _action = self.pending_actions.pop_front().unwrap();
             //self.state = self.state.clone().reduce(&action);
         }
     }
@@ -69,12 +69,12 @@ impl Instance {
                         state = state.clone().reduce(&action, tx_action.clone());
                         //tx_state.send(state.clone());
                     },
-                    Err(ref recv_error) => {}
+                    Err(ref _recv_error) => {}
                 }
 
                 match rx_observer.try_recv() {
                     Ok(observer) => { state_observers.push(Box::new(observer)); }
-                    Err(ref recv_error) => {}
+                    Err(ref _recv_error) => {}
                 }
 
                 state_observers = state_observers.into_iter()

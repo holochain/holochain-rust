@@ -77,13 +77,13 @@ pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action, action_channe
                                     .expect("action channel to be open in reducer");
                             },
 
-                            Err(ref error) => {}
+                            Err(ref _error) => {}
                         }
 
                     });
                 },
 
-                Action::ZomeFunctionResult(ref result) => {
+                Action::ZomeFunctionResult(ref _result) => {
 
                 }
 

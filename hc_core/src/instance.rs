@@ -1,6 +1,8 @@
+use error::HolochainError;
 use state::*;
 use std::collections::VecDeque;
 
+#[derive(Clone)]
 pub struct Instance {
     state: State,
     pending_actions: VecDeque<Action>,
@@ -15,21 +17,35 @@ impl Instance {
         &self.pending_actions
     }
 
-    pub fn consume_next_action(&mut self) {
+    pub fn consume_next_action(&mut self) -> Result<(), HolochainError> {
         if !self.pending_actions.is_empty() {
-            let action = self.pending_actions.pop_front().unwrap();
-            self.state = self.state.clone().reduce(&action);
+            let result = self.pending_actions.pop_front();
+            match result {
+                None => {
+                    return Err(HolochainError::ErrorGeneric(
+                        "nothing to consume".to_string(),
+                    ))
+                }
+                Some(action) => self.state = self.state.clone().reduce(&action),
+            }
         }
+        Ok(())
     }
 
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         Instance {
-            state: State::create(),
+            state: State::new(),
             pending_actions: VecDeque::new(),
         }
     }
 
     pub fn state(&self) -> &State {
         &self.state
+    }
+}
+
+impl Default for Instance {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -1,25 +1,30 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
+extern crate hc_dna;
 pub mod agent;
-pub mod source_chain;
 pub mod common;
+pub mod context;
+pub mod error;
 pub mod instance;
+pub mod logger;
 pub mod network;
 pub mod nucleus;
+pub mod persister;
+pub mod source_chain;
 pub mod state;
 
 #[cfg(test)]
 mod tests {
     use agent::Action::*;
+    use hc_dna::Dna;
     use instance::Instance;
-    use nucleus::dna::*;
     use nucleus::Action::*;
     use state::Action::*;
 
     #[test]
     fn adding_messages_to_queue() {
-        let mut instance = Instance::create();
+        let mut instance = Instance::new();
 
-        let dna = DNA {};
+        let dna = Dna::new();
         instance.dispatch(Nucleus(InitApplication(dna.clone())));
         assert_eq!(
             *instance.pending_actions().back().unwrap(),
@@ -34,21 +39,28 @@ mod tests {
 
     #[test]
     fn consuming_actions_and_checking_state_mutation() {
-        let mut instance = Instance::create();
+        let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(instance.state().nucleus().inits(), 0);
+        assert_eq!(instance.state().nucleus().initialized(), false);
 
-        let dna = DNA {};
+        let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.dispatch(action.clone());
-        instance.consume_next_action();
+
+        match instance.consume_next_action() {
+            Ok(()) => assert!(true),
+            Err(_) => assert!(false),
+        };
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(instance.state().nucleus().inits(), 1);
+        assert_eq!(instance.state().nucleus().initialized(), true);
 
         instance.dispatch(action.clone());
-        instance.consume_next_action();
+        match instance.consume_next_action() {
+            Ok(()) => assert!(true),
+            Err(_) => assert!(false),
+        };
 
-        assert_eq!(instance.state().nucleus().inits(), 2);
+        assert_eq!(instance.state().nucleus().initialized(), true);
     }
 }

@@ -1,8 +1,8 @@
 pub mod keys;
 
 use self::keys::Keys;
-use source_chain::memory::SourceChain;
 use common::entry::Entry;
+use source_chain::memory::SourceChain;
 use state;
 use std::rc::Rc;
 

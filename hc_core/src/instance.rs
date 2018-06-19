@@ -16,7 +16,7 @@ impl Instance {
     }
 
     pub fn consume_next_action(&mut self) {
-        if self.pending_actions.len() > 0 {
+        if self.pending_actions.is_empty() {
             let action = self.pending_actions.pop_front().unwrap();
             self.state = self.state.clone().reduce(&action);
         }

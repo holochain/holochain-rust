@@ -1,5 +1,7 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+extern crate hc_core;
+
 use hc_core::common;
 use hc_core::nucleus;
 

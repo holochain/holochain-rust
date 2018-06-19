@@ -6,9 +6,9 @@ pub struct SourceChain {
 }
 
 impl SourceChain {
-    pub fn new(pairs: &Vec<super::Pair>) -> SourceChain {
+    pub fn new(pairs: &[super::Pair]) -> SourceChain {
         SourceChain {
-            pairs: pairs.clone(),
+            pairs: pairs.to_owned(),
         }
     }
 }

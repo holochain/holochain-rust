@@ -4,8 +4,6 @@ rust:
 cache: cargo
 install:
   - rustup component add rustfmt-preview
+  - rustup update nightly
 script:
-  - cargo build --verbose --all --features "strict"
-  - cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
-  - cargo test --verbose --all --features "strict"
-  - cargo fmt -- --write-mode=diff
+  - make test

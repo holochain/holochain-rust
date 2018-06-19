@@ -123,6 +123,22 @@ Run:
 cargo fmt -- --write-mode=diff
 ```
 
+There is _another_ linter enforcing code style (clippy).
+
+
+Install:
+
+```
+rustup update
+cargo +nightly install clippy
+```
+
+Run:
+
+```
+cargo +nightly clippy
+```
+
 ### Watch tests
 
 For better productivity, watch your cargo tests/check while you work.
@@ -137,3 +153,17 @@ Run:
 cargo watch # check
 cargo watch -x test # test
 ```
+
+## License
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses
+/gpl-3.0)
+
+Copyright (C) 2018, Holochain Trust
+
+This program is free software: you can redistribute it and/or modify it under the terms of the license p
+rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu
+t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.
+
+**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are u
+sing GPL while we're getting the matter sorted out.

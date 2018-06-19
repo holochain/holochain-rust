@@ -54,6 +54,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "hc_dna"
+version = "0.1.0"
+dependencies = [
+ "base64 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.66 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.66 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "hc_dna_c_binding"
+version = "0.1.0"
+dependencies = [
+ "hc_dna 0.1.0",
+]
+
+[[package]]
 name = "hc_test_bin"
 version = "0.1.0"
 dependencies = [

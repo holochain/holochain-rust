@@ -1,3 +1,4 @@
+.qmake.stash
 /target/
 **/*.rs.bk
 /**/Cargo.lock
@@ -6,3 +7,5 @@ demo/wasm/target
 hc_core/src/nucleus/ribosome/target
 hc_core/src/nucleus/wasm-test/target
 .idea
+/**/Makefile
+!/Makefile

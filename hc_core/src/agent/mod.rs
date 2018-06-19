@@ -1,21 +1,20 @@
 pub mod keys;
-pub mod source_chain;
 
 use self::keys::Keys;
-use self::source_chain::SourceChain;
+use source_chain::memory::SourceChain;
 use common::entry::Entry;
 use state;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
     source_chain: Option<Box<SourceChain>>,
 }
 
 impl AgentState {
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         AgentState {
             keys: None,
             source_chain: None,

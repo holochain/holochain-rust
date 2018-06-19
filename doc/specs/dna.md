@@ -12,7 +12,7 @@
 
 We want to remove the notion of links as an entry format, and instead make declarations about linking in the entry type definition and use that data to dispatch validation instead of dispatching off of the entry-type's type name.  For example:
 
-``` javascript
+``` yaml
 // OLD WAY:
 // Note that you write validation by checking the type in the call to
 // `validateLink`
@@ -40,7 +40,7 @@ closeBundle(bundle)
 
 ## Example DNA Tree:
 
-``` javascript
+``` yaml
 {
     "name": "Example app",
     "description: "this app does very cool stuff",
@@ -61,7 +61,7 @@ closeBundle(bundle)
             },
             //"RibosomeType":"WASM", #do we just commit to WASM only at
             //  at this stage?
-            "entry-types": [
+            "entry_types": [
 
                 {
                     "name": "post",
@@ -151,7 +151,8 @@ closeBundle(bundle)
                         "membrane": "zome"
                     },
                     ,
-                    "fn_functions": [
+                    "fn_declarations": [
+                        // see above
                     ],
                      "code": ".." //s-expresion encoded wasm or Base64 encoded WASM bytecode
                 },

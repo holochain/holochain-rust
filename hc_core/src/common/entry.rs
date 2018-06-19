@@ -22,6 +22,10 @@ impl Entry {
     pub fn hash(&self) -> u64 {
         self.hash
     }
+
+    pub fn content(&self) -> String {
+        self.content.clone()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -49,6 +53,14 @@ impl Header {
         _Hash::hash(&h, &mut hasher);
         h.hash = hasher.finish();
         h
+    }
+
+    pub fn entry(&self) -> u64 {
+        self.entry
+    }
+
+    pub fn previous(&self) -> Option<u64> {
+        self.previous
     }
 
     pub fn hash(&self) -> u64 {

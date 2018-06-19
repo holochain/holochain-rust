@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "strict", deny(warnings))]
 /*!
 This crate is an ffi wrapper to provide a c-compatible dna library.
 
@@ -12,8 +11,6 @@ use std::os::raw::c_char;
 use std::panic::catch_unwind;
 
 extern crate hc_dna;
-
-use hc_dna::Dna;
 
 #[no_mangle]
 pub extern "C" fn hc_dna_create() -> *mut Dna {

@@ -12,6 +12,8 @@ use std::panic::catch_unwind;
 
 extern crate hc_dna;
 
+use hc_dna::Dna;
+
 #[no_mangle]
 pub extern "C" fn hc_dna_create() -> *mut Dna {
     match catch_unwind(|| Box::into_raw(Box::new(Dna::new()))) {

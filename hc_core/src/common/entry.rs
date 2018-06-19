@@ -14,9 +14,9 @@ impl _Hash for Entry {
 }
 
 impl Entry {
-    pub fn new (content: &String) -> Entry {
+    pub fn new (content: &str) -> Entry {
         let mut e = Entry {
-            content: content.clone(),
+            content: content.to_string(),
             hash: 0,
         };
         let mut hasher = DefaultHasher::new();
@@ -53,7 +53,7 @@ impl _Hash for Header {
 impl Header {
     pub fn new(previous: Option<u64>, entry: &Entry) -> Header {
         let mut h = Header {
-            previous: previous,
+            previous,
             entry: entry.hash(),
             hash: 0,
         };

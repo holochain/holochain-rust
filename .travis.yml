@@ -1,7 +1,6 @@
 language: rust
 rust:
   - 1.26.2
-  - nightly
 cache: cargo
 install:
   - rustup component add rustfmt-preview

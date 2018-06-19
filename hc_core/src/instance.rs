@@ -18,7 +18,7 @@ impl Instance {
     }
 
     pub fn consume_next_action(&mut self) -> Result<(), HolochainError> {
-        if self.pending_actions.len() > 0 {
+        if !self.pending_actions.is_empty() {
             let result = self.pending_actions.pop_front();
             match result {
                 None => {
@@ -41,5 +41,11 @@ impl Instance {
 
     pub fn state(&self) -> &State {
         &self.state
+    }
+}
+
+impl Default for Instance {
+    fn default() -> Self {
+        Self::new()
     }
 }

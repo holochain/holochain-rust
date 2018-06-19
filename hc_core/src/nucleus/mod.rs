@@ -8,7 +8,7 @@ pub mod ribosome;
 use state;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     dna: Option<Dna>,
     initialized: bool,

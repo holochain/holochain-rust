@@ -6,6 +6,7 @@ use self::dna::DNA;
 use state;
 use std::rc::Rc;
 use std::thread;
+use std::sync::mpsc::Sender;
 
 #[derive(Clone, Debug)]
 pub struct NucleusState {
@@ -49,7 +50,7 @@ pub enum Action {
     ZomeFunctionResult(FunctionResult)
 }
 
-pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Rc<NucleusState> {
+pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action, action_channel: Sender<state::Action>) -> Rc<NucleusState> {
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
@@ -65,7 +66,20 @@ pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action) -> Rc<Nucleus
                     let wasm = new_state.dna.clone().map(|d|d.wasm_for_zome_function(&function_call.capability, &function_call.name));
                     thread::spawn(move || {
 
-                        ribosome::call(wasm.unwrap(), &function_call.name);
+                        match ribosome::call(wasm.unwrap(), &function_call.name.clone()) {
+                            Ok(runtime) => {
+                                let mut result = FunctionResult{
+                                    call: function_call,
+                                    result: runtime.result.to_string()
+                                };
+
+                                action_channel.send(state::Action::Nucleus(Action::ZomeFunctionResult(result)))
+                                    .expect("action channel to be open in reducer");
+                            },
+
+                            Err(ref error) => {}
+                        }
+
                     });
                 },
 

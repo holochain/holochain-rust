@@ -13,7 +13,7 @@ use self::wasmi::{
 #[derive(Clone)]
 pub struct Runtime<'a> {
     print_output: Vec<u32>,
-    result: &'a str
+    pub result: &'a str
 }
 
 #[allow(dead_code)]

@@ -1,6 +1,7 @@
 use agent::AgentState;
 use nucleus::NucleusState;
 use std::rc::Rc;
+use std::sync::mpsc::Sender;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
@@ -23,10 +24,10 @@ impl State {
         }
     }
 
-    pub fn reduce(&mut self, action: &Action) -> Self {
+    pub fn reduce(&mut self, action: &Action, action_channel: Sender<Action>) -> Self {
         State {
-            nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action),
-            agent: ::agent::reduce(Rc::clone(&self.agent), action),
+            nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action, action_channel.clone()),
+            agent: ::agent::reduce(Rc::clone(&self.agent), action, action_channel.clone()),
         }
     }
 

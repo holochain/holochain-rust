@@ -6,6 +6,7 @@ use self::source_chain::SourceChain;
 use common::entry::Entry;
 use state;
 use std::rc::Rc;
+use std::sync::mpsc::Sender;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
@@ -27,7 +28,7 @@ pub enum Action {
     Commit(Entry),
 }
 
-pub fn reduce(old_state: Rc<AgentState>, action: &state::Action) -> Rc<AgentState> {
+pub fn reduce(old_state: Rc<AgentState>, action: &state::Action, action_channel: Sender<state::Action>) -> Rc<AgentState> {
     match *action {
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();

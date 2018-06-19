@@ -5,8 +5,8 @@ use self::dna::DNA;
 //use self::ribosome::*;
 use state;
 use std::rc::Rc;
-use std::thread;
 use std::sync::mpsc::Sender;
+use std::thread;
 
 #[derive(Clone, Debug)]
 pub struct NucleusState {
@@ -34,23 +34,27 @@ impl NucleusState {
 pub struct FunctionCall {
     capability: String,
     name: String,
-    parameters: String
+    parameters: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionResult {
     call: FunctionCall,
-    result: String
+    result: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     InitApplication(DNA),
     ExecuteZomeFunction(FunctionCall),
-    ZomeFunctionResult(FunctionResult)
+    ZomeFunctionResult(FunctionResult),
 }
 
-pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action, action_channel: Sender<state::Action>) -> Rc<NucleusState> {
+pub fn reduce(
+    old_state: Rc<NucleusState>,
+    action: &state::Action,
+    action_channel: &Sender<state::Action>,
+) -> Rc<NucleusState> {
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
@@ -59,36 +63,36 @@ pub fn reduce(old_state: Rc<NucleusState>, action: &state::Action, action_channe
                     new_state.dna = Some(dna.clone());
                     new_state.inits += 1;
                     println!("DNA initialized: {}", new_state.inits)
-                },
+                }
 
                 Action::ExecuteZomeFunction(ref fc) => {
                     let function_call = fc.clone();
-                    let wasm = new_state.dna.clone().map(|d|d.wasm_for_zome_function(&function_call.capability, &function_call.name));
+                    let wasm = new_state.dna.clone().map(|d| {
+                        d.wasm_for_zome_function(&function_call.capability, &function_call.name)
+                    });
+                    let action_channel = action_channel.clone();
                     thread::spawn(move || {
-
                         match ribosome::call(wasm.unwrap(), &function_call.name.clone()) {
                             Ok(runtime) => {
-                                let mut result = FunctionResult{
+                                let mut result = FunctionResult {
                                     call: function_call,
-                                    result: runtime.result.to_string()
+                                    result: runtime.result.to_string(),
                                 };
 
-                                action_channel.send(state::Action::Nucleus(Action::ZomeFunctionResult(result)))
+                                action_channel
+                                    .send(state::Action::Nucleus(Action::ZomeFunctionResult(
+                                        result,
+                                    )))
                                     .expect("action channel to be open in reducer");
-                            },
+                            }
 
                             Err(ref _error) => {}
                         }
-
                     });
-                },
-
-                Action::ZomeFunctionResult(ref _result) => {
-
                 }
 
-
-                }
+                Action::ZomeFunctionResult(ref _result) => {}
+            }
             Rc::new(new_state)
         }
         _ => old_state,

@@ -1,8 +1,8 @@
 pub mod keys;
 
 use self::keys::Keys;
-use source_chain::memory::SourceChain;
 use common::entry::Entry;
+use source_chain::memory::SourceChain;
 use state;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
@@ -27,7 +27,11 @@ pub enum Action {
     Commit(Entry),
 }
 
-pub fn reduce(old_state: Rc<AgentState>, action: &state::Action, _action_channel: Sender<state::Action>) -> Rc<AgentState> {
+pub fn reduce(
+    old_state: Rc<AgentState>,
+    action: &state::Action,
+    _action_channel: &Sender<state::Action>,
+) -> Rc<AgentState> {
     match *action {
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();

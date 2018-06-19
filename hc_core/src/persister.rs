@@ -49,7 +49,7 @@ mod tests {
 
         let mut state = State::new();
 
-        let entry = ::common::entry::Entry {};
+        let entry = ::common::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
         let new_state = state.reduce(&action).unwrap();
 

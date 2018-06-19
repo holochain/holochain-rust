@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 extern crate hc_dna;
 pub mod agent;
+pub mod source_chain;
 pub mod common;
 pub mod context;
 pub mod error;
@@ -31,7 +32,7 @@ mod tests {
             Nucleus(InitApplication(dna.clone()))
         );
 
-        let entry = ::common::entry::Entry {};
+        let entry = ::common::entry::Entry::new(&String::new());
         let action = Agent(Commit(entry));
         instance.dispatch(action.clone());
         assert_eq!(*instance.pending_actions().back().unwrap(), action);

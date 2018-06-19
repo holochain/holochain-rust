@@ -24,10 +24,8 @@ impl State {
     }
 
     pub fn reduce(&mut self, action: &Action) -> Self {
-        let nucleus = ::nucleus::reduce(Rc::clone(&self.nucleus), action);
-
         State {
-            nucleus,
+            nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action),
             agent: ::agent::reduce(Rc::clone(&self.agent), action),
         }
     }

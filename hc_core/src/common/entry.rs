@@ -1,10 +1,16 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash as _Hash, Hasher};
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Entry {
     content: String,
     hash: u64,
+}
+
+impl _Hash for Entry {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.content.hash(state);
+    }
 }
 
 impl Entry {
@@ -30,6 +36,8 @@ impl Entry {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Header {
+    // these are hashes instead of references so that they can be serialized/validated as data in
+    // any/all implementations
     previous: Option<u64>,
     entry: u64,
     hash: u64,

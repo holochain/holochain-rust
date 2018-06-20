@@ -10,7 +10,6 @@ pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod source_chain;
-pub mod source_chain;
 pub mod state;
 
 #[cfg(test)]
@@ -44,11 +43,13 @@ mod tests {
         let stored_dna = receiver.recv().unwrap();
 
         assert_eq!(dna, stored_dna);
+
         /*
         let entry = ::common::entry::Entry::new(&String::new());
         let action = Agent(Commit(entry));
         instance.dispatch(action.clone(), None);
-        assert_eq!(*instance.pending_actions().back().unwrap(), action);*/
+        assert_eq!(*instance.pending_actions().back().unwrap(), action);
+        */
     }
     /*
     #[test]
@@ -76,5 +77,6 @@ mod tests {
         };
 
         assert_eq!(instance.state().nucleus().initialized(), true);
-    }
+
+    }*/
 }

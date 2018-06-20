@@ -61,7 +61,7 @@ impl Instance {
                         "nothing to consume".to_string(),
                     ))
                 }
-                Some(action) => self.state = self.state.clone().reduce(&action),
+                Some(action) => self.state = self.state.clone().reduce(&action, &self.action_channel),
             }
         }
         Ok(())
@@ -75,7 +75,7 @@ impl Instance {
         self.observer_channel = tx_observer.clone();
 
         thread::spawn(move || {
-            let mut state = State::create();
+            let mut state = State::new();
             let mut state_observers: Vec<Box<Observer>> = Vec::new();
 
             loop {

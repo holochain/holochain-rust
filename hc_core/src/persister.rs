@@ -30,6 +30,7 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate() {
@@ -51,7 +52,8 @@ mod tests {
 
         let entry = ::common::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
-        let new_state = state.reduce(&action);
+        let (sender, _receiver) = channel::<::state::Action>();
+        let new_state = state.reduce(&action, &sender);
 
         store.save(&new_state);
 

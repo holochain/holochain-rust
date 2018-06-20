@@ -109,6 +109,7 @@ mod tests {
     use super::super::nucleus::Action::*;
     use super::super::state::Action::*;
     use super::*;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate_nucleus_state() {
@@ -122,11 +123,12 @@ mod tests {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
         let state = Rc::new(NucleusState::new()); // initialize to bogus value
-        let reduced_state = reduce(state.clone(), &action);
+        let (sender, _receiver) = channel::<state::Action>();
+        let reduced_state = reduce(state.clone(), &action, &sender.clone());
         assert!(reduced_state.initialized, true);
 
         // on second reduction it still works.
-        let second_reduced_state = reduce(reduced_state.clone(), &action);
+        let second_reduced_state = reduce(reduced_state.clone(), &action, &sender.clone());
         assert_eq!(second_reduced_state, reduced_state);
     }
 
@@ -134,8 +136,9 @@ mod tests {
     fn can_reduce_call_action() {
         let call = fncall::Call::new("bogusfn");
         let action = Nucleus(Call(call));
-        let mut state = Rc::new(NucleusState::new()); // initialize to bogus value
-        let reduced_state = reduce(state.clone(), &action);
+        let state = Rc::new(NucleusState::new()); // initialize to bogus value
+        let (sender, _receiver) = channel::<state::Action>();
+        let reduced_state = reduce(state.clone(), &action, &sender);
         assert_eq!(state, reduced_state);
     }
 }

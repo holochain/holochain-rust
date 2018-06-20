@@ -4,6 +4,8 @@ use std::rc::Rc;
 use std::sync::mpsc::Sender;
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(unknown_lints)]
+#[allow(large_enum_variant)]
 pub enum Action {
     Agent(::agent::Action),
     Network(::network::Action),

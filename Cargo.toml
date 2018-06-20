@@ -8,7 +8,3 @@ members = [
   "hc_dna_c_binding",
   "hc_test_bin",
 ]
-
-[features]
-# Treat warnings as a build error.
-strict = []

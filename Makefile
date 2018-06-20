@@ -26,9 +26,8 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines, and build the rust project
 main:
 	cargo fmt
-#	cargo +nightly clippy -- --deny clippy
-# TODO: clippy causing prolbems, disabled for now until issues fixed see #27: https://waffle.io/holochain/org/cards/5b297aa42e3a9d002f6d055d
-	cargo build --verbose --all --features "strict"
+	cargo +nightly clippy -- --deny clippy
+	cargo build --verbose --all
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -42,7 +41,7 @@ ${C_BINDING_DIRS}:
 test: main c_binding_tests ${C_BINDING_TESTS}
 	rustup target add wasm32-unknown-unknown --toolchain nightly
 	cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
-	cargo test --verbose --all --features "strict"
+	cargo test --verbose --all
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

@@ -3,6 +3,8 @@ use nucleus::NucleusState;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(unknown_lints)]
+#[allow(large_enum_variant)]
 pub enum Action {
     Agent(::agent::Action),
     Network(::network::Action),

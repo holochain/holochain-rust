@@ -7,7 +7,3 @@ authors = ["Nicolas Luck <nicolas@lucksus.org>"]
 hc_dna = { path = "../hc_dna" }
 hc_agent = { path = "../hc_agent" }
 chrono = "0.4"
-
-[features]
-# Treat warnings as a build error.
-strict = []

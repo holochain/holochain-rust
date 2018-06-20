@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "strict", deny(warnings))]
+#![deny(warnings)]
 extern crate hc_dna;
 pub mod agent;
 pub mod common;

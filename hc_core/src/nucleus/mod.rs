@@ -86,7 +86,7 @@ mod tests {
     fn can_reduce_call_action() {
         let call = fncall::Call::new("bogusfn");
         let action = Nucleus(Call(call));
-        let mut state = Rc::new(NucleusState::new()); // initialize to bogus value
+        let state = Rc::new(NucleusState::new()); // initialize to bogus value
         let reduced_state = reduce(state.clone(), &action);
         assert_eq!(state, reduced_state);
     }

@@ -1,10 +1,9 @@
 [package]
-name = "hc_test_bin"
+name = "hc_core_api"
 version = "0.1.0"
-authors = ["neonphog <neonphog@gmail.com>"]
+authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 
 [dependencies]
 hc_core = { path = "../hc_core" }
 hc_dna = { path = "../hc_dna" }
 hc_agent = { path = "../hc_agent" }
-hc_core_api = { path = "../hc_core_api" }

@@ -10,16 +10,16 @@ pub enum Action {
     Nucleus(::nucleus::Action),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct State {
     nucleus: Rc<NucleusState>,
     agent: Rc<AgentState>,
 }
 
 impl State {
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         State {
-            nucleus: Rc::new(NucleusState::create()),
+            nucleus: Rc::new(NucleusState::new()),
             agent: Rc::new(AgentState::new()),
         }
     }

@@ -1,9 +1,11 @@
+use error::HolochainError;
 use state::*;
 use std::collections::VecDeque;
 use std::sync::mpsc::*;
 use std::thread;
 use std::time::Duration;
 
+#[derive(Clone)]
 pub struct Instance {
     state: State,
     pending_actions: VecDeque<Action>,
@@ -50,11 +52,19 @@ impl Instance {
         &self.pending_actions
     }
 
-    pub fn consume_next_action(&mut self) {
+    pub fn consume_next_action(&mut self) -> Result<(), HolochainError> {
         if !self.pending_actions.is_empty() {
-            let _action = self.pending_actions.pop_front().unwrap();
-            //self.state = self.state.clone().reduce(&action);
+            let result = self.pending_actions.pop_front();
+            match result {
+                None => {
+                    return Err(HolochainError::ErrorGeneric(
+                        "nothing to consume".to_string(),
+                    ))
+                }
+                Some(action) => self.state = self.state.clone().reduce(&action),
+            }
         }
+        Ok(())
     }
 
     pub fn start_action_loop(&mut self) {
@@ -96,11 +106,11 @@ impl Instance {
         });
     }
 
-    pub fn create() -> Self {
+    pub fn new() -> Self {
         let (tx_action, _) = channel();
         let (tx_observer, _) = channel();
         Instance {
-            state: State::create(),
+            state: State::new(),
             pending_actions: VecDeque::new(),
             action_channel: tx_action,
             observer_channel: tx_observer,
@@ -109,5 +119,11 @@ impl Instance {
 
     pub fn state(&self) -> &State {
         &self.state
+    }
+}
+
+impl Default for Instance {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -166,14 +166,14 @@ impl Dna {
 
     pub fn get_wasm_for_capability(
         &self,
-        zome_name: &String,
-        capability_name: &String,
+        zome_name: &str,
+        capability_name: &str,
     ) -> Option<&wasm::DnaWasm> {
-        let zome = self.zomes.iter().find(|z| z.name == *zome_name)?;
+        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
         let capability = zome
             .capabilities
             .iter()
-            .find(|c| c.name == *capability_name)?;
+            .find(|c| c.name == capability_name)?;
         Some(&capability.code)
     }
 }

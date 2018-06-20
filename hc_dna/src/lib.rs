@@ -164,9 +164,16 @@ impl Dna {
         serde_json::to_string_pretty(self)
     }
 
-    pub fn get_wasm_for_capability(&self, zome_name: &String, capability_name: &String) -> Option<&wasm::DnaWasm> {
+    pub fn get_wasm_for_capability(
+        &self,
+        zome_name: &String,
+        capability_name: &String,
+    ) -> Option<&wasm::DnaWasm> {
         let zome = self.zomes.iter().find(|z| z.name == *zome_name)?;
-        let capability = zome.capabilities.iter().find(|c| c.name == *capability_name)?;
+        let capability = zome
+            .capabilities
+            .iter()
+            .find(|c| c.name == *capability_name)?;
         Some(&capability.code)
     }
 }
@@ -175,7 +182,6 @@ impl Dna {
 mod tests {
     use super::*;
     extern crate base64;
-
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
@@ -501,10 +507,14 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        let wasm = dna
+            .get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_for_capability(&("non existant zome".to_string()), &("test capability".to_string()));
+        let fail = dna.get_wasm_for_capability(
+            &("non existant zome".to_string()),
+            &("test capability".to_string()),
+        );
         assert_eq!(None, fail);
     }
 }

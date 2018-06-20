@@ -61,7 +61,9 @@ impl Instance {
                         "nothing to consume".to_string(),
                     ))
                 }
-                Some(action) => self.state = self.state.clone().reduce(&action, &self.action_channel),
+                Some(action) => {
+                    self.state = self.state.clone().reduce(&action, &self.action_channel)
+                }
             }
         }
         Ok(())

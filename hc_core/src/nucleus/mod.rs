@@ -73,7 +73,9 @@ pub fn reduce(
                 Action::ExecuteZomeFunction(ref fc) => {
                     let function_call = fc.clone();
                     if let Some(ref dna) = new_state.dna {
-                        if let Some(ref wasm) = dna.get_wasm_for_capability(&fc.zome_name, &fc.capability) {
+                        if let Some(ref wasm) =
+                            dna.get_wasm_for_capability(&fc.zome_name, &fc.capability)
+                        {
                             let action_channel = action_channel.clone();
                             let code = wasm.code.clone();
                             thread::spawn(move || {
@@ -85,9 +87,9 @@ pub fn reduce(
                                         };
 
                                         action_channel
-                                            .send(state::Action::Nucleus(Action::ZomeFunctionResult(
-                                                result,
-                                            )))
+                                            .send(state::Action::Nucleus(
+                                                Action::ZomeFunctionResult(result),
+                                            ))
                                             .expect("action channel to be open in reducer");
                                     }
 

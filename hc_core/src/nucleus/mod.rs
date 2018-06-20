@@ -34,6 +34,7 @@ impl NucleusState {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionCall {
+    zome_name: String,
     capability: String,
     name: String,
     parameters: String,
@@ -47,7 +48,7 @@ pub struct FunctionResult {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
-    InitApplication(DNA),
+    InitApplication(Dna),
     ExecuteZomeFunction(FunctionCall),
     ZomeFunctionResult(FunctionResult),
     Call(fncall::Call),
@@ -71,28 +72,30 @@ pub fn reduce(
 
                 Action::ExecuteZomeFunction(ref fc) => {
                     let function_call = fc.clone();
-                    let wasm = new_state.dna.clone().map(|d| {
-                        d.wasm_for_zome_function(&function_call.capability, &function_call.name)
-                    });
-                    let action_channel = action_channel.clone();
-                    thread::spawn(move || {
-                        match ribosome::call(wasm.unwrap(), &function_call.name.clone()) {
-                            Ok(runtime) => {
-                                let mut result = FunctionResult {
-                                    call: function_call,
-                                    result: runtime.result.to_string(),
-                                };
+                    if let Some(ref dna) = new_state.dna {
+                        if let Some(ref wasm) = dna.get_wasm_for_capability(&fc.zome_name, &fc.capability) {
+                            let action_channel = action_channel.clone();
+                            let code = wasm.code.clone();
+                            thread::spawn(move || {
+                                match ribosome::call(code, &function_call.name.clone()) {
+                                    Ok(runtime) => {
+                                        let mut result = FunctionResult {
+                                            call: function_call,
+                                            result: runtime.result.to_string(),
+                                        };
 
-                                action_channel
-                                    .send(state::Action::Nucleus(Action::ZomeFunctionResult(
-                                        result,
-                                    )))
-                                    .expect("action channel to be open in reducer");
-                            }
+                                        action_channel
+                                            .send(state::Action::Nucleus(Action::ZomeFunctionResult(
+                                                result,
+                                            )))
+                                            .expect("action channel to be open in reducer");
+                                    }
 
-                            Err(ref _error) => {}
+                                    Err(ref _error) => {}
+                                }
+                            });
                         }
-                    });
+                    }
                 }
 
                 Action::ZomeFunctionResult(ref _result) => {}

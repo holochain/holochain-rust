@@ -163,11 +163,19 @@ impl Dna {
     pub fn to_json_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(self)
     }
+
+    pub fn get_wasm_for_capability(&self, zome_name: &String, capability_name: &String) -> Option<&wasm::DnaWasm> {
+        let zome = self.zomes.iter().find(|z| z.name == *zome_name)?;
+        let capability = zome.capabilities.iter().find(|c| c.name == *capability_name)?;
+        Some(&capability.code)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate base64;
+
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
@@ -452,5 +460,51 @@ mod tests {
                 .as_i64()
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn get_wasm_for_capability() {
+        let dna = Dna::new_from_json(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": [
+                    {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "entry_types": [],
+                        "capabilities": [
+                            {
+                                "name": "test capability",
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [
+                                    {
+                                        "name": "test"
+                                    }
+                                ],
+                                "code": {
+                                    "code": "AAECAw=="
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }"#,
+        ).unwrap();
+
+        let wasm = dna.get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
+
+        let fail = dna.get_wasm_for_capability(&("non existant zome".to_string()), &("test capability".to_string()));
+        assert_eq!(None, fail);
     }
 }

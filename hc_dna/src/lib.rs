@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "strict", deny(warnings))]
+#![deny(warnings)]
 
 /*!
 hc_dna is a library for working with holochain dna files.

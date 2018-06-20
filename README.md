@@ -31,6 +31,15 @@ To run the tests (which are in ```src/lib.rs```) just say
 cargo test
 ```
 
+Note that some lints/warnings will only appear on a cold cargo run, which is
+slower but represents what travis will see during CI.
+
+To run all cargo tests from a cold start:
+
+```
+cargo clean && cargo test --verbose --all
+```
+
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).
 

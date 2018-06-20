@@ -27,7 +27,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 main:
 	cargo fmt
 	cargo +nightly clippy -- --deny clippy
-	cargo build --verbose --all --features "strict"
+	cargo build --verbose --all
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -39,7 +39,7 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
-	cargo test --verbose --all --features "strict"
+	cargo test --verbose --all
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

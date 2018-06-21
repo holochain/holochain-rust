@@ -6,5 +6,6 @@ install:
   - rustup component add rustfmt-preview
   - rustup update nightly
   - cargo +nightly install clippy --force
+  - cargo +nightly install cargo-tarpaulin --force
 script:
   - make test

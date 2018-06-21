@@ -133,8 +133,6 @@ pub fn reduce(
                         .ribosome_calls
                         .insert(result.call.clone(), Some(result.result.clone()));
                 }
-
-                Action::Call(_) => {}
             }
             Arc::new(new_state)
         }

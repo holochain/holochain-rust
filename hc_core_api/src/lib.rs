@@ -144,6 +144,7 @@ mod tests {
     use hc_agent::Agent as HCAgent;
     use hc_core::context::Context;
     use hc_core::logger::Logger;
+    use hc_core::nucleus::FunctionCall;
     use hc_core::persister::SimplePersister;
     use std::fmt;
     use std::sync::{Arc, Mutex};

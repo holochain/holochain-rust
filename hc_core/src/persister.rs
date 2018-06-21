@@ -48,12 +48,12 @@ mod tests {
     fn can_roundtrip() {
         let mut store = SimplePersister::new();
 
-        let mut state = State::new();
+        let state = State::new();
 
         let entry = ::common::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
-        let (sender, _receiver) = channel::<::state::Action>();
-        let new_state = state.reduce(&action, &sender);
+        let (sender, _receiver) = channel::<::state::ActionWrapper>();
+        let new_state = state.reduce(::state::ActionWrapper::new(action), &sender);
 
         store.save(&new_state);
 

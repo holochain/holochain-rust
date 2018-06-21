@@ -6,8 +6,8 @@ pub mod ribosome;
 
 //use self::ribosome::*;
 use state;
-use std::rc::Rc;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use std::thread;
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -55,10 +55,10 @@ pub enum Action {
 }
 
 pub fn reduce(
-    old_state: Rc<NucleusState>,
+    old_state: Arc<NucleusState>,
     action: &state::Action,
-    action_channel: &Sender<state::Action>,
-) -> Rc<NucleusState> {
+    action_channel: &Sender<state::ActionWrapper>,
+) -> Arc<NucleusState> {
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
@@ -87,8 +87,10 @@ pub fn reduce(
                                         };
 
                                         action_channel
-                                            .send(state::Action::Nucleus(
-                                                Action::ZomeFunctionResult(result),
+                                            .send(state::ActionWrapper::new(
+                                                state::Action::Nucleus(Action::ZomeFunctionResult(
+                                                    result,
+                                                )),
                                             ))
                                             .expect("action channel to be open in reducer");
                                     }
@@ -103,7 +105,7 @@ pub fn reduce(
                 Action::ZomeFunctionResult(ref _result) => {}
                 Action::Call(_) => {}
             }
-            Rc::new(new_state)
+            Arc::new(new_state)
         }
         _ => old_state,
     }
@@ -127,8 +129,8 @@ mod tests {
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
-        let state = Rc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = channel::<state::Action>();
+        let state = Arc::new(NucleusState::new()); // initialize to bogus value
+        let (sender, _receiver) = channel::<state::ActionWrapper>();
         let reduced_state = reduce(state.clone(), &action, &sender.clone());
         assert!(reduced_state.initialized, true);
 
@@ -141,8 +143,8 @@ mod tests {
     fn can_reduce_call_action() {
         let call = fncall::Call::new("bogusfn");
         let action = Nucleus(Call(call));
-        let state = Rc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = channel::<state::Action>();
+        let state = Arc::new(NucleusState::new()); // initialize to bogus value
+        let (sender, _receiver) = channel::<state::ActionWrapper>();
         let reduced_state = reduce(state.clone(), &action, &sender);
         assert_eq!(state, reduced_state);
     }

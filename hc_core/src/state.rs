@@ -1,7 +1,11 @@
+extern crate snowflake;
+
 use agent::AgentState;
 use nucleus::NucleusState;
-use std::rc::Rc;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 #[allow(unknown_lints)]
@@ -12,33 +16,80 @@ pub enum Action {
     Nucleus(::nucleus::Action),
 }
 
+#[derive(Clone, Debug)]
+pub struct ActionWrapper {
+    pub action: Action,
+    pub id: snowflake::ProcessUniqueId,
+}
+
+impl ActionWrapper {
+    pub fn new(a: Action) -> Self {
+        ActionWrapper {
+            action: a,
+            id: snowflake::ProcessUniqueId::new(),
+        }
+    }
+}
+
+impl PartialEq for ActionWrapper {
+    fn eq(&self, other: &ActionWrapper) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for ActionWrapper {}
+
+impl Hash for ActionWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct State {
-    nucleus: Rc<NucleusState>,
-    agent: Rc<AgentState>,
+    nucleus: Arc<NucleusState>,
+    agent: Arc<AgentState>,
+    pub history: HashSet<ActionWrapper>,
 }
 
 impl State {
     pub fn new() -> Self {
         State {
-            nucleus: Rc::new(NucleusState::new()),
-            agent: Rc::new(AgentState::new()),
+            nucleus: Arc::new(NucleusState::new()),
+            agent: Arc::new(AgentState::new()),
+            history: HashSet::new(),
         }
     }
 
-    pub fn reduce(&mut self, action: &Action, action_channel: &Sender<Action>) -> Self {
-        State {
-            nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action, action_channel),
-            agent: ::agent::reduce(Rc::clone(&self.agent), action, action_channel),
-        }
+    pub fn reduce(
+        &self,
+        action_wrapper: ActionWrapper,
+        action_channel: &Sender<ActionWrapper>,
+    ) -> Self {
+        let mut new_state = State {
+            nucleus: ::nucleus::reduce(
+                Arc::clone(&self.nucleus),
+                &action_wrapper.action,
+                action_channel,
+            ),
+            agent: ::agent::reduce(
+                Arc::clone(&self.agent),
+                &action_wrapper.action,
+                action_channel,
+            ),
+            history: self.history.clone(),
+        };
+
+        new_state.history.insert(action_wrapper);
+        new_state
     }
 
-    pub fn nucleus(&self) -> Rc<NucleusState> {
-        Rc::clone(&self.nucleus)
+    pub fn nucleus(&self) -> Arc<NucleusState> {
+        Arc::clone(&self.nucleus)
     }
 
-    pub fn agent(&self) -> Rc<AgentState> {
-        Rc::clone(&self.agent)
+    pub fn agent(&self) -> Arc<AgentState> {
+        Arc::clone(&self.agent)
     }
 }
 

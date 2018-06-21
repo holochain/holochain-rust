@@ -9,3 +9,4 @@ hc_agent = { path = "../hc_agent" }
 chrono = "0.4"
 wasmi = { git = "https://github.com/paritytech/wasmi.git"}
 wabt = "0.2.0"
+snowflake = "1.2"

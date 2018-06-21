@@ -4,8 +4,8 @@ use self::keys::Keys;
 use common::entry::Entry;
 use source_chain::memory::SourceChain;
 use state;
-use std::rc::Rc;
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
@@ -28,17 +28,17 @@ pub enum Action {
 }
 
 pub fn reduce(
-    old_state: Rc<AgentState>,
+    old_state: Arc<AgentState>,
     action: &state::Action,
-    _action_channel: &Sender<state::Action>,
-) -> Rc<AgentState> {
+    _action_channel: &Sender<state::ActionWrapper>,
+) -> Arc<AgentState> {
     match *action {
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
                 Action::Commit(ref _entry) => {}
             }
-            Rc::new(new_state)
+            Arc::new(new_state)
         }
         _ => old_state,
     }

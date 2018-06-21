@@ -23,7 +23,7 @@ mod tests {
     use std::sync::mpsc::channel;
 
     #[test]
-    fn adding_messages_to_queue() {
+    fn dispatch_with_observer() {
         let mut instance = Instance::new();
         instance.start_action_loop();
 
@@ -43,40 +43,23 @@ mod tests {
         let stored_dna = receiver.recv().unwrap();
 
         assert_eq!(dna, stored_dna);
-
-        /*
-        let entry = ::common::entry::Entry::new(&String::new());
-        let action = Agent(Commit(entry));
-        instance.dispatch(action.clone(), None);
-        assert_eq!(*instance.pending_actions().back().unwrap(), action);
-        */
     }
-    /*
+
     #[test]
-    fn consuming_actions_and_checking_state_mutation() {
+    fn dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(instance.state().nucleus().initialized(), false);
 
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
-        instance.dispatch(action.clone());
-
-        match instance.consume_next_action() {
-            Ok(()) => assert!(true),
-            Err(_) => assert!(false),
-        };
+        instance.start_action_loop();
+        instance.dispatch_and_wait(action.clone());
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(instance.state().nucleus().initialized(), true);
 
-        instance.dispatch(action.clone());
-        match instance.consume_next_action() {
-            Ok(()) => assert!(true),
-            Err(_) => assert!(false),
-        };
-
+        instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().initialized(), true);
-
-    }*/
+    }
 }

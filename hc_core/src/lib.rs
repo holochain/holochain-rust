@@ -22,6 +22,15 @@ mod tests {
     use state::State;
     use std::sync::mpsc::channel;
 
+    // This test shows how to call dispatch with a closure that should run
+    // when the action results in a state change.  Note that the observer closure
+    // needs to return a boolean to indicate that it has successfully observed what
+    // it intends to observe.  It will keep getting called as the state changes until
+    // it returns true.
+    // Note also that for this test we create a channel to send something (in this case
+    // the dna) back over, just so that the test will block until the closure is successfully
+    // run and the assert will actually run.  If we put the assert inside the closure
+    // the test thread could complete before the closure was called.
     #[test]
     fn dispatch_with_observer() {
         let mut instance = Instance::new();

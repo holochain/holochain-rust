@@ -25,12 +25,14 @@ impl Observer {
     }
 }
 
+static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
+
 impl Instance {
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
         let wrapper = ActionWrapper::new(action);
         self.action_channel
             .send(wrapper.clone())
-            .expect("action channel to be open");
+            .expect(DISPATCH_WITHOUT_CHANNELS);
         wrapper
     }
 
@@ -41,7 +43,7 @@ impl Instance {
         let (sender, receiver) = channel::<bool>();
         let closure = move |state: &State| {
             if state.history.contains(&wrapper_clone) {
-                sender.send(true).expect("closure channel has to be open");
+                sender.send(true).expect(DISPATCH_WITHOUT_CHANNELS);
                 true
             } else {
                 false
@@ -55,13 +57,13 @@ impl Instance {
 
         self.observer_channel
             .send(observer)
-            .expect("observer channel to be open");
+            .expect(DISPATCH_WITHOUT_CHANNELS);
 
         self.action_channel
             .send(wrapper)
-            .expect("action channel to be open");
+            .expect(DISPATCH_WITHOUT_CHANNELS);
 
-        receiver.recv().expect("closure channel has to be open");
+        receiver.recv().expect(DISPATCH_WITHOUT_CHANNELS);
     }
 
     pub fn dispatch_with_observer<F>(&mut self, action: Action, closure: F)

@@ -1,4 +1,6 @@
 extern crate hc_dna;
+extern crate snowflake;
+
 use hc_dna::Dna;
 
 pub mod fncall;
@@ -6,6 +8,7 @@ pub mod ribosome;
 
 //use self::ribosome::*;
 use state;
+use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::thread;
@@ -14,6 +17,7 @@ use std::thread;
 pub struct NucleusState {
     dna: Option<Dna>,
     initialized: bool,
+    ribosome_calls: HashMap<FunctionCall, Option<String>>,
 }
 
 impl NucleusState {
@@ -21,23 +25,42 @@ impl NucleusState {
         NucleusState {
             dna: None,
             initialized: false,
+            ribosome_calls: HashMap::new(),
         }
     }
 
     pub fn dna(&self) -> Option<Dna> {
         self.dna.clone()
     }
-
     pub fn initialized(&self) -> bool {
         self.initialized
     }
+    pub fn ribosome_call_result(&self, function_call: &FunctionCall) -> Option<String> {
+        match self.ribosome_calls.get(function_call) {
+            None => None,
+            Some(value) => value.clone(),
+        }
+    }
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionCall {
-    zome_name: String,
-    capability: String,
-    name: String,
-    parameters: String,
+    id: snowflake::ProcessUniqueId,
+    pub zome: String,
+    pub capability: String,
+    pub function: String,
+    pub parameters: String,
+}
+
+impl FunctionCall {
+    pub fn new(zome: String, capability: String, function: String, parameters: String) -> Self {
+        FunctionCall {
+            id: snowflake::ProcessUniqueId::new(),
+            zome: zome,
+            capability: capability,
+            function: function,
+            parameters: parameters,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -74,12 +97,14 @@ pub fn reduce(
                     let function_call = fc.clone();
                     if let Some(ref dna) = new_state.dna {
                         if let Some(ref wasm) =
-                            dna.get_wasm_for_capability(&fc.zome_name, &fc.capability)
+                            dna.get_wasm_for_capability(&fc.zome, &fc.capability)
                         {
+                            new_state.ribosome_calls.insert(fc.clone(), None);
+
                             let action_channel = action_channel.clone();
                             let code = wasm.code.clone();
                             thread::spawn(move || {
-                                match ribosome::call(code, &function_call.name.clone()) {
+                                match ribosome::call(code, &function_call.function.clone()) {
                                     Ok(runtime) => {
                                         let mut result = FunctionResult {
                                             call: function_call,
@@ -95,14 +120,22 @@ pub fn reduce(
                                             .expect("action channel to be open in reducer");
                                     }
 
-                                    Err(ref _error) => {}
+                                    Err(ref error) => {
+                                        println!("Error calling ribosome: {}", error);
+                                        panic!("Error calling ribosome: {}\nWe have to handle that by storing any error in the state...", error);
+                                    }
                                 }
                             });
                         }
                     }
                 }
 
-                Action::ZomeFunctionResult(ref _result) => {}
+                Action::ZomeFunctionResult(ref result) => {
+                    new_state
+                        .ribosome_calls
+                        .insert(result.call.clone(), Some(result.result.clone()));
+                }
+
                 Action::Call(_) => {}
             }
             Arc::new(new_state)

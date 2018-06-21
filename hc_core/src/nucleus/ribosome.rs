@@ -9,9 +9,9 @@ use self::wasmi::{
 };
 
 #[derive(Clone)]
-pub struct Runtime<'a> {
+pub struct Runtime {
     print_output: Vec<u32>,
-    pub result: &'a str,
+    pub result: String,
 }
 
 #[allow(dead_code)]
@@ -20,7 +20,7 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
 
     const PRINT_FUNC_INDEX: usize = 0;
 
-    impl<'a> Externals for Runtime<'a> {
+    impl Externals for Runtime {
         fn invoke_index(
             &mut self,
             index: usize,
@@ -82,9 +82,14 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
 
     let mut runtime = Runtime {
         print_output: vec![],
-        result: "",
+        result: String::new(),
     };
-    main.invoke_export(function_name, &[], &mut runtime)?;
+    let i32_result: i32 = main
+        .invoke_export(function_name, &[], &mut runtime)?
+        .unwrap()
+        .try_into::<i32>()
+        .unwrap();
+    runtime.result = i32_result.to_string();
     Ok(runtime.clone())
 }
 

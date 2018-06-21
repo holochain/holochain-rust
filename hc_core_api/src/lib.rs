@@ -61,7 +61,6 @@ use hc_dna::Dna;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
-#[derive(Clone)]
 pub struct Holochain {
     instance: hc_core::instance::Instance,
     context: Arc<hc_core::context::Context>,
@@ -80,8 +79,7 @@ impl Holochain {
         let mut instance = hc_core::instance::Instance::new();
         let name = dna.name.clone();
         let action = Nucleus(InitApplication(dna));
-        instance.dispatch(action);
-        instance.consume_next_action()?;
+        instance.dispatch_and_wait(action);
         context.log(&format!("{} instantiated", name))?;
         let app = Holochain {
             instance,
@@ -116,8 +114,8 @@ impl Holochain {
         }
         let call_data = fncall::Call::new(fn_name);
         let action = Nucleus(Call(call_data));
-        self.instance.dispatch(action.clone());
-        self.instance.consume_next_action()
+        self.instance.dispatch_and_wait(action.clone());
+        Ok(())
     }
 
     /// checks to see if an instance is active
@@ -126,8 +124,8 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&mut self) -> Result<&State, HolochainError> {
-        Ok(self.instance.state())
+    pub fn state(&mut self) -> Result<State, HolochainError> {
+        Ok(self.instance.state().clone())
     }
 }
 

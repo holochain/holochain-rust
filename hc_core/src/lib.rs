@@ -119,13 +119,12 @@ mod tests {
 
         // Create zome function call:
         let call = FunctionCall::new(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            "main".to_string(),
-            "{}".to_string(),
+            "test_zome",
+            "test_cap",
+            "main",
+            "{}",
         );
 
-        // Dispatch action with observer closure that waits for a result in the state:
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         // Result 1337 from WASM (as string)

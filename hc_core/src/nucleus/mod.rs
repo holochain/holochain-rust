@@ -51,13 +51,14 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn new(zome: String, capability: String, function: String, parameters: String) -> Self {
+    pub fn new<S>(zome: S, capability: S, function: S, parameters: S) -> Self
+        where S: Into<String> {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
-            zome,
-            capability,
-            function,
-            parameters,
+            zome: zome.into(),
+            capability: capability.into(),
+            function: function.into(),
+            parameters: parameters.into(),
         }
     }
 }
@@ -65,6 +66,7 @@ impl FunctionCall {
 pub fn call_and_wait_for_result(call: FunctionCall, instance: &mut super::instance::Instance) -> String {
     let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
 
+    // Dispatch action with observer closure that waits for a result in the state:
     let (sender, receiver) = channel();
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
         if let Some(result) = state.nucleus().ribosome_call_result(&call) {

@@ -54,10 +54,10 @@ impl FunctionCall {
     pub fn new(zome: String, capability: String, function: String, parameters: String) -> Self {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
-            zome: zome,
-            capability: capability,
-            function: function,
-            parameters: parameters,
+            zome,
+            capability,
+            function,
+            parameters,
         }
     }
 }

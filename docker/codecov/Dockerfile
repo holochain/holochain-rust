@@ -14,5 +14,6 @@ COPY . /root/holochain
 
 WORKDIR /root/holochain
 
-#
-# RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+
+CMD cargo +nightly tarpaulin --all

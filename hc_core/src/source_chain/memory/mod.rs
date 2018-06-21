@@ -67,32 +67,25 @@ mod tests {
     fn round_trip() {
         let mut chain = super::SourceChain::new();
 
-        let e1 = Entry::new(&String::from("some content"));
-        let h1 = Header::new(None, &e1);
-        assert_eq!(h1.entry(), e1.hash());
-        assert_eq!(h1.previous(), None);
-
-        let p1 = Pair::new(&h1, &e1);
+        let p1 = test_pair(None, "some content");
         chain.push(&p1);
 
+        // into_iter() move
         let mut iter1 = chain.clone().into_iter();
         let i = iter1.next().unwrap();
         assert_eq!(p1, i);
 
-        let e2 = Entry::new(&String::from("some more content"));
-        let h2 = Header::new(Some(h1.hash()), &e2);
-        assert_eq!(h2.entry(), e2.hash());
-        assert_eq!(h2.previous().unwrap(), h1.hash());
-
-        let p2 = Pair::new(&h2, &e2);
+        let p2 = test_pair(Some(p1.header.hash()), "some more content");
         chain.push(&p2);
 
+        // into_iter() move
         let mut iter2 = chain.clone().into_iter();
         let i = iter2.next().unwrap();
         assert_eq!(p2, i);
         let i2 = iter2.next().unwrap();
         assert_eq!(p1, i2);
 
+        // into_iter() move and filter
         let iter3 = chain.clone().into_iter();
         let f = iter3
             .filter(|p| p.entry.content() == "some content")

@@ -13,6 +13,7 @@ impl SourceChain {
     }
 }
 
+// for loop support that consumes chains
 impl IntoIterator for SourceChain {
     type Item = super::Pair;
     type IntoIter = std::vec::IntoIter<super::Pair>;
@@ -21,10 +22,27 @@ impl IntoIterator for SourceChain {
     }
 }
 
+// iter() style support for references to chains
+impl<'a> IntoIterator for &'a SourceChain {
+    type Item = &'a super::Pair;
+    type IntoIter = std::slice::Iter<'a, super::Pair>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, super::Pair> {
+        self.pairs.iter()
+    }
+}
+
+// basic SouceChain trait
 impl super::SourceChain for SourceChain {
+    // appends the current pair to the top of the chain
+    // @TODO - appending pairs should fail if hashes do not line up
+    // @see https://github.com/holochain/holochain-rust/issues/31
     fn push(&mut self, pair: &super::Pair) {
+        // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
+        // @see https://github.com/holochain/holochain-rust/issues/35
         self.pairs.insert(0, pair.clone())
     }
+    // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {
         self.pairs.iter()
     }
@@ -37,60 +55,79 @@ mod tests {
     use source_chain::Pair;
     use source_chain::SourceChain;
 
-    fn test_pair(prev: Option<u64>, s: &str) -> Pair {
+    // helper to spin up pairs for testing
+    // @TODO - do we want to expose something like this as a general utility?
+    // @see https://github.com/holochain/holochain-rust/issues/34
+    fn test_pair(previous_pair: Option<&Pair>, s: &str) -> Pair {
         let e = Entry::new(&s.to_string());
-        let h = Header::new(prev, &e);
+        let previous = match previous_pair {
+            Some(p) => Some(p.header.hash()),
+            None => None,
+        };
+        let h = Header::new(previous, &e);
         Pair::new(&h, &e)
     }
 
     #[test]
     fn iter() {
-        let mut chain = super::SourceChain::new();
-
+        // setup
         let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+        let p3 = test_pair(Some(&p2), "foo");
+
+        let mut chain = super::SourceChain::new();
         chain.push(&p1);
-
-        let p2 = test_pair(Some(p1.header.hash()), "bar");
         chain.push(&p2);
-
-        let p3 = test_pair(Some(p2.header.hash()), "foo");
         chain.push(&p3);
 
+        // iter() should iterate over references
         assert_eq!(vec![&p3, &p2, &p1], chain.iter().collect::<Vec<&Pair>>());
 
-        let foos = chain.iter().filter(|p| p.entry.content() == "foo").collect::<Vec<&Pair>>();
-
-        assert_eq!(vec![&p3, &p1], foos);
+        // iter() should support functional logic
+        assert_eq!(
+            vec![&p3, &p1],
+            chain
+                .iter()
+                .filter(|p| p.entry.content() == "foo")
+                .collect::<Vec<&Pair>>()
+        );
     }
 
     #[test]
     fn into_iter() {
+        // setup
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+        let p3 = test_pair(Some(&p2), "baz");
+
         let mut chain = super::SourceChain::new();
-
-        let p1 = test_pair(None, "some content");
         chain.push(&p1);
-
-        // into_iter() move
-        let mut iter1 = chain.clone().into_iter();
-        let i = iter1.next().unwrap();
-        assert_eq!(p1, i);
-
-        let p2 = test_pair(Some(p1.header.hash()), "some more content");
         chain.push(&p2);
+        chain.push(&p3);
+
+        // into_iter() by reference
+        let mut i = 0;
+        let expected = [&p3, &p2, &p1];
+        for p in &chain {
+            assert_eq!(expected[i], p);
+            i = i + 1;
+        }
+
+        // do functional things with (&chain).into_iter()
+        assert_eq!(
+            vec![&p1],
+            (&chain)
+                .into_iter()
+                .filter(|p| p.header.previous() == None)
+                .collect::<Vec<&Pair>>()
+        );
 
         // into_iter() move
-        let mut iter2 = chain.clone().into_iter();
-        let i = iter2.next().unwrap();
-        assert_eq!(p2, i);
-        let i2 = iter2.next().unwrap();
-        assert_eq!(p1, i2);
-
-        // into_iter() move and filter
-        let iter3 = chain.clone().into_iter();
-        let f = iter3
-            .filter(|p| p.entry.content() == "some content")
-            .last()
-            .unwrap();
-        assert_eq!(f, p1)
+        let mut i = 0;
+        let expected = [p3.clone(), p2.clone(), p1.clone()];
+        for p in chain.clone() {
+            assert_eq!(expected[i], p);
+            i = i + 1;
+        }
     }
 }

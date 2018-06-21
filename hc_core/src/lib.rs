@@ -27,6 +27,7 @@ mod tests {
     use state::State;
     use std::sync::mpsc::channel;
     use wabt::Wat2Wasm;
+    use super::*;
 
     // This test shows how to call dispatch with a closure that should run
     // when the action results in a state change.  Note that the observer closure
@@ -123,23 +124,9 @@ mod tests {
             "main".to_string(),
             "{}".to_string(),
         );
-        let call_action = Nucleus(ExecuteZomeFunction(call.clone()));
 
         // Dispatch action with observer closure that waits for a result in the state:
-        let (sender, receiver) = channel();
-        instance.dispatch_with_observer(call_action, move |state: &State| {
-            if let Some(result) = state.nucleus().ribosome_call_result(&call) {
-                sender
-                    .send(result.clone())
-                    .expect("test channel to be open");
-                true
-            } else {
-                false
-            }
-        });
-
-        // Block until we got that result through the channel:
-        let result = receiver.recv().unwrap();
+        let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         // Result 1337 from WASM (as string)
         assert_eq!(result, "1337")

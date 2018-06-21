@@ -8,7 +8,7 @@ pub mod ribosome;
 //use self::ribosome::*;
 use state;
 use std::collections::HashMap;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 
@@ -60,6 +60,25 @@ impl FunctionCall {
             parameters,
         }
     }
+}
+
+pub fn call_and_wait_for_result(call: FunctionCall, instance: &mut super::instance::Instance) -> String {
+    let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
+
+    let (sender, receiver) = channel();
+    instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
+        if let Some(result) = state.nucleus().ribosome_call_result(&call) {
+            sender
+                .send(result.clone())
+                .expect("local channel to be open");
+            true
+        } else {
+            false
+        }
+    });
+
+    // Block until we got that result through the channel:
+    receiver.recv().expect("local channel to work")
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -39,7 +39,7 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
-	cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
+	cd hc_core/src/nucleus/wasm-test && cargo +nightly build --target wasm32-unknown-unknown
 	cargo test --verbose --all
 
 # execute all the found "C" binding tests

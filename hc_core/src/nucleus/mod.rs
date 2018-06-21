@@ -6,6 +6,7 @@ use hc_dna::Dna;
 pub mod ribosome;
 
 //use self::ribosome::*;
+use error::HolochainError;
 use state;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Sender};
@@ -16,7 +17,7 @@ use std::thread;
 pub struct NucleusState {
     dna: Option<Dna>,
     initialized: bool,
-    ribosome_calls: HashMap<FunctionCall, Option<String>>,
+    ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 
 impl NucleusState {
@@ -34,7 +35,10 @@ impl NucleusState {
     pub fn initialized(&self) -> bool {
         self.initialized
     }
-    pub fn ribosome_call_result(&self, function_call: &FunctionCall) -> Option<String> {
+    pub fn ribosome_call_result(
+        &self,
+        function_call: &FunctionCall,
+    ) -> Option<Result<String, HolochainError>> {
         match self.ribosome_calls.get(function_call) {
             None => None,
             Some(value) => value.clone(),
@@ -52,7 +56,9 @@ pub struct FunctionCall {
 
 impl FunctionCall {
     pub fn new<S>(zome: S, capability: S, function: S, parameters: S) -> Self
-        where S: Into<String> {
+    where
+        S: Into<String>,
+    {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
             zome: zome.into(),
@@ -63,7 +69,10 @@ impl FunctionCall {
     }
 }
 
-pub fn call_and_wait_for_result(call: FunctionCall, instance: &mut super::instance::Instance) -> String {
+pub fn call_and_wait_for_result(
+    call: FunctionCall,
+    instance: &mut super::instance::Instance,
+) -> Result<String, HolochainError> {
     let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state:
@@ -86,7 +95,13 @@ pub fn call_and_wait_for_result(call: FunctionCall, instance: &mut super::instan
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionResult {
     call: FunctionCall,
-    result: String,
+    result: Result<String, HolochainError>,
+}
+
+impl FunctionResult {
+    fn new(call: FunctionCall, result: Result<String, HolochainError>) -> Self {
+        FunctionResult { call, result }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -123,27 +138,28 @@ pub fn reduce(
                             let action_channel = action_channel.clone();
                             let code = wasm.code.clone();
                             thread::spawn(move || {
+                                let result: FunctionResult;
                                 match ribosome::call(code, &function_call.function.clone()) {
                                     Ok(runtime) => {
-                                        let mut result = FunctionResult {
-                                            call: function_call,
-                                            result: runtime.result.to_string(),
-                                        };
-
-                                        action_channel
-                                            .send(state::ActionWrapper::new(
-                                                state::Action::Nucleus(Action::ZomeFunctionResult(
-                                                    result,
-                                                )),
-                                            ))
-                                            .expect("action channel to be open in reducer");
+                                        result = FunctionResult::new(
+                                            function_call,
+                                            Ok(runtime.result.to_string()),
+                                        );
                                     }
 
                                     Err(ref error) => {
-                                        println!("Error calling ribosome: {}", error);
-                                        panic!("Error calling ribosome: {}\nWe have to handle that by storing any error in the state...", error);
+                                        result = FunctionResult::new(
+                                            function_call,
+                                            Err(HolochainError::ErrorGeneric(format!("{}", error))),
+                                        );
                                     }
                                 }
+
+                                action_channel
+                                    .send(state::ActionWrapper::new(state::Action::Nucleus(
+                                        Action::ZomeFunctionResult(result),
+                                    )))
+                                    .expect("action channel to be open in reducer");
                             });
                         }
                     }

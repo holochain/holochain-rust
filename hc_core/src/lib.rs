@@ -16,6 +16,8 @@ pub mod state;
 #[cfg(test)]
 mod tests {
     //use agent::Action::*;
+    use super::*;
+    use error::HolochainError;
     use hc_dna::wasm::DnaWasm;
     use hc_dna::zome::capabilities::Capability;
     use hc_dna::zome::Zome;
@@ -27,7 +29,6 @@ mod tests {
     use state::State;
     use std::sync::mpsc::channel;
     use wabt::Wat2Wasm;
-    use super::*;
 
     // This test shows how to call dispatch with a closure that should run
     // when the action results in a state change.  Note that the observer closure
@@ -127,17 +128,14 @@ mod tests {
         let mut instance = create_instance(dna);
 
         // Create zome function call:
-        let call = FunctionCall::new(
-            "test_zome",
-            "test_cap",
-            "main",
-            "{}",
-        );
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
-
-        // Result 1337 from WASM (as string)
-        assert_eq!(result, "1337")
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(val) => assert_eq!(val, "1337"),
+            Err(_) => assert!(false),
+        }
     }
 
     #[test]
@@ -146,16 +144,17 @@ mod tests {
         let mut instance = create_instance(dna);
 
         // Create zome function call:
-        let call = FunctionCall::new(
-            "test_zome",
-            "test_cap",
-            "xxx",
-            "{}",
-        );
+        let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
-        // Result 1337 from WASM (as string)
-        assert_eq!(result, "1337")
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(_) => assert!(false),
+            Err(HolochainError::ErrorGeneric(err)) => {
+                assert_eq!(err, "Function: Module doesn\'t have export xxx")
+            }
+            Err(_) => assert!(false),
+        }
     }
 }

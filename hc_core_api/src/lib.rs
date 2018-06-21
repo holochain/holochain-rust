@@ -63,6 +63,7 @@ use std::sync::Arc;
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: hc_core::instance::Instance,
+    #[allow(dead_code)]
     context: Arc<hc_core::context::Context>,
     active: bool,
 }

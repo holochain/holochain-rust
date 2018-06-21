@@ -3,7 +3,6 @@ extern crate snowflake;
 
 use hc_dna::Dna;
 
-pub mod fncall;
 pub mod ribosome;
 
 //use self::ribosome::*;
@@ -74,7 +73,6 @@ pub enum Action {
     InitApplication(Dna),
     ExecuteZomeFunction(FunctionCall),
     ZomeFunctionResult(FunctionResult),
-    Call(fncall::Call),
 }
 
 pub fn reduce(
@@ -173,9 +171,15 @@ mod tests {
     }
 
     #[test]
-    fn can_reduce_call_action() {
-        let call = fncall::Call::new("bogusfn");
-        let action = Nucleus(Call(call));
+    fn can_reduce_execfn_action() {
+        let call = FunctionCall::new(
+            "myZome".to_string(),
+            "public".to_string(),
+            "bogusfn".to_string(),
+            "".to_string(),
+        );
+
+        let action = Nucleus(ExecuteZomeFunction(call));
         let state = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
         let reduced_state = reduce(state.clone(), &action, &sender);

@@ -69,8 +69,8 @@ pub struct Holochain {
 }
 
 use hc_core::error::HolochainError;
-use hc_core::nucleus::fncall;
 use hc_core::nucleus::Action::*;
+use hc_core::nucleus::FunctionCall;
 use hc_core::state::Action::*;
 use hc_core::state::State;
 
@@ -80,6 +80,7 @@ impl Holochain {
         let mut instance = hc_core::instance::Instance::new();
         let name = dna.name.clone();
         let action = Nucleus(InitApplication(dna));
+        instance.start_action_loop();
         instance.dispatch_and_wait(action);
         context.log(&format!("{} instantiated", name))?;
         let app = Holochain {
@@ -113,8 +114,15 @@ impl Holochain {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
-        let call_data = fncall::Call::new(fn_name);
-        let action = Nucleus(Call(call_data));
+
+        let call_data = FunctionCall::new(
+            "myZome".to_string(),
+            "public".to_string(),
+            fn_name.to_string(),
+            "".to_string(),
+        );
+
+        let action = Nucleus(ExecuteZomeFunction(call_data));
         self.instance.dispatch_and_wait(action.clone());
         Ok(())
     }
@@ -178,15 +186,14 @@ mod tests {
         let agent = HCAgent::from_string("bob");
         let (context, test_logger) = test_context(agent.clone());
         let result = Holochain::new(dna.clone(), context.clone());
-        let hc = result.clone().unwrap();
-        assert!(!hc.active);
-        assert_eq!(hc.context.agent, agent);
-        let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
 
         match result {
             Ok(hc) => {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
+                assert!(!hc.active);
+                assert_eq!(hc.context.agent, agent);
+                let test_logger = test_logger.lock().unwrap();
+                assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
             }
             Err(_) => assert!(false),
         };
@@ -198,7 +205,7 @@ mod tests {
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
-        assert!(!hc.clone().active());
+        assert!(!hc.active());
 
         // stop when not active returns error
         let result = hc.stop();

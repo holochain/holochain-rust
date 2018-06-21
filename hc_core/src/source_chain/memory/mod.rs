@@ -1,6 +1,6 @@
 use std;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct SourceChain {
     pairs: Vec<super::Pair>,
 }

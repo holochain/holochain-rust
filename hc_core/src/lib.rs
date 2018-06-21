@@ -79,8 +79,7 @@ mod tests {
         assert_eq!(instance.state().nucleus().initialized(), true);
     }
 
-    #[test]
-    fn call_ribosome_function() {
+    fn create_test_dna_with_wasm() -> Dna {
         // Test WASM code that returns 1337 as integer
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
@@ -109,19 +108,48 @@ mod tests {
         zome.name = "test_zome".to_string();
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
+        dna
+    }
 
+    fn create_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA:
         let mut instance = Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.start_action_loop();
         instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
+        instance
+    }
+
+    #[test]
+    fn call_ribosome_function() {
+        let dna = create_test_dna_with_wasm();
+        let mut instance = create_instance(dna);
 
         // Create zome function call:
         let call = FunctionCall::new(
             "test_zome",
             "test_cap",
             "main",
+            "{}",
+        );
+
+        let result = nucleus::call_and_wait_for_result(call, &mut instance);
+
+        // Result 1337 from WASM (as string)
+        assert_eq!(result, "1337")
+    }
+
+    #[test]
+    fn call_wrong_ribosome_function() {
+        let dna = create_test_dna_with_wasm();
+        let mut instance = create_instance(dna);
+
+        // Create zome function call:
+        let call = FunctionCall::new(
+            "test_zome",
+            "test_cap",
+            "xxx",
             "{}",
         );
 

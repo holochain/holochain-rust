@@ -64,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn round_trip() {
+    fn into_iter() {
         let mut chain = super::SourceChain::new();
 
         let p1 = test_pair(None, "some content");

@@ -69,8 +69,8 @@ pub struct Holochain {
 }
 
 use hc_core::error::HolochainError;
-use hc_core::nucleus::fncall;
 use hc_core::nucleus::Action::*;
+use hc_core::nucleus::FunctionCall;
 use hc_core::state::Action::*;
 use hc_core::state::State;
 
@@ -114,8 +114,15 @@ impl Holochain {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
-        let call_data = fncall::Call::new(fn_name);
-        let action = Nucleus(Call(call_data));
+
+        let call_data = FunctionCall::new(
+            "myZome".to_string(),
+            "public".to_string(),
+            fn_name.to_string(),
+            "".to_string(),
+        );
+
+        let action = Nucleus(ExecuteZomeFunction(call_data));
         self.instance.dispatch_and_wait(action.clone());
         Ok(())
     }

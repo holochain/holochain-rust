@@ -1,4 +1,5 @@
 pub mod memory;
+use std;
 
 use common::entry::Entry;
 use common::entry::Header;
@@ -20,4 +21,5 @@ impl Pair {
 
 pub trait SourceChain: IntoIterator {
     fn push(&mut self, &Pair);
+    fn iter(&self) -> std::slice::Iter<Pair>;
 }

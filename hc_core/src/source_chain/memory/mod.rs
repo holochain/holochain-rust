@@ -6,9 +6,9 @@ pub struct SourceChain {
 }
 
 impl SourceChain {
-    pub fn new(pairs: &[super::Pair]) -> SourceChain {
+    pub fn new() -> SourceChain {
         SourceChain {
-            pairs: pairs.to_owned(),
+            pairs: Vec::new(),
         }
     }
 }
@@ -25,6 +25,9 @@ impl super::SourceChain for SourceChain {
     fn push(&mut self, pair: &super::Pair) {
         self.pairs.insert(0, pair.clone())
     }
+    fn iter(&self) -> std::slice::Iter<super::Pair> {
+        self.pairs.iter()
+    }
 }
 
 #[cfg(test)]
@@ -34,9 +37,35 @@ mod tests {
     use source_chain::Pair;
     use source_chain::SourceChain;
 
+    fn test_pair(prev: Option<u64>, s: &str) -> Pair {
+        let e = Entry::new(&s.to_string());
+        let h = Header::new(prev, &e);
+        Pair::new(&h, &e)
+    }
+
+    #[test]
+    fn iter() {
+        let mut chain = super::SourceChain::new();
+
+        let p1 = test_pair(None, "foo");
+        chain.push(&p1);
+
+        let p2 = test_pair(Some(p1.header.hash()), "bar");
+        chain.push(&p2);
+
+        let p3 = test_pair(Some(p2.header.hash()), "foo");
+        chain.push(&p3);
+
+        assert_eq!(vec![&p3, &p2, &p1], chain.iter().collect::<Vec<&Pair>>());
+
+        let foos = chain.iter().filter(|p| p.entry.content() == "foo").collect::<Vec<&Pair>>();
+
+        assert_eq!(vec![&p3, &p1], foos);
+    }
+
     #[test]
     fn round_trip() {
-        let mut chain = super::SourceChain::new(&Vec::new());
+        let mut chain = super::SourceChain::new();
 
         let e1 = Entry::new(&String::from("some content"));
         let h1 = Header::new(None, &e1);

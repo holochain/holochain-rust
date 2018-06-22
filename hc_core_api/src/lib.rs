@@ -36,7 +36,7 @@ let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 hc.start().expect("couldn't start the app");
 
 // call a function in the app
-hc.call("some_fn");
+hc.call("test_zome","test_cap","some_fn","{}");
 
 // get the state
 {
@@ -70,7 +70,7 @@ pub struct Holochain {
 
 use hc_core::error::HolochainError;
 use hc_core::nucleus::Action::*;
-use hc_core::nucleus::FunctionCall;
+use hc_core::nucleus::{call_and_wait_for_result, FunctionCall};
 use hc_core::state::Action::*;
 use hc_core::state::State;
 
@@ -110,21 +110,20 @@ impl Holochain {
     }
 
     /// call a function in a zome
-    pub fn call(&mut self, fn_name: &str) -> Result<(), HolochainError> {
+    pub fn call(
+        &mut self,
+        zome: &str,
+        cap: &str,
+        fn_name: &str,
+        params: &str,
+    ) -> Result<String, HolochainError> {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call_data = FunctionCall::new(
-            "myZome".to_string(),
-            "public".to_string(),
-            fn_name.to_string(),
-            "".to_string(),
-        );
+        let call = FunctionCall::new(zome, cap, fn_name, params);
 
-        let action = Nucleus(ExecuteZomeFunction(call_data));
-        self.instance.dispatch_and_wait(action.clone());
-        Ok(())
+        call_and_wait_for_result(call, &mut self.instance)
     }
 
     /// checks to see if an instance is active
@@ -145,6 +144,7 @@ mod tests {
     use hc_core::context::Context;
     use hc_core::logger::Logger;
     use hc_core::persister::SimplePersister;
+    use hc_core::test_utils::create_test_dna_with_wasm;
     use std::fmt;
     use std::sync::{Arc, Mutex};
 
@@ -240,24 +240,24 @@ mod tests {
 
     #[test]
     fn can_call() {
-        let dna = Dna::new();
+        let dna = create_test_dna_with_wasm();
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
-        let result = hc.call("bogusfn");
+
+        let result = hc.call("test_zome", "test_cap", "main", "{}");
         match result {
             Err(HolochainError::InstanceNotActive) => assert!(true),
-            Ok(_) => assert!(false),
             Err(_) => assert!(false),
+            Ok(_) => assert!(false),
         }
 
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("bogusfn");
+        let result = hc.call("test_zome", "test_cap", "main", "{}");
         match result {
-            Err(HolochainError::NotImplemented) => assert!(true),
-            Ok(_) => assert!(true),
+            Ok(result) => assert_eq!(result, "1337"),
             Err(_) => assert!(false),
         };
     }

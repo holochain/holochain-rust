@@ -13,14 +13,52 @@ pub mod persister;
 pub mod source_chain;
 pub mod state;
 
+//#[cfg(test)]
+pub mod test_utils {
+    use hc_dna::wasm::DnaWasm;
+    use hc_dna::zome::capabilities::Capability;
+    use hc_dna::zome::Zome;
+    use hc_dna::Dna;
+    use wabt::Wat2Wasm;
+
+    pub fn create_test_dna_with_wasm() -> Dna {
+        // Test WASM code that returns 1337 as integer
+        let wasm_binary = Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(
+                r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "main") (result i32)
+                        i32.const 1337
+                    )
+                    (export "memory" (memory 0))
+                )
+            "#,
+            )
+            .unwrap();
+
+        // Prepare valid DNA struct with that WASM in a zome's capability:
+        let mut dna = Dna::new();
+        let mut zome = Zome::new();
+        let mut capability = Capability::new();
+        capability.name = "test_cap".to_string();
+        capability.code = DnaWasm {
+            code: wasm_binary.as_ref().to_vec(),
+        };
+        zome.name = "test_zome".to_string();
+        zome.capabilities.push(capability);
+        dna.zomes.push(zome);
+        dna
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //use agent::Action::*;
     use super::*;
     use error::HolochainError;
-    use hc_dna::wasm::DnaWasm;
-    use hc_dna::zome::capabilities::Capability;
-    use hc_dna::zome::Zome;
     use hc_dna::Dna;
     use instance::Instance;
     use nucleus::Action::*;
@@ -28,7 +66,6 @@ mod tests {
     use state::Action::*;
     use state::State;
     use std::sync::mpsc::channel;
-    use wabt::Wat2Wasm;
 
     // This test shows how to call dispatch with a closure that should run
     // when the action results in a state change.  Note that the observer closure
@@ -80,38 +117,6 @@ mod tests {
         assert_eq!(instance.state().nucleus().initialized(), true);
     }
 
-    fn create_test_dna_with_wasm() -> Dna {
-        // Test WASM code that returns 1337 as integer
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
-                (module
-                    (memory (;0;) 17)
-                    (func (export "main") (result i32)
-                        i32.const 1337
-                    )
-                    (export "memory" (memory 0))
-                )
-            "#,
-            )
-            .unwrap();
-
-        // Prepare valid DNA struct with that WASM in a zome's capability:
-        let mut dna = Dna::new();
-        let mut zome = Zome::new();
-        let mut capability = Capability::new();
-        capability.name = "test_cap".to_string();
-        capability.code = DnaWasm {
-            code: wasm_binary.as_ref().to_vec(),
-        };
-        zome.name = "test_zome".to_string();
-        zome.capabilities.push(capability);
-        dna.zomes.push(zome);
-        dna
-    }
-
     fn create_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA:
         let mut instance = Instance::new();
@@ -124,7 +129,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -140,7 +145,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -160,7 +165,7 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
         // Create zome function call:

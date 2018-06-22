@@ -168,7 +168,10 @@ pub fn reduce(
                     if !zome_capability_found {
                         let result = FunctionResult::new(
                             fc.clone(),
-                            Err(HolochainError::ErrorGeneric(format!("Zome or capability not found {}/{}", &fc.zome, &fc.capability))),
+                            Err(HolochainError::ErrorGeneric(format!(
+                                "Zome or capability not found {}/{}",
+                                &fc.zome, &fc.capability
+                            ))),
                         );
                         action_channel
                             .send(state::ActionWrapper::new(state::Action::Nucleus(

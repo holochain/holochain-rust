@@ -177,7 +177,6 @@ mod tests {
             Err(_) => assert!(false),
         }
 
-
         // Create zome function call:
         let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
 

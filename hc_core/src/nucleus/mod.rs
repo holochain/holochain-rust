@@ -129,6 +129,7 @@ pub fn reduce(
 
                 Action::ExecuteZomeFunction(ref fc) => {
                     let function_call = fc.clone();
+                    let mut zome_capability_found = false;
                     if let Some(ref dna) = new_state.dna {
                         if let Some(ref wasm) =
                             dna.get_wasm_for_capability(&fc.zome, &fc.capability)
@@ -161,7 +162,19 @@ pub fn reduce(
                                     )))
                                     .expect("action channel to be open in reducer");
                             });
+                            zome_capability_found = true;
                         }
+                    }
+                    if !zome_capability_found {
+                        let result = FunctionResult::new(
+                            fc.clone(),
+                            Err(HolochainError::ErrorGeneric(format!("Zome or capability not found {}/{}", &fc.zome, &fc.capability))),
+                        );
+                        action_channel
+                            .send(state::ActionWrapper::new(state::Action::Nucleus(
+                                Action::ZomeFunctionResult(result),
+                            )))
+                            .expect("action channel to be open in reducer");
                     }
                 }
 

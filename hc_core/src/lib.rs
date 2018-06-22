@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn call_wrong_ribosome_function() {
+    fn call_ribosome_wrong_function() {
         let dna = create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
@@ -153,6 +153,41 @@ mod tests {
             Ok(_) => assert!(false),
             Err(HolochainError::ErrorGeneric(err)) => {
                 assert_eq!(err, "Function: Module doesn\'t have export xxx")
+            }
+            Err(_) => assert!(false),
+        }
+    }
+
+    #[test]
+    fn call_wrong_ribosome_function() {
+        let dna = create_test_dna_with_wasm();
+        let mut instance = create_instance(dna);
+
+        // Create zome function call:
+        let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
+
+        let result = nucleus::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(_) => assert!(false),
+            Err(HolochainError::ErrorGeneric(err)) => {
+                assert_eq!(err, "Zome or capability not found xxx/test_cap")
+            }
+            Err(_) => assert!(false),
+        }
+
+
+        // Create zome function call:
+        let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
+
+        let result = nucleus::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(_) => assert!(false),
+            Err(HolochainError::ErrorGeneric(err)) => {
+                assert_eq!(err, "Zome or capability not found test_zome/xxx")
             }
             Err(_) => assert!(false),
         }

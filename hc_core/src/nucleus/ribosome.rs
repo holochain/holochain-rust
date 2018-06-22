@@ -97,8 +97,9 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
 mod tests {
     use super::*;
     use std::fs::File;
+    use wabt::Wat2Wasm;
 
-    fn test_wasm() -> Vec<u8> {
+    fn _test_wasm_from_file() -> Vec<u8> {
         use std::io::prelude::*;
         let mut file = File::open(
             "src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/wasm_ribosome_test.wasm",
@@ -108,9 +109,39 @@ mod tests {
         return buf;
     }
 
+    fn test_wasm() -> Vec<u8> {
+        let wasm_binary = Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(
+                r#"
+                (module
+                    (type (;0;) (func (result i32)))
+                    (type (;1;) (func (param i32)))
+                    (type (;2;) (func))
+                    (import "env" "print" (func $print (type 1)))
+                    (func $test_print (type 0) (result i32)
+                        i32.const 1337
+                        call $print
+                        i32.const 0)
+                    (func $rust_eh_personality (type 2))
+                    (table (;0;) 1 1 anyfunc)
+                    (memory (;0;) 17)
+                    (global (;0;) (mut i32) (i32.const 1049600))
+                    (export "memory" (memory 0))
+                    (export "test_print" (func $test_print))
+                    (export "rust_eh_personality" (func $rust_eh_personality)))
+            "#,
+            )
+            .unwrap();
+
+        wasm_binary.as_ref().to_vec()
+    }
+
     #[test]
     fn test_print() {
         let runtime = call(test_wasm(), "test_print").expect("test_print should be callable");
         assert_eq!(runtime.print_output.len(), 1);
+        assert_eq!(runtime.print_output[0], 1337)
     }
 }

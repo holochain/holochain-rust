@@ -7,7 +7,7 @@ addons:
       - libssl-dev
 cache: cargo
 rust:
-  - 1.26.2
+  - nightly
 
 install:
   - rustup component add rustfmt-preview

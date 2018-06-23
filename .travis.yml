@@ -11,7 +11,7 @@ cache: cargo
 rust:
   - nightly-2018-06-20
 env:
-  - CLIPPY_VERSION=0.0.179
+  - CLIPPY_VERSION=0.0.209
 install:
   - rustup default nightly-2018-06-20
   - rustup update

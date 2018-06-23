@@ -1,15 +1,13 @@
 use std;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct SourceChain {
     pairs: Vec<super::Pair>,
 }
 
 impl SourceChain {
     pub fn new() -> SourceChain {
-        SourceChain {
-            pairs: Vec::new(),
-        }
+        SourceChain { pairs: Vec::new() }
     }
 }
 

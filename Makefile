@@ -39,7 +39,7 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
-	cargo test --verbose --all
+	cargo tarpaulin --all
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

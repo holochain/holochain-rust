@@ -10,10 +10,11 @@ rust:
   - nightly
 
 install:
+  - rustup default nightly
+  - rustup update
   - rustup component add rustfmt-preview
-  - rustup update nightly
-  - cargo +nightly install clippy --force
-  - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +nightly install cargo-tarpaulin --force
+  - cargo install clippy --force
+  - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin --force
 
 script:
   - make test

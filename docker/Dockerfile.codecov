@@ -4,7 +4,7 @@ WORKDIR /root
 
 RUN apt-get update && apt-get install libssl-dev pkg-config cmake zlib1g-dev curl -y
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-20 -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
 
 ENV PATH /root/.cargo/bin:$PATH
 

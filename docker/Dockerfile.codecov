@@ -4,7 +4,7 @@ WORKDIR /root
 
 RUN apt-get update && apt-get install libssl-dev pkg-config cmake zlib1g-dev curl -y
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-01-12 -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-21 -y
 
 ENV PATH /root/.cargo/bin:$PATH
 
@@ -14,4 +14,4 @@ RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
 
 COPY . /root/holochain
 WORKDIR /root/holochain
-CMD cargo +nightly tarpaulin --all
+CMD cargo tarpaulin --all

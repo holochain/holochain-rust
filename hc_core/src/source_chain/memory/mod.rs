@@ -5,6 +5,7 @@ pub struct SourceChain {
     pairs: Vec<super::Pair>,
 }
 
+#[derive(Default)]
 impl SourceChain {
     pub fn new() -> SourceChain {
         SourceChain {

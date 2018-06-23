@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run holochain/lint:latest

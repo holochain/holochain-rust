@@ -1,0 +1,20 @@
+FROM ubuntu
+
+WORKDIR /root
+
+RUN apt-get update && apt-get install libssl-dev pkg-config cmake zlib1g-dev curl -y
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-20 -y
+
+ENV PATH /root/.cargo/bin:$PATH
+
+RUN rustc --version
+
+RUN rustup component add rustfmt-preview
+
+ENV CLIPPY_VERSION 0.0.208
+RUN cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
+
+COPY . /root/holochain
+WORKDIR /root/holochain
+CMD make test

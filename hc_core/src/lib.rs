@@ -15,28 +15,39 @@ pub mod state;
 
 //#[cfg(test)]
 pub mod test_utils {
+    use super::*;
     use hc_dna::wasm::DnaWasm;
     use hc_dna::zome::capabilities::Capability;
     use hc_dna::zome::Zome;
     use hc_dna::Dna;
     use wabt::Wat2Wasm;
 
-    pub fn create_test_dna_with_wasm() -> Dna {
-        // Test WASM code that returns 1337 as integer
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
+    pub fn create_test_dna_with_wasm(wasm: Option<&str>) -> Dna {
+        let default_wasm = format!(
+            r#"
                 (module
                     (memory (;0;) 17)
                     (func (export "main") (result i32)
-                        i32.const 1337
+                        i32.const 4
+                    )
+                    (data (i32.const {})
+                        "1337"
                     )
                     (export "memory" (memory 0))
                 )
             "#,
-            )
+            nucleus::ribosome::RESULT_OFFSET
+        );
+        let wasm_text = match wasm {
+            None => default_wasm.as_str(),
+            Some(w) => w,
+        };
+
+        // Test WASM code that returns 1337 as integer
+        let wasm_binary = Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(wasm_text)
             .unwrap();
 
         // Prepare valid DNA struct with that WASM in a zome's capability:
@@ -129,7 +140,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -139,13 +150,14 @@ mod tests {
         match result {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
-            Err(_) => assert!(false),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+            //Err(_) => assert!(false),
         }
     }
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -165,7 +177,7 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wasm(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:

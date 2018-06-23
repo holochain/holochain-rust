@@ -240,12 +240,25 @@ mod tests {
 
     #[test]
     fn can_call() {
-        let dna = create_test_dna_with_wasm();
+        let wasm = r#"
+(module
+ (memory 1)
+ (export "memory" (memory 0))
+ (export "hello" (func $func0))
+ (func $func0 (result i32)
+       i32.const 16
+       )
+ (data (i32.const 256)
+       "{\"holo\":\"world\"}"
+       )
+ )
+"#;
+        let dna = create_test_dna_with_wasm(Some(wasm));
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "main", "{}");
+        let result = hc.call("test_zome", "test_cap", "hello", "{}");
         match result {
             Err(HolochainError::InstanceNotActive) => assert!(true),
             Err(_) => assert!(false),
@@ -255,9 +268,9 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "main", "{}");
+        let result = hc.call("test_zome", "test_cap", "hello", "{}");
         match result {
-            Ok(result) => assert_eq!(result, "1337"),
+            Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),
         };
     }

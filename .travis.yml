@@ -17,7 +17,7 @@ install:
   - rustup update
   - rustup component add rustfmt-preview
   - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
-  - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin --force
+  - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin || echo "tarpaulin already installed"
 
 script:
   - make test

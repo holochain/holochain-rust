@@ -115,6 +115,30 @@ With every module handling its state which is read-only for everything else and 
 
 CI builds are happening on circle CI.
 
+### Docker
+
+The `docker` folder contains scripts to build and run docker images.
+
+#### Standard build
+
+Build:
+
+`. docker/build-amd64`
+
+Run:
+
+`. docker/run`
+
+#### Code coverage
+
+Build:
+
+`. docker/build-codecov`
+
+Run:
+
+`. docker/run-codecov`
+
 ### Code style
 
 There is a linter enforcing code style.

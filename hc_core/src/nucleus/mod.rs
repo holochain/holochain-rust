@@ -108,7 +108,7 @@ impl FunctionResult {
 pub enum Action {
     InitApplication(Dna),
     ExecuteZomeFunction(FunctionCall),
-    ZomeFunctionResult(FunctionResult),
+    ReturnZomeFunctionResult(FunctionResult),
 }
 
 pub fn reduce(
@@ -158,7 +158,7 @@ pub fn reduce(
 
                                 action_channel
                                     .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                        Action::ZomeFunctionResult(result),
+                                        Action::ReturnZomeFunctionResult(result),
                                     )))
                                     .expect("action channel to be open in reducer");
                             });
@@ -175,13 +175,13 @@ pub fn reduce(
                         );
                         action_channel
                             .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                Action::ZomeFunctionResult(result),
+                                Action::ReturnZomeFunctionResult(result),
                             )))
                             .expect("action channel to be open in reducer");
                     }
                 }
 
-                Action::ZomeFunctionResult(ref result) => {
+                Action::ReturnZomeFunctionResult(ref result) => {
                     new_state
                         .ribosome_calls
                         .insert(result.call.clone(), Some(result.result.clone()));

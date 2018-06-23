@@ -38,11 +38,9 @@ impl super::SourceChain for SourceChain {
     // @TODO - appending pairs should fail if hashes do not line up
     // @see https://github.com/holochain/holochain-rust/issues/31
     fn push(&mut self, pair: &super::Pair) {
-        // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
-        // @see https://github.com/holochain/holochain-rust/issues/35
-        self.pairs.insert(0, pair.clone())
+        self.pairs.append(&mut vec![pair.clone()])
     }
-    // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
+    // returns an iterator referencing pairs from bottom (genesis) to top (most recent)
     fn iter(&self) -> std::slice::Iter<super::Pair> {
         self.pairs.iter()
     }
@@ -81,11 +79,11 @@ mod tests {
         chain.push(&p3);
 
         // iter() should iterate over references
-        assert_eq!(vec![&p3, &p2, &p1], chain.iter().collect::<Vec<&Pair>>());
+        assert_eq!(vec![&p3, &p2, &p1], chain.iter().rev().collect::<Vec<&Pair>>());
 
         // iter() should support functional logic
         assert_eq!(
-            vec![&p3, &p1],
+            vec![&p1, &p3],
             chain
                 .iter()
                 .filter(|p| p.entry.content() == "foo")
@@ -107,7 +105,7 @@ mod tests {
 
         // into_iter() by reference
         let mut i = 0;
-        let expected = [&p3, &p2, &p1];
+        let expected = [&p1, &p2, &p3];
         for p in &chain {
             assert_eq!(expected[i], p);
             i = i + 1;
@@ -117,14 +115,14 @@ mod tests {
         assert_eq!(
             vec![&p1],
             (&chain)
-                .into_iter()
+                .into_iter().rev()
                 .filter(|p| p.header.previous() == None)
                 .collect::<Vec<&Pair>>()
         );
 
         // into_iter() move
         let mut i = 0;
-        let expected = [p3.clone(), p2.clone(), p1.clone()];
+        let expected = [p1.clone(), p2.clone(), p3.clone()];
         for p in chain.clone() {
             assert_eq!(expected[i], p);
             i = i + 1;

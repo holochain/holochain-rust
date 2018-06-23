@@ -7,13 +7,14 @@ addons:
       - libssl-dev
 cache: cargo
 rust:
-  - nightly
-
+  - nightly-2018-01-12
+env: # use env so updating versions causes cache invalidation
+  - CLIPPY_VERSION=0.0.179
 install:
   - rustup default nightly
   - rustup update
   - rustup component add rustfmt-preview
-  - cargo install clippy --force
+  - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
   - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin --force
 
 script:

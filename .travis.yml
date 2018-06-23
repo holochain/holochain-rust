@@ -6,12 +6,14 @@ addons:
     packages:
       - libssl-dev
 cache: cargo
+# pinning versions/caching
+# https://dev.to/cad97/great-rust-ci-1fk6
 rust:
   - nightly-2018-01-12
-env: # use env so updating versions causes cache invalidation
+env:
   - CLIPPY_VERSION=0.0.179
 install:
-  - rustup default nightly
+  - rustup default nightly-2018-01-12
   - rustup update
   - rustup component add rustfmt-preview
   - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"

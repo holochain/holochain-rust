@@ -8,6 +8,7 @@ RUN rustc --version
 RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
 RUN rustup component add rustfmt-preview
 RUN cargo install clippy --version 0.0.206
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2018-06-01
 
 COPY . /root/holochain
 WORKDIR /root/holochain

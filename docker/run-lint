@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run holochain/lint:latest
+docker run --security-opt seccomp=unconfined holochain/lint:latest

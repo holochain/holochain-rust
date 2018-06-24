@@ -139,38 +139,19 @@ Run:
 
 `. docker/run-codecov`
 
-### Code style
+#### Code style
 
 There is a linter enforcing code style.
 
-Install:
+Build:
 
 ```
-rustup update
-rustup component add rustfmt-preview
-```
-
-Run:
-
-```
-cargo fmt -- --write-mode=diff
-```
-
-There is _another_ linter enforcing code style (clippy).
-
-
-Install:
-
-```
-rustup update
-cargo +nightly install clippy
+. docker/build-lint
 ```
 
 Run:
 
-```
-cargo +nightly clippy
-```
+`. docker/run-lint`
 
 ### Watch tests
 

@@ -1,0 +1,14 @@
+[package]
+name = "wasm-ribosome-test"
+version = "0.1.0"
+authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[workspace]
+members = []

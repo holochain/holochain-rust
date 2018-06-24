@@ -7,9 +7,7 @@ pub struct SourceChain {
 
 impl SourceChain {
     pub fn new() -> SourceChain {
-        SourceChain {
-            pairs: Vec::new(),
-        }
+        SourceChain { pairs: Vec::new() }
     }
 }
 

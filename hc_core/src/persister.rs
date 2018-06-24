@@ -30,6 +30,7 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate() {
@@ -47,11 +48,12 @@ mod tests {
     fn can_roundtrip() {
         let mut store = SimplePersister::new();
 
-        let mut state = State::new();
+        let state = State::new();
 
         let entry = ::common::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
-        let new_state = state.reduce(&action);
+        let (sender, _receiver) = channel::<::state::ActionWrapper>();
+        let new_state = state.reduce(::state::ActionWrapper::new(action), &sender);
 
         store.save(&new_state);
 

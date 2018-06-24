@@ -13,5 +13,7 @@ RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2018-06-01
 COPY . /root/holochain
 WORKDIR /root/holochain
 
-RUN make test
+# run a build here to cache dependencies in a docker layer
+RUN cargo build
+
 CMD make test

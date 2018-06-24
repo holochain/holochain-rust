@@ -23,8 +23,4 @@ script:
   - make test
 
 after_success:
-  # @todo - this duplicates what `make test` currently does internally so is a
-  # bit inefficient
-  # @see https://github.com/holochain/holochain-rust/issues/45
-  - cargo tarpaulin --out Xml
   - bash <(curl -s https://codecov.io/bash)

@@ -21,3 +21,9 @@ install:
   - rustup target add wasm32-unknown-unknown
 script:
   - make test
+
+after_success:
+  # @todo - this duplicates what `make test` currently does internally so is a
+  # bit inefficient
+  - cargo tarpaulin --out Xml
+  - bash <(curl -s https://codecov.io/bash)

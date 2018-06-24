@@ -16,4 +16,6 @@ RUN cargo install clippy --version 0.0.206
 
 COPY . /root/holochain
 WORKDIR /root/holochain
+RUN make test
+
 CMD make test

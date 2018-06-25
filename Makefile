@@ -26,7 +26,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines, and build the rust project
 main:
 	cargo fmt
-	cargo +nightly clippy -- --deny clippy
+	cargo clippy -- --deny clippy
 	cargo build --verbose --all
 
 # list all our found "C" binding tests
@@ -39,8 +39,8 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
-	cd hc_core/src/nucleus/wasm-test && cargo +nightly build --target wasm32-unknown-unknown
-	cargo test --verbose --all
+	cargo tarpaulin --all --out Xml
+	cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

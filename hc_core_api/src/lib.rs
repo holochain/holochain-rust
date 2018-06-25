@@ -327,7 +327,7 @@ mod tests {
     (i32.store8 offset=2
       (get_local $p0)
       (i32.const 31))
-    (get_local $p0))
+    (i32.const 5))
   (func $rust_eh_personality (export "rust_eh_personality") (type $t2))
   (table $T0 1 1 anyfunc)
   (memory $memory (export "memory") 17)

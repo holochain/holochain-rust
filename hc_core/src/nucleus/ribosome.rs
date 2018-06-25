@@ -14,7 +14,7 @@ pub struct Runtime {
     pub result: String,
 }
 
-pub const RESULT_OFFSET: u32 = 256;
+pub const RESULT_OFFSET: u32 = 0;
 
 #[allow(dead_code)]
 pub fn call(
@@ -92,7 +92,11 @@ pub fn call(
         result: String::new(),
     };
     let i32_result_length: i32 = main
-        .invoke_export(function_name, &[], &mut runtime)?
+        .invoke_export(
+            function_name,
+            &[RuntimeValue::I32(1), RuntimeValue::I32(1)],
+            &mut runtime,
+        )?
         .unwrap()
         .try_into::<i32>()
         .unwrap();

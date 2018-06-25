@@ -90,6 +90,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hc_core_api_c_binding"
+version = "0.1.0"
+dependencies = [
+ "hc_agent 0.1.0",
+ "hc_core 0.1.0",
+ "hc_core_api 0.1.0",
+ "hc_dna 0.1.0",
+]
+
+[[package]]
 name = "hc_dna"
 version = "0.1.0"
 dependencies = [

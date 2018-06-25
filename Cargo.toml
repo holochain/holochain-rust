@@ -3,6 +3,7 @@
 members = [
   "hc_agent",
   "hc_core_api",
+  "hc_core_api_c_binding",
   "hc_core",
   "hc_dna",
   "hc_dna_c_binding",

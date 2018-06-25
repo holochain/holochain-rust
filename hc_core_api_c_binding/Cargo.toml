@@ -1,0 +1,15 @@
+[package]
+name = "hc_core_api_c_binding"
+version = "0.1.0"
+authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
+
+[lib]
+name = "hc_core_api_c_binding"
+crate-type = ["staticlib"]
+
+
+[dependencies]
+hc_core = { path = "../hc_core" }
+hc_core_api = { path = "../hc_core_api" }
+hc_dna = { path = "../hc_dna" }
+hc_agent = { path = "../hc_agent" }

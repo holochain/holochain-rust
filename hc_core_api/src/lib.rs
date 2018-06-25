@@ -290,4 +290,63 @@ mod tests {
             Err(_) => assert!(false),
         };
     }
+
+    #[test]
+    fn can_call_test() {
+        let wasm = r#"
+(module
+  (type $t0 (func (param i32 i32) (result i32)))
+  (type $t1 (func (param i32)))
+  (type $t2 (func))
+  (import "env" "print" (func $print (type $t1)))
+  (func $_call (export "_call") (type $t0) (param $p0 i32) (param $p1 i32) (result i32)
+    (local $l0 i32)
+    (call $print
+      (get_local $p1))
+    (block $B0
+      (br_if $B0
+        (i32.eqz
+          (get_local $p1)))
+      (set_local $l0
+        (i32.const 0))
+      (loop $L1
+        (call $print
+          (i32.load8_u
+            (i32.add
+              (get_local $p0)
+              (get_local $l0))))
+        (br_if $L1
+          (i32.lt_u
+            (tee_local $l0
+              (i32.add
+                (get_local $l0)
+                (i32.const 1)))
+            (get_local $p1)))))
+    (i32.const 0))
+  (func $test (export "test") (type $t0) (param $p0 i32) (param $p1 i32) (result i32)
+    (i32.store8 offset=2
+      (get_local $p0)
+      (i32.const 31))
+    (get_local $p0))
+  (func $rust_eh_personality (export "rust_eh_personality") (type $t2))
+  (table $T0 1 1 anyfunc)
+  (memory $memory (export "memory") 17)
+  (global $g0 (mut i32) (i32.const 1049600)))
+"#;
+        let dna = create_test_dna_with_wasm(Some(wasm));
+        let agent = HCAgent::from_string("bob");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        hc.start().expect("couldn't start");
+
+        // always returns not implemented error for now!
+        let result = hc.call("test_zome", "test_cap", "test", "{}");
+        println!("{:#?}", result);
+        match result {
+            Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
+            Err(_) => assert!(false),
+        };
+    }
+
 }

@@ -1,5 +1,8 @@
-extern {
-    fn print(i:i32);
+#![feature(wasm_import_memory, custom_attribute)]
+#![wasm_import_memory]
+
+extern "C" {
+    fn print(i: i32);
 }
 
 #[no_mangle]
@@ -11,10 +14,19 @@ pub extern "C" fn _call(input_data: *mut u8, input_len: usize) -> i32 {
             //print(888);
             print(*input_data.offset(i as isize) as i32);
         }
-
     }
 
-    return 0;//a * a;
+    return 0; //a * a;
+}
+
+use std::os::raw::c_char;
+
+#[no_mangle]
+pub extern "C" fn test(data: *mut c_char, input_len: usize) -> *mut c_char {
+    unsafe {
+        *data.offset(2) = 31;
+    }
+    data
 }
 
 //pub extern "C" fn _call(a: i32) -> i32 {

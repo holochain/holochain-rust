@@ -1,7 +1,16 @@
 FROM ubuntu
 
-WORKDIR /root
-RUN apt-get update && apt-get install libssl-dev pkg-config cmake zlib1g-dev curl qt5-default python2.7 -y
+# This removes some warning when installing packages when there is no X
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update && apt-get install --yes\
+  libssl-dev \
+  pkg-config \
+  cmake \
+  zlib1g-dev \
+  curl \
+  qt5-default \
+  python2.7
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
 ENV PATH /root/.cargo/bin:$PATH
 RUN rustc --version
@@ -10,8 +19,8 @@ RUN rustup component add rustfmt-preview
 RUN cargo install clippy --version 0.0.206
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2018-06-01
 
-COPY . /root/holochain
-WORKDIR /root/holochain
+COPY . /holochain
+WORKDIR /holochain
 
 # run a build here to cache dependencies in a docker layer
 RUN cargo build

@@ -24,3 +24,5 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then . docker/build-ubuntu; fi
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; docker push holochain/rust-ubuntu:develop; fi

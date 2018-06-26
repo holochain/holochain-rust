@@ -6,7 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 extern "C" {
     fn print(i: i32);
@@ -29,7 +29,7 @@ pub extern "C" fn _call(input_data: *mut u8, input_len: usize) -> i32 {
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-fn make_internal<T: Deserialize>(data: *mut c_char) -> T {
+fn make_internal<'s, T: Deserialize<'s>>(data: *mut c_char) -> T {
     let c_str = unsafe { CStr::from_ptr(data) };
     let actual_str = c_str.to_str().unwrap(); // Don't unwrap ever in real life
     serde_json::from_str(actual_str).unwrap() // OMG you're still doing it! Have you learned nothing?!
@@ -43,19 +43,21 @@ fn make_external<T: Serialize>(data: *mut c_char, params_len: usize, internal: T
 pub extern "C" fn test_dispatch(data: *mut c_char, params_len: usize) -> i32 {
     let input = make_internal(data);
     let output = test(input);
-    // make_external(data, params_len, output)
+    make_external(data, params_len, output)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 struct InputStruct {
     input_int_val: u8,
     input_str_val: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 struct OutputStruct {
     input_int_val_plus2: u8,
     input_str_val_plus_dog: String,
 }
 
-fn test(input: InputStruct) -> OutputStruct {}
+fn test(input: InputStruct) -> OutputStruct {
+    Default::default()
+}

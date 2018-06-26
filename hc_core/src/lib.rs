@@ -29,7 +29,7 @@ pub mod test_utils {
         let mut file = File::open(fname).unwrap();
         let mut buf = Vec::new();
         file.read_to_end(&mut buf).unwrap();
-        return buf;
+        buf
     }
 
     pub fn create_test_dna_with_wat(wat: Option<&str>) -> Dna {

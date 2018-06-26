@@ -269,6 +269,7 @@ mod tests {
 
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "hello", "{}");
+
         match result {
             Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),
@@ -342,7 +343,7 @@ mod tests {
 
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "test", "{}");
-        println!("{:#?}", result);
+
         match result {
             Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),

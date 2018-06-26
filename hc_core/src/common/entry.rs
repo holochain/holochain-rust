@@ -34,6 +34,7 @@ impl Entry {
     }
 
     pub fn validate(&self) -> bool {
+        // always valid iff immutable and new() enforces validity
         true
     }
 }
@@ -80,6 +81,7 @@ impl Header {
     }
 
     pub fn validate(&self) -> bool {
+        // always valid iff immutable and new() enforces validity
         true
     }
 }

@@ -32,6 +32,10 @@ impl Entry {
     pub fn content(&self) -> String {
         self.content.clone()
     }
+
+    pub fn validate(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -73,6 +77,10 @@ impl Header {
 
     pub fn hash(&self) -> u64 {
         self.hash
+    }
+
+    pub fn validate(&self) -> bool {
+        true
     }
 }
 

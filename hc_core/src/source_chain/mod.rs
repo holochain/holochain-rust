@@ -25,15 +25,19 @@ impl Pair {
     pub fn entry(&self) -> Entry {
         self.entry.clone()
     }
+
+    pub fn validate(&self) -> bool {
+        self.header.validate() && self.entry.validate()
+    }
 }
 
-pub trait SourceChain: IntoIterator + std::ops::Index<u64> {
+pub trait SourceChain: IntoIterator {
     // appends the given pair to the source chain, if doing so results in a new valid chain
-    // assumes the chain is currently valid
     // returns the potentially updated chain
-    fn push(&mut self, &Pair) -> &Self;
+    fn push(&mut self, &Pair);
     fn iter(&self) -> std::slice::Iter<Pair>;
     fn validate(&self) -> bool;
+    fn get(&self, k: u64) -> Option<Pair>;
 }
 
 #[cfg(test)]

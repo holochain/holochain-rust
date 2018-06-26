@@ -30,40 +30,37 @@ impl<'a> IntoIterator for &'a SourceChain {
     }
 }
 
-impl std::ops::Index<u64> for SourceChain {
-    type Output = super::Pair;
-
-    fn index(&self, header_hash: u64) -> &super::Pair {
-        self
-            .into_iter()
-            .filter(|p| p.header.hash() == header_hash)
-            .last()
-            .unwrap()
-    }
-}
-
 // basic SouceChain trait
 impl super::SourceChain for SourceChain {
     // appends the current pair to the top of the chain
     // @TODO - appending pairs should fail if hashes do not line up
     // @see https://github.com/holochain/holochain-rust/issues/31
-    fn push(&mut self, pair: &super::Pair) -> &Self {
+    fn push(&mut self, pair: &super::Pair) {
+        let previous_pair = match pair.header.previous() {
+            Some(h) => self.get(h),
+            None => None,
+        };
+
+        if !(pair.validate() && self.pairs.first() == previous_pair.as_ref()) {
+            // we panic because no code path should attempt to append an invalid pair
+            panic!("attempted to push an invalid pair for this source chain");
+        }
+
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
         self.pairs.insert(0, pair.clone());
-
-        // rollback if we can't validate this push
-        if !self.validate() {
-            self.pairs.remove(0);
-        }
-        self
     }
     // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {
         self.pairs.iter()
     }
     fn validate(&self) -> bool {
-        true
+        self.pairs.iter().fold(true, |acc, p| acc && p.validate())
+    }
+    fn get (&self, header_hash: u64) -> Option<super::Pair> {
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        self.pairs.clone().into_iter().filter(|p| p.header.hash() == header_hash).next()
     }
 }
 
@@ -85,6 +82,53 @@ mod tests {
         };
         let h = Header::new(previous, &e);
         Pair::new(&h, &e)
+    }
+
+    #[test]
+    fn validate() {
+        let mut chain = super::SourceChain::new();
+
+        assert!(chain.validate());
+    }
+
+    #[test]
+    fn get() {
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+        let p3 = test_pair(Some(&p2), "baz");
+
+        let mut chain = super::SourceChain::new();
+        chain.push(&p1);
+        chain.push(&p2);
+        chain.push(&p3);
+
+        assert_eq!(None, chain.get(0));
+        assert_eq!(Some(p1.clone()), chain.get(p1.header.hash()));
+        assert_eq!(Some(p2.clone()), chain.get(p2.header.hash()));
+        assert_eq!(Some(p3.clone()), chain.get(p3.header.hash()));
+    }
+
+    #[test]
+    fn valid_push() {
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+
+        let mut chain = super::SourceChain::new();
+        chain.push(&p1);
+        chain.push(&p2);
+    }
+
+    #[test]
+    #[should_panic(expected = "attempted to push an invalid pair for this source chain")]
+    fn invalid_push() {
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+
+        let mut chain = super::SourceChain::new();
+
+        // wrong order, must panic!
+        chain.push(&p2);
+        chain.push(&p1);
     }
 
     #[test]

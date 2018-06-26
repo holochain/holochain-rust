@@ -57,7 +57,7 @@ impl super::SourceChain for SourceChain {
 
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
-        self.pairs.insert(0, pair.clone());
+        self.pairs.insert(0, pair.clone())
     }
     // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {

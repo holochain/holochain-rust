@@ -103,6 +103,7 @@ mod tests {
         let p1 = test_pair(None, "foo");
         let p2 = test_pair(Some(&p1), "bar");
 
+        // for valid pairs its truetles all the way down...
         let mut chain = super::SourceChain::new();
         assert!(chain.validate());
         chain.push(&p1);

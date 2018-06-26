@@ -12,10 +12,17 @@ pub struct Pair {
 
 impl Pair {
     pub fn new(header: &Header, entry: &Entry) -> Pair {
-        Pair {
+        let p = Pair {
             header: header.clone(),
             entry: entry.clone(),
-        }
+        };
+
+        if !p.validate() {
+            // we panic as no code path should attempt to create invalid pairs
+            panic!("attempted to create an invalid pair");
+        };
+
+        p
     }
 
     pub fn header(&self) -> Header {
@@ -27,13 +34,13 @@ impl Pair {
     }
 
     pub fn validate(&self) -> bool {
-        self.header.validate() && self.entry.validate()
+        self.header.validate() && self.entry.validate() &&
+        self.header.entry() == self.entry.hash()
     }
 }
 
 pub trait SourceChain: IntoIterator {
-    // appends the given pair to the source chain, if doing so results in a new valid chain
-    // returns the potentially updated chain
+    // append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);
     fn iter(&self) -> std::slice::Iter<Pair>;
     fn validate(&self) -> bool;
@@ -57,5 +64,43 @@ mod tests {
         let p1 = Pair::new(&h1, &e1);
         assert_eq!(e1, p1.entry());
         assert_eq!(h1, p1.header());
+    }
+
+    #[test]
+    fn header() {
+        let e1 = Entry::new(&String::from("foo"));
+        let h1 = Header::new(None, &e1);
+        let p1 = Pair::new(&h1, &e1);
+
+        assert_eq!(h1, p1.header());
+    }
+
+    #[test]
+    fn entry() {
+        let e1 = Entry::new(&String::from("bar"));
+        let h1 = Header::new(None, &e1);
+        let p1 = Pair::new(&h1, &e1);
+
+        assert_eq!(e1, p1.entry());
+    }
+
+    #[test]
+    fn validate() {
+        let e1 = Entry::new(&String::from("bar"));
+        let h1 = Header::new(None, &e1);
+        let p1 = Pair::new(&h1, &e1);
+
+        assert!(p1.validate());
+    }
+
+    #[test]
+    #[should_panic(expected = "attempted to create an invalid pair")]
+    fn invalidate() {
+        let e1 = Entry::new(&String::from("foo"));
+        let e2 = Entry::new(&String::from("bar"));
+        let h1 = Header::new(None, &e1);
+
+        // header/entry mismatch, must panic!
+        Pair::new(&h1, &e2);
     }
 }

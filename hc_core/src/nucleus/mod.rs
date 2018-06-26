@@ -146,10 +146,8 @@ pub fn reduce(
                                     Some(function_call.clone().parameters.into_bytes()),
                                 ) {
                                     Ok(runtime) => {
-                                        result = FunctionResult::new(
-                                            function_call,
-                                            Ok(runtime.result.to_string()),
-                                        );
+                                        result =
+                                            FunctionResult::new(function_call, Ok(runtime.result));
                                     }
 
                                     Err(ref error) => {

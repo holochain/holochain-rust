@@ -91,7 +91,7 @@ pub fn call(
 
     let i32_result_length: i32 = main.invoke_export(
         function_name,
-        &[RuntimeValue::I32(1), RuntimeValue::I32(1)],
+        &[RuntimeValue::I32(0), RuntimeValue::I32(params.len() as i32)],
         &mut runtime,
     )?
         .unwrap()
@@ -108,18 +108,7 @@ pub fn call(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
     use wabt::Wat2Wasm;
-
-    fn _test_wasm_from_file() -> Vec<u8> {
-        use std::io::prelude::*;
-        let mut file = File::open(
-            "src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/wasm_ribosome_test.wasm",
-        ).unwrap();
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
-        return buf;
-    }
 
     fn test_wasm() -> Vec<u8> {
         let wasm_binary = Wat2Wasm::new()

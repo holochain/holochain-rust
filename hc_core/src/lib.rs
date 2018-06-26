@@ -22,8 +22,18 @@ pub mod test_utils {
     use hc_dna::Dna;
     use wabt::Wat2Wasm;
 
-    pub fn create_test_dna_with_wasm(wasm: Option<&str>) -> Dna {
-        let default_wasm = format!(
+    use std::fs::File;
+
+    pub fn test_wasm_from_file(fname: &str) -> Vec<u8> {
+        use std::io::prelude::*;
+        let mut file = File::open(fname).unwrap();
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+        return buf;
+    }
+
+    pub fn create_test_dna_with_wat(wat: Option<&str>) -> Dna {
+        let default_wat = format!(
             r#"
                 (module
                     (memory (;0;) 17)
@@ -38,26 +48,28 @@ pub mod test_utils {
             "#,
             nucleus::ribosome::RESULT_OFFSET
         );
-        let wasm_text = match wasm {
-            None => default_wasm.as_str(),
+        let wat_str = match wat {
+            None => default_wat.as_str(),
             Some(w) => w,
         };
-
         // Test WASM code that returns 1337 as integer
+
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
-            .convert(wasm_text)
+            .convert(wat_str)
             .unwrap();
 
+        create_test_dna_with_wasm(wasm_binary.as_ref().to_vec())
+    }
+
+    pub fn create_test_dna_with_wasm(wasm: Vec<u8>) -> Dna {
         // Prepare valid DNA struct with that WASM in a zome's capability:
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
         capability.name = "test_cap".to_string();
-        capability.code = DnaWasm {
-            code: wasm_binary.as_ref().to_vec(),
-        };
+        capability.code = DnaWasm { code: wasm };
         zome.name = "test_zome".to_string();
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
@@ -140,7 +152,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm(None);
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -157,7 +169,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wasm(None);
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -177,7 +189,7 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm(None);
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:

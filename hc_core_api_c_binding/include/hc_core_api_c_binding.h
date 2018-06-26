@@ -13,6 +13,9 @@ extern "C" {
 
 typedef void Holochain;
 extern Holochain *hc_new(Dna*);
+extern bool hc_start(Holochain*);
+extern bool hc_stop(Holochain*);
+extern char* hc_call(Holochain*, char* zome, char* capability, char* function, char* parameters);
 
 #ifdef __cplusplus
 }

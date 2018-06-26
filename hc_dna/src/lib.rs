@@ -164,6 +164,8 @@ impl Dna {
         serde_json::to_string_pretty(self)
     }
 
+
+    /// Return a Zome's WASM bytecode for a specified Capability
     pub fn get_wasm_for_capability(
         &self,
         zome_name: &str,
@@ -175,6 +177,20 @@ impl Dna {
             .iter()
             .find(|c| c.name == capability_name)?;
         Some(&capability.code)
+    }
+
+    /// Return a Zome's WASM bytecode for the validation of an entry
+    pub fn get_validation_bytecode_for_entry_type(&self,
+                                                  zome_name: &str,
+                                                  entry_type_name: &str)
+        -> Option<&wasm::DnaWasm>
+    {
+        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let entryType = zome
+          .entry_types
+          .iter()
+          .find(|et| et.name == entry_type_name)?;
+        Some(&entryType.validation)
     }
 }
 

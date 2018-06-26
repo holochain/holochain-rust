@@ -8,30 +8,78 @@ use self::wasmi::{
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
 };
 
+
+/// // Ribosome type abstracts the functions of code execution environments
+/// type Ribosome interface {
+///   Type() string
+///   ValidateAction(action Action, def *EntryDef, pkg *ValidationPackage, sources []string) (err error)
+///   ValidatePackagingRequest(action ValidatingAction, def *EntryDef) (req PackagingReq, err error)
+///   ChainGenesis() error
+///   BridgeGenesis(side int, dnaHash Hash, data string) error
+///   Receive(from string, msg string) (response string, err error)
+///   Call(fn *FunctionDef, params interface{}) (interface{}, error)
+///   Run(code string) (result interface{}, err error)
+///   RunAsyncSendResponse(response AppMsg, callback string, callbackID string) (result interface{}, err error)
+///   BundleCanceled(reason string) (response string, err error)
+/// }
+
+/// Object to hold VM data that we want out of the VM
 #[derive(Clone)]
 pub struct Runtime {
     print_output: Vec<u32>,
     pub result: String,
 }
 
+
+/// Runs the application genesis function.
+/// This function gets called after the genesis entries are added to the chain
+pub fn chain_genesis() -> Result<Runtime, InterpreterError> {
+    // FIXME
+}
+
+
+/// Builds the correct validation function based on the action an calls it
+pub fn validate_action(/*action : agent::Action, def : &Zome::EntryType, pkg *ValidationPackage, sources []string*/) -> Result<Runtime, InterpreterError> {
+    // FIXME
+}
+
+// List of all the API functions available in Nucleus
+//#[repr(usize)]
+enum HcApiFuncIndex {
+    PRINT = 0,
+    COMMIT,
+    // ADD new function index here
+}
+
+
+// WASM modules = made to be run browser along side Javascript modules
+// import and export in strings
+/// Executes an exposed function
 #[allow(dead_code)]
-pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError> {
+pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError>
+{
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
-    const PRINT_FUNC_INDEX: usize = 0;
+    //const PRINT_FUNC_INDEX: usize = 0;
+    // ADD new function index here
+    // ...
 
     impl Externals for Runtime {
         fn invoke_index(
             &mut self,
             index: usize,
             args: RuntimeArgs,
-        ) -> Result<Option<RuntimeValue>, Trap> {
+        )
+            -> Result<Option<RuntimeValue>, Trap>
+        {
             match index {
-                PRINT_FUNC_INDEX => {
+                HcApiFuncIndex::PRINT as usize => {
                     let arg: u32 = args.nth(0);
                     self.print_output.push(arg);
                     Ok(None)
                 }
+                // add callable function code
+                // ....
                 _ => panic!("unknown function index"),
             }
         }
@@ -44,12 +92,16 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
             &self,
             field_name: &str,
             _signature: &Signature,
-        ) -> Result<FuncRef, InterpreterError> {
-            let func_ref = match field_name {
+        ) -> Result<FuncRef, InterpreterError>
+        {
+            let func_ref = match field_name
+              {
                 "print" => FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], None),
-                    PRINT_FUNC_INDEX,
+                    HcApiFuncIndex::PRINT as usize,
                 ),
+                  // add callable function here
+                  // ....
                 _ => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
@@ -92,6 +144,9 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
     runtime.result = i32_result.to_string();
     Ok(runtime.clone())
 }
+
+
+//--------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

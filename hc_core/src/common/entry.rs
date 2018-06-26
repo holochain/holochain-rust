@@ -88,3 +88,31 @@ impl Header {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hash {}
+
+#[cfg(test)]
+mod tests {
+    use super::Entry;
+    use super::Header;
+
+    #[test]
+    fn new_entry() {
+        let c = String::from("foo");
+        let e = Entry::new(&c);
+
+        assert_eq!(e.content(), c);
+        assert_ne!(e.hash(), 0);
+        assert!(e.validate());
+    }
+
+    #[test]
+    fn new_header() {
+        let e = Entry::new(&String::from("foo"));
+        let h = Header::new(None, &e);
+
+        assert_eq!(h.entry(), e.hash());
+        assert_eq!(h.previous(), None);
+        assert_ne!(h.hash(), 0);
+        assert!(h.validate());
+    }
+
+}

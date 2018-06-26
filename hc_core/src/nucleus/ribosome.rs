@@ -121,7 +121,7 @@ mod tests {
                     (type (;1;) (func (param i32)))
                     (type (;2;) (func))
                     (import "env" "print" (func $print (type 1)))
-                    (func $test_print (type 0) (result i32)
+                    (func (export "test_print_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
                         i32.const 1337
                         call $print
                         i32.const 0)
@@ -130,7 +130,6 @@ mod tests {
                     (memory (;0;) 17)
                     (global (;0;) (mut i32) (i32.const 1049600))
                     (export "memory" (memory 0))
-                    (export "test_print" (func $test_print))
                     (export "rust_eh_personality" (func $rust_eh_personality)))
             "#,
             )

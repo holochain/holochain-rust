@@ -37,7 +37,7 @@ pub mod test_utils {
             r#"
                 (module
                     (memory (;0;) 17)
-                    (func (export "main") (result i32)
+                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
                         i32.const 4
                     )
                     (data (i32.const {})
@@ -156,7 +156,7 @@ mod tests {
         let mut instance = create_instance(dna);
 
         // Create zome function call:
-        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
         match result {
@@ -181,7 +181,7 @@ mod tests {
             // Result 1337 from WASM (as string)
             Ok(_) => assert!(false),
             Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx")
+                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
             }
             Err(_) => assert!(false),
         }

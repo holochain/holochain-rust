@@ -7,3 +7,4 @@ authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 hc_core = { path = "../hc_core" }
 hc_dna = { path = "../hc_dna" }
 hc_agent = { path = "../hc_agent" }
+#wabt = "0.2.0"

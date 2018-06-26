@@ -55,6 +55,7 @@ hc.stop().expect("couldn't stop the app");
 extern crate hc_agent;
 extern crate hc_core;
 extern crate hc_dna;
+//extern crate wabt;
 
 use hc_core::{
     context::Context, error::HolochainError, instance::Instance,
@@ -241,11 +242,11 @@ mod tests {
 (module
  (memory 1)
  (export "memory" (memory 0))
- (export "hello" (func $func0))
+ (export "hello_dispatch" (func $func0))
  (func $func0 (param $p0 i32) (param $p1 i32) (result i32)
        i32.const 16
        )
- (data (i32.const 256)
+ (data (i32.const 0)
        "{\"holo\":\"world\"}"
        )
  )
@@ -255,7 +256,7 @@ mod tests {
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "hello", "{}");
+        let result = hc.call("test_zome", "test_cap", "hello", "");
         match result {
             Err(HolochainError::InstanceNotActive) => assert!(true),
             Err(_) => assert!(false),
@@ -265,8 +266,8 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "hello", "{}");
-
+        let result = hc.call("test_zome", "test_cap", "hello", "");
+        println!("{:#?}", result);
         match result {
             Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),
@@ -288,12 +289,17 @@ mod tests {
             Err(_) => assert!(false),
         };
     }
+    //    use wabt::Wasm2Wat;
 
     #[test]
     fn can_call_test() {
         let wasm = test_wasm_from_file(
             "../demo/wasm/target/wasm32-unknown-unknown/debug/wasm_ribosome_call.wasm",
         );
+        /*        let wat = Wasm2Wat::new();
+        let buf = wat.convert(wasm.clone()).unwrap();
+        let x = String::from_utf8(buf.as_ref().to_vec()).unwrap();
+        println!("{}", x);*/
         let dna = create_test_dna_with_wasm(wasm);
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
@@ -308,7 +314,6 @@ mod tests {
             "test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
-        println!("{:#?}", result);
         match result {
             Ok(result) => assert_eq!(
                 result,

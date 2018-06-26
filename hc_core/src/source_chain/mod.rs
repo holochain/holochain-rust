@@ -27,9 +27,13 @@ impl Pair {
     }
 }
 
-pub trait SourceChain: IntoIterator {
-    fn push(&mut self, &Pair);
+pub trait SourceChain: IntoIterator + std::ops::Index<u64> {
+    // appends the given pair to the source chain, if doing so results in a new valid chain
+    // assumes the chain is currently valid
+    // returns the potentially updated chain
+    fn push(&mut self, &Pair) -> &Self;
     fn iter(&self) -> std::slice::Iter<Pair>;
+    fn validate(&self) -> bool;
 }
 
 #[cfg(test)]

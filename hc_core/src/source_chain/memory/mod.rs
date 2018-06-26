@@ -30,19 +30,40 @@ impl<'a> IntoIterator for &'a SourceChain {
     }
 }
 
+impl std::ops::Index<u64> for SourceChain {
+    type Output = super::Pair;
+
+    fn index(&self, header_hash: u64) -> &super::Pair {
+        self
+            .into_iter()
+            .filter(|p| p.header.hash() == header_hash)
+            .last()
+            .unwrap()
+    }
+}
+
 // basic SouceChain trait
 impl super::SourceChain for SourceChain {
     // appends the current pair to the top of the chain
     // @TODO - appending pairs should fail if hashes do not line up
     // @see https://github.com/holochain/holochain-rust/issues/31
-    fn push(&mut self, pair: &super::Pair) {
+    fn push(&mut self, pair: &super::Pair) -> &Self {
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
-        self.pairs.insert(0, pair.clone())
+        self.pairs.insert(0, pair.clone());
+
+        // rollback if we can't validate this push
+        if !self.validate() {
+            self.pairs.remove(0);
+        }
+        self
     }
     // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {
         self.pairs.iter()
+    }
+    fn validate(&self) -> bool {
+        true
     }
 }
 

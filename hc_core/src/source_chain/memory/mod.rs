@@ -41,9 +41,18 @@ impl super::SourceChain for SourceChain {
             None => None,
         };
 
+        // smoke test this pair in isolation, and check the hash reference against the top pair
         if !(pair.validate() && self.pairs.first() == previous_pair.as_ref()) {
             // we panic because no code path should attempt to append an invalid pair
             panic!("attempted to push an invalid pair for this source chain");
+        }
+
+        // dry run an insertion against a clone and validate the outcome
+        let mut validation_chain = self.clone();
+        validation_chain.pairs.insert(0, pair.clone());
+        if !validation_chain.validate() {
+            // we panic because no code path should ever invalidate the chain
+            panic!("adding this pair would invalidate the source chain");
         }
 
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)

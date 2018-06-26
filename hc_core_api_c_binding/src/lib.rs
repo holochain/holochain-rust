@@ -94,6 +94,9 @@ pub extern "C" fn hc_call(ptr: *mut Holochain, zome: CStrPtr, capability: CStrPt
                                 Ok(s) => s.into_raw(),
                                 Err(_) => std::ptr::null_mut(),
                             },
-        Err(_) => std::ptr::null_mut()
+        Err(holochain_error) => match CString::new(format!("Error calling zome function: {:?}", holochain_error)) {
+            Ok(s) => s.into_raw(),
+            Err(_) => std::ptr::null_mut()
+        }
     }
 }

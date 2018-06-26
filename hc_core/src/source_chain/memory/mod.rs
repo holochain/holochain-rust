@@ -36,13 +36,9 @@ impl super::SourceChain for SourceChain {
     // @TODO - appending pairs should fail if hashes do not line up
     // @see https://github.com/holochain/holochain-rust/issues/31
     fn push(&mut self, pair: &super::Pair) {
-        let previous_pair = match pair.header.previous() {
-            Some(h) => self.get(h),
-            None => None,
-        };
 
         // smoke test this pair in isolation, and check the hash reference against the top pair
-        if !(pair.validate() && self.pairs.first() == previous_pair.as_ref()) {
+        if !(pair.validate() && self.pairs.first() == pair.header.previous().and_then(|h| self.get(h)).as_ref()) {
             // we panic because no code path should attempt to append an invalid pair
             panic!("attempted to push an invalid pair for this source chain");
         }
@@ -58,6 +54,7 @@ impl super::SourceChain for SourceChain {
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
         self.pairs.insert(0, pair.clone())
+
     }
     // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {

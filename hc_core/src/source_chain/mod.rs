@@ -11,6 +11,7 @@ pub struct Pair {
 }
 
 impl Pair {
+
     pub fn new(header: &Header, entry: &Entry) -> Pair {
         let p = Pair {
             header: header.clone(),
@@ -37,15 +38,22 @@ impl Pair {
         self.header.validate() && self.entry.validate() &&
         self.header.entry() == self.entry.hash()
     }
+
 }
 
 pub trait SourceChain: IntoIterator {
+
     // append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);
+
     fn iter(&self) -> std::slice::Iter<Pair>;
+
     fn validate(&self) -> bool;
+    
     fn get(&self, k: u64) -> Option<Pair>;
+
     fn get_entry(&self, k:u64) -> Option<Pair>;
+
 }
 
 #[cfg(test)]

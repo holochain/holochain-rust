@@ -6,6 +6,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+use serde::Deserialize;
+
 extern "C" {
     fn print(i: i32);
 }
@@ -27,17 +29,21 @@ pub extern "C" fn _call(input_data: *mut u8, input_len: usize) -> i32 {
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-fn make_string(i: *mut c_char) -> String {
-    let s = unsafe { CStr::from_ptr(i) };
-    let mut x = 1;
-    s.to_string_lossy().into_owned()
+fn make_internal<T: Deserialize>(data: *mut c_char) -> T {
+    let c_str = unsafe { CStr::from_ptr(data) };
+    let actual_str = c_str.to_str().unwrap(); // Don't unwrap ever in real life
+    serde_json::from_str(actual_str).unwrap() // OMG you're still doing it! Have you learned nothing?!
+}
+
+fn make_external<T: Serialize>(data: *mut c_char, params_len: usize, internal: T) -> i32 {
+    unimplemented!()
 }
 
 #[no_mangle]
 pub extern "C" fn test_dispatch(data: *mut c_char, params_len: usize) -> i32 {
-    let param_as_string = make_string(data);
-
+    let input = make_internal(data);
     let output = test(input);
+    // make_external(data, params_len, output)
 }
 
 #[derive(Deserialize)]

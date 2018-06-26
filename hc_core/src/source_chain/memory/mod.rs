@@ -64,17 +64,17 @@ impl super::SourceChain for SourceChain {
         self.pairs.iter()
     }
     fn validate(&self) -> bool {
-        self.pairs.iter().fold(true, |acc, p| acc && p.validate())
+        self.pairs.iter().all(|p| p.validate())
     }
     fn get(&self, header_hash: u64) -> Option<super::Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().filter(|p| p.header.hash() == header_hash).next()
+        self.pairs.clone().into_iter().find(|p| p.header.hash() == header_hash)
     }
     fn get_entry(&self, entry_hash: u64) -> Option<super::Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().filter(|p| p.entry.hash() == entry_hash).next()
+        self.pairs.clone().into_iter().find(|p| p.entry.hash() == entry_hash)
     }
 }
 

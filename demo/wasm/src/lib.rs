@@ -1,5 +1,4 @@
 #![feature(wasm_import_memory, custom_attribute)]
-#![wasm_import_memory]
 
 extern crate serde;
 #[macro_use]
@@ -36,7 +35,16 @@ fn make_internal<'s, T: Deserialize<'s>>(data: *mut c_char) -> T {
 }
 
 fn make_external<T: Serialize>(data: *mut c_char, params_len: usize, internal: T) -> i32 {
-    unimplemented!()
+    let json = serde_json::to_string(&internal).unwrap(); //same!
+    let bytes = json.as_bytes();
+    let len = bytes.len();
+    for i in 0..len {
+        unsafe {
+            *data.offset(i as isize) = bytes[i] as i8;
+        }
+    }
+    len as i32
+    //unimplemented!()
 }
 
 #[no_mangle]
@@ -59,5 +67,8 @@ struct OutputStruct {
 }
 
 fn test(input: InputStruct) -> OutputStruct {
-    Default::default()
+    OutputStruct {
+        input_int_val_plus2: input.input_int_val + 2,
+        input_str_val_plus_dog: format!("{}.puppy", input.input_str_val),
+    }
 }

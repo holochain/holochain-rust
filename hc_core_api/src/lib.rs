@@ -308,7 +308,7 @@ mod tests {
             "test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
-
+        println!("{:#?}", result);
         match result {
             Ok(result) => assert_eq!(
                 result,

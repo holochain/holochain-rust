@@ -56,28 +56,25 @@ extern crate hc_agent;
 extern crate hc_core;
 extern crate hc_dna;
 
-use hc_core::context::Context;
+use hc_core::{
+    context::Context, error::HolochainError, instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
+};
 use hc_dna::Dna;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
-    instance: hc_core::instance::Instance,
+    instance: Instance,
     #[allow(dead_code)]
-    context: Arc<hc_core::context::Context>,
+    context: Arc<Context>,
     active: bool,
 }
-
-use hc_core::error::HolochainError;
-use hc_core::nucleus::Action::*;
-use hc_core::nucleus::{call_and_wait_for_result, FunctionCall};
-use hc_core::state::Action::*;
-use hc_core::state::State;
 
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut instance = hc_core::instance::Instance::new();
+        let mut instance = Instance::new();
         let name = dna.name.clone();
         let action = Nucleus(InitApplication(dna));
         instance.start_action_loop();
@@ -110,18 +107,18 @@ impl Holochain {
     }
 
     /// call a function in a zome
-    pub fn call(
+    pub fn call<T: Into<String>>(
         &mut self,
-        zome: &str,
-        cap: &str,
-        fn_name: &str,
-        params: &str,
+        zome: T,
+        cap: T,
+        fn_name: T,
+        params: T,
     ) -> Result<String, HolochainError> {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(zome, cap, fn_name, params);
+        let call = FunctionCall::new(zome.into(), cap.into(), fn_name.into(), params.into());
 
         call_and_wait_for_result(call, &mut self.instance)
     }

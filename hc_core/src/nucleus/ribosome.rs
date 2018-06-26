@@ -90,7 +90,7 @@ pub fn call(
     };
 
     let i32_result_length: i32 = main.invoke_export(
-        function_name,
+        format!("{}_dispatch", function_name).as_str(),
         &[RuntimeValue::I32(0), RuntimeValue::I32(params.len() as i32)],
         &mut runtime,
     )?

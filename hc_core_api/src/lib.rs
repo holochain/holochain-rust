@@ -302,10 +302,18 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "test", "{}");
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test",
+            r#"{"input_int_val":2,"input_str_val":"fish"}"#,
+        );
 
         match result {
-            Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
+            Ok(result) => assert_eq!(
+                result,
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
             Err(_) => assert!(false),
         };
     }

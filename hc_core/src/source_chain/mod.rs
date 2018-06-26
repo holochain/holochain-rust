@@ -38,6 +38,7 @@ pub trait SourceChain: IntoIterator {
     fn iter(&self) -> std::slice::Iter<Pair>;
     fn validate(&self) -> bool;
     fn get(&self, k: u64) -> Option<Pair>;
+    fn get_entry(&self, k:u64) -> Option<Pair>;
 }
 
 #[cfg(test)]

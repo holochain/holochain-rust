@@ -57,10 +57,15 @@ impl super::SourceChain for SourceChain {
     fn validate(&self) -> bool {
         self.pairs.iter().fold(true, |acc, p| acc && p.validate())
     }
-    fn get (&self, header_hash: u64) -> Option<super::Pair> {
+    fn get(&self, header_hash: u64) -> Option<super::Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs.clone().into_iter().filter(|p| p.header.hash() == header_hash).next()
+    }
+    fn get_entry(&self, entry_hash: u64) -> Option<super::Pair> {
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        self.pairs.clone().into_iter().filter(|p| p.entry.hash() == entry_hash).next()
     }
 }
 
@@ -86,8 +91,14 @@ mod tests {
 
     #[test]
     fn validate() {
-        let mut chain = super::SourceChain::new();
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
 
+        let mut chain = super::SourceChain::new();
+        assert!(chain.validate());
+        chain.push(&p1);
+        assert!(chain.validate());
+        chain.push(&p2);
         assert!(chain.validate());
     }
 
@@ -106,6 +117,23 @@ mod tests {
         assert_eq!(Some(p1.clone()), chain.get(p1.header.hash()));
         assert_eq!(Some(p2.clone()), chain.get(p2.header.hash()));
         assert_eq!(Some(p3.clone()), chain.get(p3.header.hash()));
+    }
+
+    #[test]
+    fn get_entry() {
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+        let p3 = test_pair(Some(&p2), "baz");
+
+        let mut chain = super::SourceChain::new();
+        chain.push(&p1);
+        chain.push(&p2);
+        chain.push(&p3);
+
+        assert_eq!(None, chain.get(0));
+        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry.hash()));
+        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry.hash()));
+        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry.hash()));
     }
 
     #[test]

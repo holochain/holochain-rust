@@ -3,9 +3,9 @@
 members = [
   "agent",
   "core_api",
+  "core_api_c_binding",
   "core",
   "dna",
   "dna_c_binding",
   "test_bin",
-  "hc_core_api_c_binding",
 ]

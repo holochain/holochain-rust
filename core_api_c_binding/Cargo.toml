@@ -1,10 +1,10 @@
 [package]
-name = "hc_core_api_c_binding"
+name = "holochain_core_api_c_binding"
 version = "0.1.0"
 authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
 
 [lib]
-name = "hc_core_api_c_binding"
+name = "holochain_core_api_c_binding"
 crate-type = ["staticlib"]
 
 

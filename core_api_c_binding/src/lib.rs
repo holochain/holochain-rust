@@ -24,7 +24,7 @@ impl Logger for NullLogger {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn hc_new(ptr: *mut Dna) -> *mut Holochain {
+pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     let agent = Agent::from_string("c_bob");
 
     let context = Arc::new(Context {
@@ -43,7 +43,7 @@ pub unsafe extern "C" fn hc_new(ptr: *mut Dna) -> *mut Holochain {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn hc_start(ptr: *mut Holochain) -> bool {
+pub unsafe extern "C" fn holochain_start(ptr: *mut Holochain) -> bool {
     let holochain = {
         if ptr.is_null() {
             return false;
@@ -55,7 +55,7 @@ pub unsafe extern "C" fn hc_start(ptr: *mut Holochain) -> bool {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn hc_stop(ptr: *mut Holochain) -> bool {
+pub unsafe extern "C" fn holochain_stop(ptr: *mut Holochain) -> bool {
     let holochain = {
         if ptr.is_null() {
             return false;
@@ -69,7 +69,7 @@ pub unsafe extern "C" fn hc_stop(ptr: *mut Holochain) -> bool {
 type CStrPtr = *mut c_char;
 
 #[no_mangle]
-pub unsafe extern "C" fn hc_call(
+pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
     capability: CStrPtr,

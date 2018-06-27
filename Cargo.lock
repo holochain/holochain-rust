@@ -65,16 +65,6 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "hc_core_api_c_binding"
-version = "0.1.0"
-dependencies = [
- "holochain_agent 0.1.0",
- "holochain_core 0.1.0",
- "holochain_core_api 0.1.0",
- "holochain_dna 0.1.0",
-]
-
-[[package]]
 name = "holochain_agent"
 version = "0.1.0"
 
@@ -96,6 +86,16 @@ version = "0.1.0"
 dependencies = [
  "holochain_agent 0.1.0",
  "holochain_core 0.1.0",
+ "holochain_dna 0.1.0",
+]
+
+[[package]]
+name = "holochain_core_api_c_binding"
+version = "0.1.0"
+dependencies = [
+ "holochain_agent 0.1.0",
+ "holochain_core 0.1.0",
+ "holochain_core_api 0.1.0",
  "holochain_dna 0.1.0",
 ]
 

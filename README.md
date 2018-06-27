@@ -40,6 +40,54 @@ To run all cargo tests from a cold start:
 cargo clean && cargo test --verbose --all
 ```
 
+### Building for Android
+Holochain can be build for Android as described [here](https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html).
+In order to get to libraries that can be linked against when building [HoloSqape](https://github.com/holochain/holosqape)
+for Android, you basically just need to setup up according targets for cargo.
+
+Given that the Android SDK is installed, you first need to create standalone NDKs like so:
+
+```bash
+export ANDROID_HOME=/Users/$USER/Library/Android/sdk
+export NDK_HOME=$ANDROID_HOME/ndk-bundle
+cd ~
+mkdir NDK
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch arm64 --install-dir NDK/arm64
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch arm --install-dir NDK/arm
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch x86 --install-dir NDK/x86
+```
+
+Then add the following lines to your ```~/.cargo/config```:
+
+```toml
+[target.aarch64-linux-android]
+ar = "~/NDK/arm64/bin/aarch64-linux-android-ar"
+linker = "~/greetings/NDK/arm64/bin/aarch64-linux-android-clang"
+
+[target.armv7-linux-androideabi]
+ar = "~/NDK/arm/bin/arm-linux-androideabi-ar"
+linker = "~/NDK/arm/bin/arm-linux-androideabi-clang"
+
+[target.i686-linux-android]
+ar = "~/NDK/x86/bin/i686-linux-android-ar"
+linker = "~/NDK/x86/bin/i686-linux-android-clang"
+
+```
+
+Now you can add those targets to your rust installation with:
+
+```
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
+```
+
+You should be able to build Holochain for Android with:
+
+```
+cd <holochain repo>
+cargo build --target armv7-linux-androideabi --release
+```
+for instance.
+
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).
 

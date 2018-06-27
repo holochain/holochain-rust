@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -f docker/Dockerfile.test -t holochain/test "$@" .
+docker build -f docker/Dockerfile.test -t holochain/test:latest "$@" .

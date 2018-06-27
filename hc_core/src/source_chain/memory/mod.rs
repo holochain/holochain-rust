@@ -35,8 +35,6 @@ impl<'a> IntoIterator for &'a SourceChain {
 impl super::SourceChain for SourceChain {
 
     // appends the current pair to the top of the chain
-    // @TODO - appending pairs should fail if hashes do not line up
-    // @see https://github.com/holochain/holochain-rust/issues/31
     fn push(&mut self, pair: &super::Pair) {
 
         let previous_hash_lookup = pair.header.previous().and_then(|h| self.get(h));

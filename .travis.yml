@@ -1,5 +1,7 @@
 language: rust
 sudo: required
+services:
+  - docker
 dist: trusty
 addons:
   apt:
@@ -11,7 +13,10 @@ cache: cargo
 rust:
   - nightly-2018-06-01
 env:
-  - CLIPPY_VERSION=0.0.206
+  global:
+    - CLIPPY_VERSION=0.0.206
+    - secure: gyhqwYLH9wLLOYuwU8t1c7N740lJ6GUQsCyjXxrhY2EpYL/H8CXtIAe08nB75ElpT/ZuYRvWC3MYNl9Go5Z9M6K+6S/TJt3LO76JSeVq0yBqMGEuslLCuhJdEETZd8Bh/YcLbXkIbidPtJgcXgPNupzmbCu98/DnrVC5dTPhdrDl9q1m7+qt1F/0yGgujoPrgfr5DIZ9eH02kgmDiqyMsm40dT6V7pTm22128uL6u4OiGhaDGPYv3Mr7iXblQeg7bqsyljH257Lr5tgupBnRTG0FxBUmIl8bqPmzWzBI15952+V9d7YwcDpMtnMJpFKjiXyvSFCHx1zRQxmQT0X1oA1Lw7/tEdpF3CXF2D8+ykaZA/QL+rwIHajsT6qSdkvglIOwYdsNGUTIwoJ0Z2U1PsJqsFBX0UEbLe5RxXoiqRNevjonoIaczbC5dkHkCg7Me5xM7n+Mpkkss2Zjw36FWgR6uzTH/TvD5tzuxjqBEcmpcoywanRAiXjiyKeMUARukdZQ80rvvwFCbJpIiUrRI4KADjJ3ppao7OQ9MDFLjnKbeV/SYp+L+PSgDFBF1vShHikVKQnwAIPeM3dsHdn9+OmZOOIGbkfSQXBW6G7cTzo0xRuZvdb3iLJ8rKrYwjHnS57itp6TMVl9IeqzwyxkN59j73aP+fbEMI3578a95zo=
+    - secure: X95kPmT7awsiYpZU8bFnD4p00EsO3XdHPsi9HDY9+w6niQjYoGwz/NiRtEL4+fqyo86wx8LN66dJ4PLjPsKVzCogZisybWnCPdccWW1dbIhmgwlUcMwMQsthjxZtpwCDFk84gsO6qbSd6RyRn5p3SnmF5CtyyRSfskN9EW92eFo23QAkUIPlQ+NFGOk6j6RO9aLBPS0muDPh57IoATQTQLE1wUCllESF2TQya/fb0nKfRVwPuw40HWaepWTD2l5bT6QMhTbpq+STyry3JzL2MtSJGRcgqhWaP8HGHeaMYt/gl+ZbItF/81vxgi1VP/sY5J+POL37xgJrDxOBRoHIkVIks31O0m19TVty8lD+5CBGRy4m09Eb1lTrfRiCZVd2NU4FaTBRjEYr9twwHB5/Wel246njUno3U7GG10MgU4eJmJrKXsYNac0R9eOC2MkPSdBHu/YI1Fsr7V/ugDvlUpIRsqTzv7QRuwNOuEkXTTnSqzo1zJhgIWW6Mmxhh8GqOSjmDeSFxjtSPcDlG4+5I8UuWVKsMyLburBERt1PpjymqQTr4pX10sK3KlUAzUKzpYYbw+HqQKGWtyAWfmvbY2Ugp6qLbeKHQCY0QjO3Ps8+RQQ/yDNjXtaCE5q9mVw8GlSoY0ybsExveAVIn2qo5TEKU9j4pHu8eGPkcG4JBK4=
 install:
   - rustup default nightly-2018-06-01
   - rustup update
@@ -24,3 +29,7 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then cd docker; docker build -f Dockerfile.ubuntu -t holochain/rust-ubuntu "$@" .; cd ..; fi
+  - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; docker push holochain/rust-ubuntu; fi
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then cd docker; docker build -f Dockerfile.ubuntu -t holochain/rust-ubuntu:develop "$@" .; cd ..; fi
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; docker push holochain/rust-ubuntu:develop; fi

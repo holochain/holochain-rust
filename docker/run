@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run --rm -p 3141:3141 -it holochain:latest bash
+docker run --rm -p 3141:3141 -it holochain/rust-ubuntu:latest bash

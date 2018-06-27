@@ -15,7 +15,7 @@ impl SourceChain {
 impl IntoIterator for SourceChain {
     type Item = super::Pair;
     type IntoIter = std::vec::IntoIter<super::Pair>;
-    
+
     fn into_iter(self) -> Self::IntoIter {
         self.pairs.into_iter()
     }
@@ -59,7 +59,6 @@ impl super::SourceChain for SourceChain {
 
     }
 
-    // returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<super::Pair> {
         self.pairs.iter()
     }

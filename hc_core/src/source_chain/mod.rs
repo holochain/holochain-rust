@@ -1,10 +1,12 @@
 pub mod memory;
-use std;
 
+use serde::Serialize;
+use serde::Deserialize;
+use std;
 use common::entry::Entry;
 use common::entry::Header;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
     header: Header,
     entry: Entry,
@@ -41,7 +43,7 @@ impl Pair {
 
 }
 
-pub trait SourceChain: IntoIterator {
+pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
 
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);

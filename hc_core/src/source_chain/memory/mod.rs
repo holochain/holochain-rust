@@ -1,6 +1,6 @@
 use std;
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct SourceChain {
     pairs: Vec<super::Pair>,
 }
@@ -32,7 +32,7 @@ impl<'a> IntoIterator for &'a SourceChain {
 }
 
 // basic SouceChain trait
-impl super::SourceChain for SourceChain {
+impl<'de> super::SourceChain<'de> for SourceChain {
 
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &super::Pair) {
@@ -83,6 +83,7 @@ impl super::SourceChain for SourceChain {
 
 #[cfg(test)]
 mod tests {
+    use serde_json;
     use common::entry::Entry;
     use common::entry::Header;
     use source_chain::Pair;
@@ -233,5 +234,24 @@ mod tests {
             assert_eq!(expected[i], p);
             i = i + 1;
         }
+    }
+
+    #[test]
+    fn json_round_trip() {
+        // setup
+        let p1 = test_pair(None, "foo");
+        let p2 = test_pair(Some(&p1), "bar");
+        let p3 = test_pair(Some(&p2), "baz");
+
+        let mut chain = super::SourceChain::new();
+        chain.push(&p1);
+        chain.push(&p2);
+        chain.push(&p3);
+
+        let json = serde_json::to_string(&chain).unwrap();
+        let expected_json = "{\"pairs\":[{\"header\":{\"previous\":14317484463802884792,\"entry\":16260972211344176173,\"hash\":4531740482513330668},\"entry\":{\"content\":\"baz\",\"hash\":16260972211344176173}},{\"header\":{\"previous\":2931328680099981702,\"entry\":3676438629107045207,\"hash\":14317484463802884792},\"entry\":{\"content\":\"bar\",\"hash\":3676438629107045207}},{\"header\":{\"previous\":null,\"entry\":4506850079084802999,\"hash\":2931328680099981702},\"entry\":{\"content\":\"foo\",\"hash\":4506850079084802999}}]}";
+
+        assert_eq!(expected_json, json);
+        assert_eq!(chain, serde_json::from_str(&json).unwrap());
     }
 }

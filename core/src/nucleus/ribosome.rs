@@ -1,6 +1,5 @@
 // In this example we execute a contract funciton exported as "_call"
 
-extern crate wabt;
 extern crate wasmi;
 
 use self::wasmi::{
@@ -95,6 +94,7 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
 
 #[cfg(test)]
 mod tests {
+    extern crate wabt;
     use super::*;
     use std::fs::File;
     use wabt::Wat2Wasm;

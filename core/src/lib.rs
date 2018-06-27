@@ -1,6 +1,6 @@
 #![deny(warnings)]
 extern crate holochain_dna;
-extern crate wabt;
+
 pub mod agent;
 pub mod common;
 pub mod context;
@@ -13,8 +13,9 @@ pub mod persister;
 pub mod source_chain;
 pub mod state;
 
-//#[cfg(test)]
+#[cfg(test)]
 pub mod test_utils {
+    extern crate wabt;
     use holochain_dna::wasm::DnaWasm;
     use holochain_dna::zome::capabilities::Capability;
     use holochain_dna::zome::Zome;

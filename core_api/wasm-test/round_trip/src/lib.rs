@@ -1,5 +1,3 @@
-//#![feature(wasm_import_memory, custom_attribute)]
-
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

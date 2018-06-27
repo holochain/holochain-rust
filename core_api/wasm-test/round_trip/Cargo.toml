@@ -1,7 +1,7 @@
 [package]
-name = "wasm-ribosome-call"
+name = "round-trip"
 version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
+authors = ["Eric Harris-Braun <eric@harris-braun.com>, Nicolas Luck <nicolas@lucksus.eu>"]
 
 [lib]
 crate-type = ["cdylib"]

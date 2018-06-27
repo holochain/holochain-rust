@@ -21,6 +21,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 .PHONY: main \
 	c_binding_tests ${C_BINDING_DIRS} \
 	test ${C_BINDING_TESTS} \
+        test_non_c \
 	clean ${C_BINDING_CLEAN}
 
 # apply formatting / style guidelines, and build the rust project
@@ -38,9 +39,13 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests, both rust and "C" bindings
-test: main c_binding_tests ${C_BINDING_TESTS}
+test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 	cargo tarpaulin --all --out Xml
+
+test_non_c: main
 	cd core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && cargo build --target wasm32-unknown-unknown
+	cargo test
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

@@ -55,11 +55,13 @@ hc.stop().expect("couldn't stop the app");
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
-//extern crate wabt;
 
 use holochain_core::{
-    context::Context, error::HolochainError, instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
+    context::Context,
+    error::HolochainError,
+    instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    state::{Action::*, State},
 };
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -291,17 +293,12 @@ mod tests {
             Err(_) => assert!(false),
         };
     }
-    //    use wabt::Wasm2Wat;
 
     #[test]
     fn can_call_test() {
         let wasm = test_wasm_from_file(
-            "../demo/wasm/target/wasm32-unknown-unknown/debug/wasm_ribosome_call.wasm",
+            "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
-        /*        let wat = Wasm2Wat::new();
-        let buf = wat.convert(wasm.clone()).unwrap();
-        let x = String::from_utf8(buf.as_ref().to_vec()).unwrap();
-        println!("{}", x);*/
         let dna = create_test_dna_with_wasm(wasm);
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());

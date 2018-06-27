@@ -15,8 +15,8 @@ rust:
 env:
   global:
     - CLIPPY_VERSION=0.0.206
-    - secure: R2/THCRt0p/5XR7vcYg77fNk2vLuBGcNIfu7/a47BxVREYUkAqHK2MpG6x9TbbUPnJksEpXeXHH3OVVyK7Q+QsNX6dcOfl15DBafJHlMbfMTJWGDm+pBhNLFSKtA3DRnyOTR/ZpN+xnN7A0TSl/WB+PNxX4TjZtFTAaVtZpVbK6Ins6pHylVh00biLVyZ/W2AowCqiM95Yt4SfnybHn8KApJ/orjbtlJL1+2qQa+rF5N625/pDDf4MF/CLbdODlKPJ1M704/Kq3mo4KgutL0xFPxI3hDPO6LwWdW/izmcfEP56J3UpuXbcnDwSgS6ieAH7gDjBZGC/BYp7IoZrvjLCUuL6QSefWm1G/NJZuL2J1PInHF8kKnvm6/bFkAcRNByVSsdrgqwjQUkHZ/1FP+OMEDFWZk1bRXt8nHsIa0VbmyM+7cn5sCgCIIEsBJbbyQA40eGk0BkCWBbqCrb1shSEYvYBM44CBZHuMIvpp0BfX9Fl5gM1XW0FfzUXw5lBmi6/JWy7DDAL0axkmFe3abq7vmWHUQybEW295UuUDvDO8ioTGYMWf5LLKs02nxIZIuccEdozlO1vohkucYpKamjZu/YcR0den7eHMxzU/dmTK8qZjKhQ6aOH/1xLpeCSE2fG5sHVT+0uQe/4p2Bq4QbF/ljk6kujUc4jlK6NIwg/g=
-    - secure: KU/2msclYm1J9KQidXgRl63uEYev7op/kr5w37KNJaCTqmYUHk/090+4SQmEFf0csHNCeyqmHD4tTHQ4oKsIsmfmuC4EQkEmBvwBbQVT9+lmWM1cuHRZRnSudDa4UT36OVLc+iyR2wkTYcaDan6ZaYmd9tDW8pfyOP7TxH3rf/9TqACnKKjMeHyINxgijTqiSGNnBQaNyTiBa/y/60Eg78eqq3zVPZKkae6dqAJtHqrFJTLbE4rlfHcrkmYsZhUIcyXAzw/+elz4gKC4llPXQ9mpxruBJxI+LVOoFmaqTdXpYa/Bsc9PteJOQQdecPWS0XkbV6T7Y44gAtlevsbyedSv0tmVniM4jXTnsMJ0f3gZzV5kXLM2A5rpw3gIkdqtg+a3GkVIy229Ljz1KH17o6nf1AAndqrh7wCOMXTHt1xxC+26vExnAIcyDQHpzx/Y4vmGUAhJJujIfh9Ld4YYdI2r9dP3i8N8qxFZyuQ9Lh3S1AMdIf5sBRTr6rPnZtU0UC5HYWxlGhfv7eWuMydUX2zLOmgHQXkY9/Jp+4YJ3H/Ge1qf8UtfhZBxMJM6sYdplNVpNE6NE1CemprPc7A2AotUdGlUFdGGuxLSat8tPlLe0wlf31EhdskSOf35fUJuVSJDxb4x4Flan0O42qKAgjRT+OVYB4R9/8MWQi/k8+Y=
+    - secure: gyhqwYLH9wLLOYuwU8t1c7N740lJ6GUQsCyjXxrhY2EpYL/H8CXtIAe08nB75ElpT/ZuYRvWC3MYNl9Go5Z9M6K+6S/TJt3LO76JSeVq0yBqMGEuslLCuhJdEETZd8Bh/YcLbXkIbidPtJgcXgPNupzmbCu98/DnrVC5dTPhdrDl9q1m7+qt1F/0yGgujoPrgfr5DIZ9eH02kgmDiqyMsm40dT6V7pTm22128uL6u4OiGhaDGPYv3Mr7iXblQeg7bqsyljH257Lr5tgupBnRTG0FxBUmIl8bqPmzWzBI15952+V9d7YwcDpMtnMJpFKjiXyvSFCHx1zRQxmQT0X1oA1Lw7/tEdpF3CXF2D8+ykaZA/QL+rwIHajsT6qSdkvglIOwYdsNGUTIwoJ0Z2U1PsJqsFBX0UEbLe5RxXoiqRNevjonoIaczbC5dkHkCg7Me5xM7n+Mpkkss2Zjw36FWgR6uzTH/TvD5tzuxjqBEcmpcoywanRAiXjiyKeMUARukdZQ80rvvwFCbJpIiUrRI4KADjJ3ppao7OQ9MDFLjnKbeV/SYp+L+PSgDFBF1vShHikVKQnwAIPeM3dsHdn9+OmZOOIGbkfSQXBW6G7cTzo0xRuZvdb3iLJ8rKrYwjHnS57itp6TMVl9IeqzwyxkN59j73aP+fbEMI3578a95zo=
+    - secure: X95kPmT7awsiYpZU8bFnD4p00EsO3XdHPsi9HDY9+w6niQjYoGwz/NiRtEL4+fqyo86wx8LN66dJ4PLjPsKVzCogZisybWnCPdccWW1dbIhmgwlUcMwMQsthjxZtpwCDFk84gsO6qbSd6RyRn5p3SnmF5CtyyRSfskN9EW92eFo23QAkUIPlQ+NFGOk6j6RO9aLBPS0muDPh57IoATQTQLE1wUCllESF2TQya/fb0nKfRVwPuw40HWaepWTD2l5bT6QMhTbpq+STyry3JzL2MtSJGRcgqhWaP8HGHeaMYt/gl+ZbItF/81vxgi1VP/sY5J+POL37xgJrDxOBRoHIkVIks31O0m19TVty8lD+5CBGRy4m09Eb1lTrfRiCZVd2NU4FaTBRjEYr9twwHB5/Wel246njUno3U7GG10MgU4eJmJrKXsYNac0R9eOC2MkPSdBHu/YI1Fsr7V/ugDvlUpIRsqTzv7QRuwNOuEkXTTnSqzo1zJhgIWW6Mmxhh8GqOSjmDeSFxjtSPcDlG4+5I8UuWVKsMyLburBERt1PpjymqQTr4pX10sK3KlUAzUKzpYYbw+HqQKGWtyAWfmvbY2Ugp6qLbeKHQCY0QjO3Ps8+RQQ/yDNjXtaCE5q9mVw8GlSoY0ybsExveAVIn2qo5TEKU9j4pHu8eGPkcG4JBK4=
 install:
   - rustup default nightly-2018-06-01
   - rustup update
@@ -29,6 +29,7 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - . docker/build-ubuntu
-  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker push holochain/rust-ubuntu
+  - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then cd docker; docker build -f Dockerfile.ubuntu -t holochain/rust-ubuntu "$@" .; cd ..; fi
+  - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; docker push holochain/rust-ubuntu; fi
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then cd docker; docker build -f Dockerfile.ubuntu -t holochain/rust-ubuntu:develop "$@" .; cd ..; fi
+  - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"; docker push holochain/rust-ubuntu:develop; fi

@@ -1,6 +1,7 @@
 // In this example we execute a contract funciton exported as "_call"
-
 extern crate wasmi;
+#[cfg(test)]
+extern crate wabt;
 
 use self::wasmi::{
     Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
@@ -94,7 +95,6 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
 
 #[cfg(test)]
 mod tests {
-    extern crate wabt;
     use super::*;
     use std::fs::File;
     use wabt::Wat2Wasm;

@@ -108,9 +108,7 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
             &mut self,
             index: usize,
             args: RuntimeArgs,
-        )
-            -> Result<Option<RuntimeValue>, Trap>
-        {
+        ) -> Result<Option<RuntimeValue>, Trap> {
             match index {
                 index if index == HcApiFuncIndex::PRINT as usize => {
                     let arg: u32 = args.nth(0);
@@ -143,8 +141,8 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
             &self,
             field_name: &str,
             _signature: &Signature,
-        ) -> Result<FuncRef, InterpreterError>
-        {
+        ) -> Result<FuncRef, InterpreterError> {
+
             let func_ref = match field_name {
                 "print" => FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], None),
@@ -201,8 +199,6 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
     Ok(runtime.clone())
 }
 
-
-//--------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

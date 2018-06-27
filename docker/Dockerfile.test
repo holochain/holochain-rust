@@ -1,0 +1,6 @@
+FROM holochain/rust-ubuntu:develop
+
+COPY . /holochain
+WORKDIR /holochain
+
+CMD make test

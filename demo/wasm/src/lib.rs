@@ -14,7 +14,7 @@ fn make_internal<'s, T: Deserialize<'s>>(data: *mut c_char) -> T {
     serde_json::from_str(actual_str).unwrap() // OMG you're still doing it! Have you learned nothing?!
 }
 
-fn make_external<T: Serialize>(data: *mut c_char, params_len: usize, internal: T) -> i32 {
+fn make_external<T: Serialize>(data: *mut c_char, internal: T) -> i32 {
     let json = serde_json::to_string(&internal).unwrap(); //same!
 
     let bytes = json.as_bytes();
@@ -23,17 +23,17 @@ fn make_external<T: Serialize>(data: *mut c_char, params_len: usize, internal: T
     let mem = unsafe { slice::from_raw_parts_mut(data, len) };
 
     for (i, byte) in bytes.iter().enumerate() {
-        mem[params_len + i] = *byte as i8;
+        mem[i] = *byte as i8;
     }
 
     len as i32
 }
 
 #[no_mangle]
-pub extern "C" fn test_dispatch(data: *mut c_char, params_len: usize) -> i32 {
+pub extern "C" fn test_dispatch(data: *mut c_char, _params_len: usize) -> i32 {
     let input = make_internal(data);
     let output = test(input);
-    make_external(data, params_len, output)
+    make_external(data, output)
 }
 
 #[derive(Deserialize, Default)]

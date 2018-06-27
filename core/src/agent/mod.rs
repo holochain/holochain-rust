@@ -27,6 +27,8 @@ pub enum Action {
     Commit(Entry),
 }
 
+
+/// Reduce Agent's state according to provided Action
 pub fn reduce(
     old_state: Arc<AgentState>,
     action: &state::Action,
@@ -36,7 +38,9 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {}
+                Action::Commit(ref _entry) => {
+                    // FIXME add entry to source chain
+                }
             }
             Arc::new(new_state)
         }

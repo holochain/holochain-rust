@@ -5,6 +5,9 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 use std::thread;
 use std::time::Duration;
 
+
+/// Object representing a Holochain app instance.
+/// Holds the Event loop and processes it with the redux state model.
 //#[derive(Clone)]
 pub struct Instance {
     state: Arc<RwLock<State>>,
@@ -14,6 +17,8 @@ pub struct Instance {
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
 
+
+/// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
     sensor: ClosureType,
     done: bool,
@@ -28,6 +33,8 @@ impl Observer {
 static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
+
+    /// Stack an Action in the Event Queue
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
         let wrapper = ActionWrapper::new(action);
         self.action_channel
@@ -36,6 +43,7 @@ impl Instance {
         wrapper
     }
 
+    /// Stack an Action in the Event Queue and block until is has been processed.
     pub fn dispatch_and_wait(&mut self, action: Action) {
         let wrapper = ActionWrapper::new(action);
         let wrapper_clone = wrapper.clone();
@@ -70,6 +78,7 @@ impl Instance {
             .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
     }
 
+    /// Stack an action in the Event Queue and create an Observer on it with the specified closure
     pub fn dispatch_with_observer<F>(&mut self, action: Action, closure: F)
     where
         F: 'static + FnMut(&State) -> bool + Send,
@@ -85,6 +94,7 @@ impl Instance {
         self.dispatch(action);
     }
 
+    /// Start the Event Loop on a seperate thread
     pub fn start_action_loop(&mut self) {
         let (tx_action, rx_action) = channel::<ActionWrapper>();
         let (tx_observer, rx_observer) = channel::<Observer>();
@@ -99,7 +109,7 @@ impl Instance {
             loop {
                 match rx_action.recv_timeout(Duration::from_millis(400)) {
                     Ok(action_wrapper) => {
-                        // Mutate state:
+                        // Mutate state
                         {
                             let mut state = state_mutex.write().unwrap();
                             *state = state.reduce(action_wrapper, &tx_action);

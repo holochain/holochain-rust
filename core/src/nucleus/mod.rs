@@ -69,10 +69,12 @@ impl FunctionCall {
     }
 }
 
+/// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 pub fn call_and_wait_for_result(
     call: FunctionCall,
-    instance: &mut super::instance::Instance,
-) -> Result<String, HolochainError> {
+    instance: &mut super::instance::Instance)
+  -> Result<String, HolochainError>
+{
     let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state:
@@ -109,17 +111,23 @@ pub enum Action {
     InitApplication(Dna),
     ExecuteZomeFunction(FunctionCall),
     ReturnZomeFunctionResult(FunctionResult),
+    ValidateEntry(agent::Entry),
 }
 
+
+/// Reduce state of Nucleus according to action.
 pub fn reduce(
     old_state: Arc<NucleusState>,
     action: &state::Action,
-    action_channel: &Sender<state::ActionWrapper>,
-) -> Arc<NucleusState> {
+    action_channel: &Sender<state::ActionWrapper>)
+-> Arc<NucleusState>
+{
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
             let mut new_state: NucleusState = (*old_state).clone();
             match *nucleus_action {
+
+                // Initialize Nucleus: Set DNA
                 Action::InitApplication(ref dna) => {
                     if !new_state.initialized {
                         new_state.dna = Some(dna.clone());
@@ -127,6 +135,8 @@ pub fn reduce(
                     }
                 }
 
+                // Execute an exposed Zome function in a seperate thread and send the result in
+                // a ReturnZomeFunctionResult Action on success or failure
                 Action::ExecuteZomeFunction(ref fc) => {
                     let function_call = fc.clone();
                     let mut zome_capability_found = false;
@@ -181,11 +191,33 @@ pub fn reduce(
                     }
                 }
 
+                // Store the Result in the ribosome_calls hashmap
                 Action::ReturnZomeFunctionResult(ref result) => {
                     new_state
                         .ribosome_calls
                         .insert(result.call.clone(), Some(result.result.clone()));
                 }
+
+              // Validate an Entry by calling its validation function
+              Action::ValidateEntry(ref entry) =>
+              {
+                  println!("NucleusState::Commit: Entry[{}] = {}", entry.hash, entry.content);
+                  let mut has_entry_type = false;
+
+                  // must have entry_type
+                  if let Some(ref dna) = new_state.dna
+                  {
+                      if let Some(ref wasm) = dna.get_validation_bytecode_for_entry_type(&entry.zome_name, &entry.type_name)
+                      {
+                          // FIXME DDD
+                          // Do samething as Action::ExecuteZomeFunction
+                          has_entry_type = true;
+                      }
+                  }
+
+
+              }
+
             }
             Arc::new(new_state)
         }

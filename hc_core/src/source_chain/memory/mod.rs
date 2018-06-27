@@ -39,8 +39,10 @@ impl super::SourceChain for SourceChain {
     // @see https://github.com/holochain/holochain-rust/issues/31
     fn push(&mut self, pair: &super::Pair) {
 
+        let previous_hash_lookup = pair.header.previous().and_then(|h| self.get(h));
+
         // smoke test this pair in isolation, and check the hash reference against the top pair
-        if !(pair.validate() && self.pairs.first() == pair.header.previous().and_then(|h| self.get(h)).as_ref()) {
+        if !(pair.validate() && self.pairs.first() == previous_hash_lookup.as_ref()) {
             // we panic because no code path should attempt to append an invalid pair
             panic!("attempted to push an invalid pair for this source chain");
         }

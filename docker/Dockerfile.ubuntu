@@ -24,5 +24,3 @@ WORKDIR /holochain
 
 # run a build here to cache dependencies in a docker layer
 RUN cargo build
-
-CMD make test

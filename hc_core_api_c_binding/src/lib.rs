@@ -1,17 +1,17 @@
 #![deny(warnings)]
-extern crate hc_agent;
-extern crate hc_core;
-extern crate hc_core_api;
-extern crate hc_dna;
+extern crate holochain_agent;
+extern crate holochain_core;
+extern crate holochain_core_api;
+extern crate holochain_dna;
 
-use hc_core::context::Context;
-use hc_core_api::Holochain;
-use hc_dna::Dna;
+use holochain_core::context::Context;
+use holochain_core_api::Holochain;
+use holochain_dna::Dna;
 use std::sync::Arc;
 
-use hc_agent::Agent;
-use hc_core::logger::Logger;
-use hc_core::persister::SimplePersister;
+use holochain_agent::Agent;
+use holochain_core::logger::Logger;
+use holochain_core::persister::SimplePersister;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::sync::Mutex;

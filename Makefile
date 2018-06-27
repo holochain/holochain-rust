@@ -40,7 +40,7 @@ ${C_BINDING_DIRS}:
 # execute all tests, both rust and "C" bindings
 test: main c_binding_tests ${C_BINDING_TESTS}
 	cargo tarpaulin --all --out Xml
-	cd hc_core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
+	cd core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

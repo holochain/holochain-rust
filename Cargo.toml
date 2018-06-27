@@ -1,10 +1,10 @@
 [workspace]
 
 members = [
-  "hc_agent",
-  "hc_core_api",
-  "hc_core",
-  "hc_dna",
-  "hc_dna_c_binding",
-  "hc_test_bin",
+  "agent",
+  "core_api",
+  "core",
+  "dna",
+  "dna_c_binding",
+  "test_bin",
 ]

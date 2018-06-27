@@ -5,7 +5,7 @@
 TEMPLATE = app
 TARGET = test_executable
 INCLUDEPATH += .
-LIBS += -L../../target/debug/ -lhc_dna_c_binding -ldl
+LIBS += -L../../target/debug/ -lholochain_dna_c_binding -ldl
 QT += testlib
 QT -= gui
 CONFIG += console

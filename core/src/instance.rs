@@ -20,8 +20,8 @@ type ClosureType = Box<FnMut(&State) -> bool + Send>;
 
 /// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
-    sensor: ClosureType,
-    done: bool,
+    pub sensor: ClosureType,
+    pub done: bool,
 }
 
 impl Observer {
@@ -30,7 +30,7 @@ impl Observer {
     }
 }
 
-static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
+pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
 
@@ -112,7 +112,7 @@ impl Instance {
                         // Mutate state
                         {
                             let mut state = state_mutex.write().unwrap();
-                            *state = state.reduce(action_wrapper, &tx_action);
+                            *state = state.reduce(action_wrapper, &tx_action, &tx_observer);
                         }
 
                         // Add new observers

@@ -3,66 +3,105 @@
 extern crate wabt;
 extern crate wasmi;
 
+// use std::mem::transmute;
+use std::sync::mpsc::{channel, Sender};
+// use ::agent::Action::Commit;
+use ::state::State;
+use ::state::Action;
+// use ::state::ActionWrapper;
+use ::instance::Observer;
+use ::instance::DISPATCH_WITHOUT_CHANNELS;
+
+use state;
+
 use self::wasmi::{
     Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
 };
 
 
-/// // Ribosome type abstracts the functions of code execution environments
-/// type Ribosome interface {
-///   Type() string
-///   ValidateAction(action Action, def *EntryDef, pkg *ValidationPackage, sources []string) (err error)
-///   ValidatePackagingRequest(action ValidatingAction, def *EntryDef) (req PackagingReq, err error)
-///   ChainGenesis() error
-///   BridgeGenesis(side int, dnaHash Hash, data string) error
-///   Receive(from string, msg string) (response string, err error)
-///   Call(fn *FunctionDef, params interface{}) (interface{}, error)
-///   Run(code string) (result interface{}, err error)
-///   RunAsyncSendResponse(response AppMsg, callback string, callbackID string) (result interface{}, err error)
-///   BundleCanceled(reason string) (response string, err error)
-/// }
-
 /// Object to hold VM data that we want out of the VM
 #[derive(Clone)]
 pub struct Runtime {
-    print_output: Vec<u32>,
-    pub result: String,
+    print_output:     Vec<u32>,
+    pub result:       String,
+    action_channel:   Sender<state::ActionWrapper>,
+    observer_channel: Sender<Observer>,
 }
 
 
-/// Runs the application genesis function.
-/// This function gets called after the genesis entries are added to the chain
-pub fn chain_genesis() -> Result<Runtime, InterpreterError> {
-    // FIXME
-}
-
-
-/// Builds the correct validation function based on the action an calls it
-pub fn validate_action(/*action : agent::Action, def : &Zome::EntryType, pkg *ValidationPackage, sources []string*/) -> Result<Runtime, InterpreterError> {
-    // FIXME
-}
-
-// List of all the API functions available in Nucleus
-//#[repr(usize)]
+/// List of all the API functions available in Nucleus
+#[repr(usize)]
 enum HcApiFuncIndex {
+    /// Print debug information in the console
+    /// print()
     PRINT = 0,
+    /// Commit an entry to source chain
+    /// commit(entry_type : String, entry_content : String)
     COMMIT,
-    // ADD new function index here
+    // Add new API function index here
+    // ...
 }
+
+
+
+/// Send Action to Instance's Event Queue and block until is has been processed.
+pub fn dispatch_action_and_wait(action_channel:   &Sender<state::ActionWrapper>,
+                            observer_channel: &Sender<Observer>,
+                            action:           Action)
+{
+    // Wrap Action
+    let wrapper = state::ActionWrapper::new(action);
+    let wrapper_clone = wrapper.clone();
+
+    // Create blocking channel
+    let (sender, receiver) = channel::<bool>();
+
+    // Create blocking observer
+    let closure = move |state: &State| {
+        if state.history.contains(&wrapper_clone) {
+            sender
+              .send(true)
+              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+            true
+        } else {
+            false
+        }
+    };
+    let observer = Observer {
+        sensor: Box::new(closure),
+        done: false,
+    };
+
+    // Send observer to instance
+    observer_channel
+        .send(observer)
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+    // Send action to instance
+    action_channel
+        .send(wrapper)
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+    // Block until Observer has sensed the completion of the Action
+    receiver
+      .recv()
+      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+}
+
 
 
 // WASM modules = made to be run browser along side Javascript modules
 // import and export in strings
 /// Executes an exposed function
 #[allow(dead_code)]
-pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterError>
+pub fn call(action_channel:   &Sender<state::ActionWrapper>,
+            observer_channel: &Sender<Observer>,
+            wasm:             Vec<u8>,
+            function_name:    &str)
+  -> Result<Runtime, InterpreterError>
 {
     let module = wasmi::Module::from_buffer(wasm).unwrap();
-
-    //const PRINT_FUNC_INDEX: usize = 0;
-    // ADD new function index here
-    // ...
 
     impl Externals for Runtime {
         fn invoke_index(
@@ -73,12 +112,24 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
             -> Result<Option<RuntimeValue>, Trap>
         {
             match index {
-                HcApiFuncIndex::PRINT as usize => {
+                index if index == HcApiFuncIndex::PRINT as usize => {
                     let arg: u32 = args.nth(0);
                     self.print_output.push(arg);
                     Ok(None)
                 }
-                // add callable function code
+                index if index == HcApiFuncIndex::COMMIT as usize => {
+                    // FIXME unpack args into Entry struct with serializer
+                    let entry = ::common::entry::Entry::new("FIXME - content string here");
+
+                    // Create commit Action
+                    let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+
+                    // Send Action and block for result
+                    dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_commit.clone());
+
+                    Ok(None) // FIXME - Change to Result<Runtime, InterpreterError>?
+                }
+                // Add API function code here
                 // ....
                 _ => panic!("unknown function index"),
             }
@@ -94,14 +145,17 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError>
         {
-            let func_ref = match field_name
-              {
+            let func_ref = match field_name {
                 "print" => FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], None),
                     HcApiFuncIndex::PRINT as usize,
                 ),
-                  // add callable function here
-                  // ....
+                "commit" => FuncInstance::alloc_host(
+                      Signature::new(&[ValueType::I32][..], None),
+                      HcApiFuncIndex::COMMIT as usize,
+                ),
+                // Add API function here
+                // ....
                 _ => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
@@ -135,6 +189,8 @@ pub fn call(wasm: Vec<u8>, function_name: &str) -> Result<Runtime, InterpreterEr
     let mut runtime = Runtime {
         print_output: vec![],
         result: String::new(),
+        action_channel : action_channel.clone(),
+        observer_channel : observer_channel.clone(),
     };
     let i32_result: i32 = main
         .invoke_export(function_name, &[], &mut runtime)?
@@ -195,7 +251,9 @@ mod tests {
 
     #[test]
     fn test_print() {
-        let runtime = call(test_wasm(), "test_print").expect("test_print should be callable");
+        let (action_channel, _ ) = channel::<::state::ActionWrapper>();
+        let (tx_observer, rx_observer) = channel::<Observer>();
+        let runtime = call(&action_channel, &tx_observer, test_wasm(), "test_print").expect("test_print should be callable");
         assert_eq!(runtime.print_output.len(), 1);
         assert_eq!(runtime.print_output[0], 1337)
     }

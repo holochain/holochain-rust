@@ -186,11 +186,11 @@ impl Dna {
         -> Option<&wasm::DnaWasm>
     {
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
-        let entryType = zome
+        let entry_type = zome
           .entry_types
           .iter()
           .find(|et| et.name == entry_type_name)?;
-        Some(&entryType.validation)
+        Some(&entry_type.validation)
     }
 }
 

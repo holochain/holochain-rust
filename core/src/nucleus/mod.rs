@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
+use instance::Observer;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
@@ -69,6 +70,27 @@ impl FunctionCall {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EntrySubmission {
+    pub zome_name: String,
+    pub type_name: String,
+    pub content:   String,
+}
+
+impl EntrySubmission {
+    pub fn new<S>(zome_name: S, type_name: S, content: S) -> Self
+        where
+          S: Into<String>,
+    {
+        EntrySubmission {
+            zome_name: zome_name.into(),
+            type_name: type_name.into(),
+            content: content.into(),
+        }
+    }
+}
+
+
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 pub fn call_and_wait_for_result(
     call: FunctionCall,
@@ -111,7 +133,7 @@ pub enum Action {
     InitApplication(Dna),
     ExecuteZomeFunction(FunctionCall),
     ReturnZomeFunctionResult(FunctionResult),
-    ValidateEntry(agent::Entry),
+    ValidateEntry(EntrySubmission),
 }
 
 
@@ -119,7 +141,8 @@ pub enum Action {
 pub fn reduce(
     old_state: Arc<NucleusState>,
     action: &state::Action,
-    action_channel: &Sender<state::ActionWrapper>)
+    action_channel: &Sender<state::ActionWrapper>,
+    observer_channel: &Sender<Observer>)
 -> Arc<NucleusState>
 {
     match *action {
@@ -147,10 +170,11 @@ pub fn reduce(
                             new_state.ribosome_calls.insert(fc.clone(), None);
 
                             let action_channel = action_channel.clone();
+                            let tx_observer = observer_channel.clone();
                             let code = wasm.code.clone();
                             thread::spawn(move || {
                                 let result: FunctionResult;
-                                match ribosome::call(code, &function_call.function.clone()) {
+                                match ribosome::call(&action_channel, &tx_observer, code, &function_call.function.clone()) {
                                     Ok(runtime) => {
                                         result = FunctionResult::new(
                                             function_call,
@@ -199,19 +223,19 @@ pub fn reduce(
                 }
 
               // Validate an Entry by calling its validation function
-              Action::ValidateEntry(ref entry) =>
+              Action::ValidateEntry(ref es) =>
               {
-                  println!("NucleusState::Commit: Entry[{}] = {}", entry.hash, entry.content);
-                  let mut has_entry_type = false;
+                  println!("NucleusState::Commit: Entry = {}", es.content);
+                  let mut _has_entry_type = false;
 
                   // must have entry_type
                   if let Some(ref dna) = new_state.dna
                   {
-                      if let Some(ref wasm) = dna.get_validation_bytecode_for_entry_type(&entry.zome_name, &entry.type_name)
+                      if let Some(ref _wasm) = dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
                       {
                           // FIXME DDD
-                          // Do samething as Action::ExecuteZomeFunction
-                          has_entry_type = true;
+                          // Do same thing as Action::ExecuteZomeFunction
+                          _has_entry_type = true;
                       }
                   }
 
@@ -245,11 +269,12 @@ mod tests {
         let action = Nucleus(InitApplication(dna));
         let state = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
-        let reduced_state = reduce(state.clone(), &action, &sender.clone());
+        let (tx_observer, rx_observer) = channel::<Observer>();
+        let reduced_state = reduce(state.clone(), &action, &sender.clone(), &tx_observer.clone());
         assert!(reduced_state.initialized, true);
 
         // on second reduction it still works.
-        let second_reduced_state = reduce(reduced_state.clone(), &action, &sender.clone());
+        let second_reduced_state = reduce(reduced_state.clone(), &action, &sender.clone(), &tx_observer.clone());
         assert_eq!(second_reduced_state, reduced_state);
     }
 
@@ -265,7 +290,8 @@ mod tests {
         let action = Nucleus(ExecuteZomeFunction(call));
         let state = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
-        let reduced_state = reduce(state.clone(), &action, &sender);
+        let (tx_observer, rx_observer) = channel::<Observer>();
+        let reduced_state = reduce(state.clone(), &action, &sender, &tx_observer);
         assert_eq!(state, reduced_state);
     }
 }

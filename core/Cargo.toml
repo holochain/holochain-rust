@@ -1,0 +1,12 @@
+[package]
+name = "holochain_core"
+version = "0.1.0"
+authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+
+[dependencies]
+holochain_dna = { path = "../dna" }
+holochain_agent = { path = "../agent" }
+chrono = "0.4"
+wasmi = { git = "https://github.com/paritytech/wasmi.git"}
+wabt = "0.2.0"
+snowflake = "1.2"

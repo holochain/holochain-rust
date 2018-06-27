@@ -1,5 +1,5 @@
 #include "test.h"
-#include "../../hc_dna_c_binding/include/hc_dna_c_binding.h"
+#include "../../dna_c_binding/include/dna_c_binding.h"
 
 #include <stdio.h>
 
@@ -8,42 +8,42 @@ void TestHcDna::serializeAndDeserialize() {
   Dna *dna2;
   char *buf;
 
-  dna = hc_dna_create();
-  buf = hc_dna_to_json(dna);
-  hc_dna_free(dna);
+  dna = holochain_dna_create();
+  buf = holochain_dna_to_json(dna);
+  holochain_dna_free(dna);
 
-  dna2 = hc_dna_create_from_json(buf);
-  hc_dna_string_free(buf);
+  dna2 = holochain_dna_create_from_json(buf);
+  holochain_dna_string_free(buf);
 
-  buf = hc_dna_get_dna_spec_version(dna2);
+  buf = holochain_dna_get_dna_spec_version(dna2);
 
   QCOMPARE(QString("2.0"), QString(buf));
 
-  hc_dna_string_free(buf);
-  hc_dna_free(dna2);
+  holochain_dna_string_free(buf);
+  holochain_dna_free(dna2);
 }
 
 void TestHcDna::canGetName() {
-  Dna *dna = hc_dna_create_from_json("{\"name\":\"test\"}");
-  char *buf = hc_dna_get_name(dna);
+  Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\"}");
+  char *buf = holochain_dna_get_name(dna);
 
   QCOMPARE(QString("test"), QString(buf));
 
-  hc_dna_string_free(buf);
-  hc_dna_free(dna);
+  holochain_dna_string_free(buf);
+  holochain_dna_free(dna);
 }
 
 void TestHcDna::canSetName() {
-  Dna *dna = hc_dna_create();
+  Dna *dna = holochain_dna_create();
 
-  hc_dna_set_name(dna, "test");
+  holochain_dna_set_name(dna, "test");
 
-  char *buf = hc_dna_get_name(dna);
+  char *buf = holochain_dna_get_name(dna);
 
   QCOMPARE(QString("test"), QString(buf));
 
-  hc_dna_string_free(buf);
-  hc_dna_free(dna);
+  holochain_dna_string_free(buf);
+  holochain_dna_free(dna);
 }
 
 QTEST_MAIN(TestHcDna)

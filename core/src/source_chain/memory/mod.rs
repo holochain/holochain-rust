@@ -37,10 +37,10 @@ impl<'de> super::SourceChain<'de> for SourceChain {
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &super::Pair) {
 
-        let previous_hash_lookup = pair.header.previous().and_then(|h| self.get(h));
+        let next_hash_lookup = pair.header.next().and_then(|h| self.get(h));
 
         // smoke test this pair in isolation, and check the hash reference against the top pair
-        if !(pair.validate() && self.pairs.first() == previous_hash_lookup.as_ref()) {
+        if !(pair.validate() && self.pairs.first() == next_hash_lookup.as_ref()) {
             // we panic because no code path should attempt to append an invalid pair
             panic!("attempted to push an invalid pair for this source chain");
         }
@@ -223,7 +223,7 @@ mod tests {
             vec![&p1],
             (&chain)
                 .into_iter()
-                .filter(|p| p.header.previous() == None)
+                .filter(|p| p.header.next() == None)
                 .collect::<Vec<&Pair>>()
         );
 

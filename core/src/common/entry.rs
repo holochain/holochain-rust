@@ -1,5 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash as _Hash, Hasher};
+use source_chain::SourceChain;
+use source_chain::Pair;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
@@ -41,22 +43,30 @@ impl Entry {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Header {
-    // these are hashes instead of references so that they can be serialized/validated as data in
-    // any/all implementations
-    previous: Option<u64>,
+    /// the type of this entry
+    /// system types may have associated "subconscious" behavior
+    entry_type: String,
+    /// optional link to the immediately preceding header in the chain
+    next: Option<u64>,
+    /// mandatory link to the entry for this header
     entry: u64,
+    /// optional link to the most recent header of the same type in the chain
+    next_of_type: Option<u64>,
     hash: u64,
 }
 
 impl _Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.previous.hash(state);
-        self.entry.hash(state);
+        self.header_link.hash(state);
+        self.entry_link.hash(state);
+        self.entry_type.hash(state);
+        self.type_link.hash(state);
     }
 }
 
 impl Header {
-    pub fn new(previous: Option<u64>, entry: &Entry) -> Header {
+    pub fn new(&chain: SourceChain<Pair>, entry: &Entry) -> Header {
+        let previous = chain.top();
         let mut h = Header {
             previous,
             entry: entry.hash(),
@@ -69,11 +79,11 @@ impl Header {
     }
 
     pub fn entry(&self) -> u64 {
-        self.entry
+        self.entry_link
     }
 
-    pub fn previous(&self) -> Option<u64> {
-        self.previous
+    pub fn next(&self) -> Option<u64> {
+        self.header_link
     }
 
     pub fn hash(&self) -> u64 {
@@ -110,7 +120,7 @@ mod tests {
         let h = Header::new(None, &e);
 
         assert_eq!(h.entry(), e.hash());
-        assert_eq!(h.previous(), None);
+        assert_eq!(h.next(), None);
         assert_ne!(h.hash(), 0);
         assert!(h.validate());
     }

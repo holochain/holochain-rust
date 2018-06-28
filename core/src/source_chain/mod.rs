@@ -73,7 +73,7 @@ mod tests {
         let e1 = Entry::new(&String::from("some content"));
         let h1 = Header::new(None, &e1);
         assert_eq!(h1.entry(), e1.hash());
-        assert_eq!(h1.previous(), None);
+        assert_eq!(h1.next(), None);
 
         let p1 = Pair::new(&h1, &e1);
         assert_eq!(e1, p1.entry());

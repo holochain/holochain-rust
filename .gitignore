@@ -3,9 +3,10 @@
 **/*.rs.bk
 /**/Cargo.lock
 !/Cargo.lock
-demo/wasm/target
-hc_core/src/nucleus/ribosome/target
-hc_core/src/nucleus/wasm-test/target
+core_api/wasm-test/round_trip/target
+core/src/nucleus/ribosome/target
+core/src/nucleus/wasm-test/target
+
 .idea
 /**/Makefile
 !/Makefile

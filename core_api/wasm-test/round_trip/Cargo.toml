@@ -1,0 +1,19 @@
+[package]
+name = "round-trip"
+version = "0.1.0"
+authors = ["Eric Harris-Braun <eric@harris-braun.com>, Nicolas Luck <nicolas@lucksus.eu>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[workspace]
+members = []
+
+[dependencies]
+serde="1"
+serde_derive="1"
+serde_json="1"

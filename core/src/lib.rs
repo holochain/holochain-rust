@@ -1,5 +1,10 @@
 #![deny(warnings)]
+
+#[macro_use]
+extern crate serde_derive;
 extern crate holochain_dna;
+extern crate serde;
+extern crate serde_json;
 #[cfg(test)]
 extern crate wabt;
 
@@ -17,38 +22,61 @@ pub mod state;
 
 #[cfg(test)]
 pub mod test_utils {
+    use super::*;
     use holochain_dna::wasm::DnaWasm;
     use holochain_dna::zome::capabilities::Capability;
     use holochain_dna::zome::Zome;
     use holochain_dna::Dna;
     use wabt::Wat2Wasm;
 
-    pub fn create_test_dna_with_wasm() -> Dna {
-        // Test WASM code that returns 1337 as integer
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
+    use std::fs::File;
+
+    pub fn test_wasm_from_file(fname: &str) -> Vec<u8> {
+        use std::io::prelude::*;
+        let mut file = File::open(fname).unwrap();
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+        buf
+    }
+
+    pub fn create_test_dna_with_wat(wat: Option<&str>) -> Dna {
+        let default_wat = format!(
+            r#"
                 (module
                     (memory (;0;) 17)
-                    (func (export "main") (result i32)
-                        i32.const 1337
+                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                        i32.const 4
+                    )
+                    (data (i32.const {})
+                        "1337"
                     )
                     (export "memory" (memory 0))
                 )
             "#,
-            )
+            nucleus::ribosome::RESULT_OFFSET
+        );
+        let wat_str = match wat {
+            None => default_wat.as_str(),
+            Some(w) => w,
+        };
+        // Test WASM code that returns 1337 as integer
+
+        let wasm_binary = Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(wat_str)
             .unwrap();
 
+        create_test_dna_with_wasm(wasm_binary.as_ref().to_vec())
+    }
+
+    pub fn create_test_dna_with_wasm(wasm: Vec<u8>) -> Dna {
         // Prepare valid DNA struct with that WASM in a zome's capability:
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
         capability.name = "test_cap".to_string();
-        capability.code = DnaWasm {
-            code: wasm_binary.as_ref().to_vec(),
-        };
+        capability.code = DnaWasm { code: wasm };
         zome.name = "test_zome".to_string();
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
@@ -131,23 +159,24 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
-        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
         match result {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
-            Err(_) => assert!(false),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+            //Err(_) => assert!(false),
         }
     }
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -159,7 +188,7 @@ mod tests {
             // Result 1337 from WASM (as string)
             Ok(_) => assert!(false),
             Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx")
+                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
             }
             Err(_) => assert!(false),
         }
@@ -167,7 +196,7 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat(None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:

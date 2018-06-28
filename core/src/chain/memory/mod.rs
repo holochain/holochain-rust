@@ -44,12 +44,15 @@ impl<'de> SourceChain<'de> for MemChain {
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &Pair) {
 
-        let next_hash_lookup = pair.header().next().and_then(|h| self.get(h));
-
-        // smoke test this pair in isolation, and check the hash reference against the top pair
-        if !(pair.validate() && self.pairs.first() == next_hash_lookup.as_ref()) {
-            // we panic because no code path should attempt to append an invalid pair
+        if !(pair.validate()) {
             panic!("attempted to push an invalid pair for this source chain");
+        }
+
+        let top_pair = self.top();
+        let next_pair = pair.header().next().and_then(|h| self.get(h));
+        if !(top_pair == next_pair) {
+            // we panic because no code path should attempt to append an invalid pair
+            panic!("top pair did not match next hash pair from pushed pair: {:?} vs. {:?}", top_pair, next_pair);
         }
 
         // dry run an insertion against a clone and validate the outcome
@@ -110,7 +113,7 @@ mod tests {
     // @see https://github.com/holochain/holochain-rust/issues/34
     fn test_pair<'de, C: SourceChain<'de>>(chain: &C, s: &str) -> Pair {
         let e = Entry::new(&s.to_string());
-        let h = Header::new(&chain, "testType".to_string(), &e);
+        let h = Header::new(chain, "testType".to_string(), &e);
         Pair::new(&h, &e)
     }
 

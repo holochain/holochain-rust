@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn new_pair() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e1 = Entry::new(&String::from("some content"));
         let h1 = Header::new(&chain, "someType".to_string(), &e1);
 
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn entry() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e1 = Entry::new(&String::from("bar"));
         let h1 = Header::new(&chain, "someType".to_string(), &e1);
         let p1 = Pair::new(&h1, &e1);
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn validate() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e1 = Entry::new(&String::from("bar"));
         let h1 = Header::new(&chain, "someType".to_string(), &e1);
         let p1 = Pair::new(&h1, &e1);
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "attempted to create an invalid pair")]
     fn invalidate() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e1 = Entry::new(&String::from("foo"));
         let e2 = Entry::new(&String::from("bar"));
         let h1 = Header::new(&chain, "someType".to_string(), &e1);

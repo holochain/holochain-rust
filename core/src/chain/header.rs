@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn header() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e1 = Entry::new(&String::from("foo"));
         let h1 = Header::new(&chain, "type".to_string(), &e1);
         let p1 = Pair::new(&h1, &e1);
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn new_header() {
-        let mut chain = MemChain::new();
+        let chain = MemChain::new();
         let e = Entry::new(&String::from("foo"));
         let h = Header::new(&chain, "type".to_string(), &e);
 

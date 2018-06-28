@@ -43,11 +43,14 @@ mod tests {
     use super::Pair;
     use chain::entry::Entry;
     use chain::header::Header;
+    use chain::memory::MemChain;
 
     #[test]
     fn new_pair() {
+        let mut chain = MemChain::new();
         let e1 = Entry::new(&String::from("some content"));
-        let h1 = Header::new(None, &e1);
+        let h1 = Header::new(&chain, "someType".to_string(), &e1);
+
         assert_eq!(h1.entry(), e1.hash());
         assert_eq!(h1.next(), None);
 
@@ -58,10 +61,33 @@ mod tests {
 
     #[test]
     fn entry() {
+        let mut chain = MemChain::new();
         let e1 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(None, &e1);
+        let h1 = Header::new(&chain, "someType".to_string(), &e1);
         let p1 = Pair::new(&h1, &e1);
 
         assert_eq!(e1, p1.entry());
+    }
+
+    #[test]
+    fn validate() {
+        let mut chain = MemChain::new();
+        let e1 = Entry::new(&String::from("bar"));
+        let h1 = Header::new(&chain, "someType".to_string(), &e1);
+        let p1 = Pair::new(&h1, &e1);
+
+        assert!(p1.validate());
+    }
+
+    #[test]
+    #[should_panic(expected = "attempted to create an invalid pair")]
+    fn invalidate() {
+        let mut chain = MemChain::new();
+        let e1 = Entry::new(&String::from("foo"));
+        let e2 = Entry::new(&String::from("bar"));
+        let h1 = Header::new(&chain, "someType".to_string(), &e1);
+
+        // header/entry mismatch, must panic!
+        Pair::new(&h1, &e2);
     }
 }

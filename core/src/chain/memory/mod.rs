@@ -6,11 +6,15 @@ use chain::chain::SourceChain;
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct MemChain {
     pairs: Vec<Pair>,
+    top: Option<Pair>,
 }
 
 impl MemChain {
     pub fn new() -> MemChain {
-        MemChain { pairs: Vec::new() }
+        MemChain {
+            pairs: Vec::new(),
+            top: None,
+        }
     }
 }
 
@@ -35,12 +39,12 @@ impl<'a> IntoIterator for &'a MemChain {
 }
 
 // basic SouceChain trait
-impl<'de, 'a> SourceChain<'de, 'a> for MemChain {
+impl<'de> SourceChain<'de> for MemChain {
 
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &Pair) {
 
-        let next_hash_lookup = pair.header.next().and_then(|h| self.get(h));
+        let next_hash_lookup = pair.header().next().and_then(|h| self.get(h));
 
         // smoke test this pair in isolation, and check the hash reference against the top pair
         if !(pair.validate() && self.pairs.first() == next_hash_lookup.as_ref()) {
@@ -50,6 +54,7 @@ impl<'de, 'a> SourceChain<'de, 'a> for MemChain {
 
         // dry run an insertion against a clone and validate the outcome
         let mut validation_chain = self.clone();
+        validation_chain.top = Some(pair.clone());
         validation_chain.pairs.insert(0, pair.clone());
         if !validation_chain.validate() {
             // we panic because no code path should ever invalidate the chain
@@ -58,8 +63,8 @@ impl<'de, 'a> SourceChain<'de, 'a> for MemChain {
 
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
-        self.pairs.insert(0, pair.clone())
-
+        self.top = Some(pair.clone());
+        self.pairs.insert(0, pair.clone());
     }
 
     fn iter(&self) -> std::slice::Iter<Pair> {
@@ -73,13 +78,21 @@ impl<'de, 'a> SourceChain<'de, 'a> for MemChain {
     fn get(&self, header_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.header.hash() == header_hash)
+        self.pairs.clone().into_iter().find(|p| p.header().hash() == header_hash)
     }
 
     fn get_entry(&self, entry_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.entry.hash() == entry_hash)
+        self.pairs.clone().into_iter().find(|p| p.entry().hash() == entry_hash)
+    }
+
+    fn top(&self) -> Option<Pair> {
+        self.top.clone()
+    }
+
+    fn top_type(&self, t: &str) -> Option<Pair> {
+        self.pairs.clone().into_iter().find(|p| p.header().entry_type() == t)
     }
 
 }
@@ -95,23 +108,20 @@ mod tests {
     // helper to spin up pairs for testing
     // @TODO - do we want to expose something like this as a general utility?
     // @see https://github.com/holochain/holochain-rust/issues/34
-    fn test_pair(previous_pair: Option<&Pair>, s: &str) -> Pair {
+    fn test_pair<'de, C: SourceChain<'de>>(chain: &C, s: &str) -> Pair {
         let e = Entry::new(&s.to_string());
-        let previous = match previous_pair {
-            Some(p) => Some(p.header.hash()),
-            None => None,
-        };
-        let h = Header::new(previous, &e);
+        let h = Header::new(&chain, "testType".to_string(), &e);
         Pair::new(&h, &e)
     }
 
     #[test]
     fn validate() {
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
+        let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
 
         // for valid pairs its truetles all the way down...
-        let mut chain = super::MemChain::new();
         assert!(chain.validate());
         chain.push(&p1);
         assert!(chain.validate());
@@ -121,44 +131,47 @@ mod tests {
 
     #[test]
     fn get() {
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-        let p3 = test_pair(Some(&p2), "baz");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+        let p3 = test_pair(&chain, "baz");
+
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
 
         assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get(p1.header.hash()));
-        assert_eq!(Some(p2.clone()), chain.get(p2.header.hash()));
-        assert_eq!(Some(p3.clone()), chain.get(p3.header.hash()));
+        assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
+        assert_eq!(Some(p2.clone()), chain.get(p2.header().hash()));
+        assert_eq!(Some(p3.clone()), chain.get(p3.header().hash()));
     }
 
     #[test]
     fn get_entry() {
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-        let p3 = test_pair(Some(&p2), "baz");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+        let p3 = test_pair(&chain, "baz");
+
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
 
         assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry.hash()));
-        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry.hash()));
-        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry.hash()));
+        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
+        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry().hash()));
+        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry().hash()));
     }
 
     #[test]
     fn valid_push() {
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+
         chain.push(&p1);
         chain.push(&p2);
     }
@@ -166,10 +179,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "attempted to push an invalid pair for this source chain")]
     fn invalid_push() {
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
 
         // wrong order, must panic!
         chain.push(&p2);
@@ -178,12 +191,12 @@ mod tests {
 
     #[test]
     fn iter() {
-        // setup
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-        let p3 = test_pair(Some(&p2), "foo");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+        let p3 = test_pair(&chain, "foo");
+
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -196,19 +209,19 @@ mod tests {
             vec![&p3, &p1],
             chain
                 .iter()
-                .filter(|p| p.entry.content() == "foo")
+                .filter(|p| p.entry().content() == "foo")
                 .collect::<Vec<&Pair>>()
         );
     }
 
     #[test]
     fn into_iter() {
-        // setup
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-        let p3 = test_pair(Some(&p2), "baz");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+        let p3 = test_pair(&chain, "baz");
+
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -226,7 +239,7 @@ mod tests {
             vec![&p1],
             (&chain)
                 .into_iter()
-                .filter(|p| p.header.next() == None)
+                .filter(|p| p.header().next() == None)
                 .collect::<Vec<&Pair>>()
         );
 
@@ -241,12 +254,12 @@ mod tests {
 
     #[test]
     fn json_round_trip() {
-        // setup
-        let p1 = test_pair(None, "foo");
-        let p2 = test_pair(Some(&p1), "bar");
-        let p3 = test_pair(Some(&p2), "baz");
-
         let mut chain = super::MemChain::new();
+
+        let p1 = test_pair(&chain, "foo");
+        let p2 = test_pair(&chain, "bar");
+        let p3 = test_pair(&chain, "baz");
+
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -257,4 +270,5 @@ mod tests {
         assert_eq!(expected_json, json);
         assert_eq!(chain, serde_json::from_str(&json).unwrap());
     }
+
 }

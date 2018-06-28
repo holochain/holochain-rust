@@ -3,7 +3,7 @@ use chain::pair::Pair;
 use serde::Serialize;
 use serde::Deserialize;
 
-pub trait SourceChain<'de, 'a>: IntoIterator<Item=Pair, IntoIter=std::slice::Iter<'a, Pair>> + Serialize + Deserialize<'de> {
+pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
 
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);
@@ -18,33 +18,12 @@ pub trait SourceChain<'de, 'a>: IntoIterator<Item=Pair, IntoIter=std::slice::Ite
     fn get(&self, k: u64) -> Option<Pair>;
 
     /// returns a pair for a given entry hash
-    fn get_entry(&self, k:u64) -> Option<Pair>;
+    fn get_entry(&self, k: u64) -> Option<Pair>;
 
-}
+    /// returns the top (most recent) pair from the source chain
+    fn top(&self) -> Option<Pair>;
 
-#[cfg(test)]
-mod tests {
-    use super::Pair;
-    use chain::entry::Entry;
-    use chain::header::Header;
+    /// returns the top (most recent) pair of a given type from the source chain
+    fn top_type(&self, t: &str) -> Option<Pair>;
 
-    #[test]
-    fn validate() {
-        let e1 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(None, &e1);
-        let p1 = Pair::new(&h1, &e1);
-
-        assert!(p1.validate());
-    }
-
-    #[test]
-    #[should_panic(expected = "attempted to create an invalid pair")]
-    fn invalidate() {
-        let e1 = Entry::new(&String::from("foo"));
-        let e2 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(None, &e1);
-
-        // header/entry mismatch, must panic!
-        Pair::new(&h1, &e2);
-    }
 }

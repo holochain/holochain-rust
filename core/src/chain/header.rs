@@ -4,53 +4,71 @@ use std::hash::{Hash as _Hash, Hasher};
 use chain::entry::Entry;
 use chain::chain::SourceChain;
 
+/// Properties defined in HeadersEntrySchema from golang alpha 1
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
-    entry_type: String,
+    Type: String,
+    /// ISO8601 time stamp
+    Time: String,
     /// optional link to the immediately preceding header in the chain
-    next: Option<u64>,
+    HeaderLink: Option<u64>,
     /// mandatory link to the entry for this header
-    entry: u64,
+    EntryLink: u64,
     /// optional link to the most recent header of the same type in the chain
-    next_of_type: Option<u64>,
-    hash: u64,
+    TypeLink: Option<u64>,
+    Signature: String,
 }
 
 impl _Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.header_link.hash(state);
-        self.entry_link.hash(state);
-        self.entry_type.hash(state);
-        self.type_link.hash(state);
+        self.Type.hash(state);
+        self.Time.hash(state);
+        self.HeaderLink.hash(state);
+        self.EntryLink.hash(state);
+        self.TypeLink.hash(state);
+        self.Signature.hash(state);
     }
 }
 
 impl Header {
-    pub fn new(&chain: SourceChain, entry: &Entry) -> Header {
-        let previous = chain.top();
-        let mut h = Header {
-            previous,
-            entry: entry.hash(),
-            hash: 0,
-        };
-        let mut hasher = DefaultHasher::new();
-        _Hash::hash(&h, &mut hasher);
-        h.hash = hasher.finish();
-        h
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: String, entry: &Entry) -> Header {
+        Header {
+            Type: entry_type.clone(),
+            // @TODO implement timestamps
+            // https://github.com/holochain/holochain-rust/issues/70
+            Time: String::new(),
+            HeaderLink: chain.top().and_then(|p| Some(p.header().hash())),
+            EntryLink: entry.hash(),
+            TypeLink: chain.top_type(&entry_type).and_then(|p| Some(p.header().hash())),
+            // @TODO implement signatures
+            // https://github.com/holochain/holochain-rust/issues/71
+            Signature: String::new(),
+        }
     }
 
-    pub fn entry(&self) -> u64 {
-        self.entry_link
+    pub fn entry_type(&self) -> String {
+        self.Type.clone()
     }
 
     pub fn next(&self) -> Option<u64> {
-        self.header_link
+        self.HeaderLink
+    }
+
+    pub fn entry(&self) -> u64 {
+        self.EntryLink
+    }
+
+    pub fn type_next(&self) -> Option<u64> {
+        self.TypeLink
     }
 
     pub fn hash(&self) -> u64 {
-        self.hash
+        let mut hasher = DefaultHasher::new();
+        _Hash::hash(&self, &mut hasher);
+        hasher.finish()
     }
 
     pub fn validate(&self) -> bool {
@@ -64,11 +82,13 @@ mod tests {
     use chain::pair::Pair;
     use chain::entry::Entry;
     use chain::header::Header;
+    use chain::memory::MemChain;
 
     #[test]
     fn header() {
+        let mut chain = MemChain::new();
         let e1 = Entry::new(&String::from("foo"));
-        let h1 = Header::new(None, &e1);
+        let h1 = Header::new(&chain, "type".to_string(), &e1);
         let p1 = Pair::new(&h1, &e1);
 
         assert_eq!(h1, p1.header());
@@ -76,8 +96,9 @@ mod tests {
 
     #[test]
     fn new_header() {
+        let mut chain = MemChain::new();
         let e = Entry::new(&String::from("foo"));
-        let h = Header::new(None, &e);
+        let h = Header::new(&chain, "type".to_string(), &e);
 
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);

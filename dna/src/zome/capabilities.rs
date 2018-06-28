@@ -7,51 +7,51 @@ extern crate serde_json;
 use wasm::DnaWasm;
 
 //--------------------------------------------------------------------------------------------------
-// Registered Capabilities and functions
+// Reserved Capabilities and functions names
 //--------------------------------------------------------------------------------------------------
 
-pub enum RegisteredCapabilityNames {
+pub enum ReservedCapabilityNames {
     LifeCycle,
     Communication,
 }
 
-impl RegisteredCapabilityNames {
-    pub fn from_str(s: &str) -> Option<RegisteredCapabilityNames> {
+impl ReservedCapabilityNames {
+    pub fn from_str(s: &str) -> Option<ReservedCapabilityNames> {
         match s {
-            "hc_lifecycle" => Some(RegisteredCapabilityNames::LifeCycle),
-            "hc_web_gateway" => Some(RegisteredCapabilityNames::Communication),
+            "hc_lifecycle" => Some(ReservedCapabilityNames::LifeCycle),
+            "hc_web_gateway" => Some(ReservedCapabilityNames::Communication),
             _ => None,
         }
     }
 
     pub fn as_str(&self) -> &'static str {
         match self {
-            &RegisteredCapabilityNames::LifeCycle => "hc_lifecycle",
-            &RegisteredCapabilityNames::Communication => "hc_web_gateway",
+            &ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
+            &ReservedCapabilityNames::Communication => "hc_web_gateway",
         }
     }
 }
 
 
-pub enum RegisteredFunctionNames {
+pub enum ReservedFunctionNames {
     Genesis,
     Receive,
 }
 
 
-impl RegisteredFunctionNames {
-    pub fn from_str(s: &str) -> Option<RegisteredFunctionNames> {
+impl ReservedFunctionNames {
+    pub fn from_str(s: &str) -> Option<ReservedFunctionNames> {
         match s {
-            "genesis" => Some(RegisteredFunctionNames::Genesis),
-            "receive" => Some(RegisteredFunctionNames::Receive),
+            "genesis" => Some(ReservedFunctionNames::Genesis),
+            "receive" => Some(ReservedFunctionNames::Receive),
             _ => None,
         }
     }
 
     pub fn as_str(&self) -> &'static str {
         match self {
-            &RegisteredFunctionNames::Genesis => "genesis",
-            &RegisteredFunctionNames::Receive => "receive",
+            &ReservedFunctionNames::Genesis => "genesis",
+            &ReservedFunctionNames::Receive => "receive",
         }
     }
 }

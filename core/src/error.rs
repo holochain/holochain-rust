@@ -10,6 +10,10 @@ pub enum HolochainError {
     InstanceActive,
     NotImplemented,
     LoggingError,
+    DnaMissing,
+    ZomeNotFound(String),
+    CapabilityNotFound(String),
+    ZomeFunctionNotFound(String),
 }
 
 impl HolochainError {
@@ -34,6 +38,10 @@ impl Error for HolochainError {
             InstanceNotActive => "the instance is not active",
             InstanceActive => "the instance is active",
             LoggingError => "logging failed",
+            DnaMissing => "DNA is missing",
+            ZomeNotFound(err_msg) => &err_msg,
+            CapabilityNotFound(err_msg) => &err_msg,
+            ZomeFunctionNotFound(err_msg) => &err_msg,
         }
     }
 }

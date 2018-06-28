@@ -209,3 +209,35 @@ pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper
     println!("  DONE - dispatch_action_and_wait");
 }
 
+
+/// Send Action to the Event Queue and create an Observer for it with the specified closure
+pub fn dispatch_action_with_observer<F>(action_channel:   &Sender<::state::ActionWrapper>,
+                                        observer_channel: &Sender<Observer>,
+                                        action:           Action,
+                                        closure:          F)
+    where
+      F: 'static + FnMut(&State) -> bool + Send,
+{
+    println!("dispatch_action_with_observer: {:?}", action);
+    let observer = Observer {
+        sensor: Box::new(closure),
+        done: false,
+    };
+
+    observer_channel
+        .send(observer)
+        .expect("observer channel to be open");
+    dispatch_action(action_channel, action);
+
+    println!("  DONE - dispatch_action_with_observer");
+}
+
+
+/// Send Action to the Event Queue
+pub fn dispatch_action(action_channel: &Sender<::state::ActionWrapper>, action: Action) -> ActionWrapper {
+    let wrapper = ActionWrapper::new(action);
+    action_channel
+        .send(wrapper.clone())
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+    wrapper
+}

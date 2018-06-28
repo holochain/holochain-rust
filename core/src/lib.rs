@@ -103,7 +103,7 @@ mod tests {
     fn dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(instance.state().nucleus().initialized(), false);
+        assert_eq!(instance.state().nucleus().status(), ::nucleus::NucleusStatus::New);
 
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
@@ -111,10 +111,10 @@ mod tests {
         instance.dispatch_and_wait(action.clone());
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(instance.state().nucleus().initialized(), true);
+        assert_eq!(instance.state().nucleus().has_initialized(), true);
 
         instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().initialized(), true);
+        assert_eq!(instance.state().nucleus().has_initialized(), true);
     }
 
     fn create_instance(dna: Dna) -> Instance {

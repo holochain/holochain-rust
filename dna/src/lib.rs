@@ -165,6 +165,27 @@ impl Dna {
     }
 
 
+    /// Return a Zome
+    pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
+        self.zomes
+          .iter()
+          .find(|z| z.name == zome_name)
+    }
+
+
+    /// Return a Zome's WASM bytecode for a specified Capability
+    pub fn get_capability<'a>(
+        &'a self,
+        zome: &'a zome::Zome,
+        capability_name: &str,
+    ) -> Option<&'a wasm::DnaWasm> {
+        let capability = zome
+          .capabilities
+          .iter()
+          .find(|c| c.name == capability_name)?;
+        Some(&capability.code)
+    }
+
     /// Return a Zome's WASM bytecode for a specified Capability
     pub fn get_wasm_for_capability(
         &self,

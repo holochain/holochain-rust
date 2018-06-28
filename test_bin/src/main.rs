@@ -1,4 +1,4 @@
-#![deny(warnings)]
+
 
 extern crate holochain_agent;
 extern crate holochain_core;

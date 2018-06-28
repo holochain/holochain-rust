@@ -1,5 +1,3 @@
-#![deny(warnings)]
-
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
@@ -42,7 +40,7 @@ pub mod test_utils {
         buf
     }
 
-    pub fn create_test_dna_with_wat<T: Into<String>>(wat: Option<T>) -> Dna {
+    pub fn create_test_dna_with_wat(wat: Option<&str>) -> Dna {
         let default_wat = format!(
             r#"
                 (module
@@ -59,8 +57,7 @@ pub mod test_utils {
             nucleus::ribosome::RESULT_OFFSET
         );
 
-        let wat_str: String = wat.and_then(|wat| Some(wat.into()))
-            .unwrap_or_else(|| default_wat);
+        let wat_str = wat.unwrap_or_else(|| &default_wat);
 
         // Test WASM code that returns 1337 as integer
         let wasm_binary = Wat2Wasm::new()

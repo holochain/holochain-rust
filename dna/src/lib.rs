@@ -1,4 +1,4 @@
-#![deny(warnings)]
+
 
 /*!
 holochain_dna is a library for working with holochain dna files.

@@ -1,4 +1,4 @@
-#![deny(warnings)]
+
 /*!
 This crate is an ffi wrapper to provide a c-compatible dna library.
 

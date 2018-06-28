@@ -1,6 +1,9 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash as _Hash, Hasher};
+
 use chain::entry::Entry;
 use chain::pair::Pair;
-use chain::chain::Chain;
+use chain::chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Header {
@@ -26,7 +29,7 @@ impl _Hash for Header {
 }
 
 impl Header {
-    pub fn new(&chain: Chain<Pair>, entry: &Entry) -> Header {
+    pub fn new(&chain: SourceChain<Pair>, entry: &Entry) -> Header {
         let previous = chain.top();
         let mut h = Header {
             previous,
@@ -60,8 +63,8 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use super::Pair;
-    use common::entry::Entry;
-    use common::entry::Header;
+    use chain::entry::Entry;
+    use chain::header::Header;
 
     #[test]
     fn header() {

@@ -1,20 +1,23 @@
 use std;
 
+use chain::pair::Pair;
+use chain::chain::SourceChain;
+
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
-pub struct Chain {
-    pairs: Vec<super::Pair>,
+pub struct MemChain {
+    pairs: Vec<Pair>,
 }
 
-impl Chain {
+impl MemChain {
     pub fn new() -> Chain {
         Chain { pairs: Vec::new() }
     }
 }
 
 // for loop support that consumes chains
-impl IntoIterator for SourceChain {
-    type Item = super::Pair;
-    type IntoIter = std::vec::IntoIter<super::Pair>;
+impl IntoIterator for MemChain {
+    type Item = Pair;
+    type IntoIter = std::vec::IntoIter<Pair>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.pairs.into_iter()
@@ -22,20 +25,20 @@ impl IntoIterator for SourceChain {
 }
 
 // iter() style support for references to chains
-impl<'a> IntoIterator for &'a SourceChain {
-    type Item = &'a super::Pair;
-    type IntoIter = std::slice::Iter<'a, super::Pair>;
+impl<'a> IntoIterator for &'a MemChain {
+    type Item = &'a Pair;
+    type IntoIter = std::slice::Iter<'a, Pair>;
 
-    fn into_iter(self) -> std::slice::Iter<'a, super::Pair> {
+    fn into_iter(self) -> std::slice::Iter<'a, Pair> {
         self.pairs.iter()
     }
 }
 
 // basic SouceChain trait
-impl<'de> super::SourceChain<'de> for SourceChain {
+impl<'de> SourceChain<'de> for MemChain {
 
     // appends the current pair to the top of the chain
-    fn push(&mut self, pair: &super::Pair) {
+    fn push(&mut self, pair: &Pair) {
 
         let next_hash_lookup = pair.header.next().and_then(|h| self.get(h));
 
@@ -59,7 +62,7 @@ impl<'de> super::SourceChain<'de> for SourceChain {
 
     }
 
-    fn iter(&self) -> std::slice::Iter<super::Pair> {
+    fn iter(&self) -> std::slice::Iter<Pair> {
         self.pairs.iter()
     }
 
@@ -67,13 +70,13 @@ impl<'de> super::SourceChain<'de> for SourceChain {
         self.pairs.iter().all(|p| p.validate())
     }
 
-    fn get(&self, header_hash: u64) -> Option<super::Pair> {
+    fn get(&self, header_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs.clone().into_iter().find(|p| p.header.hash() == header_hash)
     }
 
-    fn get_entry(&self, entry_hash: u64) -> Option<super::Pair> {
+    fn get_entry(&self, entry_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs.clone().into_iter().find(|p| p.entry.hash() == entry_hash)
@@ -108,7 +111,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
 
         // for valid pairs its truetles all the way down...
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         assert!(chain.validate());
         chain.push(&p1);
         assert!(chain.validate());
@@ -122,7 +125,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -139,7 +142,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -155,7 +158,7 @@ mod tests {
         let p1 = test_pair(None, "foo");
         let p2 = test_pair(Some(&p1), "bar");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
     }
@@ -166,7 +169,7 @@ mod tests {
         let p1 = test_pair(None, "foo");
         let p2 = test_pair(Some(&p1), "bar");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
 
         // wrong order, must panic!
         chain.push(&p2);
@@ -180,7 +183,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "foo");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -205,7 +208,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -243,7 +246,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::SourceChain::new();
+        let mut chain = super::Chain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);

@@ -1,3 +1,4 @@
+use std;
 use chain::pair::Pair;
 use serde::Serialize;
 use serde::Deserialize;
@@ -24,8 +25,8 @@ pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
 #[cfg(test)]
 mod tests {
     use super::Pair;
-    use common::entry::Entry;
-    use common::entry::Header;
+    use chain::entry::Entry;
+    use chain::header::Header;
 
     #[test]
     fn validate() {

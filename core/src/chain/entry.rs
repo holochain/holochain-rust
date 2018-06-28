@@ -42,7 +42,6 @@ impl Entry {
 #[cfg(test)]
 mod tests {
     use super::Entry;
-    use super::Header;
 
     #[test]
     fn new_entry() {
@@ -52,14 +51,5 @@ mod tests {
         assert_eq!(e.content(), c);
         assert_ne!(e.hash(), 0);
         assert!(e.validate());
-    }
-
-    #[test]
-    fn entry() {
-        let e1 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(None, &e1);
-        let p1 = Pair::new(&h1, &e1);
-
-        assert_eq!(e1, p1.entry());
     }
 }

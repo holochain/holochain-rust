@@ -2,8 +2,6 @@
 holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
 */
 
-extern crate serde_json;
-
 use wasm::DnaWasm;
 
 /// Enum for Zome Capability "membrane" property.
@@ -117,6 +115,7 @@ impl Capability {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

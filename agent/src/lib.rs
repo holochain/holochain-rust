@@ -26,6 +26,7 @@ impl Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn can_instantiate_agent() {
         let agent = Agent::new(Identity {

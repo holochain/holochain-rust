@@ -6,6 +6,7 @@ which is separate from standard logging via the log crate warn! info! debug! log
 gets emitted globaly from the container.
 */
 
+use chrono::Local;
 use std::fmt;
 
 /// trait that defines the logging functionality that holochain_core requires
@@ -17,10 +18,6 @@ pub trait Logger: fmt::Debug {
 pub struct SimpleLogger {
     //    log: Vec<String>,
 }
-
-extern crate chrono;
-
-use self::chrono::Local;
 
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {

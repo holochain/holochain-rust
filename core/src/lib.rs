@@ -2,10 +2,15 @@
 
 #[macro_use]
 extern crate serde_derive;
-extern crate holochain_dna;
+extern crate chrono;
 extern crate serde;
 extern crate serde_json;
+extern crate snowflake;
 extern crate wabt;
+extern crate wasmi;
+
+extern crate holochain_agent;
+extern crate holochain_dna;
 
 pub mod agent;
 pub mod chain;
@@ -26,19 +31,18 @@ pub mod test_utils {
     use holochain_dna::zome::capabilities::Capability;
     use holochain_dna::zome::Zome;
     use holochain_dna::Dna;
+    use std::fs::File;
+    use std::io::prelude::*;
     use wabt::Wat2Wasm;
 
-    use std::fs::File;
-
     pub fn test_wasm_from_file(fname: &str) -> Vec<u8> {
-        use std::io::prelude::*;
         let mut file = File::open(fname).unwrap();
         let mut buf = Vec::new();
         file.read_to_end(&mut buf).unwrap();
         buf
     }
 
-    pub fn create_test_dna_with_wat(wat: Option<&str>) -> Dna {
+    pub fn create_test_dna_with_wat<T: Into<String>>(wat: Option<T>) -> Dna {
         let default_wat = format!(
             r#"
                 (module
@@ -54,12 +58,11 @@ pub mod test_utils {
             "#,
             nucleus::ribosome::RESULT_OFFSET
         );
-        let wat_str = match wat {
-            None => default_wat.as_str(),
-            Some(w) => w,
-        };
-        // Test WASM code that returns 1337 as integer
 
+        let wat_str: String = wat.and_then(|wat| Some(wat.into()))
+            .unwrap_or_else(|| default_wat);
+
+        // Test WASM code that returns 1337 as integer
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
@@ -85,7 +88,6 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    //use agent::Action::*;
     use super::*;
     use error::HolochainError;
     use holochain_dna::Dna;

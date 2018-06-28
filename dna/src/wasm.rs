@@ -4,9 +4,6 @@ holochain_dna::wasm is a module for managing webassembly code
  - and serialized to json
 */
 
-extern crate base64;
-extern crate serde;
-
 use serde::de::{Deserializer, Visitor};
 use serde::ser::Serializer;
 

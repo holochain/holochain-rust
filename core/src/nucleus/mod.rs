@@ -1,12 +1,8 @@
-extern crate holochain_dna;
-extern crate snowflake;
-
-use holochain_dna::Dna;
-
 pub mod ribosome;
 
-//use self::ribosome::*;
 use error::HolochainError;
+use holochain_dna::Dna;
+use snowflake;
 use state;
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Sender};

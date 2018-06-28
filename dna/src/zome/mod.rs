@@ -2,8 +2,6 @@
 holochain_dna::zome is a set of structs for working with holochain dna.
 */
 
-extern crate serde_json;
-
 pub mod capabilities;
 pub mod entry_types;
 
@@ -96,6 +94,7 @@ impl Zome {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

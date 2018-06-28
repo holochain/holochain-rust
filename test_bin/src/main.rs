@@ -11,9 +11,8 @@ use holochain_core::logger::SimpleLogger;
 use holochain_core::persister::SimplePersister;
 use holochain_core_api::*;
 use holochain_dna::Dna;
-use std::sync::{Arc, Mutex};
-
 use std::env;
+use std::sync::{Arc, Mutex};
 
 fn usage() {
     println!("Usage: holochain_test_bin <identity>");

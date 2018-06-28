@@ -1,7 +1,6 @@
-extern crate snowflake;
-
 use agent::AgentState;
 use nucleus::NucleusState;
+use snowflake;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::sync::mpsc::Sender;

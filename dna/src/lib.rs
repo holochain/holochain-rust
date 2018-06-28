@@ -28,13 +28,13 @@ extern crate serde_derive;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
+extern crate base64;
 extern crate uuid;
 
-use uuid::Uuid;
-
 pub mod wasm;
-
 pub mod zome;
+
+use uuid::Uuid;
 
 /// serde helper, provides a default empty object
 fn _def_empty_object() -> serde_json::Value {
@@ -170,8 +170,7 @@ impl Dna {
         capability_name: &str,
     ) -> Option<&wasm::DnaWasm> {
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
-        let capability = zome
-            .capabilities
+        let capability = zome.capabilities
             .iter()
             .find(|c| c.name == capability_name)?;
         Some(&capability.code)
@@ -507,8 +506,10 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna
-            .get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        let wasm = dna.get_wasm_for_capability(
+            &("test zome".to_string()),
+            &("test capability".to_string()),
+        );
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
         let fail = dna.get_wasm_for_capability(

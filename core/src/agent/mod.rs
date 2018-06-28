@@ -1,6 +1,6 @@
 pub mod keys;
 
-use self::keys::Keys;
+use agent::keys::Keys;
 use chain::entry::Entry;
 use chain::memory::MemChain;
 use state;

@@ -16,7 +16,7 @@ pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
-pub mod source_chain;
+pub mod chain;
 pub mod state;
 
 //#[cfg(test)]

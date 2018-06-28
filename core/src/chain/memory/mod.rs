@@ -1,13 +1,13 @@
 use std;
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
-pub struct SourceChain {
+pub struct Chain {
     pairs: Vec<super::Pair>,
 }
 
-impl SourceChain {
-    pub fn new() -> SourceChain {
-        SourceChain { pairs: Vec::new() }
+impl Chain {
+    pub fn new() -> Chain {
+        Chain { pairs: Vec::new() }
     }
 }
 
@@ -84,10 +84,10 @@ impl<'de> super::SourceChain<'de> for SourceChain {
 #[cfg(test)]
 mod tests {
     use serde_json;
-    use common::entry::Entry;
-    use common::entry::Header;
-    use source_chain::Pair;
-    use source_chain::SourceChain;
+    use chain::entry::Entry;
+    use chain::header::Header;
+    use chain::pair::Pair;
+    use chain::chain::SourceChain;
 
     // helper to spin up pairs for testing
     // @TODO - do we want to expose something like this as a general utility?

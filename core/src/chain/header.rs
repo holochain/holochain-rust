@@ -1,45 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
-use source_chain::SourceChain;
-use source_chain::Pair;
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Entry {
-    content: String,
-    hash: u64,
-}
-
-impl _Hash for Entry {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
-    }
-}
-
-impl Entry {
-    pub fn new(content: &str) -> Entry {
-        let mut e = Entry {
-            content: content.to_string(),
-            hash: 0,
-        };
-        let mut hasher = DefaultHasher::new();
-        _Hash::hash(&e, &mut hasher);
-        e.hash = hasher.finish();
-        e
-    }
-
-    pub fn hash(&self) -> u64 {
-        self.hash
-    }
-
-    pub fn content(&self) -> String {
-        self.content.clone()
-    }
-
-    pub fn validate(&self) -> bool {
-        // always valid iff immutable and new() enforces validity
-        true
-    }
-}
+use chain::entry::Entry;
+use chain::pair::Pair;
+use chain::chain::Chain;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Header {
@@ -65,7 +26,7 @@ impl _Hash for Header {
 }
 
 impl Header {
-    pub fn new(&chain: SourceChain<Pair>, entry: &Entry) -> Header {
+    pub fn new(&chain: Chain<Pair>, entry: &Entry) -> Header {
         let previous = chain.top();
         let mut h = Header {
             previous,
@@ -96,22 +57,19 @@ impl Header {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Hash {}
-
 #[cfg(test)]
 mod tests {
-    use super::Entry;
-    use super::Header;
+    use super::Pair;
+    use common::entry::Entry;
+    use common::entry::Header;
 
     #[test]
-    fn new_entry() {
-        let c = String::from("foo");
-        let e = Entry::new(&c);
+    fn header() {
+        let e1 = Entry::new(&String::from("foo"));
+        let h1 = Header::new(None, &e1);
+        let p1 = Pair::new(&h1, &e1);
 
-        assert_eq!(e.content(), c);
-        assert_ne!(e.hash(), 0);
-        assert!(e.validate());
+        assert_eq!(h1, p1.header());
     }
 
     #[test]
@@ -124,5 +82,4 @@ mod tests {
         assert_ne!(h.hash(), 0);
         assert!(h.validate());
     }
-
 }

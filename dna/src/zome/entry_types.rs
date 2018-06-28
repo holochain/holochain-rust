@@ -1,6 +1,4 @@
-/*!
-holochain_dna::zome::entry_types is a set of structs for working with holochain dna.
-*/
+//! holochain_dna::zome::entry_types is a set of structs for working with holochain dna.
 
 use wasm::DnaWasm;
 

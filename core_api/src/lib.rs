@@ -1,67 +1,62 @@
-/*!
-holochain_core_api provides a library for container applications to instantiate and run holochain applications.
-
-# Examples
-
-``` rust
-extern crate holochain_core;
-extern crate holochain_core_api;
-extern crate holochain_dna;
-extern crate holochain_agent;
-
-use holochain_core_api::*;
-use holochain_dna::Dna;
-use holochain_agent::Agent;
-use std::sync::{Arc, Mutex};
-use holochain_core::context::Context;
-use holochain_core::logger::SimpleLogger;
-use holochain_core::persister::SimplePersister;
-
-// instantiate a new app
-
-// need to get to something like this:
-//let dna = holochain_dna::from_package_file("mydna.hcpkg");
-
-// but for now:
-let dna = Dna::new();
-let agent = Agent::from_string("bob");
-let context = Context {
-    agent: agent,
-    logger: Arc::new(Mutex::new(SimpleLogger {})),
-    persister: Arc::new(Mutex::new(SimplePersister::new())),
-};
-let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
-
-// start up the app
-hc.start().expect("couldn't start the app");
-
-// call a function in the app
-hc.call("test_zome","test_cap","some_fn","{}");
-
-// get the state
-{
-    let state = hc.state();
-
-    // do some other stuff with the state here
-    // ...
-}
-
-// stop the app
-hc.stop().expect("couldn't stop the app");
-
-```
-*/
+//! holochain_core_api provides a library for container applications to instantiate and run holochain applications.
+//!
+//! # Examples
+//!
+//! ``` rust
+//! extern crate holochain_core;
+//! extern crate holochain_core_api;
+//! extern crate holochain_dna;
+//! extern crate holochain_agent;
+//!
+//! use holochain_core_api::*;
+//! use holochain_dna::Dna;
+//! use holochain_agent::Agent;
+//! use std::sync::{Arc, Mutex};
+//! use holochain_core::context::Context;
+//! use holochain_core::logger::SimpleLogger;
+//! use holochain_core::persister::SimplePersister;
+//!
+//! // instantiate a new app
+//!
+//! // need to get to something like this:
+//! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+//!
+//! // but for now:
+//! let dna = Dna::new();
+//! let agent = Agent::from_string("bob");
+//! let context = Context {
+//!     agent: agent,
+//!     logger: Arc::new(Mutex::new(SimpleLogger {})),
+//!     persister: Arc::new(Mutex::new(SimplePersister::new())),
+//! };
+//! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
+//!
+//! // start up the app
+//! hc.start().expect("couldn't start the app");
+//!
+//! // call a function in the app
+//! hc.call("test_zome","test_cap","some_fn","{}");
+//!
+//! // get the state
+//! {
+//!     let state = hc.state();
+//!
+//!     // do some other stuff with the state here
+//!     // ...
+//! }
+//!
+//! // stop the app
+//! hc.stop().expect("couldn't stop the app");
+//!
+//!```
 
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
 
 use holochain_core::{
-    context::Context,
-    error::HolochainError,
-    instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
-    state::{Action::*, State},
+    context::Context, error::HolochainError, instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
 };
 use holochain_dna::Dna;
 use std::sync::Arc;

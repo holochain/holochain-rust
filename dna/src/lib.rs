@@ -1,27 +1,23 @@
-
-
-/*!
-holochain_dna is a library for working with holochain dna files.
-
-It includes utilities for representing dna structures in memory,
-as well as serializing and deserializing dna, mainly to json format.
-
-# Examples
-
-```
-use holochain_dna::Dna;
-
-let name = String::from("My Holochain App");
-
-let mut dna = Dna::new();
-dna.name = name.clone();
-
-let json = dna.to_json().unwrap();
-
-let dna2 = Dna::new_from_json(&json).unwrap();
-assert_eq!(name, dna2.name);
-```
-*/
+//! holochain_dna is a library for working with holochain dna files.
+//!
+//! It includes utilities for representing dna structures in memory,
+//! as well as serializing and deserializing dna, mainly to json format.
+//!
+//! # Examples
+//!
+//! ```
+//! use holochain_dna::Dna;
+//!
+//! let name = String::from("My Holochain App");
+//!
+//! let mut dna = Dna::new();
+//! dna.name = name.clone();
+//!
+//! let json = dna.to_json().unwrap();
+//!
+//! let dna2 = Dna::new_from_json(&json).unwrap();
+//! assert_eq!(name, dna2.name);
+//! ```
 
 #[macro_use]
 extern crate serde_derive;
@@ -94,72 +90,64 @@ impl Default for Dna {
 }
 
 impl Dna {
-    /**
-    Create a new in-memory dna structure with some default values.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    assert_eq!("", dna.name);
-
-    ```
-    */
+    /// Create a new in-memory dna structure with some default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// assert_eq!("", dna.name);
+    ///
+    /// ```
     pub fn new() -> Self {
         Default::default()
     }
 
-    /**
-    Create a new in-memory dna struct from a json string.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new_from_json(r#"{
-        "name": "MyTestApp"
-    }"#).unwrap();
-
-    assert_eq!("MyTestApp", dna.name);
-    ```
-    */
+    /// Create a new in-memory dna struct from a json string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new_from_json(r#"{
+    ///     "name": "MyTestApp"
+    /// }"#).unwrap();
+    ///
+    /// assert_eq!("MyTestApp", dna.name);
+    /// ```
     pub fn new_from_json(dna: &str) -> serde_json::Result<Self> {
         serde_json::from_str(dna)
     }
 
-    /**
-    Generate a json string from an in-memory dna struct.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    println!("json: {}", dna.to_json().unwrap());
-
-    ```
-    */
+    /// Generate a json string from an in-memory dna struct.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// println!("json: {}", dna.to_json().unwrap());
+    ///
+    /// ```
     pub fn to_json(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
     }
 
-    /**
-    Generate a pretty-printed json string from an in-memory dna struct.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    println!("json: {}", dna.to_json_pretty().unwrap());
-
-    ```
-    */
+    /// Generate a pretty-printed json string from an in-memory dna struct.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// println!("json: {}", dna.to_json_pretty().unwrap());
+    ///
+    /// ```
     pub fn to_json_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(self)
     }

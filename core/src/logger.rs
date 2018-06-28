@@ -1,10 +1,6 @@
-//use std::sync::{Arc, Mutex};
-
-/*!
-This logger is the logger that's attached to each Holochain application
-which is separate from standard logging via the log crate warn! info! debug! logging that
-gets emitted globaly from the container.
-*/
+//! This logger is the logger that's attached to each Holochain application
+//! which is separate from standard logging via the log crate warn! info! debug! logging that
+//! gets emitted globaly from the container.
 
 use chrono::Local;
 use std::fmt;
@@ -16,7 +12,7 @@ pub trait Logger: fmt::Debug {
 
 #[derive(Clone)]
 pub struct SimpleLogger {
-    //    log: Vec<String>,
+    // log: Vec<String>,
 }
 
 impl Logger for SimpleLogger {
@@ -24,9 +20,9 @@ impl Logger for SimpleLogger {
         let date = Local::now();
         println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
     }
-    /*    fn new() -> SimpleLogger {
-        SimpleLogger {}
-    }*/
+    // fn new() -> SimpleLogger {
+    //      SimpleLogger {}
+    // }
 }
 
 impl fmt::Debug for SimpleLogger {

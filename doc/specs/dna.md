@@ -112,12 +112,12 @@ closeBundle(bundle)
                     },
                     "fn_declarations": [
                         {
-                            "name": "xxx",
+                            "name": "newPost",
                             "signature" :
                             {
-                                "input" : [
+                                "input" : ["string":post
                                 ],
-                                "output" : [
+                                "output" : ["hash":hash
                                 ]
                             },
                         },

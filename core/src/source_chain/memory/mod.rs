@@ -33,10 +33,8 @@ impl<'a> IntoIterator for &'a SourceChain {
 
 // basic SouceChain trait
 impl<'de> super::SourceChain<'de> for SourceChain {
-
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &super::Pair) {
-
         let previous_hash_lookup = pair.header.previous().and_then(|h| self.get(h));
 
         // smoke test this pair in isolation, and check the hash reference against the top pair
@@ -56,7 +54,6 @@ impl<'de> super::SourceChain<'de> for SourceChain {
         // @TODO - inserting at the start of a vector is O(n), some other collection could be O(1)
         // @see https://github.com/holochain/holochain-rust/issues/35
         self.pairs.insert(0, pair.clone())
-
     }
 
     fn iter(&self) -> std::slice::Iter<super::Pair> {
@@ -70,22 +67,27 @@ impl<'de> super::SourceChain<'de> for SourceChain {
     fn get(&self, header_hash: u64) -> Option<super::Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.header.hash() == header_hash)
+        self.pairs
+            .clone()
+            .into_iter()
+            .find(|p| p.header.hash() == header_hash)
     }
 
     fn get_entry(&self, entry_hash: u64) -> Option<super::Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.entry.hash() == entry_hash)
+        self.pairs
+            .clone()
+            .into_iter()
+            .find(|p| p.entry.hash() == entry_hash)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use common::entry::Entry;
     use common::entry::Header;
+    use serde_json;
     use source_chain::Pair;
     use source_chain::SourceChain;
 

@@ -1,4 +1,4 @@
-use common::entry::Hash;
+use common::hash::Hash;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Key {}

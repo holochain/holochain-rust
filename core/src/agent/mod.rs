@@ -1,7 +1,7 @@
 pub mod keys;
 
 use self::keys::Keys;
-use common::entry::Entry;
+use chain::entry::Entry;
 use chain::memory::MemChain;
 use state;
 use std::sync::mpsc::Sender;

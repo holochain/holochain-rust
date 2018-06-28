@@ -3,7 +3,7 @@ use chain::pair::Pair;
 use serde::Serialize;
 use serde::Deserialize;
 
-pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
+pub trait SourceChain<'de, 'a>: IntoIterator<Item=Pair, IntoIter=std::slice::Iter<'a, Pair>> + Serialize + Deserialize<'de> {
 
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);

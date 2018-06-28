@@ -9,8 +9,8 @@ pub struct MemChain {
 }
 
 impl MemChain {
-    pub fn new() -> Chain {
-        Chain { pairs: Vec::new() }
+    pub fn new() -> MemChain {
+        MemChain { pairs: Vec::new() }
     }
 }
 
@@ -35,7 +35,7 @@ impl<'a> IntoIterator for &'a MemChain {
 }
 
 // basic SouceChain trait
-impl<'de> SourceChain<'de> for MemChain {
+impl<'de, 'a> SourceChain<'de, 'a> for MemChain {
 
     // appends the current pair to the top of the chain
     fn push(&mut self, pair: &Pair) {
@@ -111,7 +111,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
 
         // for valid pairs its truetles all the way down...
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         assert!(chain.validate());
         chain.push(&p1);
         assert!(chain.validate());
@@ -125,7 +125,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -142,7 +142,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -158,7 +158,7 @@ mod tests {
         let p1 = test_pair(None, "foo");
         let p2 = test_pair(Some(&p1), "bar");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
     }
@@ -169,7 +169,7 @@ mod tests {
         let p1 = test_pair(None, "foo");
         let p2 = test_pair(Some(&p1), "bar");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
 
         // wrong order, must panic!
         chain.push(&p2);
@@ -183,7 +183,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "foo");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -208,7 +208,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);
@@ -246,7 +246,7 @@ mod tests {
         let p2 = test_pair(Some(&p1), "bar");
         let p3 = test_pair(Some(&p2), "baz");
 
-        let mut chain = super::Chain::new();
+        let mut chain = super::MemChain::new();
         chain.push(&p1);
         chain.push(&p2);
         chain.push(&p3);

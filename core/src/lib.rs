@@ -1,6 +1,12 @@
 #![deny(warnings)]
+
+#[macro_use]
+extern crate serde_derive;
 extern crate holochain_dna;
+extern crate serde;
+extern crate serde_json;
 extern crate wabt;
+
 pub mod agent;
 pub mod common;
 pub mod context;

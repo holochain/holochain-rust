@@ -159,3 +159,53 @@ impl Default for Instance {
         Self::new()
     }
 }
+
+
+/// Send Action to Instance's Event Queue and block until is has been processed.
+pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper>,
+                                observer_channel: &Sender<Observer>,
+                                action:           Action)
+{
+    println!("dispatch_action_and_wait: {:?}", action);
+
+    // Wrap Action
+    let wrapper = ::state::ActionWrapper::new(action);
+    let wrapper_clone = wrapper.clone();
+
+    // Create blocking channel
+    let (sender, receiver) = channel::<bool>();
+
+    // Create blocking observer
+    let closure = move |state: &State| {
+        if state.history.contains(&wrapper_clone) {
+            sender
+              .send(true)
+              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+            true
+        } else {
+            false
+        }
+    };
+    let observer = Observer {
+        sensor: Box::new(closure),
+        done: false,
+    };
+
+    // Send observer to instance
+    observer_channel
+      .send(observer)
+      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+    // Send action to instance
+    action_channel
+      .send(wrapper)
+      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+    // Block until Observer has sensed the completion of the Action
+    receiver
+      .recv()
+      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+    println!("  DONE - dispatch_action_and_wait");
+}
+

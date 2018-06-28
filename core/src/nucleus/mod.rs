@@ -13,6 +13,8 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::Arc;
 use std::thread;
 use instance::Observer;
+use holochain_dna::zome::capabilities::RegisteredCapabilityNames;
+use holochain_dna::zome::capabilities::RegisteredFunctionNames;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
@@ -92,6 +94,7 @@ impl EntrySubmission {
 
 
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
+/// for test only??
 pub fn call_and_wait_for_result(
     call: FunctionCall,
     instance: &mut super::instance::Instance)
@@ -99,7 +102,7 @@ pub fn call_and_wait_for_result(
 {
     let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
 
-    // Dispatch action with observer closure that waits for a result in the state:
+    // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
         if let Some(result) = state.nucleus().ribosome_call_result(&call) {
@@ -136,8 +139,10 @@ pub enum Action {
     ValidateEntry(EntrySubmission),
 }
 
+use ::instance::DISPATCH_WITHOUT_CHANNELS;
 
 /// Reduce state of Nucleus according to action.
+/// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
     old_state: Arc<NucleusState>,
     action: &state::Action,
@@ -150,11 +155,61 @@ pub fn reduce(
             let mut new_state: NucleusState = (*old_state).clone();
             match *nucleus_action {
 
-                // Initialize Nucleus: Set DNA
+                // Initialize Nucleus
                 Action::InitApplication(ref dna) => {
                     if !new_state.initialized {
+
+                        // Set DNA
                         new_state.dna = Some(dna.clone());
-                        new_state.initialized = true;
+
+                        //  Call each Zome's genesis() with ExecuteZomeFunction Action
+
+                        for zome in dna.clone().zomes {
+                            // Make ExecuteZomeFunction Action
+                            let call = FunctionCall::new(
+                                zome.name,
+                                RegisteredCapabilityNames::LifeCycle.as_str().to_string(),
+                                RegisteredFunctionNames::Genesis.as_str().to_string(),
+                                "".to_string(),
+                            );
+                            let action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call));
+
+
+
+                            // Dispatch Action with Observer so it can finish asynchronously (outside of mutex)
+                            // Wrap Action
+                            let wrapper = ::state::ActionWrapper::new(action);
+                            let wrapper_clone = wrapper.clone();
+
+                            // Create observer
+                            // Done when action is part of state's history
+                            let closure = move |state: &::state::State| {
+                                if state.history.contains(&wrapper_clone) {
+                                    new_state.initialized = true;
+                                    true
+                                } else {
+                                    false
+                                }
+                            };
+                            let observer = Observer {
+                                sensor: Box::new(closure),
+                                done: false,
+                            };
+
+                            // Send observer to instance
+                            observer_channel
+                              .send(observer)
+                              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+                            // Send action to instance
+                            action_channel
+                              .send(wrapper)
+                              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+
+                            // TODO - Have one 'initialized' boolean per Zome because init can fail mid step
+                            // Maybe Zome's should have own states and reduce() ?
+                        }
+                        // new_state.initialized = true;
                     }
                 }
 
@@ -269,7 +324,7 @@ mod tests {
         let action = Nucleus(InitApplication(dna));
         let state = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
-        let (tx_observer, rx_observer) = channel::<Observer>();
+        let (tx_observer, _observer) = channel::<Observer>();
         let reduced_state = reduce(state.clone(), &action, &sender.clone(), &tx_observer.clone());
         assert!(reduced_state.initialized, true);
 
@@ -290,7 +345,7 @@ mod tests {
         let action = Nucleus(ExecuteZomeFunction(call));
         let state = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
-        let (tx_observer, rx_observer) = channel::<Observer>();
+        let (tx_observer, _observer) = channel::<Observer>();
         let reduced_state = reduce(state.clone(), &action, &sender, &tx_observer);
         assert_eq!(state, reduced_state);
     }

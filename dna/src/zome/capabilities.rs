@@ -6,6 +6,61 @@ extern crate serde_json;
 
 use wasm::DnaWasm;
 
+//--------------------------------------------------------------------------------------------------
+// Registered Capabilities and functions
+//--------------------------------------------------------------------------------------------------
+
+pub enum RegisteredCapabilityNames {
+    LifeCycle,
+    Communication,
+}
+
+impl RegisteredCapabilityNames {
+    pub fn from_str(s: &str) -> Option<RegisteredCapabilityNames> {
+        match s {
+            "hc_lifecycle" => Some(RegisteredCapabilityNames::LifeCycle),
+            "hc_web_gateway" => Some(RegisteredCapabilityNames::Communication),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            &RegisteredCapabilityNames::LifeCycle => "hc_lifecycle",
+            &RegisteredCapabilityNames::Communication => "hc_web_gateway",
+        }
+    }
+}
+
+
+pub enum RegisteredFunctionNames {
+    Genesis,
+    Receive,
+}
+
+
+impl RegisteredFunctionNames {
+    pub fn from_str(s: &str) -> Option<RegisteredFunctionNames> {
+        match s {
+            "genesis" => Some(RegisteredFunctionNames::Genesis),
+            "receive" => Some(RegisteredFunctionNames::Receive),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            &RegisteredFunctionNames::Genesis => "genesis",
+            &RegisteredFunctionNames::Receive => "receive",
+        }
+    }
+}
+
+
+//--------------------------------------------------------------------------------------------------
+//
+//--------------------------------------------------------------------------------------------------
+
 /// Enum for Zome Capability "membrane" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Membrane {

@@ -3,14 +3,8 @@
 extern crate wabt;
 extern crate wasmi;
 
-// use std::mem::transmute;
-use std::sync::mpsc::{channel, Sender};
-// use ::agent::Action::Commit;
-use ::state::State;
-use ::state::Action;
-// use ::state::ActionWrapper;
+use std::sync::mpsc::Sender;
 use ::instance::Observer;
-use ::instance::DISPATCH_WITHOUT_CHANNELS;
 
 use state;
 
@@ -37,58 +31,11 @@ enum HcApiFuncIndex {
     /// print()
     PRINT = 0,
     /// Commit an entry to source chain
-    /// commit(entry_type : String, entry_content : String)
+    /// commit(entry_type : String, entry_content : String) -> Hash
     COMMIT,
     // Add new API function index here
     // ...
 }
-
-
-
-/// Send Action to Instance's Event Queue and block until is has been processed.
-pub fn dispatch_action_and_wait(action_channel:   &Sender<state::ActionWrapper>,
-                            observer_channel: &Sender<Observer>,
-                            action:           Action)
-{
-    // Wrap Action
-    let wrapper = state::ActionWrapper::new(action);
-    let wrapper_clone = wrapper.clone();
-
-    // Create blocking channel
-    let (sender, receiver) = channel::<bool>();
-
-    // Create blocking observer
-    let closure = move |state: &State| {
-        if state.history.contains(&wrapper_clone) {
-            sender
-              .send(true)
-              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-            true
-        } else {
-            false
-        }
-    };
-    let observer = Observer {
-        sensor: Box::new(closure),
-        done: false,
-    };
-
-    // Send observer to instance
-    observer_channel
-        .send(observer)
-        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-
-    // Send action to instance
-    action_channel
-        .send(wrapper)
-        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-
-    // Block until Observer has sensed the completion of the Action
-    receiver
-      .recv()
-      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-}
-
 
 
 // WASM modules = made to be run browser along side Javascript modules
@@ -123,8 +70,9 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
                     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
 
                     // Send Action and block for result
-                    dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_commit.clone());
+                    ::instance::dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_commit.clone());
 
+                    // FIXME - return Hash of Entry (entry.hash)
                     Ok(None) // FIXME - Change to Result<Runtime, InterpreterError>?
                 }
                 // Add API function code here
@@ -205,6 +153,7 @@ mod tests {
     use super::*;
     use std::fs::File;
     use wabt::Wat2Wasm;
+    use std::sync::mpsc::channel;
 
     fn _test_wasm_from_file() -> Vec<u8> {
         use std::io::prelude::*;
@@ -248,7 +197,7 @@ mod tests {
     #[test]
     fn test_print() {
         let (action_channel, _ ) = channel::<::state::ActionWrapper>();
-        let (tx_observer, rx_observer) = channel::<Observer>();
+        let (tx_observer, _observer) = channel::<Observer>();
         let runtime = call(&action_channel, &tx_observer, test_wasm(), "test_print").expect("test_print should be callable");
         assert_eq!(runtime.print_output.len(), 1);
         assert_eq!(runtime.print_output[0], 1337)

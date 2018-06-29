@@ -37,14 +37,14 @@ impl _Hash for Header {
 impl Header {
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Header {
         Header {
-            Type: entry_type.clone(),
+            Type: entry_type.to_string(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             Time: String::new(),
             HeaderLink: chain.top().and_then(|p| Some(p.header().hash())),
             EntryLink: entry.hash(),
             TypeLink: chain
-                .top_type(&entry_type)
+                .top_type(entry_type)
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
@@ -91,8 +91,8 @@ mod tests {
     fn header() {
         let chain = MemChain::new();
         let e1 = Entry::new(&String::from("foo"));
-        let h1 = Header::new(&chain, "type".to_string(), &e1);
-        let p1 = Pair::new(&chain, "type".to_string(), &e1);
+        let h1 = Header::new(&chain, "type", &e1);
+        let p1 = Pair::new(&chain, "type", &e1);
 
         assert_eq!(h1, p1.header());
     }
@@ -101,7 +101,7 @@ mod tests {
     fn new_header() {
         let chain = MemChain::new();
         let e = Entry::new(&String::from("foo"));
-        let h = Header::new(&chain, "type".to_string(), &e);
+        let h = Header::new(&chain, "type", &e);
 
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);

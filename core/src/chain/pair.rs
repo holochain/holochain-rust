@@ -9,7 +9,7 @@ pub struct Pair {
 }
 
 impl Pair {
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: String, entry: &Entry) -> Pair {
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry_type, entry);
 
         let p = Pair {
@@ -49,12 +49,12 @@ mod tests {
     fn new_pair() {
         let chain = MemChain::new();
         let e1 = Entry::new(&String::from("some content"));
-        let h1 = Header::new(&chain, "fooType".to_string(), &e1);
+        let h1 = Header::new(&chain, "fooType", &e1);
 
         assert_eq!(h1.entry(), e1.hash());
         assert_eq!(h1.next(), None);
 
-        let p1 = Pair::new(&chain, "fooType".to_string(), &e1);
+        let p1 = Pair::new(&chain, "fooType", &e1);
         assert_eq!(e1, p1.entry());
         assert_eq!(h1, p1.header());
     }
@@ -64,7 +64,7 @@ mod tests {
         let chain = MemChain::new();
 
         let e1 = Entry::new(&String::from("bar"));
-        let p1 = Pair::new(&chain, "fooType".to_string(), &e1);
+        let p1 = Pair::new(&chain, "fooType", &e1);
 
         assert!(p1.validate());
     }

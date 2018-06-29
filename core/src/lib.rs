@@ -198,10 +198,14 @@ mod tests {
         instance.dispatch_and_wait(action.clone());
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        //assert!(instance.state().nucleus().has_initialized());
+        assert!(instance.state().nucleus().has_initialized() == false);
 
-        instance.dispatch_and_wait(action.clone());
-        //assert!(instance.state().nucleus().has_initialized());
+        // Wait for Init to finish
+        while instance.state().history.len() < 2 {
+            println!("Waiting... {}", instance.state().history.len());
+            sleep(Duration::from_millis(10));
+        }
+        assert!(instance.state().nucleus().has_initialized());
     }
 
     fn create_instance(dna: Dna) -> Instance {
@@ -212,6 +216,7 @@ mod tests {
         instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
+        // Wait for Init to finish
         while instance.state().history.len() < 4 {
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10))

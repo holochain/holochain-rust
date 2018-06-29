@@ -38,8 +38,6 @@ enum HcApiFuncIndex {
 }
 
 
-// WASM modules = made to be run browser along side Javascript modules
-// import and export in strings
 /// Executes an exposed function
 #[allow(dead_code)]
 pub fn call(action_channel:   &Sender<state::ActionWrapper>,
@@ -63,7 +61,8 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
                     Ok(None)
                 }
                 index if index == HcApiFuncIndex::COMMIT as usize => {
-                    // FIXME unpack args into Entry struct with serializer
+                    // TODO - #61 commit()
+                    // unpack args into Entry struct with serializer
                     let entry = ::common::entry::Entry::new("FIXME - content string here");
 
                     // Create commit Action
@@ -72,8 +71,10 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
                     // Send Action and block for result
                     ::instance::dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_commit.clone());
 
-                    // FIXME - return Hash of Entry (entry.hash)
-                    Ok(None) // FIXME - Change to Result<Runtime, InterpreterError>?
+                    // TODO - #61 commit()
+                    // Return Hash of Entry (entry.hash)
+                    // Change to Result<Runtime, InterpreterError>?
+                    Ok(None)
                 }
                 // Add API function code here
                 // ....

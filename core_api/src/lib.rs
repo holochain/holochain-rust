@@ -144,8 +144,9 @@ mod tests {
     use holochain_core::context::Context;
     use holochain_core::logger::Logger;
     use holochain_core::persister::SimplePersister;
-    use holochain_core::test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat,
-                                     test_wasm_from_file};
+    use holochain_core::test_utils::{
+        create_test_dna_with_wasm, create_test_dna_with_wat, test_wasm_from_file,
+    };
     use std::fmt;
     use std::sync::{Arc, Mutex};
 

@@ -3,9 +3,10 @@
 extern crate wabt;
 extern crate wasmi;
 
-use self::wasmi::{Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-                  ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature,
-                  Trap, ValueType};
+use self::wasmi::{
+    Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
+};
 
 #[derive(Clone)]
 pub struct Runtime {

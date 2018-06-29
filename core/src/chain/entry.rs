@@ -40,6 +40,7 @@ mod tests {
     use super::Entry;
 
     #[test]
+    /// tests for Entry::new()
     fn new() {
         let c = String::from("foo");
         let e = Entry::new(&c);
@@ -50,6 +51,7 @@ mod tests {
     }
 
     #[test]
+    /// tests for entry.hash()
     fn hash() {
         let c = String::from("bar");
         let e = Entry::new(&c);
@@ -58,6 +60,7 @@ mod tests {
     }
 
     #[test]
+    /// tests for entry.content()
     fn content() {
         let c = String::from("baz");
         let e = Entry::new(&c);
@@ -66,6 +69,7 @@ mod tests {
     }
 
     #[test]
+    /// tests for entry.validate()
     fn validate() {
         let c = String::new();
         let e = Entry::new(&c);

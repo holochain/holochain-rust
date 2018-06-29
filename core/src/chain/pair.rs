@@ -46,7 +46,8 @@ mod tests {
     use chain::memory::MemChain;
 
     #[test]
-    fn new_pair() {
+    /// tests for Pair::new()
+    fn new() {
         let chain = MemChain::new();
         let e1 = Entry::new(&String::from("some content"));
         let h1 = Header::new(&chain, "fooType", &e1);
@@ -56,6 +57,17 @@ mod tests {
 
         let p1 = Pair::new(&chain, "fooType", &e1);
         assert_eq!(e1, p1.entry());
+        assert_eq!(h1, p1.header());
+    }
+
+    #[test]
+    // tests for pair.header()
+    fn header() {
+        let chain = MemChain::new();
+        let e1 = Entry::new(&String::from("foo"));
+        let h1 = Header::new(&chain, "type", &e1);
+        let p1 = Pair::new(&chain, "type", &e1);
+
         assert_eq!(h1, p1.header());
     }
 

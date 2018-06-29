@@ -90,23 +90,14 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
+    use chain::SourceChain;
     use chain::entry::Entry;
     use chain::header::Header;
     use chain::memory::MemChain;
-    use chain::pair::Pair;
 
     #[test]
-    fn header() {
-        let chain = MemChain::new();
-        let e1 = Entry::new(&String::from("foo"));
-        let h1 = Header::new(&chain, "type", &e1);
-        let p1 = Pair::new(&chain, "type", &e1);
-
-        assert_eq!(h1, p1.header());
-    }
-
-    #[test]
-    fn new_header() {
+    /// tests for Header::new()
+    fn new() {
         let chain = MemChain::new();
         let e = Entry::new(&String::from("foo"));
         let h = Header::new(&chain, "type", &e);
@@ -114,6 +105,125 @@ mod tests {
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);
         assert_ne!(h.hash(), 0);
+        assert!(h.validate());
+    }
+
+    #[test]
+    /// tests for header.entry_type()
+    fn entry_type() {
+        let chain = MemChain::new();
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, "foo", &e);
+
+        assert_eq!(h.entry_type(), "foo");
+    }
+
+    #[test]
+    /// tests for header.time()
+    fn time() {
+        let chain = MemChain::new();
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, "foo", &e);
+
+        assert_eq!(h.time(), "");
+    }
+
+    #[test]
+    /// tests for header.next()
+    fn next() {
+        let mut chain = MemChain::new();
+        let t = "foo";
+
+        // first header is genesis so next should be None
+        let e1 = Entry::new(&String::new());
+        let p1 = chain.push(t, &e1);
+        let h1 = p1.header();
+
+        assert_eq!(h1.next(), None);
+
+        // second header next should be first header hash
+        let e2 = Entry::new(&String::from("foo"));
+        let p2 = chain.push(t, &e2);
+        let h2 = p2.header();
+
+        assert_eq!(h2.next(), Some(h1.hash()));
+    }
+
+    #[test]
+    /// tests for header.entry()
+    fn entry() {
+        let chain = MemChain::new();
+        let t = "foo";
+
+        // header for an entry should contain the entry hash under entry()
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, t, &e);
+
+        assert_eq!(h.entry(), e.hash());
+    }
+
+    #[test]
+    /// tests for header.type_next()
+    fn type_next() {
+        let mut chain = MemChain::new();
+        let t1 = "foo";
+        let t2 = "bar";
+
+        // first header is genesis so next should be None
+        let e1 = Entry::new(&String::new());
+        let p1 = chain.push(t1, &e1);
+        let h1 = p1.header();
+
+        assert_eq!(h1.type_next(), None);
+
+        // second header is a different type so next should be None
+        let e2 = Entry::new(&String::new());
+        let p2 = chain.push(t2, &e2);
+        let h2 = p2.header();
+
+        assert_eq!(h2.type_next(), None);
+
+        // third header is same type as first header so next should be first header hash
+        let e3 = Entry::new(&String::new());
+        let p3 = chain.push(t1, &e3);
+        let h3 = p3.header();
+
+        assert_eq!(h3.type_next(), Some(h1.hash()));
+    }
+
+    #[test]
+    /// tests for header.signature()
+    fn signature() {
+        let chain = MemChain::new();
+        let t = "foo";
+
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, t, &e);
+
+        assert_eq!("", h.signature());
+    }
+
+    #[test]
+    /// tests for header.hash()
+    fn hash() {
+        let chain = MemChain::new();
+        let t = "foo";
+
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, t, &e);
+
+        assert_eq!(6289138340682858684, h.hash());
+    }
+
+    #[test]
+    /// tests for header.validate()
+    fn validate() {
+        let chain = MemChain::new();
+        let t = "foo";
+
+        let e = Entry::new(&String::new());
+        let h = Header::new(&chain, t, &e);
+
         assert!(h.validate());
     }
 }

@@ -85,6 +85,7 @@ mod tests {
     }
 
     #[test]
+    /// tests for pair.validate()
     fn validate() {
         let chain = MemChain::new();
 

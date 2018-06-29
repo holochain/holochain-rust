@@ -152,11 +152,14 @@ impl Dna {
         serde_json::to_string_pretty(self)
     }
 
-    pub fn get_wasm_for_capability(
+    pub fn get_wasm_for_capability<T: Into<String>>(
         &self,
-        zome_name: &str,
-        capability_name: &str,
+        zome_name: T,
+        capability_name: T,
     ) -> Option<&wasm::DnaWasm> {
+        let zome_name = zome_name.into();
+        let capability_name = capability_name.into();
+
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
         let capability = zome.capabilities
             .iter()
@@ -494,16 +497,10 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_for_capability(
-            &("test zome".to_string()),
-            &("test capability".to_string()),
-        );
+        let wasm = dna.get_wasm_for_capability("test zome", "test capability");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_for_capability(
-            &("non existant zome".to_string()),
-            &("test capability".to_string()),
-        );
+        let fail = dna.get_wasm_for_capability("non existant zome", "test capability");
         assert_eq!(None, fail);
     }
 }

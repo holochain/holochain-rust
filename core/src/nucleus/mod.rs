@@ -128,7 +128,7 @@ pub fn reduce(
                     let mut zome_capability_found = false;
                     if let Some(ref dna) = new_state.dna {
                         if let Some(ref wasm) =
-                            dna.get_wasm_for_capability(&fc.zome, &fc.capability)
+                            dna.get_wasm_for_capability(fc.zome.clone(), fc.capability.clone())
                         {
                             new_state.ribosome_calls.insert(fc.clone(), None);
 

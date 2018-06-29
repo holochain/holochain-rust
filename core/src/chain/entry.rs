@@ -14,16 +14,15 @@ impl _Hash for Entry {
 
 impl Entry {
     pub fn new(content: &str) -> Entry {
-        let mut e = Entry {
+        Entry {
             content: content.to_string(),
-        };
-        e
+        }
     }
 
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         _Hash::hash(&self, &mut hasher);
-        hasher.finish();
+        hasher.finish()
     }
 
     pub fn content(&self) -> String {

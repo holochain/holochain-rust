@@ -11,6 +11,8 @@ pub struct MemChain {
 }
 
 impl MemChain {
+    /// builds the data structures required to efficiently represent a SourceChain in memory
+    /// typically a MemChain should be _mutable_ to facilitate chain.push()
     pub fn new() -> MemChain {
         MemChain {
             pairs: Vec::new(),

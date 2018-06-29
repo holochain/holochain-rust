@@ -16,6 +16,8 @@ impl Pair {
     /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
     /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
     /// now be valid, the new Y' will include correct headers pointing to X.
+    /// @see chain::entry::Entry
+    /// @see chain::header::Header
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry_type, entry);
 

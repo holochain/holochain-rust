@@ -13,22 +13,30 @@ impl _Hash for Entry {
 }
 
 impl Entry {
+    /// build a new Entry from passed content
+    /// an Entry is immutable, this is important for absolutely everything downstream
+    /// an entry is not valid until paired with a header and included in a chain.
+    /// @see chain::header::Header
+    /// @see chain::pair::Pair
     pub fn new(content: &str) -> Entry {
         Entry {
             content: content.to_string(),
         }
     }
 
+    /// hashes the entry
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         _Hash::hash(&self, &mut hasher);
         hasher.finish()
     }
 
+    /// content getter
     pub fn content(&self) -> String {
         self.content.clone()
     }
 
+    /// returns true if the entry is valid
     pub fn validate(&self) -> bool {
         // always valid iff immutable and new() enforces validity
         true

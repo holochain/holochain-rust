@@ -36,6 +36,14 @@ impl _Hash for Header {
 }
 
 impl Header {
+    /// build a new Header from a chain, entry type and entry.
+    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+    /// this means that a header becomes invalid and useless as soon as the chain is mutated
+    /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
+    /// normally (outside unit tests) the generation of valid headers is internal to the
+    /// chain::SourceChain trait and should not need to be handled manually
+    /// @see chain::pair::Pair
+    /// @see chain::entry::Entry
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Header {
         Header {
             entry_type: entry_type.to_string(),
@@ -53,36 +61,44 @@ impl Header {
         }
     }
 
+    /// entry_type getter
     pub fn entry_type(&self) -> String {
         self.entry_type.clone()
     }
 
+    /// time getter
     pub fn time(&self) -> String {
         self.time.clone()
     }
 
+    /// next getter
     pub fn next(&self) -> Option<u64> {
         self.next
     }
 
+    /// entry getter
     pub fn entry(&self) -> u64 {
         self.entry
     }
 
+    /// type_next getter
     pub fn type_next(&self) -> Option<u64> {
         self.type_next
     }
 
+    /// signature getter
     pub fn signature(&self) -> String {
         self.signature.clone()
     }
 
+    /// hashes the header
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         _Hash::hash(&self, &mut hasher);
         hasher.finish()
     }
 
+    /// returns true if the header is valid
     pub fn validate(&self) -> bool {
         // always valid iff immutable and new() enforces validity
         true

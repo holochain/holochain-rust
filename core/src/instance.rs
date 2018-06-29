@@ -166,8 +166,6 @@ pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper
                                 observer_channel: &Sender<Observer>,
                                 action:           Action)
 {
-    println!("dispatch_action_and_wait: {:?}", action);
-
     // Wrap Action
     let wrapper = ::state::ActionWrapper::new(action);
     let wrapper_clone = wrapper.clone();
@@ -206,7 +204,6 @@ pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper
       .recv()
       .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 
-    println!("  DONE - dispatch_action_and_wait");
 }
 
 
@@ -218,7 +215,6 @@ pub fn dispatch_action_with_observer<F>(action_channel:   &Sender<::state::Actio
     where
       F: 'static + FnMut(&State) -> bool + Send,
 {
-    println!("dispatch_action_with_observer: {:?}", action);
     let observer = Observer {
         sensor: Box::new(closure),
         done: false,

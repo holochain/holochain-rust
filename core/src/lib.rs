@@ -17,17 +17,19 @@ pub mod state;
 pub mod test_utils {
     use holochain_dna::wasm::DnaWasm;
     use holochain_dna::zome::capabilities::Capability;
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use holochain_dna::zome::Zome;
     use holochain_dna::Dna;
     use wabt::Wat2Wasm;
+    use wabt::WabtBuf;
 
+    // Create DNA containing WASM code that returns 1337 as integer
     pub fn create_test_dna_with_wasm() -> Dna {
-        // Test WASM code that returns 1337 as integer
         let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
+          .canonicalize_lebs(false)
+          .write_debug_names(true)
+          .convert(
+              r#"
                 (module
                     (memory (;0;) 17)
                     (func (export "main") (result i32)
@@ -36,23 +38,103 @@ pub mod test_utils {
                     (export "memory" (memory 0))
                 )
             "#,
-            )
-            .unwrap();
+          )
+          .unwrap();
 
-        // Prepare valid DNA struct with that WASM in a zome's capability:
+        return create_dna("test_zome".to_string(), "test_cap".to_string(), wasm_binary);
+    }
+
+
+    // Create DNA containing WASM code with genesis that returns 0
+    pub fn create_dna_with_genesis_ok() -> Dna {
+        let wasm_binary = Wat2Wasm::new()
+          .canonicalize_lebs(false)
+          .write_debug_names(true)
+          .convert(
+              r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "genesis") (result i32)
+                        i32.const 0
+                    )
+                    (export "memory" (memory 0))
+                )
+            "#,
+          )
+          .unwrap();
+
+        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
+    }
+
+
+    // Create DNA containing WASM code with genesis that returns 42
+    pub fn create_dna_with_genesis_err() -> Dna {
+        let wasm_binary = Wat2Wasm::new()
+          .canonicalize_lebs(false)
+          .write_debug_names(true)
+          .convert(
+              r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "genesis") (result i32)
+                        i32.const 42
+                    )
+                    (export "memory" (memory 0))
+                )
+            "#,
+          )
+          .unwrap();
+
+        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
+    }
+
+
+    // Setup DNA containing WASM code that prints 1337 in genesis
+    pub fn create_dna_containing_genesis() -> Dna {
+        let wasm_binary = Wat2Wasm::new()
+          .canonicalize_lebs(false)
+          .write_debug_names(true)
+          .convert(
+              r#"
+                (module
+                    (type (;0;) (func (result i32)))
+                    (type (;1;) (func (param i32)))
+                    (type (;2;) (func))
+                    (import "env" "print" (func $print (type 1)))
+                    (func $genesis (type 0) (result i32)
+                        i32.const 1337
+                        call $print
+                        i32.const 0)
+                    (func $rust_eh_personality (type 2))
+                    (table (;0;) 1 1 anyfunc)
+                    (memory (;0;) 17)
+                    (global (;0;) (mut i32) (i32.const 1049600))
+                    (export "memory" (memory 0))
+                    (export "genesis" (func $genesis))
+                    (export "rust_eh_personality" (func $rust_eh_personality)))
+            "#,
+          )
+          .unwrap();
+
+        // DNA with that WASM in zome's hc_lifecycle capability
+        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
+    }
+
+
+    // Prepare valid DNA struct helper
+    pub fn create_dna(zome_name : String, cap_name : String, wasm_binary : WabtBuf) -> Dna {
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
-        capability.name = "test_cap".to_string();
-        capability.code = DnaWasm {
-            code: wasm_binary.as_ref().to_vec(),
-        };
-        zome.name = "test_zome".to_string();
+        capability.name = cap_name;
+        capability.code = DnaWasm { code: wasm_binary.as_ref().to_vec() };
+        zome.name = zome_name.to_string();
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
         dna
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -69,6 +151,8 @@ mod tests {
 
     use std::thread::sleep;
     use std::time::Duration;
+
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
     // This test shows how to call dispatch with a closure that should run
     // when the action results in a state change.  Note that the observer closure
@@ -160,8 +244,6 @@ mod tests {
         let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
-        println!("result = {:?}", result);
-
         match result {
             Err(HolochainError::DnaMissing) => {}
             _ => assert!(false),
@@ -216,4 +298,45 @@ mod tests {
             _ => { assert!(false) },
         }
     }
+
+    #[test]
+    fn test_missing_genesis() {
+        let mut dna = test_utils::create_test_dna_with_wasm();
+        dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+
+        let instance = create_instance(dna);
+
+        assert_eq!(instance.state().history.len(), 4);
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
+
+    #[test]
+    fn test_genesis() {
+        let dna = test_utils::create_dna_containing_genesis();
+        let instance = create_instance(dna);
+
+        assert_eq!(instance.state().history.len(), 4);
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
+    #[test]
+    fn test_genesis_ok() {
+        let dna = test_utils::create_dna_with_genesis_ok();
+        let instance = create_instance(dna);
+
+        assert_eq!(instance.state().history.len(), 4);
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
+    #[test]
+    fn test_genesis_err() {
+        let dna = test_utils::create_dna_with_genesis_err();
+        let instance = create_instance(dna);
+
+        assert_eq!(instance.state().history.len(), 4);
+        assert!(instance.state().nucleus().has_initialized() == false);
+    }
+
+
 }

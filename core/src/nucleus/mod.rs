@@ -5,7 +5,6 @@ use holochain_dna::Dna;
 
 pub mod ribosome;
 
-//use self::ribosome::*;
 use error::HolochainError;
 use state;
 use std::collections::HashMap;
@@ -35,7 +34,6 @@ impl Default for NucleusStatus {
 pub struct NucleusState {
     dna: Option<Dna>,
     status: NucleusStatus,
-    //are_zomes_initialized: Vec<bool>,
     ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 
@@ -44,7 +42,6 @@ impl NucleusState {
         NucleusState {
             dna: None,
             status: NucleusStatus::New,
-            //are_zomes_initialized: ::std::Vec::new(),
             ribosome_calls: HashMap::new(),
         }
     }
@@ -92,11 +89,12 @@ impl FunctionCall {
     }
 }
 
+/// WIP struct to hold data required by a ValidateEntry Action
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntrySubmission {
-    pub zome_name: String,
-    pub type_name: String,
-    pub content:   String,
+    pub zome_name:     String,
+    pub type_name:     String,
+    pub entry_content: String,
 }
 
 impl EntrySubmission {
@@ -105,9 +103,9 @@ impl EntrySubmission {
           S: Into<String>,
     {
         EntrySubmission {
-            zome_name: zome_name.into(),
-            type_name: type_name.into(),
-            content: content.into(),
+            zome_name:     zome_name.into(),
+            type_name:     type_name.into(),
+            entry_content: content.into(),
         }
     }
 }
@@ -187,39 +185,41 @@ pub enum Action {
     ValidateEntry(EntrySubmission),
 }
 
-// use ::instance::DISPATCH_WITHOUT_CHANNELS;
+
+// Reduce ReturnZomeFunctionResult
+// On initialization success set Initialized status
+// otherwise reset the nucleus
+fn reduce_rir(nucleus_state : & mut NucleusState, has_succeeded : bool) {
+    assert!(nucleus_state.status == NucleusStatus::Initializing);
+    if has_succeeded {
+        (*nucleus_state).status = NucleusStatus::Initialized
+    } else {
+        *nucleus_state = NucleusState::new();
+    };
+}
 
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    old_nucleus_state: Arc<NucleusState>,
+    old_state: Arc<NucleusState>,
     action: &state::Action,
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>)
 -> Arc<NucleusState>
 {
-    println!(" REDUCING NUCLEUS {:?}", *action);
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
-            let mut new_nucleus_state: NucleusState = (*old_nucleus_state).clone();
+            let mut new_nucleus_state: NucleusState = (*old_state).clone();
 
             match *nucleus_action {
 
-                // Update state on initialization success
-                // otherwise reset the nucleus
-                Action::ReturnInitializationResult(succeeded) => {
-                    assert!(new_nucleus_state.status == NucleusStatus::Initializing);
-                    if succeeded {
-                        new_nucleus_state.status = NucleusStatus::Initialized
-                    } else {
-                        new_nucleus_state = NucleusState::new();
-                    };
+                Action::ReturnInitializationResult(has_succeeded) => {
+                    reduce_rir(& mut new_nucleus_state, has_succeeded);
                 }
 
                 // Initialize Nucleus by setting the DNA
                 // and sending ExecuteFunction Action of genesis of each zome
                 Action::InitApplication(ref dna) => {
-                    println!("\t InitApplication: {:?}", new_nucleus_state.status);
                     match new_nucleus_state.status {
                         NucleusStatus::New =>
                         {
@@ -249,15 +249,11 @@ pub fn reduce(
                                     // Call Genesis and wait
                                     let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
 
+                                    // genesis returns a i32 as a string
+                                    // 0 == success
                                     match call_result {
-                                        // OKAY if hc_lifecycle or genesis not present
-                                        Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
-                                        // FIXME TEST THIS CASE
-                                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis"
-                                          => { /* NA */ }
-                                        Err(e) => {
-                                            // TODO test this case
-                                            println!("\t CALL genesis failed {:?}", e);
+                                        // not okay if genesis returned an errorCode
+                                        Ok(ref s) if s != "0" => {
                                             // Send Failed ReturnInitializationResult Action
                                             action_channel
                                               .send(state::ActionWrapper::new(state::Action::Nucleus(
@@ -266,13 +262,33 @@ pub fn reduce(
                                               .expect("action channel to be open in reducer");
                                             // Kill thread
                                             // TODO - Instead, Keep track of each zome's initialization.
+                                            // @see https://github.com/holochain/holochain-rust/issues/78
+                                            // Mark this one as failed and continue with other zomes
+                                            return;
+                                        }
+                                        // its okay if hc_lifecycle or genesis not present
+                                        Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
+                                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis"
+                                          => { /* NA */ }
+                                        // Init fails if something failed in genesis called
+                                        Err(_e) => {
+                                            // TODO - Create test for this edge case
+                                            // @see https://github.com/holochain/holochain-rust/issues/78
+                                            // Send Failed ReturnInitializationResult Action
+                                            action_channel
+                                              .send(state::ActionWrapper::new(state::Action::Nucleus(
+                                                  Action::ReturnInitializationResult(false),
+                                              )))
+                                              .expect("action channel to be open in reducer");
+                                            // Kill thread
+                                            // TODO - Instead, Keep track of each zome's initialization.
+                                            // @see https://github.com/holochain/holochain-rust/issues/78
                                             // Mark this one as failed and continue with other zomes
                                             return;
                                         }
                                     }
                                 }
                                 // Send Succeeded ReturnInitializationResult Action
-                                println!("\t SEND SUCCESSFUL ReturnInitializationResult");
                                 action_channel
                                   .send(state::ActionWrapper::new(state::Action::Nucleus(
                                       Action::ReturnInitializationResult(true),
@@ -282,20 +298,18 @@ pub fn reduce(
                         }
                         _ => {
                             // TODO better error reporting based on current state and logger
+                            // https://github.com/holochain/holochain-rust/issues/21
                             println!("\t!! Nucleus already initialized or initializing");
                         }
                     }
                 }
 
+
                 // Execute an exposed Zome function in a seperate thread and send the result in
                 // a ReturnZomeFunctionResult Action on success or failure
                 Action::ExecuteZomeFunction(ref fc) => {
 
-                    println!("\t ExecuteZomeFunction: {:?}", fc);
-
                     let function_call = fc.clone();
-                    // let mut has_zome_and_capability = false;
-
                     let mut has_error = false;
                     let mut result = FunctionResult::new(
                         fc.clone(),
@@ -368,6 +382,7 @@ pub fn reduce(
                     }
                 }
 
+
                 // Store the Result in the ribosome_calls hashmap
                 Action::ReturnZomeFunctionResult(ref result) => {
                     new_nucleus_state
@@ -375,10 +390,10 @@ pub fn reduce(
                         .insert(result.call.clone(), Some(result.result.clone()));
                 }
 
+
                 // Validate an Entry by calling its validation function
                 Action::ValidateEntry(ref es) =>
                 {
-                    println!("NucleusState::Commit: Entry = {}", es.content);
                     let mut _has_entry_type = false;
 
                     // must have entry_type
@@ -386,17 +401,16 @@ pub fn reduce(
                     {
                         if let Some(ref _wasm) = dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
                         {
-                            // FIXME DDD
-                            // Do same thing as Action::ExecuteZomeFunction
+                            // TODO #61 validate()
+                            // Do same thing as Action::ExecuteZomeFunction or actually send a Action::ExecuteZomeFunction?
                             _has_entry_type = true;
                         }
                     }
                 }
             }
-            println!(" -- DONE REDUCING NUCLEUS {:?}", *action);
             Arc::new(new_nucleus_state)
         }
-        _ => old_nucleus_state,
+        _ => old_state,
     }
 }
 

@@ -34,7 +34,11 @@ impl ReservedCapabilityNames {
 
 
 pub enum ReservedFunctionNames {
+    /// genesis() -> bool
+    /// Must be in LifeCycle Capability
     Genesis,
+    /// receive(from : String, message : String) -> String
+    /// Must be in Communication Capability
     Receive,
 }
 

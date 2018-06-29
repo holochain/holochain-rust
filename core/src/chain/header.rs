@@ -4,68 +4,76 @@ use std::hash::{Hash as _Hash, Hasher};
 use chain::entry::Entry;
 use chain::SourceChain;
 
-/// Properties defined in HeadersEntrySchema from golang alpha 1 (hence the title case)
-/// @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
+// @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
+// @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
+// @see https://github.com/holochain/holochain-rust/issues/75
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
-    Type: String,
+    entry_type: String,
     /// ISO8601 time stamp
-    Time: String,
+    time: String,
     /// link to the immediately preceding header, None is valid only for genesis
-    HeaderLink: Option<u64>,
+    next: Option<u64>,
     /// mandatory link to the entry for this header
-    EntryLink: u64,
+    entry: u64,
     /// link to the most recent header of the same type, None is valid only for the first of type
-    TypeLink: Option<u64>,
-    Signature: String,
+    type_next: Option<u64>,
+    signature: String,
 }
 
 impl _Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.Type.hash(state);
-        self.Time.hash(state);
-        self.HeaderLink.hash(state);
-        self.EntryLink.hash(state);
-        self.TypeLink.hash(state);
-        self.Signature.hash(state);
+        self.entry_type.hash(state);
+        self.time.hash(state);
+        self.next.hash(state);
+        self.entry.hash(state);
+        self.type_next.hash(state);
+        self.signature.hash(state);
     }
 }
 
 impl Header {
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Header {
         Header {
-            Type: entry_type.to_string(),
+            entry_type: entry_type.to_string(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
-            Time: String::new(),
-            HeaderLink: chain.top().and_then(|p| Some(p.header().hash())),
-            EntryLink: entry.hash(),
-            TypeLink: chain
+            time: String::new(),
+            next: chain.top().and_then(|p| Some(p.header().hash())),
+            entry: entry.hash(),
+            type_next: chain
                 .top_type(entry_type)
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
-            Signature: String::new(),
+            signature: String::new(),
         }
     }
 
     pub fn entry_type(&self) -> String {
-        self.Type.clone()
+        self.entry_type.clone()
+    }
+
+    pub fn time(&self) -> String {
+        self.time.clone()
     }
 
     pub fn next(&self) -> Option<u64> {
-        self.HeaderLink
+        self.next
     }
 
     pub fn entry(&self) -> u64 {
-        self.EntryLink
+        self.entry
     }
 
     pub fn type_next(&self) -> Option<u64> {
-        self.TypeLink
+        self.type_next
+    }
+
+    pub fn signature(&self) -> String {
+        self.signature.clone()
     }
 
     pub fn hash(&self) -> u64 {

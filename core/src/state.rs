@@ -91,14 +91,3 @@ impl State {
         Arc::clone(&self.agent)
     }
 }
-
-// TODO: write macro for DRY reducer functions
-// macro_rules! reducer {
-//     ($func_name:ident) => (
-//         fn reducer(old_state: Rc<$state_type>, action: &_Action) -> Rc<$state_type>  {
-//             // The `stringify!` macro converts an `ident` into a string.
-//             println!("You called {:?}()",
-//                      stringify!($func_name));
-//         }
-//     )
-// }

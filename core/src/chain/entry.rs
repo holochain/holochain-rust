@@ -4,7 +4,6 @@ use std::hash::{Hash as _Hash, Hasher};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     content: String,
-    hash: u64,
 }
 
 impl _Hash for Entry {
@@ -17,16 +16,14 @@ impl Entry {
     pub fn new(content: &str) -> Entry {
         let mut e = Entry {
             content: content.to_string(),
-            hash: 0,
         };
-        let mut hasher = DefaultHasher::new();
-        _Hash::hash(&e, &mut hasher);
-        e.hash = hasher.finish();
         e
     }
 
     pub fn hash(&self) -> u64 {
-        self.hash
+        let mut hasher = DefaultHasher::new();
+        _Hash::hash(&self, &mut hasher);
+        hasher.finish();
     }
 
     pub fn content(&self) -> String {

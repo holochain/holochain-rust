@@ -4,10 +4,14 @@ use error::HolochainError;
 use holochain_dna::Dna;
 use snowflake;
 use state;
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
-use std::sync::Arc;
-use std::thread;
+use std::{
+    collections::HashMap,
+    sync::{
+        mpsc::{channel, Sender},
+        Arc,
+    },
+    thread,
+};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
@@ -193,9 +197,10 @@ pub fn reduce(
 
 #[cfg(test)]
 mod tests {
-    use super::super::nucleus::Action::*;
-    use super::super::state::Action::*;
-    use super::*;
+    use super::{
+        super::{nucleus::Action::*, state::Action::*},
+        *,
+    };
     use std::sync::mpsc::channel;
 
     #[test]

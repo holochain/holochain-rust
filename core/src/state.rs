@@ -1,10 +1,11 @@
 use agent::AgentState;
 use nucleus::NucleusState;
 use snowflake;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::{
+    collections::HashSet,
+    hash::{Hash, Hasher},
+    sync::{mpsc::Sender, Arc},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 #[allow(unknown_lints)]

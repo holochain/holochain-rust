@@ -25,12 +25,12 @@ pub mod state;
 //#[cfg(test)]
 pub mod test_utils {
     use super::*;
-    use holochain_dna::wasm::DnaWasm;
-    use holochain_dna::zome::capabilities::Capability;
-    use holochain_dna::zome::Zome;
-    use holochain_dna::Dna;
-    use std::fs::File;
-    use std::io::prelude::*;
+    use holochain_dna::{
+        wasm::DnaWasm,
+        zome::{capabilities::Capability, Zome},
+        Dna,
+    };
+    use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;
 
     pub fn test_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -89,10 +89,8 @@ mod tests {
     use error::HolochainError;
     use holochain_dna::Dna;
     use instance::Instance;
-    use nucleus::Action::*;
-    use nucleus::FunctionCall;
-    use state::Action::*;
-    use state::State;
+    use nucleus::{Action::*, FunctionCall};
+    use state::{Action::*, State};
     use std::sync::mpsc::channel;
 
     /// This test shows how to call dispatch with a closure that should run

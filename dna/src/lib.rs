@@ -161,7 +161,8 @@ impl Dna {
         let capability_name = capability_name.into();
 
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
-        let capability = zome.capabilities
+        let capability = zome
+            .capabilities
             .iter()
             .find(|c| c.name == capability_name)?;
         Some(&capability.code)

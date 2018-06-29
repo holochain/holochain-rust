@@ -1,9 +1,10 @@
 //use error::HolochainError;
 use state::*;
-use std::sync::mpsc::*;
-use std::sync::{Arc, RwLock, RwLockReadGuard};
-use std::thread;
-use std::time::Duration;
+use std::{
+    sync::{mpsc::*, Arc, RwLock, RwLockReadGuard},
+    thread,
+    time::Duration,
+};
 
 //#[derive(Clone)]
 pub struct Instance {

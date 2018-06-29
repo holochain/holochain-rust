@@ -7,9 +7,11 @@
 extern crate holochain_dna;
 
 use holochain_dna::Dna;
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-use std::panic::catch_unwind;
+use std::{
+    ffi::{CStr, CString},
+    os::raw::c_char,
+    panic::catch_unwind,
+};
 
 #[no_mangle]
 pub extern "C" fn holochain_dna_create() -> *mut Dna {

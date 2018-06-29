@@ -61,7 +61,8 @@ use holochain_core::{
     error::HolochainError,
     instance::Instance,
     nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
-    state::{Action::*, State}};
+    state::{Action::*, State},
+};
 use holochain_dna::Dna;
 use std::sync::Arc;
 

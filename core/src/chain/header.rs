@@ -20,6 +20,7 @@ pub struct Header {
     entry: u64,
     /// link to the most recent header of the same type, None is valid only for the first of type
     type_next: Option<u64>,
+    /// agent's cryptographic signature
     signature: String,
 }
 
@@ -207,12 +208,42 @@ mod tests {
     /// tests for header.hash()
     fn hash() {
         let chain = MemChain::new();
-        let t = "foo";
+        let t1 = "foo";
+        let t2 = "bar";
 
+        // basic hash test.
         let e = Entry::new(&String::new());
-        let h = Header::new(&chain, t, &e);
+        let h = Header::new(&chain, t1, &e);
 
         assert_eq!(6289138340682858684, h.hash());
+
+        // different entries must give different hashes
+        let e1 = Entry::new(&String::new());
+        let h1 = Header::new(&chain, t1, &e1);
+
+        let e2 = Entry::new(&String::from("a"));
+        let h2 = Header::new(&chain, t1, &e2);
+
+        // h and h1 are actually identical so should have the same hash
+        assert_eq!(h.hash(), h1.hash());
+        assert_ne!(h1.hash(), h2.hash());
+
+        // different types must give different hashes
+        let h3 = Header::new(&chain, t2, &e1);
+        assert_ne!(h3.hash(), h1.hash());
+
+        // different chain, different hash
+        let mut c1 = MemChain::new();
+
+        let p1 = c1.push(t1, &e1);
+
+        // p2 is pushing the same thing as p1, but after p1, so it has a different next val
+        let p2 = c1.push(t1, &e1);
+        assert_eq!(h1.hash(), p1.header().hash());
+        assert_ne!(h1.hash(), p2.header().hash());
+
+        // @TODO is it possible to test that type_next changes the hash in an isolated way?
+        // @see https://github.com/holochain/holochain-rust/issues/76
     }
 
     #[test]

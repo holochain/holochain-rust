@@ -9,6 +9,13 @@ pub struct Pair {
 }
 
 impl Pair {
+    /// build a new Pair from a chain and entry
+    /// Header is generated automatically
+    /// a Pair is immutable, but the chain is mutable if chain.push() is used.
+    /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
+    /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
+    /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
+    /// now be valid, the new Y' will include correct headers pointing to X.
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry_type, entry);
 
@@ -25,14 +32,17 @@ impl Pair {
         p
     }
 
+    /// header getter
     pub fn header(&self) -> Header {
         self.header.clone()
     }
 
+    /// entry getter
     pub fn entry(&self) -> Entry {
         self.entry.clone()
     }
 
+    /// true if the pair is valid
     pub fn validate(&self) -> bool {
         self.header.validate() && self.entry.validate() && self.header.entry() == self.entry.hash()
     }

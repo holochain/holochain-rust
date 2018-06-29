@@ -1,5 +1,6 @@
 use chain::entry::Entry;
 use chain::header::Header;
+use chain::chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -9,7 +10,9 @@ pub struct Pair {
 
 impl Pair {
 
-    pub fn new(header: &Header, entry: &Entry) -> Pair {
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: String, entry: &Entry) -> Pair {
+        let header = Header::new(chain, entry_type, entry);
+
         let p = Pair {
             header: header.clone(),
             entry: entry.clone(),
@@ -49,45 +52,23 @@ mod tests {
     fn new_pair() {
         let chain = MemChain::new();
         let e1 = Entry::new(&String::from("some content"));
-        let h1 = Header::new(&chain, "someType".to_string(), &e1);
+        let h1 = Header::new(&chain, "fooType".to_string(), &e1);
 
         assert_eq!(h1.entry(), e1.hash());
         assert_eq!(h1.next(), None);
 
-        let p1 = Pair::new(&h1, &e1);
+        let p1 = Pair::new(&chain, "fooType".to_string(), &e1);
         assert_eq!(e1, p1.entry());
         assert_eq!(h1, p1.header());
     }
 
     #[test]
-    fn entry() {
-        let chain = MemChain::new();
-        let e1 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(&chain, "someType".to_string(), &e1);
-        let p1 = Pair::new(&h1, &e1);
-
-        assert_eq!(e1, p1.entry());
-    }
-
-    #[test]
     fn validate() {
         let chain = MemChain::new();
+
         let e1 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(&chain, "someType".to_string(), &e1);
-        let p1 = Pair::new(&h1, &e1);
+        let p1 = Pair::new(&chain, "fooType".to_string(), &e1);
 
         assert!(p1.validate());
-    }
-
-    #[test]
-    #[should_panic(expected = "attempted to create an invalid pair")]
-    fn invalidate() {
-        let chain = MemChain::new();
-        let e1 = Entry::new(&String::from("foo"));
-        let e2 = Entry::new(&String::from("bar"));
-        let h1 = Header::new(&chain, "someType".to_string(), &e1);
-
-        // header/entry mismatch, must panic!
-        Pair::new(&h1, &e2);
     }
 }

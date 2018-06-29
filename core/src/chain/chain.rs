@@ -1,4 +1,5 @@
 use std;
+use chain::entry::Entry;
 use chain::pair::Pair;
 use serde::Serialize;
 use serde::Deserialize;
@@ -6,7 +7,7 @@ use serde::Deserialize;
 pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
 
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
-    fn push(&mut self, &Pair);
+    fn push(&mut self, entry_type: String, &Entry) -> Pair;
 
     /// returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<Pair>;

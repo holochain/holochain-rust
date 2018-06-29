@@ -1,5 +1,6 @@
 use std;
 
+use chain::entry::Entry;
 use chain::pair::Pair;
 use chain::chain::SourceChain;
 
@@ -42,7 +43,9 @@ impl<'a> IntoIterator for &'a MemChain {
 impl<'de> SourceChain<'de> for MemChain {
 
     // appends the current pair to the top of the chain
-    fn push(&mut self, pair: &Pair) {
+    fn push(&mut self, entry_type: String, entry: &Entry) -> Pair {
+
+        let pair = Pair::new(self, entry_type, entry);
 
         if !(pair.validate()) {
             panic!("attempted to push an invalid pair for this source chain");
@@ -68,6 +71,8 @@ impl<'de> SourceChain<'de> for MemChain {
         // @see https://github.com/holochain/holochain-rust/issues/35
         self.top = Some(pair.clone());
         self.pairs.insert(0, pair.clone());
+
+        pair
     }
 
     fn iter(&self) -> std::slice::Iter<Pair> {
@@ -104,31 +109,26 @@ impl<'de> SourceChain<'de> for MemChain {
 mod tests {
     use serde_json;
     use chain::entry::Entry;
-    use chain::header::Header;
     use chain::pair::Pair;
     use chain::chain::SourceChain;
-
-    // helper to spin up pairs for testing
-    // @TODO - do we want to expose something like this as a general utility?
-    // @see https://github.com/holochain/holochain-rust/issues/34
-    fn test_pair<'de, C: SourceChain<'de>>(chain: &C, s: &str) -> Pair {
-        let e = Entry::new(&s.to_string());
-        let h = Header::new(chain, "testType".to_string(), &e);
-        Pair::new(&h, &e)
-    }
 
     #[test]
     fn validate() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
+        let entry_type = "fooType".to_string();
+
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
 
         // for valid pairs its truetles all the way down...
         assert!(chain.validate());
-        chain.push(&p1);
+        chain.push(entry_type.clone(), &e1);
         assert!(chain.validate());
-        chain.push(&p2);
+        chain.push(entry_type.clone(), &e2);
+        assert!(chain.validate());
+        chain.push(entry_type.clone(), &e3);
         assert!(chain.validate());
     }
 
@@ -136,13 +136,15 @@ mod tests {
     fn get() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-        let p3 = test_pair(&chain, "baz");
+        let entry_type = "fooType".to_string();
 
-        chain.push(&p1);
-        chain.push(&p2);
-        chain.push(&p3);
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        let p1 = chain.push(entry_type.clone(), &e1);
+        let p2 = chain.push(entry_type.clone(), &e2);
+        let p3 = chain.push(entry_type.clone(), &e3);
 
         assert_eq!(None, chain.get(0));
         assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
@@ -154,13 +156,15 @@ mod tests {
     fn get_entry() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-        let p3 = test_pair(&chain, "baz");
+        let entry_type = "fooType".to_string();
 
-        chain.push(&p1);
-        chain.push(&p2);
-        chain.push(&p3);
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        let p1 = chain.push(entry_type.clone(), &e1);
+        let p2 = chain.push(entry_type.clone(), &e2);
+        let p3 = chain.push(entry_type.clone(), &e3);
 
         assert_eq!(None, chain.get(0));
         assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
@@ -172,37 +176,34 @@ mod tests {
     fn valid_push() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
+        let entry_type = "fooType".to_string();
 
-        chain.push(&p1);
-        chain.push(&p2);
-    }
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
 
-    #[test]
-    #[should_panic(expected = "attempted to push an invalid pair for this source chain")]
-    fn invalid_push() {
-        let mut chain = super::MemChain::new();
+        let p1 = chain.push(entry_type.clone(), &e1);
+        let p2 = chain.push(entry_type.clone(), &e2);
+        let p3 = chain.push(entry_type.clone(), &e3);
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-
-        // wrong order, must panic!
-        chain.push(&p2);
-        chain.push(&p1);
+        assert_eq!(p1.entry(), e1);
+        assert_eq!(p2.entry(), e2);
+        assert_eq!(p3.entry(), e3);
     }
 
     #[test]
     fn iter() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-        let p3 = test_pair(&chain, "foo");
+        let entry_type = "fooType".to_string();
 
-        chain.push(&p1);
-        chain.push(&p2);
-        chain.push(&p3);
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"foo".to_string());
+
+        let p1 = chain.push(entry_type.clone(), &e1);
+        let p2 = chain.push(entry_type.clone(), &e2);
+        let p3 = chain.push(entry_type.clone(), &e3);
 
         // iter() should iterate over references
         assert_eq!(vec![&p3, &p2, &p1], chain.iter().collect::<Vec<&Pair>>());
@@ -221,13 +222,15 @@ mod tests {
     fn into_iter() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-        let p3 = test_pair(&chain, "baz");
+        let entry_type = "fooType".to_string();
 
-        chain.push(&p1);
-        chain.push(&p2);
-        chain.push(&p3);
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        let p1 = chain.push(entry_type.clone(), &e1);
+        let p2 = chain.push(entry_type.clone(), &e2);
+        let p3 = chain.push(entry_type.clone(), &e3);
 
         // into_iter() by reference
         let mut i = 0;
@@ -259,16 +262,17 @@ mod tests {
     fn json_round_trip() {
         let mut chain = super::MemChain::new();
 
-        let p1 = test_pair(&chain, "foo");
-        let p2 = test_pair(&chain, "bar");
-        let p3 = test_pair(&chain, "baz");
+        let entry_type = "foo".to_string();
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
 
-        chain.push(&p1);
-        chain.push(&p2);
-        chain.push(&p3);
+        chain.push(entry_type.clone(), &e1);
+        chain.push(entry_type.clone(), &e2);
+        chain.push(entry_type.clone(), &e3);
 
         let json = serde_json::to_string(&chain).unwrap();
-        let expected_json = "{\"pairs\":[{\"header\":{\"previous\":14317484463802884792,\"entry\":16260972211344176173,\"hash\":4531740482513330668},\"entry\":{\"content\":\"baz\",\"hash\":16260972211344176173}},{\"header\":{\"previous\":2931328680099981702,\"entry\":3676438629107045207,\"hash\":14317484463802884792},\"entry\":{\"content\":\"bar\",\"hash\":3676438629107045207}},{\"header\":{\"previous\":null,\"entry\":4506850079084802999,\"hash\":2931328680099981702},\"entry\":{\"content\":\"foo\",\"hash\":4506850079084802999}}]}";
+        let expected_json = "{\"pairs\":[{\"header\":{\"Type\":\"foo\",\"Time\":\"\",\"HeaderLink\":3223843486057940362,\"EntryLink\":16260972211344176173,\"TypeLink\":3223843486057940362,\"Signature\":\"\"},\"entry\":{\"content\":\"baz\",\"hash\":16260972211344176173}},{\"header\":{\"Type\":\"foo\",\"Time\":\"\",\"HeaderLink\":14176581647729525889,\"EntryLink\":3676438629107045207,\"TypeLink\":14176581647729525889,\"Signature\":\"\"},\"entry\":{\"content\":\"bar\",\"hash\":3676438629107045207}},{\"header\":{\"Type\":\"foo\",\"Time\":\"\",\"HeaderLink\":null,\"EntryLink\":4506850079084802999,\"TypeLink\":null,\"Signature\":\"\"},\"entry\":{\"content\":\"foo\",\"hash\":4506850079084802999}}],\"top\":{\"header\":{\"Type\":\"foo\",\"Time\":\"\",\"HeaderLink\":3223843486057940362,\"EntryLink\":16260972211344176173,\"TypeLink\":3223843486057940362,\"Signature\":\"\"},\"entry\":{\"content\":\"baz\",\"hash\":16260972211344176173}}}";
 
         assert_eq!(expected_json, json);
         assert_eq!(chain, serde_json::from_str(&json).unwrap());

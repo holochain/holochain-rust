@@ -89,7 +89,7 @@ mod tests {
         let chain = MemChain::new();
         let e1 = Entry::new(&String::from("foo"));
         let h1 = Header::new(&chain, "type".to_string(), &e1);
-        let p1 = Pair::new(&h1, &e1);
+        let p1 = Pair::new(&chain, "type".to_string(), &e1);
 
         assert_eq!(h1, p1.header());
     }

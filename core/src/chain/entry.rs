@@ -53,10 +53,22 @@ mod tests {
     #[test]
     /// tests for entry.hash()
     fn hash() {
-        let c = String::from("bar");
-        let e = Entry::new(&c);
+        let c1 = String::from("bar");
+        let e1 = Entry::new(&c1);
 
-        assert_eq!(3676438629107045207, e.hash());
+        assert_eq!(3676438629107045207, e1.hash());
+
+        // same content, same hash
+        let c2 = String::from("bar");
+        let e2 = Entry::new(&c2);
+
+        assert_eq!(e1.hash(), e2.hash());
+
+        // different content, different hash
+        let c3 = String::from("foo");
+        let e3 = Entry::new(&c3);
+
+        assert_ne!(e1.hash(), e3.hash());
     }
 
     #[test]

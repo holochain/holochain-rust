@@ -56,11 +56,12 @@ extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
 
-use holochain_core::{context::Context,
-                     error::HolochainError,
-                     instance::Instance,
-                     nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
-                     state::{Action::*, State}};
+use holochain_core::{
+    context::Context,
+    error::HolochainError,
+    instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    state::{Action::*, State}};
 use holochain_dna::Dna;
 use std::sync::Arc;
 

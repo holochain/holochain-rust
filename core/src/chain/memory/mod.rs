@@ -19,27 +19,7 @@ impl MemChain {
     }
 }
 
-// for loop support that consumes chains
-impl IntoIterator for MemChain {
-    type Item = Pair;
-    type IntoIter = std::vec::IntoIter<Pair>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.pairs.into_iter()
-    }
-}
-
-// iter() style support for references to chains
-impl<'a> IntoIterator for &'a MemChain {
-    type Item = &'a Pair;
-    type IntoIter = std::slice::Iter<'a, Pair>;
-
-    fn into_iter(self) -> std::slice::Iter<'a, Pair> {
-        self.pairs.iter()
-    }
-}
-
-// basic SouceChain trait
+/// SouceChain trait implementation
 impl<'de> SourceChain<'de> for MemChain {
     // appends the current pair to the top of the chain
     fn push(&mut self, entry_type: &str, entry: &Entry) -> Pair {
@@ -114,93 +94,69 @@ impl<'de> SourceChain<'de> for MemChain {
     }
 }
 
+// for loop support that consumes chains
+impl IntoIterator for MemChain {
+    type Item = Pair;
+    type IntoIter = std::vec::IntoIter<Pair>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.pairs.into_iter()
+    }
+}
+
+// iter() style support for references to chains
+impl<'a> IntoIterator for &'a MemChain {
+    type Item = &'a Pair;
+    type IntoIter = std::slice::Iter<'a, Pair>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, Pair> {
+        self.pairs.iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chain::entry::Entry;
     use chain::pair::Pair;
     use chain::SourceChain;
     use serde_json;
+    use super::MemChain;
 
     #[test]
-    fn validate() {
-        let mut chain = super::MemChain::new();
+    /// tests for MemChain::new()
+    fn new() {
+        let chain = MemChain::new();
 
-        let entry_type = "fooType";
-
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
-
-        // for valid pairs its truetles all the way down...
-        assert!(chain.validate());
-        chain.push(entry_type, &e1);
-        assert!(chain.validate());
-        chain.push(entry_type, &e2);
-        assert!(chain.validate());
-        chain.push(entry_type, &e3);
-        assert!(chain.validate());
+        assert_eq!(None, chain.top());
     }
 
     #[test]
-    fn get() {
-        let mut chain = super::MemChain::new();
+    /// tests for chain.push()
+    fn push () {
+        let mut chain = MemChain::new();
+        let t = "fooType";
 
-        let entry_type = "fooType";
+        assert_eq!(None, chain.top());
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        // chain top, pair entry and headers should all line up after a push
+        let e1 = Entry::new(&String::from("foo"));
+        let p1 = chain.push(t, &e1);
 
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
+        assert_eq!(Some(p1.clone()), chain.top());
+        assert_eq!(e1, p1.entry());
+        assert_eq!(e1.hash(), p1.header().entry());
 
-        assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
-        assert_eq!(Some(p2.clone()), chain.get(p2.header().hash()));
-        assert_eq!(Some(p3.clone()), chain.get(p3.header().hash()));
+        // we should be able to do it again
+        let e2 = Entry::new(&String::from("bar"));
+        let p2 = chain.push(t, &e2);
+
+        assert_eq!(Some(p2.clone()), chain.top());
+        assert_eq!(e2, p2.entry());
+        assert_eq!(e2.hash(), p2.header().entry());
     }
 
     #[test]
-    fn get_entry() {
-        let mut chain = super::MemChain::new();
-
-        let entry_type = "fooType";
-
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
-
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
-
-        assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
-        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry().hash()));
-        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry().hash()));
-    }
-
-    #[test]
-    fn valid_push() {
-        let mut chain = super::MemChain::new();
-
-        let entry_type = "fooType";
-
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
-
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
-
-        assert_eq!(p1.entry(), e1);
-        assert_eq!(p2.entry(), e2);
-        assert_eq!(p3.entry(), e3);
-    }
-
-    #[test]
+    /// tests for chain.iter()
     fn iter() {
         let mut chain = super::MemChain::new();
 
@@ -228,6 +184,125 @@ mod tests {
     }
 
     #[test]
+    /// tests for chain.validate()
+    fn validate() {
+        let mut chain = super::MemChain::new();
+
+        let entry_type = "fooType";
+
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        // for valid pairs its truetles all the way down...
+        assert!(chain.validate());
+        chain.push(entry_type, &e1);
+        assert!(chain.validate());
+        chain.push(entry_type, &e2);
+        assert!(chain.validate());
+        chain.push(entry_type, &e3);
+        assert!(chain.validate());
+    }
+
+    #[test]
+    /// tests for chain.get()
+    fn get() {
+        let mut chain = super::MemChain::new();
+
+        let entry_type = "fooType";
+
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        let p1 = chain.push(entry_type, &e1);
+        let p2 = chain.push(entry_type, &e2);
+        let p3 = chain.push(entry_type, &e3);
+
+        assert_eq!(None, chain.get(0));
+        assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
+        assert_eq!(Some(p2.clone()), chain.get(p2.header().hash()));
+        assert_eq!(Some(p3.clone()), chain.get(p3.header().hash()));
+    }
+
+    #[test]
+    /// tests for chain.get_entry()
+    fn get_entry() {
+        let mut chain = super::MemChain::new();
+
+        let entry_type = "fooType";
+
+        let e1 = Entry::new(&"foo".to_string());
+        let e2 = Entry::new(&"bar".to_string());
+        let e3 = Entry::new(&"baz".to_string());
+
+        let p1 = chain.push(entry_type, &e1);
+        let p2 = chain.push(entry_type, &e2);
+        let p3 = chain.push(entry_type, &e3);
+
+        assert_eq!(None, chain.get(0));
+        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
+        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry().hash()));
+        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry().hash()));
+    }
+
+    #[test]
+    /// tests for chain.top()
+    fn top() {
+        let mut chain = MemChain::new();
+        let t = "fooType";
+
+        assert_eq!(None, chain.top());
+
+        let e1 = Entry::new(&String::from("foo"));
+        let p1 = chain.push(t, &e1);
+
+        assert_eq!(Some(p1), chain.top());
+
+        let e2 = Entry::new(&String::from("bar"));
+        let p2 = chain.push(t, &e2);
+
+        assert_eq!(Some(p2), chain.top());
+    }
+
+    #[test]
+    /// tests for chain.top_type()
+    fn top_type() {
+        let mut chain = MemChain::new();
+        let t1 = "foo";
+        let t2 = "bar";
+
+        // both types start with None
+        assert_eq!(None, chain.top_type(t1));
+        assert_eq!(None, chain.top_type(t2));
+
+        let e1 = Entry::new(&String::from("a"));
+        let p1 = chain.push(t1, &e1);
+
+        // t1 should be p1
+        // t2 should still be None
+        assert_eq!(Some(p1.clone()), chain.top_type(t1));
+        assert_eq!(None, chain.top_type(t2));
+
+        let e2 = Entry::new(&String::from("b"));
+        let p2 = chain.push(t2, &e2);
+
+        // t1 should still be p1
+        // t2 should be p2
+        assert_eq!(Some(p1.clone()), chain.top_type(t1));
+        assert_eq!(Some(p2.clone()), chain.top_type(t2));
+
+        let e3 = Entry::new(&String::new());
+        let p3 = chain.push(t1, &e3);
+
+        // t1 should be p3
+        // t2 should still be p2
+        assert_eq!(Some(p3.clone()), chain.top_type(t1));
+        assert_eq!(Some(p2.clone()), chain.top_type(t2));
+    }
+
+    #[test]
+    /// tests for IntoIterator implementation
     fn into_iter() {
         let mut chain = super::MemChain::new();
 
@@ -268,6 +343,7 @@ mod tests {
     }
 
     #[test]
+    /// tests for chain serialization round trip through JSON
     fn json_round_trip() {
         let mut chain = super::MemChain::new();
 

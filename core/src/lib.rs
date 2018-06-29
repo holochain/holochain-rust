@@ -8,6 +8,7 @@ extern crate serde_json;
 extern crate wabt;
 
 pub mod agent;
+pub mod chain;
 pub mod common;
 pub mod context;
 pub mod error;
@@ -16,7 +17,6 @@ pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
-pub mod source_chain;
 pub mod state;
 
 //#[cfg(test)]

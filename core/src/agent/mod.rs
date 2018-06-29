@@ -1,8 +1,8 @@
 pub mod keys;
 
 use self::keys::Keys;
-use common::entry::Entry;
-use source_chain::memory::SourceChain;
+use chain::entry::Entry;
+use chain::memory::MemChain;
 use state;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
-    source_chain: Option<Box<SourceChain>>,
+    source_chain: Option<Box<MemChain>>,
 }
 
 impl AgentState {

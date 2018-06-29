@@ -144,7 +144,12 @@ _xa_str!(
     holochain_dna_set_description
 );
 
-_xa_str!(Dna, version, holochain_dna_get_version, holochain_dna_set_version);
+_xa_str!(
+    Dna,
+    version,
+    holochain_dna_get_version,
+    holochain_dna_set_version
+);
 
 _xa_str!(Dna, uuid, holochain_dna_get_uuid, holochain_dna_set_uuid);
 

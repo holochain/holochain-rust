@@ -140,12 +140,14 @@ pub fn reduce(
                             let code = wasm.code.clone();
                             thread::spawn(move || {
                                 let result: FunctionResult;
-                                match ribosome::call(code, &function_call.function.clone()) {
+                                match ribosome::call(
+                                    code,
+                                    &function_call.function.clone(),
+                                    Some(function_call.clone().parameters.into_bytes()),
+                                ) {
                                     Ok(runtime) => {
-                                        result = FunctionResult::new(
-                                            function_call,
-                                            Ok(runtime.result.to_string()),
-                                        );
+                                        result =
+                                            FunctionResult::new(function_call, Ok(runtime.result));
                                     }
 
                                     Err(ref error) => {

@@ -56,28 +56,28 @@ extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
 
-use holochain_core::context::Context;
+use holochain_core::{
+    context::Context,
+    error::HolochainError,
+    instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    state::{Action::*, State},
+};
 use holochain_dna::Dna;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
-    instance: holochain_core::instance::Instance,
+    instance: Instance,
     #[allow(dead_code)]
-    context: Arc<holochain_core::context::Context>,
+    context: Arc<Context>,
     active: bool,
 }
-
-use holochain_core::error::HolochainError;
-use holochain_core::nucleus::Action::*;
-use holochain_core::nucleus::{call_and_wait_for_result, FunctionCall};
-use holochain_core::state::Action::*;
-use holochain_core::state::State;
 
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut instance = holochain_core::instance::Instance::new();
+        let mut instance = Instance::new();
         let name = dna.name.clone();
         let action = Nucleus(InitApplication(dna));
         instance.start_action_loop();
@@ -110,18 +110,18 @@ impl Holochain {
     }
 
     /// call a function in a zome
-    pub fn call(
+    pub fn call<T: Into<String>>(
         &mut self,
-        zome: &str,
-        cap: &str,
-        fn_name: &str,
-        params: &str,
+        zome: T,
+        cap: T,
+        fn_name: T,
+        params: T,
     ) -> Result<String, HolochainError> {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(zome, cap, fn_name, params);
+        let call = FunctionCall::new(zome.into(), cap.into(), fn_name.into(), params.into());
 
         call_and_wait_for_result(call, &mut self.instance)
     }
@@ -144,7 +144,9 @@ mod tests {
     use holochain_core::context::Context;
     use holochain_core::logger::Logger;
     use holochain_core::persister::SimplePersister;
-    use holochain_core::test_utils::create_test_dna_with_wasm;
+    use holochain_core::test_utils::{
+        create_test_dna_with_wasm, create_test_dna_with_wat, test_wasm_from_file,
+    };
     use std::fmt;
     use std::sync::{Arc, Mutex};
 
@@ -240,12 +242,25 @@ mod tests {
 
     #[test]
     fn can_call() {
-        let dna = create_test_dna_with_wasm();
+        let wat = r#"
+(module
+ (memory 1)
+ (export "memory" (memory 0))
+ (export "hello_dispatch" (func $func0))
+ (func $func0 (param $p0 i32) (param $p1 i32) (result i32)
+       i32.const 16
+       )
+ (data (i32.const 0)
+       "{\"holo\":\"world\"}"
+       )
+ )
+"#;
+        let dna = create_test_dna_with_wat(Some(wat));
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "main", "{}");
+        let result = hc.call("test_zome", "test_cap", "hello", "");
         match result {
             Err(HolochainError::InstanceNotActive) => assert!(true),
             Err(_) => assert!(false),
@@ -255,9 +270,10 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "main", "{}");
+        let result = hc.call("test_zome", "test_cap", "hello", "");
+        println!("{:#?}", result);
         match result {
-            Ok(result) => assert_eq!(result, "1337"),
+            Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),
         };
     }
@@ -277,4 +293,33 @@ mod tests {
             Err(_) => assert!(false),
         };
     }
+
+    #[test]
+    fn can_call_test() {
+        let wasm = test_wasm_from_file(
+            "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
+        );
+        let dna = create_test_dna_with_wasm(wasm);
+        let agent = HCAgent::from_string("bob");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        hc.start().expect("couldn't start");
+
+        // always returns not implemented error for now!
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test",
+            r#"{"input_int_val":2,"input_str_val":"fish"}"#,
+        );
+        match result {
+            Ok(result) => assert_eq!(
+                result,
+                r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            ),
+            Err(_) => assert!(false),
+        };
+    }
+
 }

@@ -86,13 +86,19 @@ impl<'de> SourceChain<'de> for MemChain {
     fn get(&self, header_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.header().hash() == header_hash)
+        self.pairs
+            .clone()
+            .into_iter()
+            .find(|p| p.header().hash() == header_hash)
     }
 
     fn get_entry(&self, entry_hash: u64) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self.pairs.clone().into_iter().find(|p| p.entry().hash() == entry_hash)
+        self.pairs
+            .clone()
+            .into_iter()
+            .find(|p| p.entry().hash() == entry_hash)
     }
 
     fn top(&self) -> Option<Pair> {
@@ -100,7 +106,10 @@ impl<'de> SourceChain<'de> for MemChain {
     }
 
     fn top_type(&self, t: &str) -> Option<Pair> {
-        self.pairs.clone().into_iter().find(|p| p.header().entry_type() == t)
+        self.pairs
+            .clone()
+            .into_iter()
+            .find(|p| p.header().entry_type() == t)
     }
 
 }

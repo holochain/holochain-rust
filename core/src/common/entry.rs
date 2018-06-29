@@ -1,6 +1,5 @@
 use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash as _Hash, Hasher},
+    collections::hash_map::DefaultHasher, hash::{Hash as _Hash, Hasher},
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

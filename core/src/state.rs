@@ -2,9 +2,7 @@ use agent::AgentState;
 use nucleus::NucleusState;
 use snowflake;
 use std::{
-    collections::HashSet,
-    hash::{Hash, Hasher},
-    sync::{mpsc::Sender, Arc},
+    collections::HashSet, hash::{Hash, Hasher}, sync::{mpsc::Sender, Arc},
 };
 
 #[derive(Clone, Debug, PartialEq)]

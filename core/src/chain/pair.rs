@@ -44,6 +44,7 @@ mod tests {
     use chain::entry::Entry;
     use chain::header::Header;
     use chain::memory::MemChain;
+    use chain::SourceChain;
 
     #[test]
     /// tests for Pair::new()
@@ -61,14 +62,26 @@ mod tests {
     }
 
     #[test]
-    // tests for pair.header()
+    /// tests for pair.header()
     fn header() {
         let chain = MemChain::new();
-        let e1 = Entry::new(&String::from("foo"));
-        let h1 = Header::new(&chain, "type", &e1);
-        let p1 = Pair::new(&chain, "type", &e1);
+        let t = "foo";
+        let e = Entry::new(&String::from("foo"));
+        let h = Header::new(&chain, t, &e);
+        let p = Pair::new(&chain, t, &e);
 
-        assert_eq!(h1, p1.header());
+        assert_eq!(h, p.header());
+    }
+
+    #[test]
+    /// tests for pair.entry()
+    fn entry() {
+        let mut chain = MemChain::new();
+        let t = "foo";
+        let e = Entry::new(&String::new());
+        let p = chain.push(t, &e);
+
+        assert_eq!(e, p.entry());
     }
 
     #[test]

@@ -170,8 +170,7 @@ impl Dna {
         capability_name: &str,
     ) -> Option<&wasm::DnaWasm> {
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
-        let capability = zome
-            .capabilities
+        let capability = zome.capabilities
             .iter()
             .find(|c| c.name == capability_name)?;
         Some(&capability.code)
@@ -507,8 +506,10 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna
-            .get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        let wasm = dna.get_wasm_for_capability(
+            &("test zome".to_string()),
+            &("test capability".to_string()),
+        );
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
         let fail = dna.get_wasm_for_capability(

@@ -2,7 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash as _Hash, Hasher};
 
 use chain::entry::Entry;
-use chain::chain::SourceChain;
+use chain::SourceChain;
 
 /// Properties defined in HeadersEntrySchema from golang alpha 1 (hence the title case)
 /// @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -35,7 +35,7 @@ impl _Hash for Header {
 }
 
 impl Header {
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: String, entry: &Entry) -> Header {
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Header {
         Header {
             Type: entry_type.clone(),
             // @TODO implement timestamps
@@ -43,7 +43,9 @@ impl Header {
             Time: String::new(),
             HeaderLink: chain.top().and_then(|p| Some(p.header().hash())),
             EntryLink: entry.hash(),
-            TypeLink: chain.top_type(&entry_type).and_then(|p| Some(p.header().hash())),
+            TypeLink: chain
+                .top_type(&entry_type)
+                .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             Signature: String::new(),
@@ -80,10 +82,10 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::pair::Pair;
     use chain::entry::Entry;
     use chain::header::Header;
     use chain::memory::MemChain;
+    use chain::pair::Pair;
 
     #[test]
     fn header() {

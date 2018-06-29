@@ -1,6 +1,6 @@
 use chain::entry::Entry;
 use chain::header::Header;
-use chain::chain::SourceChain;
+use chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -9,7 +9,6 @@ pub struct Pair {
 }
 
 impl Pair {
-
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: String, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry_type, entry);
 
@@ -35,10 +34,8 @@ impl Pair {
     }
 
     pub fn validate(&self) -> bool {
-        self.header.validate() && self.entry.validate() &&
-        self.header.entry() == self.entry.hash()
+        self.header.validate() && self.entry.validate() && self.header.entry() == self.entry.hash()
     }
-
 }
 
 #[cfg(test)]

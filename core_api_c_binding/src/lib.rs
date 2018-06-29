@@ -76,10 +76,7 @@ pub unsafe extern "C" fn holochain_call(
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
-    if ptr.is_null()
-        || zome.is_null()
-        || capability.is_null()
-        || function.is_null()
+    if ptr.is_null() || zome.is_null() || capability.is_null() || function.is_null()
         || parameters.is_null()
     {
         return std::ptr::null_mut();

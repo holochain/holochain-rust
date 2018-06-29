@@ -2,7 +2,7 @@ use std;
 
 use chain::entry::Entry;
 use chain::pair::Pair;
-use chain::chain::SourceChain;
+use chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct MemChain {
@@ -41,10 +41,8 @@ impl<'a> IntoIterator for &'a MemChain {
 
 // basic SouceChain trait
 impl<'de> SourceChain<'de> for MemChain {
-
     // appends the current pair to the top of the chain
     fn push(&mut self, entry_type: String, entry: &Entry) -> Pair {
-
         let pair = Pair::new(self, entry_type, entry);
 
         if !(pair.validate()) {
@@ -53,9 +51,12 @@ impl<'de> SourceChain<'de> for MemChain {
 
         let top_pair = self.top();
         let next_pair = pair.header().next().and_then(|h| self.get(h));
-        if !(top_pair == next_pair) {
+        if top_pair != next_pair {
             // we panic because no code path should attempt to append an invalid pair
-            panic!("top pair did not match next hash pair from pushed pair: {:?} vs. {:?}", top_pair, next_pair);
+            panic!(
+                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                top_pair, next_pair
+            );
         }
 
         // dry run an insertion against a clone and validate the outcome
@@ -111,15 +112,14 @@ impl<'de> SourceChain<'de> for MemChain {
             .into_iter()
             .find(|p| p.header().entry_type() == t)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json;
     use chain::entry::Entry;
     use chain::pair::Pair;
-    use chain::chain::SourceChain;
+    use chain::SourceChain;
+    use serde_json;
 
     #[test]
     fn validate() {

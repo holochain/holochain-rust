@@ -13,11 +13,11 @@ pub struct Header {
     Type: String,
     /// ISO8601 time stamp
     Time: String,
-    /// optional link to the immediately preceding header in the chain
+    /// link to the immediately preceding header, None is valid only for genesis
     HeaderLink: Option<u64>,
     /// mandatory link to the entry for this header
     EntryLink: u64,
-    /// optional link to the most recent header of the same type in the chain
+    /// link to the most recent header of the same type, None is valid only for the first of type
     TypeLink: Option<u64>,
     Signature: String,
 }

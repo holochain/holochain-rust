@@ -4,7 +4,8 @@ use std::hash::{Hash as _Hash, Hasher};
 use chain::entry::Entry;
 use chain::chain::SourceChain;
 
-/// Properties defined in HeadersEntrySchema from golang alpha 1
+/// Properties defined in HeadersEntrySchema from golang alpha 1 (hence the title case)
+/// @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub struct Header {

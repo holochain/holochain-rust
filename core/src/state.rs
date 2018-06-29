@@ -69,7 +69,7 @@ impl State {
         observer_channel: &Sender<Observer>,
     ) -> Self {
 
-        println!("instance.reduce: {:?}", action_wrapper.action);
+        // println!("instance.reduce: {:?}", action_wrapper.action);
 
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
@@ -86,7 +86,7 @@ impl State {
             history: self.history.clone(),
         };
 
-        println!("-- DONE - instance.reduce {:?}", action_wrapper.action);
+        //println!("-- DONE - instance.reduce {:?}", action_wrapper.action);
         new_state.history.insert(action_wrapper);
         new_state
     }

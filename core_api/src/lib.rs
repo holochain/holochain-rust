@@ -192,6 +192,7 @@ mod tests {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
                 assert_eq!(hc.context.agent, agent);
+                // assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
                 assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
             }

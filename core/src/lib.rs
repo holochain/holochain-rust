@@ -67,6 +67,9 @@ mod tests {
     use state::State;
     use std::sync::mpsc::channel;
 
+    use std::thread::sleep;
+    use std::time::Duration;
+
     // This test shows how to call dispatch with a closure that should run
     // when the action results in a state change.  Note that the observer closure
     // needs to return a boolean to indicate that it has successfully observed what
@@ -111,19 +114,25 @@ mod tests {
         instance.dispatch_and_wait(action.clone());
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(instance.state().nucleus().has_initialized(), true);
+        //assert!(instance.state().nucleus().has_initialized());
 
         instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().has_initialized(), true);
+        //assert!(instance.state().nucleus().has_initialized());
     }
 
     fn create_instance(dna: Dna) -> Instance {
-        // Create instance and plug in our DNA:
+        // Create instance and plug in our DNA
         let mut instance = Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.start_action_loop();
         instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
+
+        while instance.state().history.len() < 4 {
+            println!("Waiting... {}", instance.state().history.len());
+            sleep(Duration::from_millis(10))
+        }
+
         instance
     }
 
@@ -132,7 +141,7 @@ mod tests {
         let dna = test_utils::create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
-        // Create zome function call:
+        // Create zome function call
         let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
@@ -140,6 +149,22 @@ mod tests {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
             Err(_) => assert!(false),
+        }
+    }
+
+    #[test]
+    fn call_ribosome_wrong_dna() {
+        let mut instance = Instance::new();
+        instance.start_action_loop();
+
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let result = nucleus::call_and_wait_for_result(call, &mut instance);
+
+        println!("result = {:?}", result);
+
+        match result {
+            Err(HolochainError::DnaMissing) => {}
+            _ => assert!(false),
         }
     }
 
@@ -154,12 +179,10 @@ mod tests {
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            // Result 1337 from WASM (as string)
-            Ok(_) => assert!(false),
             Err(HolochainError::ErrorGeneric(err)) => {
                 assert_eq!(err, "Function: Module doesn\'t have export xxx")
             }
-            Err(_) => assert!(false),
+            _ => assert!(false),
         }
     }
 
@@ -168,32 +191,29 @@ mod tests {
         let dna = test_utils::create_test_dna_with_wasm();
         let mut instance = create_instance(dna);
 
-        // Create zome function call:
+
+        // Create bad zome function call
         let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            // Result 1337 from WASM (as string)
-            Ok(_) => assert!(false),
-            Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Zome or capability not found xxx/test_cap")
+            Err(HolochainError::ZomeNotFound(err)) => {
+                assert_eq!(err, "Zome 'xxx' not found")
             }
-            Err(_) => assert!(false),
+            _ => assert!(false),
         }
 
-        // Create zome function call:
+        // Create bad capability function call
         let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            // Result 1337 from WASM (as string)
-            Ok(_) => assert!(false),
-            Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Zome or capability not found test_zome/xxx")
+            Err(HolochainError::CapabilityNotFound(err)) => {
+                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
             }
-            Err(_) => assert!(false),
+            _ => { assert!(false) },
         }
     }
 }

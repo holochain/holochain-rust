@@ -192,7 +192,7 @@ pub enum Action {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    old_nucleus: Arc<NucleusState>,
+    old_nucleus_state: Arc<NucleusState>,
     action: &state::Action,
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>)
@@ -201,32 +201,33 @@ pub fn reduce(
     println!(" REDUCING NUCLEUS {:?}", *action);
     match *action {
         state::Action::Nucleus(ref nucleus_action) => {
-            let mut new_nucleus: NucleusState = (*old_nucleus).clone();
+            let mut new_nucleus_state: NucleusState = (*old_nucleus_state).clone();
+
             match *nucleus_action {
 
                 // Update state on initialization success
                 // otherwise reset the nucleus
                 Action::ReturnInitializationResult(succeeded) => {
-                    assert!(new_nucleus.status == NucleusStatus::Initializing);
+                    assert!(new_nucleus_state.status == NucleusStatus::Initializing);
                     if succeeded {
-                        new_nucleus.status = NucleusStatus::Initialized
+                        new_nucleus_state.status = NucleusStatus::Initialized
                     } else {
-                        new_nucleus = NucleusState::new();
+                        new_nucleus_state = NucleusState::new();
                     };
                 }
 
                 // Initialize Nucleus by setting the DNA
                 // and sending ExecuteFunction Action of genesis of each zome
                 Action::InitApplication(ref dna) => {
-                    println!("\t InitApplication: {:?}", new_nucleus.status);
-                    match new_nucleus.status {
+                    println!("\t InitApplication: {:?}", new_nucleus_state.status);
+                    match new_nucleus_state.status {
                         NucleusStatus::New =>
                         {
                             // Update state
-                            new_nucleus.status = NucleusStatus::Initializing;
+                            new_nucleus_state.status = NucleusStatus::Initializing;
 
                             // Set DNA
-                            new_nucleus.dna = Some(dna.clone());
+                            new_nucleus_state.dna = Some(dna.clone());
 
                             // Create & launch thread
                             let action_channel = action_channel.clone();
@@ -248,18 +249,26 @@ pub fn reduce(
                                     // Call Genesis and wait
                                     let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
 
-                                    if let Err(e) = call_result {
-                                        println!("\t CALL genesis failed {:?}", e);
-                                        // Send Failed ReturnInitializationResult Action
-                                        action_channel
-                                          .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                              Action::ReturnInitializationResult(false),
-                                          )))
-                                          .expect("action channel to be open in reducer");
-                                        // Kill thread
-                                        // TODO - Instead, Keep track of each zome's initialization.
-                                        // Mark this one as failed and continue with other zomes
-                                        return;
+                                    match call_result {
+                                        // OKAY if hc_lifecycle or genesis not present
+                                        Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
+                                        // FIXME TEST THIS CASE
+                                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis"
+                                          => { /* NA */ }
+                                        Err(e) => {
+                                            // TODO test this case
+                                            println!("\t CALL genesis failed {:?}", e);
+                                            // Send Failed ReturnInitializationResult Action
+                                            action_channel
+                                              .send(state::ActionWrapper::new(state::Action::Nucleus(
+                                                  Action::ReturnInitializationResult(false),
+                                              )))
+                                              .expect("action channel to be open in reducer");
+                                            // Kill thread
+                                            // TODO - Instead, Keep track of each zome's initialization.
+                                            // Mark this one as failed and continue with other zomes
+                                            return;
+                                        }
                                     }
                                 }
                                 // Send Succeeded ReturnInitializationResult Action
@@ -281,6 +290,9 @@ pub fn reduce(
                 // Execute an exposed Zome function in a seperate thread and send the result in
                 // a ReturnZomeFunctionResult Action on success or failure
                 Action::ExecuteZomeFunction(ref fc) => {
+
+                    println!("\t ExecuteZomeFunction: {:?}", fc);
+
                     let function_call = fc.clone();
                     // let mut has_zome_and_capability = false;
 
@@ -290,11 +302,11 @@ pub fn reduce(
                         Err(HolochainError::ErrorGeneric("[]".to_string())),
                     );
 
-                    if let Some(ref dna) = new_nucleus.dna {
+                    if let Some(ref dna) = new_nucleus_state.dna {
                         if let Some(ref zome) = dna.get_zome(&fc.zome) {
                             if let Some(ref wasm) = dna.get_capability(zome, &fc.capability) {
 
-                                new_nucleus.ribosome_calls.insert(fc.clone(), None);
+                                new_nucleus_state.ribosome_calls.insert(fc.clone(), None);
 
                                 let action_channel = action_channel.clone();
                                 let tx_observer = observer_channel.clone();
@@ -332,14 +344,14 @@ pub fn reduce(
                             } else {
                                 has_error = true;
                                 result = FunctionResult::new(fc.clone(),Err(HolochainError::CapabilityNotFound(format!(
-                                    "Capability {} not found in Zome {}",
+                                    "Capability '{}' not found in Zome '{}'",
                                     &fc.capability, &fc.zome
                                 ))));
                             }
                         } else {
                             has_error = true;
                             result = FunctionResult::new(fc.clone(), Err(HolochainError::ZomeNotFound(format!(
-                                "Zome {} not found",
+                                "Zome '{}' not found",
                                 &fc.zome
                             ))));
                         }
@@ -358,7 +370,7 @@ pub fn reduce(
 
                 // Store the Result in the ribosome_calls hashmap
                 Action::ReturnZomeFunctionResult(ref result) => {
-                    new_nucleus
+                    new_nucleus_state
                         .ribosome_calls
                         .insert(result.call.clone(), Some(result.result.clone()));
                 }
@@ -370,7 +382,7 @@ pub fn reduce(
                     let mut _has_entry_type = false;
 
                     // must have entry_type
-                    if let Some(ref dna) = new_nucleus.dna
+                    if let Some(ref dna) = new_nucleus_state.dna
                     {
                         if let Some(ref _wasm) = dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
                         {
@@ -382,9 +394,9 @@ pub fn reduce(
                 }
             }
             println!(" -- DONE REDUCING NUCLEUS {:?}", *action);
-            Arc::new(new_nucleus)
+            Arc::new(new_nucleus_state)
         }
-        _ => old_nucleus,
+        _ => old_nucleus_state,
     }
 }
 
@@ -394,32 +406,74 @@ mod tests {
     use super::super::state::Action::*;
     use super::*;
     use std::sync::mpsc::channel;
-    //use std::thread::sleep;
-    //use std::time::Duration;
+
 
     #[test]
     fn can_instantiate_nucleus_state() {
-        let nucleus = NucleusState::new();
-        assert_eq!(nucleus.dna, None);
-        assert_eq!(nucleus.has_initialized(), false);
+        let nucleus_state = NucleusState::new();
+        assert_eq!(nucleus_state.dna, None);
+        assert_eq!(nucleus_state.has_initialized(), false);
+        assert_eq!(nucleus_state.status(), NucleusStatus::New);
     }
+
 
     #[test]
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = channel::<state::ActionWrapper>();
+        let (sender, receiver) = channel::<state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
+
+        // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(nucleus.clone(), &action, &sender.clone(), &tx_observer.clone());
-        //assert!(reduced_nucleus.has_initialized(), false);
+        receiver
+          .recv()
+          .unwrap_or_else(|_| panic!("channel failed"));
 
-        //sleep(Duration::from_millis(500));
-        //assert!(reduced_nucleus.has_initialized(), true);
+        assert_eq!(reduced_nucleus.has_initialized(), false);
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
 
-        // on second reduction it still works.
-        let second_reduced_nucleus = reduce(reduced_nucleus.clone(), &action, &sender.clone(), &tx_observer.clone());
-        assert_eq!(second_reduced_nucleus, reduced_nucleus);
+
+    }
+
+
+    #[test]
+    fn can_reduce_return_init_result_action() {
+        let dna = Dna::new();
+        let action = Nucleus(InitApplication(dna));
+        let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
+        let (sender, receiver) = channel::<state::ActionWrapper>();
+        let (tx_observer, _observer) = channel::<Observer>();
+
+        // Reduce Init action and block until receiving ReturnInit Action
+        let reduced_nucleus = reduce(nucleus.clone(), &action, &sender.clone(), &tx_observer.clone());
+        receiver
+          .recv()
+          .unwrap_or_else(|_| panic!("receiver fail"));
+
+        assert_eq!(reduced_nucleus.has_initialized(), false);
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
+
+        // Send ReturnInit(false) Action
+        let return_action = Nucleus(ReturnInitializationResult(false));
+        let reduced_nucleus = reduce(reduced_nucleus.clone(), &return_action, &sender.clone(), &tx_observer.clone());
+
+        assert_eq!(reduced_nucleus.has_initialized(), false);
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::New);
+
+        // Reduce Init action and block until receiving ReturnInit Action
+        let reduced_nucleus = reduce(reduced_nucleus.clone(), &action, &sender.clone(), &tx_observer.clone());
+        receiver
+          .recv()
+          .unwrap_or_else(|_| panic!("receiver fail"));
+
+        // Send ReturnInit(true) Action
+        let return_action = Nucleus(ReturnInitializationResult(true));
+        let reduced_nucleus = reduce(reduced_nucleus.clone(), &return_action, &sender.clone(), &tx_observer.clone());
+
+        assert_eq!(reduced_nucleus.has_initialized(), true);
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initialized);
     }
 
     #[test]

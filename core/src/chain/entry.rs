@@ -40,12 +40,36 @@ mod tests {
     use super::Entry;
 
     #[test]
-    fn new_entry() {
+    fn new() {
         let c = String::from("foo");
         let e = Entry::new(&c);
 
         assert_eq!(e.content(), c);
         assert_ne!(e.hash(), 0);
+        assert!(e.validate());
+    }
+
+    #[test]
+    fn hash() {
+        let c = String::from("bar");
+        let e = Entry::new(&c);
+
+        assert_eq!(3676438629107045207, e.hash());
+    }
+
+    #[test]
+    fn content() {
+        let c = String::from("baz");
+        let e = Entry::new(&c);
+
+        assert_eq!("baz", e.content());
+    }
+
+    #[test]
+    fn validate() {
+        let c = String::new();
+        let e = Entry::new(&c);
+
         assert!(e.validate());
     }
 }

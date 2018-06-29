@@ -507,7 +507,8 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        let wasm = dna
+            .get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
         let fail = dna.get_wasm_for_capability(

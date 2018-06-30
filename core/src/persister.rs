@@ -50,7 +50,7 @@ mod tests {
 
         let state = State::new();
 
-        let entry = ::common::entry::Entry::new(&"some hash".to_string());
+        let entry = ::chain::entry::Entry::new(&"some hash".to_string());
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
         let (sender, _receiver) = channel::<::state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();

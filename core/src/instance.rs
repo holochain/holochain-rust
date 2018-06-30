@@ -36,46 +36,12 @@ impl Instance {
 
     /// Stack an Action in the Event Queue
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
-        let wrapper = ActionWrapper::new(action);
-        self.action_channel
-            .send(wrapper.clone())
-            .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-        wrapper
+        return dispatch_action(&self.action_channel, action);
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
     pub fn dispatch_and_wait(&mut self, action: Action) {
-        let wrapper = ActionWrapper::new(action);
-        let wrapper_clone = wrapper.clone();
-
-        let (sender, receiver) = channel::<bool>();
-        let closure = move |state: &State| {
-            if state.history.contains(&wrapper_clone) {
-                sender
-                    .send(true)
-                    .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-                true
-            } else {
-                false
-            }
-        };
-
-        let observer = Observer {
-            sensor: Box::new(closure),
-            done: false,
-        };
-
-        self.observer_channel
-            .send(observer)
-            .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-
-        self.action_channel
-            .send(wrapper)
-            .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-
-        receiver
-            .recv()
-            .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+        return dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -83,15 +49,7 @@ impl Instance {
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
-        let observer = Observer {
-            sensor: Box::new(closure),
-            done: false,
-        };
-
-        self.observer_channel
-            .send(observer)
-            .expect("observer channel to be open");
-        self.dispatch(action);
+        return dispatch_action_with_observer(&self.action_channel, &self.observer_channel, action, closure);
     }
 
     /// Start the Event Loop on a seperate thread

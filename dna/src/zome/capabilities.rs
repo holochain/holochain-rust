@@ -4,6 +4,7 @@ holochain_dna::zome::capabilities is a set of structs for working with holochain
 
 extern crate serde_json;
 
+use std::str::FromStr;
 use wasm::DnaWasm;
 
 //--------------------------------------------------------------------------------------------------
@@ -15,19 +16,22 @@ pub enum ReservedCapabilityNames {
     Communication,
 }
 
-impl ReservedCapabilityNames {
-    pub fn from_str(s: &str) -> Option<ReservedCapabilityNames> {
+impl FromStr for ReservedCapabilityNames {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "hc_lifecycle" => Some(ReservedCapabilityNames::LifeCycle),
-            "hc_web_gateway" => Some(ReservedCapabilityNames::Communication),
-            _ => None,
+            "hc_lifecycle" => Ok(ReservedCapabilityNames::LifeCycle),
+            "hc_web_gateway" => Ok(ReservedCapabilityNames::Communication),
+            _ => Err("Cannot convert string to ReservedCapabilityNames"),
         }
     }
+}
 
+impl ReservedCapabilityNames {
     pub fn as_str(&self) -> &'static str {
-        match self {
-            &ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
-            &ReservedCapabilityNames::Communication => "hc_web_gateway",
+        match *self {
+            ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
+            ReservedCapabilityNames::Communication => "hc_web_gateway",
         }
     }
 }
@@ -43,19 +47,23 @@ pub enum ReservedFunctionNames {
 }
 
 
-impl ReservedFunctionNames {
-    pub fn from_str(s: &str) -> Option<ReservedFunctionNames> {
+impl FromStr for ReservedFunctionNames {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "genesis" => Some(ReservedFunctionNames::Genesis),
-            "receive" => Some(ReservedFunctionNames::Receive),
-            _ => None,
+            "genesis" => Ok(ReservedFunctionNames::Genesis),
+            "receive" => Ok(ReservedFunctionNames::Receive),
+            _ => Err("Cannot convert string to ReservedFunctionNames"),
         }
     }
+}
 
+
+impl ReservedFunctionNames {
     pub fn as_str(&self) -> &'static str {
-        match self {
-            &ReservedFunctionNames::Genesis => "genesis",
-            &ReservedFunctionNames::Receive => "receive",
+        match *self {
+            ReservedFunctionNames::Genesis => "genesis",
+            ReservedFunctionNames::Receive => "receive",
         }
     }
 }

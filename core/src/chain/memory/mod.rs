@@ -284,22 +284,22 @@ mod tests {
         let e2 = Entry::new(t2, "b");
         let e3 = Entry::new(t1, "");
 
-        let p1 = chain.push(&e1);
-        let p2 = chain.push(&e2);
-        let p3 = chain.push(&e3);
 
         // t1 should be p1
         // t2 should still be None
+        let p1 = chain.push(&e1);
         assert_eq!(Some(p1.clone()), chain.top_type(t1));
         assert_eq!(None, chain.top_type(t2));
 
         // t1 should still be p1
         // t2 should be p2
+        let p2 = chain.push(&e2);
         assert_eq!(Some(p1.clone()), chain.top_type(t1));
         assert_eq!(Some(p2.clone()), chain.top_type(t2));
 
         // t1 should be p3
         // t2 should still be p2
+        let p3 = chain.push(&e3);
         assert_eq!(Some(p3.clone()), chain.top_type(t1));
         assert_eq!(Some(p2.clone()), chain.top_type(t2));
     }
@@ -350,7 +350,7 @@ mod tests {
     fn json_round_trip() {
         let mut chain = super::MemChain::new();
 
-        let t = "fooType";
+        let t = "foo";
         let e1 = Entry::new(t, "foo");
         let e2 = Entry::new(t, "bar");
         let e3 = Entry::new(t, "baz");
@@ -360,7 +360,7 @@ mod tests {
         chain.push(&e3);
 
         let json = serde_json::to_string(&chain).unwrap();
-        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":14176581647729525889,\"entry\":3676438629107045207,\"type_next\":14176581647729525889,\"signature\":\"\"},\"entry\":{\"content\":\"bar\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":4506850079084802999,\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\"}}}";
+        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":14176581647729525889,\"entry\":3676438629107045207,\"type_next\":14176581647729525889,\"signature\":\"\"},\"entry\":{\"content\":\"bar\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":4506850079084802999,\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\",\"entry_type\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}}}";
 
         assert_eq!(expected_json, json);
         assert_eq!(chain, serde_json::from_str(&json).unwrap());

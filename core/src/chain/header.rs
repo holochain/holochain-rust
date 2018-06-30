@@ -8,10 +8,10 @@ use chain::SourceChain;
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Header<'a> {
+pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
-    entry_type: &str,
+    entry_type: String,
     /// ISO8601 time stamp
     time: String,
     /// link to the immediately preceding header, None is valid only for genesis
@@ -24,7 +24,7 @@ pub struct Header<'a> {
     signature: String,
 }
 
-impl<'a> _Hash for Header<'a> {
+impl _Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.entry_type.hash(state);
         self.time.hash(state);
@@ -35,7 +35,7 @@ impl<'a> _Hash for Header<'a> {
     }
 }
 
-impl<'a> Header<'a> {
+impl Header {
     /// build a new Header from a chain, entry type and entry.
     /// a Header is immutable, but the chain is mutable if chain.push() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
@@ -44,7 +44,7 @@ impl<'a> Header<'a> {
     /// chain::SourceChain trait and should not need to be handled manually
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &'a Entry) -> Header<'a> {
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &Entry) -> Header {
         Header {
             entry_type: entry.entry_type(),
             // @TODO implement timestamps

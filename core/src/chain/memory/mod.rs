@@ -5,12 +5,12 @@ use chain::pair::Pair;
 use chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
-pub struct MemChain<'a> {
-    pairs: Vec<Pair<'a>>,
-    top: Option<Pair<'a>>,
+pub struct MemChain {
+    pairs: Vec<Pair>,
+    top: Option<Pair>,
 }
 
-impl<'a> MemChain<'a> {
+impl MemChain {
     /// builds the data structures required to efficiently represent a SourceChain in memory
     /// typically a MemChain should be _mutable_ to facilitate chain.push()
     pub fn new() -> MemChain {
@@ -22,7 +22,7 @@ impl<'a> MemChain<'a> {
 }
 
 /// SouceChain trait implementation
-impl<'de, 'a> SourceChain<'de> for MemChain<'a> {
+impl<'de> SourceChain<'de> for MemChain {
     // appends the current pair to the top of the chain
     fn push(&mut self, entry: &Entry) -> Pair {
         let pair = Pair::new(self, entry);
@@ -97,9 +97,9 @@ impl<'de, 'a> SourceChain<'de> for MemChain<'a> {
 }
 
 // for loop support that consumes chains
-impl<'a> IntoIterator for MemChain<'a> {
-    type Item = Pair<'a>;
-    type IntoIter = std::vec::IntoIter<Pair<'a>>;
+impl IntoIterator for MemChain {
+    type Item = Pair;
+    type IntoIter = std::vec::IntoIter<Pair>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.pairs.into_iter()
@@ -107,11 +107,11 @@ impl<'a> IntoIterator for MemChain<'a> {
 }
 
 // iter() style support for references to chains
-impl<'a> IntoIterator for &'a MemChain {
-    type Item = &'a Pair;
-    type IntoIter = std::slice::Iter<'a, Pair>;
+impl IntoIterator for &MemChain {
+    type Item = &Pair;
+    type IntoIter = std::slice::Iter<Pair>;
 
-    fn into_iter(self) -> std::slice::Iter<'a, Pair> {
+    fn into_iter(self) -> std::slice::Iter<Pair> {
         self.pairs.iter()
     }
 }

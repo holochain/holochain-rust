@@ -7,7 +7,7 @@ pub struct Entry {
     entry_type: String,
 }
 
-impl<'a> _Hash for Entry<'a> {
+impl _Hash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.content.hash(state);
         // do NOT include the entry_type in the entry hash
@@ -16,16 +16,16 @@ impl<'a> _Hash for Entry<'a> {
     }
 }
 
-impl<'a> Entry<'a> {
+impl Entry {
     /// build a new Entry from passed content
     /// an Entry is immutable, this is important for absolutely everything downstream
     /// an entry is not valid until paired with a header and included in a chain.
     /// @see chain::header::Header
     /// @see chain::pair::Pair
-    pub fn new(entry_type: &'a str, content: &'a str) -> Entry<'a> {
+    pub fn new(entry_type: &str, content: &str) -> Entry {
         Entry {
-            entry_type,
-            content,
+            entry_type: entry_type.to_string(),
+            content: content.to_string(),
         }
     }
 

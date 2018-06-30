@@ -8,12 +8,12 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq, Default)]
-pub struct AgentState<'a> {
+pub struct AgentState {
     keys: Option<Keys>,
-    source_chain: Option<Box<MemChain<'a>>>,
+    source_chain: Option<Box<MemChain>>,
 }
 
-impl<'a> AgentState<'a> {
+impl AgentState {
     pub fn new() -> Self {
         AgentState {
             keys: None,
@@ -23,8 +23,8 @@ impl<'a> AgentState<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Action<'a> {
-    Commit(Entry<'a>),
+pub enum Action {
+    Commit(Entry),
 }
 
 pub fn reduce(

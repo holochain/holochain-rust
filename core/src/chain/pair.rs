@@ -3,9 +3,9 @@ use chain::header::Header;
 use chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Pair<'e> {
+pub struct Pair {
     header: Header,
-    entry: Entry<'e>,
+    entry: Entry,
 }
 
 impl Pair {

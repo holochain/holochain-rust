@@ -8,11 +8,11 @@ pub trait Persister {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct SimplePersister<'a> {
-    state: Option<State<'a>>,
+pub struct SimplePersister {
+    state: Option<State>,
 }
 
-impl<'a> Persister for SimplePersister<'a> {
+impl Persister for SimplePersister {
     fn save(&mut self, state: &State) {
         self.state = Some(state.clone());
     }
@@ -21,7 +21,7 @@ impl<'a> Persister for SimplePersister<'a> {
     }
 }
 
-impl<'a> SimplePersister<'a> {
+impl SimplePersister {
     pub fn new() -> Self {
         SimplePersister { state: None }
     }

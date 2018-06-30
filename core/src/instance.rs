@@ -6,9 +6,9 @@ use std::thread;
 use std::time::Duration;
 
 //#[derive(Clone)]
-pub struct Instance<'a> {
+pub struct Instance {
     state: Arc<RwLock<State>>,
-    action_channel: Sender<ActionWrapper<'a>>,
+    action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
 }
 

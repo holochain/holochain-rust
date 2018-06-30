@@ -124,6 +124,16 @@ mod tests {
     }
 
     #[test]
+    /// tests for entry.entry_type()
+    fn entry_type() {
+        let t = "bar";
+        let c = "foo";
+        let e = Entry::new(t, c);
+
+        assert_eq!(t, e.entry_type());
+    }
+
+    #[test]
     /// tests for entry.validate()
     fn validate() {
         let t = "";

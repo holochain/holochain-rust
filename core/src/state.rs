@@ -10,19 +10,19 @@ use std::sync::Arc;
 #[derive(Clone, Debug, PartialEq)]
 #[allow(unknown_lints)]
 #[allow(large_enum_variant)]
-pub enum Action {
-    Agent(::agent::Action),
+pub enum Action<'a> {
+    Agent(::agent::Action<'a>),
     Network(::network::Action),
     Nucleus(::nucleus::Action),
 }
 
 #[derive(Clone, Debug)]
-pub struct ActionWrapper {
-    pub action: Action,
+pub struct ActionWrapper<'a> {
+    pub action: Action<'a>,
     pub id: snowflake::ProcessUniqueId,
 }
 
-impl ActionWrapper {
+impl<'a> ActionWrapper<'a> {
     pub fn new(a: Action) -> Self {
         ActionWrapper {
             action: a,
@@ -31,28 +31,28 @@ impl ActionWrapper {
     }
 }
 
-impl PartialEq for ActionWrapper {
+impl<'a> PartialEq for ActionWrapper<'a> {
     fn eq(&self, other: &ActionWrapper) -> bool {
         self.id == other.id
     }
 }
 
-impl Eq for ActionWrapper {}
+impl<'a> Eq for ActionWrapper<'a> {}
 
-impl Hash for ActionWrapper {
+impl<'a> Hash for ActionWrapper<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
 
 #[derive(Clone, PartialEq, Debug, Default)]
-pub struct State {
+pub struct State<'a> {
     nucleus: Arc<NucleusState>,
-    agent: Arc<AgentState>,
-    pub history: HashSet<ActionWrapper>,
+    agent: Arc<AgentState<'a>>,
+    pub history: HashSet<ActionWrapper<'a>>,
 }
 
-impl State {
+impl<'a> State<'a> {
     pub fn new() -> Self {
         State {
             nucleus: Arc::new(NucleusState::new()),

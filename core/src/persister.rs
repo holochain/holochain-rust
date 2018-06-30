@@ -8,11 +8,11 @@ pub trait Persister {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct SimplePersister {
-    state: Option<State>,
+pub struct SimplePersister<'a> {
+    state: Option<State<'a>>,
 }
 
-impl Persister for SimplePersister {
+impl<'a> Persister for SimplePersister<'a> {
     fn save(&mut self, state: &State) {
         self.state = Some(state.clone());
     }
@@ -21,7 +21,7 @@ impl Persister for SimplePersister {
     }
 }
 
-impl SimplePersister {
+impl<'a> SimplePersister<'a> {
     pub fn new() -> Self {
         SimplePersister { state: None }
     }
@@ -49,8 +49,9 @@ mod tests {
         let mut store = SimplePersister::new();
 
         let state = State::new();
+        let t = "entryType";
 
-        let entry = ::chain::entry::Entry::new(&"some hash".to_string());
+        let entry = ::chain::entry::Entry::new(t, "some hash");
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
         let (sender, _receiver) = channel::<::state::ActionWrapper>();
         let new_state = state.reduce(::state::ActionWrapper::new(action), &sender);

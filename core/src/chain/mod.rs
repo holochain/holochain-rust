@@ -11,7 +11,7 @@ use std;
 
 pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
-    fn push(&mut self, entry_type: &str, &Entry) -> Pair;
+    fn push(&mut self, &Entry) -> Pair;
 
     /// returns an iterator referencing pairs from top (most recent) to bottom (genesis)
     fn iter(&self) -> std::slice::Iter<Pair>;

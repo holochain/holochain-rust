@@ -46,14 +46,14 @@ impl Header {
     /// @see chain::entry::Entry
     pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &Entry) -> Header {
         Header {
-            entry_type: entry.entry_type(),
+            entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
             next: chain.top().and_then(|p| Some(p.header().hash())),
             entry: entry.hash(),
             type_next: chain
-                .top_type(entry.entry_type())
+                .top_type(&entry.entry_type())
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71

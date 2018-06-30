@@ -107,11 +107,11 @@ impl IntoIterator for MemChain {
 }
 
 // iter() style support for references to chains
-impl IntoIterator for &MemChain {
-    type Item = &Pair;
-    type IntoIter = std::slice::Iter<Pair>;
+impl IntoIterator for &'a MemChain {
+    type Item = &'a Pair;
+    type IntoIter = std::slice::Iter<'a, Pair>;
 
-    fn into_iter(self) -> std::slice::Iter<Pair> {
+    fn into_iter(self) -> std::slice::Iter<'a, Pair> {
         self.pairs.iter()
     }
 }

@@ -111,7 +111,7 @@ mod tests {
         let chain = MemChain::new();
         let t = "fooType";
 
-        let e1 = Entry::new(t, &String::from("bar"));
+        let e1 = Entry::new(t, "bar");
         let p1 = Pair::new(&chain, &e1);
 
         assert!(p1.validate());

@@ -237,7 +237,6 @@ pub fn reduce(
                             thread::spawn(move || {
                                 //  Call each Zome's genesis() with an ExecuteZomeFunction Action
                                 for zome in dna_clone.zomes {
-
                                     // Make ExecuteZomeFunction Action for genesis()
                                     let call = FunctionCall::new(
                                         zome.name,
@@ -268,7 +267,7 @@ pub fn reduce(
                                         }
                                         // its okay if hc_lifecycle or genesis not present
                                         Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
-                                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis"
+                                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis_dispatch"
                                           => { /* NA */ }
                                         // Init fails if something failed in genesis called
                                         Err(_e) => {
@@ -331,8 +330,10 @@ pub fn reduce(
                                     match ribosome::call(&action_channel,
                                                          &tx_observer,
                                                          code,
-                                                         &function_call.function.clone()) {
-
+                                                         &function_call.function.clone(),
+                                                         Some(function_call.clone().parameters.into_bytes()),
+                                        ) 
+                                        {
                                         Ok(runtime) => {
                                             result = FunctionResult::new(
                                                 function_call,
@@ -402,7 +403,7 @@ pub fn reduce(
                         if let Some(ref _wasm) = dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
                         {
                             // TODO #61 validate()
-                            // Do same thing as Action::ExecuteZomeFunction or actually send a Action::ExecuteZomeFunction?
+                            // Do same thing as Action::ExecuteZomeFunction
                             _has_entry_type = true;
                         }
                     }

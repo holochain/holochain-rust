@@ -224,8 +224,6 @@ pub fn dispatch_action_with_observer<F>(action_channel:   &Sender<::state::Actio
         .send(observer)
         .expect("observer channel to be open");
     dispatch_action(action_channel, action);
-
-    println!("  DONE - dispatch_action_with_observer");
 }
 
 

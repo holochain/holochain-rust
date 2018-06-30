@@ -138,12 +138,12 @@ They are available in keyword specific Capabilities and function names
                     },
                     "fn_declarations": [
                         {
-                            "name": "xxx",
+                            "name": "newPost",
                             "signature" :
                             {
-                                "input" : [
+                                "input" : ["string":post
                                 ],
-                                "output" : [
+                                "output" : ["hash":hash
                                 ]
                             },
                         },

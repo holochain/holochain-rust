@@ -1,17 +1,18 @@
 pub mod memory;
-use std;
 
 use common::entry::Entry;
 use common::entry::Header;
+use serde::Deserialize;
+use serde::Serialize;
+use std;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
     header: Header,
     entry: Entry,
 }
 
 impl Pair {
-
     pub fn new(header: &Header, entry: &Entry) -> Pair {
         let p = Pair {
             header: header.clone(),
@@ -35,14 +36,11 @@ impl Pair {
     }
 
     pub fn validate(&self) -> bool {
-        self.header.validate() && self.entry.validate() &&
-        self.header.entry() == self.entry.hash()
+        self.header.validate() && self.entry.validate() && self.header.entry() == self.entry.hash()
     }
-
 }
 
-pub trait SourceChain: IntoIterator {
-
+pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
     /// append a pair to the source chain if the pair and new chain are both valid, else panic
     fn push(&mut self, &Pair);
 
@@ -56,8 +54,7 @@ pub trait SourceChain: IntoIterator {
     fn get(&self, k: u64) -> Option<Pair>;
 
     /// returns a pair for a given entry hash
-    fn get_entry(&self, k:u64) -> Option<Pair>;
-
+    fn get_entry(&self, k: u64) -> Option<Pair>;
 }
 
 #[cfg(test)]

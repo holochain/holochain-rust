@@ -1,6 +1,12 @@
 #![deny(warnings)]
+
+#[macro_use]
+extern crate serde_derive;
 extern crate holochain_dna;
+extern crate serde;
+extern crate serde_json;
 extern crate wabt;
+
 pub mod agent;
 pub mod common;
 pub mod context;
@@ -15,123 +21,119 @@ pub mod state;
 
 //#[cfg(test)]
 pub mod test_utils {
+    use super::*;
     use holochain_dna::wasm::DnaWasm;
     use holochain_dna::zome::capabilities::Capability;
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use holochain_dna::zome::Zome;
     use holochain_dna::Dna;
     use wabt::Wat2Wasm;
-    use wabt::WabtBuf;
 
-    // Create DNA containing WASM code that returns 1337 as integer
-    pub fn create_test_dna_with_wasm() -> Dna {
-        let wasm_binary = Wat2Wasm::new()
-          .canonicalize_lebs(false)
-          .write_debug_names(true)
-          .convert(
-              r#"
+    use std::fs::File;
+
+    pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
+        use std::io::prelude::*;
+        let mut file = File::open(fname).unwrap();
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).unwrap();
+        buf
+    }
+
+    pub fn create_test_dna_with_wat(zome_name : String, cap_name : String, wat: Option<&str>) -> Dna {
+        // Default WASM code returns 1337 as integer
+        let default_wat = format!(
+            r#"
                 (module
                     (memory (;0;) 17)
-                    (func (export "main") (result i32)
-                        i32.const 1337
+                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                        i32.const 4
+                    )
+                    (data (i32.const {})
+                        "1337"
                     )
                     (export "memory" (memory 0))
                 )
             "#,
-          )
-          .unwrap();
+            nucleus::ribosome::RESULT_OFFSET
+        );
+        let wat_str = match wat {
+            None => default_wat.as_str(),
+            Some(w) => w,
+        };
 
-        return create_dna("test_zome".to_string(), "test_cap".to_string(), wasm_binary);
-    }
-
-
-    // Create DNA containing WASM code with genesis that returns 0
-    pub fn create_dna_with_genesis_ok() -> Dna {
         let wasm_binary = Wat2Wasm::new()
-          .canonicalize_lebs(false)
-          .write_debug_names(true)
-          .convert(
-              r#"
-                (module
-                    (memory (;0;) 17)
-                    (func (export "genesis") (result i32)
-                        i32.const 0
-                    )
-                    (export "memory" (memory 0))
-                )
-            "#,
-          )
-          .unwrap();
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(wat_str)
+            .unwrap();
 
-        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
+        return create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec());
     }
 
 
-    // Create DNA containing WASM code with genesis that returns 42
-    pub fn create_dna_with_genesis_err() -> Dna {
-        let wasm_binary = Wat2Wasm::new()
-          .canonicalize_lebs(false)
-          .write_debug_names(true)
-          .convert(
-              r#"
-                (module
-                    (memory (;0;) 17)
-                    (func (export "genesis") (result i32)
-                        i32.const 42
-                    )
-                    (export "memory" (memory 0))
-                )
-            "#,
-          )
-          .unwrap();
-
-        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
-    }
-
-
-    // Setup DNA containing WASM code that prints 1337 in genesis
-    pub fn create_dna_containing_genesis() -> Dna {
-        let wasm_binary = Wat2Wasm::new()
-          .canonicalize_lebs(false)
-          .write_debug_names(true)
-          .convert(
-              r#"
-                (module
-                    (type (;0;) (func (result i32)))
-                    (type (;1;) (func (param i32)))
-                    (type (;2;) (func))
-                    (import "env" "print" (func $print (type 1)))
-                    (func $genesis (type 0) (result i32)
-                        i32.const 1337
-                        call $print
-                        i32.const 0)
-                    (func $rust_eh_personality (type 2))
-                    (table (;0;) 1 1 anyfunc)
-                    (memory (;0;) 17)
-                    (global (;0;) (mut i32) (i32.const 1049600))
-                    (export "memory" (memory 0))
-                    (export "genesis" (func $genesis))
-                    (export "rust_eh_personality" (func $rust_eh_personality)))
-            "#,
-          )
-          .unwrap();
-
-        // DNA with that WASM in zome's hc_lifecycle capability
-        return create_dna("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), wasm_binary);
-    }
-
-
-    // Prepare valid DNA struct helper
-    pub fn create_dna(zome_name : String, cap_name : String, wasm_binary : WabtBuf) -> Dna {
+    // Prepare valid DNA struct with that WASM in a zome's capability
+    pub fn create_test_dna_with_wasm(zome_name : String, cap_name : String, wasm: Vec<u8>) -> Dna {
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
-        capability.name = cap_name;
-        capability.code = DnaWasm { code: wasm_binary.as_ref().to_vec() };
+        capability.name = cap_name.to_string();
+        capability.code = DnaWasm { code: wasm };
         zome.name = zome_name.to_string();
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
         dna
+    }
+
+
+    // Prepare valid DNA struct helper
+//    pub fn create_dna(zome_name : String, cap_name : String, wasm_binary : WabtBuf) -> Dna {
+//        let mut dna = Dna::new();
+//        let mut zome = Zome::new();
+//        let mut capability = Capability::new();
+//        capability.name = cap_name;
+//        capability.code = DnaWasm { code: wasm_binary.as_ref().to_vec() };
+//        zome.name = zome_name.to_string();
+//        zome.capabilities.push(capability);
+//        dna.zomes.push(zome);
+//        dna
+//    }
+
+
+    // Create DNA containing WASM code with genesis that returns 0
+    pub fn create_dna_with_genesis_ok() -> Dna {
+        let wat =
+            r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                        i32.const 1
+                    )
+                    (data (i32.const 0)
+                        "0"
+                    )
+                    (export "memory" (memory 0))
+                )
+            "#;
+        return create_test_dna_with_wat("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), Some(wat));
+    }
+
+
+    // Create DNA containing WASM code with genesis that returns 1337
+    pub fn create_dna_with_genesis_err() -> Dna {
+        let wat =
+            r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                        i32.const 4
+                    )
+                    (data (i32.const 0)
+                        "1337"
+                    )
+                    (export "memory" (memory 0))
+                )
+            "#;
+        return create_test_dna_with_wat("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), Some(wat));
     }
 }
 
@@ -227,17 +229,18 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
         let mut instance = create_instance(dna);
 
         // Create zome function call
-        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
 
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
         match result {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
-            Err(_) => assert!(false),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+            //Err(_) => assert!(false),
         }
     }
 
@@ -257,7 +260,7 @@ mod tests {
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -267,7 +270,7 @@ mod tests {
 
         match result {
             Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx")
+                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
             }
             _ => assert!(false),
         }
@@ -275,7 +278,7 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wasm();
+        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
         let mut instance = create_instance(dna);
 
 
@@ -306,19 +309,9 @@ mod tests {
 
     #[test]
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wasm();
+        let mut dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
         dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
 
-        let instance = create_instance(dna);
-
-        assert_eq!(instance.state().history.len(), 4);
-        assert!(instance.state().nucleus().has_initialized());
-    }
-
-
-    #[test]
-    fn test_genesis() {
-        let dna = test_utils::create_dna_containing_genesis();
         let instance = create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);

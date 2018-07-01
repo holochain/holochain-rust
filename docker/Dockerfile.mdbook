@@ -1,0 +1,6 @@
+FROM holochain/rust-ubuntu:develop
+
+RUN cargo install mdbook --vers "^0.1.0"
+
+COPY . /holochain
+WORKDIR /holochain

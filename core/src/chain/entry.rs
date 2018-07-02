@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
     content: String,
 
@@ -16,6 +16,15 @@ impl Hash for Entry {
         // do NOT include the entry_type in the entry hash
         // the serialized representation of the entry type (and hence hash) sits in the header
         // self.entry_type.hash(state);
+    }
+}
+
+impl PartialEq for Entry {
+    fn eq(&self, other: &Entry) -> bool {
+        // @TODO is this right?
+        // e.g. two entries with the same content but different type are equal
+        // @see https://github.com/holochain/holochain-rust/issues/85
+        self.hash() == other.hash()
     }
 }
 

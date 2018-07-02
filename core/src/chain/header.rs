@@ -7,7 +7,7 @@ use chain::SourceChain;
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
@@ -32,6 +32,12 @@ impl Hash for Header {
         self.entry.hash(state);
         self.type_next.hash(state);
         self.signature.hash(state);
+    }
+}
+
+impl PartialEq for Header {
+    fn eq(&self, other: &Header) -> bool {
+        self.hash() == other.hash()
     }
 }
 

@@ -1,5 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
@@ -10,7 +10,7 @@ pub struct Entry {
     entry_type: String,
 }
 
-impl _Hash for Entry {
+impl Hash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.content.hash(state);
         // do NOT include the entry_type in the entry hash
@@ -35,7 +35,7 @@ impl Entry {
     /// hashes the entry
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        _Hash::hash(&self, &mut hasher);
+        Hash::hash(&self, &mut hasher);
         hasher.finish()
     }
 

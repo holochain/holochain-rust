@@ -1,5 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 use chain::entry::Entry;
 use chain::SourceChain;
@@ -24,7 +24,7 @@ pub struct Header {
     signature: String,
 }
 
-impl _Hash for Header {
+impl Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.entry_type.hash(state);
         self.time.hash(state);
@@ -94,7 +94,7 @@ impl Header {
     /// hashes the header
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        _Hash::hash(&self, &mut hasher);
+        Hash::hash(&self, &mut hasher);
         hasher.finish()
     }
 

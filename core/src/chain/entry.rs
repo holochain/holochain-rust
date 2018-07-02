@@ -1,5 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
+use std::{
+    collections::hash_map::DefaultHasher, hash::{Hash as _Hash, Hasher},
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {

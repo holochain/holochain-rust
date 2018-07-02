@@ -1,8 +1,6 @@
 use std;
 
-use chain::entry::Entry;
-use chain::pair::Pair;
-use chain::SourceChain;
+use chain::{entry::Entry, pair::Pair, SourceChain};
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct MemChain {
@@ -118,11 +116,9 @@ impl<'a> IntoIterator for &'a MemChain {
 
 #[cfg(test)]
 mod tests {
-    use chain::entry::Entry;
-    use chain::pair::Pair;
-    use chain::SourceChain;
-    use serde_json;
     use super::MemChain;
+    use chain::{entry::Entry, pair::Pair, SourceChain};
+    use serde_json;
 
     #[test]
     /// tests for MemChain::new()
@@ -134,7 +130,7 @@ mod tests {
 
     #[test]
     /// tests for chain.push()
-    fn push () {
+    fn push() {
         let mut chain = MemChain::new();
         let t = "fooType";
 

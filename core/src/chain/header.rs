@@ -1,8 +1,8 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
+use std::{
+    collections::hash_map::DefaultHasher, hash::{Hash as _Hash, Hasher},
+};
 
-use chain::entry::Entry;
-use chain::SourceChain;
+use chain::{entry::Entry, SourceChain};
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -107,10 +107,7 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::SourceChain;
-    use chain::entry::Entry;
-    use chain::header::Header;
-    use chain::memory::MemChain;
+    use chain::{entry::Entry, header::Header, memory::MemChain, SourceChain};
 
     #[test]
     /// tests for Header::new()

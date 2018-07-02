@@ -45,7 +45,7 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	cd core/src/nucleus/wasm-test && cargo build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && cargo build --target wasm32-unknown-unknown
-	cargo test
+	RUSTFLAGS="-D warnings" cargo test
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

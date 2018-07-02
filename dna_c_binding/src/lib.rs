@@ -1,19 +1,15 @@
-#![deny(warnings)]
-/*!
-This crate is an ffi wrapper to provide a c-compatible dna library.
-
-Remember to free all dna objects and returned strings.
-
-See the associated Qt unit tests in the c_binding_tests directory.
-*/
-
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-use std::panic::catch_unwind;
+//! This crate is an ffi wrapper to provide a c-compatible dna library.
+//!
+//! Remember to free all dna objects and returned strings.
+//!
+//! See the associated Qt unit tests in the c_binding_tests directory.
 
 extern crate holochain_dna;
 
 use holochain_dna::Dna;
+use std::{
+    ffi::{CStr, CString}, os::raw::c_char, panic::catch_unwind,
+};
 
 #[no_mangle]
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
@@ -89,10 +85,8 @@ pub extern "C" fn holochain_dna_string_free(s: *mut c_char) {
     }).unwrap_or(());
 }
 
-/**
-This macro takes care boilerplate for getting string accessors over ffi.
-This is not exported, it is only meant to be used internally.
-*/
+/// This macro takes care boilerplate for getting string accessors over ffi.
+/// This is not exported, it is only meant to be used internally.
 macro_rules! _xa_str {
     ($struct:ident, $prop:ident, $getname:ident, $setname:ident) => {
         #[no_mangle]

@@ -1,17 +1,14 @@
-extern crate holochain_dna;
-extern crate snowflake;
-
-use holochain_dna::Dna;
-
 pub mod ribosome;
 
-//use self::ribosome::*;
 use error::HolochainError;
+use holochain_dna::Dna;
+use snowflake;
 use state;
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
-use std::sync::Arc;
-use std::thread;
+use std::{
+    collections::HashMap, sync::{
+        mpsc::{channel, Sender}, Arc,
+    }, thread,
+};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
@@ -132,7 +129,7 @@ pub fn reduce(
                     let mut zome_capability_found = false;
                     if let Some(ref dna) = new_state.dna {
                         if let Some(ref wasm) =
-                            dna.get_wasm_for_capability(&fc.zome, &fc.capability)
+                            dna.get_wasm_for_capability(fc.zome.clone(), fc.capability.clone())
                         {
                             new_state.ribosome_calls.insert(fc.clone(), None);
 
@@ -197,9 +194,9 @@ pub fn reduce(
 
 #[cfg(test)]
 mod tests {
-    use super::super::nucleus::Action::*;
-    use super::super::state::Action::*;
-    use super::*;
+    use super::{
+        super::{nucleus::Action::*, state::Action::*}, *,
+    };
     use std::sync::mpsc::channel;
 
     #[test]

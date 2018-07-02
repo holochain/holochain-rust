@@ -1,19 +1,15 @@
-#![deny(warnings)]
-
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
 
 use holochain_agent::Agent;
-use holochain_core::context::Context;
-use holochain_core::logger::SimpleLogger;
-use holochain_core::persister::SimplePersister;
+use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
 use holochain_core_api::*;
 use holochain_dna::Dna;
-use std::sync::{Arc, Mutex};
-
-use std::env;
+use std::{
+    env, sync::{Arc, Mutex},
+};
 
 fn usage() {
     println!("Usage: holochain_test_bin <identity>");

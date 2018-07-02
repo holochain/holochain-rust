@@ -1,11 +1,14 @@
-#![deny(warnings)]
-
 #[macro_use]
 extern crate serde_derive;
-extern crate holochain_dna;
+extern crate chrono;
 extern crate serde;
 extern crate serde_json;
+extern crate snowflake;
 extern crate wabt;
+extern crate wasmi;
+
+extern crate holochain_agent;
+extern crate holochain_dna;
 
 pub mod agent;
 pub mod chain;
@@ -22,16 +25,13 @@ pub mod state;
 //#[cfg(test)]
 pub mod test_utils {
     use super::*;
-    use holochain_dna::wasm::DnaWasm;
-    use holochain_dna::zome::capabilities::Capability;
-    use holochain_dna::zome::Zome;
-    use holochain_dna::Dna;
+    use holochain_dna::{
+        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+    };
+    use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;
 
-    use std::fs::File;
-
     pub fn test_wasm_from_file(fname: &str) -> Vec<u8> {
-        use std::io::prelude::*;
         let mut file = File::open(fname).unwrap();
         let mut buf = Vec::new();
         file.read_to_end(&mut buf).unwrap();
@@ -54,12 +54,10 @@ pub mod test_utils {
             "#,
             nucleus::ribosome::RESULT_OFFSET
         );
-        let wat_str = match wat {
-            None => default_wat.as_str(),
-            Some(w) => w,
-        };
-        // Test WASM code that returns 1337 as integer
 
+        let wat_str = wat.unwrap_or_else(|| &default_wat);
+
+        // Test WASM code that returns 1337 as integer
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
@@ -85,26 +83,23 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    //use agent::Action::*;
     use super::*;
     use error::HolochainError;
     use holochain_dna::Dna;
     use instance::Instance;
-    use nucleus::Action::*;
-    use nucleus::FunctionCall;
-    use state::Action::*;
-    use state::State;
+    use nucleus::{Action::*, FunctionCall};
+    use state::{Action::*, State};
     use std::sync::mpsc::channel;
 
-    // This test shows how to call dispatch with a closure that should run
-    // when the action results in a state change.  Note that the observer closure
-    // needs to return a boolean to indicate that it has successfully observed what
-    // it intends to observe.  It will keep getting called as the state changes until
-    // it returns true.
-    // Note also that for this test we create a channel to send something (in this case
-    // the dna) back over, just so that the test will block until the closure is successfully
-    // run and the assert will actually run.  If we put the assert inside the closure
-    // the test thread could complete before the closure was called.
+    /// This test shows how to call dispatch with a closure that should run
+    /// when the action results in a state change.  Note that the observer closure
+    /// needs to return a boolean to indicate that it has successfully observed what
+    /// it intends to observe.  It will keep getting called as the state changes until
+    /// it returns true.
+    /// Note also that for this test we create a channel to send something (in this case
+    /// the dna) back over, just so that the test will block until the closure is successfully
+    /// run and the assert will actually run.  If we put the assert inside the closure
+    /// the test thread could complete before the closure was called.
     #[test]
     fn dispatch_with_observer() {
         let mut instance = Instance::new();

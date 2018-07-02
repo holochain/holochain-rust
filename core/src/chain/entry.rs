@@ -70,6 +70,27 @@ mod tests {
     use super::Entry;
 
     #[test]
+    /// tests for PartialEq
+    fn eq() {
+        let c1 = "foo";
+        let c2 = "bar";
+        let t1 = "a";
+        let t2 = "b";
+
+        // same type and content is equal
+        assert_eq!(Entry::new(t1, c1), Entry::new(t1, c1));
+
+        // same type different content is not equal
+        assert_ne!(Entry::new(t1, c1), Entry::new(t1, c2));
+
+        // same content different type is equal
+        assert_eq!(Entry::new(t1, c1), Entry::new(t2, c1));
+
+        // different content different type is not equal
+        assert_ne!(Entry::new(t1, c1), Entry::new(t2, c2));
+    }
+
+    #[test]
     /// tests for Entry::new()
     fn new() {
         let c = "foo";

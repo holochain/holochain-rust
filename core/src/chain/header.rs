@@ -119,6 +119,44 @@ mod tests {
     use chain::memory::MemChain;
 
     #[test]
+    /// tests for PartialEq
+    fn eq() {
+        let chain1 = MemChain::new();
+        let c1 = "foo";
+        let c2 = "bar";
+        let t1 = "a";
+        let t2 = "b";
+
+        // same content + type + state is equal
+        assert_eq!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t1, c1))
+        );
+
+        // different content is different
+        assert_ne!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t1, c2))
+        );
+
+        // different type is different
+        assert_ne!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t2, c1)),
+        );
+
+        // different state is different
+        let mut chain2 = MemChain::new();
+        let e = Entry::new(t1, c1);
+        chain2.push(&e);
+
+        assert_ne!(
+            Header::new(&chain1, &e),
+            Header::new(&chain2, &e)
+        );
+    }
+
+    #[test]
     /// tests for Header::new()
     fn new() {
         let chain = MemChain::new();

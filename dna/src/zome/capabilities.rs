@@ -1,8 +1,4 @@
-/*!
-holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
-*/
-
-extern crate serde_json;
+//! holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
 
 use std::str::FromStr;
 use wasm::DnaWasm;
@@ -184,6 +180,7 @@ impl Capability {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

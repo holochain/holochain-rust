@@ -1,8 +1,4 @@
-/*!
-holochain_dna::zome::entry_types is a set of structs for working with holochain dna.
-*/
-
-extern crate serde_json;
+//! holochain_dna::zome::entry_types is a set of structs for working with holochain dna.
 
 use wasm::DnaWasm;
 
@@ -105,6 +101,7 @@ impl EntryType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

@@ -1,4 +1,3 @@
-#![deny(warnings)]
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_api;
@@ -10,11 +9,10 @@ use holochain_dna::Dna;
 use std::sync::Arc;
 
 use holochain_agent::Agent;
-use holochain_core::logger::Logger;
-use holochain_core::persister::SimplePersister;
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-use std::sync::Mutex;
+use holochain_core::{logger::Logger, persister::SimplePersister};
+use std::{
+    ffi::{CStr, CString}, os::raw::c_char, sync::Mutex,
+};
 
 #[derive(Clone, Debug)]
 struct NullLogger {}

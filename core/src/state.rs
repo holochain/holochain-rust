@@ -1,12 +1,10 @@
-extern crate snowflake;
-
 use instance::Observer;
 use agent::AgentState;
 use nucleus::NucleusState;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use snowflake;
+use std::{
+    collections::HashSet, hash::{Hash, Hasher}, sync::{mpsc::Sender, Arc},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 #[allow(unknown_lints)]
@@ -96,16 +94,3 @@ impl State {
         Arc::clone(&self.agent)
     }
 }
-
-/*
-TODO: write macro for DRY reducer functions
-macro_rules! reducer {
-    ($func_name:ident) => (
-        fn reducer(old_state: Rc<$state_type>, action: &_Action) -> Rc<$state_type>  {
-            // The `stringify!` macro converts an `ident` into a string.
-            println!("You called {:?}()",
-                     stringify!($func_name));
-        }
-    )
-}
-*/

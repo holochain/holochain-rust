@@ -1,7 +1,4 @@
-/*!
-holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
-
-*/
+//! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Identity {
@@ -26,6 +23,7 @@ impl Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn can_instantiate_agent() {
         let agent = Agent::new(Identity {

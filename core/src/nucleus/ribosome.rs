@@ -1,15 +1,10 @@
-// In this example we execute a contract funciton exported as "_call"
-
-extern crate wabt;
-extern crate wasmi;
 
 use std::sync::mpsc::Sender;
 use ::instance::Observer;
-
 use state;
 
-use self::wasmi::{
-    Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+use wasmi::{
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
 };
 

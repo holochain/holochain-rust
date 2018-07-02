@@ -58,11 +58,7 @@ pub mod test_utils {
             "#,
             nucleus::ribosome::RESULT_OFFSET
         );
-        let wat_str = wat.unwrap_or(default_wat.as_str());
-//        let wat_str = match wat {
-//            None => default_wat.as_str(),
-//            Some(w) => w,
-//        };
+        let wat_str = wat.unwrap_or_else(||default_wat.as_str());
 
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
@@ -155,6 +151,8 @@ mod tests {
 
         // Wait for Init to finish
         while instance.state().history.len() < 2 {
+            // TODO - #21
+            // This println! should be converted to either a call to the app logger, or to the core debug log.
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
@@ -171,6 +169,8 @@ mod tests {
 
         // Wait for Init to finish
         while instance.state().history.len() < 4 {
+            // TODO - #21
+            // This println! should be converted to either a call to the app logger, or to the core debug log.
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10))
         }

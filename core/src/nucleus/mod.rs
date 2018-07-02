@@ -174,6 +174,8 @@ impl FunctionResult {
 
 /// Enum of all Actions that mutates the Nucleus's state
 #[derive(Clone, Debug, PartialEq)]
+#[allow(unknown_lints)]
+#[allow(large_enum_variant)]
 pub enum Action {
     InitApplication(Dna),
     ReturnInitializationResult(bool),

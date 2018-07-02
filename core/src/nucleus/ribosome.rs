@@ -42,7 +42,6 @@ pub const RESULT_OFFSET: u32 = 0;
 
 
 /// Executes an exposed function
-#[allow(dead_code)]
 pub fn call(action_channel:   &Sender<state::ActionWrapper>,
             observer_channel: &Sender<Observer>,
             wasm:             Vec<u8>,

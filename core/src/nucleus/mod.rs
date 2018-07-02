@@ -46,25 +46,23 @@ impl NucleusState {
         }
     }
 
-    pub fn dna(&self) -> Option<Dna> {
-        self.dna.clone()
-    }
-    pub fn status(&self) -> NucleusStatus {
-        self.status.clone()
-    }
-    pub fn has_initialized(&self) -> bool {
-        self.status == NucleusStatus::Initialized
-    }
-    pub fn ribosome_call_result(
-        &self,
-        function_call: &FunctionCall,
-    ) -> Option<Result<String, HolochainError>> {
+    pub fn ribosome_call_result(&self, function_call: &FunctionCall)
+        -> Option<Result<String, HolochainError>> {
         match self.ribosome_calls.get(function_call) {
             None => None,
             Some(value) => value.clone(),
         }
     }
+
+    pub fn has_initialized(&self) -> bool { self.status == NucleusStatus::Initialized }
+
+    // Getters
+    pub fn dna(&self) -> Option<Dna> { self.dna.clone() }
+    pub fn status(&self) -> NucleusStatus { self.status.clone() }
 }
+
+
+/// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionCall {
     id: snowflake::ProcessUniqueId,
@@ -75,9 +73,7 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn new<S>(zome: S, capability: S, function: S, parameters: S) -> Self
-    where
-        S: Into<String>,
+    pub fn new<S: Into<String>>(zome: S, capability: S, function: S, parameters: S) -> Self
     {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
@@ -89,7 +85,8 @@ impl FunctionCall {
     }
 }
 
-/// WIP struct to hold data required by a ValidateEntry Action
+
+/// WIP - Struct for holding data when requesting an Entry Validation (ValidateEntry Action)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntrySubmission {
     pub zome_name:     String,
@@ -98,9 +95,7 @@ pub struct EntrySubmission {
 }
 
 impl EntrySubmission {
-    pub fn new<S>(zome_name: S, type_name: S, content: S) -> Self
-        where
-          S: Into<String>,
+    pub fn new<S: Into<String>>(zome_name: S, type_name: S, content: S) -> Self
     {
         EntrySubmission {
             zome_name:     zome_name.into(),
@@ -176,6 +171,8 @@ impl FunctionResult {
     }
 }
 
+
+/// Enum of all Actions that mutates the Nucleus's state
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     InitApplication(Dna),
@@ -186,9 +183,9 @@ pub enum Action {
 }
 
 
-// Reduce ReturnZomeFunctionResult
-// On initialization success set Initialized status
-// otherwise reset the nucleus
+/// Reduce ReturnInitializationResult Action
+/// On initialization success, set Initialized status
+/// otherwise reset the nucleus
 fn reduce_rir(nucleus_state : & mut NucleusState, has_succeeded : bool) {
     assert!(nucleus_state.status == NucleusStatus::Initializing);
     if has_succeeded {
@@ -197,6 +194,7 @@ fn reduce_rir(nucleus_state : & mut NucleusState, has_succeeded : bool) {
         *nucleus_state = NucleusState::new();
     };
 }
+
 
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
@@ -223,7 +221,7 @@ pub fn reduce(
                     match new_nucleus_state.status {
                         NucleusStatus::New =>
                         {
-                            // Update state
+                            // Update status
                             new_nucleus_state.status = NucleusStatus::Initializing;
 
                             // Set DNA
@@ -253,7 +251,7 @@ pub fn reduce(
                                     match call_result {
                                         // not okay if genesis returned an errorCode
                                         Ok(ref s) if s != "0" => {
-                                            // Send Failed ReturnInitializationResult Action
+                                            // Send a failed ReturnInitializationResult Action
                                             action_channel
                                               .send(state::ActionWrapper::new(state::Action::Nucleus(
                                                   Action::ReturnInitializationResult(false),
@@ -273,7 +271,7 @@ pub fn reduce(
                                         Err(_e) => {
                                             // TODO - Create test for this edge case
                                             // @see https://github.com/holochain/holochain-rust/issues/78
-                                            // Send Failed ReturnInitializationResult Action
+                                            // Send a failed ReturnInitializationResult Action
                                             action_channel
                                               .send(state::ActionWrapper::new(state::Action::Nucleus(
                                                   Action::ReturnInitializationResult(false),

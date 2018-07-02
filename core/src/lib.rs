@@ -79,9 +79,9 @@ pub mod test_utils {
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
-        capability.name = cap_name.to_string();
+        capability.name = cap_name;
         capability.code = DnaWasm { code: wasm };
-        zome.name = zome_name.to_string();
+        zome.name = zome_name;
         zome.capabilities.push(capability);
         dna.zomes.push(zome);
         dna
@@ -254,7 +254,7 @@ mod tests {
             Err(HolochainError::CapabilityNotFound(err)) => {
                 assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
             }
-            _ => { assert!(false) },
+            _ => assert!(false),
         }
     }
 

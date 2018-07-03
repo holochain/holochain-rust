@@ -1,3 +1,4 @@
+use instance::Observer;
 use agent::AgentState;
 use nucleus::NucleusState;
 use snowflake;
@@ -63,12 +64,15 @@ impl State {
         &self,
         action_wrapper: ActionWrapper,
         action_channel: &Sender<ActionWrapper>,
+        observer_channel: &Sender<Observer>,
     ) -> Self {
+
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
                 Arc::clone(&self.nucleus),
                 &action_wrapper.action,
                 action_channel,
+                observer_channel,
             ),
             agent: ::agent::reduce(
                 Arc::clone(&self.agent),

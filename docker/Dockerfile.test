@@ -1,3 +1,8 @@
 FROM holochain/rust-ubuntu:develop
 
+ENV RUST_BACKTRACE full
+
+COPY . /holochain
+WORKDIR /holochain
+
 CMD make test

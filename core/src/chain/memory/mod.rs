@@ -22,8 +22,8 @@ impl MemChain {
 /// SouceChain trait implementation
 impl<'de> SourceChain<'de> for MemChain {
     // appends the current pair to the top of the chain
-    fn push(&mut self, entry_type: &str, entry: &Entry) -> Pair {
-        let pair = Pair::new(self, entry_type, entry);
+    fn push(&mut self, entry: &Entry) -> Pair {
+        let pair = Pair::new(self, entry);
 
         if !(pair.validate()) {
             panic!("attempted to push an invalid pair for this source chain");
@@ -137,16 +137,16 @@ mod tests {
         assert_eq!(None, chain.top());
 
         // chain top, pair entry and headers should all line up after a push
-        let e1 = Entry::new(&String::from("foo"));
-        let p1 = chain.push(t, &e1);
+        let e1 = Entry::new(t, "foo");
+        let p1 = chain.push(&e1);
 
         assert_eq!(Some(p1.clone()), chain.top());
         assert_eq!(e1, p1.entry());
         assert_eq!(e1.hash(), p1.header().entry());
 
         // we should be able to do it again
-        let e2 = Entry::new(&String::from("bar"));
-        let p2 = chain.push(t, &e2);
+        let e2 = Entry::new(t, "bar");
+        let p2 = chain.push(&e2);
 
         assert_eq!(Some(p2.clone()), chain.top());
         assert_eq!(e2, p2.entry());
@@ -158,15 +158,15 @@ mod tests {
     fn iter() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "fooType";
+        let t = "fooType";
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"foo".to_string());
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "foo");
 
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
+        let p1 = chain.push(&e1);
+        let p2 = chain.push(&e2);
+        let p3 = chain.push(&e3);
 
         // iter() should iterate over references
         assert_eq!(vec![&p3, &p2, &p1], chain.iter().collect::<Vec<&Pair>>());
@@ -186,19 +186,22 @@ mod tests {
     fn validate() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "fooType";
+        let t = "fooType";
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "baz");
 
         // for valid pairs its truetles all the way down...
         assert!(chain.validate());
-        chain.push(entry_type, &e1);
+
+        chain.push(&e1);
         assert!(chain.validate());
-        chain.push(entry_type, &e2);
+
+        chain.push(&e2);
         assert!(chain.validate());
-        chain.push(entry_type, &e3);
+
+        chain.push(&e3);
         assert!(chain.validate());
     }
 
@@ -207,15 +210,15 @@ mod tests {
     fn get() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "fooType";
+        let t = "fooType";
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "baz");
 
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
+        let p1 = chain.push(&e1);
+        let p2 = chain.push(&e2);
+        let p3 = chain.push(&e3);
 
         assert_eq!(None, chain.get(0));
         assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
@@ -228,15 +231,15 @@ mod tests {
     fn get_entry() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "fooType";
+        let t = "fooType";
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "baz");
 
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
+        let p1 = chain.push(&e1);
+        let p2 = chain.push(&e2);
+        let p3 = chain.push(&e3);
 
         assert_eq!(None, chain.get(0));
         assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
@@ -250,16 +253,15 @@ mod tests {
         let mut chain = MemChain::new();
         let t = "fooType";
 
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+
         assert_eq!(None, chain.top());
 
-        let e1 = Entry::new(&String::from("foo"));
-        let p1 = chain.push(t, &e1);
-
+        let p1 = chain.push(&e1);
         assert_eq!(Some(p1), chain.top());
 
-        let e2 = Entry::new(&String::from("bar"));
-        let p2 = chain.push(t, &e2);
-
+        let p2 = chain.push(&e2);
         assert_eq!(Some(p2), chain.top());
     }
 
@@ -274,27 +276,26 @@ mod tests {
         assert_eq!(None, chain.top_type(t1));
         assert_eq!(None, chain.top_type(t2));
 
-        let e1 = Entry::new(&String::from("a"));
-        let p1 = chain.push(t1, &e1);
+        let e1 = Entry::new(t1, "a");
+        let e2 = Entry::new(t2, "b");
+        let e3 = Entry::new(t1, "");
+
 
         // t1 should be p1
         // t2 should still be None
+        let p1 = chain.push(&e1);
         assert_eq!(Some(p1.clone()), chain.top_type(t1));
         assert_eq!(None, chain.top_type(t2));
 
-        let e2 = Entry::new(&String::from("b"));
-        let p2 = chain.push(t2, &e2);
-
         // t1 should still be p1
         // t2 should be p2
+        let p2 = chain.push(&e2);
         assert_eq!(Some(p1.clone()), chain.top_type(t1));
         assert_eq!(Some(p2.clone()), chain.top_type(t2));
 
-        let e3 = Entry::new(&String::new());
-        let p3 = chain.push(t1, &e3);
-
         // t1 should be p3
         // t2 should still be p2
+        let p3 = chain.push(&e3);
         assert_eq!(Some(p3.clone()), chain.top_type(t1));
         assert_eq!(Some(p2.clone()), chain.top_type(t2));
     }
@@ -304,15 +305,15 @@ mod tests {
     fn into_iter() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "fooType";
+        let t = "fooType";
 
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "baz");
 
-        let p1 = chain.push(entry_type, &e1);
-        let p2 = chain.push(entry_type, &e2);
-        let p3 = chain.push(entry_type, &e3);
+        let p1 = chain.push(&e1);
+        let p2 = chain.push(&e2);
+        let p3 = chain.push(&e3);
 
         // into_iter() by reference
         let mut i = 0;
@@ -345,17 +346,17 @@ mod tests {
     fn json_round_trip() {
         let mut chain = super::MemChain::new();
 
-        let entry_type = "foo";
-        let e1 = Entry::new(&"foo".to_string());
-        let e2 = Entry::new(&"bar".to_string());
-        let e3 = Entry::new(&"baz".to_string());
+        let t = "foo";
+        let e1 = Entry::new(t, "foo");
+        let e2 = Entry::new(t, "bar");
+        let e3 = Entry::new(t, "baz");
 
-        chain.push(entry_type, &e1);
-        chain.push(entry_type, &e2);
-        chain.push(entry_type, &e3);
+        chain.push(&e1);
+        chain.push(&e2);
+        chain.push(&e3);
 
         let json = serde_json::to_string(&chain).unwrap();
-        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":14176581647729525889,\"entry\":3676438629107045207,\"type_next\":14176581647729525889,\"signature\":\"\"},\"entry\":{\"content\":\"bar\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":4506850079084802999,\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\"}}}";
+        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":14176581647729525889,\"entry\":3676438629107045207,\"type_next\":14176581647729525889,\"signature\":\"\"},\"entry\":{\"content\":\"bar\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":4506850079084802999,\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\",\"entry_type\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}}}";
 
         assert_eq!(expected_json, json);
         assert_eq!(chain, serde_json::from_str(&json).unwrap());

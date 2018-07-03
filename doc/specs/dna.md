@@ -1,4 +1,4 @@
-# DNA Spec v (Draft 6/13)
+# DNA Spec v (Draft 6/28)
 
 ## Some notes:
 
@@ -38,7 +38,33 @@ link(post,"taggedBy", myHandle)
 closeBundle(bundle)
 ```
 
-## Example DNA Tree:
+## Key / Reserved Capabilities
+
+Some functions are required for core process/features of Holochain to work.
+They are available in keyword specific Capabilities and function names
+
+### LifeCycle Capability
+
+`"name": "hc_lifecycle"`
+
+#### Genesis
+`genesis()`
+
+#### BridgeGenesis
+`bridgeGenesis(side, dna, appData)`
+
+#### Migrate
+
+### Communication Capability
+
+`"name": "hc_web_gateway"`
+
+### Receive
+`receive(from, message)`
+### Send
+
+
+## Example DNA Tree
 
 ``` yaml
 {

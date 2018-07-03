@@ -1,5 +1,5 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use hash;
+use multihash::Hash;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -8,15 +8,6 @@ pub struct Entry {
     // @TODO do NOT serialize entry_type in Entry as it should only be in Header
     // @see https://github.com/holochain/holochain-rust/issues/80
     entry_type: String,
-}
-
-impl Hash for Entry {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
-        // do NOT include the entry_type in the entry hash
-        // the serialized representation of the entry type (and hence hash) sits in the header
-        // self.entry_type.hash(state);
-    }
 }
 
 impl PartialEq for Entry {
@@ -42,10 +33,10 @@ impl Entry {
     }
 
     /// hashes the entry
-    pub fn hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        Hash::hash(&self, &mut hasher);
-        hasher.finish()
+    pub fn hash(&self) -> String {
+        // do NOT include the entry_type in the entry hash
+        // the serialized representation of the entry type (and hence hash) sits in the header
+        hash::str_to_b58_hash(&self.content, Hash::SHA2256)
     }
 
     /// content getter
@@ -99,7 +90,7 @@ mod tests {
         let e = Entry::new(t, c);
 
         assert_eq!(e.content(), c);
-        assert_ne!(e.hash(), 0);
+        assert_ne!(e.hash(), "");
         assert!(e.validate());
     }
 
@@ -110,7 +101,7 @@ mod tests {
         let c1 = "bar";
         let e1 = Entry::new(t, &c1);
 
-        assert_eq!(3676438629107045207, e1.hash());
+        assert_eq!("QmfMjwGasyzX74517w3gL2Be3sozKMGDRwuGJHgs9m6gfS", e1.hash());
     }
 
     #[test]

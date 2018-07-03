@@ -73,7 +73,7 @@ impl<'de> SourceChain<'de> for MemChain {
             .find(|p| p.header().hash() == header_hash)
     }
 
-    fn get_entry(&self, entry_hash: u64) -> Option<Pair> {
+    fn get_entry(&self, entry_hash: &str) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs
@@ -242,9 +242,9 @@ mod tests {
         let p3 = chain.push(&e3);
 
         assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
-        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry().hash()));
-        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry().hash()));
+        assert_eq!(Some(p1.clone()), chain.get_entry(&p1.entry().hash()));
+        assert_eq!(Some(p2.clone()), chain.get_entry(&p2.entry().hash()));
+        assert_eq!(Some(p3.clone()), chain.get_entry(&p3.entry().hash()));
     }
 
     #[test]

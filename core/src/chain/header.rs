@@ -16,7 +16,7 @@ pub struct Header {
     /// link to the immediately preceding header, None is valid only for genesis
     next: Option<u64>,
     /// mandatory link to the entry for this header
-    entry: u64,
+    entry: String,
     /// link to the most recent header of the same type, None is valid only for the first of type
     type_next: Option<u64>,
     /// agent's cryptographic signature
@@ -56,7 +56,7 @@ impl Header {
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
             next: chain.top().and_then(|p| Some(p.header().hash())),
-            entry: entry.hash(),
+            entry: entry.hash().to_string(),
             type_next: chain
                 .top_type(&entry.entry_type())
                 .and_then(|p| Some(p.header().hash())),
@@ -82,8 +82,8 @@ impl Header {
     }
 
     /// entry getter
-    pub fn entry(&self) -> u64 {
-        self.entry
+    pub fn entry(&self) -> String {
+        self.entry.clone()
     }
 
     /// type_next getter

@@ -21,7 +21,7 @@ pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
     fn get(&self, k: u64) -> Option<Pair>;
 
     /// returns a pair for a given entry hash
-    fn get_entry(&self, k: u64) -> Option<Pair>;
+    fn get_entry(&self, k: &str) -> Option<Pair>;
 
     /// returns the top (most recent) pair from the source chain
     fn top(&self) -> Option<Pair>;

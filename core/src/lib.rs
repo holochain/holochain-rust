@@ -6,13 +6,14 @@ extern crate serde_json;
 extern crate snowflake;
 extern crate wabt;
 extern crate wasmi;
+extern crate multihash;
+extern crate rust_base58;
 
 extern crate holochain_agent;
 extern crate holochain_dna;
 
 pub mod agent;
 pub mod chain;
-pub mod common;
 pub mod context;
 pub mod error;
 pub mod instance;
@@ -21,6 +22,7 @@ pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
+pub mod hash;
 
 //#[cfg(test)]
 pub mod test_utils {

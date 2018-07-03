@@ -1,11 +1,10 @@
 pub mod keys;
 
-use self::keys::Keys;
+use agent::keys::Keys;
 use chain::entry::Entry;
 use chain::memory::MemChain;
 use state;
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::sync::{mpsc::Sender, Arc};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
@@ -27,6 +26,8 @@ pub enum Action {
     Commit(Entry),
 }
 
+
+/// Reduce Agent's state according to provided Action
 pub fn reduce(
     old_state: Arc<AgentState>,
     action: &state::Action,
@@ -36,7 +37,10 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {}
+                Action::Commit(ref _entry) => {
+                    // @TODO  add entry to source chain
+                    // @see #57
+                }
             }
             Arc::new(new_state)
         }

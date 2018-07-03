@@ -168,9 +168,22 @@ cargo watch # check
 cargo watch -x test # test
 ```
 
+### holochain_101 mdbook
+
+There is an [mdbook](https://github.com/rust-lang-nursery/mdBook) book on learning holochain at `doc/holochain_101`.
+
+There is also a docker build that allows local build, serve, watch and live reload for the book.
+
+From the root of the repo, run:
+
+`$ . docker/build-mdbook && . docker/run-mdbook`
+
+Once the book has built and is serving, visit `http://localhost:3000` in the browser.
+
+You can edit the markdown files in `doc/holochain_101` and the book will live reload.
+
 ## License
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses
-/gpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
 Copyright (C) 2018, Holochain Trust
 

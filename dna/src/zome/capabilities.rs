@@ -1,10 +1,73 @@
-/*!
-holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
-*/
+//! holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
 
-extern crate serde_json;
-
+use std::str::FromStr;
 use wasm::DnaWasm;
+
+//--------------------------------------------------------------------------------------------------
+// Reserved Capabilities and functions names
+//--------------------------------------------------------------------------------------------------
+
+pub enum ReservedCapabilityNames {
+    LifeCycle,
+    Communication,
+}
+
+impl FromStr for ReservedCapabilityNames {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "hc_lifecycle" => Ok(ReservedCapabilityNames::LifeCycle),
+            "hc_web_gateway" => Ok(ReservedCapabilityNames::Communication),
+            _ => Err("Cannot convert string to ReservedCapabilityNames"),
+        }
+    }
+}
+
+impl ReservedCapabilityNames {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
+            ReservedCapabilityNames::Communication => "hc_web_gateway",
+        }
+    }
+}
+
+
+pub enum ReservedFunctionNames {
+    /// genesis() -> bool
+    /// Must be in LifeCycle Capability
+    Genesis,
+    /// receive(from : String, message : String) -> String
+    /// Must be in Communication Capability
+    Receive,
+}
+
+
+impl FromStr for ReservedFunctionNames {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "genesis" => Ok(ReservedFunctionNames::Genesis),
+            "receive" => Ok(ReservedFunctionNames::Receive),
+            _ => Err("Cannot convert string to ReservedFunctionNames"),
+        }
+    }
+}
+
+
+impl ReservedFunctionNames {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            ReservedFunctionNames::Genesis => "genesis",
+            ReservedFunctionNames::Receive => "receive",
+        }
+    }
+}
+
+
+//--------------------------------------------------------------------------------------------------
+//
+//--------------------------------------------------------------------------------------------------
 
 /// Enum for Zome Capability "membrane" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -117,6 +180,7 @@ impl Capability {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

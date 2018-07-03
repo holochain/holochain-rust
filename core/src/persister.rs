@@ -54,7 +54,8 @@ mod tests {
         let entry = ::chain::entry::Entry::new(t, "some hash");
         let action = ::state::Action::Agent(::agent::Action::Commit(entry));
         let (sender, _receiver) = channel::<::state::ActionWrapper>();
-        let new_state = state.reduce(::state::ActionWrapper::new(action), &sender);
+        let (tx_observer, _observer) = channel::<::instance::Observer>();
+        let new_state = state.reduce(::state::ActionWrapper::new(action), &sender, &tx_observer);
 
         store.save(&new_state);
 

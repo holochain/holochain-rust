@@ -1,7 +1,5 @@
-extern crate holochain_agent;
-
-use self::holochain_agent::Agent;
 use error::HolochainError;
+use holochain_agent::Agent;
 use logger::Logger;
 use persister::Persister;
 use std::sync::{Arc, Mutex};

@@ -1,40 +1,36 @@
-#![deny(warnings)]
-
-/*!
-holochain_dna is a library for working with holochain dna files.
-
-It includes utilities for representing dna structures in memory,
-as well as serializing and deserializing dna, mainly to json format.
-
-# Examples
-
-```
-use holochain_dna::Dna;
-
-let name = String::from("My Holochain App");
-
-let mut dna = Dna::new();
-dna.name = name.clone();
-
-let json = dna.to_json().unwrap();
-
-let dna2 = Dna::new_from_json(&json).unwrap();
-assert_eq!(name, dna2.name);
-```
-*/
+//! holochain_dna is a library for working with holochain dna files.
+//!
+//! It includes utilities for representing dna structures in memory,
+//! as well as serializing and deserializing dna, mainly to json format.
+//!
+//! # Examples
+//!
+//! ```
+//! use holochain_dna::Dna;
+//!
+//! let name = String::from("My Holochain App");
+//!
+//! let mut dna = Dna::new();
+//! dna.name = name.clone();
+//!
+//! let json = dna.to_json().unwrap();
+//!
+//! let dna2 = Dna::new_from_json(&json).unwrap();
+//! assert_eq!(name, dna2.name);
+//! ```
 
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
+extern crate base64;
 extern crate uuid;
 
-use uuid::Uuid;
-
 pub mod wasm;
-
 pub mod zome;
+
+use uuid::Uuid;
 
 /// serde helper, provides a default empty object
 fn _def_empty_object() -> serde_json::Value {
@@ -94,87 +90,119 @@ impl Default for Dna {
 }
 
 impl Dna {
-    /**
-    Create a new in-memory dna structure with some default values.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    assert_eq!("", dna.name);
-
-    ```
-    */
+    /// Create a new in-memory dna structure with some default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// assert_eq!("", dna.name);
+    ///
+    /// ```
     pub fn new() -> Self {
         Default::default()
     }
 
-    /**
-    Create a new in-memory dna struct from a json string.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new_from_json(r#"{
-        "name": "MyTestApp"
-    }"#).unwrap();
-
-    assert_eq!("MyTestApp", dna.name);
-    ```
-    */
+    /// Create a new in-memory dna struct from a json string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new_from_json(r#"{
+    ///     "name": "MyTestApp"
+    /// }"#).unwrap();
+    ///
+    /// assert_eq!("MyTestApp", dna.name);
+    /// ```
     pub fn new_from_json(dna: &str) -> serde_json::Result<Self> {
         serde_json::from_str(dna)
     }
 
-    /**
-    Generate a json string from an in-memory dna struct.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    println!("json: {}", dna.to_json().unwrap());
-
-    ```
-    */
+    /// Generate a json string from an in-memory dna struct.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// println!("json: {}", dna.to_json().unwrap());
+    ///
+    /// ```
     pub fn to_json(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
     }
 
-    /**
-    Generate a pretty-printed json string from an in-memory dna struct.
-
-    # Examples
-
-    ```
-    use holochain_dna::Dna;
-
-    let dna = Dna::new();
-    println!("json: {}", dna.to_json_pretty().unwrap());
-
-    ```
-    */
+    /// Generate a pretty-printed json string from an in-memory dna struct.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use holochain_dna::Dna;
+    ///
+    /// let dna = Dna::new();
+    /// println!("json: {}", dna.to_json_pretty().unwrap());
+    ///
+    /// ```
     pub fn to_json_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(self)
     }
 
-    pub fn get_wasm_for_capability(
-        &self,
-        zome_name: &str,
+
+    /// Return a Zome
+    pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
+        self.zomes
+          .iter()
+          .find(|z| z.name == zome_name)
+    }
+
+
+    /// Return a Zome's WASM bytecode for a specified Capability
+    pub fn get_capability<'a>(
+        &'a self,
+        zome: &'a zome::Zome,
         capability_name: &str,
+    ) -> Option<&'a wasm::DnaWasm> {
+        let capability = zome
+          .capabilities
+          .iter()
+          .find(|c| c.name == capability_name)?;
+        Some(&capability.code)
+    }
+
+    /// Return a Zome's WASM bytecode for a specified Capability
+    pub fn get_wasm_for_capability<T: Into<String>>(
+        &self,
+        zome_name: T,
+        capability_name: T,
     ) -> Option<&wasm::DnaWasm> {
+        let zome_name = zome_name.into();
+        let capability_name = capability_name.into();
+
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
         let capability = zome
             .capabilities
             .iter()
             .find(|c| c.name == capability_name)?;
         Some(&capability.code)
+    }
+
+    /// Return a Zome's WASM bytecode for the validation of an entry
+    pub fn get_validation_bytecode_for_entry_type(&self,
+                                                  zome_name: &str,
+                                                  entry_type_name: &str)
+        -> Option<&wasm::DnaWasm>
+    {
+        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let entry_type = zome
+          .entry_types
+          .iter()
+          .find(|et| et.name == entry_type_name)?;
+        Some(&entry_type.validation)
     }
 }
 
@@ -507,14 +535,10 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna
-            .get_wasm_for_capability(&("test zome".to_string()), &("test capability".to_string()));
+        let wasm = dna.get_wasm_for_capability("test zome", "test capability");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_for_capability(
-            &("non existant zome".to_string()),
-            &("test capability".to_string()),
-        );
+        let fail = dna.get_wasm_for_capability("non existant zome", "test capability");
         assert_eq!(None, fail);
     }
 }

@@ -61,7 +61,7 @@ pub fn call(action_channel:   &Sender<state::ActionWrapper>,
                 index if index == HcApiFuncIndex::COMMIT as usize => {
                     // TODO - #61 commit()
                     // unpack args into Entry struct with serializer
-                    let entry = ::chain::entry::Entry::new("FIXME - content string here");
+                    let entry = ::chain::entry::Entry::new("FIXME - type here", "FIXME - content string here");
 
                     // Create commit Action
                     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));

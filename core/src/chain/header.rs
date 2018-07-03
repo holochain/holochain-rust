@@ -1,5 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash as _Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 use chain::entry::Entry;
 use chain::SourceChain;
@@ -7,7 +7,7 @@ use chain::SourceChain;
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
@@ -24,7 +24,7 @@ pub struct Header {
     signature: String,
 }
 
-impl _Hash for Header {
+impl Hash for Header {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.entry_type.hash(state);
         self.time.hash(state);
@@ -32,6 +32,12 @@ impl _Hash for Header {
         self.entry.hash(state);
         self.type_next.hash(state);
         self.signature.hash(state);
+    }
+}
+
+impl PartialEq for Header {
+    fn eq(&self, other: &Header) -> bool {
+        self.hash() == other.hash()
     }
 }
 
@@ -44,16 +50,16 @@ impl Header {
     /// chain::SourceChain trait and should not need to be handled manually
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry_type: &str, entry: &Entry) -> Header {
+    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &Entry) -> Header {
         Header {
-            entry_type: entry_type.to_string(),
+            entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
             next: chain.top().and_then(|p| Some(p.header().hash())),
             entry: entry.hash(),
             type_next: chain
-                .top_type(entry_type)
+                .top_type(&entry.entry_type())
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
@@ -94,7 +100,7 @@ impl Header {
     /// hashes the header
     pub fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        _Hash::hash(&self, &mut hasher);
+        Hash::hash(&self, &mut hasher);
         hasher.finish()
     }
 
@@ -113,11 +119,50 @@ mod tests {
     use chain::memory::MemChain;
 
     #[test]
+    /// tests for PartialEq
+    fn eq() {
+        let chain1 = MemChain::new();
+        let c1 = "foo";
+        let c2 = "bar";
+        let t1 = "a";
+        let t2 = "b";
+
+        // same content + type + state is equal
+        assert_eq!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t1, c1))
+        );
+
+        // different content is different
+        assert_ne!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t1, c2))
+        );
+
+        // different type is different
+        assert_ne!(
+            Header::new(&chain1, &Entry::new(t1, c1)),
+            Header::new(&chain1, &Entry::new(t2, c1)),
+        );
+
+        // different state is different
+        let mut chain2 = MemChain::new();
+        let e = Entry::new(t1, c1);
+        chain2.push(&e);
+
+        assert_ne!(
+            Header::new(&chain1, &e),
+            Header::new(&chain2, &e)
+        );
+    }
+
+    #[test]
     /// tests for Header::new()
     fn new() {
         let chain = MemChain::new();
-        let e = Entry::new(&String::from("foo"));
-        let h = Header::new(&chain, "type", &e);
+        let t = "type";
+        let e = Entry::new(t, "foo");
+        let h = Header::new(&chain, &e);
 
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);
@@ -129,8 +174,9 @@ mod tests {
     /// tests for header.entry_type()
     fn entry_type() {
         let chain = MemChain::new();
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, "foo", &e);
+        let t = "foo";
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
 
         assert_eq!(h.entry_type(), "foo");
     }
@@ -139,8 +185,9 @@ mod tests {
     /// tests for header.time()
     fn time() {
         let chain = MemChain::new();
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, "foo", &e);
+        let t = "foo";
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
 
         assert_eq!(h.time(), "");
     }
@@ -152,15 +199,15 @@ mod tests {
         let t = "foo";
 
         // first header is genesis so next should be None
-        let e1 = Entry::new(&String::new());
-        let p1 = chain.push(t, &e1);
+        let e1 = Entry::new(t, "");
+        let p1 = chain.push(&e1);
         let h1 = p1.header();
 
         assert_eq!(h1.next(), None);
 
         // second header next should be first header hash
-        let e2 = Entry::new(&String::from("foo"));
-        let p2 = chain.push(t, &e2);
+        let e2 = Entry::new(t, "foo");
+        let p2 = chain.push(&e2);
         let h2 = p2.header();
 
         assert_eq!(h2.next(), Some(h1.hash()));
@@ -173,8 +220,8 @@ mod tests {
         let t = "foo";
 
         // header for an entry should contain the entry hash under entry()
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, t, &e);
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
 
         assert_eq!(h.entry(), e.hash());
     }
@@ -187,22 +234,22 @@ mod tests {
         let t2 = "bar";
 
         // first header is genesis so next should be None
-        let e1 = Entry::new(&String::new());
-        let p1 = chain.push(t1, &e1);
+        let e1 = Entry::new(t1, "");
+        let p1 = chain.push(&e1);
         let h1 = p1.header();
 
         assert_eq!(h1.type_next(), None);
 
         // second header is a different type so next should be None
-        let e2 = Entry::new(&String::new());
-        let p2 = chain.push(t2, &e2);
+        let e2 = Entry::new(t2, "");
+        let p2 = chain.push(&e2);
         let h2 = p2.header();
 
         assert_eq!(h2.type_next(), None);
 
         // third header is same type as first header so next should be first header hash
-        let e3 = Entry::new(&String::new());
-        let p3 = chain.push(t1, &e3);
+        let e3 = Entry::new(t1, "");
+        let p3 = chain.push(&e3);
         let h3 = p3.header();
 
         assert_eq!(h3.type_next(), Some(h1.hash()));
@@ -214,50 +261,86 @@ mod tests {
         let chain = MemChain::new();
         let t = "foo";
 
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, t, &e);
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
 
         assert_eq!("", h.signature());
     }
 
     #[test]
-    /// tests for header.hash()
-    fn hash() {
+    /// test header.hash() against a known value
+    fn hash_known() {
+        let chain = MemChain::new();
+        let t = "foo";
+
+        // check a known hash
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
+
+        assert_eq!(6289138340682858684, h.hash());
+    }
+
+    #[test]
+    /// test that different entry content returns different hashes
+    fn hash_entry_content() {
+        let chain = MemChain::new();
+        let t = "fooType";
+
+        // different entries must return different hashes
+        let e1 = Entry::new(t, "");
+        let h1 = Header::new(&chain, &e1);
+
+        let e2 = Entry::new(t, "a");
+        let h2 = Header::new(&chain, &e2);
+
+        assert_ne!(h1.hash(), h2.hash());
+
+        // same entry must return same hash
+        let e3 = Entry::new(t, "");
+        let h3 = Header::new(&chain, &e3);
+
+        assert_eq!(h1.hash(), h3.hash());
+    }
+
+    #[test]
+    /// test that different entry types returns different hashes
+    fn hash_entry_type() {
         let chain = MemChain::new();
         let t1 = "foo";
         let t2 = "bar";
+        let c = "baz";
 
-        // basic hash test.
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, t1, &e);
+        let e1 = Entry::new(t1, c);
+        let e2 = Entry::new(t2, c);
 
-        assert_eq!(6289138340682858684, h.hash());
-
-        // different entries must give different hashes
-        let e1 = Entry::new(&String::new());
-        let h1 = Header::new(&chain, t1, &e1);
-
-        let e2 = Entry::new(&String::from("a"));
-        let h2 = Header::new(&chain, t1, &e2);
-
-        // h and h1 are actually identical so should have the same hash
-        assert_eq!(h.hash(), h1.hash());
-        assert_ne!(h1.hash(), h2.hash());
+        let h1 = Header::new(&chain, &e1);
+        let h2 = Header::new(&chain, &e2);
 
         // different types must give different hashes
-        let h3 = Header::new(&chain, t2, &e1);
-        assert_ne!(h3.hash(), h1.hash());
+        assert_ne!(h1.hash(), h2.hash());
+    }
 
+    #[test]
+    /// test that different chain state returns different hashes
+    fn hash_chain_state() {
         // different chain, different hash
-        let mut c1 = MemChain::new();
+        let mut chain = MemChain::new();
+        let t = "foo";
+        let c = "bar";
+        let e = Entry::new(t, c);
+        let h = Header::new(&chain, &e);
 
-        let p1 = c1.push(t1, &e1);
+        let p1 = chain.push(&e);
+        // p2 will have a different hash to p1 with the same entry as the chain state is different
+        let p2 = chain.push(&e);
 
-        // p2 is pushing the same thing as p1, but after p1, so it has a different next val
-        let p2 = c1.push(t1, &e1);
-        assert_eq!(h1.hash(), p1.header().hash());
-        assert_ne!(h1.hash(), p2.header().hash());
+        assert_eq!(h.hash(), p1.header().hash());
+        assert_ne!(h.hash(), p2.header().hash());
+    }
 
+    #[test]
+    /// test that different type_next returns different hashes
+    fn hash_type_next() {
         // @TODO is it possible to test that type_next changes the hash in an isolated way?
         // @see https://github.com/holochain/holochain-rust/issues/76
     }
@@ -268,8 +351,8 @@ mod tests {
         let chain = MemChain::new();
         let t = "foo";
 
-        let e = Entry::new(&String::new());
-        let h = Header::new(&chain, t, &e);
+        let e = Entry::new(t, "");
+        let h = Header::new(&chain, &e);
 
         assert!(h.validate());
     }

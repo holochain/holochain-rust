@@ -84,6 +84,7 @@ mod tests {
         assert_ne!(Entry::new(t1, c1), Entry::new(t1, c2));
 
         // same content different type is equal
+        // @see https://github.com/holochain/holochain-rust/issues/85
         assert_eq!(Entry::new(t1, c1), Entry::new(t2, c1));
 
         // different content different type is not equal

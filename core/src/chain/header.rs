@@ -91,9 +91,9 @@ impl Header {
         let string_to_hash = String::new()
             + &self.entry_type
             + &self.time
-            + &self.next.clone().unwrap_or(String::new())
+            + &self.next.clone().unwrap_or_default()
             + &self.entry
-            + &self.type_next.clone().unwrap_or(String::new())
+            + &self.type_next.clone().unwrap_or_default()
             + &self.signature;
 
         // @TODO the hashing algo should not be hardcoded

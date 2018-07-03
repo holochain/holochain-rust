@@ -98,7 +98,7 @@ mod tests {
     use std::sync::mpsc::channel;
     use std::thread::sleep;
     use std::time::Duration;
-    
+
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
     /// needs to return a boolean to indicate that it has successfully observed what
@@ -141,10 +141,12 @@ mod tests {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
         instance.start_action_loop();
-        instance.dispatch_and_wait(action.clone());
 
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
+        // the initial state is not intialized
         assert!(instance.state().nucleus().has_initialized() == false);
+
+        instance.dispatch_and_wait(action.clone());
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
         // Wait for Init to finish
         while instance.state().history.len() < 2 {

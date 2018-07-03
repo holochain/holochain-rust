@@ -1,5 +1,7 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
 use chain::{entry::Entry, SourceChain};
 
@@ -146,10 +148,7 @@ mod tests {
         let e = Entry::new(t1, c1);
         chain2.push(&e);
 
-        assert_ne!(
-            Header::new(&chain1, &e),
-            Header::new(&chain2, &e)
-        );
+        assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
     }
 
     #[test]

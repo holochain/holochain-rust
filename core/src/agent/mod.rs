@@ -25,7 +25,6 @@ pub enum Action {
     Commit(Entry),
 }
 
-
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
     old_state: Arc<AgentState>,

@@ -55,8 +55,11 @@ extern crate holochain_core;
 extern crate holochain_dna;
 
 use holochain_core::{
-    context::Context, error::HolochainError, instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
+    context::Context,
+    error::HolochainError,
+    instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    state::{Action::*, State},
 };
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -137,11 +140,14 @@ mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
     use holochain_core::{
-        context::Context, logger::Logger, persister::SimplePersister,
+        context::Context,
+        logger::Logger,
+        persister::SimplePersister,
         test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
     };
     use std::{
-        fmt, sync::{Arc, Mutex},
+        fmt,
+        sync::{Arc, Mutex},
     };
 
     #[derive(Clone)]
@@ -251,7 +257,8 @@ mod tests {
        )
  )
 "#;
-        let dna = create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),Some(wat));
+        let dna =
+            create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(), Some(wat));
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -295,7 +302,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(),wasm);
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

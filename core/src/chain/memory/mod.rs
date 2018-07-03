@@ -280,7 +280,6 @@ mod tests {
         let e2 = Entry::new(t2, "b");
         let e3 = Entry::new(t1, "");
 
-
         // t1 should be p1
         // t2 should still be None
         let p1 = chain.push(&e1);

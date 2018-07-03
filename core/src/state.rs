@@ -1,9 +1,11 @@
-use instance::Observer;
 use agent::AgentState;
+use instance::Observer;
 use nucleus::NucleusState;
 use snowflake;
 use std::{
-    collections::HashSet, hash::{Hash, Hasher}, sync::{mpsc::Sender, Arc},
+    collections::HashSet,
+    hash::{Hash, Hasher},
+    sync::{mpsc::Sender, Arc},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -66,7 +68,6 @@ impl State {
         action_channel: &Sender<ActionWrapper>,
         observer_channel: &Sender<Observer>,
     ) -> Self {
-
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
                 Arc::clone(&self.nucleus),

@@ -152,14 +152,10 @@ impl Dna {
         serde_json::to_string_pretty(self)
     }
 
-
     /// Return a Zome
     pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes
-          .iter()
-          .find(|z| z.name == zome_name)
+        self.zomes.iter().find(|z| z.name == zome_name)
     }
-
 
     /// Return a Zome's WASM bytecode for a specified Capability
     pub fn get_capability<'a>(
@@ -168,9 +164,9 @@ impl Dna {
         capability_name: &str,
     ) -> Option<&'a wasm::DnaWasm> {
         let capability = zome
-          .capabilities
-          .iter()
-          .find(|c| c.name == capability_name)?;
+            .capabilities
+            .iter()
+            .find(|c| c.name == capability_name)?;
         Some(&capability.code)
     }
 
@@ -192,16 +188,16 @@ impl Dna {
     }
 
     /// Return a Zome's WASM bytecode for the validation of an entry
-    pub fn get_validation_bytecode_for_entry_type(&self,
-                                                  zome_name: &str,
-                                                  entry_type_name: &str)
-        -> Option<&wasm::DnaWasm>
-    {
+    pub fn get_validation_bytecode_for_entry_type(
+        &self,
+        zome_name: &str,
+        entry_type_name: &str,
+    ) -> Option<&wasm::DnaWasm> {
         let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
         let entry_type = zome
-          .entry_types
-          .iter()
-          .find(|et| et.name == entry_type_name)?;
+            .entry_types
+            .iter()
+            .find(|et| et.name == entry_type_name)?;
         Some(&entry_type.validation)
     }
 }

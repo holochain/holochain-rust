@@ -26,7 +26,9 @@ pub mod state;
 pub mod test_utils {
     use super::*;
     use holochain_dna::{
-        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+        wasm::DnaWasm,
+        zome::{capabilities::Capability, Zome},
+        Dna,
     };
     use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;
@@ -39,9 +41,8 @@ pub mod test_utils {
         buf
     }
 
-
     /// Create DNA from WAT
-    pub fn create_test_dna_with_wat(zome_name : String, cap_name : String, wat: Option<&str>) -> Dna {
+    pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
         // Default WASM code returns 1337 as integer
         let default_wat = format!(
             r#"
@@ -70,9 +71,8 @@ pub mod test_utils {
         return create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec());
     }
 
-
     /// Prepare valid DNA struct with that WASM in a zome's capability
-    pub fn create_test_dna_with_wasm(zome_name : String, cap_name : String, wasm: Vec<u8>) -> Dna {
+    pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<u8>) -> Dna {
         let mut dna = Dna::new();
         let mut zome = Zome::new();
         let mut capability = Capability::new();
@@ -85,19 +85,15 @@ pub mod test_utils {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use error::HolochainError;
-    use holochain_dna::Dna;
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
     use instance::Instance;
     use nucleus::{Action::*, FunctionCall};
     use state::{Action::*, State};
-    use std::sync::mpsc::channel;
-    use std::thread::sleep;
-    use std::time::Duration;
+    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
 
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
@@ -136,7 +132,10 @@ mod tests {
     fn dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(instance.state().nucleus().status(), ::nucleus::NucleusStatus::New);
+        assert_eq!(
+            instance.state().nucleus().status(),
+            ::nucleus::NucleusStatus::New
+        );
 
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
@@ -179,7 +178,11 @@ mod tests {
 
     #[test]
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
         let mut instance = create_instance(dna);
 
         // Create zome function call
@@ -210,7 +213,11 @@ mod tests {
 
     #[test]
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
         let mut instance = create_instance(dna);
 
         // Create zome function call:
@@ -228,9 +235,12 @@ mod tests {
 
     #[test]
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
         let mut instance = create_instance(dna);
-
 
         // Create bad zome function call
         let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
@@ -238,9 +248,7 @@ mod tests {
         let result = nucleus::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::ZomeNotFound(err)) => {
-                assert_eq!(err, "Zome 'xxx' not found")
-            }
+            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 
@@ -257,10 +265,13 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),None);
+        let mut dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
         dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
 
         let instance = create_instance(dna);
@@ -269,10 +280,13 @@ mod tests {
         assert!(instance.state().nucleus().has_initialized());
     }
 
-
     #[test]
     fn test_genesis_ok() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), Some(r#"
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            Some(
+                r#"
             (module
                 (memory (;0;) 17)
                 (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
@@ -283,7 +297,9 @@ mod tests {
                 )
                 (export "memory" (memory 0))
             )
-        "#));
+        "#,
+            ),
+        );
 
         let instance = create_instance(dna);
 
@@ -291,10 +307,13 @@ mod tests {
         assert!(instance.state().nucleus().has_initialized());
     }
 
-
     #[test]
     fn test_genesis_err() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome".to_string(), ReservedCapabilityNames::LifeCycle.as_str().to_string(), Some(r#"
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            Some(
+                r#"
             (module
                 (memory (;0;) 17)
                 (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
@@ -305,13 +324,14 @@ mod tests {
                 )
                 (export "memory" (memory 0))
             )
-        "#));
+        "#,
+            ),
+        );
 
         let instance = create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }
-
 
 }

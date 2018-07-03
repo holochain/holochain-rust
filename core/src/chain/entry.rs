@@ -34,9 +34,12 @@ impl Entry {
 
     /// hashes the entry
     pub fn hash(&self) -> String {
-        // do NOT include the entry_type in the entry hash
-        // the serialized representation of the entry type (and hence hash) sits in the header
+        // @TODO - this is the wrong string being hashed
+        // @see https://github.com/holochain/holochain-rust/issues/103
         let string_to_hash = self.content.clone();
+
+        // @TODO the hashing algo should not be hardcoded
+        // @see https://github.com/holochain/holochain-rust/issues/104
         hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 

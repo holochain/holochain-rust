@@ -86,6 +86,8 @@ impl Header {
 
     /// hashes the header
     pub fn hash(&self) -> String {
+        // @TODO this is the wrong string being hashed
+        // @see https://github.com/holochain/holochain-rust/issues/103
         let string_to_hash = String::new()
             + &self.entry_type
             + &self.time
@@ -93,6 +95,9 @@ impl Header {
             + &self.entry
             + &self.type_next.clone().unwrap_or(String::new())
             + &self.signature;
+
+        // @TODO the hashing algo should not be hardcoded
+        // @see https://github.com/holochain/holochain-rust/issues/104
         hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 

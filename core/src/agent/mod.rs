@@ -1,8 +1,7 @@
 pub mod keys;
 
 use agent::keys::Keys;
-use chain::entry::Entry;
-use chain::memory::MemChain;
+use chain::{entry::Entry, memory::MemChain};
 use state;
 use std::sync::{mpsc::Sender, Arc};
 

@@ -3,10 +3,8 @@ pub mod header;
 pub mod memory;
 pub mod pair;
 
-use chain::entry::Entry;
-use chain::pair::Pair;
-use serde::Deserialize;
-use serde::Serialize;
+use chain::{entry::Entry, pair::Pair};
+use serde::{Deserialize, Serialize};
 use std;
 
 pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {

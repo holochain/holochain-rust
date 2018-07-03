@@ -32,7 +32,6 @@ impl ReservedCapabilityNames {
     }
 }
 
-
 pub enum ReservedFunctionNames {
     /// genesis() -> bool
     /// Must be in LifeCycle Capability
@@ -41,7 +40,6 @@ pub enum ReservedFunctionNames {
     /// Must be in Communication Capability
     Receive,
 }
-
 
 impl FromStr for ReservedFunctionNames {
     type Err = &'static str;
@@ -54,7 +52,6 @@ impl FromStr for ReservedFunctionNames {
     }
 }
 
-
 impl ReservedFunctionNames {
     pub fn as_str(&self) -> &'static str {
         match *self {
@@ -63,7 +60,6 @@ impl ReservedFunctionNames {
         }
     }
 }
-
 
 //--------------------------------------------------------------------------------------------------
 //

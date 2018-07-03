@@ -1,6 +1,6 @@
+use chain::{entry::Entry, SourceChain};
 use hash;
 use multihash::Hash;
-use chain::{entry::Entry, SourceChain};
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -144,10 +144,7 @@ mod tests {
         let e = Entry::new(t1, c1);
         chain2.push(&e);
 
-        assert_ne!(
-            Header::new(&chain1, &e),
-            Header::new(&chain2, &e)
-        );
+        assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
     }
 
     #[test]

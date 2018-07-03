@@ -4,7 +4,6 @@ use std::{
     sync::{mpsc::*, Arc, RwLock, RwLockReadGuard}, thread, time::Duration,
 };
 
-
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
 //#[derive(Clone)]
@@ -15,7 +14,6 @@ pub struct Instance {
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
-
 
 /// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
@@ -32,7 +30,6 @@ impl Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-
     /// Stack an Action in the Event Queue
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
         return dispatch_action(&self.action_channel, action);
@@ -48,7 +45,12 @@ impl Instance {
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
-        return dispatch_action_with_observer(&self.action_channel, &self.observer_channel, action, closure);
+        return dispatch_action_with_observer(
+            &self.action_channel,
+            &self.observer_channel,
+            action,
+            closure,
+        );
     }
 
     /// Start the Event Loop on a seperate thread
@@ -117,12 +119,12 @@ impl Default for Instance {
     }
 }
 
-
 /// Send Action to Instance's Event Queue and block until is has been processed.
-pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper>,
-                                observer_channel: &Sender<Observer>,
-                                action:           Action)
-{
+pub fn dispatch_action_and_wait(
+    action_channel: &Sender<::state::ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+    action: Action,
+) {
     // Wrap Action
     let wrapper = ::state::ActionWrapper::new(action);
     let wrapper_clone = wrapper.clone();
@@ -134,8 +136,8 @@ pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper
     let closure = move |state: &State| {
         if state.history.contains(&wrapper_clone) {
             sender
-              .send(true)
-              .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+                .send(true)
+                .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
             true
         } else {
             false
@@ -148,29 +150,28 @@ pub fn dispatch_action_and_wait(action_channel:   &Sender<::state::ActionWrapper
 
     // Send observer to instance
     observer_channel
-      .send(observer)
-      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+        .send(observer)
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 
     // Send action to instance
     action_channel
-      .send(wrapper)
-      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
+        .send(wrapper)
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 
     // Block until Observer has sensed the completion of the Action
     receiver
-      .recv()
-      .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-
+        .recv()
+        .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 }
 
-
 /// Send Action to the Event Queue and create an Observer for it with the specified closure
-pub fn dispatch_action_with_observer<F>(action_channel:   &Sender<::state::ActionWrapper>,
-                                        observer_channel: &Sender<Observer>,
-                                        action:           Action,
-                                        closure:          F)
-    where
-      F: 'static + FnMut(&State) -> bool + Send,
+pub fn dispatch_action_with_observer<F>(
+    action_channel: &Sender<::state::ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+    action: Action,
+    closure: F,
+) where
+    F: 'static + FnMut(&State) -> bool + Send,
 {
     let observer = Observer {
         sensor: Box::new(closure),
@@ -183,9 +184,11 @@ pub fn dispatch_action_with_observer<F>(action_channel:   &Sender<::state::Actio
     dispatch_action(action_channel, action);
 }
 
-
 /// Send Action to the Event Queue
-pub fn dispatch_action(action_channel: &Sender<::state::ActionWrapper>, action: Action) -> ActionWrapper {
+pub fn dispatch_action(
+    action_channel: &Sender<::state::ActionWrapper>,
+    action: Action,
+) -> ActionWrapper {
     let wrapper = ActionWrapper::new(action);
     action_channel
         .send(wrapper.clone())

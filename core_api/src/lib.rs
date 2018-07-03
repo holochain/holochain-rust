@@ -251,7 +251,8 @@ mod tests {
        )
  )
 "#;
-        let dna = create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),Some(wat));
+        let dna =
+            create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(), Some(wat));
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -295,7 +296,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(),wasm);
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

@@ -34,12 +34,12 @@ pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels o
 impl Instance {
     /// Stack an Action in the Event Queue
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
-        return dispatch_action(&self.action_channel, action);
+        dispatch_action(&self.action_channel, action)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
     pub fn dispatch_and_wait(&mut self, action: Action) {
-        return dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action);
+        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -47,12 +47,12 @@ impl Instance {
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
-        return dispatch_action_with_observer(
+        dispatch_action_with_observer(
             &self.action_channel,
             &self.observer_channel,
             action,
             closure,
-        );
+        )
     }
 
     /// Start the Event Loop on a seperate thread

@@ -68,7 +68,7 @@ pub mod test_utils {
             .convert(wat_str)
             .unwrap();
 
-        return create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec());
+        create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
     }
 
     /// Prepare valid DNA struct with that WASM in a zome's capability

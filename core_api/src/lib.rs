@@ -138,7 +138,7 @@ mod tests {
     use holochain_agent::Agent as HCAgent;
     use holochain_core::{
         context::Context, logger::Logger, persister::SimplePersister,
-        test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, test_wasm_from_file},
+        test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
     };
     use std::{
         fmt, sync::{Arc, Mutex},
@@ -188,6 +188,8 @@ mod tests {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
                 assert_eq!(hc.context.agent, agent);
+                // TODO #61 - Should instantiation also initialize?
+                // assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
                 assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
             }
@@ -249,7 +251,7 @@ mod tests {
        )
  )
 "#;
-        let dna = create_test_dna_with_wat(Some(wat));
+        let dna = create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(),Some(wat));
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -290,10 +292,10 @@ mod tests {
 
     #[test]
     fn can_call_test() {
-        let wasm = test_wasm_from_file(
+        let wasm = create_wasm_from_file(
             "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
-        let dna = create_test_dna_with_wasm(wasm);
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(),wasm);
         let agent = HCAgent::from_string("bob");
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

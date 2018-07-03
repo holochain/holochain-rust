@@ -1,6 +1,5 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
+use hash;
+use multihash::Hash;
 use chain::{entry::Entry, SourceChain};
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
@@ -14,24 +13,13 @@ pub struct Header {
     /// ISO8601 time stamp
     time: String,
     /// link to the immediately preceding header, None is valid only for genesis
-    next: Option<u64>,
+    next: Option<String>,
     /// mandatory link to the entry for this header
     entry: String,
     /// link to the most recent header of the same type, None is valid only for the first of type
-    type_next: Option<u64>,
+    type_next: Option<String>,
     /// agent's cryptographic signature
     signature: String,
-}
-
-impl Hash for Header {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.entry_type.hash(state);
-        self.time.hash(state);
-        self.next.hash(state);
-        self.entry.hash(state);
-        self.type_next.hash(state);
-        self.signature.hash(state);
-    }
 }
 
 impl PartialEq for Header {
@@ -77,8 +65,8 @@ impl Header {
     }
 
     /// next getter
-    pub fn next(&self) -> Option<u64> {
-        self.next
+    pub fn next(&self) -> Option<String> {
+        self.next.clone()
     }
 
     /// entry getter
@@ -87,8 +75,8 @@ impl Header {
     }
 
     /// type_next getter
-    pub fn type_next(&self) -> Option<u64> {
-        self.type_next
+    pub fn type_next(&self) -> Option<String> {
+        self.type_next.clone()
     }
 
     /// signature getter
@@ -97,10 +85,15 @@ impl Header {
     }
 
     /// hashes the header
-    pub fn hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        Hash::hash(&self, &mut hasher);
-        hasher.finish()
+    pub fn hash(&self) -> String {
+        let string_to_hash = String::new()
+            + &self.entry_type
+            + &self.time
+            + &self.next.clone().unwrap_or(String::new())
+            + &self.entry
+            + &self.type_next.clone().unwrap_or(String::new())
+            + &self.signature;
+        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 
     /// returns true if the header is valid
@@ -162,7 +155,7 @@ mod tests {
 
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);
-        assert_ne!(h.hash(), 0);
+        assert_ne!(h.hash(), "");
         assert!(h.validate());
     }
 
@@ -273,7 +266,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(6289138340682858684, h.hash());
+        assert_eq!("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9", h.hash());
     }
 
     #[test]

@@ -36,7 +36,8 @@ impl Entry {
     pub fn hash(&self) -> String {
         // do NOT include the entry_type in the entry hash
         // the serialized representation of the entry type (and hence hash) sits in the header
-        hash::str_to_b58_hash(&self.content, Hash::SHA2256)
+        let string_to_hash = self.content.clone();
+        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 
     /// content getter

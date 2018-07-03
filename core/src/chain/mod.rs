@@ -18,7 +18,7 @@ pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
     fn validate(&self) -> bool;
 
     /// returns a pair for a given header hash
-    fn get(&self, k: u64) -> Option<Pair>;
+    fn get(&self, k: &str) -> Option<Pair>;
 
     /// returns a pair for a given entry hash
     fn get_entry(&self, k: &str) -> Option<Pair>;

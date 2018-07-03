@@ -16,4 +16,4 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 
 [dev-dependencies]
 wabt = "0.2.0"
-
+test_utils = { path = "../test_utils"}

@@ -79,6 +79,7 @@ dependencies = [
  "serde_derive 1.0.67 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "test_utils 0.1.0",
  "wabt 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasmi 0.2.0 (git+https://github.com/paritytech/wasmi.git)",
 ]
@@ -90,6 +91,7 @@ dependencies = [
  "holochain_agent 0.1.0",
  "holochain_core 0.1.0",
  "holochain_dna 0.1.0",
+ "test_utils 0.1.0",
 ]
 
 [[package]]
@@ -324,6 +326,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "remove_dir_all 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "test_utils"
+version = "0.1.0"
+dependencies = [
+ "holochain_core 0.1.0",
+ "holochain_dna 0.1.0",
+ "wabt 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

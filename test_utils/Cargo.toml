@@ -1,0 +1,10 @@
+[package]
+name = "test_utils"
+version = "0.1.0"
+authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+
+[dependencies]
+holochain_dna = { path = "../dna" }
+holochain_core = { path = "../core" }
+wabt = "0.2.0"
+

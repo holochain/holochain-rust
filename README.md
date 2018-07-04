@@ -2,43 +2,7 @@
 This is a beginning and architecture proposal of a second iteration of
 Holochain build in Rust with the intention to have
 1. some modules be compiled to WebAssembly to be reused in Holo's front-end part and
-2. be able to use a somewhat mature WebAssembly interperter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
-
-## Build/install
-First [install rustup](https://www.rust-lang.org/en-US/install.html).
-
-We are pinning the rust version to ensure predictable behaviour.
-
-To install this specific version and set it as the default.
-
-```
-rustup install 1.26.2
-rustup default 1.26.2
-```
-
-and then just run
-
-```
-cargo build
-```
-
-inside this repository.
-Find the executable in ```target/debug/holochain-beta```.
-
-To run the tests (which are in ```src/lib.rs```) just say
-
-```
-cargo test
-```
-
-Note that some lints/warnings will only appear on a cold cargo run, which is
-slower but represents what travis will see during CI.
-
-To run all cargo tests from a cold start:
-
-```
-cargo clean && cargo test --verbose --all
-```
+2. be able to use a somewhat mature WebAssembly interpreter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
 
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).
@@ -50,20 +14,20 @@ together in src/state.rs.
 
 State is only read from the instance
 
-```rs
+```rust
 instance.state().nucleus().dna()
 ```
 
 and mutated by dispatching an action:
 
-```rs
+```rust
 let entry = Entry{...};
 instance.dispatch(state::Action::Agent(Commit(entry)));
 ```
 
 Instance calls reduce on the state with the next action to consume:
 
-```rs
+```rust
 pub fn consume_next_action(&mut self) {
     if self.pending_actions.len() > 0 {
         let action = self.pending_actions.pop_front().unwrap();
@@ -74,7 +38,7 @@ pub fn consume_next_action(&mut self) {
 
 The main reducer creates a new State object and calls the sub-reducers:
 
-```rs
+```rust
 pub fn reduce(&mut self, action: &Action) -> Self {
     State {
         nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action),
@@ -92,7 +56,7 @@ Since sub-module state slices are included in state::State as counted references
 
 In module agent:
 
-```rs
+```rust
 pub fn reduce(old_state: Rc<AgentState>, action: &_Action) -> Rc<AgentState> {
     match *action {
         _Action::Agent(ref agent_action) => {
@@ -119,54 +83,29 @@ CI builds are happening on circle CI.
 
 The `docker` folder contains scripts to build and run docker images.
 
-#### Standard build
+#### Running tests
 
 Build:
 
-`. docker/build-amd64`
+`. docker/build-ubuntu`
 
 Run:
 
-`. docker/run`
-
-#### Code coverage
-
-Build:
-
-`. docker/build-codecov`
-
-Run:
-
-`. docker/run-codecov`
+`. docker/run-test`
 
 #### Code style
 
-There is a linter enforcing code style.
+There is a linter/formatter enforcing code style.
 
 Build:
 
 ```
-. docker/build-lint
+. docker/build-ubuntu
 ```
 
 Run:
 
-`. docker/run-lint`
-
-### Watch tests
-
-For better productivity, watch your cargo tests/check while you work.
-
-Install:
-
-`cargo install cargo-watch`
-
-Run:
-
-```
-cargo watch # check
-cargo watch -x test # test
-```
+`. docker/run-fmt`
 
 ### holochain_101 mdbook
 

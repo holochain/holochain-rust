@@ -26,7 +26,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 
 # apply formatting / style guidelines, and build the rust project
 main:
-	cargo fmt
+	cargo fmt -- --check
 	cargo clippy -- -A needless_return
 	cargo build --verbose --all
 

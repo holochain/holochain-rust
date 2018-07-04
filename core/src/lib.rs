@@ -149,8 +149,6 @@ mod tests {
 
         // Wait for Init to finish
         while instance.state().history.len() < 2 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }

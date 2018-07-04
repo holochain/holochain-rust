@@ -193,11 +193,17 @@ pub enum Action {
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
 fn reduce_rir(nucleus_state: &mut NucleusState, result: &Option<String>) {
-    //assert!(nucleus_state.status == NucleusStatus::Initializing);
-    match result {
-        None => (*nucleus_state).status = NucleusStatus::Initialized,
-        Some(err) => (*nucleus_state).status = NucleusStatus::InitializationFailed(err.clone()),
-    };
+    if nucleus_state.status != NucleusStatus::Initializing {
+        (*nucleus_state).status = NucleusStatus::InitializationFailed(
+            "reduce of ReturnInitializationResult attempted when status != Initializing"
+                .to_string(),
+        );
+    } else {
+        match result {
+            None => (*nucleus_state).status = NucleusStatus::Initialized,
+            Some(err) => (*nucleus_state).status = NucleusStatus::InitializationFailed(err.clone()),
+        };
+    }
 }
 
 fn return_initialization_result(
@@ -470,7 +476,7 @@ mod tests {
         let (tx_observer, _observer) = channel::<Observer>();
 
         // Reduce Init action and block until receiving ReturnInit Action
-        let reduced_nucleus = reduce(
+        let initializing_nucleus = reduce(
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -478,13 +484,13 @@ mod tests {
         );
         receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
 
-        assert_eq!(reduced_nucleus.has_initialized(), false);
-        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
+        assert_eq!(initializing_nucleus.has_initialized(), false);
+        assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) Action
         let return_action = Nucleus(ReturnInitializationResult(Some("init failed".to_string())));
         let reduced_nucleus = reduce(
-            reduced_nucleus.clone(),
+            initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
             &tx_observer.clone(),
@@ -513,7 +519,7 @@ mod tests {
         // Send ReturnInit(None) Action
         let return_action = Nucleus(ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
-            Arc::new(NucleusState::new()),
+            initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
             &tx_observer.clone(),

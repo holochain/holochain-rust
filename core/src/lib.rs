@@ -28,7 +28,9 @@ pub mod state;
 pub mod test_utils {
     use super::*;
     use holochain_dna::{
-        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+        wasm::DnaWasm,
+        zome::{capabilities::Capability, Zome},
+        Dna,
     };
     use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;
@@ -68,7 +70,7 @@ pub mod test_utils {
             .convert(wat_str)
             .unwrap();
 
-        return create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec());
+        create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
     }
 
     /// Prepare valid DNA struct with that WASM in a zome's capability

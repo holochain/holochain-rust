@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run --name holochain-mdbook --rm -v `pwd`:/holochain -p 3000:3000 -p 3001:3001 -it holochain/mdbook:latest

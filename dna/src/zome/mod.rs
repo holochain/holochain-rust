@@ -1,8 +1,4 @@
-/*!
-holochain_dna::zome is a set of structs for working with holochain dna.
-*/
-
-extern crate serde_json;
+//! holochain_dna::zome is a set of structs for working with holochain dna.
 
 pub mod capabilities;
 pub mod entry_types;
@@ -56,11 +52,9 @@ pub struct Zome {
     #[serde(default)]
     pub description: String,
 
-    /**
-    Configuration associated with this zome.
-    Note, this should perhaps be a more free-form serde_json::Value,
-    "throw-errors" may not make sense for wasm, or other ribosome types.
-    */
+    /// Configuration associated with this zome.
+    /// Note, this should perhaps be a more free-form serde_json::Value,
+    /// "throw-errors" may not make sense for wasm, or other ribosome types.
     #[serde(default)]
     pub config: Config,
 
@@ -96,6 +90,7 @@ impl Zome {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn build_and_compare() {

@@ -1,18 +1,13 @@
-/*!
-holochain_dna::wasm is a module for managing webassembly code
- - within the in-memory dna struct
- - and serialized to json
-*/
+//! holochain_dna::wasm is a module for managing webassembly code
+//!  - within the in-memory dna struct
+//!  - and serialized to json
 
-extern crate base64;
-extern crate serde;
+use base64;
+use serde::{
+    self, de::{Deserializer, Visitor}, ser::Serializer,
+};
 
-use serde::de::{Deserializer, Visitor};
-use serde::ser::Serializer;
-
-/**
-Private helper for converting binary WebAssembly into base64 serialized string.
-*/
+/// Private helper for converting binary WebAssembly into base64 serialized string.
 fn _vec_u8_to_b64_str<S>(data: &[u8], s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -21,9 +16,7 @@ where
     s.serialize_str(&b64)
 }
 
-/**
-Private helper for converting base64 string into binary WebAssembly.
-*/
+/// Private helper for converting base64 string into binary WebAssembly.
 fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,

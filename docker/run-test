@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run --security-opt seccomp=unconfined holochain/test:latest
+docker run -v `pwd`:/holochain --rm --security-opt seccomp=unconfined holochain/test:latest

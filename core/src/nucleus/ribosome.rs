@@ -1,30 +1,49 @@
 // In this example we execute a contract funciton exported as "_call"
 #[cfg(test)]
 extern crate wabt;
-extern crate wasmi;
 
-use self::wasmi::{
-    Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+use instance::Observer;
+use state;
+use std::sync::mpsc::Sender;
+
+use wasmi::{
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
 };
 
+/// Object to hold VM data that we want out of the VM
 #[derive(Clone)]
 pub struct Runtime {
     print_output: Vec<u32>,
     pub result: String,
+    action_channel: Sender<state::ActionWrapper>,
+    observer_channel: Sender<Observer>,
+}
+
+/// List of all the API functions available in Nucleus
+#[repr(usize)]
+enum HcApiFuncIndex {
+    /// Print debug information in the console
+    /// print()
+    PRINT = 0,
+    /// Commit an entry to source chain
+    /// commit(entry_type : String, entry_content : String) -> Hash
+    COMMIT,
+    // Add new API function index here
+    // ...
 }
 
 pub const RESULT_OFFSET: u32 = 0;
 
-#[allow(dead_code)]
+/// Executes an exposed function
 pub fn call(
+    action_channel: &Sender<state::ActionWrapper>,
+    observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
     function_name: &str,
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
     let module = wasmi::Module::from_buffer(wasm).unwrap();
-
-    const PRINT_FUNC_INDEX: usize = 0;
 
     impl Externals for Runtime {
         fn invoke_index(
@@ -33,11 +52,37 @@ pub fn call(
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             match index {
-                PRINT_FUNC_INDEX => {
+                index if index == HcApiFuncIndex::PRINT as usize => {
                     let arg: u32 = args.nth(0);
                     self.print_output.push(arg);
                     Ok(None)
                 }
+                index if index == HcApiFuncIndex::COMMIT as usize => {
+                    // TODO - #61 commit()
+                    // unpack args into Entry struct with serializer
+                    let entry = ::chain::entry::Entry::new(
+                        "FIXME - type here",
+                        "FIXME - content string here",
+                    );
+
+                    // Create commit Action
+                    let action_commit =
+                        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+
+                    // Send Action and block for result
+                    ::instance::dispatch_action_and_wait(
+                        &self.action_channel,
+                        &self.observer_channel,
+                        action_commit.clone(),
+                    );
+
+                    // TODO - #61 commit()
+                    // Return Hash of Entry (entry.hash)
+                    // Change to Result<Runtime, InterpreterError>?
+                    Ok(None)
+                }
+                // Add API function code here
+                // ....
                 _ => panic!("unknown function index"),
             }
         }
@@ -54,8 +99,14 @@ pub fn call(
             let func_ref = match field_name {
                 "print" => FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], None),
-                    PRINT_FUNC_INDEX,
+                    HcApiFuncIndex::PRINT as usize,
                 ),
+                "commit" => FuncInstance::alloc_host(
+                    Signature::new(&[ValueType::I32][..], None),
+                    HcApiFuncIndex::COMMIT as usize,
+                ),
+                // Add API function here
+                // ....
                 _ => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
@@ -88,6 +139,8 @@ pub fn call(
     let mut runtime = Runtime {
         print_output: vec![],
         result: String::new(),
+        action_channel: action_channel.clone(),
+        observer_channel: observer_channel.clone(),
     };
 
     let i32_result_length: i32 = main
@@ -104,6 +157,7 @@ pub fn call(
         .get(RESULT_OFFSET, i32_result_length as usize)
         .expect("Successfully retrieve the result");
     runtime.result = String::from_utf8(result).unwrap();
+
     Ok(runtime.clone())
 }
 
@@ -111,6 +165,7 @@ pub fn call(
 mod tests {
     use self::wabt::Wat2Wasm;
     use super::*;
+    use std::sync::mpsc::channel;
 
     fn test_wasm() -> Vec<u8> {
         let wasm_binary = Wat2Wasm::new()
@@ -142,7 +197,15 @@ mod tests {
 
     #[test]
     fn test_print() {
-        let runtime = call(test_wasm(), "test_print", None).expect("test_print should be callable");
+        let (action_channel, _) = channel::<::state::ActionWrapper>();
+        let (tx_observer, _observer) = channel::<Observer>();
+        let runtime = call(
+            &action_channel,
+            &tx_observer,
+            test_wasm(),
+            "test_print",
+            None,
+        ).expect("test_print should be callable");
         assert_eq!(runtime.print_output.len(), 1);
         assert_eq!(runtime.print_output[0], 1337)
     }

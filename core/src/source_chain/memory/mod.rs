@@ -85,11 +85,9 @@ impl<'de> super::SourceChain<'de> for SourceChain {
 
 #[cfg(test)]
 mod tests {
-    use common::entry::Entry;
-    use common::entry::Header;
+    use common::entry::{Entry, Header};
     use serde_json;
-    use source_chain::Pair;
-    use source_chain::SourceChain;
+    use source_chain::{Pair, SourceChain};
 
     // helper to spin up pairs for testing
     // @TODO - do we want to expose something like this as a general utility?

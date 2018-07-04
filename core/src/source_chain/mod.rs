@@ -1,9 +1,7 @@
 pub mod memory;
 
-use common::entry::Entry;
-use common::entry::Header;
-use serde::Deserialize;
-use serde::Serialize;
+use common::entry::{Entry, Header};
+use serde::{Deserialize, Serialize};
 use std;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -60,8 +58,7 @@ pub trait SourceChain<'de>: IntoIterator + Serialize + Deserialize<'de> {
 #[cfg(test)]
 mod tests {
     use super::Pair;
-    use common::entry::Entry;
-    use common::entry::Header;
+    use common::entry::{Entry, Header};
 
     #[test]
     fn new_pair() {

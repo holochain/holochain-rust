@@ -1,0 +1,12 @@
+FROM holochain/rust-ubuntu:develop
+
+RUN cargo install mdbook --vers "^0.1.0"
+
+WORKDIR /holochain/doc/holochain_101
+
+# Port for web access
+EXPOSE 3000
+# Port for websocket (live reload)
+EXPOSE 3001
+
+CMD mdbook serve -i 0.0.0.0 -p 3000 -w 3001

@@ -2,43 +2,7 @@
 This is a beginning and architecture proposal of a second iteration of
 Holochain build in Rust with the intention to have
 1. some modules be compiled to WebAssembly to be reused in Holo's front-end part and
-2. be able to use a somewhat mature WebAssembly interperter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
-
-## Build/install
-First [install rustup](https://www.rust-lang.org/en-US/install.html).
-
-We are pinning the rust version to ensure predictable behaviour.
-
-To install this specific version and set it as the default.
-
-```
-rustup install 1.26.2
-rustup default 1.26.2
-```
-
-and then just run
-
-```
-cargo build
-```
-
-inside this repository.
-Find the executable in ```target/debug/holochain-beta```.
-
-To run the tests (which are in ```src/lib.rs```) just say
-
-```
-cargo test
-```
-
-Note that some lints/warnings will only appear on a cold cargo run, which is
-slower but represents what travis will see during CI.
-
-To run all cargo tests from a cold start:
-
-```
-cargo clean && cargo test --verbose --all
-```
+2. be able to use a somewhat mature WebAssembly interpreter like [wasmi](https://github.com/paritytech/wasmi) for a new type of Ribosome.
 
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).

@@ -290,10 +290,10 @@ mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                    i32.const 1
+                    i32.const 0
                 )
                 (data (i32.const 0)
-                    "0"
+                    ""
                 )
                 (export "memory" (memory 0))
             )

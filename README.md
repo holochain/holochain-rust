@@ -119,54 +119,29 @@ CI builds are happening on circle CI.
 
 The `docker` folder contains scripts to build and run docker images.
 
-#### Standard build
+#### Running tests
 
 Build:
 
-`. docker/build-amd64`
+`. docker/build-ubuntu`
 
 Run:
 
-`. docker/run`
-
-#### Code coverage
-
-Build:
-
-`. docker/build-codecov`
-
-Run:
-
-`. docker/run-codecov`
+`. docker/run-test`
 
 #### Code style
 
-There is a linter enforcing code style.
+There is a linter/formatter enforcing code style.
 
 Build:
 
 ```
-. docker/build-lint
+. docker/build-ubuntu
 ```
 
 Run:
 
-`. docker/run-lint`
-
-### Watch tests
-
-For better productivity, watch your cargo tests/check while you work.
-
-Install:
-
-`cargo install cargo-watch`
-
-Run:
-
-```
-cargo watch # check
-cargo watch -x test # test
-```
+`. docker/run-fmt`
 
 ### holochain_101 mdbook
 

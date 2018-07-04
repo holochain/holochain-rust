@@ -4,9 +4,7 @@
 
 use base64;
 use serde::{
-    self,
-    de::{Deserializer, Visitor},
-    ser::Serializer,
+    self, de::{Deserializer, Visitor}, ser::Serializer,
 };
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.

@@ -138,7 +138,7 @@ impl Holochain {
 mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
-    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, test_wasm_from_file};
+    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
     use holochain_core::{
         context::Context, logger::Logger, persister::SimplePersister,
     };

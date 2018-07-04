@@ -1,5 +1,3 @@
-use common::hash::Hash;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Key {}
 
@@ -7,5 +5,5 @@ pub struct Key {}
 pub struct Keys {
     pub_key: Key,
     priv_key: Key,
-    node_id: Hash,
+    node_id: String,
 }

@@ -30,7 +30,7 @@ impl<'de> SourceChain<'de> for MemChain {
         }
 
         let top_pair = self.top();
-        let next_pair = pair.header().next().and_then(|h| self.get(h));
+        let next_pair = pair.header().next().and_then(|h| self.get(&h));
         if top_pair != next_pair {
             // we panic because no code path should attempt to append an invalid pair
             panic!(
@@ -64,7 +64,7 @@ impl<'de> SourceChain<'de> for MemChain {
         self.pairs.iter().all(|p| p.validate())
     }
 
-    fn get(&self, header_hash: u64) -> Option<Pair> {
+    fn get(&self, header_hash: &str) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs
@@ -73,7 +73,7 @@ impl<'de> SourceChain<'de> for MemChain {
             .find(|p| p.header().hash() == header_hash)
     }
 
-    fn get_entry(&self, entry_hash: u64) -> Option<Pair> {
+    fn get_entry(&self, entry_hash: &str) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self.pairs
@@ -220,10 +220,10 @@ mod tests {
         let p2 = chain.push(&e2);
         let p3 = chain.push(&e3);
 
-        assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get(p1.header().hash()));
-        assert_eq!(Some(p2.clone()), chain.get(p2.header().hash()));
-        assert_eq!(Some(p3.clone()), chain.get(p3.header().hash()));
+        assert_eq!(None, chain.get(""));
+        assert_eq!(Some(p1.clone()), chain.get(&p1.header().hash()));
+        assert_eq!(Some(p2.clone()), chain.get(&p2.header().hash()));
+        assert_eq!(Some(p3.clone()), chain.get(&p3.header().hash()));
     }
 
     #[test]
@@ -241,10 +241,10 @@ mod tests {
         let p2 = chain.push(&e2);
         let p3 = chain.push(&e3);
 
-        assert_eq!(None, chain.get(0));
-        assert_eq!(Some(p1.clone()), chain.get_entry(p1.entry().hash()));
-        assert_eq!(Some(p2.clone()), chain.get_entry(p2.entry().hash()));
-        assert_eq!(Some(p3.clone()), chain.get_entry(p3.entry().hash()));
+        assert_eq!(None, chain.get(""));
+        assert_eq!(Some(p1.clone()), chain.get_entry(&p1.entry().hash()));
+        assert_eq!(Some(p2.clone()), chain.get_entry(&p2.entry().hash()));
+        assert_eq!(Some(p3.clone()), chain.get_entry(&p3.entry().hash()));
     }
 
     #[test]
@@ -355,7 +355,7 @@ mod tests {
         chain.push(&e3);
 
         let json = serde_json::to_string(&chain).unwrap();
-        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":14176581647729525889,\"entry\":3676438629107045207,\"type_next\":14176581647729525889,\"signature\":\"\"},\"entry\":{\"content\":\"bar\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":4506850079084802999,\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\",\"entry_type\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":3223843486057940362,\"entry\":16260972211344176173,\"type_next\":3223843486057940362,\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}}}";
+        let expected_json = "{\"pairs\":[{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":\"QmTDSBLxBhPN8jQzpGjpbopHzfTbjNGmmTBTVSna5icHaX\",\"entry\":\"QmauF2HRPZkF43phNoWmMDqW6hPREXNdT6758PXyBUH9Y1\",\"type_next\":\"QmTDSBLxBhPN8jQzpGjpbopHzfTbjNGmmTBTVSna5icHaX\",\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":\"Qma5N19LgwLSY3K2eKteeCjt86QTkxmFCt9JDJfWTrESTy\",\"entry\":\"QmfMjwGasyzX74517w3gL2Be3sozKMGDRwuGJHgs9m6gfS\",\"type_next\":\"Qma5N19LgwLSY3K2eKteeCjt86QTkxmFCt9JDJfWTrESTy\",\"signature\":\"\"},\"entry\":{\"content\":\"bar\",\"entry_type\":\"foo\"}},{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":null,\"entry\":\"QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"foo\",\"entry_type\":\"foo\"}}],\"top\":{\"header\":{\"entry_type\":\"foo\",\"time\":\"\",\"next\":\"QmTDSBLxBhPN8jQzpGjpbopHzfTbjNGmmTBTVSna5icHaX\",\"entry\":\"QmauF2HRPZkF43phNoWmMDqW6hPREXNdT6758PXyBUH9Y1\",\"type_next\":\"QmTDSBLxBhPN8jQzpGjpbopHzfTbjNGmmTBTVSna5icHaX\",\"signature\":\"\"},\"entry\":{\"content\":\"baz\",\"entry_type\":\"foo\"}}}";
 
         assert_eq!(expected_json, json);
         assert_eq!(chain, serde_json::from_str(&json).unwrap());

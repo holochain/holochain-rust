@@ -1,9 +1,6 @@
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
-
 use chain::{entry::Entry, SourceChain};
+use hash;
+use multihash::Hash;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -16,24 +13,13 @@ pub struct Header {
     /// ISO8601 time stamp
     time: String,
     /// link to the immediately preceding header, None is valid only for genesis
-    next: Option<u64>,
+    next: Option<String>,
     /// mandatory link to the entry for this header
-    entry: u64,
+    entry: String,
     /// link to the most recent header of the same type, None is valid only for the first of type
-    type_next: Option<u64>,
+    type_next: Option<String>,
     /// agent's cryptographic signature
     signature: String,
-}
-
-impl Hash for Header {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.entry_type.hash(state);
-        self.time.hash(state);
-        self.next.hash(state);
-        self.entry.hash(state);
-        self.type_next.hash(state);
-        self.signature.hash(state);
-    }
 }
 
 impl PartialEq for Header {
@@ -58,7 +44,7 @@ impl Header {
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
             next: chain.top().and_then(|p| Some(p.header().hash())),
-            entry: entry.hash(),
+            entry: entry.hash().to_string(),
             type_next: chain
                 .top_type(&entry.entry_type())
                 .and_then(|p| Some(p.header().hash())),
@@ -79,18 +65,18 @@ impl Header {
     }
 
     /// next getter
-    pub fn next(&self) -> Option<u64> {
-        self.next
+    pub fn next(&self) -> Option<String> {
+        self.next.clone()
     }
 
     /// entry getter
-    pub fn entry(&self) -> u64 {
-        self.entry
+    pub fn entry(&self) -> String {
+        self.entry.clone()
     }
 
     /// type_next getter
-    pub fn type_next(&self) -> Option<u64> {
-        self.type_next
+    pub fn type_next(&self) -> Option<String> {
+        self.type_next.clone()
     }
 
     /// signature getter
@@ -99,10 +85,20 @@ impl Header {
     }
 
     /// hashes the header
-    pub fn hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        Hash::hash(&self, &mut hasher);
-        hasher.finish()
+    pub fn hash(&self) -> String {
+        // @TODO this is the wrong string being hashed
+        // @see https://github.com/holochain/holochain-rust/issues/103
+        let string_to_hash = String::new()
+            + &self.entry_type
+            + &self.time
+            + &self.next.clone().unwrap_or_default()
+            + &self.entry
+            + &self.type_next.clone().unwrap_or_default()
+            + &self.signature;
+
+        // @TODO the hashing algo should not be hardcoded
+        // @see https://github.com/holochain/holochain-rust/issues/104
+        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 
     /// returns true if the header is valid
@@ -161,7 +157,7 @@ mod tests {
 
         assert_eq!(h.entry(), e.hash());
         assert_eq!(h.next(), None);
-        assert_ne!(h.hash(), 0);
+        assert_ne!(h.hash(), "");
         assert!(h.validate());
     }
 
@@ -272,7 +268,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(6289138340682858684, h.hash());
+        assert_eq!("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9", h.hash());
     }
 
     #[test]

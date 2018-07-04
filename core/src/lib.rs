@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
+extern crate multihash;
+extern crate rust_base58;
 extern crate serde;
 extern crate serde_json;
 extern crate snowflake;
@@ -12,9 +14,9 @@ extern crate holochain_dna;
 
 pub mod agent;
 pub mod chain;
-pub mod common;
 pub mod context;
 pub mod error;
+pub mod hash;
 pub mod instance;
 pub mod logger;
 pub mod network;
@@ -26,9 +28,7 @@ pub mod state;
 pub mod test_utils {
     use super::*;
     use holochain_dna::{
-        wasm::DnaWasm,
-        zome::{capabilities::Capability, Zome},
-        Dna,
+        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
     };
     use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;

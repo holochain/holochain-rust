@@ -50,20 +50,20 @@ together in src/state.rs.
 
 State is only read from the instance
 
-```rs
+```rust
 instance.state().nucleus().dna()
 ```
 
 and mutated by dispatching an action:
 
-```rs
+```rust
 let entry = Entry{...};
 instance.dispatch(state::Action::Agent(Commit(entry)));
 ```
 
 Instance calls reduce on the state with the next action to consume:
 
-```rs
+```rust
 pub fn consume_next_action(&mut self) {
     if self.pending_actions.len() > 0 {
         let action = self.pending_actions.pop_front().unwrap();
@@ -74,7 +74,7 @@ pub fn consume_next_action(&mut self) {
 
 The main reducer creates a new State object and calls the sub-reducers:
 
-```rs
+```rust
 pub fn reduce(&mut self, action: &Action) -> Self {
     State {
         nucleus: ::nucleus::reduce(Rc::clone(&self.nucleus), action),
@@ -92,7 +92,7 @@ Since sub-module state slices are included in state::State as counted references
 
 In module agent:
 
-```rs
+```rust
 pub fn reduce(old_state: Rc<AgentState>, action: &_Action) -> Rc<AgentState> {
     match *action {
         _Action::Agent(ref agent_action) => {

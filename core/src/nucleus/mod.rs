@@ -57,6 +57,13 @@ impl NucleusState {
         self.status == NucleusStatus::Initialized
     }
 
+    pub fn has_initialization_failed(&self) -> bool {
+        match self.status {
+            NucleusStatus::InitializationFailed(_) => true,
+            _ => false,
+        }
+    }
+
     // Getters
     pub fn dna(&self) -> Option<Dna> {
         self.dna.clone()
@@ -438,6 +445,7 @@ mod tests {
         let nucleus_state = NucleusState::new();
         assert_eq!(nucleus_state.dna, None);
         assert_eq!(nucleus_state.has_initialized(), false);
+        assert_eq!(nucleus_state.has_initialization_failed(), false);
         assert_eq!(nucleus_state.status(), NucleusStatus::New);
     }
 
@@ -459,6 +467,7 @@ mod tests {
         receiver.recv().unwrap_or_else(|_| panic!("channel failed"));
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
+        assert_eq!(reduced_nucleus.has_initialization_failed(), false);
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
     }
 
@@ -480,6 +489,7 @@ mod tests {
         receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
+        assert_eq!(initializing_nucleus.has_initialization_failed(), false);
         assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) Action
@@ -492,6 +502,7 @@ mod tests {
         );
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
+        assert_eq!(reduced_nucleus.has_initialization_failed(), true);
         assert_eq!(
             reduced_nucleus.status(),
             NucleusStatus::InitializationFailed("init failed".to_string())
@@ -521,6 +532,7 @@ mod tests {
         );
 
         assert_eq!(reduced_nucleus.has_initialized(), true);
+        assert_eq!(reduced_nucleus.has_initialization_failed(), false);
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initialized);
     }
 

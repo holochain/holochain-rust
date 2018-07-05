@@ -28,15 +28,15 @@ pub mod state;
 pub mod test_utils {
     use super::*;
     use holochain_dna::{
-        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+        wasm::DnaWasm,
+        zome::{capabilities::Capability, Zome},
+        Dna,
     };
     use instance::Instance;
-    use state::Action::Nucleus;
     use nucleus::Action::InitApplication;
-    use std::{fs::File, io::prelude::*};
+    use state::Action::Nucleus;
+    use std::{fs::File, io::prelude::*, thread::sleep, time::Duration};
     use wabt::Wat2Wasm;
-    use std::{thread::sleep, time::Duration};
-
 
     /// create a test instance
     pub fn create_instance(dna: Dna) -> Instance {

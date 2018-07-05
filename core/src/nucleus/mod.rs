@@ -2,15 +2,19 @@ pub mod ribosome;
 
 use error::HolochainError;
 use holochain_dna::{
-    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames}, Dna,
+    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
+    Dna,
 };
 use instance::Observer;
 use snowflake;
 use state;
 use std::{
-    collections::HashMap, sync::{
-        mpsc::{channel, Sender}, Arc,
-    }, thread,
+    collections::HashMap,
+    sync::{
+        mpsc::{channel, Sender},
+        Arc,
+    },
+    thread,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -429,7 +433,8 @@ pub fn reduce(
 #[cfg(test)]
 mod tests {
     use super::{
-        super::{nucleus::Action::*, state::Action::*}, *,
+        super::{nucleus::Action::*, state::Action::*},
+        *,
     };
     use std::sync::mpsc::channel;
 

@@ -9,5 +9,6 @@ private slots:
   void serializeAndDeserialize();
   void canGetName();
   void canSetName();
+  void canGetZomeNames();
 };
 

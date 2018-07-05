@@ -154,6 +154,42 @@ _xa_str!(
     holochain_dna_set_dna_spec_version
 );
 
+#[repr(C)]
+pub struct CStringVec {
+    len: usize,
+    ptr: *const *mut c_char,
+}
+
+#[no_mangle]
+pub extern "C" fn holochain_dna_get_zome_names(ptr: *const Dna) -> CStringVec {
+    match catch_unwind(|| {
+        let dna = unsafe {
+            assert!(!ptr.is_null());
+            &*ptr
+        };
+
+        dna.zomes
+            .iter()
+            .map(|zome| {
+                let res = match CString::new(zome.name.clone()) {
+                    Ok(s) => s,
+                    Err(_) => return std::ptr::null_mut(),
+                };
+                res.into_raw()
+            })
+            .collect::<Vec<_>>()
+    }) {
+        Ok(zome_names) => CStringVec {
+            len: zome_names.len(),
+            ptr: zome_names.as_ptr(),
+        },
+        Err(_) => CStringVec {
+            len: 0,
+            ptr: std::ptr::null_mut(),
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -46,4 +46,24 @@ void TestHcDna::canSetName() {
   holochain_dna_free(dna);
 }
 
+void TestHcDna::canGetZomeNames() {
+  Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
+                                            "\"zomes\":["
+                                            "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":[]},"
+                                            "{\"name\":\"zome2\",\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":[]}"
+                                            "]}");
+  QVERIFY(dna != 0);
+
+  CStringVec names = holochain_dna_get_zome_names(dna);
+  QCOMPARE(names.len, 2);
+
+  QString name1 = QString("%1").arg(names.ptr[0]);
+  QString name2 = QString("%1").arg(names.ptr[1]);
+
+  QCOMPARE(name1, QString("zome1"));
+  QCOMPARE(name2, QString("zome2"));
+
+  holochain_dna_free(dna);
+}
+
 QTEST_MAIN(TestHcDna)

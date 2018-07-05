@@ -29,6 +29,13 @@ extern void holochain_dna_set_uuid(const Dna *ptr, const char *val);
 extern char *holochain_dna_get_dna_spec_version(const Dna *ptr);
 extern void holochain_dna_set_dna_spec_version(const Dna *ptr, const char *val);
 
+struct CStringVec {
+    size_t len;
+    const char* ptr[];
+};
+
+extern CStringVec holochain_dna_get_zome_names(const Dna *ptr);
+
 #ifdef __cplusplus
 }
 #endif

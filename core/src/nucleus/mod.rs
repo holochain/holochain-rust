@@ -18,6 +18,7 @@ pub enum NucleusStatus {
     New,
     Initializing,
     Initialized,
+    InitializationFailed(String),
 }
 
 impl Default for NucleusStatus {
@@ -178,7 +179,7 @@ impl FunctionResult {
 #[allow(large_enum_variant)]
 pub enum Action {
     InitApplication(Dna),
-    ReturnInitializationResult(bool),
+    ReturnInitializationResult(Option<String>),
     ExecuteZomeFunction(FunctionCall),
     ReturnZomeFunctionResult(FunctionResult),
     ValidateEntry(EntrySubmission),
@@ -186,14 +187,30 @@ pub enum Action {
 
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
-/// otherwise reset the nucleus
-fn reduce_rir(nucleus_state: &mut NucleusState, has_succeeded: bool) {
-    assert!(nucleus_state.status == NucleusStatus::Initializing);
-    if has_succeeded {
-        (*nucleus_state).status = NucleusStatus::Initialized
+/// otherwise set the failed message
+fn reduce_rir(nucleus_state: &mut NucleusState, result: &Option<String>) {
+    if nucleus_state.status != NucleusStatus::Initializing {
+        (*nucleus_state).status = NucleusStatus::InitializationFailed(
+            "reduce of ReturnInitializationResult attempted when status != Initializing"
+                .to_string(),
+        );
     } else {
-        *nucleus_state = NucleusState::new();
-    };
+        match result {
+            None => (*nucleus_state).status = NucleusStatus::Initialized,
+            Some(err) => (*nucleus_state).status = NucleusStatus::InitializationFailed(err.clone()),
+        };
+    }
+}
+
+fn return_initialization_result(
+    result: Option<String>,
+    action_channel: &Sender<state::ActionWrapper>,
+) {
+    action_channel
+        .send(state::ActionWrapper::new(state::Action::Nucleus(
+            Action::ReturnInitializationResult(result),
+        )))
+        .expect("action channel to be open in reducer");
 }
 
 /// Reduce state of Nucleus according to action.
@@ -209,8 +226,8 @@ pub fn reduce(
             let mut new_nucleus_state: NucleusState = (*old_state).clone();
 
             match *nucleus_action {
-                Action::ReturnInitializationResult(has_succeeded) => {
-                    reduce_rir(&mut new_nucleus_state, has_succeeded);
+                Action::ReturnInitializationResult(ref result) => {
+                    reduce_rir(&mut new_nucleus_state, result);
                 }
 
                 // Initialize Nucleus by setting the DNA
@@ -247,17 +264,14 @@ pub fn reduce(
                                         &observer_channel,
                                     );
 
-                                    // genesis returns a i32 as a string
-                                    // 0 == success
+                                    // genesis returns a string
+                                    // "" == success, otherwise error value
                                     match call_result {
-                                        // not okay if genesis returned an errorCode
-                                        Ok(ref s) if s != "0" => {
+                                        // not okay if genesis returned an value
+                                        Ok(ref s) if s != "" => {
                                             // Send a failed ReturnInitializationResult Action
-                                            action_channel
-                                              .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                                  Action::ReturnInitializationResult(false),
-                                              )))
-                                              .expect("action channel to be open in reducer");
+                                            return_initialization_result(Some(s.to_string()),&action_channel);
+
                                             // Kill thread
                                             // TODO - Instead, Keep track of each zome's initialization.
                                             // @see https://github.com/holochain/holochain-rust/issues/78
@@ -269,15 +283,12 @@ pub fn reduce(
                                         Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis_dispatch"
                                           => { /* NA */ }
                                         // Init fails if something failed in genesis called
-                                        Err(_e) => {
+                                        Err(err) => {
                                             // TODO - Create test for this edge case
                                             // @see https://github.com/holochain/holochain-rust/issues/78
                                             // Send a failed ReturnInitializationResult Action
-                                            action_channel
-                                              .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                                  Action::ReturnInitializationResult(false),
-                                              )))
-                                              .expect("action channel to be open in reducer");
+                                            return_initialization_result(Some(err.to_string()),&action_channel);
+
                                             // Kill thread
                                             // TODO - Instead, Keep track of each zome's initialization.
                                             // @see https://github.com/holochain/holochain-rust/issues/78
@@ -287,17 +298,15 @@ pub fn reduce(
                                     }
                                 }
                                 // Send Succeeded ReturnInitializationResult Action
-                                action_channel
-                                    .send(state::ActionWrapper::new(state::Action::Nucleus(
-                                        Action::ReturnInitializationResult(true),
-                                    )))
-                                    .expect("action channel to be open in reducer");
+                                return_initialization_result(None, &action_channel);
                             });
                         }
                         _ => {
-                            // TODO better error reporting based on current state and logger
-                            // https://github.com/holochain/holochain-rust/issues/21
-                            println!("\t!! Nucleus already initialized or initializing");
+                            // Send bad start state ReturnInitializationResult Action
+                            return_initialization_result(
+                                Some("Nucleus already initialized or initializing".to_string()),
+                                &action_channel,
+                            );
                         }
                     }
                 }
@@ -462,7 +471,7 @@ mod tests {
         let (tx_observer, _observer) = channel::<Observer>();
 
         // Reduce Init action and block until receiving ReturnInit Action
-        let reduced_nucleus = reduce(
+        let initializing_nucleus = reduce(
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -470,20 +479,23 @@ mod tests {
         );
         receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
 
-        assert_eq!(reduced_nucleus.has_initialized(), false);
-        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
+        assert_eq!(initializing_nucleus.has_initialized(), false);
+        assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) Action
-        let return_action = Nucleus(ReturnInitializationResult(false));
+        let return_action = Nucleus(ReturnInitializationResult(Some("init failed".to_string())));
         let reduced_nucleus = reduce(
-            reduced_nucleus.clone(),
+            initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
             &tx_observer.clone(),
         );
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
-        assert_eq!(reduced_nucleus.status(), NucleusStatus::New);
+        assert_eq!(
+            reduced_nucleus.status(),
+            NucleusStatus::InitializationFailed("init failed".to_string())
+        );
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(
@@ -494,10 +506,15 @@ mod tests {
         );
         receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
 
-        // Send ReturnInit(true) Action
-        let return_action = Nucleus(ReturnInitializationResult(true));
+        assert_eq!(
+            reduced_nucleus.status(),
+            NucleusStatus::InitializationFailed("init failed".to_string())
+        );
+
+        // Send ReturnInit(None) Action
+        let return_action = Nucleus(ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
-            reduced_nucleus.clone(),
+            initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
             &tx_observer.clone(),

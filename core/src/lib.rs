@@ -149,8 +149,6 @@ mod tests {
 
         // Wait for Init to finish
         while instance.state().history.len() < 2 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
@@ -290,10 +288,10 @@ mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                    i32.const 1
+                    i32.const 0
                 )
                 (data (i32.const 0)
-                    "0"
+                    ""
                 )
                 (export "memory" (memory 0))
             )

@@ -1,4 +1,4 @@
-FROM holochain/rust-ubuntu:latest
+FROM holochain/rust-ubuntu:develop
 
 ENV RUST_BACKTRACE full
 

@@ -30,8 +30,34 @@ pub mod test_utils {
     use holochain_dna::{
         wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
     };
+    use instance::Instance;
+    use state::Action::Nucleus;
+    use nucleus::Action::InitApplication;
     use std::{fs::File, io::prelude::*};
     use wabt::Wat2Wasm;
+    use std::{thread::sleep, time::Duration};
+
+
+    /// create a test instance
+    pub fn create_instance(dna: Dna) -> Instance {
+        // Create instance and plug in our DNA
+        let mut instance = Instance::new();
+        let action = Nucleus(InitApplication(dna.clone()));
+        instance.start_action_loop();
+        instance.dispatch_and_wait(action.clone());
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
+
+        // Wait for Init to finish
+        while instance.state().history.len() < 4 {
+            // TODO - #21
+            // This println! should be converted to either a call to the app logger, or to the core debug log.
+            println!("Waiting... {}", instance.state().history.len());
+            sleep(Duration::from_millis(10))
+        }
+
+        instance
+    }
+
 
     /// Load WASM from filesystem
     pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -94,6 +120,8 @@ mod tests {
     use nucleus::{Action::*, FunctionCall};
     use state::{Action::*, State};
     use std::{sync::mpsc::channel, thread::sleep, time::Duration};
+    use test_utils;
+
 
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
@@ -106,7 +134,7 @@ mod tests {
     /// the test thread could complete before the closure was called.
 
     #[test]
-    fn dispatch_with_observer() {
+    fn can_dispatch_with_observer() {
         let mut instance = Instance::new();
         instance.start_action_loop();
 
@@ -129,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn dispatch_and_wait() {
+    fn can_dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
@@ -155,25 +183,6 @@ mod tests {
         assert!(instance.state().nucleus().has_initialized());
     }
 
-    fn create_instance(dna: Dna) -> Instance {
-        // Create instance and plug in our DNA
-        let mut instance = Instance::new();
-        let action = Nucleus(InitApplication(dna.clone()));
-        instance.start_action_loop();
-        instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
-
-        // Wait for Init to finish
-        while instance.state().history.len() < 4 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
-            println!("Waiting... {}", instance.state().history.len());
-            sleep(Duration::from_millis(10))
-        }
-
-        instance
-    }
-
     #[test]
     fn call_ribosome_function() {
         let dna = test_utils::create_test_dna_with_wat(
@@ -181,7 +190,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = create_instance(dna);
+        let mut instance = test_utils::create_instance(dna);
 
         // Create zome function call
         let call = FunctionCall::new("test_zome", "test_cap", "main", "");
@@ -216,7 +225,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = create_instance(dna);
+        let mut instance = test_utils::create_instance(dna);
 
         // Create zome function call:
         let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
@@ -238,7 +247,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = create_instance(dna);
+        let mut instance = test_utils::create_instance(dna);
 
         // Create bad zome function call
         let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
@@ -272,7 +281,7 @@ mod tests {
         );
         dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
 
-        let instance = create_instance(dna);
+        let instance = test_utils::create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
@@ -299,7 +308,7 @@ mod tests {
             ),
         );
 
-        let instance = create_instance(dna);
+        let instance = test_utils::create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
@@ -326,7 +335,7 @@ mod tests {
             ),
         );
 
-        let instance = create_instance(dna);
+        let instance = test_utils::create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);

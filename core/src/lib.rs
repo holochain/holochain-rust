@@ -58,7 +58,6 @@ pub mod test_utils {
         instance
     }
 
-
     /// Load WASM from filesystem
     pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
         let mut file = File::open(fname).unwrap();
@@ -121,7 +120,6 @@ mod tests {
     use state::{Action::*, State};
     use std::{sync::mpsc::channel, thread::sleep, time::Duration};
     use test_utils;
-
 
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure

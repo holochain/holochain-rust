@@ -68,4 +68,54 @@ void TestHcDna::canGetZomeNames() {
   holochain_dna_free(dna);
 }
 
+void TestHcDna::canGetCapabilityNames() {
+    Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
+                                              "\"zomes\":["
+                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
+                                              "{"
+                                              "    \"name\": \"test_cap\","
+                                              "            \"capability\": {"
+                                              "        \"membrane\": \"public\""
+                                              "    },"
+                                              "    \"fn_declarations\": ["
+                                              "    {"
+                                              "        \"name\": \"main\""
+                                              "    }"
+                                              "    ],"
+                                              "    \"code\": {"
+                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
+                                              "    }"
+                                              "},"
+                                              "{"
+                                              "    \"name\": \"test_cap2\","
+                                              "            \"capability\": {"
+                                              "        \"membrane\": \"public\""
+                                              "    },"
+                                              "    \"fn_declarations\": ["
+                                              "    {"
+                                              "        \"name\": \"main\""
+                                              "    }"
+                                              "    ],"
+                                              "    \"code\": {"
+                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
+                                              "    }"
+                                              "}"
+                                              "]}"
+                                              "]}");
+    QVERIFY(dna != 0);
+
+    CStringVec names;
+    holochain_dna_get_capabilities_names(dna, "zome1", &names);
+    QCOMPARE(names.len, 2);
+
+    QString name1 = QString("%1").arg(names.ptr[0]);
+    QString name2 = QString("%1").arg(names.ptr[1]);
+
+    QCOMPARE(name1, QString("test_cap"));
+    QCOMPARE(name2, QString("test_cap2"));
+
+    holochain_dna_free_zome_names(&names);
+    holochain_dna_free(dna);
+}
+
 QTEST_MAIN(TestHcDna)

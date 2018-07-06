@@ -201,6 +201,52 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
     let _vec = vec.into_iter().map(|s| CString::from_raw(s as *mut c_char)).collect::<Vec<_>>();
 }
 
+#[no_mangle]
+pub extern "C" fn holochain_dna_get_capabilities_names(ptr: *mut Dna, zome_name: *const c_char, string_vec: *mut CStringVec) {
+    match catch_unwind(|| {
+        let dna = unsafe {
+            assert!(!ptr.is_null());
+            &*ptr
+        };
+
+        let zome_name= unsafe {
+            CStr::from_ptr(zome_name).to_string_lossy()
+        };
+
+        match dna.zomes
+            .iter()
+            .find(|&z| z.name == zome_name) {
+                Some(zome) => {
+                    zome.capabilities
+                        .iter()
+                        .map(|cap| {
+                            let raw = match CString::new(cap.name.clone()) {
+                                Ok(s) => s.into_raw(),
+                                Err(_) => std::ptr::null(),
+                            };
+                            raw as *const c_char
+                        })
+                        .collect::<Vec<*const c_char>>()
+                },
+                None => Vec::new()
+            }
+    }) {
+        Ok(cap_names) => {
+            unsafe {
+                (*string_vec).len = cap_names.len();
+                (*string_vec).ptr = cap_names.as_ptr();
+                std::mem::forget(cap_names);
+            }
+        },
+        Err(_) => {
+            unsafe {
+                (*string_vec).len = 0;
+                (*string_vec).ptr = std::ptr::null_mut();
+            }
+        },
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

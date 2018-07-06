@@ -41,14 +41,42 @@ cargo clean && cargo test --verbose --all
 ```
 
 ### Building for Android
-Holochain can be build for Android as described [here](https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html).
-In order to get to libraries that can be linked against when building [HoloSqape](https://github.com/holochain/holosqape)
-for Android, you basically just need to setup up according targets for cargo.
+Note: These instructions for building Holochain on Android are adapted from [here](https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html).
 
-Given that the Android SDK is installed, you first need to create standalone NDKs like so:
+In order to get to libraries that can be linked against when building [HoloSqape](https://github.com/holochain/holosqape) for Android, you basically just need to setup up according targets for cargo.
+
+Given that the Android SDK is installed, here are the steps to setting things up for building:
+
+1. Install the Android tools:
+
+    a. Install [Android Studio](https://developer.android.com/studio/)
+    b. Open Android Studio and navigate to SDK Tools:
+        - MacOS: `Android Studio > Preferences > Appearance & Behaviour > Android SDK > SDK Tools`
+        - Linux: `Configure (gear) >  Appearance & Behavior > System Settings > Android SDK`
+    c. Check the following options for installation and click OK:
+        * Android SDK Tools
+        * NDK
+        * CMake
+        * LLDB
+    d. Get a beverage of your choice (or a full meal for that matter) why you wait for the lengthy download
+
+1. Setup ANDROID_HOME env variable:
+
+On MacOS
 
 ```bash
 export ANDROID_HOME=/Users/$USER/Library/Android/sdk
+```
+
+Linux: (assuming you used defaults when installing Android Studio)
+
+```bash
+export ANDROID_HOME=$HOME/Android/Sdk
+```
+
+2. Create standalone NDKs (the commands below put the NDK in your home dir but you can put them where you like):
+
+```bash
 export NDK_HOME=$ANDROID_HOME/ndk-bundle
 cd ~
 mkdir NDK
@@ -57,7 +85,7 @@ ${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch arm --insta
 ${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch x86 --install-dir NDK/x86
 ```
 
-Then add the following lines to your ```~/.cargo/config```:
+3. Add the following lines to your ```~/.cargo/config```:
 
 ```toml
 [target.aarch64-linux-android]
@@ -74,19 +102,19 @@ linker = "~/NDK/x86/bin/i686-linux-android-clang"
 
 ```
 
-Now you can add those targets to your rust installation with:
+4. Now you can add those targets to your rust installation with:
 
 ```
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
 ```
 
-You should be able to build Holochain for Android with:
+Finally, should now be able to build Holochain for Android with:
 
 ```
 cd <holochain repo>
 cargo build --target armv7-linux-androideabi --release
 ```
-for instance.
+
 
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).

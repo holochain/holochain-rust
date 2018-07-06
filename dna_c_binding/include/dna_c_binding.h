@@ -31,10 +31,10 @@ extern void holochain_dna_set_dna_spec_version(const Dna *ptr, const char *val);
 
 struct CStringVec {
     size_t len;
-    const char* ptr[];
+    const char** ptr;
 };
 
-extern CStringVec holochain_dna_get_zome_names(const Dna *ptr);
+extern void holochain_dna_get_zome_names(const Dna *ptr, CStringVec *string_vec);
 
 #ifdef __cplusplus
 }

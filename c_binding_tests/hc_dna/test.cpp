@@ -54,7 +54,8 @@ void TestHcDna::canGetZomeNames() {
                                             "]}");
   QVERIFY(dna != 0);
 
-  CStringVec names = holochain_dna_get_zome_names(dna);
+  CStringVec names;
+  holochain_dna_get_zome_names(dna, &names);
   QCOMPARE(names.len, 2);
 
   QString name1 = QString("%1").arg(names.ptr[0]);

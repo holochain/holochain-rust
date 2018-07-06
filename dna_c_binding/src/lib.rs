@@ -157,11 +157,11 @@ _xa_str!(
 #[repr(C)]
 pub struct CStringVec {
     len: usize,
-    ptr: *const *mut c_char,
+    ptr: *const *const c_char,
 }
 
 #[no_mangle]
-pub extern "C" fn holochain_dna_get_zome_names(ptr: *const Dna) -> CStringVec {
+pub extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut CStringVec) {
     match catch_unwind(|| {
         let dna = unsafe {
             assert!(!ptr.is_null());
@@ -171,23 +171,28 @@ pub extern "C" fn holochain_dna_get_zome_names(ptr: *const Dna) -> CStringVec {
         dna.zomes
             .iter()
             .map(|zome| {
-                let res = match CString::new(zome.name.clone()) {
-                    Ok(s) => s,
-                    Err(_) => return std::ptr::null_mut(),
+                let raw = match CString::new(zome.name.clone()) {
+                    Ok(s) => s.into_raw(),
+                    Err(_) => std::ptr::null(),
                 };
-                res.into_raw()
+                raw as *const c_char
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<*const c_char>>()
     }) {
-        Ok(zome_names) => CStringVec {
-            len: zome_names.len(),
-            ptr: zome_names.as_ptr(),
+        Ok(zome_names) => {
+            unsafe {
+                (*string_vec).len = zome_names.len();
+                (*string_vec).ptr = zome_names.as_ptr();
+                std::mem::forget(zome_names);
+            }
         },
-        Err(_) => CStringVec {
-            len: 0,
-            ptr: std::ptr::null_mut(),
+        Err(_) => {
+            unsafe {
+                (*string_vec).len = 0;
+                (*string_vec).ptr = std::ptr::null_mut();
+            }
         },
-    }
+    };
 }
 
 #[cfg(test)]

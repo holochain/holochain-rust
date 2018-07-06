@@ -1,8 +1,8 @@
 .qmake.stash
 /target/
 **/*.rs.bk
-/**/Cargo.lock
-!/Cargo.lock
+**/Cargo.lock
+Cargo.lock
 core_api/wasm-test/round_trip/target
 core/src/nucleus/ribosome/target
 core/src/nucleus/wasm-test/target

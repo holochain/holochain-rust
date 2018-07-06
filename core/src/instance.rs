@@ -1,7 +1,9 @@
 //use error::HolochainError;
 use state::*;
 use std::{
-    sync::{mpsc::*, Arc, RwLock, RwLockReadGuard}, thread, time::Duration,
+    sync::{mpsc::*, Arc, RwLock, RwLockReadGuard},
+    thread,
+    time::Duration,
 };
 
 /// Object representing a Holochain app instance.

@@ -55,8 +55,11 @@ extern crate holochain_core;
 extern crate holochain_dna;
 
 use holochain_core::{
-    context::Context, error::HolochainError, instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
+    context::Context,
+    error::HolochainError,
+    instance::Instance,
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    state::{Action::*, State},
 };
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -137,11 +140,14 @@ mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
     use holochain_core::{
-        context::Context, logger::Logger, persister::SimplePersister,
+        context::Context,
+        logger::Logger,
+        persister::SimplePersister,
         test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
     };
     use std::{
-        fmt, sync::{Arc, Mutex},
+        fmt,
+        sync::{Arc, Mutex},
     };
 
     #[derive(Clone)]

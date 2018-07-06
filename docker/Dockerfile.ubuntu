@@ -11,13 +11,14 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
 ENV PATH /root/.cargo/bin:$PATH
 RUN rustc --version
+RUN rustup toolchain install nightly
 RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
-RUN rustup component add rustfmt-preview
-RUN cargo install clippy --version 0.0.206
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2018-06-01
+RUN rustup component add rustfmt-preview --toolchain nightly
+RUN cargo +nightly install clippy
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
 COPY . /holochain
 WORKDIR /holochain

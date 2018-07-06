@@ -21,24 +21,25 @@ env:
     - secure: PGd7dK2ciu86Ej2JoEI7upwvRAhUhS3XJnFqCRO9ujKktGHiUXB1HzlarftLapBL4EJ4VkgtJkkdd70yn2kZyVCSElfF/xF6AE0JOcLK5DKn5mbp+qBMXqRYy+bbjveMq1FU2O/d2rmP4nYle5c026gp0AFm95h2h6et3b0+/AM53Is1a8fopMspPso88Nc3o8TT7ouNyrOYlxNN4M2rXbndQWmdfguXBasnidTpbMq7gCC/1H2yLHWj4dyqiDmpKZck+1zVKWBqJtbLrwEg97mQ3yMnmzX91jYMiEj00kPjXG121W3M1HIS2Mdiiz+3RW963aSKpp7gXAM9cprQHgbx2xFEdVrVAKbGH9FTVlpVDjkdBDAcHsJ9B+ygs6ML8byZQDSfVZBbDDwL8Kk2lgRCN+5TIyjEOzSOyD/3FjSO2LL2ccX7wIeo/dbhD2C0MwdkCLsH5TRvkz/C0d16XxTR9wn2bVlDNKcjIZFrgFj/R8//dJc049J39uRHJ88zK5jENPHisUEzVjCtIi2EHzQz87j8lBO6EVu+P1fc4s9CKGHGTBXMznBRfFym1M0rnqG+aXabjZ5fyS5qAfTIJyquNI9B9Enk154p07ALNIsDqozkEFwsMUCeq6/aZojl/SxcAgxT6oto2jCV1hl9Y6I/8fTqfMWOtHlbFh02qhk=
 install:
   - rustup toolchain install nightly
+  - rustup toolchain install nightly-2018-06-01
   - rustup update
-  - rustup component add rustfmt-preview --toolchain=nightly
-  - cargo +nightly install clippy || echo "clippy already installed"
+  - rustup component add rustfmt-preview --toolchain=nightly-2018-06-01
+  - cargo +nightly-2018-06-01 install clippy || echo "clippy already installed"
   - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin || echo "tarpaulin already installed"
-  - rustup target add wasm32-unknown-unknown --toolchain=nightly
+  - rustup target add wasm32-unknown-unknown --toolchain=nightly-2018-06-01
 script:
   - make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu "$@" .; cd ..;
+    travis_wait 60 docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu "$@" .; cd ..;
     fi
   - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; docker push holochain/rust-ubuntu;
+    travis_wait 60 docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; docker push holochain/rust-ubuntu;
     fi
   - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu:develop "$@" .;
+    travis_wait 60 docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu:develop "$@" .;
     cd ..; fi
   - if [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; docker push holochain/rust-ubuntu:develop;
+    travis_wait 60 docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; docker push holochain/rust-ubuntu:develop;
     fi

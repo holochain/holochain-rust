@@ -195,6 +195,12 @@ pub extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut C
     };
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
+    let vec = Vec::from_raw_parts((*string_vec).ptr as *mut *const c_char, (*string_vec).len, (*string_vec).len);
+    let _vec = vec.into_iter().map(|s| CString::from_raw(s as *mut c_char)).collect::<Vec<_>>();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

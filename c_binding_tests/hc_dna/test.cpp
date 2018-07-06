@@ -64,6 +64,7 @@ void TestHcDna::canGetZomeNames() {
   QCOMPARE(name1, QString("zome1"));
   QCOMPARE(name2, QString("zome2"));
 
+  holochain_dna_free_zome_names(&names);
   holochain_dna_free(dna);
 }
 

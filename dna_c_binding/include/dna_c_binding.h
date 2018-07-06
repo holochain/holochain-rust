@@ -35,6 +35,7 @@ struct CStringVec {
 };
 
 extern void holochain_dna_get_zome_names(const Dna *ptr, CStringVec *string_vec);
+extern void holochain_dna_free_zome_names(CStringVec *string_vec);
 
 #ifdef __cplusplus
 }

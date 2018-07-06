@@ -11,9 +11,7 @@ use std::sync::Arc;
 use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{
-    ffi::{CStr, CString},
-    os::raw::c_char,
-    sync::Mutex,
+    ffi::{CStr, CString}, os::raw::c_char, sync::Mutex,
 };
 
 #[derive(Clone, Debug)]

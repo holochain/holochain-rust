@@ -20,7 +20,7 @@ install:
   - rustup component add rustfmt-preview --toolchain=nightly
   - cargo +nightly install clippy || echo "clippy already installed"
   - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin || echo "tarpaulin already installed"
-  - rustup target add wasm32-unknown-unknown
+  - rustup target add wasm32-unknown-unknown --toolchain=nightly
 script:
   - make test
 after_success:

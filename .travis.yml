@@ -24,9 +24,9 @@ install:
   - rustup toolchain install nightly-2018-06-01
   - rustup update
   - rustup component add rustfmt-preview --toolchain=nightly-2018-06-01
-  - cargo +nightly-2018-06-01 install clippy || echo "clippy already installed"
+  - cargo +nightly-2018-06-01 install clippy --version 0.0.206 || echo "clippy already installed"
   - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin || echo "tarpaulin already installed"
-  - rustup target add wasm32-unknown-unknown --toolchain=nightly-2018-06-01
+  - rustup target add wasm32-unknown-unknown --toolchain=nightly
 script:
   - make test
 after_success:

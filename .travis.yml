@@ -10,6 +10,11 @@ addons:
 cache: cargo
 rust:
   - stable
+  - beta
+  - nightly
+matrix:
+  allow_failures:
+    - rust: nightly
 env:
   global:
     - secure: R6Qw8reHFKVTwziluSxv0Uq4FVfwOI7u0IhUloYjyOZIgWp5+0p0i6FvVB6W13RfEevbBusrl6GHaIe5mGsrLZSN5ICHnN1ZLVhaVnZzoQLGdojHzYBneR5yETogbNA1DiCRZBz62cefkDpfawbUPh8rZQLcO74vfbfFLm+Z838gnCZUhjcYuESHUpA1V3vgXUYuQKp8fVcOCODew0LzAFgbLvipuNZENbb6smyIJAHh8erE4vJdvosCNlMr8Dm5/IUMPYgCcTOjDEUmGt3SktXtrEhJFtMP2RDuSC59qRwQSqBYrdas7LoT7DwP9gh/cWnQtlZJzW3zxaOIWwRk6HiEp4Eds2nGa3j7PPN2WetKfQC6s0wBe9FGqXuQ0HXwlzpQ6+V41J+QraYZMfVRDrrCRAO0DCY2bG/n1T3NYg3PzOM4vLeC3fiLX/lfglpMhWtJ6B22Zm+07KqXHyenDOKHFVKckmISCnouszrD4ay3UC8f1+Xcvp9SvgOLdcPDMqTXyGGDsANzLpttT9wGafBRm+TOMNvMsqkm+EyfTYlsI7SUw1pDYvkg16N115E9V6z1oLdYkS2zbKP5HU0SIPR9kJ2fKQG703prZW9zijnspf9+4k2kyKs/bXfa5Md00DW1BsgfhwI0Fvt6oK8h69MSCaeQnDrWIe9C5sMYQsg=

@@ -1,4 +1,5 @@
 use super::MessageData;
+use chain::pair::Pair;
 
 const NAME: &str = "PUT_REQUEST";
 const CODE: i8 = 2;
@@ -6,21 +7,21 @@ const CODE: i8 = 2;
 pub struct Put {
 
     data: MessageData,
-    key: String,
+    pair: Pair,
 
 }
 
 impl Put {
 
-    pub fn new(data: &MessageData, key: &str) -> Put {
+    pub fn new(data: &MessageData, pair: &Pair) -> Put {
         Put{
             data: data.clone(),
-            key: String::from(key),
+            pair: pair.clone(),
         }
     }
 
-    pub fn key(&self) -> String {
-        self.key.clone()
+    pub fn pair(&self) -> String {
+        self.pair.clone()
     }
 
 }
@@ -51,7 +52,7 @@ mod tests {
     fn new() {
         // smoke test
         let data = MessageData::new("body", "from", "time");
-        let k = "";
+        let pair = "";
         let _put = Put::new(&data, k);
     }
 

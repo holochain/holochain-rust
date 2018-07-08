@@ -8,6 +8,8 @@ extern crate serde_json;
 extern crate snowflake;
 extern crate wabt;
 extern crate wasmi;
+#[macro_use]
+extern crate bitflags;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

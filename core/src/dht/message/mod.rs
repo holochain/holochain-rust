@@ -44,3 +44,35 @@ pub trait Message {
     fn data(&self) -> MessageData;
 
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::MessageData;
+
+    pub fn test_data() -> MessageData {
+        MessageData::new("body", "from", "time")
+    }
+
+
+    #[test]
+    fn data_new() {
+        // smoke test
+        test_data();
+    }
+
+    #[test]
+    fn data_body() {
+        assert_eq!("body", test_data().body());
+    }
+
+    #[test]
+    fn data_from() {
+        assert_eq!("from", test_data().from());
+    }
+
+    #[test]
+    fn data_time() {
+        assert_eq!("time", test_data().time());
+    }
+}

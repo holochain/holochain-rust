@@ -2,6 +2,8 @@ extern crate holochain_core;
 extern crate holochain_dna;
 extern crate wabt;
 
+pub mod chain;
+
 use holochain_core::*;
 use holochain_dna::wasm::DnaWasm;
 use holochain_dna::zome::capabilities::Capability;

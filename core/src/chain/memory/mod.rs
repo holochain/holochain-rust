@@ -115,10 +115,14 @@ impl<'a> IntoIterator for &'a MemChain {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::MemChain;
     use chain::{entry::Entry, pair::Pair, SourceChain};
     use serde_json;
+
+    pub fn test_chain() -> MemChain {
+        MemChain::new()
+    }
 
     #[test]
     /// tests for MemChain::new()

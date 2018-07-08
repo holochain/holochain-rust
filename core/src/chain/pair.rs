@@ -56,9 +56,15 @@ impl Pair {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::Pair;
     use chain::{entry::Entry, header::Header, memory::MemChain, SourceChain};
+    use chain::memory::tests::test_chain;
+    use chain::entry::tests::test_entry;
+
+    pub fn test_pair() -> Pair {
+        Pair::new(&test_chain(), &test_entry())
+    }
 
     #[test]
     /// tests for Pair::new()

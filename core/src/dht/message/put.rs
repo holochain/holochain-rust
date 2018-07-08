@@ -20,7 +20,7 @@ impl Put {
         }
     }
 
-    pub fn pair(&self) -> String {
+    pub fn pair(&self) -> Pair {
         self.pair.clone()
     }
 
@@ -43,45 +43,40 @@ impl super::Message for Put {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use chain::pair::tests::test_pair;
     use dht::message::Message;
-    use dht::message::MessageData;
     use super::Put;
+    use dht::message::tests::test_data;
+
+    pub fn test_put() -> Put {
+        Put::new(&test_data(), &test_pair())
+    }
 
     #[test]
     fn new() {
         // smoke test
-        let data = MessageData::new("body", "from", "time");
-        let pair = "";
-        let _put = Put::new(&data, k);
+        test_put();
     }
 
     #[test]
     fn type_name() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!("PUT_REQUEST", Put::new(&data, k).type_name());
+        assert_eq!("PUT_REQUEST", test_put().type_name());
     }
 
     #[test]
     fn type_code() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!(2, Put::new(&data, k).type_code());
+        assert_eq!(2, test_put().type_code());
     }
 
     #[test]
     fn data() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!(data, Put::new(&data, k).data());
+        assert_eq!(test_data(), test_put().data());
     }
 
     #[test]
-    fn key() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "some key";
-        assert_eq!(k, Put::new(&data, k).key())
+    fn pair() {
+        assert_eq!(test_pair(), test_put().pair())
     }
 
 }

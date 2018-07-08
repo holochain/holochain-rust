@@ -1,3 +1,5 @@
+pub mod delete;
+pub mod modify;
 pub mod put;
 pub mod response_ok;
 pub mod response_error;

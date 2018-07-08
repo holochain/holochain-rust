@@ -1,3 +1,5 @@
+use super::MessageData;
+
 const NAME: &str = "ERROR_RESPONSE";
 const CODE: i8 = 0;
 
@@ -30,19 +32,15 @@ impl ErrorCode {
 pub struct Error {
     code: i8,
     // Message trait data
-    body: String,
-    time: String,
-    from: String,
+    data: MessageData
 }
 
 impl Error {
 
-    pub fn new(code: ErrorCode, body: &str) -> Error {
+    pub fn new(data: &MessageData, code: ErrorCode) -> Error {
         Error{
             code: code.code(),
-            body: String::from(body),
-            time: String::new(),
-            from: String::new(),
+            data: data.clone(),
         }
     }
 
@@ -62,22 +60,15 @@ impl super::Message for Error {
         CODE
     }
 
-    fn time(&self) -> String {
-        self.time.clone()
-    }
-
-    fn from(&self) -> String {
-        self.from.clone()
-    }
-
-    fn body(&self) -> String {
-        self.body.clone()
+    fn data(&self) -> super::MessageData {
+        self.data.clone()
     }
 
 }
 
 #[cfg(test)]
 mod tests {
+    use dht::message::MessageData;
     use dht::message::Message;
     use super::ErrorCode;
     use super::Error;
@@ -95,36 +86,56 @@ mod tests {
     }
 
     #[test]
+    /// tests for Error::new()
+    fn new() {
+        // smoke test
+        let data = MessageData::new("body", "from", "time");
+        let _error = Error::new(&data, ErrorCode::Unknown);
+    }
+
+    #[test]
     fn code() {
-        // type code is always 0 for error messages
-        assert_eq!(0, Error::new(ErrorCode::Unknown, "").code());
-        assert_eq!(1, Error::new(ErrorCode::HashNotFound, "").code());
-        assert_eq!(2, Error::new(ErrorCode::HashDeleted, "").code());
-        assert_eq!(3, Error::new(ErrorCode::HashModified, "").code());
-        assert_eq!(4, Error::new(ErrorCode::HashRejected, "").code());
-        assert_eq!(5, Error::new(ErrorCode::LinkNotFound, "").code());
-        assert_eq!(6, Error::new(ErrorCode::EntryTypeMismatch, "").code());
-        assert_eq!(7, Error::new(ErrorCode::BlockedListed, "").code());
-        assert_eq!(0, Error::new(ErrorCode::Unknown, "foo").code());
+        let data = MessageData::new("body", "from", "time");
+
+        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).code());
+        assert_eq!(1, Error::new(&data, ErrorCode::HashNotFound).code());
+        assert_eq!(2, Error::new(&data, ErrorCode::HashDeleted).code());
+        assert_eq!(3, Error::new(&data, ErrorCode::HashModified).code());
+        assert_eq!(4, Error::new(&data, ErrorCode::HashRejected).code());
+        assert_eq!(5, Error::new(&data, ErrorCode::LinkNotFound).code());
+        assert_eq!(6, Error::new(&data, ErrorCode::EntryTypeMismatch).code());
+        assert_eq!(7, Error::new(&data, ErrorCode::BlockedListed).code());
     }
 
     #[test]
     fn type_name() {
-        assert_eq!(super::NAME, Error::new(ErrorCode::Unknown, "").type_name());
+        let data = MessageData::new("body", "from", "time");
+
+        assert_eq!("ERROR_RESPONSE", Error::new(&data, ErrorCode::Unknown).type_name());
     }
 
     #[test]
     fn type_code() {
+        let data = MessageData::new("body", "from", "time");
+
         // type code is always 0 for error messages
-        assert_eq!(0, Error::new(ErrorCode::Unknown, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::HashNotFound, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::HashDeleted, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::HashModified, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::HashRejected, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::LinkNotFound, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::EntryTypeMismatch, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::BlockedListed, "").type_code());
-        assert_eq!(0, Error::new(ErrorCode::Unknown, "foo").type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::HashNotFound).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::HashDeleted).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::HashModified).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::HashRejected).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::LinkNotFound).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::EntryTypeMismatch).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::BlockedListed).type_code());
+        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).type_code());
+    }
+
+    #[test]
+    fn data() {
+        let data = MessageData::new("body", "from", "time");
+        let error = Error::new(&data, ErrorCode::Unknown);
+
+        assert_eq!(data, error.data());
     }
 
 }

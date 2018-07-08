@@ -31,8 +31,7 @@ impl ErrorCode {
 
 pub struct Error {
     code: i8,
-    // Message trait data
-    data: MessageData
+    data: MessageData,
 }
 
 impl Error {

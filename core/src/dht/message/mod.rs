@@ -1,4 +1,5 @@
 pub mod put;
+pub mod response_ok;
 pub mod response_error;
 
 #[derive(Clone, PartialEq, Debug)]

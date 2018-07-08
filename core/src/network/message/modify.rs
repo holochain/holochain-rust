@@ -49,8 +49,8 @@ impl super::Message for Modify {
 
 #[cfg(test)]
 mod tests {
-    use dht::message::Message;
-    use dht::message::MessageData;
+    use network::message::Message;
+    use network::message::MessageData;
     use super::Modify;
 
     #[test]

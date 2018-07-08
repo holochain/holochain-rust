@@ -45,9 +45,9 @@ impl super::Message for Put {
 #[cfg(test)]
 pub mod tests {
     use chain::pair::tests::test_pair;
-    use dht::message::Message;
+    use network::message::Message;
     use super::Put;
-    use dht::message::tests::test_data;
+    use network::message::tests::test_data;
 
     pub fn test_put() -> Put {
         Put::new(&test_data(), &test_pair())

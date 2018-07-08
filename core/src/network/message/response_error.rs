@@ -67,8 +67,8 @@ impl super::Message for Error {
 
 #[cfg(test)]
 mod tests {
-    use dht::message::MessageData;
-    use dht::message::Message;
+    use network::message::MessageData;
+    use network::message::Message;
     use super::ErrorCode;
     use super::Error;
 

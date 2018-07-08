@@ -43,8 +43,8 @@ impl super::Message for Delete {
 
 #[cfg(test)]
 mod tests {
-    use dht::message::Message;
-    use dht::message::MessageData;
+    use network::message::Message;
+    use network::message::MessageData;
     use super::Delete;
 
     #[test]

@@ -1,13 +1,12 @@
-pub mod message;
 pub mod status;
 
 use std;
 use chain::pair::Pair;
 use error::HolochainError;
-use dht::message::Message;
-use dht::message::put::Put;
-use dht::message::delete::Delete;
-use dht::message::modify::Modify;
+use network::message::Message;
+use network::message::put::Put;
+use network::message::delete::Delete;
+use network::message::modify::Modify;
 
 // TODO IntoIterator trait
 pub trait DHT {

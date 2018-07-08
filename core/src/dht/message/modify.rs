@@ -6,15 +6,27 @@ const CODE: i8 = 4;
 pub struct Modify {
 
     data: MessageData,
+    old_key: String,
+    new_key: String,
 
 }
 
 impl Modify {
 
-    pub fn new(data: &MessageData) -> Modify {
+    pub fn new(data: &MessageData, old_key: &str, new_key: &str) -> Modify {
         Modify{
             data: data.clone(),
+            old_key: String::from(old_key),
+            new_key: String::from(new_key),
         }
+    }
+
+    pub fn old_key(&self) -> String {
+        self.old_key.clone()
+    }
+
+    pub fn new_key(&self) -> String {
+        self.new_key.clone()
     }
 
 }
@@ -45,25 +57,49 @@ mod tests {
     fn new() {
         // smoke test
         let data = MessageData::new("body", "from", "time");
-        let _put = Modify::new(&data);
+        let ko = "";
+        let kn = "";
+        let _put = Modify::new(&data, ko, kn);
     }
 
     #[test]
     fn type_name() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!("MOD_REQUEST", Modify::new(&data).type_name());
+        let ko = "";
+        let kn = "";
+        assert_eq!("MOD_REQUEST", Modify::new(&data, ko, kn).type_name());
     }
 
     #[test]
     fn type_code() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!(4, Modify::new(&data).type_code());
+        let ko = "";
+        let kn = "";
+        assert_eq!(4, Modify::new(&data, ko, kn).type_code());
     }
 
     #[test]
     fn data() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!(data, Modify::new(&data).data());
+        let ko = "";
+        let kn = "";
+        assert_eq!(data, Modify::new(&data, ko, kn).data());
+    }
+
+    #[test]
+    fn old_key() {
+        let data = MessageData::new("body", "from", "time");
+        let ko = "foo";
+        let kn = "bar";
+        assert_eq!(ko, Modify::new(&data, ko, kn).old_key());
+    }
+
+    #[test]
+    fn new_key() {
+        let data = MessageData::new("body", "from", "time");
+        let ko = "foo";
+        let kn = "bar";
+        assert_eq!(kn, Modify::new(&data, ko, kn).new_key());
     }
 
 }

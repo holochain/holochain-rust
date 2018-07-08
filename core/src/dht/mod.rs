@@ -10,10 +10,10 @@ pub trait DHT {
 
     fn genesis <'de, C: SourceChain<'de>>(&mut self, chain: &C) -> Result<(), HolochainError>;
 
-    fn put <'de, C: SourceChain<'de>>(&mut self, chain: &C, message: Put, k: String) -> Result<(), HolochainError>;
+    fn put <'de, C: SourceChain<'de>>(&mut self, chain: &C, message: Put) -> Result<(), HolochainError>;
 
-    fn delete (&mut self, message: Delete, k: String) -> Result<(), HolochainError>;
+    fn delete (&mut self, message: Delete) -> Result<(), HolochainError>;
 
-    fn modify (&mut self, message: Modify, k_old: String, k_new: String) -> Result<(), HolochainError>;
+    fn modify (&mut self, message: Modify) -> Result<(), HolochainError>;
 
 }

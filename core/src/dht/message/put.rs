@@ -6,15 +6,21 @@ const CODE: i8 = 2;
 pub struct Put {
 
     data: MessageData,
+    key: String,
 
 }
 
 impl Put {
 
-    pub fn new(data: &MessageData) -> Put {
+    pub fn new(data: &MessageData, key: &str) -> Put {
         Put{
             data: data.clone(),
+            key: String::from(key),
         }
+    }
+
+    pub fn key(&self) -> String {
+        self.key.clone()
     }
 
 }
@@ -45,25 +51,36 @@ mod tests {
     fn new() {
         // smoke test
         let data = MessageData::new("body", "from", "time");
-        let _put = Put::new(&data);
+        let k = "";
+        let _put = Put::new(&data, k);
     }
 
     #[test]
     fn type_name() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!("PUT_REQUEST", Put::new(&data).type_name());
+        let k = "";
+        assert_eq!("PUT_REQUEST", Put::new(&data, k).type_name());
     }
 
     #[test]
     fn type_code() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!(2, Put::new(&data).type_code());
+        let k = "";
+        assert_eq!(2, Put::new(&data, k).type_code());
     }
 
     #[test]
     fn data() {
         let data = MessageData::new("body", "from", "time");
-        assert_eq!(data, Put::new(&data).data());
+        let k = "";
+        assert_eq!(data, Put::new(&data, k).data());
+    }
+
+    #[test]
+    fn key() {
+        let data = MessageData::new("body", "from", "time");
+        let k = "some key";
+        assert_eq!(k, Put::new(&data, k).key())
     }
 
 }

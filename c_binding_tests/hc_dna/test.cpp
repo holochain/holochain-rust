@@ -180,5 +180,60 @@ void TestHcDna::canGetFunctionNames() {
     holochain_dna_free(dna);
 }
 
+void TestHcDna::canGetFunctionParameters() {
+    Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
+                                              "\"zomes\":["
+                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
+                                              "{"
+                                              "    \"name\": \"test_cap\","
+                                              "            \"capability\": {"
+                                              "        \"membrane\": \"public\""
+                                              "    },"
+                                              "    \"fn_declarations\": ["
+                                              "    {"
+                                              "        \"name\": \"main\","
+                                              "        \"signature\": {"
+                                              "            \"inputs\": ["
+                                              "                {"
+                                              "                    \"name\": \"param1\","
+                                              "                    \"type\": \"string\""
+                                              "                }"
+                                              "            ],"
+                                              "            \"outputs\": []"
+                                              "        }"
+                                              "    },"
+                                              "    {"
+                                              "        \"name\": \"test\","
+                                              "        \"signature\": {"
+                                              "            \"inputs\": [],"
+                                              "            \"outputs\": []"
+                                              "        }"
+                                              "    }"
+                                              "    ],"
+                                              "    \"code\": {"
+                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
+                                              "    }"
+                                              "}"
+                                              "]}"
+                                              "]}");
+    QVERIFY(dna != 0);
+
+    CStringVec names;
+    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "main", &names);
+    QCOMPARE(names.len, 1);
+
+    QString name1 = QString("%1").arg(names.ptr[0]);
+    QCOMPARE(name1, QString("param1"));
+
+    holochain_dna_free_zome_names(&names);
+
+    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "test", &names);
+    QCOMPARE(names.len, 0);
+
+    holochain_dna_free_zome_names(&names);
+
+    holochain_dna_free(dna);
+}
+
 
 QTEST_MAIN(TestHcDna)

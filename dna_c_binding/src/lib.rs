@@ -305,6 +305,75 @@ pub extern "C" fn holochain_dna_get_function_names(ptr: *mut Dna, zome_name: *co
     };
 }
 
+#[no_mangle]
+pub extern "C" fn holochain_dna_get_function_parameters(ptr: *mut Dna, zome_name: *const c_char, capability_name: *const c_char, function_name: *const c_char, string_vec: *mut CStringVec) {
+    match catch_unwind(|| {
+        let dna = unsafe {
+            assert!(!ptr.is_null());
+            &*ptr
+        };
+
+        let zome_name= unsafe {
+            CStr::from_ptr(zome_name).to_string_lossy()
+        };
+
+        let capability_name= unsafe {
+            CStr::from_ptr(capability_name).to_string_lossy()
+        };
+
+        let function_name= unsafe {
+            CStr::from_ptr(function_name).to_string_lossy()
+        };
+
+        match dna.zomes
+            .iter()
+            .find(|&z| z.name == zome_name) {
+            Some(zome) => {
+                match zome.capabilities
+                    .iter()
+                    .find(|&c| c.name == capability_name) {
+                    Some(capability) => {
+                        match capability.fn_declarations
+                            .iter()
+                            .find(|&function| function.name == function_name) {
+                            Some(function) => {
+                                function.signature.inputs
+                                    .iter()
+                                    .map(|input| {
+                                    let raw = match CString::new(input.name.clone()) {
+                                        Ok(s) => s.into_raw(),
+                                        Err(_) => std::ptr::null(),
+                                    };
+                                    raw as *const c_char
+                                })
+                                    .collect::<Vec<*const c_char>>()
+                            },
+                            None => Vec::new()
+                        }
+                    },
+                    None => Vec::new()
+                }
+
+            },
+            None => Vec::new()
+        }
+    }) {
+        Ok(function_parameters) => {
+            unsafe {
+                (*string_vec).len = function_parameters.len();
+                (*string_vec).ptr = function_parameters.as_ptr();
+                std::mem::forget(function_parameters);
+            }
+        },
+        Err(_) => {
+            unsafe {
+                (*string_vec).len = 0;
+                (*string_vec).ptr = std::ptr::null_mut();
+            }
+        },
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -12,5 +12,6 @@ private slots:
   void canGetZomeNames();
   void canGetCapabilityNames();
   void canGetFunctionNames();
+  void canGetFunctionParameters();
 };
 

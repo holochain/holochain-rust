@@ -161,12 +161,10 @@ pub struct CStringVec {
 }
 
 #[no_mangle]
-pub extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut CStringVec) {
+pub unsafe extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut CStringVec) {
     match catch_unwind(|| {
-        let dna = unsafe {
-            assert!(!ptr.is_null());
-            &*ptr
-        };
+        assert!(!ptr.is_null());
+        let dna = &*ptr;
 
         dna.zomes
             .iter()
@@ -179,15 +177,15 @@ pub extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut C
             })
             .collect::<Vec<*const c_char>>()
     }) {
-        Ok(zome_names) => unsafe {
+        Ok(zome_names) => {
             (*string_vec).len = zome_names.len();
             (*string_vec).ptr = zome_names.as_ptr();
             std::mem::forget(zome_names);
-        },
-        Err(_) => unsafe {
+        }
+        Err(_) => {
             (*string_vec).len = 0;
             (*string_vec).ptr = std::ptr::null_mut();
-        },
+        }
     };
 }
 
@@ -205,18 +203,16 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
 }
 
 #[no_mangle]
-pub extern "C" fn holochain_dna_get_capabilities_names(
+pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     ptr: *mut Dna,
     zome_name: *const c_char,
     string_vec: *mut CStringVec,
 ) {
     match catch_unwind(|| {
-        let dna = unsafe {
-            assert!(!ptr.is_null());
-            &*ptr
-        };
+        assert!(!ptr.is_null());
+        let dna = &*ptr;
 
-        let zome_name = unsafe { CStr::from_ptr(zome_name).to_string_lossy() };
+        let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
 
         match dna.zomes.iter().find(|&z| z.name == zome_name) {
             Some(zome) => zome
@@ -233,34 +229,31 @@ pub extern "C" fn holochain_dna_get_capabilities_names(
             None => Vec::new(),
         }
     }) {
-        Ok(cap_names) => unsafe {
+        Ok(cap_names) => {
             (*string_vec).len = cap_names.len();
             (*string_vec).ptr = cap_names.as_ptr();
             std::mem::forget(cap_names);
-        },
-        Err(_) => unsafe {
+        }
+        Err(_) => {
             (*string_vec).len = 0;
             (*string_vec).ptr = std::ptr::null_mut();
-        },
+        }
     };
 }
 
 #[no_mangle]
-pub extern "C" fn holochain_dna_get_function_names(
+pub unsafe extern "C" fn holochain_dna_get_function_names(
     ptr: *mut Dna,
     zome_name: *const c_char,
     capability_name: *const c_char,
     string_vec: *mut CStringVec,
 ) {
     match catch_unwind(|| {
-        let dna = unsafe {
-            assert!(!ptr.is_null());
-            &*ptr
-        };
+        assert!(!ptr.is_null());
+        let dna = &*ptr;
 
-        let zome_name = unsafe { CStr::from_ptr(zome_name).to_string_lossy() };
-
-        let capability_name = unsafe { CStr::from_ptr(capability_name).to_string_lossy() };
+        let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
+        let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
 
         match dna.zomes.iter().find(|&z| z.name == zome_name) {
             Some(zome) => match zome
@@ -284,20 +277,20 @@ pub extern "C" fn holochain_dna_get_function_names(
             None => Vec::new(),
         }
     }) {
-        Ok(function_names) => unsafe {
+        Ok(function_names) => {
             (*string_vec).len = function_names.len();
             (*string_vec).ptr = function_names.as_ptr();
             std::mem::forget(function_names);
-        },
-        Err(_) => unsafe {
+        }
+        Err(_) => {
             (*string_vec).len = 0;
             (*string_vec).ptr = std::ptr::null_mut();
-        },
+        }
     };
 }
 
 #[no_mangle]
-pub extern "C" fn holochain_dna_get_function_parameters(
+pub unsafe extern "C" fn holochain_dna_get_function_parameters(
     ptr: *mut Dna,
     zome_name: *const c_char,
     capability_name: *const c_char,
@@ -305,16 +298,12 @@ pub extern "C" fn holochain_dna_get_function_parameters(
     string_vec: *mut CStringVec,
 ) {
     match catch_unwind(|| {
-        let dna = unsafe {
-            assert!(!ptr.is_null());
-            &*ptr
-        };
+        assert!(!ptr.is_null());
+        let dna = &*ptr;
 
-        let zome_name = unsafe { CStr::from_ptr(zome_name).to_string_lossy() };
-
-        let capability_name = unsafe { CStr::from_ptr(capability_name).to_string_lossy() };
-
-        let function_name = unsafe { CStr::from_ptr(function_name).to_string_lossy() };
+        let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
+        let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
+        let function_name = CStr::from_ptr(function_name).to_string_lossy();
 
         match dna.zomes.iter().find(|&z| z.name == zome_name) {
             Some(zome) => match zome
@@ -346,15 +335,15 @@ pub extern "C" fn holochain_dna_get_function_parameters(
             None => Vec::new(),
         }
     }) {
-        Ok(function_parameters) => unsafe {
+        Ok(function_parameters) => {
             (*string_vec).len = function_parameters.len();
             (*string_vec).ptr = function_parameters.as_ptr();
             std::mem::forget(function_parameters);
-        },
-        Err(_) => unsafe {
+        }
+        Err(_) => {
             (*string_vec).len = 0;
             (*string_vec).ptr = std::ptr::null_mut();
-        },
+        }
     };
 }
 

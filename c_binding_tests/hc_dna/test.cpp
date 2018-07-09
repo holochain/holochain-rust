@@ -118,4 +118,46 @@ void TestHcDna::canGetCapabilityNames() {
     holochain_dna_free(dna);
 }
 
+
+
+void TestHcDna::canGetFunctionNames() {
+    Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
+                                              "\"zomes\":["
+                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
+                                              "{"
+                                              "    \"name\": \"test_cap\","
+                                              "            \"capability\": {"
+                                              "        \"membrane\": \"public\""
+                                              "    },"
+                                              "    \"fn_declarations\": ["
+                                              "    {"
+                                              "        \"name\": \"main\""
+                                              "    },"
+                                              "    {"
+                                              "        \"name\": \"test\""
+                                              "    }"
+                                              "    ],"
+                                              "    \"code\": {"
+                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
+                                              "    }"
+                                              "}"
+                                              "]}"
+                                              "]}");
+    QVERIFY(dna != 0);
+
+    CStringVec names;
+    holochain_dna_get_function_names(dna, "zome1", "test_cap", &names);
+    QCOMPARE(names.len, 2);
+
+    QString name1 = QString("%1").arg(names.ptr[0]);
+    QString name2 = QString("%1").arg(names.ptr[1]);
+
+    QCOMPARE(name1, QString("main"));
+    QCOMPARE(name2, QString("test"));
+
+    holochain_dna_free_zome_names(&names);
+    holochain_dna_free(dna);
+}
+
+
 QTEST_MAIN(TestHcDna)

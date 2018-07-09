@@ -7,7 +7,7 @@ addons:
   apt:
     packages:
     - libssl-dev
-cache: cargo
+cache: docker
 rust:
   - stable
   - beta

@@ -62,7 +62,10 @@ use holochain_core::{
     state::{Action::*, State},
 };
 use holochain_dna::Dna;
-use std::{sync::{mpsc::channel, Arc}, time::Duration};
+use std::{
+    sync::{mpsc::channel, Arc},
+    time::Duration,
+};
 
 /// contains a Holochain application instance
 pub struct Holochain {

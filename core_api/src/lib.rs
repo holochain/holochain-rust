@@ -62,7 +62,7 @@ use holochain_core::{
     state::{Action::*, State},
 };
 use holochain_dna::Dna;
-use std::sync::{mpsc::channel, Arc};
+use std::{sync::{mpsc::channel, Arc}, time::Duration};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -94,18 +94,23 @@ impl Holochain {
             }
         });
 
-        // is unwrap ok here?
-        let status = receiver.recv().unwrap();
-        match status {
-            NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
-            _ => {
-                context.log(&format!("{} instantiated", name))?;
-                let app = Holochain {
-                    instance,
-                    context,
-                    active: false,
-                };
-                Ok(app)
+        match receiver.recv_timeout(Duration::from_millis(1000)) {
+            Ok(status) => match status {
+                NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
+                _ => {
+                    context.log(&format!("{} instantiated", name))?;
+                    let app = Holochain {
+                        instance,
+                        context,
+                        active: false,
+                    };
+                    Ok(app)
+                }
+            },
+            Err(err) => {
+                // TODO: what kind of cleanup to do on an initialization timeout?
+                // see #120:  https://waffle.io/holochain/org/cards/5b43704336bf54001bceeee0
+                Err(HolochainError::ErrorGeneric(err.to_string()))
             }
         }
     }
@@ -256,6 +261,9 @@ mod tests {
             Err(err) => assert_eq!(err, HolochainError::ErrorGeneric("fail".to_string())),
         };
     }
+
+    #[test]
+    fn fails_instantiate_if_genesis_times_out() {}
 
     #[test]
     fn can_start_and_stop() {

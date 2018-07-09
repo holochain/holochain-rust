@@ -4,6 +4,7 @@ FROM ubuntu
 ENV DEBIAN_FRONTEND noninteractive
 ENV PINNED_NIGHTLY nightly-2018-06-01
 ENV CLIPPY_VERSION 0.0.206
+ARG RUST_VERSION=stable
 
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
@@ -13,7 +14,7 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y
 ENV PATH /root/.cargo/bin:$PATH
 RUN rustc --version
 RUN rustup toolchain install nightly

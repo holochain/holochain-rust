@@ -109,13 +109,32 @@ impl CapabilityType {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct FnParameter {
+    #[serde(rename = "type")]
+    pub parameter_type: String,
+    pub name: String
+}
+
+impl FnParameter {
+    fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
+        FnParameter{name: n.into(), parameter_type: t.into()}
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct FnSignature {
+    pub inputs: Vec<FnParameter>,
+    pub outputs: Vec<FnParameter>
+}
+
 /// Represents a zome "fn_declarations" object.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct FnDeclaration {
     /// The name of this fn declaration.
     #[serde(default)]
     pub name: String,
-    // TODO - signature
+    pub signature: FnSignature
 }
 
 impl Default for FnDeclaration {
@@ -123,6 +142,7 @@ impl Default for FnDeclaration {
     fn default() -> Self {
         FnDeclaration {
             name: String::from(""),
+            signature: FnSignature{inputs: Vec::new(), outputs: Vec::new()}
         }
     }
 }
@@ -188,7 +208,22 @@ mod tests {
                 },
                 "fn_declarations": [
                     {
-                        "name": "test"
+                        "name": "test",
+                        "signature" :
+                        {
+                            "inputs" : [
+                                {
+                                    "name": "post",
+                                    "type": "string"
+                                }
+                            ],
+                            "outputs" : [
+                                {
+                                    "name": "hash",
+                                    "type": "string"
+                                }
+                            ]
+                        }
                     }
                 ],
                 "code": {
@@ -201,6 +236,10 @@ mod tests {
         cap.name = String::from("test");
         let mut fn_dec = FnDeclaration::new();
         fn_dec.name = String::from("test");
+        let input = FnParameter::new("post", "string");
+        let output = FnParameter::new("hash", "string");
+        fn_dec.signature.inputs.push(input);
+        fn_dec.signature.outputs.push(output);
         cap.fn_declarations.push(fn_dec);
         cap.code.code = vec![0, 1, 2, 3];
 

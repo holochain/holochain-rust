@@ -113,19 +113,22 @@ impl CapabilityType {
 pub struct FnParameter {
     #[serde(rename = "type")]
     pub parameter_type: String,
-    pub name: String
+    pub name: String,
 }
 
 impl FnParameter {
     fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
-        FnParameter{name: n.into(), parameter_type: t.into()}
+        FnParameter {
+            name: n.into(),
+            parameter_type: t.into(),
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct FnSignature {
     pub inputs: Vec<FnParameter>,
-    pub outputs: Vec<FnParameter>
+    pub outputs: Vec<FnParameter>,
 }
 
 /// Represents a zome "fn_declarations" object.
@@ -134,7 +137,7 @@ pub struct FnDeclaration {
     /// The name of this fn declaration.
     #[serde(default)]
     pub name: String,
-    pub signature: FnSignature
+    pub signature: FnSignature,
 }
 
 impl Default for FnDeclaration {
@@ -142,7 +145,10 @@ impl Default for FnDeclaration {
     fn default() -> Self {
         FnDeclaration {
             name: String::from(""),
-            signature: FnSignature{inputs: Vec::new(), outputs: Vec::new()}
+            signature: FnSignature {
+                inputs: Vec::new(),
+                outputs: Vec::new(),
+            },
         }
     }
 }

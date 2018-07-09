@@ -265,7 +265,35 @@ mod tests {
     }
 
     #[test]
-    fn fails_instantiate_if_genesis_times_out() {}
+    fn fails_instantiate_if_genesis_times_out() {
+        let mut dna = create_test_dna_with_wat(
+            "test_zome".to_string(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            Some(
+                r#"
+            (module
+                (memory (;0;) 17)
+                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                    (loop (br 0))
+                    i32.const 0
+                )
+                (export "memory" (memory 0))
+            )
+        "#,
+            ),
+        );
+
+        dna.name = "TestApp".to_string();
+        let agent = HCAgent::from_string("bob");
+        let (context, _test_logger) = test_context(agent.clone());
+        let result = Holochain::new(dna.clone(), context.clone());
+
+        match result {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err, HolochainError::ErrorGeneric("timed out waiting on channel".to_string())),
+        };
+
+    }
 
     #[test]
     fn can_start_and_stop() {

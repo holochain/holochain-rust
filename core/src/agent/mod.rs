@@ -1,7 +1,7 @@
 pub mod keys;
 
 use agent::keys::Keys;
-use chain::{entry::Entry, memory::MemChain};
+use chain::{entry::Entry, memory::MemChain, SourceChain};
 use state;
 use std::sync::{mpsc::Sender, Arc};
 
@@ -37,7 +37,7 @@ pub fn reduce(
             match *agent_action {
                 Action::Commit(ref entry) => {
                     // add entry to source chain
-                    if let Some(chain) = source_chain {
+                    if let Some(mut chain) = new_state.source_chain.clone() {
                         chain.push(entry);
                     }
                 }

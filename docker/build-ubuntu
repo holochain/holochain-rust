@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu "$@" .
+docker build -f docker/Dockerfile.ubuntu -t holochain/rust-ubuntu:latest "$@" .

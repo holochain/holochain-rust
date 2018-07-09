@@ -35,9 +35,11 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {
-                    // @TODO  add entry to source chain
-                    // @see #57
+                Action::Commit(ref entry) => {
+                    // add entry to source chain
+                    if let Some(chain) = source_chain {
+                        chain.push(entry);
+                    }
                 }
             }
             Arc::new(new_state)

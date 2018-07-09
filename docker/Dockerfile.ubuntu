@@ -1,11 +1,11 @@
 FROM ubuntu
 
-# This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
 ENV PINNED_NIGHTLY nightly-2018-06-01
 ENV CLIPPY_VERSION 0.0.206
 ARG RUST_VERSION=stable
 
+# This removes some warning when installing packages when there is no X
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
   pkg-config \
@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y
 ENV PATH /root/.cargo/bin:$PATH
 RUN rustc --version

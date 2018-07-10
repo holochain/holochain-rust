@@ -77,6 +77,8 @@ With every module handling its state which is read-only for everything else and 
 
 ## Local development & testing
 
+**NEVER RUN `make` ON ITS OWN UNLESS YOU KNOW WHAT YOU'RE DOING**
+
 CI builds are happening on circle CI.
 
 ### Docker

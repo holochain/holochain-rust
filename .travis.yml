@@ -7,5 +7,5 @@ install:
 script:
   . docker/run-test
 after_success:
-  . docker/run-cov
-  bash <(curl -s https://codecov.io/bash)
+  - . docker/run-cov
+  - bash <(curl -s https://codecov.io/bash)

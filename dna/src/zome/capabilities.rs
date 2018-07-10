@@ -34,7 +34,6 @@ impl ReservedCapabilityNames {
     }
 }
 
-
 /// Enumeration of all Zome functions known and used by HC Core
 /// Enumeration converts to str
 pub enum ReservedFunctionNames {

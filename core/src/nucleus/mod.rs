@@ -2,19 +2,15 @@ pub mod ribosome;
 
 use error::HolochainError;
 use holochain_dna::{
-    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
-    Dna,
+    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames}, Dna,
 };
 use instance::Observer;
 use snowflake;
 use state;
 use std::{
-    collections::HashMap,
-    sync::{
-        mpsc::{channel, Sender},
-        Arc,
-    },
-    thread,
+    collections::HashMap, sync::{
+        mpsc::{channel, Sender}, Arc,
+    }, thread,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -218,15 +214,15 @@ fn return_initialization_result(
         .expect("action channel to be open in reducer");
 }
 
-
 /// Reduce InitApplication Action
 /// Initialize Nucleus by setting the DNA
 /// and sending ExecuteFunction Action of genesis of each zome
-fn reduce_ia(nucleus_state: &mut NucleusState,
-             dna: &Dna,
-             action_channel: &Sender<state::ActionWrapper>,
-             observer_channel: &Sender<Observer>)
-{
+fn reduce_ia(
+    nucleus_state: &mut NucleusState,
+    dna: &Dna,
+    action_channel: &Sender<state::ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+) {
     match nucleus_state.status {
         NucleusStatus::New => {
             // Update status
@@ -252,11 +248,8 @@ fn reduce_ia(nucleus_state: &mut NucleusState,
                     );
 
                     // Call Genesis and wait
-                    let call_result = call_zome_and_wait_for_result(
-                        call,
-                        &action_channel,
-                        &observer_channel,
-                    );
+                    let call_result =
+                        call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
 
                     // genesis returns a string
                     // "" == success, otherwise error value
@@ -274,8 +267,9 @@ fn reduce_ia(nucleus_state: &mut NucleusState,
                         }
                         // its okay if hc_lifecycle or genesis not present
                         Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
-                        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis_dispatch"
-                        => { /* NA */ }
+                        Err(HolochainError::ErrorGeneric(ref msg))
+                            if msg == "Function: Module doesn\'t have export genesis_dispatch" =>
+                        { /* NA */ }
                         // Init fails if something failed in genesis called
                         Err(err) => {
                             // TODO - Create test for this edge case
@@ -305,15 +299,15 @@ fn reduce_ia(nucleus_state: &mut NucleusState,
     }
 }
 
-
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
-fn reduce_ezf(nucleus_state: &mut NucleusState,
-               fc: &FunctionCall,
-               action_channel: &Sender<state::ActionWrapper>,
-               observer_channel: &Sender<Observer>)
-{
+fn reduce_ezf(
+    nucleus_state: &mut NucleusState,
+    fc: &FunctionCall,
+    action_channel: &Sender<state::ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+) {
     let function_call = fc.clone();
     let mut has_error = false;
     let mut result = FunctionResult::new(
@@ -340,29 +334,24 @@ fn reduce_ezf(nucleus_state: &mut NucleusState,
                         Some(function_call.clone().parameters.into_bytes()),
                     ) {
                         Ok(runtime) => {
-                            result = FunctionResult::new(
-                                function_call,
-                                Ok(runtime.result.to_string()),
-                            );
+                            result =
+                                FunctionResult::new(function_call, Ok(runtime.result.to_string()));
                         }
 
                         Err(ref error) => {
                             result = FunctionResult::new(
                                 function_call,
-                                Err(HolochainError::ErrorGeneric(format!(
-                                    "{}",
-                                    error
-                                ))),
+                                Err(HolochainError::ErrorGeneric(format!("{}", error))),
                             );
                         }
                     }
 
                     // Send ReturnResult Action
                     action_channel
-                      .send(state::ActionWrapper::new(state::Action::Nucleus(
-                          Action::ReturnZomeFunctionResult(result),
-                      )))
-                      .expect("action channel to be open in reducer");
+                        .send(state::ActionWrapper::new(state::Action::Nucleus(
+                            Action::ReturnZomeFunctionResult(result),
+                        )))
+                        .expect("action channel to be open in reducer");
                 });
             } else {
                 has_error = true;
@@ -390,33 +379,29 @@ fn reduce_ezf(nucleus_state: &mut NucleusState,
     }
     if has_error {
         action_channel
-          .send(state::ActionWrapper::new(state::Action::Nucleus(
-              Action::ReturnZomeFunctionResult(result),
-          )))
-          .expect("action channel to be open in reducer");
+            .send(state::ActionWrapper::new(state::Action::Nucleus(
+                Action::ReturnZomeFunctionResult(result),
+            )))
+            .expect("action channel to be open in reducer");
     }
 }
 
-
 /// Reduce ValidateEntry Action
 /// Validate an Entry by calling its validation function
-fn reduce_ve(nucleus_state: &mut NucleusState,
-              es: &EntrySubmission)
-{
+fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
     let mut _has_entry_type = false;
 
     // must have entry_type
     if let Some(ref dna) = nucleus_state.dna {
         if let Some(ref _wasm) =
-        dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
-          {
-              // TODO #61 validate()
-              // Do same thing as Action::ExecuteZomeFunction
-              _has_entry_type = true;
-          }
+            dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
+        {
+            // TODO #61 validate()
+            // Do same thing as Action::ExecuteZomeFunction
+            _has_entry_type = true;
+        }
     }
 }
-
 
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
@@ -435,11 +420,14 @@ pub fn reduce(
                     reduce_rir(&mut new_nucleus_state, result);
                 }
 
-
                 Action::InitApplication(ref dna) => {
-                    reduce_ia(&mut new_nucleus_state, dna, action_channel, observer_channel);
+                    reduce_ia(
+                        &mut new_nucleus_state,
+                        dna,
+                        action_channel,
+                        observer_channel,
+                    );
                 }
-
 
                 Action::ExecuteZomeFunction(ref fc) => {
                     reduce_ezf(&mut new_nucleus_state, fc, action_channel, observer_channel);
@@ -462,12 +450,10 @@ pub fn reduce(
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::{
-        super::{nucleus::Action::*, state::Action::*},
-        *,
+        super::{nucleus::Action::*, state::Action::*}, *,
     };
     use std::sync::mpsc::channel;
 

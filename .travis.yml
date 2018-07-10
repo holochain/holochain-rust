@@ -5,7 +5,7 @@ cache:
   directories:
     - docker_cache
 
-before_script:
+before_install:
   - gzip -dc docker_cache/cache.tar.gz | docker load
 
 install:

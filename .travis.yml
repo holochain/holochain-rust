@@ -5,12 +5,14 @@ cache:
   directories:
     - docker_cache
 
-before_install:
-  - gzip -dc docker_cache/cache.tar.gz | docker load
+before_install: |
+  if [ -f docker_cache/cache.tar.gz ]; then
+    gzip -dc docker_cache/cache.tar.gz | docker load
+  fi
 
 install:
   - docker pull sphinxc0re/holochain-rust:develop
-  - mkdir docker_cache
+  - mkdir -p docker_cache
   - docker save sphinxc0re/holochain-rust:develop | gzip > docker_cache/cache.tar.gz
 
 script:

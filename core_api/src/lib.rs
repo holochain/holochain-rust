@@ -60,8 +60,7 @@ use holochain_core::{
 };
 use holochain_dna::Dna;
 use std::{
-    sync::{mpsc::channel, Arc},
-    time::Duration,
+    sync::{mpsc::channel, Arc}, time::Duration,
 };
 
 /// contains a Holochain application instance

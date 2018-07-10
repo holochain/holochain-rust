@@ -2,14 +2,16 @@ pub mod ribosome;
 
 use error::HolochainError;
 use holochain_dna::{
-    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames}, Dna,
+    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
+    Dna,
 };
 use instance::Observer;
 use snowflake;
 use state;
 use std::{
     collections::HashMap, sync::{
-        mpsc::{channel, Sender}, Arc,
+        mpsc::{channel, Sender},
+        Arc,
     }, thread,
 };
 

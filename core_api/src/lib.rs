@@ -53,6 +53,8 @@
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
+#[cfg(test)]
+extern crate test_utils;
 
 use holochain_core::{
     context::Context, error::HolochainError, instance::Instance,
@@ -165,14 +167,12 @@ impl Holochain {
 mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
-    use holochain_core::{
-        context::Context, logger::Logger, persister::SimplePersister,
-        test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
-    };
+    use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use std::{
         fmt, sync::{Arc, Mutex},
     };
+    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
 
     #[derive(Clone)]
     struct TestLogger {

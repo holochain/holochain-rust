@@ -3,7 +3,7 @@ FROM ubuntu
 ENV DEBIAN_FRONTEND noninteractive
 ENV PINNED_NIGHTLY nightly-2018-06-01
 ENV CLIPPY_VERSION 0.0.206
-ARG RUST_VERSION=stable
+ENV RUST_VERSION stable
 
 # This removes some warning when installing packages when there is no X
 RUN apt-get update && apt-get install --yes\
@@ -22,5 +22,6 @@ RUN rustup toolchain install ${PINNED_NIGHTLY}
 RUN rustup component add rustfmt-preview --toolchain ${PINNED_NIGHTLY}
 RUN cargo +${PINNED_NIGHTLY} install clippy --version ${CLIPPY_VERSION}
 RUN rustup target add wasm32-unknown-unknown --toolchain ${PINNED_NIGHTLY}
+RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
 
 WORKDIR /holochain

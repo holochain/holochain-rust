@@ -7,6 +7,8 @@ use wasm::DnaWasm;
 // Reserved Capabilities and functions names
 //--------------------------------------------------------------------------------------------------
 
+/// Enumeration of all Capabilities known and used by HC Core
+/// Enumeration converts to str
 pub enum ReservedCapabilityNames {
     LifeCycle,
     Communication,
@@ -32,6 +34,8 @@ impl ReservedCapabilityNames {
     }
 }
 
+/// Enumeration of all Zome functions known and used by HC Core
+/// Enumeration converts to str
 pub enum ReservedFunctionNames {
     /// genesis() -> bool
     /// Must be in LifeCycle Capability

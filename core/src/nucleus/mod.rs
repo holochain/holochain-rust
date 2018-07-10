@@ -9,7 +9,8 @@ use instance::Observer;
 use snowflake;
 use state;
 use std::{
-    collections::HashMap, sync::{
+    collections::HashMap,
+    sync::{
         mpsc::{channel, Sender},
         Arc,
     },

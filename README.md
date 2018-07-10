@@ -110,7 +110,9 @@ There is also a docker build that allows local build, serve, watch and live relo
 
 From the root of the repo, run:
 
-`$ . docker/build-mdbook && . docker/run-mdbook`
+```shell
+. docker/build-mdbook && . docker/run-mdbook
+```
 
 Once the book has built and is serving, visit `http://localhost:3000` in the browser.
 

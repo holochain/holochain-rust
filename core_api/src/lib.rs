@@ -58,11 +58,14 @@ use holochain_core::{
     context::Context,
     error::HolochainError,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall},
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall, NucleusStatus},
     state::{Action::*, State},
 };
 use holochain_dna::Dna;
-use std::sync::Arc;
+use std::{
+    sync::{mpsc::channel, Arc},
+    time::Duration,
+};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -79,14 +82,40 @@ impl Holochain {
         let name = dna.name.clone();
         let action = Nucleus(InitApplication(dna));
         instance.start_action_loop();
-        instance.dispatch_and_wait(action);
-        context.log(&format!("{} instantiated", name))?;
-        let app = Holochain {
-            instance,
-            context,
-            active: false,
-        };
-        Ok(app)
+
+        let (sender, receiver) = channel();
+
+        instance.dispatch_with_observer(action, move |state: &State| {
+            let nucleus_state = state.nucleus();
+            if nucleus_state.has_initialized() || nucleus_state.has_initialization_failed() {
+                sender
+                    .send(nucleus_state.status())
+                    .expect("test channel must be open");
+                true
+            } else {
+                false
+            }
+        });
+
+        match receiver.recv_timeout(Duration::from_millis(1000)) {
+            Ok(status) => match status {
+                NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
+                _ => {
+                    context.log(&format!("{} instantiated", name))?;
+                    let app = Holochain {
+                        instance,
+                        context,
+                        active: false,
+                    };
+                    Ok(app)
+                }
+            },
+            Err(err) => {
+                // TODO: what kind of cleanup to do on an initialization timeout?
+                // see #120:  https://waffle.io/holochain/org/cards/5b43704336bf54001bceeee0
+                Err(HolochainError::ErrorGeneric(err.to_string()))
+            }
+        }
     }
 
     /// activate the Holochain instance
@@ -145,6 +174,7 @@ mod tests {
         persister::SimplePersister,
         test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
     };
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use std::{
         fmt,
         sync::{Arc, Mutex},
@@ -194,12 +224,76 @@ mod tests {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
                 assert_eq!(hc.context.agent, agent);
-                // TODO #61 - Should instantiation also initialize?
-                // assert!(hc.instance.state().nucleus().has_initialized());
+                assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
                 assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
             }
             Err(_) => assert!(false),
+        };
+    }
+
+    #[test]
+    fn fails_instantiate_if_genesis_fails() {
+        let mut dna = create_test_dna_with_wat(
+            "test_zome".to_string(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            Some(
+                r#"
+            (module
+                (memory (;0;) 17)
+                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                    i32.const 4
+                )
+                (data (i32.const 0)
+                    "fail"
+                )
+                (export "memory" (memory 0))
+            )
+        "#,
+            ),
+        );
+
+        dna.name = "TestApp".to_string();
+        let agent = HCAgent::from_string("bob");
+        let (context, _test_logger) = test_context(agent.clone());
+        let result = Holochain::new(dna.clone(), context.clone());
+
+        match result {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err, HolochainError::ErrorGeneric("fail".to_string())),
+        };
+    }
+
+    #[test]
+    fn fails_instantiate_if_genesis_times_out() {
+        let mut dna = create_test_dna_with_wat(
+            "test_zome".to_string(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            Some(
+                r#"
+            (module
+                (memory (;0;) 17)
+                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                    (loop (br 0))
+                    i32.const 0
+                )
+                (export "memory" (memory 0))
+            )
+        "#,
+            ),
+        );
+
+        dna.name = "TestApp".to_string();
+        let agent = HCAgent::from_string("bob");
+        let (context, _test_logger) = test_context(agent.clone());
+        let result = Holochain::new(dna.clone(), context.clone());
+
+        match result {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(
+                err,
+                HolochainError::ErrorGeneric("timed out waiting on channel".to_string())
+            ),
         };
     }
 

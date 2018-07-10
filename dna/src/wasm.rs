@@ -53,7 +53,10 @@ where
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct DnaWasm {
     /// The actual binary WebAssembly bytecode goes here.
-    #[serde(serialize_with = "_vec_u8_to_b64_str", deserialize_with = "_b64_str_to_vec_u8")]
+    #[serde(
+        serialize_with = "_vec_u8_to_b64_str",
+        deserialize_with = "_b64_str_to_vec_u8"
+    )]
     pub code: Vec<u8>,
     // using a struct gives us the flexibility to extend it later
     // should we need additional properties, like:

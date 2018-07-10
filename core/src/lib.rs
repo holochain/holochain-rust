@@ -34,6 +34,27 @@ mod tests {
     use nucleus::{Action::*, FunctionCall};
     use state::{Action::*, State};
     use std::{sync::mpsc::channel, thread::sleep, time::Duration};
+    use test_utils;
+
+    /// create a test instance
+    pub fn create_instance(dna: Dna) -> Instance {
+        // Create instance and plug in our DNA
+        let mut instance = Instance::new();
+        let action = Nucleus(InitApplication(dna.clone()));
+        instance.start_action_loop();
+        instance.dispatch_and_wait(action.clone());
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
+
+        // Wait for Init to finish
+        while instance.state().history.len() < 4 {
+            // TODO - #21
+            // This println! should be converted to either a call to the app logger, or to the core debug log.
+            println!("Waiting... {}", instance.state().history.len());
+            sleep(Duration::from_millis(10))
+        }
+
+        instance
+    }
 
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
@@ -46,7 +67,7 @@ mod tests {
     /// the test thread could complete before the closure was called.
 
     #[test]
-    fn dispatch_with_observer() {
+    fn can_dispatch_with_observer() {
         let mut instance = Instance::new();
         instance.start_action_loop();
 
@@ -69,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn dispatch_and_wait() {
+    fn can_dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
@@ -89,31 +110,10 @@ mod tests {
 
         // Wait for Init to finish
         while instance.state().history.len() < 2 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
         assert!(instance.state().nucleus().has_initialized());
-    }
-
-    fn create_instance(dna: Dna) -> Instance {
-        // Create instance and plug in our DNA
-        let mut instance = Instance::new();
-        let action = Nucleus(InitApplication(dna.clone()));
-        instance.start_action_loop();
-        instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
-
-        // Wait for Init to finish
-        while instance.state().history.len() < 4 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
-            println!("Waiting... {}", instance.state().history.len());
-            sleep(Duration::from_millis(10))
-        }
-
-        instance
     }
 
     #[test]
@@ -230,10 +230,10 @@ mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                    i32.const 1
+                    i32.const 0
                 )
                 (data (i32.const 0)
-                    "0"
+                    ""
                 )
                 (export "memory" (memory 0))
             )

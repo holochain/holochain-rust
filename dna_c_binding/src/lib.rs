@@ -8,7 +8,9 @@ extern crate holochain_dna;
 
 use holochain_dna::Dna;
 use std::{
-    ffi::{CStr, CString}, os::raw::c_char, panic::catch_unwind,
+    ffi::{CStr, CString},
+    os::raw::c_char,
+    panic::catch_unwind,
 };
 
 #[no_mangle]

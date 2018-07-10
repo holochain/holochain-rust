@@ -3,14 +3,13 @@ extern crate holochain_dna;
 extern crate wabt;
 
 use holochain_core::*;
-use holochain_dna::wasm::DnaWasm;
-use holochain_dna::zome::capabilities::Capability;
-use holochain_dna::zome::Zome;
-use holochain_dna::Dna;
+use holochain_dna::{
+    wasm::DnaWasm,
+    zome::{capabilities::Capability, Zome},
+    Dna,
+};
+use std::{fs::File, io::prelude::*};
 use wabt::Wat2Wasm;
-
-use std::fs::File;
-use std::io::prelude::*;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -25,17 +24,17 @@ pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option
     // Default WASM code returns 1337 as integer
     let default_wat = format!(
         r#"
-            (module
-                (memory (;0;) 17)
-                (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                    i32.const 4
+                (module
+                    (memory (;0;) 17)
+                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                        i32.const 4
+                    )
+                    (data (i32.const {})
+                        "1337"
+                    )
+                    (export "memory" (memory 0))
                 )
-                (data (i32.const {})
-                    "1337"
-                )
-                (export "memory" (memory 0))
-            )
-        "#,
+            "#,
         nucleus::ribosome::RESULT_OFFSET
     );
     let wat_str = wat.unwrap_or_else(|| &default_wat);

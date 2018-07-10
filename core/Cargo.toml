@@ -8,7 +8,7 @@ authors = ["Nicolas Luck <nicolas@lucksus.org>",
 holochain_dna = { path = "../dna" }
 holochain_agent = { path = "../agent" }
 chrono = "0.4"
-wasmi = { git = "https://github.com/paritytech/wasmi.git"}
+wasmi = "0.3"
 snowflake = "1.2"
 serde = "1.0"
 serde_derive = "1.0"
@@ -17,5 +17,5 @@ multihash = "0.8.0"
 rust-base58 = "0.0.4"
 
 [dev-dependencies]
-wabt = "0.2.0"
+wabt = "0.4"
 test_utils = { path = "../test_utils"}

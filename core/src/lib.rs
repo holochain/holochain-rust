@@ -5,9 +5,9 @@ extern crate multihash;
 extern crate rust_base58;
 extern crate serde;
 extern crate serde_json;
+extern crate snowflake;
 #[cfg(test)]
 extern crate test_utils;
-extern crate snowflake;
 extern crate wasmi;
 
 extern crate holochain_agent;

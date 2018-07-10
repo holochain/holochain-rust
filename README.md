@@ -85,27 +85,20 @@ The `docker` folder contains scripts to build and run docker images.
 
 #### Running tests
 
-Build:
-
-`. docker/build-ubuntu`
-
 Run:
 
-`. docker/run-test`
+```shell
+. docker/run-test
+```
 
 #### Code style
-
 There is a linter/formatter enforcing code style.
-
-Build:
-
-```
-. docker/build-ubuntu
-```
 
 Run:
 
-`. docker/run-fmt`
+```shell
+. docker/run-fmt
+```
 
 ### holochain_101 mdbook
 

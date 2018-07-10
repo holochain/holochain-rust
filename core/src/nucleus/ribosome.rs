@@ -20,7 +20,7 @@ pub struct Runtime {
 #[repr(usize)]
 enum HcApiFuncIndex {
     /// Print debug information in the console
-    /// print()
+    /// print(...)
     PRINT = 0,
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
@@ -30,6 +30,46 @@ enum HcApiFuncIndex {
 }
 
 pub const RESULT_OFFSET: u32 = 0;
+
+/// HcApiFuncIndex::PRINT function code
+fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
+    -> Result<Option<RuntimeValue>, Trap>
+{
+    let arg: u32 = args.nth(0);
+    runtime.print_output.push(arg);
+    Ok(None)
+}
+
+/// HcApiFuncIndex::COMMIT function code
+fn invoke_commit(runtime : & mut Runtime, _args: RuntimeArgs)
+  -> Result<Option<RuntimeValue>, Trap>
+{
+    // TODO - #61 commit()
+    // unpack args into Entry struct with serializer
+    // let arg_entry_type: u32 = args.nth(0);
+    let entry = ::chain::entry::Entry::new(
+        "FIXME - type here",
+        "FIXME - content string here",
+    );
+
+    // Create commit Action
+    let action_commit =
+        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+
+    // Send Action and block for result
+    ::instance::dispatch_action_and_wait(
+        &runtime.action_channel,
+        &runtime.observer_channel,
+        action_commit.clone(),
+    );
+
+    // TODO - #61 commit()
+    // Return Hash of Entry (entry.hash)
+    // Change to Result<Runtime, InterpreterError>?
+    Ok(None)
+}
+
+
 
 /// Executes an exposed function
 pub fn call(
@@ -48,35 +88,8 @@ pub fn call(
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             match index {
-                index if index == HcApiFuncIndex::PRINT as usize => {
-                    let arg: u32 = args.nth(0);
-                    self.print_output.push(arg);
-                    Ok(None)
-                }
-                index if index == HcApiFuncIndex::COMMIT as usize => {
-                    // TODO - #61 commit()
-                    // unpack args into Entry struct with serializer
-                    let entry = ::chain::entry::Entry::new(
-                        "FIXME - type here",
-                        "FIXME - content string here",
-                    );
-
-                    // Create commit Action
-                    let action_commit =
-                        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
-
-                    // Send Action and block for result
-                    ::instance::dispatch_action_and_wait(
-                        &self.action_channel,
-                        &self.observer_channel,
-                        action_commit.clone(),
-                    );
-
-                    // TODO - #61 commit()
-                    // Return Hash of Entry (entry.hash)
-                    // Change to Result<Runtime, InterpreterError>?
-                    Ok(None)
-                }
+                index if index == HcApiFuncIndex::PRINT as usize => { invoke_print(self, args) }
+                index if index == HcApiFuncIndex::COMMIT as usize => { invoke_commit(self, args) }
                 // Add API function code here
                 // ....
                 _ => panic!("unknown function index"),

@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run -v `pwd`:/holochain --rm --security-opt seccomp=unconfined sphinxc0re/holochain-rust:develop make cov

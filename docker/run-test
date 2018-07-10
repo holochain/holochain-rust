@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v `pwd`:/holochain --rm --security-opt seccomp=unconfined holochain/test:latest
+RUST_BACKTRACE=full docker run -v `pwd`:/holochain --rm sphinxc0re/holochain-rust:develop make test

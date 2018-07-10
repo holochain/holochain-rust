@@ -1,11 +1,11 @@
 FROM ubuntu
 
+# This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
 ENV PINNED_NIGHTLY nightly-2018-06-01
 ENV CLIPPY_VERSION 0.0.206
 ENV RUST_VERSION stable
 
-# This removes some warning when installing packages when there is no X
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
   pkg-config \

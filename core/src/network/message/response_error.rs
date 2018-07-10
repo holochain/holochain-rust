@@ -1,7 +1,8 @@
 use super::MessageData;
+use agent::keys::Keys;
+use serde_json;
 
 const NAME: &str = "ERROR_RESPONSE";
-const CODE: i8 = 0;
 
 pub enum ErrorCode {
     Unknown,
@@ -15,7 +16,7 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
-    pub fn code(&self) -> i8 {
+    pub fn code(&self) -> u8 {
         match self {
             ErrorCode::Unknown => 0,
             ErrorCode::HashNotFound => 1,
@@ -29,34 +30,56 @@ impl ErrorCode {
     }
 }
 
+#[derive(Clone, Serialize)]
+pub struct ErrorData {
+    code: u8,
+    description: String,
+}
+
+impl ErrorData {
+
+    pub fn code(&self) -> u8 {
+        self.code
+    }
+
+    pub fn description(&self) -> String {
+        self.description.clone()
+    }
+
+}
+
 pub struct Error {
-    code: i8,
+    error: ErrorData,
     data: MessageData,
 }
 
 impl Error {
 
-    pub fn new(data: &MessageData, code: ErrorCode) -> Error {
-        Error{
+    pub fn new(keys: &Keys, code: ErrorCode, description: &str) -> Error {
+        let e = ErrorData{
             code: code.code(),
-            data: data.clone(),
+            description: String::from(description),
+        };
+        Error{
+            error: e.clone(),
+            data: MessageData::new(keys, NAME, &serde_json::to_string(&e).unwrap()),
         }
     }
 
-    pub fn code(&self) -> i8 {
-        self.code
+    pub fn data(&self) -> MessageData {
+        self.data.clone()
+    }
+
+    pub fn error(&self) -> ErrorData {
+        self.error.clone()
     }
 
 }
 
 impl super::Message for Error {
 
-    fn type_name(&self) -> &str {
+    fn name(&self) -> &str {
         NAME
-    }
-
-    fn type_code(&self) -> i8 {
-        CODE
     }
 
     fn data(&self) -> super::MessageData {
@@ -66,11 +89,15 @@ impl super::Message for Error {
 }
 
 #[cfg(test)]
-mod tests {
-    use network::message::MessageData;
+pub mod tests {
     use network::message::Message;
     use super::ErrorCode;
     use super::Error;
+    use agent::keys::tests::test_keys;
+
+    pub fn test_error() -> Error {
+        Error::new(&test_keys(), ErrorCode::Unknown, "test error description")
+    }
 
     #[test]
     fn error_codes() {
@@ -88,53 +115,24 @@ mod tests {
     /// tests for Error::new()
     fn new() {
         // smoke test
-        let data = MessageData::new("body", "from", "time");
-        let _error = Error::new(&data, ErrorCode::Unknown);
+        test_error();
     }
 
     #[test]
     fn code() {
-        let data = MessageData::new("body", "from", "time");
-
-        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).code());
-        assert_eq!(1, Error::new(&data, ErrorCode::HashNotFound).code());
-        assert_eq!(2, Error::new(&data, ErrorCode::HashDeleted).code());
-        assert_eq!(3, Error::new(&data, ErrorCode::HashModified).code());
-        assert_eq!(4, Error::new(&data, ErrorCode::HashRejected).code());
-        assert_eq!(5, Error::new(&data, ErrorCode::LinkNotFound).code());
-        assert_eq!(6, Error::new(&data, ErrorCode::EntryTypeMismatch).code());
-        assert_eq!(7, Error::new(&data, ErrorCode::BlockedListed).code());
+        assert_eq!(0, Error::new(&test_keys(), ErrorCode::Unknown, "").error().code());
+        assert_eq!(1, Error::new(&test_keys(), ErrorCode::HashNotFound, "").error().code());
+        assert_eq!(2, Error::new(&test_keys(), ErrorCode::HashDeleted, "").error().code());
+        assert_eq!(3, Error::new(&test_keys(), ErrorCode::HashModified, "").error().code());
+        assert_eq!(4, Error::new(&test_keys(), ErrorCode::HashRejected, "").error().code());
+        assert_eq!(5, Error::new(&test_keys(), ErrorCode::LinkNotFound, "").error().code());
+        assert_eq!(6, Error::new(&test_keys(), ErrorCode::EntryTypeMismatch, "").error().code());
+        assert_eq!(7, Error::new(&test_keys(), ErrorCode::BlockedListed, "").error().code());
     }
 
     #[test]
-    fn type_name() {
-        let data = MessageData::new("body", "from", "time");
-
-        assert_eq!("ERROR_RESPONSE", Error::new(&data, ErrorCode::Unknown).type_name());
-    }
-
-    #[test]
-    fn type_code() {
-        let data = MessageData::new("body", "from", "time");
-
-        // type code is always 0 for error messages
-        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::HashNotFound).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::HashDeleted).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::HashModified).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::HashRejected).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::LinkNotFound).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::EntryTypeMismatch).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::BlockedListed).type_code());
-        assert_eq!(0, Error::new(&data, ErrorCode::Unknown).type_code());
-    }
-
-    #[test]
-    fn data() {
-        let data = MessageData::new("body", "from", "time");
-        let error = Error::new(&data, ErrorCode::Unknown);
-
-        assert_eq!(data, error.data());
+    fn name() {
+        assert_eq!("ERROR_RESPONSE", test_error().name());
     }
 
 }

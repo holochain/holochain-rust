@@ -1,7 +1,7 @@
 use super::MessageData;
+use agent::keys::Keys;
 
 const NAME: &str = "OK_RESPONSE";
-const CODE: i8 = 1;
 
 pub struct Ok {
     data: MessageData,
@@ -9,9 +9,9 @@ pub struct Ok {
 
 impl Ok {
 
-    pub fn new (data: &MessageData) -> Ok {
+    pub fn new (keys: &Keys) -> Ok {
         Ok{
-            data: data.clone(),
+            data: MessageData::new(keys, NAME, ""),
         }
     }
 
@@ -19,12 +19,8 @@ impl Ok {
 
 impl super::Message for Ok {
 
-    fn type_name(&self) -> &str {
+    fn name(&self) -> &str {
         NAME
-    }
-
-    fn type_code(&self) -> i8 {
-        CODE
     }
 
     fn data(&self) -> super::MessageData {
@@ -34,38 +30,25 @@ impl super::Message for Ok {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use network::message::Message;
-    use network::message::MessageData;
     use super::Ok;
+    use agent::keys::tests::test_keys;
+
+    pub fn test_ok() -> Ok {
+        Ok::new(&test_keys())
+    }
 
     #[test]
     /// tests for Ok::new()
     fn new() {
         // smoke test
-        let data = MessageData::new("body", "from", "time");
-        let _ok = Ok::new(&data);
+        test_ok();
     }
 
     #[test]
-    fn type_name() {
-        let data = MessageData::new("body", "from", "time");
-
-        assert_eq!("OK_RESPONSE", Ok::new(&data).type_name());
-    }
-
-    #[test]
-    fn type_code() {
-        let data = MessageData::new("body", "from", "time");
-
-        assert_eq!(1, Ok::new(&data).type_code());
-    }
-
-    #[test]
-    fn data() {
-        let data = MessageData::new("body", "from", "time");
-
-        assert_eq!(data, Ok::new(&data).data());
+    fn name() {
+        assert_eq!("OK_RESPONSE", test_ok().name());
     }
 
 }

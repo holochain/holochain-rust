@@ -19,6 +19,7 @@ pub mod agent;
 pub mod chain;
 pub mod context;
 pub mod dht;
+pub mod ht;
 pub mod error;
 pub mod hash;
 pub mod instance;

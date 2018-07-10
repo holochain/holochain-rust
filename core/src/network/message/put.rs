@@ -1,8 +1,8 @@
 use super::MessageData;
 use chain::pair::Pair;
+use agent::keys::Keys;
 
 const NAME: &str = "PUT_REQUEST";
-const CODE: i8 = 2;
 
 pub struct Put {
 
@@ -13,9 +13,9 @@ pub struct Put {
 
 impl Put {
 
-    pub fn new(data: &MessageData, pair: &Pair) -> Put {
+    pub fn new(keys: &Keys, pair: &Pair) -> Put {
         Put{
-            data: data.clone(),
+            data: MessageData::new(keys, NAME, &pair.json()),
             pair: pair.clone(),
         }
     }
@@ -28,12 +28,8 @@ impl Put {
 
 impl super::Message for Put {
 
-    fn type_name(&self) -> &str {
+    fn name(&self) -> &str {
         NAME
-    }
-
-    fn type_code(&self) -> i8 {
-        CODE
     }
 
     fn data(&self) -> super::MessageData {
@@ -47,10 +43,10 @@ pub mod tests {
     use chain::pair::tests::test_pair;
     use network::message::Message;
     use super::Put;
-    use network::message::tests::test_data;
+    use agent::keys::tests::test_keys;
 
     pub fn test_put() -> Put {
-        Put::new(&test_data(), &test_pair())
+        Put::new(&test_keys(), &test_pair())
     }
 
     #[test]
@@ -60,18 +56,8 @@ pub mod tests {
     }
 
     #[test]
-    fn type_name() {
-        assert_eq!("PUT_REQUEST", test_put().type_name());
-    }
-
-    #[test]
-    fn type_code() {
-        assert_eq!(2, test_put().type_code());
-    }
-
-    #[test]
-    fn data() {
-        assert_eq!(test_data(), test_put().data());
+    fn name() {
+        assert_eq!("PUT_REQUEST", test_put().name());
     }
 
     #[test]

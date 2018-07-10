@@ -1,3 +1,4 @@
+use serde_json;
 use chain::{entry::Entry, header::Header, SourceChain};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -52,6 +53,11 @@ impl Pair {
         && self.header.entry() == self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
+    }
+
+    /// returns the pair as a json string
+    pub fn json(&self) -> String {
+        serde_json::to_string(&self).unwrap()
     }
 }
 

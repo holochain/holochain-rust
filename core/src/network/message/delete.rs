@@ -1,38 +1,35 @@
 use super::MessageData;
+use chain::pair::Pair;
+use agent::keys::Keys;
 
 const NAME: &str = "DEL_REQUEST";
-const CODE: i8 = 3;
 
 pub struct Delete {
 
     data: MessageData,
-    key: String,
+    pair: Pair,
 
 }
 
 impl Delete {
 
-    pub fn new(data: &MessageData, key: &str) -> Delete {
+    pub fn new(keys: &Keys, pair: &Pair) -> Delete {
         Delete{
-            data: data.clone(),
-            key: String::from(key),
+            data: MessageData::new(keys, NAME, &pair.json()),
+            pair: pair.clone(),
         }
     }
 
-    pub fn key(&self) -> String {
-        self.key.clone()
+    pub fn pair(&self) -> Pair {
+        self.pair.clone()
     }
 
 }
 
 impl super::Message for Delete {
 
-    fn type_name(&self) -> &str {
+    fn name(&self) -> &str {
         NAME
-    }
-
-    fn type_code(&self) -> i8 {
-        CODE
     }
 
     fn data(&self) -> super::MessageData {
@@ -42,46 +39,30 @@ impl super::Message for Delete {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use network::message::Message;
-    use network::message::MessageData;
     use super::Delete;
+    use chain::pair::tests::test_pair;
+    use agent::keys::tests::test_keys;
+
+    pub fn test_delete() -> Delete {
+        Delete::new(&test_keys(), &test_pair())
+    }
 
     #[test]
     fn new() {
         // smoke test
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        let _put = Delete::new(&data, k);
+        test_delete();
     }
 
     #[test]
-    fn type_name() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!("DEL_REQUEST", Delete::new(&data, k).type_name());
+    fn name() {
+        assert_eq!("DEL_REQUEST", test_delete().name());
     }
 
     #[test]
-    fn type_code() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!(3, Delete::new(&data, k).type_code());
-    }
-
-    #[test]
-    fn data() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "";
-        assert_eq!(data, Delete::new(&data, k).data());
-    }
-
-    #[test]
-    fn key() {
-        let data = MessageData::new("body", "from", "time");
-        let k = "foo";
-
-        assert_eq!(k, Delete::new(&data, k).key());
+    fn pair() {
+        assert_eq!(test_pair(), test_delete().pair());
     }
 
 }

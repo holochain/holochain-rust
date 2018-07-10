@@ -42,7 +42,9 @@ ${C_BINDING_DIRS}:
 
 # execute all tests, both rust and "C" bindings
 test: test_non_c c_binding_tests ${C_BINDING_TESTS}
-	cargo +stable tarpaulin --all --out Xml
+	if [[ ${RUST_VERSION} == stable ]]; then
+		cargo tarpaulin --all --out Xml
+	fi
 
 test_non_c: main
 	cd core/src/nucleus/wasm-test && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown

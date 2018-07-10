@@ -12,7 +12,8 @@ use std::{
     collections::HashMap, sync::{
         mpsc::{channel, Sender},
         Arc,
-    }, thread,
+    },
+    thread,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -462,7 +463,8 @@ pub fn reduce(
 #[cfg(test)]
 mod tests {
     use super::{
-        super::{nucleus::Action::*, state::Action::*}, *,
+        super::{nucleus::Action::*, state::Action::*},
+        *,
     };
     use std::sync::mpsc::channel;
 

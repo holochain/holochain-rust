@@ -17,6 +17,7 @@ pub struct MessageData {
 impl MessageData {
 
     pub fn new(keys: &Keys, message_type: &str, payload: &str) -> MessageData {
+        // signing + timestamping logic goes here
         MessageData{
             message_type: String::from(message_type),
             payload: String::from(payload),

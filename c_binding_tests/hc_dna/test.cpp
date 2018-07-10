@@ -56,7 +56,7 @@ void TestHcDna::canGetZomeNames() {
 
   CStringVec names;
   holochain_dna_get_zome_names(dna, &names);
-  QCOMPARE(names.len, 2);
+  QCOMPARE(names.len, (size_t) 2);
 
   QString name1 = QString("%1").arg(names.ptr[0]);
   QString name2 = QString("%1").arg(names.ptr[1]);
@@ -114,7 +114,7 @@ void TestHcDna::canGetCapabilityNames() {
 
     CStringVec names;
     holochain_dna_get_capabilities_names(dna, "zome1", &names);
-    QCOMPARE(names.len, 2);
+    QCOMPARE(names.len, (size_t) 2);
 
     QString name1 = QString("%1").arg(names.ptr[0]);
     QString name2 = QString("%1").arg(names.ptr[1]);
@@ -168,7 +168,7 @@ void TestHcDna::canGetFunctionNames() {
 
     CStringVec names;
     holochain_dna_get_function_names(dna, "zome1", "test_cap", &names);
-    QCOMPARE(names.len, 2);
+    QCOMPARE(names.len, (size_t) 2);
 
     QString name1 = QString("%1").arg(names.ptr[0]);
     QString name2 = QString("%1").arg(names.ptr[1]);
@@ -220,7 +220,7 @@ void TestHcDna::canGetFunctionParameters() {
 
     CStringVec names;
     holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "main", &names);
-    QCOMPARE(names.len, 1);
+    QCOMPARE(names.len, (size_t) 1);
 
     QString name1 = QString("%1").arg(names.ptr[0]);
     QCOMPARE(name1, QString("param1"));
@@ -228,7 +228,7 @@ void TestHcDna::canGetFunctionParameters() {
     holochain_dna_free_zome_names(&names);
 
     holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "test", &names);
-    QCOMPARE(names.len, 0);
+    QCOMPARE(names.len, (size_t) 0);
 
     holochain_dna_free_zome_names(&names);
 

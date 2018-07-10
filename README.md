@@ -89,18 +89,19 @@ ${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch x86 --insta
 
 ```toml
 [target.aarch64-linux-android]
-ar = "~/NDK/arm64/bin/aarch64-linux-android-ar"
-linker = "~/greetings/NDK/arm64/bin/aarch64-linux-android-clang"
+ar = "<your $HOME value here>/NDK/arm64/bin/aarch64-linux-android-ar"
+linker = "<your $HOME value here>/NDK/arm64/bin/aarch64-linux-android-clang"
 
 [target.armv7-linux-androideabi]
-ar = "~/NDK/arm/bin/arm-linux-androideabi-ar"
-linker = "~/NDK/arm/bin/arm-linux-androideabi-clang"
+ar = "<your $HOME value here>/NDK/arm/bin/arm-linux-androideabi-ar"
+linker = "<your $HOME value here>/NDK/arm/bin/arm-linux-androideabi-clang"
 
 [target.i686-linux-android]
-ar = "~/NDK/x86/bin/i686-linux-android-ar"
-linker = "~/NDK/x86/bin/i686-linux-android-clang"
+ar = "<your $HOME value here>/NDK/x86/bin/i686-linux-android-ar"
+linker = "<your $HOME value here>/NDK/x86/bin/i686-linux-android-clang"
 
 ```
+(this toml file needs absolute paths, so you need to prefix the path with your home dir).
 
 4. Now you can add those targets to your rust installation with:
 
@@ -108,13 +109,14 @@ linker = "~/NDK/x86/bin/i686-linux-android-clang"
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
 ```
 
-Finally, should now be able to build Holochain for Android with:
+Finally, should now be able to build Holochain for Android with your chosen target, e.g.:
 
 ```
 cd <holochain repo>
 cargo build --target armv7-linux-androideabi --release
 ```
 
+**NOTE:**  there is currently a problem in that `wabt` (which we use in testing as a dev dependency) won't compile on android, and the cargo builder compiles dev dependencies even though they aren't being used in release builds.  Thus as a work around, for the cargo build command above to work, you need to manually comment out the dev dependency section in both `core/Cargo.toml` and `core_api/Cargo.toml`
 
 ## Architecture
 I've tried to resemble Redux in Rust and looked at [this code](https://github.com/rust-redux/rust-redux).

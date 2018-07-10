@@ -56,7 +56,8 @@ extern crate holochain_dna;
 
 use holochain_core::{
     context::Context, error::HolochainError, instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall}, state::{Action::*, State},
+    nucleus::{call_and_wait_for_result, Action::*, FunctionCall, NucleusStatus},
+    state::{Action::*, State},
 };
 use holochain_dna::Dna;
 use std::{

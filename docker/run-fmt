@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v `pwd`:/holochain --rm -it holochain/rust-ubuntu:develop cargo +nightly fmt
+docker run -v `pwd`:/holochain --rm -it sphinxc0re/holochain-rust:develop make fmt

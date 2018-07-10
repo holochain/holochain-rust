@@ -155,6 +155,8 @@ With every module handling its state which is read-only for everything else and 
 
 ## Local development & testing
 
+**NEVER RUN `make` ON ITS OWN UNLESS YOU KNOW WHAT YOU'RE DOING**
+
 CI builds are happening on circle CI.
 
 ### Docker
@@ -163,27 +165,20 @@ The `docker` folder contains scripts to build and run docker images.
 
 #### Running tests
 
-Build:
-
-`. docker/build-ubuntu`
-
 Run:
 
-`. docker/run-test`
+```shell
+. docker/run-test
+```
 
 #### Code style
-
 There is a linter/formatter enforcing code style.
-
-Build:
-
-```
-. docker/build-ubuntu
-```
 
 Run:
 
-`. docker/run-fmt`
+```shell
+. docker/run-fmt
+```
 
 ### holochain_101 mdbook
 
@@ -193,7 +188,9 @@ There is also a docker build that allows local build, serve, watch and live relo
 
 From the root of the repo, run:
 
-`$ . docker/build-mdbook && . docker/run-mdbook`
+```shell
+. docker/build-mdbook && . docker/run-mdbook
+```
 
 Once the book has built and is serving, visit `http://localhost:3000` in the browser.
 

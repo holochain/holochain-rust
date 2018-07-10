@@ -29,7 +29,9 @@ pub mod state;
 mod tests {
     use super::*;
     use error::HolochainError;
-    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
+    use holochain_dna::{
+        wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+    };
     use instance::Instance;
     use nucleus::{Action::*, FunctionCall};
     use state::{Action::*, State};

@@ -5,6 +5,7 @@ extern crate wabt;
 use instance::Observer;
 use state;
 use std::sync::mpsc::Sender;
+use hash_table::entry::Entry;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
@@ -60,7 +61,7 @@ pub fn call(
                 index if index == HcApiFuncIndex::COMMIT as usize => {
                     // TODO - #61 commit()
                     // unpack args into Entry struct with serializer
-                    let entry = ::chain::entry::Entry::new(
+                    let entry = Entry::new(
                         "FIXME - type here",
                         "FIXME - content string here",
                     );

@@ -1,9 +1,6 @@
-pub mod entry;
-pub mod header;
 pub mod memory;
-pub mod pair;
 
-use chain::{entry::Entry, pair::Pair};
+use hash_table::{entry::Entry, pair::Pair};
 use serde::{Deserialize, Serialize};
 use std;
 

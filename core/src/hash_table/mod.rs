@@ -1,7 +1,10 @@
 pub mod status;
+pub mod entry;
+pub mod header;
+pub mod pair;
 
 use error::HolochainError;
-use chain::pair::Pair;
+use hash_table::pair::Pair;
 
 pub trait HashTable {
 

@@ -1,4 +1,5 @@
-use chain::{entry::Entry, SourceChain};
+use hash_table::entry::Entry;
+use chain::SourceChain;
 use hash;
 use multihash::Hash;
 
@@ -110,7 +111,9 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::{entry::Entry, header::Header, memory::MemChain, SourceChain};
+    use hash_table::{entry::Entry, header::Header};
+    use chain::memory::MemChain;
+    use chain::SourceChain;
 
     #[test]
     /// tests for PartialEq

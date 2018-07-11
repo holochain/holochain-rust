@@ -1,6 +1,7 @@
 use std;
 
-use chain::{entry::Entry, pair::Pair, SourceChain};
+use chain::SourceChain;
+use hash_table::{entry::Entry, pair::Pair};
 
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct MemChain {
@@ -117,7 +118,8 @@ impl<'a> IntoIterator for &'a MemChain {
 #[cfg(test)]
 mod tests {
     use super::MemChain;
-    use chain::{entry::Entry, pair::Pair, SourceChain};
+    use chain::SourceChain;
+    use hash_table::{entry::Entry, pair::Pair};
     use serde_json;
 
     #[test]

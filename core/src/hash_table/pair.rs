@@ -1,4 +1,5 @@
-use chain::{entry::Entry, header::Header, SourceChain};
+use ::chain::SourceChain;
+use hash_table::{entry::Entry, header::Header};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -58,7 +59,9 @@ impl Pair {
 #[cfg(test)]
 mod tests {
     use super::Pair;
-    use chain::{entry::Entry, header::Header, memory::MemChain, SourceChain};
+    use chain::memory::MemChain;
+    use chain::SourceChain;
+    use hash_table::{entry::Entry, header::Header};
 
     #[test]
     /// tests for Pair::new()

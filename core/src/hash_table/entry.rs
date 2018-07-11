@@ -61,8 +61,20 @@ impl Entry {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::Entry;
+
+    pub fn test_type() -> String {
+        "testEntryType".into()
+    }
+
+    pub fn test_content() -> String {
+        "test entry content".into()
+    }
+
+    pub fn test_entry() -> Entry {
+        Entry::new(&test_type(), &test_content())
+    }
 
     #[test]
     /// tests for PartialEq

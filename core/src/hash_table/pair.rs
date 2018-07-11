@@ -45,6 +45,11 @@ impl Pair {
         self.entry.clone()
     }
 
+    /// hash used in hash table lookups
+    pub fn hash(&self) -> String {
+        self.header.hash()
+    }
+
     /// true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header and entry must validate independently
@@ -57,11 +62,16 @@ impl Pair {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::Pair;
     use chain::memory::MemChain;
     use chain::SourceChain;
     use hash_table::{entry::Entry, header::Header};
+    use hash_table::entry::tests::test_entry;
+
+    pub fn test_pair() -> Pair {
+        Pair::new(&MemChain::new(), &test_entry())
+    }
 
     #[test]
     /// tests for Pair::new()

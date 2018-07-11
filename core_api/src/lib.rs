@@ -419,4 +419,38 @@ mod tests {
         };
     }
 
+    #[test]
+    fn can_call_commit() {
+        let wasm = create_wasm_from_file(
+            "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
+        );
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let agent = HCAgent::from_string("alex");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        hc.start().expect("couldn't start");
+
+        // Call function with commit in it
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+             "test",
+            //"test_print",
+            r#"{}"#,
+        );
+
+        // Expect normal OK result with hash
+        match result {
+            Ok(result) => assert_eq!(
+                result,
+                // r#"{"hash":"QmXyZ"}"#,
+                r#"{"post":"QmXyZ"}"#
+            ),
+            Err(_) => assert!(false),
+        };
+
+        // FIXME
+        // Check holochain instance's history if there was a commit event
+    }
 }

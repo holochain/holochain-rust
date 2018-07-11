@@ -5,6 +5,7 @@ use std::sync::mpsc::Sender;
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
+    MemoryRef,
 };
 
 /// Object to hold VM data that we want out of the VM
@@ -14,6 +15,7 @@ pub struct Runtime {
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
+    memory : MemoryRef,
 }
 
 /// List of all the API functions available in Nucleus
@@ -40,38 +42,75 @@ fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
     Ok(None)
 }
 
+
+#[derive(Deserialize, Default)]
+struct CommitInputStruct {
+    entry_type_name: String,
+    entry_content: String,
+}
+
+
 /// HcApiFuncIndex::COMMIT function code
-fn invoke_commit(runtime : & mut Runtime, _args: RuntimeArgs)
+/// fn commit(data: *mut c_char, params_len: usize) -> *mut c_char;
+/// args: [0] len of complex arguments in memory
+/// todo add offset argument?
+fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
   -> Result<Option<RuntimeValue>, Trap>
 {
-    // TODO - #61 commit()
-    // unpack args into Entry struct with serializer
-    // let arg_entry_type: u32 = args.nth(0);
-    let entry = ::chain::entry::Entry::new(
-        "FIXME - type here",
-        "FIXME - content string here",
-    );
+    // receiving r#"{"entry_type_name":"post","entry_content":"hello"}"#
+    // stored in memory module
 
-    // Create commit Action
-    let action_commit =
-        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+    // Read complex argument stored in memory
+    let arg_len: u32 = args.nth(0);
+    let bin_arg =
+        runtime.memory
+          .get(RESULT_OFFSET, arg_len as usize)
+          .expect("Successfully retrieve the arguments");
 
-    // Send Action and block for result
-    ::instance::dispatch_action_and_wait(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        action_commit.clone(),
-    );
+    // Convert Vec<u8> to Vec<u32>
+    let mut result_u32 : Vec<u32> = vec![];
+    for x in bin_arg {
+        result_u32.push(x as u32);
+    }
+    // Dump to print output
+    runtime.print_output.append(& mut result_u32);
+
+    // deserialize input
+    // FIXME
+    // let arg = String::from_utf8(result).unwrap();
+    // serde_json::from_str(dna);
+
+    //entry_type_name: String,
+    //entry_content: String,
+
+
+//    let entry = ::chain::entry::Entry::new(
+//        "FIXME - type here",
+//        "FIXME - content string here",
+//    );
+//
+//    // Create commit Action
+//    let action_commit =
+//        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+//
+//    // Send Action and block for result
+//    ::instance::dispatch_action_and_wait(
+//        &runtime.action_channel,
+//        &runtime.observer_channel,
+//        action_commit.clone(),
+//        //2000,
+//    );
 
     // TODO - #61 commit()
     // Return Hash of Entry (entry.hash)
     // Change to Result<Runtime, InterpreterError>?
-    Ok(None)
+
+    // Return success in i32 format
+    Ok(Some(RuntimeValue::I32(0)))
 }
 
 
-
-/// Executes an exposed function
+/// Executes an exposed function in a wasm binary
 pub fn call(
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>,
@@ -79,8 +118,11 @@ pub fn call(
     function_name: &str,
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
+
+    // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
+    // Describe invokable functions form within Zome
     impl Externals for Runtime {
         fn invoke_index(
             &mut self,
@@ -97,8 +139,8 @@ pub fn call(
         }
     }
 
+    // Define invokable functions form within Zome
     struct RuntimeModuleImportResolver;
-
     impl ModuleImportResolver for RuntimeModuleImportResolver {
         fn resolve_func(
             &self,
@@ -111,7 +153,7 @@ pub fn call(
                     HcApiFuncIndex::PRINT as usize,
                 ),
                 "commit" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], None),
+                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
                     HcApiFuncIndex::COMMIT as usize,
                 ),
                 // Add API function here
@@ -127,42 +169,54 @@ pub fn call(
         }
     }
 
+    // Create Imports with previously described Resolver
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
-    let main = ModuleInstance::new(&module, &imports)
+    // Create module instance from wasm module, and without starting it
+    let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
         .assert_no_start();
 
-    let memory = main
+
+    // get wasm memory reference from module
+    let wasm_memory = wasm_instance
         .export_by_name("memory")
         .expect("all modules compiled with rustc should have an export named 'memory'; qed")
         .as_memory()
         .expect("in module generated by rustc export named 'memory' should be a memory; qed")
         .clone();
 
+    // write arguments for module call at beginning of memory module
     let params: Vec<_> = parameters.unwrap_or_default();
+    wasm_memory.set(0, &params).expect("memory should be writable");
 
-    memory.set(0, &params).expect("memory should be writable");
-
+    // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         print_output: vec![],
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
+        memory : wasm_memory,
     };
 
-    let i32_result_length: i32 = main
+    // invoke function in wasm instance
+    // arguments are info for wasm on how to retrieve complex input arguments
+    // which have been set in memory module
+    let i32_result_length: i32 =
+        wasm_instance
         .invoke_export(
             format!("{}_dispatch", function_name).as_str(),
             &[RuntimeValue::I32(0), RuntimeValue::I32(params.len() as i32)],
-            &mut runtime,
+            &mut runtime, // external state for data passing
         )?
         .unwrap()
         .try_into()
         .unwrap();
 
-    let result = memory
+    // retrieve invoked wasm function's result that got written in memory
+    let result =
+        wasm_memory
         .get(RESULT_OFFSET, i32_result_length as usize)
         .expect("Successfully retrieve the result");
     runtime.result = String::from_utf8(result).unwrap();

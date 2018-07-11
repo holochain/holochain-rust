@@ -9,6 +9,8 @@ use hash_table::pair::Pair;
 
 pub trait HashTable {
 
+    fn box_clone (&self) -> Box<HashTable>;
+
     // state changes
     fn open (&mut self) -> Result<(), HolochainError>;
     fn close (&mut self) -> Result<(), HolochainError>;
@@ -22,4 +24,11 @@ pub trait HashTable {
     // query
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;
 
+}
+
+// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
+impl Clone for Box<HashTable> {
+    fn clone(&self) -> Box<HashTable> {
+        self.box_clone()
+    }
 }

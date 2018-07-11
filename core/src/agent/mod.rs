@@ -2,14 +2,14 @@ pub mod keys;
 
 use agent::keys::Keys;
 use hash_table::entry::Entry;
-use chain::{memory::MemChain};
+use chain::Chain;
 use state;
 use std::sync::{mpsc::Sender, Arc};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
-    source_chain: Option<Box<MemChain>>,
+    source_chain: Option<Chain>,
 }
 
 impl AgentState {

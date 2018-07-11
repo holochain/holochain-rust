@@ -21,7 +21,7 @@ impl MemChain {
 }
 
 /// SouceChain trait implementation
-impl<'de> SourceChain<'de> for MemChain {
+impl SourceChain for MemChain {
     // appends the current pair to the top of the chain
     fn push(&mut self, entry: &Entry) -> Pair {
         let pair = Pair::new(self, entry);

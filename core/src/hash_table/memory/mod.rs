@@ -5,6 +5,7 @@ use error::HolochainError;
 use hash_table::pair::Pair;
 use hash_table::HashTable;
 
+#[derive(Serialize, Clone)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
 }
@@ -22,6 +23,14 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
+
+    fn box_clone(&self) -> Box<HashTable> {
+        Box::new(
+            MemTable{
+                pairs: self.pairs.clone(),
+            }
+        )
+    }
 
     fn open(&mut self) -> Result<(), HolochainError> {
         Result::Ok(())

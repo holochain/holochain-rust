@@ -1,5 +1,5 @@
 use hash_table::entry::Entry;
-use chain::SourceChain;
+use chain::Chain;
 use hash;
 use multihash::Hash;
 
@@ -38,7 +38,7 @@ impl Header {
     /// chain::SourceChain trait and should not need to be handled manually
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &Entry) -> Header {
+    pub fn new(chain: &Chain, entry: &Entry) -> Header {
         Header {
             entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps

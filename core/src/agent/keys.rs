@@ -18,11 +18,11 @@ pub struct Keys {
 
 impl Keys {
 
-    pub fn new(pub_key: &Key, priv_key: &Key, node_id: &str) -> Keys {
+    pub fn new<S: Into<String>> (pub_key: &Key, priv_key: &Key, node_id: S) -> Keys {
         Keys {
             pub_key: pub_key.clone(),
             priv_key: priv_key.clone(),
-            node_id: String::from(node_id),
+            node_id: node_id.into(),
         }
     }
 
@@ -55,12 +55,12 @@ pub mod tests {
 
     /// generates a new node id suitable for testing
     pub fn test_node_id() -> String {
-        String::from("test node id")
+        "test node id".into()
     }
 
     /// generates new id/pub/priv keys suitable for testing
     pub fn test_keys() -> Keys {
-        Keys::new(&test_key(), &test_key(), &test_node_id())
+        Keys::new(&test_key(), &test_key(), test_node_id())
     }
 
     #[test]

@@ -8,7 +8,7 @@ extern crate holochain_dna;
 
 use holochain_dna::Dna;
 use std::{
-    ffi::{CStr, CString}, os::raw::c_char, panic::catch_unwind
+    ffi::{CStr, CString}, os::raw::c_char, panic::catch_unwind,
 };
 
 #[no_mangle]
@@ -175,16 +175,17 @@ unsafe fn vec_char_to_cstringvec(vec: Option<Vec<*const c_char>>, string_vec: *m
 }
 
 fn zome_names_as_vec(dna: &Dna) -> Option<Vec<*const c_char>> {
-    Some(dna.zomes
-        .iter()
-        .map(|zome| {
-            let raw = match CString::new(zome.name.clone()) {
-                Ok(s) => s.into_raw(),
-                Err(_) => std::ptr::null(),
-            };
-            raw as *const c_char
-        })
-        .collect::<Vec<*const c_char>>()
+    Some(
+        dna.zomes
+            .iter()
+            .map(|zome| {
+                let raw = match CString::new(zome.name.clone()) {
+                    Ok(s) => s.into_raw(),
+                    Err(_) => std::ptr::null(),
+                };
+                raw as *const c_char
+            })
+            .collect::<Vec<*const c_char>>(),
     )
 }
 
@@ -209,7 +210,10 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
 }
 
 fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
-    let result = dna.zomes.iter().find(|&z| z.name == zome_name)?
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
         .capabilities
         .iter()
         .map(|cap| {
@@ -235,10 +239,20 @@ pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     vec_char_to_cstringvec(capabalities, string_vec);
 }
 
-fn fn_names_as_vec(dna: &Dna, zome_name: &str, capability_name: &str) -> Option<Vec<*const c_char>> {
-    let result = dna.zomes.iter().find(|&z| z.name == zome_name)?
-        .capabilities.iter().find(|&c| c.name == capability_name)?
-        .fn_declarations.iter()
+fn fn_names_as_vec(
+    dna: &Dna,
+    zome_name: &str,
+    capability_name: &str,
+) -> Option<Vec<*const c_char>> {
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
+        .capabilities
+        .iter()
+        .find(|&c| c.name == capability_name)?
+        .fn_declarations
+        .iter()
         .map(|fn_declaration| {
             let raw = match CString::new(fn_declaration.name.clone()) {
                 Ok(s) => s.into_raw(),
@@ -266,12 +280,24 @@ pub unsafe extern "C" fn holochain_dna_get_function_names(
     vec_char_to_cstringvec(fn_names, string_vec)
 }
 
-
-fn fn_parameters_as_vec(dna: &Dna, zome_name: &str, capability_name: &str, function_name: &str) -> Option<Vec<*const c_char>> {
-    let result = dna.zomes.iter().find(|&z| z.name == zome_name)?
-        .capabilities.iter().find(|&c| c.name == capability_name)?
-        .fn_declarations.iter().find(|&function| function.name == function_name)?
-        .signature.inputs
+fn fn_parameters_as_vec(
+    dna: &Dna,
+    zome_name: &str,
+    capability_name: &str,
+    function_name: &str,
+) -> Option<Vec<*const c_char>> {
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
+        .capabilities
+        .iter()
+        .find(|&c| c.name == capability_name)?
+        .fn_declarations
+        .iter()
+        .find(|&function| function.name == function_name)?
+        .signature
+        .inputs
         .iter()
         .map(|input| {
             let raw = match CString::new(input.name.clone()) {

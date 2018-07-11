@@ -2,7 +2,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate libc;
+//extern crate libc;
 
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
@@ -29,30 +29,56 @@ struct CommitOutputStruct {
 }
 
 /// Commit an entry on source chain and broadcast to dht if entry is public
-fn hc_commit(entry_type_name: &str, entry_content : &str) -> Result<String, &'static str>
+fn hc_commit(data: *mut c_char, entry_type_name: &str, entry_content : &str) -> Result<String, &'static str>
 {
   // change args to struct & serialize data
   // data: *mut c_char;
-  data: &[u8];
-  let input = CommitInputStruct {entry_type_name, entry_content};
+  // data: &[u8];
+  // data: *mut c_char = 0;
+
+  let input = CommitInputStruct {
+    entry_type_name: entry_type_name.to_string(),
+    entry_content: entry_content.to_string(),
+  };
   let data_size =  serialize(data, input);
 
   // Write data in wasm memory
-  // FIXME
-  mem: *mut c_char = 0;
-  let mem8 = unsafe { slice::from_raw_parts_mut(mem, data_size) };
-  for (i, byte) in data.iter().enumerate() {
-    mem8[i] = *byte as i8;
-  }
+//  let mem8 = unsafe { slice::from_raw_parts_mut(data, data_size as usize) };
+//  for (i, byte) in data.iter().enumerate() {
+//    mem8[i] = *byte as i8;
+//  }
 
   // Call WASMI-able commit
-  let bin_result = commit(data_size);
+  let mut result_len = 0;
+  unsafe {
+    result_len = commit(data_size);
+  }
 
-  // Un-WASM result and return
-  //let str_result = deserialize(bin_result);
-  //str_result
+  if result_len != 0  {
+    // return Ok("fail".to_string())
+    return Ok(result_len.to_string())
+  }
 
-  Ok("0")
+  // Un-WASMI result
+//  let mut bytes = "Test".to_string().into_bytes();
+//  bytes.push(b"\0");
+//  let cchars = bytes.iter_mut().map(|b| b as c_char);
+//  let name: *mut c_char = cchars.as_mut_ptr();
+
+  // let mut x : Vec<c_char> = vec![123, 125, 0];
+  let mut x : Vec<c_char> = vec![0];
+  let slice = x.as_mut_slice();
+  let ptr = slice.as_mut_ptr();
+  let output : CommitOutputStruct = deserialize(ptr);
+
+  // let output : CommitOutputStruct = deserialize(data);
+
+
+  // Return value
+  let output = CommitOutputStruct { hash :"QmXyZ".to_string()};
+  Ok(output.hash.to_string())
+
+  // Ok("QmXyZ".to_string())
 }
 
 
@@ -67,7 +93,7 @@ fn deserialize<'s, T: Deserialize<'s>>(data: *mut c_char) -> T {
     serde_json::from_str(actual_str).unwrap()
 }
 
-// Convert output data struct into json as memory buffer
+// Convert a data struct into json memory buffer
 fn serialize<T: Serialize>(data: *mut c_char, internal: T) -> i32 {
     let json = serde_json::to_string(&internal).unwrap();
     let bytes = json.as_bytes();
@@ -92,8 +118,8 @@ fn serialize<T: Serialize>(data: *mut c_char, internal: T) -> i32 {
 /// returns length of returned data (in number of bytes)
 #[no_mangle]
 pub extern "C" fn test_dispatch(data: *mut c_char, _params_len: usize) -> i32 {
-    let _input : InputStruct = deserialize(data);
-    let output = test();
+    //let _input : InputStruct = deserialize(data);
+    let output = test(data);
     return serialize(data, output);
 }
 
@@ -109,14 +135,20 @@ struct OutputStruct {
 }
 
 // Actual test function code
-fn test() -> OutputStruct {
-  let mut hash = "".to_string();
+fn test(data: *mut c_char) -> OutputStruct
+{
+  let hash = hc_commit(data, "post", "{content:\"hello\"}");
 
-  unsafe {
-     hash = hc_commit("post", "{content:\"hello\"}");
-  };
   //let hash = "QmXyZ";
+  if let Ok(hash_str) = hash {
     OutputStruct {
-      hash: hash,
+      hash: hash_str,
     }
+  }
+  else
+  {
+    OutputStruct {
+      hash: "fail".to_string(),
+    }
+  }
 }

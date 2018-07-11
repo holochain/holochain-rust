@@ -440,12 +440,14 @@ mod tests {
             r#"{}"#,
         );
 
+        println!("   RESULT = {:?}", result);
+
         // Expect normal OK result with hash
         match result {
             Ok(result) => assert_eq!(
                 result,
                 // r#"{"hash":"QmXyZ"}"#,
-                r#"{"post":"QmXyZ"}"#
+                r#"{"hash":"QmXyZ"}"#
             ),
             Err(_) => assert!(false),
         };

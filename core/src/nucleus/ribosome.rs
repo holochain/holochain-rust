@@ -1,6 +1,7 @@
 use instance::Observer;
 use state;
 use std::sync::mpsc::Sender;
+use serde_json;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
@@ -9,7 +10,7 @@ use wasmi::{
 };
 
 /// Object to hold VM data that we want out of the VM
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Runtime {
     print_output: Vec<u32>,
     pub result: String,
@@ -43,7 +44,7 @@ fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
 }
 
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Debug)]
 struct CommitInputStruct {
     entry_type_name: String,
     entry_content: String,
@@ -57,6 +58,10 @@ struct CommitInputStruct {
 fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
   -> Result<Option<RuntimeValue>, Trap>
 {
+    println!(" --- invoke_commit START");
+    println!("\t runtime = {:?}", runtime);
+    println!("\t args = {:?}", args);
+
     // receiving r#"{"entry_type_name":"post","entry_content":"hello"}"#
     // stored in memory module
 
@@ -68,31 +73,37 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
           .expect("Successfully retrieve the arguments");
 
     // Convert Vec<u8> to Vec<u32>
-    let mut result_u32 : Vec<u32> = vec![];
-    for x in bin_arg {
-        result_u32.push(x as u32);
-    }
-    // Dump to print output
-    runtime.print_output.append(& mut result_u32);
+//    let mut result_u32 : Vec<u32> = vec![];
+//    for x in bin_arg {
+//        result_u32.push(x as u32);
+//    }
+//
+//    // Dump to print output
+//    runtime.print_output.append(& mut result_u32);
+//
+//    println!("\t runtime.print_output = {:?}", runtime.print_output);
 
     // deserialize input
     // FIXME
-    // let arg = String::from_utf8(result).unwrap();
-    // serde_json::from_str(dna);
+    let arg = String::from_utf8(bin_arg).unwrap();
+    println!("\t arg = {}", arg);
 
-    //entry_type_name: String,
-    //entry_content: String,
+    let res_entry : Result<CommitInputStruct, _> = serde_json::from_str(&arg);
+    // println!("\t res_entry = {:?}", res_entry);
 
+    if let Err(_) = res_entry {
+        // FIXME write error in memory
+        return Ok(Some(RuntimeValue::I32(42)));
+    }
 
-//    let entry = ::chain::entry::Entry::new(
-//        "FIXME - type here",
-//        "FIXME - content string here",
-//    );
-//
+    let entry = res_entry.unwrap();
+    println!("\t entry = {:?}", entry);
+
 //    // Create commit Action
 //    let action_commit =
 //        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
 //
+
 //    // Send Action and block for result
 //    ::instance::dispatch_action_and_wait(
 //        &runtime.action_channel,
@@ -101,10 +112,20 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
 //        //2000,
 //    );
 
-    // TODO - #61 commit()
-    // Return Hash of Entry (entry.hash)
-    // Change to Result<Runtime, InterpreterError>?
+    // Hash entry
+    // FIXME
 
+
+    // Write Hash of Entry in memory
+    // FIXME
+    let mut params = "{}".to_string().into_bytes();
+    params.push(0);
+    println!(" --- params = {:?}", params);
+    //let params: Vec<_> = parameters.unwrap_or_default();
+    runtime.memory.set(0, &params).expect("memory should be writable");
+
+    // Return Hash of Entry (entry.hash)
+    println!(" --- invoke_commit STOP");
     // Return success in i32 format
     Ok(Some(RuntimeValue::I32(0)))
 }
@@ -197,8 +218,10 @@ pub fn call(
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        memory : wasm_memory,
+        memory : wasm_memory.clone(),
     };
+
+    println!("\n !!! INVOKE !!! {} \n", params.len() as i32);
 
     // invoke function in wasm instance
     // arguments are info for wasm on how to retrieve complex input arguments
@@ -213,6 +236,8 @@ pub fn call(
         .unwrap()
         .try_into()
         .unwrap();
+
+    println!("\n !!! DONE !!!\n");
 
     // retrieve invoked wasm function's result that got written in memory
     let result =

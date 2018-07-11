@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v `pwd`:/holochain --rm -p 3141:3141 -it sphinxc0re/holochain-rust bash
+docker run -v `pwd`:/holochain --rm -p 3141:3141 -it sphinxc0re/holochain-rust:develop bash

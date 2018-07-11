@@ -2,12 +2,14 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
+use hash_table::status::StatusMask;
 use hash_table::pair::Pair;
 use hash_table::HashTable;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
+    meta: HashMap<String, String>,
 }
 
 impl MemTable {
@@ -50,10 +52,23 @@ impl HashTable for MemTable {
     }
 
     fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
+        self.commit(new_pair);
+        // @TODO better meta
+        self.assert_meta(
+            old_pair,
+            "status",
+            &StatusMask::MODIFIED.bits().to_string(),
+        );
         Result::Ok(())
     }
 
     fn retract(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+        Result::Ok(())
+    }
+
+    // EAVTK
+    // pair, attribute name, attribute value, txn id, source, signature
+    fn assert_meta(&mut self, e: &Pair, a: &str, v: &str, t: u32, s: &str, sig: &str) -> Result<(), HolochainError> {
         Result::Ok(())
     }
 

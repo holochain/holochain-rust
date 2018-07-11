@@ -3,11 +3,12 @@ pub mod entry;
 pub mod header;
 pub mod pair;
 pub mod memory;
+use std::fmt::Debug;
 
 use error::HolochainError;
 use hash_table::pair::Pair;
 
-pub trait HashTable {
+pub trait HashTable: Debug + Send + Sync {
 
     fn box_clone (&self) -> Box<HashTable>;
 
@@ -26,9 +27,42 @@ pub trait HashTable {
 
 }
 
+impl HashTable for Box<HashTable> {
+    fn box_clone(&self) -> Box<HashTable> {
+        self.clone()
+    }
+
+    fn open (&mut self) -> Result<(), HolochainError> {
+        self.open()
+    }
+    fn close (&mut self) -> Result<(), HolochainError> {
+        self.close()
+    }
+
+    // crud
+    fn commit (&mut self, pair: &Pair) -> Result<(), HolochainError> {
+        self.commit(&pair)
+    }
+    fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+        self.get(key)
+    }
+    fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
+        self.modify(&old_pair, new_pair)
+    }
+    fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError> {
+        self.retract(&pair)
+    }
+}
+
 // https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
 impl Clone for Box<HashTable> {
     fn clone(&self) -> Box<HashTable> {
         self.box_clone()
+    }
+}
+
+impl PartialEq for Box<HashTable> {
+    fn eq(&self, other: &Box<HashTable>) -> bool {
+        self == other
     }
 }

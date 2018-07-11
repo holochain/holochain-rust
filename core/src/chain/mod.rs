@@ -3,7 +3,7 @@ use error::HolochainError;
 use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
 
-struct ChainIterator {
+pub struct ChainIterator {
 
     table: Box<HashTable>,
     current: Option<Pair>,
@@ -26,33 +26,34 @@ impl Iterator for ChainIterator {
     type Item = Pair;
 
     fn next(&mut self) -> Option<Pair> {
+        self.current
         // @TODO should this be panicking?
-        self.table.get(
-            &self.current.and_then(
-                |p| Some(p.hash())
-            )
-            .unwrap_or_default()
-        ).unwrap()
+        // let k = self.current.and_then(|p| Some(p.header().next()));
+        // let n = self.table.get(&k).unwrap();
+        // self.current = n;
+        // self.current
     }
 
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Chain {
 
+    table: Box<HashTable>,
     top: Option<Pair>,
 
 }
 
 impl Chain {
 
-    pub fn new () -> Chain {
+    pub fn new<HT: HashTable> (table: &HT) -> Chain {
         Chain{
+            table: table.box_clone(),
             top: None,
         }
     }
 
-    fn push<HT: HashTable> (&mut self, table: &mut HT, entry: &Entry) -> Result<Pair, HolochainError> {
+    fn push<HT: HashTable> (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
 
         if !(pair.validate()) {
@@ -78,7 +79,7 @@ impl Chain {
         //     return Result::Err(HolochainError::new("adding this pair would invalidate the source chain"))
         // }
 
-        let result = table.commit(&pair);
+        let result = self.table.commit(&pair);
         if result.is_ok() {
             self.top = Some(pair.clone());
         }
@@ -88,12 +89,16 @@ impl Chain {
         }
     }
 
+    pub fn table(&self) -> Box<HashTable> {
+        self.table.clone()
+    }
+
     // fn validate(&self) -> bool {
     //     self.pairs.iter().all(|p| p.validate())
     // }
     //
-    pub fn iter<HT: HashTable>(&self, table: HT) -> ChainIterator {
-        ChainIterator::new(table, &self.top())
+    pub fn iter(&self) -> ChainIterator {
+        ChainIterator::new(self.table(), &self.top())
     }
 
     pub fn get<HT: HashTable> (&self, table: &HT, k: &str) -> Result<Option<Pair>, HolochainError> {
@@ -112,9 +117,9 @@ impl Chain {
         self.top.clone()
     }
 
-    pub fn top_type<HT: HashTable>(&self, table: HT, t: &str) -> Option<Pair> {
+    pub fn top_type(&self, t: &str) -> Option<Pair> {
         self
-            .iter(table)
+            .iter()
             .find(|p| p.header().entry_type() == t)
     }
 

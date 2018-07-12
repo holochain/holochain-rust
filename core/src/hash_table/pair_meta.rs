@@ -3,7 +3,7 @@ use agent::keys::Keys;
 use multihash::Hash;
 use hash::serializable_to_b58_hash;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PairMeta {
     pair: String,
     attribute: String,

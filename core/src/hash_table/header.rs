@@ -112,7 +112,6 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use hash_table::{entry::Entry, header::Header};
-    use chain::Chain;
     use chain::tests::test_chain;
 
     #[test]
@@ -145,7 +144,7 @@ mod tests {
         // different state is different
         let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
-        chain2.push(&e);
+        chain2.push(&e).unwrap();
 
         assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
     }

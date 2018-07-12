@@ -64,7 +64,6 @@ impl Pair {
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use chain::Chain;
     use hash_table::{entry::Entry, header::Header};
     use hash_table::entry::tests::test_entry;
     use chain::tests::test_chain;

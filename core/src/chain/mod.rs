@@ -55,9 +55,17 @@ impl Chain {
 
     pub fn new<HT: HashTable> (table: &HT) -> Chain {
         Chain{
-            table: table.clone_box(),
             top: None,
+            table: table.clone_box(),
         }
+    }
+
+    pub fn top(&self) -> Option<Pair> {
+        self.top.clone()
+    }
+
+    pub fn table(&self) -> Box<HashTable> {
+        self.table.clone()
     }
 
     pub fn push (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
@@ -96,10 +104,6 @@ impl Chain {
         }
     }
 
-    pub fn table(&self) -> Box<HashTable> {
-        self.table.clone()
-    }
-
     // fn validate(&self) -> bool {
     //     self.pairs.iter().all(|p| p.validate())
     // }
@@ -119,10 +123,6 @@ impl Chain {
     //         .iter(table)
     //         .find(|p| p.entry().hash() == entry_hash)
     // }
-
-    pub fn top(&self) -> Option<Pair> {
-        self.top.clone()
-    }
 
     pub fn top_type(&self, _t: &str) -> Option<Pair> {
         // @TODO this is wrong
@@ -163,8 +163,9 @@ impl Chain {
 pub mod tests {
 
     use super::Chain;
-    use hash_table::memory::MemTable;
+    use hash_table::entry::tests::test_entry;
     use hash_table::memory::tests::test_table;
+    use hash_table::HashTable;
 
     pub fn test_chain() -> Chain {
         Chain::new(&test_table())
@@ -173,6 +174,26 @@ pub mod tests {
     #[test]
     fn new() {
         test_chain();
+    }
+
+    #[test]
+    fn top() {
+        let c = test_chain();
+        assert_eq!(None, c.top());
+    }
+
+    #[test]
+    fn table() {
+        let t = test_table();
+        let mut c = Chain::new(&t);
+        // test that adding something to the chain adds to the table
+        let p = c.push(&test_entry()).unwrap();
+        assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap());
+        assert_eq!(Some(p.clone()), t.get(&p.key()).unwrap());
+        assert_eq!(
+            c.table().get(&p.key()).unwrap(),
+            t.get(&p.key()).unwrap(),
+        );
     }
 
 }

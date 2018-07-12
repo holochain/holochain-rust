@@ -9,7 +9,7 @@ use hash_table::pair::Pair;
 use hash_table::HashTable;
 use hash_table::pair_meta::PairMeta;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
     meta: HashMap<String, PairMeta>,
@@ -64,8 +64,12 @@ impl HashTable for MemTable {
     }
 
     fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
-        self.commit(new_pair);
-        // @TODO better meta
+        let result = self.commit(new_pair);
+        if result.is_err() {
+            return result
+        }
+
+        // @TODO what if meta fails when commit succeeds?
         self.assert_meta(
             &PairMeta::new(
                 &Keys::new(&Key::new(), &Key::new(), ""),
@@ -73,8 +77,7 @@ impl HashTable for MemTable {
                 "status",
                 &StatusMask::MODIFIED.bits().to_string(),
             )
-        );
-        Result::Ok(())
+        )
     }
 
     fn retract(&mut self, pair: &Pair) -> Result<(), HolochainError> {
@@ -85,8 +88,7 @@ impl HashTable for MemTable {
                 "status",
                 &StatusMask::DELETED.bits().to_string(),
             )
-        );
-        Result::Ok(())
+        )
     }
 
     // EAVTK

@@ -15,7 +15,7 @@ impl AgentState {
     pub fn new() -> Self {
         AgentState {
             keys: None,
-            source_chain: None,
+            source_chain: Some(Box::new(MemChain::new())),
         }
     }
 }

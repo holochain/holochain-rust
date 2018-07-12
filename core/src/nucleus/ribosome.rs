@@ -55,78 +55,66 @@ struct CommitInputStruct {
 /// fn commit(data: *mut c_char, params_len: usize) -> *mut c_char;
 /// args: [0] len of complex arguments in memory
 /// todo add offset argument?
+/// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
   -> Result<Option<RuntimeValue>, Trap>
 {
-    println!(" --- invoke_commit START");
-    println!("\t runtime = {:?}", runtime);
-    println!("\t args = {:?}", args);
+    // println!(" --- invoke_commit START");
+    // println!("\t args = {:?}", args);
 
-    // receiving r#"{"entry_type_name":"post","entry_content":"hello"}"#
-    // stored in memory module
-
-    // Read complex argument stored in memory
+    // Read complex argument serialized in memory
     let arg_len: u32 = args.nth(0);
     let bin_arg =
         runtime.memory
           .get(RESULT_OFFSET, arg_len as usize)
           .expect("Successfully retrieve the arguments");
 
-    // Convert Vec<u8> to Vec<u32>
-//    let mut result_u32 : Vec<u32> = vec![];
-//    for x in bin_arg {
-//        result_u32.push(x as u32);
-//    }
-//
-//    // Dump to print output
-//    runtime.print_output.append(& mut result_u32);
-//
-//    println!("\t runtime.print_output = {:?}", runtime.print_output);
-
-    // deserialize input
-    // FIXME
+    // deserialize argument
     let arg = String::from_utf8(bin_arg).unwrap();
-    println!("\t arg = {}", arg);
-
+    // println!("\t arg = {}", arg);
     let res_entry : Result<CommitInputStruct, _> = serde_json::from_str(&arg);
-    // println!("\t res_entry = {:?}", res_entry);
-
+    // Exit on error
     if let Err(_) = res_entry {
         // FIXME write error in memory
         return Ok(Some(RuntimeValue::I32(42)));
     }
 
-    let entry = res_entry.unwrap();
-    println!("\t entry = {:?}", entry);
+    // Create Chain Entry
+    let entry_input = res_entry.unwrap();
+    let entry = ::chain::entry::Entry::new(
+        &entry_input.entry_type_name,
+        &entry_input.entry_content,
+    );
+    // println!("\t entry = {:?}", entry);
 
-//    // Create commit Action
-//    let action_commit =
-//        ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
-//
+    // Create Commit Action
+    let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
 
-//    // Send Action and block for result
-//    ::instance::dispatch_action_and_wait(
-//        &runtime.action_channel,
-//        &runtime.observer_channel,
-//        action_commit.clone(),
-//        //2000,
-//    );
+    // Send Action and block for result
+    ::instance::dispatch_action_and_wait(
+        &runtime.action_channel,
+        &runtime.observer_channel,
+        action_commit.clone(),
+        // TODO - add timeout argument and return error on timeout
+        //2000, // FIXME have global const for default timeout
+    );
+    // TODO - return error on timeout
+    // return Err(_);
 
     // Hash entry
-    // FIXME
+    let hash_str = entry.hash();
 
-
-    // Write Hash of Entry in memory
-    // FIXME
-    let mut params = "{}".to_string().into_bytes();
+    // Write Hash of Entry in memory in output format
+    let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
+    // println!(" --- params_str = {}", params_str);
+    let mut params: Vec<_> = params_str.into_bytes();
+    // let mut params: Vec<_> = "{\"hash\":\"QmXyZ\"}".to_string().into_bytes();
     params.push(0);
-    println!(" --- params = {:?}", params);
-    //let params: Vec<_> = parameters.unwrap_or_default();
+    // println!(" --- params = {:?}", params);
     runtime.memory.set(0, &params).expect("memory should be writable");
 
-    // Return Hash of Entry (entry.hash)
-    println!(" --- invoke_commit STOP");
     // Return success in i32 format
+    // println!(" --- invoke_commit STOP");
     Ok(Some(RuntimeValue::I32(0)))
 }
 
@@ -221,8 +209,6 @@ pub fn call(
         memory : wasm_memory.clone(),
     };
 
-    println!("\n !!! INVOKE !!! {} \n", params.len() as i32);
-
     // invoke function in wasm instance
     // arguments are info for wasm on how to retrieve complex input arguments
     // which have been set in memory module
@@ -236,8 +222,6 @@ pub fn call(
         .unwrap()
         .try_into()
         .unwrap();
-
-    println!("\n !!! DONE !!!\n");
 
     // retrieve invoked wasm function's result that got written in memory
     let result =

@@ -447,7 +447,7 @@ mod tests {
             Ok(result) => assert_eq!(
                 result,
                 // r#"{"hash":"QmXyZ"}"#,
-                r#"{"hash":"QmXyZ"}"#
+                r#"{"hash":"QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5"}"#
             ),
             Err(_) => assert!(false),
         };

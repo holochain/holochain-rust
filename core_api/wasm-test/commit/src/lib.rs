@@ -23,62 +23,46 @@ struct CommitInputStruct {
   entry_content: String,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 struct CommitOutputStruct {
   hash: String,
 }
 
 /// Commit an entry on source chain and broadcast to dht if entry is public
-fn hc_commit(data: *mut c_char, entry_type_name: &str, entry_content : &str) -> Result<String, &'static str>
+fn hc_commit(data: *mut c_char, entry_type_name: &str, entry_content : &str)
+  -> Result<String, &'static str>
 {
   // change args to struct & serialize data
-  // data: *mut c_char;
-  // data: &[u8];
-  // data: *mut c_char = 0;
-
   let input = CommitInputStruct {
     entry_type_name: entry_type_name.to_string(),
     entry_content: entry_content.to_string(),
   };
   let data_size =  serialize(data, input);
 
-  // Write data in wasm memory
-//  let mem8 = unsafe { slice::from_raw_parts_mut(data, data_size as usize) };
-//  for (i, byte) in data.iter().enumerate() {
-//    mem8[i] = *byte as i8;
-//  }
-
   // Call WASMI-able commit
-  let mut result_len = 0;
+  let mut result_code = 0;
   unsafe {
-    result_len = commit(data_size);
+    result_code = commit(data_size);
+  }
+  // Exit if error
+  if result_code != 0  {
+    return Ok(result_code.to_string())
   }
 
-  if result_len != 0  {
-    // return Ok("fail".to_string())
-    return Ok(result_len.to_string())
-  }
+  // Deserialize complex result stored in memory
 
-  // Un-WASMI result
-//  let mut bytes = "Test".to_string().into_bytes();
-//  bytes.push(b"\0");
-//  let cchars = bytes.iter_mut().map(|b| b as c_char);
-//  let name: *mut c_char = cchars.as_mut_ptr();
+  // Hardcode test
+//  let mut x : Vec<c_char> = vec![123, 34, 104, 97, 115, 104, 34, 58, 34, 81, 109, 88, 121, 90, 34, 125];
+//  x.push(0);
+//  // let mut x : Vec<c_char> = vec![123, 34, 104, 97, 115, 104, 34, 58, 34, 112, 111, 115, 116, 34, 125];
+//  let slice = x.as_mut_slice();
+//  let ptr = slice.as_mut_ptr();
+//  let output : CommitOutputStruct = deserialize(ptr);
 
-  // let mut x : Vec<c_char> = vec![123, 125, 0];
-  let mut x : Vec<c_char> = vec![0];
-  let slice = x.as_mut_slice();
-  let ptr = slice.as_mut_ptr();
-  let output : CommitOutputStruct = deserialize(ptr);
+  let output : CommitOutputStruct = deserialize(data);
 
-  // let output : CommitOutputStruct = deserialize(data);
-
-
-  // Return value
-  let output = CommitOutputStruct { hash :"QmXyZ".to_string()};
+  // Return hash
   Ok(output.hash.to_string())
-
-  // Ok("QmXyZ".to_string())
 }
 
 
@@ -113,8 +97,8 @@ fn serialize<T: Serialize>(data: *mut c_char, internal: T) -> i32 {
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Instance
-/// data : parameters received as JSON string?
-/// _params_len : ???
+/// data : pointer to memory buffer to use
+/// _params_len : size of parameters used in memory buffer
 /// returns length of returned data (in number of bytes)
 #[no_mangle]
 pub extern "C" fn test_dispatch(data: *mut c_char, _params_len: usize) -> i32 {
@@ -123,31 +107,22 @@ pub extern "C" fn test_dispatch(data: *mut c_char, _params_len: usize) -> i32 {
     return serialize(data, output);
 }
 
-// Input and Output Structures
 
-#[derive(Deserialize, Default)]
-struct InputStruct {
-}
-
-#[derive(Serialize, Default)]
-struct OutputStruct {
-    hash: String,
-}
-
-// Actual test function code
-fn test(data: *mut c_char) -> OutputStruct
+/// Actual test function code
+fn test(data: *mut c_char) -> CommitOutputStruct
 {
-  let hash = hc_commit(data, "post", "{content:\"hello\"}");
+  // Call Commit API function
+  let hash = hc_commit(data, "post", "hello");
 
-  //let hash = "QmXyZ";
+  // Return result in complex format
   if let Ok(hash_str) = hash {
-    OutputStruct {
+    CommitOutputStruct {
       hash: hash_str,
     }
   }
   else
   {
-    OutputStruct {
+    CommitOutputStruct {
       hash: "fail".to_string(),
     }
   }

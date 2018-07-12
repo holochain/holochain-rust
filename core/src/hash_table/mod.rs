@@ -2,11 +2,13 @@ pub mod status;
 pub mod entry;
 pub mod header;
 pub mod pair;
+pub mod pair_meta;
 pub mod memory;
 use std::fmt::Debug;
 
 use error::HolochainError;
 use hash_table::pair::Pair;
+use hash_table::pair_meta::PairMeta;
 
 pub trait HashTable: Debug + Send + Sync {
 
@@ -21,6 +23,9 @@ pub trait HashTable: Debug + Send + Sync {
     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError>;
     fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError>;
     fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError>;
+
+    // meta
+    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
 
     // query
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;
@@ -41,16 +46,20 @@ impl HashTable for Box<HashTable> {
 
     // crud
     fn commit (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        self.commit(&pair)
+        self.commit(pair)
     }
     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError> {
         self.get(key)
     }
     fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
-        self.modify(&old_pair, new_pair)
+        self.modify(old_pair, new_pair)
     }
     fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        self.retract(&pair)
+        self.retract(pair)
+    }
+
+    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+        self.assert_meta(meta)
     }
 }
 

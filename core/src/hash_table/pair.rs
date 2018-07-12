@@ -45,8 +45,8 @@ impl Pair {
         self.entry.clone()
     }
 
-    /// hash used in hash table lookups
-    pub fn hash(&self) -> String {
+    /// key used in hash table lookups and other references
+    pub fn key(&self) -> String {
         self.header.hash()
     }
 

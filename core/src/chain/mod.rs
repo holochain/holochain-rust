@@ -60,7 +60,7 @@ impl Chain {
             return Result::Err(HolochainError::new("attempted to push an invalid pair for this chain"))
         }
 
-        let top_pair = self.top().and_then(|p| Some(p.hash()));
+        let top_pair = self.top().and_then(|p| Some(p.key()));
         let next_pair = pair.header().next();
 
         if top_pair != next_pair {

@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
-use hash_table::status::StatusMask;
 use hash_table::pair::Pair;
 use hash_table::HashTable;
+use hash_table::pair_meta::PairMeta;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct MemTable {
@@ -18,6 +18,7 @@ impl MemTable {
 
         MemTable{
             pairs: HashMap::new(),
+            meta: HashMap::new(),
         }
 
     }
@@ -30,6 +31,7 @@ impl HashTable for MemTable {
         Box::new(
             MemTable{
                 pairs: self.pairs.clone(),
+                meta: self.meta.clone(),
             }
         )
     }
@@ -43,7 +45,7 @@ impl HashTable for MemTable {
     }
 
     fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        self.pairs.insert(pair.hash(), pair.clone());
+        self.pairs.insert(pair.key(), pair.clone());
         Result::Ok(())
     }
 
@@ -54,11 +56,7 @@ impl HashTable for MemTable {
     fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
         self.commit(new_pair);
         // @TODO better meta
-        self.assert_meta(
-            old_pair,
-            "status",
-            &StatusMask::MODIFIED.bits().to_string(),
-        );
+        self.assert_meta(&PairMeta{});
         Result::Ok(())
     }
 
@@ -68,7 +66,8 @@ impl HashTable for MemTable {
 
     // EAVTK
     // pair, attribute name, attribute value, txn id, source, signature
-    fn assert_meta(&mut self, e: &Pair, a: &str, v: &str, t: u32, s: &str, sig: &str) -> Result<(), HolochainError> {
+    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+        self.meta.insert(meta.key(), meta.clone());
         Result::Ok(())
     }
 

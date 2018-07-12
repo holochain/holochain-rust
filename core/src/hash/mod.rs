@@ -1,6 +1,8 @@
 // use multihash::Multihash;
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
+use serde::Serialize;
+use serde_json;
 
 /// convert bytes to a b58 hashed string
 pub fn bytes_to_b58_hash(bytes: &[u8], hash_type: Hash) -> String {
@@ -10,6 +12,10 @@ pub fn bytes_to_b58_hash(bytes: &[u8], hash_type: Hash) -> String {
 /// magic all in one fn, take a serialized something + hash type and get a hashed b58 string back
 pub fn str_to_b58_hash(s: &str, hash_type: Hash) -> String {
     bytes_to_b58_hash(s.as_bytes(), hash_type)
+}
+
+pub fn serializable_to_b58_hash<S: Serialize>(s: S, hash_type: Hash) -> String {
+    str_to_b58_hash(&serde_json::to_string(&s).unwrap(), hash_type)
 }
 
 #[cfg(test)]

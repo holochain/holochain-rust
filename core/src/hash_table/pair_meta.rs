@@ -3,7 +3,7 @@ use agent::keys::Keys;
 use multihash::Hash;
 use hash::serializable_to_b58_hash;
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug, Clone)]
 pub struct PairMeta {
     pair: String,
     attribute: String,
@@ -15,12 +15,12 @@ pub struct PairMeta {
 
 impl PairMeta {
 
-    pub fn new(pair: &Pair, keys: &Keys, attribute: &str, value: &str) -> PairMeta {
+    pub fn new(keys: &Keys, pair: &Pair, attribute: &str, value: &str) -> PairMeta {
         PairMeta{
             pair: pair.key(),
             attribute: attribute.into(),
             value: value.into(),
-            source: keys.node_id.into(),
+            source: keys.node_id().into(),
         }
     }
 

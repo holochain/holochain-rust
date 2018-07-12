@@ -2,6 +2,9 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
+use agent::keys::Key;
+use agent::keys::Keys;
+use hash_table::status::StatusMask;
 use hash_table::pair::Pair;
 use hash_table::HashTable;
 use hash_table::pair_meta::PairMeta;
@@ -9,7 +12,7 @@ use hash_table::pair_meta::PairMeta;
 #[derive(Serialize, Debug, Clone)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
-    meta: HashMap<String, String>,
+    meta: HashMap<String, PairMeta>,
 }
 
 impl MemTable {
@@ -56,11 +59,26 @@ impl HashTable for MemTable {
     fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
         self.commit(new_pair);
         // @TODO better meta
-        self.assert_meta(&PairMeta{});
+        self.assert_meta(
+            &PairMeta::new(
+                &Keys::new(&Key::new(), &Key::new(), ""),
+                &old_pair,
+                "status",
+                &StatusMask::MODIFIED.bits().to_string(),
+            )
+        );
         Result::Ok(())
     }
 
     fn retract(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+        self.assert_meta(
+            &PairMeta::new(
+                &Keys::new(&Key::new(), &Key::new(), ""),
+                &pair,
+                "status",
+                &StatusMask::DELETED.bits().to_string(),
+            )
+        );
         Result::Ok(())
     }
 

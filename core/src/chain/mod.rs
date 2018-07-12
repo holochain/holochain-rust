@@ -19,6 +19,10 @@ impl ChainIterator {
         }
     }
 
+    fn current(&self) -> Option<Pair> {
+        self.current.clone()
+    }
+
 }
 
 impl Iterator for ChainIterator {
@@ -26,12 +30,13 @@ impl Iterator for ChainIterator {
     type Item = Pair;
 
     fn next(&mut self) -> Option<Pair> {
-        self.current
-        // @TODO should this be panicking?
-        // let k = self.current.and_then(|p| Some(p.header().next()));
-        // let n = self.table.get(&k).unwrap();
-        // self.current = n;
-        // self.current
+        let n = self
+                .current()
+                .and_then(|p| p.header().next())
+                // @TODO should this panic?
+                .and_then(|h| self.table.get(&h).unwrap());
+        self.current = n;
+        self.current()
     }
 
 }

@@ -2,21 +2,21 @@ pub mod keys;
 
 use agent::keys::Keys;
 use hash_table::entry::Entry;
-use chain::Chain;
 use state;
 use std::sync::{mpsc::Sender, Arc};
+use hash_table::pair::Pair;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
-    source_chain: Option<Chain>,
+    top_pair: Option<Pair>,
 }
 
 impl AgentState {
     pub fn new() -> Self {
         AgentState {
             keys: None,
-            source_chain: None,
+            top_pair: None,
         }
     }
 }

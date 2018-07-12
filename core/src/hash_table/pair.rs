@@ -64,19 +64,19 @@ impl Pair {
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use chain::memory::MemChain;
-    use chain::SourceChain;
+    use chain::Chain;
     use hash_table::{entry::Entry, header::Header};
     use hash_table::entry::tests::test_entry;
+    use chain::tests::test_chain;
 
     pub fn test_pair() -> Pair {
-        Pair::new(&MemChain::new(), &test_entry())
+        Pair::new(&test_chain(), &test_entry())
     }
 
     #[test]
     /// tests for Pair::new()
     fn new() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
         let h1 = Header::new(&chain, &e1);
@@ -92,7 +92,7 @@ pub mod tests {
     #[test]
     /// tests for pair.header()
     fn header() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
@@ -105,10 +105,10 @@ pub mod tests {
     #[test]
     /// tests for pair.entry()
     fn entry() {
-        let mut chain = MemChain::new();
+        let mut chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let p = chain.push(&e);
+        let p = chain.push(&e).unwrap();
 
         assert_eq!(e, p.entry());
     }
@@ -116,7 +116,7 @@ pub mod tests {
     #[test]
     /// tests for pair.validate()
     fn validate() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");

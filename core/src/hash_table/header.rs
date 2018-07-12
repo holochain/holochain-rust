@@ -112,13 +112,13 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use hash_table::{entry::Entry, header::Header};
-    use chain::memory::MemChain;
-    use chain::SourceChain;
+    use chain::Chain;
+    use chain::tests::test_chain;
 
     #[test]
     /// tests for PartialEq
     fn eq() {
-        let chain1 = MemChain::new();
+        let chain1 = test_chain();
         let c1 = "foo";
         let c2 = "bar";
         let t1 = "a";
@@ -143,7 +143,7 @@ mod tests {
         );
 
         // different state is different
-        let mut chain2 = MemChain::new();
+        let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
         chain2.push(&e);
 
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     /// tests for Header::new()
     fn new() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "type";
         let e = Entry::new(t, "foo");
         let h = Header::new(&chain, &e);
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     /// tests for header.entry_type()
     fn entry_type() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
@@ -178,7 +178,7 @@ mod tests {
     #[test]
     /// tests for header.time()
     fn time() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
@@ -189,19 +189,19 @@ mod tests {
     #[test]
     /// tests for header.next()
     fn next() {
-        let mut chain = MemChain::new();
+        let mut chain = test_chain();
         let t = "foo";
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t, "");
-        let p1 = chain.push(&e1);
+        let p1 = chain.push(&e1).unwrap();
         let h1 = p1.header();
 
         assert_eq!(h1.next(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
-        let p2 = chain.push(&e2);
+        let p2 = chain.push(&e2).unwrap();
         let h2 = p2.header();
 
         assert_eq!(h2.next(), Some(h1.hash()));
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     /// tests for header.entry()
     fn entry() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
 
         // header for an entry should contain the entry hash under entry()
@@ -223,27 +223,27 @@ mod tests {
     #[test]
     /// tests for header.type_next()
     fn type_next() {
-        let mut chain = MemChain::new();
+        let mut chain = test_chain();
         let t1 = "foo";
         let t2 = "bar";
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t1, "");
-        let p1 = chain.push(&e1);
+        let p1 = chain.push(&e1).unwrap();
         let h1 = p1.header();
 
         assert_eq!(h1.type_next(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
-        let p2 = chain.push(&e2);
+        let p2 = chain.push(&e2).unwrap();
         let h2 = p2.header();
 
         assert_eq!(h2.type_next(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
-        let p3 = chain.push(&e3);
+        let p3 = chain.push(&e3).unwrap();
         let h3 = p3.header();
 
         assert_eq!(h3.type_next(), Some(h1.hash()));
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     /// tests for header.signature()
     fn signature() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
 
         let e = Entry::new(t, "");
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     /// test header.hash() against a known value
     fn hash_known() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
 
         // check a known hash
@@ -277,7 +277,7 @@ mod tests {
     #[test]
     /// test that different entry content returns different hashes
     fn hash_entry_content() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "fooType";
 
         // different entries must return different hashes
@@ -299,7 +299,7 @@ mod tests {
     #[test]
     /// test that different entry types returns different hashes
     fn hash_entry_type() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t1 = "foo";
         let t2 = "bar";
         let c = "baz";
@@ -318,15 +318,15 @@ mod tests {
     /// test that different chain state returns different hashes
     fn hash_chain_state() {
         // different chain, different hash
-        let mut chain = MemChain::new();
+        let mut chain = test_chain();
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
         let h = Header::new(&chain, &e);
 
-        let p1 = chain.push(&e);
+        let p1 = chain.push(&e).unwrap();
         // p2 will have a different hash to p1 with the same entry as the chain state is different
-        let p2 = chain.push(&e);
+        let p2 = chain.push(&e).unwrap();
 
         assert_eq!(h.hash(), p1.header().hash());
         assert_ne!(h.hash(), p2.header().hash());
@@ -342,7 +342,7 @@ mod tests {
     #[test]
     /// tests for header.validate()
     fn validate() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
 
         let e = Entry::new(t, "");

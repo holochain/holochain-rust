@@ -30,14 +30,21 @@ impl MemTable {
 
 impl HashTable for MemTable {
 
-    fn box_clone(&self) -> Box<HashTable> {
-        Box::new(
-            MemTable{
-                pairs: self.pairs.clone(),
-                meta: self.meta.clone(),
-            }
-        )
-    }
+    // fn box_clone(&self) -> Box<HashTable> {
+    //     Box::new(
+    //         MemTable{
+    //             pairs: self.pairs.clone(),
+    //             meta: self.meta.clone(),
+    //         }
+    //     )
+    // }
+    //
+    // fn clone(&self) -> HashTable {
+    //     MemTable{
+    //         pairs: self.pairs.clone(),
+    //         meta: self.meta.clone(),
+    //     }
+    // }
 
     fn open(&mut self) -> Result<(), HolochainError> {
         Result::Ok(())
@@ -127,8 +134,8 @@ pub mod tests {
     fn round_trip() {
         let mut ht = test_table();
         let p = test_pair();
-        ht.commit(&p);
-        assert_eq!(ht.get(&p.hash()), Result::Ok(Some(p)));
+        ht.commit(&p).unwrap();
+        assert_eq!(ht.get(&p.key()), Result::Ok(Some(p)));
     }
 
 }

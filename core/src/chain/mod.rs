@@ -2,7 +2,9 @@
 use error::HolochainError;
 use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
+// use objekt::clone_box;
 
+#[derive(Clone)]
 pub struct ChainIterator {
 
     table: Box<HashTable>,
@@ -12,10 +14,10 @@ pub struct ChainIterator {
 
 impl ChainIterator {
 
-    fn new<HT: HashTable> (table: HT, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new<HT: 'static + HashTable> (table: &HT, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator{
             current: pair.clone(),
-            table: table.box_clone(),
+            table: table.clone_box(),
         }
     }
 
@@ -41,7 +43,7 @@ impl Iterator for ChainIterator {
 
 }
 
-#[derive(Clone, Debug, PartialEq)]
+// #[derive(Clone, Debug, PartialEq)]
 pub struct Chain {
 
     table: Box<HashTable>,
@@ -53,12 +55,12 @@ impl Chain {
 
     pub fn new<HT: HashTable> (table: &HT) -> Chain {
         Chain{
-            table: table.box_clone(),
+            table: table.clone_box(),
             top: None,
         }
     }
 
-    fn push<HT: HashTable> (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+    pub fn push (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
 
         if !(pair.validate()) {
@@ -102,9 +104,9 @@ impl Chain {
     //     self.pairs.iter().all(|p| p.validate())
     // }
     //
-    pub fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top())
-    }
+    // pub fn iter(&self) -> ChainIterator {
+    //     ChainIterator::new(&self.table(), &self.top())
+    // }
 
     pub fn get<HT: HashTable> (&self, table: &HT, k: &str) -> Result<Option<Pair>, HolochainError> {
         table.get(k)
@@ -122,10 +124,12 @@ impl Chain {
         self.top.clone()
     }
 
-    pub fn top_type(&self, t: &str) -> Option<Pair> {
-        self
-            .iter()
-            .find(|p| p.header().entry_type() == t)
+    pub fn top_type(&self, _t: &str) -> Option<Pair> {
+        // @TODO this is wrong
+        self.top()
+        // self
+        //     .iter()
+        //     .find(|p| p.header().entry_type() == t)
     }
 
 }
@@ -162,8 +166,8 @@ pub mod tests {
     use hash_table::memory::MemTable;
     use hash_table::memory::tests::test_table;
 
-    pub fn test_chain() -> Chain<MemTable> {
-        Chain::new(test_table())
+    pub fn test_chain() -> Chain {
+        Chain::new(&test_table())
     }
 
     #[test]

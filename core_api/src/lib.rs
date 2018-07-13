@@ -430,13 +430,13 @@ mod tests {
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         hc.start().expect("couldn't start");
+        assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call function with commit in it
         let result = hc.call(
             "test_zome",
             "test_cap",
              "test",
-            //"test_print",
             r#"{}"#,
         );
 
@@ -446,13 +446,12 @@ mod tests {
         match result {
             Ok(result) => assert_eq!(
                 result,
-                // r#"{"hash":"QmXyZ"}"#,
                 r#"{"hash":"QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5"}"#
             ),
             Err(_) => assert!(false),
         };
 
-        // FIXME
         // Check holochain instance's history if there was a commit event
+        assert_eq!(hc.state().unwrap().history.len(), 7);
     }
 }

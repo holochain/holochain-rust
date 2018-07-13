@@ -9,15 +9,19 @@ use wasmi::{
     MemoryRef,
 };
 
-/// Object to hold VM data that we want out of the VM
-#[derive(Clone, Debug)]
-pub struct Runtime {
-    print_output: Vec<u32>,
-    pub result: String,
-    action_channel: Sender<state::ActionWrapper>,
-    observer_channel: Sender<Observer>,
-    memory : MemoryRef,
+
+//--------------------------------------------------------------------------------------------------
+// HC API FUNCTION IMPLEMENTATIONS
+//--------------------------------------------------------------------------------------------------
+
+/// Enumeration of all possible return codes that an HC API function can return
+#[repr(usize)]
+#[allow(non_camel_case_types)]
+pub enum HcApiReturnCode {
+    SUCCESS = 0,
+    ERROR_SERDE_JSON,
 }
+
 
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
@@ -32,7 +36,6 @@ enum HcApiFuncIndex {
     // ...
 }
 
-pub const RESULT_OFFSET: u32 = 0;
 
 /// HcApiFuncIndex::PRINT function code
 fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
@@ -59,24 +62,24 @@ struct CommitInputStruct {
 fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
   -> Result<Option<RuntimeValue>, Trap>
 {
-    // println!(" --- invoke_commit START");
-    // println!("\t args = {:?}", args);
+    assert!(args.len() == 2);
 
     // Read complex argument serialized in memory
-    let arg_len: u32 = args.nth(0);
+    // TODO - #65 use our Malloced data instead
+    let mem_offset: u32 = args.nth(0);
+    let mem_len: u32 = args.nth(1);
     let bin_arg =
         runtime.memory
-          .get(RESULT_OFFSET, arg_len as usize)
+          .get(mem_offset, mem_len as usize)
           .expect("Successfully retrieve the arguments");
 
-    // deserialize argument
+    // deserialize complex argument
     let arg = String::from_utf8(bin_arg).unwrap();
-    // println!("\t arg = {}", arg);
     let res_entry : Result<CommitInputStruct, _> = serde_json::from_str(&arg);
     // Exit on error
     if let Err(_) = res_entry {
-        // FIXME write error in memory
-        return Ok(Some(RuntimeValue::I32(42)));
+        // Return Error code in i32 format
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ERROR_SERDE_JSON as i32)));
     }
 
     // Create Chain Entry
@@ -85,18 +88,18 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
         &entry_input.entry_type_name,
         &entry_input.entry_content,
     );
-    // println!("\t entry = {:?}", entry);
 
     // Create Commit Action
     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
 
     // Send Action and block for result
+    // TODO - Dispatch with observer so we can check if the action did its job without errors
     ::instance::dispatch_action_and_wait(
         &runtime.action_channel,
         &runtime.observer_channel,
         action_commit.clone(),
         // TODO - add timeout argument and return error on timeout
-        //2000, // FIXME have global const for default timeout
+        // REDUX_DEFAULT_TIMEOUT_MS,
     );
     // TODO - return error on timeout
     // return Err(_);
@@ -106,16 +109,30 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
 
     // Write Hash of Entry in memory in output format
     let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
-    // println!(" --- params_str = {}", params_str);
     let mut params: Vec<_> = params_str.into_bytes();
-    // let mut params: Vec<_> = "{\"hash\":\"QmXyZ\"}".to_string().into_bytes();
-    params.push(0);
-    // println!(" --- params = {:?}", params);
-    runtime.memory.set(0, &params).expect("memory should be writable");
+    params.push(0); // Add string terminate character (important)
+
+    // TODO - #65 use our Malloc instead
+    runtime.memory.set(mem_offset, &params).expect("memory should be writable");
 
     // Return success in i32 format
-    // println!(" --- invoke_commit STOP");
-    Ok(Some(RuntimeValue::I32(0)))
+    Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+}
+
+//--------------------------------------------------------------------------------------------------
+// Wasm call
+//--------------------------------------------------------------------------------------------------
+
+pub const RESULT_OFFSET: u32 = 0;
+
+/// Object to hold VM data that we want out of the VM
+#[derive(Clone, Debug)]
+pub struct Runtime {
+    print_output: Vec<u32>,
+    pub result: String,
+    action_channel: Sender<state::ActionWrapper>,
+    observer_channel: Sender<Observer>,
+    memory : MemoryRef,
 }
 
 
@@ -162,7 +179,7 @@ pub fn call(
                     HcApiFuncIndex::PRINT as usize,
                 ),
                 "commit" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
+                    Signature::new(&[ValueType::I32, ValueType::I32][..], Some(ValueType::I32)),
                     HcApiFuncIndex::COMMIT as usize,
                 ),
                 // Add API function here
@@ -216,7 +233,7 @@ pub fn call(
         wasm_instance
         .invoke_export(
             format!("{}_dispatch", function_name).as_str(),
-            &[RuntimeValue::I32(0), RuntimeValue::I32(params.len() as i32)],
+            &[RuntimeValue::I32(RESULT_OFFSET as i32), RuntimeValue::I32(params.len() as i32)],
             &mut runtime, // external state for data passing
         )?
         .unwrap()

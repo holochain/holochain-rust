@@ -421,6 +421,7 @@ mod tests {
 
     #[test]
     fn can_call_commit() {
+        // Setup the holochain instance
         let wasm = create_wasm_from_file(
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
@@ -429,10 +430,11 @@ mod tests {
         let (context, _) = test_context(agent.clone());
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
+        // Run the holochain instance
         hc.start().expect("couldn't start");
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
-        // Call function with commit in it
+        // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
             "test_cap",
@@ -440,7 +442,7 @@ mod tests {
             r#"{}"#,
         );
 
-        println!("   RESULT = {:?}", result);
+        println!("\t RESULT = {:?}", result);
 
         // Expect normal OK result with hash
         match result {
@@ -451,7 +453,7 @@ mod tests {
             Err(_) => assert!(false),
         };
 
-        // Check holochain instance's history if there was a commit event
+        // Check in holochain instance's history that the commit event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 7);
     }
 }

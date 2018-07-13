@@ -46,7 +46,7 @@ fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
     Ok(None)
 }
 
-
+/// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
 struct CommitInputStruct {
     entry_type_name: String,
@@ -55,10 +55,10 @@ struct CommitInputStruct {
 
 
 /// HcApiFuncIndex::COMMIT function code
-/// fn commit(data: *mut c_char, params_len: usize) -> *mut c_char;
-/// args: [0] len of complex arguments in memory
-/// todo add offset argument?
+/// args: [0] memory offset where complex argument is stored
+/// args: [1] memory length of complex argument soted in memory
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
+/// Returns an HcApiReturnCode as I32
 fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
   -> Result<Option<RuntimeValue>, Trap>
 {
@@ -93,15 +93,15 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
 
     // Send Action and block for result
-    // TODO - Dispatch with observer so we can check if the action did its job without errors
+    // TODO #97 - Dispatch with observer so we can check if the action did its job without errors
     ::instance::dispatch_action_and_wait(
         &runtime.action_channel,
         &runtime.observer_channel,
         action_commit.clone(),
-        // TODO - add timeout argument and return error on timeout
+        // TODO #131 - add timeout argument and return error on timeout
         // REDUX_DEFAULT_TIMEOUT_MS,
     );
-    // TODO - return error on timeout
+    // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
     // Hash entry
@@ -112,7 +112,7 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
     let mut params: Vec<_> = params_str.into_bytes();
     params.push(0); // Add string terminate character (important)
 
-    // TODO - #65 use our Malloc instead
+    // TODO #65 - use our Malloc instead
     runtime.memory.set(mem_offset, &params).expect("memory should be writable");
 
     // Return success in i32 format
@@ -125,7 +125,7 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
 
 pub const RESULT_OFFSET: u32 = 0;
 
-/// Object to hold VM data that we want out of the VM
+/// Object holding data to pass around to invoked API functions
 #[derive(Clone, Debug)]
 pub struct Runtime {
     print_output: Vec<u32>,
@@ -215,7 +215,7 @@ pub fn call(
 
     // write arguments for module call at beginning of memory module
     let params: Vec<_> = parameters.unwrap_or_default();
-    wasm_memory.set(0, &params).expect("memory should be writable");
+    wasm_memory.set(RESULT_OFFSET, &params).expect("memory should be writable");
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
@@ -234,7 +234,7 @@ pub fn call(
         .invoke_export(
             format!("{}_dispatch", function_name).as_str(),
             &[RuntimeValue::I32(RESULT_OFFSET as i32), RuntimeValue::I32(params.len() as i32)],
-            &mut runtime, // external state for data passing
+            &mut runtime,
         )?
         .unwrap()
         .try_into()

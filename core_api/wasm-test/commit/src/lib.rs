@@ -69,10 +69,9 @@ fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
 
 // Write a data struct into a memory buffer as json string
 fn serialize<T: Serialize>(ptr_data: *mut c_char, internal: T) -> i32 {
-    let json_str = serde_json::to_string(&internal).unwrap();
-    let json_bytes = json_str.as_bytes();
+    let json_bytes     = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
-    let ptr_data_safe = unsafe { slice::from_raw_parts_mut(ptr_data, json_bytes_len) };
+    let ptr_data_safe  = unsafe { slice::from_raw_parts_mut(ptr_data, json_bytes_len) };
 
     for (i, byte) in json_bytes.iter().enumerate() {
         ptr_data_safe[i] = *byte as i8;

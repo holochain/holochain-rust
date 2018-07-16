@@ -1,9 +1,7 @@
 //use error::HolochainError;
 use state::*;
 use std::{
-    sync::{mpsc::*, Arc, RwLock, RwLockReadGuard},
-    thread,
-    time::Duration,
+    sync::{mpsc::*, Arc, RwLock, RwLockReadGuard}, thread, time::Duration,
 };
 
 pub const REDUX_LOOP_TIMEOUT_MS: u64    =  400;

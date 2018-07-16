@@ -1,3 +1,7 @@
+// In this example we execute a contract funciton exported as "_call"
+#[cfg(test)]
+extern crate wabt;
+
 use instance::Observer;
 use serde_json;
 use state;
@@ -246,9 +250,9 @@ pub fn call(
 
 #[cfg(test)]
 mod tests {
+    use self::wabt::Wat2Wasm;
     use super::*;
     use std::sync::mpsc::channel;
-    use wabt::Wat2Wasm;
 
     fn test_wasm() -> Vec<u8> {
         let wasm_binary = Wat2Wasm::new()

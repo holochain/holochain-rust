@@ -6,7 +6,8 @@ extern crate rust_base58;
 extern crate serde;
 extern crate serde_json;
 extern crate snowflake;
-extern crate wabt;
+#[cfg(test)]
+extern crate test_utils;
 extern crate wasmi;
 
 extern crate holochain_agent;
@@ -24,19 +25,16 @@ pub mod nucleus;
 pub mod persister;
 pub mod state;
 
-//#[cfg(test)]
-pub mod test_utils {
+#[cfg(test)]
+mod tests {
     use super::*;
-    use holochain_dna::{
-        wasm::DnaWasm,
-        zome::{capabilities::Capability, Zome},
-        Dna,
-    };
+    use error::HolochainError;
+    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
     use instance::Instance;
-    use nucleus::Action::InitApplication;
-    use state::Action::Nucleus;
-    use std::{fs::File, io::prelude::*, thread::sleep, time::Duration};
-    use wabt::Wat2Wasm;
+    use nucleus::{Action::*, FunctionCall};
+    use state::{Action::*, State};
+    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
+    use test_utils;
 
     /// create a test instance
     pub fn create_instance(dna: Dna) -> Instance {
@@ -57,69 +55,6 @@ pub mod test_utils {
 
         instance
     }
-
-    /// Load WASM from filesystem
-    pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
-        let mut file = File::open(fname).unwrap();
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
-        buf
-    }
-
-    /// Create DNA from WAT
-    pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
-        // Default WASM code returns 1337 as integer
-        let default_wat = format!(
-            r#"
-                (module
-                    (memory (;0;) 17)
-                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                        i32.const 4
-                    )
-                    (data (i32.const {})
-                        "1337"
-                    )
-                    (export "memory" (memory 0))
-                )
-            "#,
-            nucleus::ribosome::RESULT_OFFSET
-        );
-        let wat_str = wat.unwrap_or_else(|| &default_wat);
-
-        // Test WASM code that returns 1337 as integer
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(wat_str)
-            .unwrap();
-
-        create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
-    }
-
-    /// Prepare valid DNA struct with that WASM in a zome's capability
-    pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<u8>) -> Dna {
-        let mut dna = Dna::new();
-        let mut zome = Zome::new();
-        let mut capability = Capability::new();
-        capability.name = cap_name;
-        capability.code = DnaWasm { code: wasm };
-        zome.name = zome_name;
-        zome.capabilities.push(capability);
-        dna.zomes.push(zome);
-        dna
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use error::HolochainError;
-    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
-    use instance::Instance;
-    use nucleus::{Action::*, FunctionCall};
-    use state::{Action::*, State};
-    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
-    use test_utils;
 
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
@@ -188,7 +123,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = test_utils::create_instance(dna);
+        let mut instance = create_instance(dna);
 
         // Create zome function call
         let call = FunctionCall::new("test_zome", "test_cap", "main", "");
@@ -223,7 +158,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = test_utils::create_instance(dna);
+        let mut instance = create_instance(dna);
 
         // Create zome function call:
         let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
@@ -245,7 +180,7 @@ mod tests {
             "test_cap".to_string(),
             None,
         );
-        let mut instance = test_utils::create_instance(dna);
+        let mut instance = create_instance(dna);
 
         // Create bad zome function call
         let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
@@ -279,7 +214,7 @@ mod tests {
         );
         dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
 
-        let instance = test_utils::create_instance(dna);
+        let instance = create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
@@ -306,7 +241,7 @@ mod tests {
             ),
         );
 
-        let instance = test_utils::create_instance(dna);
+        let instance = create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
@@ -333,7 +268,7 @@ mod tests {
             ),
         );
 
-        let instance = test_utils::create_instance(dna);
+        let instance = create_instance(dna);
 
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);

@@ -8,8 +8,7 @@ use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePe
 use holochain_core_api::*;
 use holochain_dna::Dna;
 use std::{
-    env,
-    sync::{Arc, Mutex},
+    env, sync::{Arc, Mutex},
 };
 
 fn usage() {

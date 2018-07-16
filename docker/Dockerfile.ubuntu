@@ -2,6 +2,9 @@ FROM ubuntu
 
 # This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
+ENV PINNED_NIGHTLY nightly-2018-06-01
+ENV CLIPPY_VERSION 0.0.206
+ENV RUST_VERSION stable
 
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
@@ -11,17 +14,14 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_VERSION} -y
 ENV PATH /root/.cargo/bin:$PATH
 RUN rustc --version
-RUN rustup toolchain install nightly
+RUN rustup toolchain install ${PINNED_NIGHTLY}
+RUN rustup component add rustfmt-preview --toolchain ${PINNED_NIGHTLY}
+RUN cargo +${PINNED_NIGHTLY} install clippy --version ${CLIPPY_VERSION}
+RUN rustup target add wasm32-unknown-unknown --toolchain ${PINNED_NIGHTLY}
 RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
-RUN rustup component add rustfmt-preview --toolchain nightly
-RUN cargo +nightly install clippy
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
-COPY . /holochain
 WORKDIR /holochain
-
-# run a build here to cache dependencies in a docker layer
-RUN cargo build

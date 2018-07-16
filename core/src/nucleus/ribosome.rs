@@ -1,14 +1,12 @@
 use instance::Observer;
+use serde_json;
 use state;
 use std::sync::mpsc::Sender;
-use serde_json;
 
 use wasmi::{
-    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder, MemoryRef,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
-    MemoryRef,
 };
-
 
 //--------------------------------------------------------------------------------------------------
 // HC API FUNCTION IMPLEMENTATIONS
@@ -21,7 +19,6 @@ pub enum HcApiReturnCode {
     SUCCESS = 0,
     ERROR_SERDE_JSON,
 }
-
 
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
@@ -36,11 +33,8 @@ enum HcApiFuncIndex {
     // ...
 }
 
-
 /// HcApiFuncIndex::PRINT function code
-fn invoke_print(runtime : & mut Runtime, args: RuntimeArgs)
-    -> Result<Option<RuntimeValue>, Trap>
-{
+fn invoke_print(runtime: &mut Runtime, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     let arg: u32 = args.nth(0);
     runtime.print_output.push(arg);
     Ok(None)
@@ -53,41 +47,38 @@ struct CommitInputStruct {
     entry_content: String,
 }
 
-
 /// HcApiFuncIndex::COMMIT function code
 /// args: [0] memory offset where complex argument is stored
 /// args: [1] memory length of complex argument soted in memory
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
-fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
-  -> Result<Option<RuntimeValue>, Trap>
-{
+fn invoke_commit(runtime: &mut Runtime, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     assert!(args.len() == 2);
 
     // Read complex argument serialized in memory
     // TODO - #65 use our Malloced data instead
     let mem_offset: u32 = args.nth(0);
     let mem_len: u32 = args.nth(1);
-    let bin_arg =
-        runtime.memory
-          .get(mem_offset, mem_len as usize)
-          .expect("Successfully retrieve the arguments");
+    let bin_arg = runtime
+        .memory
+        .get(mem_offset, mem_len as usize)
+        .expect("Successfully retrieve the arguments");
 
     // deserialize complex argument
     let arg = String::from_utf8(bin_arg).unwrap();
-    let res_entry : Result<CommitInputStruct, _> = serde_json::from_str(&arg);
+    let res_entry: Result<CommitInputStruct, _> = serde_json::from_str(&arg);
     // Exit on error
     if let Err(_) = res_entry {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ERROR_SERDE_JSON as i32)));
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ERROR_SERDE_JSON as i32,
+        )));
     }
 
     // Create Chain Entry
     let entry_input = res_entry.unwrap();
-    let entry = ::chain::entry::Entry::new(
-        &entry_input.entry_type_name,
-        &entry_input.entry_content,
-    );
+    let entry =
+        ::chain::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
@@ -113,7 +104,10 @@ fn invoke_commit(runtime : & mut Runtime, args: RuntimeArgs)
     params.push(0); // Add string terminate character (important)
 
     // TODO #65 - use our Malloc instead
-    runtime.memory.set(mem_offset, &params).expect("memory should be writable");
+    runtime
+        .memory
+        .set(mem_offset, &params)
+        .expect("memory should be writable");
 
     // Return success in i32 format
     Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
@@ -132,9 +126,8 @@ pub struct Runtime {
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
-    memory : MemoryRef,
+    memory: MemoryRef,
 }
-
 
 /// Executes an exposed function in a wasm binary
 pub fn call(
@@ -144,7 +137,6 @@ pub fn call(
     function_name: &str,
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
-
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
@@ -156,8 +148,8 @@ pub fn call(
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             match index {
-                index if index == HcApiFuncIndex::PRINT as usize => { invoke_print(self, args) }
-                index if index == HcApiFuncIndex::COMMIT as usize => { invoke_commit(self, args) }
+                index if index == HcApiFuncIndex::PRINT as usize => invoke_print(self, args),
+                index if index == HcApiFuncIndex::COMMIT as usize => invoke_commit(self, args),
                 // Add API function code here
                 // ....
                 _ => panic!("unknown function index"),
@@ -204,7 +196,6 @@ pub fn call(
         .expect("Failed to instantiate module")
         .assert_no_start();
 
-
     // get wasm memory reference from module
     let wasm_memory = wasm_instance
         .export_by_name("memory")
@@ -215,7 +206,9 @@ pub fn call(
 
     // write arguments for module call at beginning of memory module
     let params: Vec<_> = parameters.unwrap_or_default();
-    wasm_memory.set(RESULT_OFFSET, &params).expect("memory should be writable");
+    wasm_memory
+        .set(RESULT_OFFSET, &params)
+        .expect("memory should be writable");
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
@@ -223,17 +216,19 @@ pub fn call(
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        memory : wasm_memory.clone(),
+        memory: wasm_memory.clone(),
     };
 
     // invoke function in wasm instance
     // arguments are info for wasm on how to retrieve complex input arguments
     // which have been set in memory module
-    let i32_result_length: i32 =
-        wasm_instance
+    let i32_result_length: i32 = wasm_instance
         .invoke_export(
             format!("{}_dispatch", function_name).as_str(),
-            &[RuntimeValue::I32(RESULT_OFFSET as i32), RuntimeValue::I32(params.len() as i32)],
+            &[
+                RuntimeValue::I32(RESULT_OFFSET as i32),
+                RuntimeValue::I32(params.len() as i32),
+            ],
             &mut runtime,
         )?
         .unwrap()
@@ -241,8 +236,7 @@ pub fn call(
         .unwrap();
 
     // retrieve invoked wasm function's result that got written in memory
-    let result =
-        wasm_memory
+    let result = wasm_memory
         .get(RESULT_OFFSET, i32_result_length as usize)
         .expect("Successfully retrieve the result");
     runtime.result = String::from_utf8(result).unwrap();

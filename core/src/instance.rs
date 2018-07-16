@@ -4,7 +4,7 @@ use std::{
     sync::{mpsc::*, Arc, RwLock, RwLockReadGuard}, thread, time::Duration,
 };
 
-pub const REDUX_LOOP_TIMEOUT_MS: u64    =  400;
+pub const REDUX_LOOP_TIMEOUT_MS: u64 = 400;
 pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
 
 /// Object representing a Holochain app instance.

@@ -429,12 +429,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call(
-            "test_zome",
-            "test_cap",
-             "test",
-            r#"{}"#,
-        );
+        let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
 
         println!("\t RESULT = {:?}", result);
 

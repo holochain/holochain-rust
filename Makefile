@@ -46,6 +46,7 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	cd core/src/nucleus/wasm-test && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
 	RUSTFLAGS="-D warnings" cargo test
 
 cov:

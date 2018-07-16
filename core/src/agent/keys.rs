@@ -2,11 +2,9 @@
 pub struct Key {}
 
 impl Key {
-
     pub fn new() -> Key {
-        Key{}
+        Key {}
     }
-
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,8 +15,7 @@ pub struct Keys {
 }
 
 impl Keys {
-
-    pub fn new<S: Into<String>> (pub_key: &Key, priv_key: &Key, node_id: S) -> Keys {
+    pub fn new<S: Into<String>>(pub_key: &Key, priv_key: &Key, node_id: S) -> Keys {
         Keys {
             pub_key: pub_key.clone(),
             priv_key: priv_key.clone(),
@@ -45,8 +42,7 @@ impl Keys {
 #[cfg(test)]
 pub mod tests {
 
-    use super::Key;
-    use super::Keys;
+    use super::{Key, Keys};
 
     /// generates a new key suitable for testing
     pub fn test_key() -> Key {

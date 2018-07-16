@@ -1,7 +1,7 @@
 pub mod keys;
 
 use agent::keys::Keys;
-use chain::{entry::Entry, memory::MemChain};
+use chain::{entry::Entry, memory::MemChain, SourceChain};
 use state;
 use std::sync::{mpsc::Sender, Arc};
 
@@ -15,7 +15,7 @@ impl AgentState {
     pub fn new() -> Self {
         AgentState {
             keys: None,
-            source_chain: None,
+            source_chain: Some(Box::new(MemChain::new())),
         }
     }
 }
@@ -35,9 +35,11 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {
-                    // @TODO  add entry to source chain
-                    // @see #57
+                Action::Commit(ref entry) => {
+                    // add entry to source chain
+                    if let Some(mut chain) = new_state.source_chain.clone() {
+                        chain.push(entry);
+                    }
                 }
             }
             Arc::new(new_state)

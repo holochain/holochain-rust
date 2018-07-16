@@ -38,7 +38,7 @@ enum HcApiFuncIndex {
 }
 
 /// HcApiFuncIndex::PRINT function code
-fn invoke_print(runtime: &mut Runtime, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     let arg: u32 = args.nth(0);
     runtime.print_output.push(arg);
     Ok(None)
@@ -56,7 +56,7 @@ struct CommitInputStruct {
 /// args: [1] memory length of complex argument soted in memory
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
-fn invoke_commit(runtime: &mut Runtime, args: RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     assert!(args.len() == 2);
 
     // Read complex argument serialized in memory
@@ -72,7 +72,7 @@ fn invoke_commit(runtime: &mut Runtime, args: RuntimeArgs) -> Result<Option<Runt
     let arg = String::from_utf8(bin_arg).unwrap();
     let res_entry: Result<CommitInputStruct, _> = serde_json::from_str(&arg);
     // Exit on error
-    if let Err(_) = res_entry {
+    if res_entry.is_err() {
         // Return Error code in i32 format
         return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ERROR_SERDE_JSON as i32,
@@ -152,8 +152,8 @@ pub fn call(
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             match index {
-                index if index == HcApiFuncIndex::PRINT as usize => invoke_print(self, args),
-                index if index == HcApiFuncIndex::COMMIT as usize => invoke_commit(self, args),
+                index if index == HcApiFuncIndex::PRINT as usize => invoke_print(self, &args),
+                index if index == HcApiFuncIndex::COMMIT as usize => invoke_commit(self, &args),
                 // Add API function code here
                 // ....
                 _ => panic!("unknown function index"),

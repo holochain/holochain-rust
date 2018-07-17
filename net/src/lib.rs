@@ -14,14 +14,6 @@ pub type SerializedAddress = String;
 pub type TransportAddress = String;
 pub type SerializedMessage = String;
 
-/*
-pub struct Message {
-    // envelope (meta data plus signature(s))
-    // contents (date, type, body)
-    contents: String
-}
-
-*/
 /// this closure type will get called when the send completes and the parameter will be the response message (or error)
 type SendResponseClosure = Box<FnMut(Result<SerializedMessage, Error>) -> Option<Error> + Send>;
 
@@ -30,8 +22,6 @@ type ReceiveClosure =
     Box<FnMut(&SerializedAddress, &SerializedMessage) -> Result<SerializedMessage, Error> + Send>;
 
 pub trait Node {
-    //   fn deliver(&mut self, from: SerializedAddress, message:SerializedMessage) -> Result<SerializedMessage,Error>;
-    //  fn receive(&mut self, handler: ReceiveClosure);
     fn get_address(&self) -> SerializedAddress;
     fn get_transport_address(&self) -> TransportAddress;
 }
@@ -57,7 +47,7 @@ pub trait Transport {
     //    fn initialize(config);
     fn new_node(&mut self, addr: SerializedAddress, handler: Option<Handler>) -> Result<(), Error>;
     fn send(
-        &self,
+        &mut self,
         from: &SerializedAddress,
         to: &SerializedAddress,
         msg: SerializedMessage,
@@ -77,7 +67,6 @@ mod tests {
     use std::collections::HashMap;
     //    use error::NetworkError;
 
-    //    #[derive(Copy,Clone,Debug)]
     pub struct SimpleNode {
         hc_addr: SerializedAddress,
         transport_addr: u32,
@@ -103,24 +92,39 @@ mod tests {
             SimpleTransport {
                 nodes: Vec::new(),
                 handlers: HashMap::new(),
-            } //,handlers: Vec::new()}
+            }
+        }
+        pub fn exists(&self,addr: &SerializedAddress) -> bool {
+            if let Some(_node) = self.nodes.iter().find(|node| node.get_address() == *addr) {
+                true
+            }
+            else {
+                false
+            }
         }
     }
 
     impl Transport for SimpleTransport {
         fn send(
-            &self,
+            &mut self,
             from: &SerializedAddress,
-            _to: &SerializedAddress,
-            _msg: SerializedMessage,
-            _callback: SendResponseClosure,
+            to: &SerializedAddress,
+            msg: SerializedMessage,
+            mut callback: SendResponseClosure,
         ) -> Result<(), Error> {
-            if let Some(_) = self.nodes.iter().find(|node| node.get_address() == *from) {
+            if self.exists(from) {
+                let result = callback(self.deliver(from,to,msg));
+                if let Some(err) = result{
+                    Err(err)
+                } else {
+                    Ok(())
+                }
+
             } else {
                 bail!("can't send from unknown node {}", from);
             }
-            bail!("not implemented");
         }
+
         fn deliver(
             &mut self,
             from: &SerializedAddress,
@@ -181,23 +185,6 @@ mod tests {
     }
 
     #[test]
-    fn fails_to_send_from_uninitialized_nodes() {
-        let net = SimpleTransport::new();
-        let node_to = "Qm..191".to_string();
-        let node_from = "Qm..192".to_string();
-        let callback = move |result| None;
-        match net.send(
-            &node_from,
-            &node_to,
-            "foo message".into(),
-            Box::new(callback),
-        ) {
-            Ok(_) => assert!(false),
-            Err(err) => assert_eq!(err.to_string(), "can't send from unknown node Qm..192"),
-        }
-    }
-
-    #[test]
     fn can_receive_delivered_messages() {
         let mut net = SimpleTransport::new();
         let msgs = Arc::new(Mutex::new(Vec::new()));
@@ -231,4 +218,65 @@ mod tests {
             Err(err) => assert_eq!(err.to_string(), "no handler for 3333"),
         }
     }
+
+    #[test]
+    fn fails_to_send_from_uninitialized_nodes() {
+        let mut net = SimpleTransport::new();
+        let node_to = "Qm..191".to_string();
+        let node_from = "Qm..192".to_string();
+        let callback = move |_result| None;
+        match net.send(
+            &node_from,
+            &node_to,
+            "foo message".into(),
+            Box::new(callback),
+        ) {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err.to_string(), "can't send from unknown node Qm..192"),
+        }
+    }
+
+    #[test]
+    fn can_send() {
+        let mut net = SimpleTransport::new();
+        let msgs = Arc::new(Mutex::new(Vec::new()));
+
+        let msgs1 = msgs.clone();
+        let callback = move |from: &SerializedAddress, message: &SerializedMessage| {
+            let return_msg: SerializedMessage = format!("{} sent: {}", from, message);
+            (*msgs1.lock().unwrap()).push(message.clone());
+            Ok(return_msg)
+        };
+
+        let node_to = "Qm..191".to_string();
+        let node_from = "Qm..192".to_string();
+        net.new_node(
+            node_to.clone(),
+            Some(Handler {
+                handler: Some(Box::new(callback)),
+            }),
+        ).unwrap();
+
+        net.new_node(
+            node_from.clone(),
+            None,
+        ).unwrap();
+
+        assert_eq!(net.handlers.len(), 1);
+
+        let send_callback = move |response| {
+            match response {
+                Err(_) => assert!(false),
+                Ok(response_msg) => assert_eq!(response_msg,"Qm..192 sent: foo message"),
+            }
+            None
+        };
+
+        match net.send(&node_from, &node_to, "foo message".into(),Box::new(send_callback)) {
+            Ok(result) =>assert_eq!(result,()),
+            Err(_) => assert!(false),
+        }
+        assert_eq!(msgs.lock().unwrap()[0], "foo message".to_string());
+    }
+
 }

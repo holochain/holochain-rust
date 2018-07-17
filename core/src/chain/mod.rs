@@ -186,6 +186,7 @@ pub mod tests {
     }
 
     #[test]
+    /// tests for chain.top()
     fn top() {
         let mut chain = test_chain();
         assert_eq!(None, chain.top());
@@ -201,6 +202,7 @@ pub mod tests {
     }
 
     #[test]
+    /// tests for chain.table()
     fn table() {
         let t = test_table();
         let mut c = Chain::new(Rc::new(t));
@@ -219,6 +221,30 @@ pub mod tests {
             c.table().get(&p.key()).unwrap(),
             tr.get(&p.key()).unwrap(),
         );
+    }
+
+    #[test]
+    /// tests for chain.push()
+    fn push() {
+        let mut chain = test_chain();
+
+        assert_eq!(None, chain.top());
+
+        // chain top, pair entry and headers should all line up after a push
+        let e1 = test_entry_a();
+        let p1 = chain.push(&e1).unwrap();
+
+        assert_eq!(Some(p1.clone()), chain.top());
+        assert_eq!(e1, p1.entry());
+        assert_eq!(e1.hash(), p1.header().entry());
+
+        // we should be able to do it again
+        let e2 = test_entry_b();
+        let p2 = chain.push(&e2).unwrap();
+
+        assert_eq!(Some(p2.clone()), chain.top());
+        assert_eq!(e2, p2.entry());
+        assert_eq!(e2.hash(), p2.header().entry());
     }
 
     #[test]

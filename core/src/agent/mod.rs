@@ -9,15 +9,29 @@ use hash_table::pair::Pair;
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
     keys: Option<Keys>,
+    // @TODO how should this work with chains/HTs?
+    // @see https://github.com/holochain/holochain-rust/issues/137
     top_pair: Option<Pair>,
 }
 
 impl AgentState {
-    pub fn new() -> Self {
+    /// builds a new, empty AgentState
+    pub fn new() -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
         }
+    }
+
+    /// getter for a copy of self.keys
+    pub fn keys(&self) -> Option<Keys> {
+        self.keys.clone()
+    }
+
+    /// getter for a copy of self.top_pair
+    /// should be used with a source chain for validation/safety
+    pub fn top_pair(&self) -> Option<Pair> {
+        self.top_pair.clone()
     }
 }
 
@@ -44,5 +58,33 @@ pub fn reduce(
             Arc::new(new_state)
         }
         _ => old_state,
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::AgentState;
+
+    /// builds a dummy agent state for testing
+    pub fn test_agent_state() -> AgentState {
+        AgentState::new()
+    }
+
+    #[test]
+    /// smoke test for building a new AgentState
+    fn agent_state_new() {
+        test_agent_state();
+    }
+
+    #[test]
+    /// test for the agent state keys getter
+    fn agent_state_keys() {
+        assert_eq!(None, test_agent_state().keys());
+    }
+
+    #[test]
+    /// test for the agent state top pair getter
+    fn agent_state_top_pair() {
+        assert_eq!(None, test_agent_state().top_pair());
     }
 }

@@ -6,11 +6,12 @@
 extern crate failure;
 
 use failure::Error;
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 pub mod error;
 
 pub type SerializedAddress = String;
+pub type TransportAddress = String;
 pub type SerializedMessage = String;
 
 /*
@@ -20,20 +21,19 @@ pub struct Message {
     contents: String
 }
 
-
+*/
 /// this closure type will get called when the send completes and the parameter will be the response message (or error)
-type SendResponseClosure = Box<FnMut(Result<Message,NetworkError>) -> Option<NetworkError> + Send>;
-
- */
+type SendResponseClosure = Box<FnMut(Result<SerializedMessage, Error>) -> Option<Error> + Send>;
 
 /// this closure type gets called when a new message arrives, you can respond with a Message or an error.
-type ReceiveClosure = Box<FnMut(&SerializedAddress, &SerializedMessage) -> Result<SerializedMessage,Error> + Send>;
+type ReceiveClosure =
+    Box<FnMut(&SerializedAddress, &SerializedMessage) -> Result<SerializedMessage, Error> + Send>;
 
 pub trait Node {
-//    fn send(&self, to: &Node, msg: Message, callback: SendResponseClosure);
-    fn deliver(&mut self, from: SerializedAddress, message:SerializedMessage) -> Result<SerializedMessage,Error>;
-    fn receive(&mut self, handler: ReceiveClosure);
-    fn get_address(&self) ->SerializedAddress;
+    //   fn deliver(&mut self, from: SerializedAddress, message:SerializedMessage) -> Result<SerializedMessage,Error>;
+    //  fn receive(&mut self, handler: ReceiveClosure);
+    fn get_address(&self) -> SerializedAddress;
+    fn get_transport_address(&self) -> TransportAddress;
 }
 
 pub struct Handler {
@@ -41,209 +41,194 @@ pub struct Handler {
 }
 
 impl Handler {
-    fn handle(&mut self,from:&SerializedAddress,message:&SerializedMessage) -> Result<SerializedMessage,Error> {
+    fn handle(
+        &mut self,
+        from: &SerializedAddress,
+        message: &SerializedMessage,
+    ) -> Result<SerializedMessage, Error> {
         match self.handler {
             None => bail!("fish"),
-            Some(ref mut handler) => (handler)(from,message)
+            Some(ref mut handler) => (handler)(from, message),
         }
     }
 }
 
 pub trait Transport {
-//    fn initialize(config);
-    fn new_node(&mut self, addr: SerializedAddress,handler:Option<Handler>) -> Result< Arc<Box<Node>>, Error>;
- //   fn receive(&mut self,node: Arc<Node>, handler: ReceiveClosure);
+    //    fn initialize(config);
+    fn new_node(&mut self, addr: SerializedAddress, handler: Option<Handler>) -> Result<(), Error>;
+    fn send(
+        &self,
+        from: &SerializedAddress,
+        to: &SerializedAddress,
+        msg: SerializedMessage,
+        callback: SendResponseClosure,
+    ) -> Result<(), Error>;
+    fn deliver(
+        &mut self,
+        from: &SerializedAddress,
+        to: &SerializedAddress,
+        message: SerializedMessage,
+    ) -> Result<SerializedMessage, Error>;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use error::NetworkError;
+    //    use error::NetworkError;
 
-
-
-//    #[derive(Copy,Clone,Debug)]
+    //    #[derive(Copy,Clone,Debug)]
     pub struct SimpleNode {
-        addr: u32,
-        handler: Handler,
+        hc_addr: SerializedAddress,
+        transport_addr: u32,
     }
 
     impl Node for SimpleNode {
-/*        fn send(&self, to: &Node, msg: Message, callback: SendResponseClosure) {
-
-        }
-         */
-
-        fn deliver(&mut self, from: SerializedAddress, message:SerializedMessage)  -> Result<SerializedMessage,Error> {
-            self.handler.handle(&from,&message)
-        }
-
-        fn receive(&mut self, handler: ReceiveClosure) {
-            self.handler = Handler{handler:Some(handler)};
-        }
-
         fn get_address(&self) -> SerializedAddress {
-            format!("{}",self.addr)
+            format!("{}", self.hc_addr)
+        }
+
+        fn get_transport_address(&self) -> TransportAddress {
+            format!("{}", self.transport_addr)
         }
     }
 
     pub struct SimpleTransport {
-        nodes: Vec<Arc<Box<SimpleNode>>>,
-        handlers: Vec<(SerializedAddress,Handler)>
+        nodes: Vec<Arc<SimpleNode>>,
+        handlers: HashMap<SerializedAddress, Handler>,
     }
 
     impl SimpleTransport {
-        pub fn new() ->  SimpleTransport {
-            SimpleTransport{nodes: Vec::new(),handlers: Vec::new()}
-        }
-
-        pub fn node_deliver(&mut self,mut to: SimpleNode,from:SimpleNode,message:SerializedMessage) -> Result<SerializedMessage,Error> {
-//            let to_addr = to.get_address();
-            to.handler.handle(&from.get_address(),&message)
-
-
-//            Ok("bogus message".into())
-            //            let closure = self.handlers.get_mut(&to.get_address()).unwrap();
-            /*
-
-            let x= Arc::get_mut(&mut to);
-            match x {
-            Some(y) => {
-            match (*y).handler {
-            Some(zz) => {
-            let z = Arc::get_mut(&mut zz);
-            match z {
-            Some(q) => {
-            q(&from,&message)
-        },
-            None => panic!("uz")
-        }
-        },
-            None => panic!("foz")
-
-        }
-        },
-            None => panic!("unable to mutate node"),
-        }
-            //            x.handler.unwrap()(&from,&message)
-             */
-        }
-
-        pub fn deliver(&mut self,mut to: Arc<SimpleNode>,from:SimpleNode,message:SerializedMessage) -> Result<SerializedMessage,Error> {
-
-            let mut return_val : Result<SerializedMessage,Error> = Err(NetworkError::GenericError{error :"no handler for address".to_string()}.into());
-//            let closure = self.handlers.get_mut(&(*to).get_address()).unwrap();
-         //   let result = closure(&from,&message);
-            Ok("fish".into())
-/*
-            let to_addr = (*to).get_address();
-            self.handlers = self.handlers.into_iter().map(|(address, mut handler)| {
-                if address == to_addr {
-                    return_val = handler.handle(&from,&message);
-                }
-                (address,handler)
-            }).collect::<Vec<(SerializedAddress,Handler)>>();
-            return_val*/
+        pub fn new() -> SimpleTransport {
+            SimpleTransport {
+                nodes: Vec::new(),
+                handlers: HashMap::new(),
+            } //,handlers: Vec::new()}
         }
     }
 
     impl Transport for SimpleTransport {
-    /*    fn receive(&mut self,node: Arc<Node>, handler: ReceiveClosure) {
-            self.handlers.push(((*node).get_address(),Handler{handler:Some(handler)}));
-        }*/
-
-       fn new_node(&mut self, serialized_addr: SerializedAddress,handler: Option<Handler>) -> Result<Arc<Box<Node>>,Error> {
-            //            let addr = self.new_address(serialized_addr);
-            match serialized_addr.parse::<u32>() {
-                Err(err) => bail!("bad address: {}",err.to_string()),
-                Ok(addr) => {
-                    let h = match handler {
-                        None => Handler{handler:None},
-                        Some(hh) => hh
-                    };
-                    let node = Arc::new(Box::new(SimpleNode{addr: addr,handler: h}));
-                    self.nodes.push(node.clone());
-                    Ok(node)
-                }
+        fn send(
+            &self,
+            from: &SerializedAddress,
+            _to: &SerializedAddress,
+            _msg: SerializedMessage,
+            _callback: SendResponseClosure,
+        ) -> Result<(), Error> {
+            if let Some(_) = self.nodes.iter().find(|node| node.get_address() == *from) {
+            } else {
+                bail!("can't send from unknown node {}", from);
             }
+            bail!("not implemented");
+        }
+        fn deliver(
+            &mut self,
+            from: &SerializedAddress,
+            to: &SerializedAddress,
+            message: SerializedMessage,
+        ) -> Result<SerializedMessage, Error> {
+            if !self.handlers.contains_key(to) {
+                bail!("no handler for {}", to);
+            }
+            let mut_h = self.handlers.get_mut(to);
+            if let Some(h) = mut_h {
+                h.handle(from, &message)
+            } else {
+                bail!("error while getting mutable handler for {}", to);
+            }
+        }
+        fn new_node(
+            &mut self,
+            serialized_addr: SerializedAddress,
+            handler: Option<Handler>,
+        ) -> Result<(), Error> {
+            if serialized_addr == "" {
+                bail!("bad holochain address")
+            }
+            if let Some(h) = handler {
+                self.handlers.insert(serialized_addr.clone(), h);
+            }
+            let node = Arc::new(SimpleNode {
+                transport_addr: self.nodes.len() as u32,
+                hc_addr: serialized_addr,
+            });
+            self.nodes.push(node.clone());
+            Ok(())
         }
     }
 
     #[test]
     fn can_create_node() {
         let mut net = SimpleTransport::new();
-        let node = net.new_node("192".into(),None);
-        match node {
-            Ok(n) => {
-                assert_eq!(n.get_address(),"192");
-                assert_eq!(net.nodes.len(),1);
-            },
-            Err(_) => assert!(false)
+        let addr = "Qm..192".into();
+        let result = net.new_node(addr, None);
+        match result {
+            Ok(()) => {
+                assert_eq!(net.nodes.len(), 1);
+            }
+            Err(_) => assert!(false),
         }
     }
 
     #[test]
     fn can_fail_on_create_node() {
         let mut net = SimpleTransport::new();
-        let node = net.new_node("a bad address".into(),None);
+        let node = net.new_node("".into(), None);
         match node {
-            Ok(_) =>  assert!(false),
-            Err(err) =>assert_eq!(err.to_string(),"bad address: invalid digit found in string"),
+            Ok(()) => assert!(false),
+            Err(err) => assert_eq!(err.to_string(), "bad holochain address"),
         }
     }
 
     #[test]
-    fn can_receive_via_node() {
-        let mut net = SimpleTransport::new();
-
-        let msgs = Arc::new(Mutex::new(Vec::new()));
-
-        let msgs1 = msgs.clone();
-        let callback = move |from:&SerializedAddress ,message:&SerializedMessage|{
-            let return_msg : SerializedMessage = format!("{} sent: {}",from,message);
-            (*msgs1.lock().unwrap()).push(return_msg.clone());
-            Ok(return_msg)
-        };
-
-
-        let mut node = net.new_node("192".into(),Some(Handler{handler:Some(Box::new(callback))})).unwrap();
-
-        let sending_node = net.new_node("191".into(),None).unwrap();
-
-        //node.deliver(sending_node,"foo message".into());
-
-        let x= Arc::get_mut(&mut node).unwrap();
-        x.deliver(sending_node.get_address(),"foo message".into());
-
-        //let x = node.get_mut();
-/*        match x {
-            Some(y) => y.deliver(sending_node,"foo message".into()),
-            None => panic!("unable to mutate2"),
-        };
-*/
-        assert_eq!(msgs.lock().unwrap()[0],"192 sent foo message".to_string());
+    fn fails_to_send_from_uninitialized_nodes() {
+        let net = SimpleTransport::new();
+        let node_to = "Qm..191".to_string();
+        let node_from = "Qm..192".to_string();
+        let callback = move |result| None;
+        match net.send(
+            &node_from,
+            &node_to,
+            "foo message".into(),
+            Box::new(callback),
+        ) {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err.to_string(), "can't send from unknown node Qm..192"),
+        }
     }
 
     #[test]
-    fn can_receive_via_transport() {
+    fn can_receive_delivered_messages() {
         let mut net = SimpleTransport::new();
         let msgs = Arc::new(Mutex::new(Vec::new()));
 
         let msgs1 = msgs.clone();
-        let callback = move |from:&SerializedAddress ,message:&SerializedMessage|{
-            let return_msg : SerializedMessage = format!("{} sent: {}",from,message);
-            (*msgs1.lock().unwrap()).push(return_msg.clone());
+        let callback = move |from: &SerializedAddress, message: &SerializedMessage| {
+            let return_msg: SerializedMessage = format!("{} sent: {}", from, message);
+            (*msgs1.lock().unwrap()).push(message.clone());
             Ok(return_msg)
         };
 
-        let node = net.new_node("192".into(),Some(Handler{handler:Some(Box::new(callback))})).unwrap();
-        //  let sending_node = net.new_node("191".into()).unwrap();
+        let node_to = "Qm..191".to_string();
+        let node_from = "Qm..192".to_string();
+        net.new_node(
+            node_to.clone(),
+            Some(Handler {
+                handler: Some(Box::new(callback)),
+            }),
+        ).unwrap();
 
-//        net.receive(node,Box::new(callback));
-        node.deliver(node.get_address(),"foo message".into());
+        assert_eq!(net.handlers.len(), 1);
 
-        assert_eq!(msgs.lock().unwrap()[0],"192 sent foo message".to_string());
+        match net.deliver(&node_from, &node_to, "foo message".into()) {
+            Ok(msg) => assert_eq!("Qm..192 sent: foo message", msg),
+            Err(_) => assert!(false),
+        }
+        assert_eq!(msgs.lock().unwrap()[0], "foo message".to_string());
+
+        match net.deliver(&node_from, &"3333".to_string(), "foo message".into()) {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err.to_string(), "no handler for 3333"),
+        }
     }
-
 }

@@ -10,11 +10,13 @@ mod tests {
     use failure::Error;
 
     pub fn fail() -> Result<(), Error> {
-        Err(NetworkError::GenericError{error: "boink".to_string()}.into())
+        Err(NetworkError::GenericError {
+            error: "boink".to_string(),
+        }.into())
     }
 
     pub fn test_bail() -> Result<(), Error> {
-        bail!("test {}","fish")
+        bail!("test {}", "fish")
     }
 
     #[test]

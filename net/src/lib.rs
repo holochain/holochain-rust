@@ -10,9 +10,9 @@ use std::sync::{Arc, Mutex};
 
 pub mod error;
 
-pub type SerializedAddress = String;
-pub type TransportAddress = String;
-pub type SerializedMessage = String;
+pub type SerializedAddress = Vec<u8>;
+pub type TransportAddress = Vec<u8>;
+pub type SerializedMessage = Vec<u8>;
 
 /// this closure type will get called when the send completes and the parameter will be the response message (or error)
 type SendResponseClosure = Box<FnMut(Result<SerializedMessage, Error>) -> Option<Error> + Send>;
@@ -22,7 +22,7 @@ type ReceiveClosure =
     Box<FnMut(&SerializedAddress, &SerializedMessage) -> Result<SerializedMessage, Error> + Send>;
 
 pub trait Node {
-    fn get_address(&self) -> SerializedAddress;
+    fn get_address(&self) -> &SerializedAddress;
     fn get_transport_address(&self) -> TransportAddress;
 }
 
@@ -64,7 +64,7 @@ pub trait Transport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use std::{collections::HashMap, str};
     //    use error::NetworkError;
 
     pub struct SimpleNode {
@@ -73,12 +73,12 @@ mod tests {
     }
 
     impl Node for SimpleNode {
-        fn get_address(&self) -> SerializedAddress {
-            format!("{}", self.hc_addr)
+        fn get_address(&self) -> &SerializedAddress {
+            &self.hc_addr
         }
 
         fn get_transport_address(&self) -> TransportAddress {
-            format!("{}", self.transport_addr)
+            format!("{}", self.transport_addr).into()
         }
     }
 
@@ -95,12 +95,16 @@ mod tests {
             }
         }
         pub fn exists(&self, addr: &SerializedAddress) -> bool {
-            if let Some(_node) = self.nodes.iter().find(|node| node.get_address() == *addr) {
+            if let Some(_node) = self.nodes.iter().find(|node| *node.get_address() == *addr) {
                 true
             } else {
                 false
             }
         }
+    }
+
+    fn to_str(vec: &Vec<u8>) -> String {
+        str::from_utf8(vec).unwrap().to_string()
     }
 
     impl Transport for SimpleTransport {
@@ -119,7 +123,7 @@ mod tests {
                     Ok(())
                 }
             } else {
-                bail!("can't send from unknown node {}", from);
+                bail!("can't send from unknown node {}", to_str(from));
             }
         }
 
@@ -130,13 +134,13 @@ mod tests {
             message: SerializedMessage,
         ) -> Result<SerializedMessage, Error> {
             if !self.handlers.contains_key(to) {
-                bail!("no handler for {}", to);
+                bail!("no handler for {}", to_str(to));
             }
             let mut_h = self.handlers.get_mut(to);
             if let Some(h) = mut_h {
                 h.handle(from, &message)
             } else {
-                bail!("error while getting mutable handler for {}", to);
+                bail!("error while getting mutable handler for {}", to_str(to));
             }
         }
         fn new_node(
@@ -144,7 +148,7 @@ mod tests {
             serialized_addr: SerializedAddress,
             handler: Option<Handler>,
         ) -> Result<(), Error> {
-            if serialized_addr == "" {
+            if serialized_addr.len() == 0 {
                 bail!("bad holochain address")
             }
             if let Some(h) = handler {
@@ -189,13 +193,16 @@ mod tests {
 
         let msgs1 = msgs.clone();
         let callback = move |from: &SerializedAddress, message: &SerializedMessage| {
-            let return_msg: SerializedMessage = format!("{} sent: {}", from, message);
+            let return_msg: SerializedMessage =
+                format!("{} sent: {}", to_str(from), to_str(message))
+                    .as_bytes()
+                    .to_owned();
             (*msgs1.lock().unwrap()).push(message.clone());
             Ok(return_msg)
         };
 
-        let node_to = "Qm..191".to_string();
-        let node_from = "Qm..192".to_string();
+        let node_to = "Qm..191".as_bytes().to_owned();
+        let node_from = "Qm..192".as_bytes().to_owned();
         net.new_node(
             node_to.clone(),
             Some(Handler {
@@ -206,12 +213,16 @@ mod tests {
         assert_eq!(net.handlers.len(), 1);
 
         match net.deliver(&node_from, &node_to, "foo message".into()) {
-            Ok(msg) => assert_eq!("Qm..192 sent: foo message", msg),
+            Ok(msg) => assert_eq!("Qm..192 sent: foo message".as_bytes().to_owned(), msg),
             Err(_) => assert!(false),
         }
-        assert_eq!(msgs.lock().unwrap()[0], "foo message".to_string());
+        assert_eq!(msgs.lock().unwrap()[0], "foo message".as_bytes().to_owned());
 
-        match net.deliver(&node_from, &"3333".to_string(), "foo message".into()) {
+        match net.deliver(
+            &node_from,
+            &"3333".as_bytes().to_owned(),
+            "foo message".into(),
+        ) {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(err.to_string(), "no handler for 3333"),
         }
@@ -220,8 +231,8 @@ mod tests {
     #[test]
     fn fails_to_send_from_uninitialized_nodes() {
         let mut net = SimpleTransport::new();
-        let node_to = "Qm..191".to_string();
-        let node_from = "Qm..192".to_string();
+        let node_to = "Qm..191".as_bytes().to_owned();
+        let node_from = "Qm..192".as_bytes().to_owned();
         let callback = move |_result| None;
         match net.send(
             &node_from,
@@ -241,16 +252,19 @@ mod tests {
 
         let msgs1 = msgs.clone();
         let callback = move |from: &SerializedAddress, message: &SerializedMessage| {
-            if *message == "fail me" {
+            if *message == "fail me".as_bytes().to_owned() {
                 bail!("handler failure!")
             }
-            let return_msg: SerializedMessage = format!("{} sent: {}", from, message);
+            let return_msg: SerializedMessage =
+                format!("{} sent: {}", to_str(from), to_str(message))
+                    .as_bytes()
+                    .to_owned();
             (*msgs1.lock().unwrap()).push(message.clone());
             Ok(return_msg)
         };
 
-        let node_to = "Qm..191".to_string();
-        let node_from = "Qm..192".to_string();
+        let node_to = "Qm..191".as_bytes().to_owned();
+        let node_from = "Qm..192".as_bytes().to_owned();
         net.new_node(
             node_to.clone(),
             Some(Handler {
@@ -265,7 +279,10 @@ mod tests {
         let send_callback1 = move |response: Result<SerializedMessage, Error>| {
             match response {
                 Err(_) => assert!(false),
-                Ok(response_msg) => assert_eq!(response_msg, "Qm..192 sent: foo message"),
+                Ok(response_msg) => assert_eq!(
+                    response_msg,
+                    "Qm..192 sent: foo message".as_bytes().to_owned()
+                ),
             };
             None
         };
@@ -279,7 +296,7 @@ mod tests {
             Ok(result) => assert_eq!(result, ()),
             Err(_) => assert!(false),
         }
-        assert_eq!(msgs.lock().unwrap()[0], "foo message".to_string());
+        assert_eq!(msgs.lock().unwrap()[0], "foo message".as_bytes().to_owned());
 
         // test that a handler can send and error back to the sender
         let send_callback2 = move |response: Result<SerializedMessage, Error>| {

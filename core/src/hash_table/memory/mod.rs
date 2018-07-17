@@ -47,20 +47,20 @@ impl HashTable for MemTable {
     // }
 
     fn open(&mut self) -> Result<(), HolochainError> {
-        Result::Ok(())
+        Ok(())
     }
 
     fn close(&mut self) -> Result<(), HolochainError> {
-        Result::Ok(())
+        Ok(())
     }
 
     fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.pairs.insert(pair.key(), pair.clone());
-        Result::Ok(())
+        Ok(())
     }
 
     fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        Result::Ok(self.pairs.get(key.into()).and_then(|p| Some(p.clone())))
+        Ok(self.pairs.get(key.into()).and_then(|p| Some(p.clone())))
     }
 
     fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
@@ -95,7 +95,7 @@ impl HashTable for MemTable {
     // pair, attribute name, attribute value, txn id, source, signature
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
         self.meta.insert(meta.key(), meta.clone());
-        Result::Ok(())
+        Ok(())
     }
 
 }

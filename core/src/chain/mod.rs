@@ -3,21 +3,22 @@ use error::HolochainError;
 use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
 // use objekt::clone_box;
+use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct ChainIterator {
 
-    table: Box<HashTable>,
+    table: Rc<HashTable>,
     current: Option<Pair>,
 
 }
 
 impl ChainIterator {
 
-    pub fn new<HT: 'static + HashTable> (table: &HT, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new<HT: 'static + HashTable> (table: Rc<HashTable>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator{
             current: pair.clone(),
-            table: table.clone_box(),
+            table: Rc::clone(&table),
         }
     }
 
@@ -44,19 +45,19 @@ impl Iterator for ChainIterator {
 }
 
 // #[derive(Clone, Debug, PartialEq)]
-pub struct Chain {
+pub struct Chain<T: HashTable> {
 
-    table: Box<HashTable>,
+    table: Rc<T>,
     top: Option<Pair>,
 
 }
 
-impl Chain {
+impl<T: HashTable> Chain<T> {
 
-    pub fn new<HT: HashTable> (table: &HT) -> Chain {
+    pub fn new(table: Rc<T>) -> Chain<T> {
         Chain{
             top: None,
-            table: table.clone_box(),
+            table: Rc::clone(&table),
         }
     }
 
@@ -64,8 +65,8 @@ impl Chain {
         self.top.clone()
     }
 
-    pub fn table(&self) -> Box<HashTable> {
-        self.table.clone()
+    pub fn table(&self) -> Rc<T> {
+        Rc::clone(&self.table)
     }
 
     pub fn push (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
@@ -94,7 +95,10 @@ impl Chain {
         //     return Result::Err(HolochainError::new("adding this pair would invalidate the source chain"))
         // }
 
-        let result = self.table.commit(&pair);
+        // @TODO implement incubator for thread safety
+        // @see https://github.com/holochain/holochain-rust/issues/135
+        let table = Rc::get_mut(&mut self.table).unwrap();
+        let result = table.commit(&pair);
         if result.is_ok() {
             self.top = Some(pair.clone());
         }
@@ -112,8 +116,8 @@ impl Chain {
     //     ChainIterator::new(&self.table(), &self.top())
     // }
 
-    pub fn get<HT: HashTable> (&self, table: &HT, k: &str) -> Result<Option<Pair>, HolochainError> {
-        table.get(k)
+    pub fn get (&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+        self.table.get(k)
     }
 
     // fn get_entry (&self, table: &HT, entry_hash: &str) -> Option<Pair> {
@@ -166,9 +170,11 @@ pub mod tests {
     use hash_table::entry::tests::test_entry;
     use hash_table::memory::tests::test_table;
     use hash_table::HashTable;
+    use std::rc::Rc;
+    use hash_table::memory::MemTable;
 
-    pub fn test_chain() -> Chain {
-        Chain::new(&test_table())
+    pub fn test_chain() -> Chain<MemTable> {
+        Chain::new(Rc::new(test_table()))
     }
 
     #[test]
@@ -185,14 +191,32 @@ pub mod tests {
     #[test]
     fn table() {
         let t = test_table();
-        let mut c = Chain::new(&t);
+        let mut c = Chain::new(Rc::new(t));
         // test that adding something to the chain adds to the table
         let p = c.push(&test_entry()).unwrap();
-        assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap());
-        assert_eq!(Some(p.clone()), t.get(&p.key()).unwrap());
+        let tr = Rc::new(c.table());
+        assert_eq!(
+            Some(p.clone()),
+            c.table().get(&p.key()).unwrap(),
+        );
+        assert_eq!(
+            Some(p.clone()),
+            tr.get(&p.key()).unwrap(),
+        );
         assert_eq!(
             c.table().get(&p.key()).unwrap(),
-            t.get(&p.key()).unwrap(),
+            tr.get(&p.key()).unwrap(),
+        );
+    }
+
+    #[test]
+    fn round_trip() {
+        let mut c = test_chain();
+        let e = test_entry();
+        let p = c.push(&e).unwrap();
+        assert_eq!(
+            Some(p.clone()),
+            c.get(&p.key()).unwrap(),
         );
     }
 

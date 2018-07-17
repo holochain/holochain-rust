@@ -154,6 +154,180 @@ _xa_str!(
     holochain_dna_set_dna_spec_version
 );
 
+#[repr(C)]
+pub struct CStringVec {
+    len: usize,
+    ptr: *const *const c_char,
+}
+
+unsafe fn vec_char_to_cstringvec(vec: Option<Vec<*const c_char>>, string_vec: *mut CStringVec) {
+    match vec {
+        Some(function_names) => {
+            (*string_vec).len = function_names.len();
+            (*string_vec).ptr = function_names.as_ptr();
+            std::mem::forget(function_names);
+        }
+        None => {
+            (*string_vec).len = 0;
+            (*string_vec).ptr = std::ptr::null_mut();
+        }
+    }
+}
+
+fn zome_names_as_vec(dna: &Dna) -> Option<Vec<*const c_char>> {
+    Some(
+        dna.zomes
+            .iter()
+            .map(|zome| {
+                let raw = match CString::new(zome.name.clone()) {
+                    Ok(s) => s.into_raw(),
+                    Err(_) => std::ptr::null(),
+                };
+                raw as *const c_char
+            })
+            .collect::<Vec<*const c_char>>(),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec: *mut CStringVec) {
+    let dna = &*ptr;
+    let zome_names = zome_names_as_vec(dna);
+    vec_char_to_cstringvec(zome_names, string_vec);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
+    let vec = Vec::from_raw_parts(
+        (*string_vec).ptr as *mut *const c_char,
+        (*string_vec).len,
+        (*string_vec).len,
+    );
+    let _vec = vec
+        .into_iter()
+        .map(|s| CString::from_raw(s as *mut c_char))
+        .collect::<Vec<_>>();
+}
+
+fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
+        .capabilities
+        .iter()
+        .map(|cap| {
+            let raw = match CString::new(cap.name.clone()) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null(),
+            };
+            raw as *const c_char
+        })
+        .collect::<Vec<*const c_char>>();
+    Some(result)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
+    ptr: *mut Dna,
+    zome_name: *const c_char,
+    string_vec: *mut CStringVec,
+) {
+    let dna = &*ptr;
+    let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
+    let capabalities = capabilities_as_vec(dna, &*zome_name);
+    vec_char_to_cstringvec(capabalities, string_vec);
+}
+
+fn fn_names_as_vec(
+    dna: &Dna,
+    zome_name: &str,
+    capability_name: &str,
+) -> Option<Vec<*const c_char>> {
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
+        .capabilities
+        .iter()
+        .find(|&c| c.name == capability_name)?
+        .fn_declarations
+        .iter()
+        .map(|fn_declaration| {
+            let raw = match CString::new(fn_declaration.name.clone()) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null(),
+            };
+            raw as *const c_char
+        })
+        .collect::<Vec<*const c_char>>();
+    Some(result)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_get_function_names(
+    ptr: *mut Dna,
+    zome_name: *const c_char,
+    capability_name: *const c_char,
+    string_vec: *mut CStringVec,
+) {
+    let dna = &*ptr;
+
+    let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
+    let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
+
+    let fn_names = fn_names_as_vec(dna, &*zome_name, &*capability_name);
+    vec_char_to_cstringvec(fn_names, string_vec)
+}
+
+fn fn_parameters_as_vec(
+    dna: &Dna,
+    zome_name: &str,
+    capability_name: &str,
+    function_name: &str,
+) -> Option<Vec<*const c_char>> {
+    let result = dna
+        .zomes
+        .iter()
+        .find(|&z| z.name == zome_name)?
+        .capabilities
+        .iter()
+        .find(|&c| c.name == capability_name)?
+        .fn_declarations
+        .iter()
+        .find(|&function| function.name == function_name)?
+        .signature
+        .inputs
+        .iter()
+        .map(|input| {
+            let raw = match CString::new(input.name.clone()) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null(),
+            };
+            raw as *const c_char
+        })
+        .collect::<Vec<*const c_char>>();
+    Some(result)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_get_function_parameters(
+    ptr: *mut Dna,
+    zome_name: *const c_char,
+    capability_name: *const c_char,
+    function_name: *const c_char,
+    string_vec: *mut CStringVec,
+) {
+    let dna = &*ptr;
+
+    let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
+    let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
+    let function_name = CStr::from_ptr(function_name).to_string_lossy();
+
+    let fn_parameters = fn_parameters_as_vec(dna, &*zome_name, &*capability_name, &*function_name);
+    vec_char_to_cstringvec(fn_parameters, string_vec)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

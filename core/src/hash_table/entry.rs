@@ -68,12 +68,36 @@ pub mod tests {
         "testEntryType".into()
     }
 
+    pub fn test_type_a() -> String {
+        test_type()
+    }
+
+    pub fn test_type_b() -> String {
+        "testEntryTypeB".into()
+    }
+
     pub fn test_content() -> String {
         "test entry content".into()
     }
 
+    pub fn test_content_a() -> String {
+        test_content()
+    }
+
+    pub fn test_content_b() -> String {
+        "other test entry content".into()
+    }
+
     pub fn test_entry() -> Entry {
         Entry::new(&test_type(), &test_content())
+    }
+
+    pub fn test_entry_a() -> Entry {
+        test_entry()
+    }
+
+    pub fn test_entry_b() -> Entry {
+        Entry::new(&test_type_b(), &test_content_b())
     }
 
     #[test]

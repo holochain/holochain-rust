@@ -167,24 +167,37 @@ pub mod tests {
 
     use super::Chain;
     use hash_table::entry::tests::test_entry;
+    use hash_table::entry::tests::test_entry_a;
+    use hash_table::entry::tests::test_entry_b;
     use hash_table::memory::tests::test_table;
     use hash_table::HashTable;
     use std::rc::Rc;
     use hash_table::memory::MemTable;
 
+    /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {
         Chain::new(Rc::new(test_table()))
     }
 
     #[test]
+    /// smoke test for new chains
     fn new() {
         test_chain();
     }
 
     #[test]
     fn top() {
-        let c = test_chain();
-        assert_eq!(None, c.top());
+        let mut chain = test_chain();
+        assert_eq!(None, chain.top());
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+
+        let p1 = chain.push(&e1).unwrap();
+        assert_eq!(Some(p1), chain.top());
+
+        let p2 = chain.push(&e2).unwrap();
+        assert_eq!(Some(p2), chain.top());
     }
 
     #[test]

@@ -2,7 +2,6 @@
 use error::HolochainError;
 use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
-// use objekt::clone_box;
 use std::rc::Rc;
 
 #[derive(Clone)]

@@ -4,8 +4,6 @@ pub mod header;
 pub mod pair;
 pub mod pair_meta;
 pub mod memory;
-// use objekt;
-// use std::fmt::Debug;
 
 use error::HolochainError;
 use hash_table::pair::Pair;

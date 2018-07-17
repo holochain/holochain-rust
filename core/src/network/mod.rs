@@ -1,5 +1,5 @@
-use error::HolochainError;
-use net::SerialzedAddress;
+//use error::HolochainError;
+use holochain_net::SerializedAddress;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {

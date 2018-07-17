@@ -11,6 +11,7 @@ pub struct AgentState {
     keys: Option<Keys>,
     // @TODO how should this work with chains/HTs?
     // @see https://github.com/holochain/holochain-rust/issues/137
+    // @see https://github.com/holochain/holochain-rust/issues/135
     top_pair: Option<Pair>,
 }
 

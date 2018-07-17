@@ -87,13 +87,6 @@ impl<T: HashTable> Chain<T> {
             ))
         }
 
-        // let mut validation_chain = self.clone();
-        // validation_chain.top = Some(pair.clone());
-        // validation_chain.pairs.insert(0, pair.clone());
-        // if !validation_chain.validate() {
-        //     return Result::Err(HolochainError::new("adding this pair would invalidate the source chain"))
-        // }
-
         // @TODO implement incubator for thread safety
         // @see https://github.com/holochain/holochain-rust/issues/135
         let table = Rc::get_mut(&mut self.table).unwrap();

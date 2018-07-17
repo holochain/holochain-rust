@@ -53,6 +53,8 @@
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
+#[cfg(test)]
+extern crate test_utils;
 
 use holochain_core::{
     context::Context, error::HolochainError, instance::Instance,
@@ -165,14 +167,12 @@ impl Holochain {
 mod tests {
     use super::*;
     use holochain_agent::Agent as HCAgent;
-    use holochain_core::{
-        context::Context, logger::Logger, persister::SimplePersister,
-        test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file},
-    };
+    use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use std::{
         fmt, sync::{Arc, Mutex},
     };
+    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
 
     #[derive(Clone)]
     struct TestLogger {
@@ -413,4 +413,36 @@ mod tests {
         };
     }
 
+    #[test]
+    fn can_call_commit() {
+        // Setup the holochain instance
+        let wasm = create_wasm_from_file(
+            "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
+        );
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let agent = HCAgent::from_string("alex");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        // Run the holochain instance
+        hc.start().expect("couldn't start");
+        assert_eq!(hc.state().unwrap().history.len(), 4);
+
+        // Call the exposed wasm function that calls the Commit API function
+        let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
+
+        println!("\t RESULT = {:?}", result);
+
+        // Expect normal OK result with hash
+        match result {
+            Ok(result) => assert_eq!(
+                result,
+                r#"{"hash":"QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5"}"#
+            ),
+            Err(_) => assert!(false),
+        };
+
+        // Check in holochain instance's history that the commit event has been processed
+        assert_eq!(hc.state().unwrap().history.len(), 7);
+    }
 }

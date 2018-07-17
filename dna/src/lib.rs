@@ -277,7 +277,11 @@ mod tests {
                                 },
                                 "fn_declarations": [
                                     {
-                                        "name": "test"
+                                        "name": "test",
+                                        "signature": {
+                                            "inputs": [],
+                                            "outputs": []
+                                        }
                                     }
                                 ],
                                 "code": {
@@ -518,7 +522,11 @@ mod tests {
                                 },
                                 "fn_declarations": [
                                     {
-                                        "name": "test"
+                                        "name": "test",
+                                        "signature": {
+                                            "inputs": [],
+                                            "outputs": []
+                                        }
                                     }
                                 ],
                                 "code": {

@@ -4,6 +4,9 @@ use std::{
     sync::{mpsc::*, Arc, RwLock, RwLockReadGuard}, thread, time::Duration,
 };
 
+pub const REDUX_LOOP_TIMEOUT_MS: u64 = 400;
+pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
+
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
 //#[derive(Clone)]
@@ -66,7 +69,7 @@ impl Instance {
             let mut state_observers: Vec<Box<Observer>> = Vec::new();
 
             loop {
-                match rx_action.recv_timeout(Duration::from_millis(400)) {
+                match rx_action.recv_timeout(Duration::from_millis(REDUX_LOOP_TIMEOUT_MS)) {
                     Ok(action_wrapper) => {
                         // Mutate state
                         {

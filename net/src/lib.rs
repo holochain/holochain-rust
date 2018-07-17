@@ -94,11 +94,10 @@ mod tests {
                 handlers: HashMap::new(),
             }
         }
-        pub fn exists(&self,addr: &SerializedAddress) -> bool {
+        pub fn exists(&self, addr: &SerializedAddress) -> bool {
             if let Some(_node) = self.nodes.iter().find(|node| node.get_address() == *addr) {
                 true
-            }
-            else {
+            } else {
                 false
             }
         }
@@ -113,13 +112,12 @@ mod tests {
             mut callback: SendResponseClosure,
         ) -> Result<(), Error> {
             if self.exists(from) {
-                let result = callback(self.deliver(from,to,msg));
-                if let Some(err) = result{
+                let result = callback(self.deliver(from, to, msg));
+                if let Some(err) = result {
                     Err(err)
                 } else {
                     Ok(())
                 }
-
             } else {
                 bail!("can't send from unknown node {}", from);
             }
@@ -243,6 +241,9 @@ mod tests {
 
         let msgs1 = msgs.clone();
         let callback = move |from: &SerializedAddress, message: &SerializedMessage| {
+            if *message == "fail me" {
+                bail!("handler failure!")
+            }
             let return_msg: SerializedMessage = format!("{} sent: {}", from, message);
             (*msgs1.lock().unwrap()).push(message.clone());
             Ok(return_msg)
@@ -257,26 +258,47 @@ mod tests {
             }),
         ).unwrap();
 
-        net.new_node(
-            node_from.clone(),
-            None,
-        ).unwrap();
+        net.new_node(node_from.clone(), None).unwrap();
 
         assert_eq!(net.handlers.len(), 1);
 
-        let send_callback = move |response| {
+        let send_callback1 = move |response: Result<SerializedMessage, Error>| {
             match response {
                 Err(_) => assert!(false),
-                Ok(response_msg) => assert_eq!(response_msg,"Qm..192 sent: foo message"),
-            }
+                Ok(response_msg) => assert_eq!(response_msg, "Qm..192 sent: foo message"),
+            };
             None
         };
 
-        match net.send(&node_from, &node_to, "foo message".into(),Box::new(send_callback)) {
-            Ok(result) =>assert_eq!(result,()),
+        match net.send(
+            &node_from,
+            &node_to,
+            "foo message".into(),
+            Box::new(send_callback1),
+        ) {
+            Ok(result) => assert_eq!(result, ()),
             Err(_) => assert!(false),
         }
         assert_eq!(msgs.lock().unwrap()[0], "foo message".to_string());
+
+        // test that a handler can send and error back to the sender
+        let send_callback2 = move |response: Result<SerializedMessage, Error>| {
+            match response {
+                Ok(_) => assert!(false),
+                Err(err) => assert_eq!(err.to_string(), "handler failure!"),
+            };
+            None
+        };
+
+        match net.send(
+            &node_from,
+            &node_to,
+            "fail me".into(),
+            Box::new(send_callback2),
+        ) {
+            Ok(result) => assert_eq!(result, ()),
+            Err(_) => assert!(false),
+        }
     }
 
 }

@@ -122,12 +122,12 @@ impl<T: HashTable> Chain<T> {
         )
     }
 
-    pub fn top_type(&self, _t: &str) -> Option<Pair> {
-        // @TODO this is wrong
-        self.top()
-        // self
-        //     .iter()
-        //     .find(|p| p.header().entry_type() == t)
+    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
+        Ok(
+            self
+                .iter()
+                .find(|p| p.header().entry_type() == t)
+        )
     }
 
 }
@@ -139,6 +139,8 @@ pub mod tests {
     use hash_table::entry::tests::test_entry;
     use hash_table::entry::tests::test_entry_a;
     use hash_table::entry::tests::test_entry_b;
+    use hash_table::entry::tests::test_type_a;
+    use hash_table::entry::tests::test_type_b;
     use hash_table::memory::tests::test_table;
     use hash_table::HashTable;
     use hash_table::pair::Pair;
@@ -322,6 +324,37 @@ pub mod tests {
         assert_eq!(Some(p3.clone()), chain.get_entry(&p1.entry().key()).unwrap());
         assert_eq!(Some(p2.clone()), chain.get_entry(&p2.entry().key()).unwrap());
         assert_eq!(Some(p3.clone()), chain.get_entry(&p3.entry().key()).unwrap());
+    }
+
+    #[test]
+    /// test chain.top_type()
+    fn top_type() {
+        let mut chain = test_chain();
+
+        assert_eq!(None, chain.top_type(&test_type_a()).unwrap());
+        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+        let e3 = test_entry_a();
+
+        // type a should be p1
+        // type b should be None
+        let p1 = chain.push(&e1).unwrap();
+        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
+        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+
+        // type a should still be p1
+        // type b should be p2
+        let p2 = chain.push(&e2).unwrap();
+        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+
+        // type a should be p3
+        // type b should still be p2
+        let p3 = chain.push(&e3).unwrap();
+        assert_eq!(Some(p3.clone()), chain.top_type(&test_type_a()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
     }
 
 }

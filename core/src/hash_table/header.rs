@@ -49,6 +49,8 @@ impl Header {
             entry: entry.hash().to_string(),
             type_next: chain
                 .top_type(&entry.entry_type())
+                // @TODO inappropriate unwrap()?
+                .unwrap()
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71

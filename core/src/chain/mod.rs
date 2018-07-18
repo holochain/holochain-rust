@@ -4,6 +4,7 @@ use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
 use std::rc::Rc;
 use serde_json;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct ChainIterator<T: HashTable> {
@@ -51,6 +52,20 @@ pub struct Chain<T: HashTable> {
 
 }
 
+impl<T: HashTable> PartialEq for Chain<T> {
+    fn eq(&self, other: &Chain<T>) -> bool {
+        self.validate() &&
+        other.validate() &&
+        self.top() == other.top()
+    }
+}
+
+impl<T: HashTable> fmt::Debug for Chain<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Chain {{ top: {:?} }}", self.top)
+    }
+}
+
 impl<T: HashTable> IntoIterator for Chain<T> {
 
     type Item = Pair;
@@ -78,9 +93,7 @@ impl<T: HashTable> Chain<T> {
         Rc::clone(&self.table)
     }
 
-    pub fn push (&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = Pair::new(self, entry);
-
+    fn push_pair (&mut self, pair: Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
             return Result::Err(HolochainError::new("attempted to push an invalid pair for this chain"))
         }
@@ -108,6 +121,11 @@ impl<T: HashTable> Chain<T> {
             Result::Ok(_) => Result::Ok(pair),
             Result::Err(e) => Result::Err(e),
         }
+    }
+
+    pub fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+        let pair = Pair::new(self, entry);
+        self.push_pair(pair)
     }
 
     pub fn validate(&self) -> bool {
@@ -144,6 +162,18 @@ impl<T: HashTable> Chain<T> {
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         let as_seq = self.iter().collect::<Vec<Pair>>();
         serde_json::to_string(&as_seq)
+    }
+
+    pub fn from_json(table: Rc<T>, s: &str) -> Self {
+        // @TODO inappropriate unwrap?
+        let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
+        as_seq.reverse();
+
+        let mut chain = Chain::new(table);
+        for p in as_seq {
+            chain.push_pair(p).unwrap();
+        };
+        chain
     }
 
 }
@@ -396,8 +426,8 @@ pub mod tests {
     }
 
     #[test]
-    /// test JSON to_json() implementation
-    fn to_json() {
+    /// test to_json() and from_json() implementation
+    fn json_round_trip() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -410,6 +440,9 @@ pub mod tests {
 
         let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"time\":\"\",\"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]";
         assert_eq!(expected_json, chain.to_json().unwrap());
+
+        let mut table = test_table();
+        assert_eq!(chain, Chain::from_json(Rc::new(table), expected_json));
     }
 
 }

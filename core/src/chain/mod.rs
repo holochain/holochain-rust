@@ -50,6 +50,16 @@ pub struct Chain<T: HashTable> {
 
 }
 
+impl<T: HashTable> IntoIterator for Chain<T> {
+
+    type Item = Pair;
+    type IntoIter = ChainIterator<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 impl<T: HashTable> Chain<T> {
 
     pub fn new(table: Rc<T>) -> Chain<T> {
@@ -355,6 +365,28 @@ pub mod tests {
         let p3 = chain.push(&e3).unwrap();
         assert_eq!(Some(p3.clone()), chain.top_type(&test_type_a()).unwrap());
         assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+    }
+
+    #[test]
+    /// test IntoIterator implementation
+    fn into_iter() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+        let e3 = test_entry_a();
+
+        let p1 = chain.push(&e1).unwrap();
+        let p2 = chain.push(&e2).unwrap();
+        let p3 = chain.push(&e3).unwrap();
+
+        // into_iter() returns clones of pairs
+        let mut i = 0;
+        let expected = [p3.clone(), p2.clone(), p1.clone()];
+        for p in chain {
+            assert_eq!(expected[i], p);
+            i = i + 1;
+        }
     }
 
 }

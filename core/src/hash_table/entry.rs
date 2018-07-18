@@ -58,6 +58,12 @@ impl Entry {
         // always valid iff immutable and new() enforces validity
         true
     }
+
+    /// returns the key used for lookups in chain, HT, etc.
+    /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
+    pub fn key(&self) -> String {
+        self.hash()
+    }
 }
 
 #[cfg(test)]
@@ -203,5 +209,11 @@ pub mod tests {
         let e = Entry::new(t, c);
 
         assert!(e.validate());
+    }
+
+    #[test]
+    /// tests for entry.key()
+    fn key() {
+        assert_eq!(test_entry().hash(), test_entry().key());
     }
 }

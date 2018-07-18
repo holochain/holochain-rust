@@ -108,12 +108,23 @@ impl Header {
         // always valid iff immutable and new() enforces validity
         true
     }
+
+    /// returns the key for use in hash table lookups, e.g. chain.get()
+    pub fn key(&self) -> String {
+        self.hash()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use hash_table::{entry::Entry, header::Header};
     use chain::tests::test_chain;
+    use hash_table::pair::tests::test_pair;
+
+    /// returns a dummy header for use in tests
+    pub fn test_header() -> Header {
+        test_pair().header()
+    }
 
     #[test]
     /// tests for PartialEq
@@ -349,5 +360,11 @@ mod tests {
         let h = Header::new(&chain, &e);
 
         assert!(h.validate());
+    }
+
+    #[test]
+    /// tests for header.key()
+    fn key() {
+        assert_eq!(test_header().hash(), test_header().key());
     }
 }

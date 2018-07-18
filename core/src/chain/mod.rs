@@ -111,13 +111,16 @@ impl<T: HashTable> Chain<T> {
         self.table.get(k)
     }
 
-    // fn get_entry (&self, table: &HT, entry_hash: &str) -> Option<Pair> {
-    //     // @TODO - this is a slow way to do a lookup
-    //     // @see https://github.com/holochain/holochain-rust/issues/50
-    //     self
-    //         .iter(table)
-    //         .find(|p| p.entry().hash() == entry_hash)
-    // }
+    pub fn get_entry (&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        Ok(
+            self
+                .iter()
+                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                .find(|p| p.entry().hash() == entry_hash)
+        )
+    }
 
     pub fn top_type(&self, _t: &str) -> Option<Pair> {
         // @TODO this is wrong
@@ -296,6 +299,29 @@ pub mod tests {
         assert_eq!(Some(p1.clone()), chain.get(&p1.key()).unwrap());
         assert_eq!(Some(p2.clone()), chain.get(&p2.key()).unwrap());
         assert_eq!(Some(p3.clone()), chain.get(&p3.key()).unwrap());
+        assert_eq!(Some(p1.clone()), chain.get(&p1.header().key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get(&p2.header().key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get(&p3.header().key()).unwrap());
+    }
+
+    #[test]
+    /// test chain.get_entry()
+    fn get_entry() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+        let e3 = test_entry_a();
+
+        let p1 = chain.push(&e1).unwrap();
+        let p2 = chain.push(&e2).unwrap();
+        let p3 = chain.push(&e3).unwrap();
+
+        assert_eq!(None, chain.get_entry("").unwrap());
+        // @TODO at this point we have p3 with the same entry key as p1...
+        assert_eq!(Some(p3.clone()), chain.get_entry(&p1.entry().key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get_entry(&p2.entry().key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get_entry(&p3.entry().key()).unwrap());
     }
 
 }

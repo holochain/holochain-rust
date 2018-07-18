@@ -46,6 +46,7 @@ pub trait HashTable: HashTableClone + Send + Sync {
 
     // meta
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
 
     // query
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;

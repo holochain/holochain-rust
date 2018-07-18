@@ -98,6 +98,10 @@ impl HashTable for MemTable {
         Ok(())
     }
 
+    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+        Ok(self.meta.get(key).and_then(|m| Some(m.clone())))
+    }
+
 }
 
 #[cfg(test)]

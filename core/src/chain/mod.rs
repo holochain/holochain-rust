@@ -9,6 +9,8 @@ use std::fmt;
 #[derive(Clone)]
 pub struct ChainIterator<T: HashTable> {
 
+    // @TODO thread safe table references
+    // @see https://github.com/holochain/holochain-rust/issues/135
     table: Rc<T>,
     current: Option<Pair>,
 
@@ -38,6 +40,7 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
         self.current = ret.clone()
                         .and_then(|p| p.header().next())
                         // @TODO should this panic?
+                        // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| self.table.get(&h).unwrap());
         ret
     }
@@ -47,6 +50,8 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
 // #[derive(Clone, Debug, PartialEq)]
 pub struct Chain<T: HashTable> {
 
+    // @TODO thread safe table references
+    // @see https://github.com/holochain/holochain-rust/issues/135
     table: Rc<T>,
     top: Option<Pair>,
 
@@ -147,6 +152,7 @@ impl<T: HashTable> Chain<T> {
             self
                 .iter()
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                // @see https://github.com/holochain/holochain-rust/issues/145
                 .find(|p| p.entry().hash() == entry_hash)
         )
     }
@@ -267,18 +273,6 @@ pub mod tests {
     }
 
     #[test]
-    /// test chain.push() and chain.get() together
-    fn round_trip() {
-        let mut c = test_chain();
-        let e = test_entry();
-        let p = c.push(&e).unwrap();
-        assert_eq!(
-            Some(p.clone()),
-            c.get(&p.key()).unwrap(),
-        );
-    }
-
-    #[test]
     /// test chain.validate()
     fn validate() {
         let mut chain = test_chain();
@@ -293,6 +287,18 @@ pub mod tests {
 
         chain.push(&e2).unwrap();
         assert!(chain.validate());
+    }
+
+    #[test]
+    /// test chain.push() and chain.get() together
+    fn round_trip() {
+        let mut c = test_chain();
+        let e = test_entry();
+        let p = c.push(&e).unwrap();
+        assert_eq!(
+            Some(p.clone()),
+            c.get(&p.key()).unwrap(),
+        );
     }
 
     #[test]

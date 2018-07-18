@@ -126,8 +126,8 @@ impl<T: HashTable> Chain<T> {
             self.top = Some(pair.clone());
         }
         match result {
-            Result::Ok(_) => Result::Ok(pair),
-            Result::Err(e) => Result::Err(e),
+            Ok(_) => Ok(pair),
+            Err(e) => Err(e),
         }
     }
 

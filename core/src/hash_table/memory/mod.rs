@@ -146,14 +146,14 @@ pub mod tests {
     /// tests for ht.open()
     fn open() {
         let mut ht = test_table();
-        assert_eq!(Result::Ok(()), ht.open());
+        assert_eq!(Ok(()), ht.open());
     }
 
     #[test]
     /// tests for ht.close()
     fn close() {
         let mut ht = test_table();
-        assert_eq!(Result::Ok(()), ht.close());
+        assert_eq!(Ok(()), ht.close());
     }
 
     #[test]
@@ -162,7 +162,7 @@ pub mod tests {
         let mut ht = test_table();
         let p = test_pair();
         ht.commit(&p).unwrap();
-        assert_eq!(ht.get(&p.key()), Result::Ok(Some(p)));
+        assert_eq!(ht.get(&p.key()), Ok(Some(p)));
     }
 
     #[test]

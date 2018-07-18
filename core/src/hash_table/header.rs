@@ -50,6 +50,7 @@ impl Header {
             type_next: chain
                 .top_type(&entry.entry_type())
                 // @TODO inappropriate unwrap()?
+                // @see https://github.com/holochain/holochain-rust/issues/147
                 .unwrap()
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures

@@ -32,13 +32,12 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
     type Item = Pair;
 
     fn next(&mut self) -> Option<Pair> {
-        let n = self
-                .current()
-                .and_then(|p| p.header().next())
-                // @TODO should this panic?
-                .and_then(|h| self.table.get(&h).unwrap());
-        self.current = n;
-        self.current()
+        let ret = self.current();
+        self.current = ret.clone()
+                        .and_then(|p| p.header().next())
+                        // @TODO should this panic?
+                        .and_then(|h| self.table.get(&h).unwrap());
+        ret
     }
 
 }
@@ -267,6 +266,26 @@ pub mod tests {
 
         chain.push(&e2).unwrap();
         assert!(chain.validate());
+    }
+
+    #[test]
+    /// test chain.iter()
+    fn iter() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+
+        let p1 = chain.push(&e1).unwrap();
+        let p2 = chain.push(&e2).unwrap();
+
+        let mut vec = Vec::new();
+        for p in chain.iter() {
+            vec.push(p);
+        }
+
+        assert_eq!(vec![p2, p1], vec);
+
     }
 
 }

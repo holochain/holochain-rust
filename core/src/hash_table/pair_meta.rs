@@ -93,7 +93,10 @@ pub mod tests {
 
     use super::PairMeta;
     use hash_table::pair::tests::test_pair;
+    use hash_table::pair::tests::test_pair_a;
+    use hash_table::pair::tests::test_pair_b;
     use agent::keys::tests::test_keys;
+    use std::cmp::Ordering;
 
     pub fn test_attribute() -> String {
         "meta-attribute".into()
@@ -153,5 +156,32 @@ pub mod tests {
     /// test meta.source()
     fn source() {
         assert_eq!(test_pair_meta().source(), test_keys().node_id());
+    }
+
+    #[test]
+    /// test that we can sort pair metas with cmp
+    fn cmp() {
+        let p1 = test_pair_a();
+        let p2 = test_pair_b();
+
+        // basic ordering
+        let m_1ax = PairMeta::new(&test_keys(), &p1, "a", "x");
+        let m_1ay = PairMeta::new(&test_keys(), &p1, "a", "y");
+        let m_1bx = PairMeta::new(&test_keys(), &p1, "b", "x");
+        let m_2ax = PairMeta::new(&test_keys(), &p2, "a", "x");
+
+        // sort by pair key
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
+        assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
+        assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
+        assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
+
+        // sort by attribute key
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
+        assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
+
+        // sort by attribute value
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
+        assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
     }
 }

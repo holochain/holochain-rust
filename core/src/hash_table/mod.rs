@@ -5,6 +5,7 @@ pub mod pair;
 pub mod pair_meta;
 pub mod memory;
 
+use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::pair::Pair;
 use hash_table::pair_meta::PairMeta;
@@ -41,9 +42,9 @@ pub trait HashTable: HashTableClone + Send + Sync {
     /// lookup a Pair from the HashTable by Pair/Header key
     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError>;
     /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
-    fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError>;
+    fn modify (&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError>;
     /// set the status of a Pair to DELETED
-    fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError>;
+    fn retract (&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError>;
 
     // meta
     /// assert a given PairMeta in the HashTable

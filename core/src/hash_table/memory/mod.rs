@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
-use agent::keys::Key;
 use agent::keys::Keys;
 use hash_table::status::CRUDStatus;
 use hash_table::pair::Pair;
@@ -49,7 +48,7 @@ impl HashTable for MemTable {
         Ok(self.pairs.get(key.into()).and_then(|p| Some(p.clone())))
     }
 
-    fn modify(&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
+    fn modify(&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
         let result = self.commit(new_pair);
         if result.is_err() {
             return result
@@ -59,7 +58,7 @@ impl HashTable for MemTable {
         // @see https://github.com/holochain/holochain-rust/issues/142
         let result = self.assert_meta(
             &PairMeta::new(
-                &Keys::new(&Key::new(), &Key::new(), ""),
+                keys,
                 &old_pair,
                 STATUS_NAME,
                 &CRUDStatus::MODIFIED.bits().to_string(),
@@ -73,7 +72,7 @@ impl HashTable for MemTable {
         // @see https://github.com/holochain/holochain-rust/issues/142
         self.assert_meta(
             &PairMeta::new(
-                &Keys::new(&Key::new(), &Key::new(), ""),
+                keys,
                 &old_pair,
                 LINK_NAME,
                 &new_pair.key(),
@@ -82,10 +81,10 @@ impl HashTable for MemTable {
 
     }
 
-    fn retract(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
         self.assert_meta(
             &PairMeta::new(
-                &Keys::new(&Key::new(), &Key::new(), ""),
+                keys,
                 &pair,
                 STATUS_NAME,
                 &CRUDStatus::DELETED.bits().to_string(),
@@ -103,13 +102,13 @@ impl HashTable for MemTable {
     }
 
     fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        Ok(
-            self.meta
+        let mut metas = self.meta
             .values()
             .filter(|&m| m.pair() == pair.key())
             .cloned()
-            .collect::<Vec<PairMeta>>()
-        )
+            .collect::<Vec<PairMeta>>();
+        metas.sort();
+        Ok(metas)
     }
 
 }
@@ -122,6 +121,11 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use hash_table::pair::tests::test_pair_a;
     use hash_table::pair::tests::test_pair_b;
+    use hash_table::pair_meta::PairMeta;
+    use hash_table::status::STATUS_NAME;
+    use hash_table::status::LINK_NAME;
+    use hash_table::status::CRUDStatus;
+    use agent::keys::tests::test_keys;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -164,7 +168,18 @@ pub mod tests {
         let p2 = test_pair_b();
 
         ht.commit(&p1).unwrap();
-        ht.modify(&p1, &p2).unwrap();
+        ht.modify(&test_keys(), &p1, &p2).unwrap();
+
+        assert_eq!(
+            vec![
+                PairMeta::new(&test_keys(), &p1, LINK_NAME, &p2.key()),
+                PairMeta::new(&test_keys(), &p1, STATUS_NAME, &CRUDStatus::MODIFIED.bits().to_string()),
+            ],
+            ht.get_pair_meta(&p1).unwrap()
+        );
+
+        let empty_vec: Vec<PairMeta> = Vec::new();
+        assert_eq!(empty_vec, ht.get_pair_meta(&p2).unwrap());
     }
 
 }

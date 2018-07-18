@@ -2,8 +2,9 @@ use hash_table::pair::Pair;
 use agent::keys::Keys;
 use multihash::Hash;
 use hash::serializable_to_b58_hash;
+use std::cmp::Ordering;
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
 /// E = the pair key for hash table lookups
 /// A = the name of the meta attribute
@@ -24,6 +25,26 @@ pub struct PairMeta {
     // @TODO implement meta data signing
     // @see https://github.com/holochain/holochain-rust/issues/139
     // signature: String,
+}
+
+impl Ord for PairMeta {
+    fn cmp(&self, other: &PairMeta) -> Ordering {
+        match self.pair.cmp(&other.pair) {
+            Ordering::Equal => match self.attribute.cmp(&other.attribute) {
+                Ordering::Equal => self.value.cmp(&other.value),
+                Ordering::Greater => Ordering::Greater,
+                Ordering::Less => Ordering::Less,
+            },
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Less => Ordering::Less,
+        }
+    }
+}
+
+impl PartialOrd for PairMeta {
+    fn partial_cmp(&self, other: &PairMeta) -> Option<Ordering> {
+        Some(self.cmp(&other))
+    }
 }
 
 impl PairMeta {

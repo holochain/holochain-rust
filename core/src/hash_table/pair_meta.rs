@@ -99,13 +99,30 @@ pub mod tests {
         "meta-attribute".into()
     }
 
+    pub fn test_attribute_b() -> String {
+        "another-attribute".into()
+    }
+
     pub fn test_value() -> String {
         "meta value".into()
+    }
+
+    pub fn test_value_b() -> String {
+        "another value".into()
     }
 
     /// returns dummy pair meta for testing
     pub fn test_pair_meta() -> PairMeta {
         PairMeta::new(&test_keys(), &test_pair(), &test_attribute(), &test_value())
+    }
+
+    pub fn test_pair_meta_a() -> PairMeta {
+        test_pair_meta()
+    }
+
+    /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
+    pub fn test_pair_meta_b() -> PairMeta {
+        PairMeta::new(&test_keys(), &test_pair(), &test_attribute_b(), &test_value_b())
     }
 
     #[test]

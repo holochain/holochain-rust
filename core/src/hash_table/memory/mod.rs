@@ -107,6 +107,7 @@ impl HashTable for MemTable {
             .filter(|&m| m.pair() == pair.key())
             .cloned()
             .collect::<Vec<PairMeta>>();
+        // @TODO should this be sorted at all at this point?
         metas.sort();
         Ok(metas)
     }
@@ -122,6 +123,9 @@ pub mod tests {
     use hash_table::pair::tests::test_pair_a;
     use hash_table::pair::tests::test_pair_b;
     use hash_table::pair_meta::PairMeta;
+    use hash_table::pair_meta::tests::test_pair_meta;
+    use hash_table::pair_meta::tests::test_pair_meta_a;
+    use hash_table::pair_meta::tests::test_pair_meta_b;
     use hash_table::status::STATUS_NAME;
     use hash_table::status::LINK_NAME;
     use hash_table::status::CRUDStatus;
@@ -201,4 +205,33 @@ pub mod tests {
         );
     }
 
+    #[test]
+    /// PairMeta can round trip through table.assert_meta() and table.get_meta()
+    fn meta_round_trip() {
+        let mut ht = test_table();
+        let m = test_pair_meta();
+
+        assert_eq!(None, ht.get_meta(&m.key()).unwrap());
+
+        ht.assert_meta(&m).unwrap();
+        assert_eq!(Some(m.clone()), ht.get_meta(&m.key()).unwrap());
+    }
+
+    #[test]
+    /// all PairMeta for a Pair can be retrieved with get_pair_meta
+    fn get_pair_meta() {
+        let mut ht = test_table();
+        let p = test_pair();
+        let m1 = test_pair_meta_a();
+        let m2 = test_pair_meta_b();
+        let empty_vec: Vec<PairMeta> = Vec::new();
+
+        assert_eq!(empty_vec, ht.get_pair_meta(&p).unwrap());
+
+        ht.assert_meta(&m1).unwrap();
+        assert_eq!(vec![m1.clone()], ht.get_pair_meta(&p).unwrap());
+
+        ht.assert_meta(&m2).unwrap();
+        assert_eq!(vec![m2.clone(), m1.clone(),], ht.get_pair_meta(&p).unwrap());
+    }
 }

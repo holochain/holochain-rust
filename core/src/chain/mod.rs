@@ -5,16 +5,16 @@ use hash_table::{entry::Entry, pair::Pair};
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct ChainIterator {
+pub struct ChainIterator<T: HashTable> {
 
-    table: Rc<HashTable>,
+    table: Rc<T>,
     current: Option<Pair>,
 
 }
 
-impl ChainIterator {
+impl<T: HashTable> ChainIterator<T> {
 
-    pub fn new<HT: 'static + HashTable> (table: Rc<HashTable>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new (table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
         ChainIterator{
             current: pair.clone(),
             table: Rc::clone(&table),
@@ -27,7 +27,7 @@ impl ChainIterator {
 
 }
 
-impl Iterator for ChainIterator {
+impl<T: HashTable> Iterator for ChainIterator<T> {
 
     type Item = Pair;
 
@@ -100,13 +100,13 @@ impl<T: HashTable> Chain<T> {
         }
     }
 
-    // fn validate(&self) -> bool {
-    //     self.pairs.iter().all(|p| p.validate())
-    // }
-    //
-    // pub fn iter(&self) -> ChainIterator {
-    //     ChainIterator::new(&self.table(), &self.top())
-    // }
+    pub fn validate(&self) -> bool {
+        self.iter().all(|p| p.validate())
+    }
+
+    pub fn iter(&self) -> ChainIterator<T> {
+        ChainIterator::new(self.table(), &self.top())
+    }
 
     pub fn get (&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         self.table.get(k)
@@ -241,6 +241,7 @@ pub mod tests {
     }
 
     #[test]
+    /// test chain.push() and chain.get() together
     fn round_trip() {
         let mut c = test_chain();
         let e = test_entry();
@@ -249,6 +250,23 @@ pub mod tests {
             Some(p.clone()),
             c.get(&p.key()).unwrap(),
         );
+    }
+
+    #[test]
+    /// test chain.validate()
+    fn validate() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+
+        assert!(chain.validate());
+
+        chain.push(&e1).unwrap();
+        assert!(chain.validate());
+
+        chain.push(&e2).unwrap();
+        assert!(chain.validate());
     }
 
 }

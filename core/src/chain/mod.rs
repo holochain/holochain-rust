@@ -104,14 +104,14 @@ impl<T: HashTable> Chain<T> {
 
     fn push_pair (&mut self, pair: Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
-            return Result::Err(HolochainError::new("attempted to push an invalid pair for this chain"))
+            return Err(HolochainError::new("attempted to push an invalid pair for this chain"))
         }
 
         let top_pair = self.top().and_then(|p| Some(p.key()));
         let next_pair = pair.header().next();
 
         if top_pair != next_pair {
-            return Result::Err(HolochainError::new(
+            return Err(HolochainError::new(
                 &format!(
                     "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
                     top_pair.clone(), next_pair.clone()

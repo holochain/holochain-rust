@@ -3,6 +3,7 @@ use error::HolochainError;
 use hash_table::HashTable;
 use hash_table::{entry::Entry, pair::Pair};
 use std::rc::Rc;
+use serde_json;
 
 #[derive(Clone)]
 pub struct ChainIterator<T: HashTable> {
@@ -138,6 +139,11 @@ impl<T: HashTable> Chain<T> {
                 .iter()
                 .find(|p| p.header().entry_type() == t)
         )
+    }
+
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        let as_seq = self.iter().collect::<Vec<Pair>>();
+        serde_json::to_string(&as_seq)
     }
 
 }
@@ -387,6 +393,23 @@ pub mod tests {
             assert_eq!(expected[i], p);
             i = i + 1;
         }
+    }
+
+    #[test]
+    /// test JSON to_json() implementation
+    fn to_json() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+        let e3 = test_entry_a();
+
+        chain.push(&e1).unwrap();
+        chain.push(&e2).unwrap();
+        chain.push(&e3).unwrap();
+
+        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"time\":\"\",\"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]";
+        assert_eq!(expected_json, chain.to_json().unwrap());
     }
 
 }

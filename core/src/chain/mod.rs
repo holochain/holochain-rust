@@ -25,6 +25,7 @@ impl<T: HashTable> ChainIterator<T> {
         }
     }
 
+    /// returns the current pair representing the iterator internal state
     fn current(&self) -> Option<Pair> {
         self.current.clone()
     }

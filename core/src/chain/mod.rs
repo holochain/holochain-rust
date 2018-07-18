@@ -279,4 +279,23 @@ pub mod tests {
         );
     }
 
+    #[test]
+    /// test chain.get()
+    fn get() {
+        let mut chain = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+        let e3 = test_entry_a();
+
+        let p1 = chain.push(&e1).unwrap();
+        let p2 = chain.push(&e2).unwrap();
+        let p3 = chain.push(&e3).unwrap();
+
+        assert_eq!(None, chain.get("").unwrap());
+        assert_eq!(Some(p1.clone()), chain.get(&p1.key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get(&p2.key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get(&p3.key()).unwrap());
+    }
+
 }

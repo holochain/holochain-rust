@@ -31,11 +31,11 @@ impl MemTable {
 
 impl HashTable for MemTable {
 
-    fn open(&mut self) -> Result<(), HolochainError> {
+    fn setup(&mut self) -> Result<(), HolochainError> {
         Ok(())
     }
 
-    fn close(&mut self) -> Result<(), HolochainError> {
+    fn teardown(&mut self) -> Result<(), HolochainError> {
         Ok(())
     }
 
@@ -143,17 +143,17 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for ht.open()
-    fn open() {
+    /// tests for ht.setup()
+    fn setup() {
         let mut ht = test_table();
-        assert_eq!(Ok(()), ht.open());
+        assert_eq!(Ok(()), ht.setup());
     }
 
     #[test]
-    /// tests for ht.close()
-    fn close() {
+    /// tests for ht.teardown()
+    fn teardown() {
         let mut ht = test_table();
-        assert_eq!(Ok(()), ht.close());
+        assert_eq!(Ok(()), ht.teardown());
     }
 
     #[test]

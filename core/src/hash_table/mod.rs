@@ -12,9 +12,9 @@ use hash_table::pair_meta::PairMeta;
 
 pub trait HashTable {
 
-    // state changes
-    fn open (&mut self) -> Result<(), HolochainError>;
-    fn close (&mut self) -> Result<(), HolochainError>;
+    // internal state management
+    fn setup (&mut self) -> Result<(), HolochainError>;
+    fn teardown (&mut self) -> Result<(), HolochainError>;
 
     // crud
     /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced

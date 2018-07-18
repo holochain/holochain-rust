@@ -1,7 +1,7 @@
-use hash_table::pair::Pair;
 use agent::keys::Keys;
-use multihash::Hash;
 use hash::serializable_to_b58_hash;
+use hash_table::pair::Pair;
+use multihash::Hash;
 use std::cmp::Ordering;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -49,12 +49,11 @@ impl PartialOrd for PairMeta {
 }
 
 impl PairMeta {
-
     /// Builds a new PairMeta from EAV and agent keys, where E is an existing Pair
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
     pub fn new(keys: &Keys, pair: &Pair, attribute: &str, value: &str) -> PairMeta {
-        PairMeta{
+        PairMeta {
             pair: pair.key(),
             attribute: attribute.into(),
             value: value.into(),
@@ -86,17 +85,14 @@ impl PairMeta {
     pub fn key(&self) -> String {
         serializable_to_b58_hash(&self, Hash::SHA2256)
     }
-
 }
 
 #[cfg(test)]
 pub mod tests {
 
     use super::PairMeta;
-    use hash_table::pair::tests::test_pair;
-    use hash_table::pair::tests::test_pair_a;
-    use hash_table::pair::tests::test_pair_b;
     use agent::keys::tests::test_keys;
+    use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
     use std::cmp::Ordering;
 
     /// dummy test attribute name
@@ -141,7 +137,12 @@ pub mod tests {
 
     /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
     pub fn test_pair_meta_b() -> PairMeta {
-        PairMeta::new(&test_keys(), &test_pair(), &test_attribute_b(), &test_value_b())
+        PairMeta::new(
+            &test_keys(),
+            &test_pair(),
+            &test_attribute_b(),
+            &test_value_b(),
+        )
     }
 
     #[test]

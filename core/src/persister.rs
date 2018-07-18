@@ -30,8 +30,8 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::mpsc::channel;
     use hash_table::entry::tests::test_entry;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate() {

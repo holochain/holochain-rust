@@ -1,5 +1,5 @@
 use chain::Chain;
-use hash_table::{HashTable, entry::Entry, header::Header};
+use hash_table::{entry::Entry, header::Header, HashTable};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -17,7 +17,7 @@ impl Pair {
     /// now be valid, the new Y' will include correct headers pointing to X.
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn new<T: HashTable> (chain: &Chain<T>, entry: &Entry) -> Pair {
+    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry);
 
         let p = Pair {
@@ -64,10 +64,12 @@ impl Pair {
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use hash_table::{entry::Entry, header::Header};
-    use hash_table::entry::tests::test_entry;
-    use hash_table::entry::tests::test_entry_b;
     use chain::tests::test_chain;
+    use hash_table::{
+        entry::{
+            tests::{test_entry, test_entry_b}, Entry,
+        }, header::Header,
+    };
 
     /// dummy pair
     pub fn test_pair() -> Pair {

@@ -1,8 +1,7 @@
-use hash_table::entry::Entry;
 use chain::Chain;
 use hash;
+use hash_table::{entry::Entry, HashTable};
 use multihash::Hash;
-use hash_table::HashTable;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -120,9 +119,8 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use hash_table::{entry::Entry, header::Header};
     use chain::tests::test_chain;
-    use hash_table::pair::tests::test_pair;
+    use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {

@@ -1,11 +1,12 @@
 pub mod keys;
 
 use agent::keys::Keys;
-use hash_table::entry::Entry;
-use chain::{entry::Entry, memory::MemChain, SourceChain};
+use chain::Chain;
+use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use state;
-use std::sync::{mpsc::Sender, Arc};
-use hash_table::pair::Pair;
+use std::{
+    rc::Rc, sync::{mpsc::Sender, Arc},
+};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
@@ -54,9 +55,10 @@ pub fn reduce(
             match *agent_action {
                 Action::Commit(ref entry) => {
                     // add entry to source chain
-                    if let Some(mut chain) = new_state.source_chain.clone() {
-                        chain.push(entry);
-                    }
+                    // @TODO this does nothing! it isn't exactly clear what it should do either
+                    // @see https://github.com/holochain/holochain-rust/issues/148
+                    let mut chain = Chain::new(Rc::new(MemTable::new()));
+                    chain.push(&entry).unwrap();
                 }
             }
             Arc::new(new_state)

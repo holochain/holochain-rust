@@ -20,13 +20,13 @@ pub mod chain;
 pub mod context;
 pub mod error;
 pub mod hash;
+pub mod hash_table;
 pub mod instance;
 pub mod logger;
 pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
-pub mod hash_table;
 
 #[cfg(test)]
 mod tests {

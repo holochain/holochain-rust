@@ -45,11 +45,13 @@ mod tests {
     /// known hash for a serializable something
     fn serializable_to_b58_hash() {
         #[derive(Serialize)]
-        struct Foo{foo: u8};
+        struct Foo {
+            foo: u8,
+        };
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            super::serializable_to_b58_hash(Foo{foo: 5}, Hash::SHA2256),
+            super::serializable_to_b58_hash(Foo { foo: 5 }, Hash::SHA2256),
         );
     }
 }

@@ -3,12 +3,9 @@ use std::collections::HashMap;
 use error::HolochainError;
 
 use agent::keys::Keys;
-use hash_table::status::CRUDStatus;
-use hash_table::pair::Pair;
-use hash_table::HashTable;
-use hash_table::pair_meta::PairMeta;
-use hash_table::status::STATUS_NAME;
-use hash_table::status::LINK_NAME;
+use hash_table::{
+    pair::Pair, pair_meta::PairMeta, status::{CRUDStatus, LINK_NAME, STATUS_NAME}, HashTable,
+};
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct MemTable {
@@ -17,20 +14,15 @@ pub struct MemTable {
 }
 
 impl MemTable {
-
     pub fn new() -> MemTable {
-
-        MemTable{
+        MemTable {
             pairs: HashMap::new(),
             meta: HashMap::new(),
         }
-
     }
-
 }
 
 impl HashTable for MemTable {
-
     fn setup(&mut self) -> Result<(), HolochainError> {
         Ok(())
     }
@@ -48,48 +40,41 @@ impl HashTable for MemTable {
         Ok(self.pairs.get(key.into()).and_then(|p| Some(p.clone())))
     }
 
-    fn modify(&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
+    fn modify(
+        &mut self,
+        keys: &Keys,
+        old_pair: &Pair,
+        new_pair: &Pair,
+    ) -> Result<(), HolochainError> {
         let result = self.commit(new_pair);
         if result.is_err() {
-            return result
+            return result;
         }
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        let result = self.assert_meta(
-            &PairMeta::new(
-                keys,
-                &old_pair,
-                STATUS_NAME,
-                &CRUDStatus::MODIFIED.bits().to_string(),
-            )
-        );
+        let result = self.assert_meta(&PairMeta::new(
+            keys,
+            &old_pair,
+            STATUS_NAME,
+            &CRUDStatus::MODIFIED.bits().to_string(),
+        ));
         if result.is_err() {
-            return result
+            return result;
         }
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(
-            &PairMeta::new(
-                keys,
-                &old_pair,
-                LINK_NAME,
-                &new_pair.key(),
-            )
-        )
-
+        self.assert_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
     }
 
     fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        self.assert_meta(
-            &PairMeta::new(
-                keys,
-                &pair,
-                STATUS_NAME,
-                &CRUDStatus::DELETED.bits().to_string(),
-            )
-        )
+        self.assert_meta(&PairMeta::new(
+            keys,
+            &pair,
+            STATUS_NAME,
+            &CRUDStatus::DELETED.bits().to_string(),
+        ))
     }
 
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
@@ -102,7 +87,8 @@ impl HashTable for MemTable {
     }
 
     fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let mut metas = self.meta
+        let mut metas = self
+            .meta
             .values()
             .filter(|&m| m.pair() == pair.key())
             .cloned()
@@ -112,25 +98,19 @@ impl HashTable for MemTable {
         metas.sort();
         Ok(metas)
     }
-
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use hash_table::HashTable;
-    use hash_table::memory::MemTable;
-    use hash_table::pair::tests::test_pair;
-    use hash_table::pair::tests::test_pair_a;
-    use hash_table::pair::tests::test_pair_b;
-    use hash_table::pair_meta::PairMeta;
-    use hash_table::pair_meta::tests::test_pair_meta;
-    use hash_table::pair_meta::tests::test_pair_meta_a;
-    use hash_table::pair_meta::tests::test_pair_meta_b;
-    use hash_table::status::STATUS_NAME;
-    use hash_table::status::LINK_NAME;
-    use hash_table::status::CRUDStatus;
     use agent::keys::tests::test_keys;
+    use hash_table::{
+        memory::MemTable, pair::tests::{test_pair, test_pair_a, test_pair_b},
+        pair_meta::{
+            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b}, PairMeta,
+        },
+        status::{CRUDStatus, LINK_NAME, STATUS_NAME}, HashTable,
+    };
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -178,7 +158,12 @@ pub mod tests {
         assert_eq!(
             vec![
                 PairMeta::new(&test_keys(), &p1, LINK_NAME, &p2.key()),
-                PairMeta::new(&test_keys(), &p1, STATUS_NAME, &CRUDStatus::MODIFIED.bits().to_string()),
+                PairMeta::new(
+                    &test_keys(),
+                    &p1,
+                    STATUS_NAME,
+                    &CRUDStatus::MODIFIED.bits().to_string(),
+                ),
             ],
             ht.get_pair_meta(&p1).unwrap()
         );
@@ -199,9 +184,12 @@ pub mod tests {
 
         ht.retract(&test_keys(), &p).unwrap();
         assert_eq!(
-            vec![
-                PairMeta::new(&test_keys(), &p, STATUS_NAME, &CRUDStatus::DELETED.bits().to_string()),
-            ],
+            vec![PairMeta::new(
+                &test_keys(),
+                &p,
+                STATUS_NAME,
+                &CRUDStatus::DELETED.bits().to_string(),
+            )],
             ht.get_pair_meta(&p).unwrap(),
         );
     }
@@ -233,6 +221,6 @@ pub mod tests {
         assert_eq!(vec![m1.clone()], ht.get_pair_meta(&p).unwrap());
 
         ht.assert_meta(&m2).unwrap();
-        assert_eq!(vec![m2.clone(), m1.clone(),], ht.get_pair_meta(&p).unwrap());
+        assert_eq!(vec![m2.clone(), m1.clone()], ht.get_pair_meta(&p).unwrap());
     }
 }

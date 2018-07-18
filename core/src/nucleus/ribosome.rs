@@ -6,7 +6,6 @@ use instance::Observer;
 use serde_json;
 use state;
 use std::sync::mpsc::Sender;
-use hash_table::entry::Entry;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder, MemoryRef,
@@ -83,7 +82,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     // Create Chain Entry
     let entry_input = res_entry.unwrap();
     let entry =
-        ::chain::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
+        ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));

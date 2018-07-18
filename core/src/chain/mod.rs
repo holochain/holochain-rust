@@ -1,25 +1,20 @@
 // pub mod memory;
 use error::HolochainError;
-use hash_table::HashTable;
-use hash_table::{entry::Entry, pair::Pair};
-use std::rc::Rc;
+use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;
-use std::fmt;
+use std::{fmt, rc::Rc};
 
 #[derive(Clone)]
 pub struct ChainIterator<T: HashTable> {
-
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
     table: Rc<T>,
     current: Option<Pair>,
-
 }
 
 impl<T: HashTable> ChainIterator<T> {
-
-    pub fn new (table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
-        ChainIterator{
+    pub fn new(table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
+        ChainIterator {
             current: pair.clone(),
             table: Rc::clone(&table),
         }
@@ -29,11 +24,9 @@ impl<T: HashTable> ChainIterator<T> {
     fn current(&self) -> Option<Pair> {
         self.current.clone()
     }
-
 }
 
 impl<T: HashTable> Iterator for ChainIterator<T> {
-
     type Item = Pair;
 
     fn next(&mut self) -> Option<Pair> {
@@ -45,16 +38,13 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
                         .and_then(|h| self.table.get(&h).unwrap());
         ret
     }
-
 }
 
 pub struct Chain<T: HashTable> {
-
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
     table: Rc<T>,
     top: Option<Pair>,
-
 }
 
 impl<T: HashTable> PartialEq for Chain<T> {
@@ -76,7 +66,6 @@ impl<T: HashTable> fmt::Debug for Chain<T> {
 }
 
 impl<T: HashTable> IntoIterator for Chain<T> {
-
     type Item = Pair;
     type IntoIter = ChainIterator<T>;
 
@@ -86,10 +75,9 @@ impl<T: HashTable> IntoIterator for Chain<T> {
 }
 
 impl<T: HashTable> Chain<T> {
-
     /// build a new Chain against an existing HashTable
     pub fn new(table: Rc<T>) -> Chain<T> {
-        Chain{
+        Chain {
             top: None,
             table: Rc::clone(&table),
         }
@@ -106,21 +94,22 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// private pair-oriented version of push() (which expects Entries)
-    fn push_pair (&mut self, pair: Pair) -> Result<Pair, HolochainError> {
+    fn push_pair(&mut self, pair: Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
-            return Err(HolochainError::new("attempted to push an invalid pair for this chain"))
+            return Err(HolochainError::new(
+                "attempted to push an invalid pair for this chain",
+            ));
         }
 
         let top_pair = self.top().and_then(|p| Some(p.key()));
         let next_pair = pair.header().next();
 
         if top_pair != next_pair {
-            return Err(HolochainError::new(
-                &format!(
-                    "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                    top_pair.clone(), next_pair.clone()
-                )
-            ))
+            return Err(HolochainError::new(&format!(
+                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                top_pair.clone(),
+                next_pair.clone()
+            )));
         }
 
         // @TODO implement incubator for thread safety
@@ -156,30 +145,24 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    pub fn get (&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+    pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         self.table.get(k)
     }
 
     /// get an Entry by Entry key from the HashTable if it exists
-    pub fn get_entry (&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    pub fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        Ok(
-            self
+        Ok(self
                 .iter()
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash)
-        )
+                .find(|p| p.entry().hash() == entry_hash))
     }
 
     /// get the top Pair by Entry type
     pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(
-            self
-                .iter()
-                .find(|p| p.header().entry_type() == t)
-        )
+        Ok(self.iter().find(|p| p.header().entry_type() == t))
     }
 
     /// get the entire chain, top to bottom as a JSON array
@@ -197,26 +180,20 @@ impl<T: HashTable> Chain<T> {
         let mut chain = Chain::new(table);
         for p in as_seq {
             chain.push_pair(p).unwrap();
-        };
+        }
         chain
     }
-
 }
 
 #[cfg(test)]
 pub mod tests {
 
     use super::Chain;
-    use hash_table::entry::tests::test_entry;
-    use hash_table::entry::tests::test_entry_a;
-    use hash_table::entry::tests::test_entry_b;
-    use hash_table::entry::tests::test_type_a;
-    use hash_table::entry::tests::test_type_b;
-    use hash_table::memory::tests::test_table;
-    use hash_table::HashTable;
-    use hash_table::pair::Pair;
+    use hash_table::{
+        entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
+        memory::{tests::test_table, MemTable}, pair::Pair, HashTable,
+    };
     use std::rc::Rc;
-    use hash_table::memory::MemTable;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {
@@ -274,18 +251,9 @@ pub mod tests {
         // test that adding something to the chain adds to the table
         let p = c.push(&test_entry()).unwrap();
         let tr = Rc::new(c.table());
-        assert_eq!(
-            Some(p.clone()),
-            c.table().get(&p.key()).unwrap(),
-        );
-        assert_eq!(
-            Some(p.clone()),
-            tr.get(&p.key()).unwrap(),
-        );
-        assert_eq!(
-            c.table().get(&p.key()).unwrap(),
-            tr.get(&p.key()).unwrap(),
-        );
+        assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap(),);
+        assert_eq!(Some(p.clone()), tr.get(&p.key()).unwrap(),);
+        assert_eq!(c.table().get(&p.key()).unwrap(), tr.get(&p.key()).unwrap(),);
     }
 
     #[test]
@@ -335,10 +303,7 @@ pub mod tests {
         let mut c = test_chain();
         let e = test_entry();
         let p = c.push(&e).unwrap();
-        assert_eq!(
-            Some(p.clone()),
-            c.get(&p.key()).unwrap(),
-        );
+        assert_eq!(Some(p.clone()), c.get(&p.key()).unwrap(),);
     }
 
     #[test]
@@ -413,9 +378,18 @@ pub mod tests {
 
         assert_eq!(None, chain.get_entry("").unwrap());
         // @TODO at this point we have p3 with the same entry key as p1...
-        assert_eq!(Some(p3.clone()), chain.get_entry(&p1.entry().key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get_entry(&p2.entry().key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get_entry(&p3.entry().key()).unwrap());
+        assert_eq!(
+            Some(p3.clone()),
+            chain.get_entry(&p1.entry().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p2.clone()),
+            chain.get_entry(&p2.entry().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p3.clone()),
+            chain.get_entry(&p3.entry().key()).unwrap()
+        );
     }
 
     #[test]

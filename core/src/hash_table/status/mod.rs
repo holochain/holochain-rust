@@ -1,4 +1,3 @@
-
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
 pub const STATUS_NAME: &str = "crud-status";

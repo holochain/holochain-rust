@@ -10,27 +10,7 @@ use error::HolochainError;
 use hash_table::pair::Pair;
 use hash_table::pair_meta::PairMeta;
 
-// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
-pub trait HashTableClone {
-    fn clone_box(&self) -> Box<HashTable>;
-}
-
-impl<HT> HashTableClone for HT
-    where
-        HT: 'static + HashTable + Clone,
-        {
-            fn clone_box(&self) -> Box<HashTable> {
-                Box::new(self.clone())
-            }
-}
-
-impl Clone for Box<HashTable> {
-    fn clone(&self) -> Box<HashTable> {
-        self.clone_box()
-    }
-}
-
-pub trait HashTable: HashTableClone + Send + Sync {
+pub trait HashTable {
 
     // state changes
     fn open (&mut self) -> Result<(), HolochainError>;

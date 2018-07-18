@@ -50,6 +50,8 @@ pub trait HashTable: HashTableClone + Send + Sync {
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
     /// lookup a PairMeta from the HashTable by key
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
+    /// lookup all PairMeta for a given Pair
+    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError>;
 
     // query
     // @TODO how should we handle queries?

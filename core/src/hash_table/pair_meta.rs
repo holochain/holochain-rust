@@ -40,6 +40,26 @@ impl PairMeta {
         }
     }
 
+    /// getter for pair clone
+    pub fn pair(&self) -> String {
+        self.pair.clone()
+    }
+
+    /// getter for attribute clone
+    pub fn attribute(&self) -> String {
+        self.attribute.clone()
+    }
+
+    /// getter for value clone
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    // getter for source clone
+    pub fn source(&self) -> String {
+        self.source.clone()
+    }
+
     /// the key for hash table lookups, e.g. table.get_meta()
     pub fn key(&self) -> String {
         serializable_to_b58_hash(&self, Hash::SHA2256)
@@ -71,5 +91,29 @@ pub mod tests {
     /// smoke test PairMeta::new()
     fn new() {
         test_pair_meta();
+    }
+
+    #[test]
+    /// test meta.pair()
+    fn pair() {
+        assert_eq!(test_pair_meta().pair(), test_pair().key());
+    }
+
+    #[test]
+    /// test meta.attribute()
+    fn attribute() {
+        assert_eq!(test_pair_meta().attribute(), test_attribute());
+    }
+
+    #[test]
+    /// test meta.value()
+    fn value() {
+        assert_eq!(test_pair_meta().value(), test_value());
+    }
+
+    #[test]
+    /// test meta.source()
+    fn source() {
+        assert_eq!(test_pair_meta().source(), test_keys().node_id());
     }
 }

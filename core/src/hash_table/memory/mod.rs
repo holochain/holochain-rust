@@ -102,6 +102,16 @@ impl HashTable for MemTable {
         Ok(self.meta.get(key).and_then(|m| Some(m.clone())))
     }
 
+    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+        Ok(
+            self.meta
+            .values()
+            .filter(|&m| m.pair() == pair.key())
+            .cloned()
+            .collect::<Vec<PairMeta>>()
+        )
+    }
+
 }
 
 #[cfg(test)]
@@ -110,6 +120,8 @@ pub mod tests {
     use hash_table::HashTable;
     use hash_table::memory::MemTable;
     use hash_table::pair::tests::test_pair;
+    use hash_table::pair::tests::test_pair_a;
+    use hash_table::pair::tests::test_pair_b;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -136,12 +148,23 @@ pub mod tests {
     }
 
     #[test]
-    /// round trip
-    fn round_trip() {
+    /// Pairs can round trip through table.commit() and table.get()
+    fn pair_round_trip() {
         let mut ht = test_table();
         let p = test_pair();
         ht.commit(&p).unwrap();
         assert_eq!(ht.get(&p.key()), Result::Ok(Some(p)));
+    }
+
+    #[test]
+    /// Pairs can be modified through table.modify()
+    fn modify() {
+        let mut ht = test_table();
+        let p1 = test_pair_a();
+        let p2 = test_pair_b();
+
+        ht.commit(&p1).unwrap();
+        ht.modify(&p1, &p2).unwrap();
     }
 
 }

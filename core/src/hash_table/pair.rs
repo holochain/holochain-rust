@@ -66,10 +66,19 @@ pub mod tests {
     use super::Pair;
     use hash_table::{entry::Entry, header::Header};
     use hash_table::entry::tests::test_entry;
+    use hash_table::entry::tests::test_entry_b;
     use chain::tests::test_chain;
 
     pub fn test_pair() -> Pair {
         Pair::new(&test_chain(), &test_entry())
+    }
+
+    pub fn test_pair_a() -> Pair {
+        test_pair()
+    }
+
+    pub fn test_pair_b() -> Pair {
+        Pair::new(&test_chain(), &test_entry_b())
     }
 
     #[test]

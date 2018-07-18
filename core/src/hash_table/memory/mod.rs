@@ -108,6 +108,7 @@ impl HashTable for MemTable {
             .cloned()
             .collect::<Vec<PairMeta>>();
         // @TODO should this be sorted at all at this point?
+        // @see https://github.com/holochain/holochain-rust/issues/144
         metas.sort();
         Ok(metas)
     }

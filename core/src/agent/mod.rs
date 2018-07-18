@@ -2,6 +2,7 @@ pub mod keys;
 
 use agent::keys::Keys;
 use hash_table::entry::Entry;
+use chain::{entry::Entry, memory::MemChain, SourceChain};
 use state;
 use std::sync::{mpsc::Sender, Arc};
 use hash_table::pair::Pair;
@@ -51,9 +52,11 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref _entry) => {
-                    // @TODO  add entry to source chain
-                    // @see #57
+                Action::Commit(ref entry) => {
+                    // add entry to source chain
+                    if let Some(mut chain) = new_state.source_chain.clone() {
+                        chain.push(entry);
+                    }
                 }
             }
             Arc::new(new_state)

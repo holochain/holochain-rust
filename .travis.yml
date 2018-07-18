@@ -1,6 +1,10 @@
+language: rust
+
+cache: cargo
+
 services:
   - docker
-  
+
 dist: trusty
 
 install:

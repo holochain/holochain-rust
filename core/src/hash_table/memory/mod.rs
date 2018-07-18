@@ -182,4 +182,23 @@ pub mod tests {
         assert_eq!(empty_vec, ht.get_pair_meta(&p2).unwrap());
     }
 
+    #[test]
+    /// Pairs can be retracted through table.retract()
+    fn retract() {
+        let mut ht = test_table();
+        let p = test_pair();
+        let empty_vec: Vec<PairMeta> = Vec::new();
+
+        ht.commit(&p).unwrap();
+        assert_eq!(empty_vec, ht.get_pair_meta(&p).unwrap());
+
+        ht.retract(&test_keys(), &p).unwrap();
+        assert_eq!(
+            vec![
+                PairMeta::new(&test_keys(), &p, STATUS_NAME, &CRUDStatus::DELETED.bits().to_string()),
+            ],
+            ht.get_pair_meta(&p).unwrap(),
+        );
+    }
+
 }

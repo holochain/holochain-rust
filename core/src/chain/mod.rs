@@ -47,7 +47,6 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
 
 }
 
-// #[derive(Clone, Debug, PartialEq)]
 pub struct Chain<T: HashTable> {
 
     // @TODO thread safe table references
@@ -59,11 +58,15 @@ pub struct Chain<T: HashTable> {
 
 impl<T: HashTable> PartialEq for Chain<T> {
     fn eq(&self, other: &Chain<T>) -> bool {
+        // an invalid chain is like NaN... not even equal to itself
         self.validate() &&
         other.validate() &&
+        // header hashing ensures that if the tops match the whole chain matches
         self.top() == other.top()
     }
 }
+
+impl<T: HashTable> Eq for Chain<T> {}
 
 impl<T: HashTable> fmt::Debug for Chain<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -208,6 +211,27 @@ pub mod tests {
     /// smoke test for new chains
     fn new() {
         test_chain();
+    }
+
+    #[test]
+    /// test chain equality
+    fn eq() {
+        let mut c1 = test_chain();
+        let mut c2 = test_chain();
+        let mut c3 = test_chain();
+
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+
+        c1.push(&e1).unwrap();
+        c2.push(&e1).unwrap();
+        c3.push(&e2).unwrap();
+
+        assert_eq!(c1.top(), c2.top());
+        assert_eq!(c1, c2);
+
+        assert_ne!(c1, c3);
+        assert_ne!(c2, c3);
     }
 
     #[test]

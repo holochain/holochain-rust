@@ -44,8 +44,23 @@ impl Handler {
 }
 
 pub trait Transport {
-    //    fn initialize(config);
+    /** initialize the transport
+     * this might be used for example in a TCP based transport to specify a listening port for
+     * for the transport.
+     */
+    fn initialize(&mut self, config: Option<String>) -> Result<(), Error>;
+
+    /** return a default config with best configuration guesses for the transport
+     */
+    fn get_default_config(&self) -> String;
+
+    /** register a peer as a node in the transport
+     */
     fn new_node(&mut self, addr: SerializedAddress, handler: Option<Handler>) -> Result<(), Error>;
+
+    /** send a message to a node over the transport
+     * assumes that the sending address was registered locally with new_node
+     */
     fn send(
         &mut self,
         from: &SerializedAddress,
@@ -53,6 +68,11 @@ pub trait Transport {
         msg: SerializedMessage,
         callback: SendResponseClosure,
     ) -> Result<(), Error>;
+
+    /** deliver a message to a given recipient
+     * assumes that recipient address was registered locally with new_node
+     * this function may be called by the routing layer to bridge across transports
+     */
     fn deliver(
         &mut self,
         from: &SerializedAddress,
@@ -83,6 +103,7 @@ mod tests {
     }
 
     pub struct SimpleTransport {
+        config: String,
         nodes: Vec<Arc<SimpleNode>>,
         handlers: HashMap<SerializedAddress, Handler>,
     }
@@ -90,6 +111,7 @@ mod tests {
     impl SimpleTransport {
         pub fn new() -> SimpleTransport {
             SimpleTransport {
+                config: "".into(),
                 nodes: Vec::new(),
                 handlers: HashMap::new(),
             }
@@ -108,6 +130,22 @@ mod tests {
     }
 
     impl Transport for SimpleTransport {
+        fn initialize(&mut self, config: Option<String>) -> Result<(), Error> {
+            if let Some(cfg) = config {
+                if cfg == "".to_string() {
+                    bail!("null config!");
+                }
+                self.config = cfg;
+            } else {
+                self.config = self.get_default_config();
+            }
+            Ok(())
+        }
+
+        fn get_default_config(&self) -> String {
+            "simple config".into()
+        }
+
         fn send(
             &mut self,
             from: &SerializedAddress,
@@ -143,6 +181,7 @@ mod tests {
                 bail!("error while getting mutable handler for {}", to_str(to));
             }
         }
+
         fn new_node(
             &mut self,
             serialized_addr: SerializedAddress,
@@ -161,6 +200,19 @@ mod tests {
             self.nodes.push(node.clone());
             Ok(())
         }
+    }
+
+    #[test]
+    fn can_initialize() {
+        let mut net = SimpleTransport::new();
+        match net.initialize(Some("".into())) {
+            Err(_) => assert!(true),
+            Ok(()) => assert!(false),
+        }
+        net.initialize(None).unwrap();
+        assert_eq!(net.config, "simple config".to_string());
+        net.initialize(Some("complex config".to_string())).unwrap();
+        assert_eq!(net.config, "complex config".to_string());
     }
 
     #[test]

@@ -129,31 +129,6 @@ impl<T: HashTable> Chain<T> {
 
 }
 
-// pub trait SourceChain:
-//     // IntoIterator +
-//     Serialize {
-//     /// append a pair to the source chain if the pair and new chain are both valid, else panic
-//     fn push(&mut self, &Entry) -> Result<Pair, HolochainError>;
-//
-//     /// returns an iterator referencing pairs from top (most recent) to bottom (genesis)
-//     fn iter(&self) -> std::slice::Iter<Pair>;
-//
-//     /// returns true if system and dApp validation is successful
-//     fn validate(&self) -> bool;
-//
-//     /// returns a pair for a given header hash
-//     fn get(&self, k: &str) -> Option<Pair>;
-//
-//     /// returns a pair for a given entry hash
-//     fn get_entry(&self, k: &str) -> Option<Pair>;
-//
-//     /// returns the top (most recent) pair from the source chain
-//     fn top(&self) -> Option<Pair>;
-//
-//     /// returns the top (most recent) pair of a given type from the source chain
-//     fn top_type(&self, t: &str) -> Option<Pair>;
-// }
-
 #[cfg(test)]
 pub mod tests {
 
@@ -163,6 +138,7 @@ pub mod tests {
     use hash_table::entry::tests::test_entry_b;
     use hash_table::memory::tests::test_table;
     use hash_table::HashTable;
+    use hash_table::pair::Pair;
     use std::rc::Rc;
     use hash_table::memory::MemTable;
 
@@ -279,13 +255,28 @@ pub mod tests {
         let p1 = chain.push(&e1).unwrap();
         let p2 = chain.push(&e2).unwrap();
 
-        let mut vec = Vec::new();
-        for p in chain.iter() {
-            vec.push(p);
-        }
+        assert_eq!(vec![p2, p1], chain.iter().collect::<Vec<Pair>>());
+    }
 
-        assert_eq!(vec![p2, p1], vec);
+    #[test]
+    /// test chain.iter() functional interface
+    fn iter_functional() {
+        let mut chain = test_chain();
 
+        let e1 = test_entry_a();
+        let e2 = test_entry_b();
+
+        let p1 = chain.push(&e1).unwrap();
+        let _p2 = chain.push(&e2).unwrap();
+        let p3 = chain.push(&e1).unwrap();
+
+        assert_eq!(
+            vec![p3, p1],
+            chain
+                .iter()
+                .filter(|p| p.entry().entry_type() == "testEntryType")
+                .collect::<Vec<Pair>>()
+        );
     }
 
 }

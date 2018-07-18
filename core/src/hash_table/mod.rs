@@ -31,100 +31,29 @@ impl Clone for Box<HashTable> {
 
 pub trait HashTable: HashTableClone + Send + Sync {
 
-    // fn box_clone (&self) -> Box<HashTable>;
-    // fn clone (&self) -> HashTable;
-
     // state changes
     fn open (&mut self) -> Result<(), HolochainError>;
     fn close (&mut self) -> Result<(), HolochainError>;
 
     // crud
+    /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
     fn commit (&mut self, pair: &Pair) -> Result<(), HolochainError>;
+    /// lookup a Pair from the HashTable by Pair/Header key
     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError>;
+    /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
     fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError>;
+    /// set the status of a Pair to DELETED
     fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError>;
 
     // meta
+    /// assert a given PairMeta in the HashTable
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+    /// lookup a PairMeta from the HashTable by key
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
 
     // query
+    // @TODO how should we handle queries?
+    // @see https://github.com/holochain/holochain-rust/issues/141
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;
 
 }
-
-// clone_trait_object!(HashTable);
-
-// impl<'a> HashTable for &'a HashTable {
-//
-//     fn open (&mut self) -> Result<(), HolochainError> {
-//         self.open()
-//     }
-//
-//     fn close (&mut self) -> Result<(), HolochainError> {
-//         self.close()
-//     }
-//
-//     // crud
-//     fn commit (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//         self.commit(pair)
-//     }
-//     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-//         self.get(key)
-//     }
-//     fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
-//         self.modify(old_pair, new_pair)
-//     }
-//     fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//         self.retract(pair)
-//     }
-//
-//     // meta
-//     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
-//         self.assert_meta(meta)
-//     }
-// }
-
-// impl HashTable for Box<HashTable> {
-//     fn box_clone(&self) -> Box<HashTable> {
-//         self.clone()
-//     }
-//
-//     fn open (&mut self) -> Result<(), HolochainError> {
-//         self.open()
-//     }
-//     fn close (&mut self) -> Result<(), HolochainError> {
-//         self.close()
-//     }
-//
-//     // crud
-//     fn commit (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//         self.commit(pair)
-//     }
-//     fn get (&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-//         self.get(key)
-//     }
-//     fn modify (&mut self, old_pair: &Pair, new_pair: &Pair) -> Result<(), HolochainError> {
-//         self.modify(old_pair, new_pair)
-//     }
-//     fn retract (&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//         self.retract(pair)
-//     }
-//
-//     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
-//         self.assert_meta(meta)
-//     }
-// }
-
-// https://users.rust-lang.org/t/solved-is-it-possible-to-clone-a-boxed-trait-object/1714/6
-// impl Clone for Box<HashTable> {
-//     fn clone(&self) -> Box<HashTable> {
-//         self.box_clone()
-//     }
-// }
-
-// impl PartialEq for Box<HashTable> {
-//     fn eq(&self, other: &Box<HashTable>) -> bool {
-//         self == other
-//     }
-// }

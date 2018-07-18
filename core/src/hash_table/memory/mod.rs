@@ -4,10 +4,12 @@ use error::HolochainError;
 
 use agent::keys::Key;
 use agent::keys::Keys;
-use hash_table::status::StatusMask;
+use hash_table::status::CRUDStatus;
 use hash_table::pair::Pair;
 use hash_table::HashTable;
 use hash_table::pair_meta::PairMeta;
+use hash_table::status::STATUS_NAME;
+use hash_table::status::LINK_NAME;
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct MemTable {
@@ -29,22 +31,6 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
-
-    // fn box_clone(&self) -> Box<HashTable> {
-    //     Box::new(
-    //         MemTable{
-    //             pairs: self.pairs.clone(),
-    //             meta: self.meta.clone(),
-    //         }
-    //     )
-    // }
-    //
-    // fn clone(&self) -> HashTable {
-    //     MemTable{
-    //         pairs: self.pairs.clone(),
-    //         meta: self.meta.clone(),
-    //     }
-    // }
 
     fn open(&mut self) -> Result<(), HolochainError> {
         Ok(())
@@ -70,14 +56,30 @@ impl HashTable for MemTable {
         }
 
         // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
+        let result = self.assert_meta(
+            &PairMeta::new(
+                &Keys::new(&Key::new(), &Key::new(), ""),
+                &old_pair,
+                STATUS_NAME,
+                &CRUDStatus::MODIFIED.bits().to_string(),
+            )
+        );
+        if result.is_err() {
+            return result
+        }
+
+        // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
         self.assert_meta(
             &PairMeta::new(
                 &Keys::new(&Key::new(), &Key::new(), ""),
                 &old_pair,
-                "status",
-                &StatusMask::MODIFIED.bits().to_string(),
+                LINK_NAME,
+                &new_pair.key(),
             )
         )
+
     }
 
     fn retract(&mut self, pair: &Pair) -> Result<(), HolochainError> {
@@ -85,14 +87,12 @@ impl HashTable for MemTable {
             &PairMeta::new(
                 &Keys::new(&Key::new(), &Key::new(), ""),
                 &pair,
-                "status",
-                &StatusMask::DELETED.bits().to_string(),
+                STATUS_NAME,
+                &CRUDStatus::DELETED.bits().to_string(),
             )
         )
     }
 
-    // EAVTK
-    // pair, attribute name, attribute value, txn id, source, signature
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
         self.meta.insert(meta.key(), meta.clone());
         Ok(())

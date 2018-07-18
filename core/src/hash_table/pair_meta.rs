@@ -188,23 +188,29 @@ pub mod tests {
 
         // sort by pair key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
-        assert!(m_1ax < m_2ax);
         assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
         assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
-        assert!(m_2ax > m_1ax);
         assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
+
+        // pair key with operators
+        assert!(m_1ax < m_2ax);
+        assert!(m_2ax > m_1ax);
         assert!(m_1ay < m_2ax);
 
         // sort by attribute key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
-        assert!(m_1ax < m_1bx);
         assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
+
+        // attribute key with operators
+        assert!(m_1ax < m_1bx);
         assert!(m_1bx > m_1ax);
 
         // sort by attribute value
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
-        assert!(m_1ax < m_1ay);
         assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
+
+        // attribute value with operators
+        assert!(m_1ax < m_1ay);
         assert!(m_1ay > m_1ax);
     }
 }

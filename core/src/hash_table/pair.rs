@@ -69,14 +69,17 @@ pub mod tests {
     use hash_table::entry::tests::test_entry_b;
     use chain::tests::test_chain;
 
+    /// dummy pair
     pub fn test_pair() -> Pair {
         Pair::new(&test_chain(), &test_entry())
     }
 
+    /// dummy pair, same as test_pair()
     pub fn test_pair_a() -> Pair {
         test_pair()
     }
 
+    /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
         Pair::new(&test_chain(), &test_entry_b())
     }

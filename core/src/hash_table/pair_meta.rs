@@ -29,6 +29,7 @@ pub struct PairMeta {
 
 impl Ord for PairMeta {
     fn cmp(&self, other: &PairMeta) -> Ordering {
+        // we want to sort by pair hash, then attribute name, then attribute value
         match self.pair.cmp(&other.pair) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
@@ -98,18 +99,32 @@ pub mod tests {
     use agent::keys::tests::test_keys;
     use std::cmp::Ordering;
 
+    /// dummy test attribute name
     pub fn test_attribute() -> String {
         "meta-attribute".into()
     }
 
+    /// dummy test attribute name, same as test_attribute()
+    pub fn test_attribute_a() -> String {
+        test_attribute()
+    }
+
+    /// dummy test attribute name, differs from test_attribute()
     pub fn test_attribute_b() -> String {
         "another-attribute".into()
     }
 
+    /// dummy test attribute value
     pub fn test_value() -> String {
         "meta value".into()
     }
 
+    /// dummy test attribute value, same as test_value()
+    pub fn test_value_a() -> String {
+        test_value()
+    }
+
+    /// dummy test attribute value, differs from test_value()
     pub fn test_value_b() -> String {
         "another value".into()
     }
@@ -119,6 +134,7 @@ pub mod tests {
         PairMeta::new(&test_keys(), &test_pair(), &test_attribute(), &test_value())
     }
 
+    /// dummy pair meta, same as test_pair_meta()
     pub fn test_pair_meta_a() -> PairMeta {
         test_pair_meta()
     }

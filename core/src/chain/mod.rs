@@ -87,6 +87,7 @@ impl<T: HashTable> IntoIterator for Chain<T> {
 
 impl<T: HashTable> Chain<T> {
 
+    /// build a new Chain against an existing HashTable
     pub fn new(table: Rc<T>) -> Chain<T> {
         Chain{
             top: None,
@@ -94,14 +95,17 @@ impl<T: HashTable> Chain<T> {
         }
     }
 
+    /// returns a clone of the top Pair
     pub fn top(&self) -> Option<Pair> {
         self.top.clone()
     }
 
+    /// returns a reference to the underlying HashTable
     pub fn table(&self) -> Rc<T> {
         Rc::clone(&self.table)
     }
 
+    /// private pair-oriented version of push() (which expects Entries)
     fn push_pair (&mut self, pair: Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
             return Err(HolochainError::new("attempted to push an invalid pair for this chain"))
@@ -132,23 +136,31 @@ impl<T: HashTable> Chain<T> {
         }
     }
 
+    /// push a new Entry on to the top of the Chain
+    /// the Pair for the new Entry is automatically generated and validated against the current top
+    /// Pair to ensure the chain links up correctly across the underlying table data
+    /// the newly created and pushed Pair is returned in the fn Result
     pub fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
         self.push_pair(pair)
     }
 
+    /// returns true if all pairs in the chain pass validation
     pub fn validate(&self) -> bool {
         self.iter().all(|p| p.validate())
     }
 
+    /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     pub fn iter(&self) -> ChainIterator<T> {
         ChainIterator::new(self.table(), &self.top())
     }
 
+    /// get a Pair by Pair/Header key from the HashTable if it exists
     pub fn get (&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         self.table.get(k)
     }
 
+    /// get an Entry by Entry key from the HashTable if it exists
     pub fn get_entry (&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
@@ -161,6 +173,7 @@ impl<T: HashTable> Chain<T> {
         )
     }
 
+    /// get the top Pair by Entry type
     pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
         Ok(
             self
@@ -169,11 +182,13 @@ impl<T: HashTable> Chain<T> {
         )
     }
 
+    /// get the entire chain, top to bottom as a JSON array
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         let as_seq = self.iter().collect::<Vec<Pair>>();
         serde_json::to_string(&as_seq)
     }
 
+    /// restore a valid JSON chain
     pub fn from_json(table: Rc<T>, s: &str) -> Self {
         // @TODO inappropriate unwrap?
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();

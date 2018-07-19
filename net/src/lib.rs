@@ -117,11 +117,7 @@ mod tests {
             }
         }
         pub fn exists(&self, addr: &SerializedAddress) -> bool {
-            if let Some(_node) = self.nodes.iter().find(|node| *node.get_address() == *addr) {
-                true
-            } else {
-                false
-            }
+            self.nodes.iter().find(|node| *node.get_address() == *addr).is_some()
         }
     }
 
@@ -131,14 +127,14 @@ mod tests {
 
     impl Transport for SimpleTransport {
         fn initialize(&mut self, config: Option<String>) -> Result<(), Error> {
-            if let Some(cfg) = config {
-                if cfg == "".to_string() {
+            self.config = if let Some(cfg) = config {
+                if cfg.is_empty() {
                     bail!("null config!");
                 }
-                self.config = cfg;
+                cfg
             } else {
-                self.config = self.get_default_config();
-            }
+                 self.get_default_config()
+            };
             Ok(())
         }
 

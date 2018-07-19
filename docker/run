@@ -11,4 +11,4 @@ else
   HOST_UID=
 fi
 
-docker run -v `pwd`:/holochain --rm -it sphinxc0re/holochain-rust:develop ./docker/entry "$@"
+docker run -v `pwd`:/holochain --rm -it holochain/holochain-rust:develop ./docker/entry "$@"

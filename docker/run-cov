@@ -11,4 +11,4 @@ else
   HOST_UID=
 fi
 
-docker run -v `pwd`:/holochain --rm --security-opt seccomp=unconfined -it sphinxc0re/holochain-rust:develop ./docker/entry make cov
+docker run -v `pwd`:/holochain --rm --security-opt seccomp=unconfined -it holochain/holochain-rust:develop ./docker/entry make cov

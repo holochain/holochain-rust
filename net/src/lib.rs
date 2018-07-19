@@ -6,7 +6,6 @@
 extern crate failure;
 
 use failure::Error;
-use std::sync::{Arc, Mutex};
 
 pub mod error;
 
@@ -26,23 +25,6 @@ pub trait Node {
     fn get_transport_address(&self) -> TransportAddress;
 }
 
-pub struct Handler {
-    pub handler: Option<ReceiveClosure>,
-}
-
-impl Handler {
-    fn handle(
-        &mut self,
-        from: &SerializedAddress,
-        message: &SerializedMessage,
-    ) -> Result<SerializedMessage, Error> {
-        match self.handler {
-            None => bail!("fish"),
-            Some(ref mut handler) => (handler)(from, message),
-        }
-    }
-}
-
 pub trait Transport {
     /** initialize the transport
      * this might be used for example in a TCP based transport to specify a listening port for
@@ -56,7 +38,7 @@ pub trait Transport {
 
     /** register a peer as a node in the transport
      */
-    fn new_node(&mut self, addr: SerializedAddress, handler: Option<Handler>) -> Result<(), Error>;
+    fn new_node(&mut self, addr: SerializedAddress, handler: Option<ReceiveClosure>) -> Result<(), Error>;
 
     /** send a message to a node over the transport
      * assumes that the sending address was registered locally with new_node
@@ -85,6 +67,7 @@ pub trait Transport {
 mod tests {
     use super::*;
     use std::{collections::HashMap, str};
+    use std::sync::{Arc, Mutex};
     //    use error::NetworkError;
 
     pub struct SimpleNode {
@@ -105,7 +88,7 @@ mod tests {
     pub struct SimpleTransport {
         config: String,
         nodes: Vec<Arc<SimpleNode>>,
-        handlers: HashMap<SerializedAddress, Handler>,
+        handlers: HashMap<SerializedAddress, ReceiveClosure>,
     }
 
     impl SimpleTransport {
@@ -171,8 +154,8 @@ mod tests {
                 bail!("no handler for {}", to_str(to));
             }
             let mut_h = self.handlers.get_mut(to);
-            if let Some(h) = mut_h {
-                h.handle(from, &message)
+            if let Some(handler) = mut_h {
+                handler(from, &message)
             } else {
                 bail!("error while getting mutable handler for {}", to_str(to));
             }
@@ -181,7 +164,7 @@ mod tests {
         fn new_node(
             &mut self,
             serialized_addr: SerializedAddress,
-            handler: Option<Handler>,
+            handler: Option<ReceiveClosure>,
         ) -> Result<(), Error> {
             if serialized_addr.len() == 0 {
                 bail!("bad holochain address")
@@ -253,9 +236,7 @@ mod tests {
         let node_from = "Qm..192".as_bytes().to_owned();
         net.new_node(
             node_to.clone(),
-            Some(Handler {
-                handler: Some(Box::new(callback)),
-            }),
+            Some(Box::new(callback)),
         ).unwrap();
 
         assert_eq!(net.handlers.len(), 1);
@@ -315,9 +296,7 @@ mod tests {
         let node_from = "Qm..192".as_bytes().to_owned();
         net.new_node(
             node_to.clone(),
-            Some(Handler {
-                handler: Some(Box::new(callback)),
-            }),
+            Some(Box::new(callback)),
         ).unwrap();
 
         net.new_node(node_from.clone(), None).unwrap();

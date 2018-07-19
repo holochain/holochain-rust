@@ -81,7 +81,7 @@ mod tests {
         }
 
         fn get_transport_address(&self) -> TransportAddress {
-            format!("{}", self.transport_addr).into()
+            self.transport_addr.to_string().into()
         }
     }
 

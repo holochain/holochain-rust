@@ -3,10 +3,16 @@ FROM ubuntu
 # This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
 
+# Set the internal user for the docker container (non-root)
+ENV DOCKER_BUILD_USER holochain
+
+# The Rust version used for the Wasm builds
 ENV WASM_NIGHTLY nightly-2018-06-01
 
+# The Rust version used for the tools
 ENV TOOLS_NIGHTLY nightly-2018-07-17
 
+# The Rust version that is used everywhere else
 ENV CORE_RUST_VERSION stable
 
 RUN apt-get update && apt-get install --yes\
@@ -18,8 +24,11 @@ RUN apt-get update && apt-get install --yes\
   qt5-default \
   python2.7
 
+RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
+USER ${DOCKER_BUILD_USER}
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
-ENV PATH /root/.cargo/bin:$PATH
+ENV PATH /home/${DOCKER_BUILD_USER}/.cargo/bin:$PATH
 RUN rustc --version
 
 RUN rustup toolchain install ${WASM_NIGHTLY}

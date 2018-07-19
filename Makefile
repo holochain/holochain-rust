@@ -29,7 +29,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines, and build the rust project
 main:
 	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
-	$(CARGO) +$(TOOLS_NIGHTLY) clippy
+	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
 	$(CARGO) build --all
 
 # list all our found "C" binding tests

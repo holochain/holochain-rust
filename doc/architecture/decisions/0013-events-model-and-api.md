@@ -17,7 +17,7 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
 1. In the DNA you can declare observable events anywhere you can declare functions.  You can think of this almost identically to declaring a function except that it "goes the other way," i.e. a function def exposes an entry point where an event def exposes and exit point.  It would look like this:
 
 ``` javascript
-          "evt_declarations": [
+          "event_declarations": [
             {
               "name": "Post",
               "params": null,

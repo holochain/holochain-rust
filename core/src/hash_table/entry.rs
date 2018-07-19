@@ -58,11 +58,62 @@ impl Entry {
         // always valid iff immutable and new() enforces validity
         true
     }
+
+    /// returns the key used for lookups in chain, HT, etc.
+    /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
+    pub fn key(&self) -> String {
+        self.hash()
+    }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::Entry;
+
+    /// dummy entry type
+    pub fn test_type() -> String {
+        "testEntryType".into()
+    }
+
+    /// dummy entry type, same as test_type()
+    pub fn test_type_a() -> String {
+        test_type()
+    }
+
+    /// dummy entry type, differs from test_type()
+    pub fn test_type_b() -> String {
+        "testEntryTypeB".into()
+    }
+
+    /// dummy entry content
+    pub fn test_content() -> String {
+        "test entry content".into()
+    }
+
+    /// dummy entry content, same as test_content()
+    pub fn test_content_a() -> String {
+        test_content()
+    }
+
+    /// dummy entry content, differs from test_content()
+    pub fn test_content_b() -> String {
+        "other test entry content".into()
+    }
+
+    /// dummy entry
+    pub fn test_entry() -> Entry {
+        Entry::new(&test_type(), &test_content())
+    }
+
+    /// dummy entry, same as test_entry()
+    pub fn test_entry_a() -> Entry {
+        test_entry()
+    }
+
+    /// dummy entry, differs from test_entry()
+    pub fn test_entry_b() -> Entry {
+        Entry::new(&test_type_b(), &test_content_b())
+    }
 
     #[test]
     /// tests for PartialEq
@@ -167,5 +218,11 @@ mod tests {
         let e = Entry::new(t, c);
 
         assert!(e.validate());
+    }
+
+    #[test]
+    /// tests for entry.key()
+    fn key() {
+        assert_eq!(test_entry().hash(), test_entry().key());
     }
 }

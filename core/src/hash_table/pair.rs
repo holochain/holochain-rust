@@ -1,4 +1,5 @@
-use chain::{entry::Entry, header::Header, SourceChain};
+use chain::Chain;
+use hash_table::{entry::Entry, header::Header, HashTable};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -16,7 +17,7 @@ impl Pair {
     /// now be valid, the new Y' will include correct headers pointing to X.
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn new<'de, C: SourceChain<'de>>(chain: &C, entry: &Entry) -> Pair {
+    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry);
 
         let p = Pair {
@@ -44,6 +45,11 @@ impl Pair {
         self.entry.clone()
     }
 
+    /// key used in hash table lookups and other references
+    pub fn key(&self) -> String {
+        self.header.hash()
+    }
+
     /// true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header and entry must validate independently
@@ -56,14 +62,34 @@ impl Pair {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::Pair;
-    use chain::{entry::Entry, header::Header, memory::MemChain, SourceChain};
+    use chain::tests::test_chain;
+    use hash_table::{
+        entry::{
+            tests::{test_entry, test_entry_b}, Entry,
+        }, header::Header,
+    };
+
+    /// dummy pair
+    pub fn test_pair() -> Pair {
+        Pair::new(&test_chain(), &test_entry())
+    }
+
+    /// dummy pair, same as test_pair()
+    pub fn test_pair_a() -> Pair {
+        test_pair()
+    }
+
+    /// dummy pair, differs from test_pair()
+    pub fn test_pair_b() -> Pair {
+        Pair::new(&test_chain(), &test_entry_b())
+    }
 
     #[test]
     /// tests for Pair::new()
     fn new() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
         let h1 = Header::new(&chain, &e1);
@@ -79,7 +105,7 @@ mod tests {
     #[test]
     /// tests for pair.header()
     fn header() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
@@ -92,10 +118,10 @@ mod tests {
     #[test]
     /// tests for pair.entry()
     fn entry() {
-        let mut chain = MemChain::new();
+        let mut chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let p = chain.push(&e);
+        let p = chain.push(&e).unwrap();
 
         assert_eq!(e, p.entry());
     }
@@ -103,7 +129,7 @@ mod tests {
     #[test]
     /// tests for pair.validate()
     fn validate() {
-        let chain = MemChain::new();
+        let chain = test_chain();
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");

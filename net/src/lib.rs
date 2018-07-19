@@ -20,29 +20,27 @@ type SendResponseClosure = Box<FnMut(Result<SerializedMessage, Error>) -> Option
 type ReceiveClosure =
     Box<FnMut(&SerializedAddress, &SerializedMessage) -> Result<SerializedMessage, Error> + Send>;
 
+/// trait to encapsulate a node that represents a given Holochain app from the Transport's perspective
 pub trait Node {
     fn get_address(&self) -> &SerializedAddress;
     fn get_transport_address(&self) -> TransportAddress;
 }
 
 pub trait Transport {
-    /** initialize the transport
-     * this might be used for example in a TCP based transport to specify a listening port for
-     * for the transport.
-     */
+
+    /// initialize the transport
+    /// this might be used for example in a TCP based transport to specify a listening port for
+    /// for the transport.
     fn initialize(&mut self, config: Option<String>) -> Result<(), Error>;
 
-    /** return a default config with best configuration guesses for the transport
-     */
+    /// return a default config with best configuration guesses for the transport
     fn get_default_config(&self) -> String;
 
-    /** register a peer as a node in the transport
-     */
+    /// register a peer as a node in the transport
     fn new_node(&mut self, addr: SerializedAddress, handler: Option<ReceiveClosure>) -> Result<(), Error>;
 
-    /** send a message to a node over the transport
-     * assumes that the sending address was registered locally with new_node
-     */
+    /// send a message to a node over the transport
+    /// assumes that the sending address was registered locally with new_node
     fn send(
         &mut self,
         from: &SerializedAddress,
@@ -51,10 +49,9 @@ pub trait Transport {
         callback: SendResponseClosure,
     ) -> Result<(), Error>;
 
-    /** deliver a message to a given recipient
-     * assumes that recipient address was registered locally with new_node
-     * this function may be called by the routing layer to bridge across transports
-     */
+    /// deliver a message to a given recipient
+    /// assumes that recipient address was registered locally with new_node
+    /// this function may be called by the routing layer to bridge across transports
     fn deliver(
         &mut self,
         from: &SerializedAddress,

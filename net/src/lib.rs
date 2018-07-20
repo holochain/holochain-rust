@@ -27,7 +27,6 @@ pub trait Node {
 }
 
 pub trait Transport {
-
     /// initialize the transport
     /// this might be used for example in a TCP based transport to specify a listening port for
     /// for the transport.
@@ -37,7 +36,11 @@ pub trait Transport {
     fn get_default_config(&self) -> String;
 
     /// register a peer as a node in the transport
-    fn new_node(&mut self, addr: SerializedAddress, handler: Option<ReceiveClosure>) -> Result<(), Error>;
+    fn new_node(
+        &mut self,
+        addr: SerializedAddress,
+        handler: Option<ReceiveClosure>,
+    ) -> Result<(), Error>;
 
     /// send a message to a node over the transport
     /// assumes that the sending address was registered locally with new_node
@@ -63,8 +66,11 @@ pub trait Transport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{collections::HashMap, str};
-    use std::sync::{Arc, Mutex};
+    use std::{
+        collections::HashMap,
+        str,
+        sync::{Arc, Mutex},
+    };
     //    use error::NetworkError;
 
     pub struct SimpleNode {
@@ -97,7 +103,10 @@ mod tests {
             }
         }
         pub fn exists(&self, addr: &SerializedAddress) -> bool {
-            self.nodes.iter().find(|node| *node.get_address() == *addr).is_some()
+            self.nodes
+                .iter()
+                .find(|node| *node.get_address() == *addr)
+                .is_some()
         }
     }
 
@@ -113,7 +122,7 @@ mod tests {
                 }
                 cfg
             } else {
-                 self.get_default_config()
+                self.get_default_config()
             };
             Ok(())
         }
@@ -231,10 +240,8 @@ mod tests {
 
         let node_to = "Qm..191".as_bytes().to_owned();
         let node_from = "Qm..192".as_bytes().to_owned();
-        net.new_node(
-            node_to.clone(),
-            Some(Box::new(callback)),
-        ).unwrap();
+        net.new_node(node_to.clone(), Some(Box::new(callback)))
+            .unwrap();
 
         assert_eq!(net.handlers.len(), 1);
 
@@ -291,10 +298,8 @@ mod tests {
 
         let node_to = "Qm..191".as_bytes().to_owned();
         let node_from = "Qm..192".as_bytes().to_owned();
-        net.new_node(
-            node_to.clone(),
-            Some(Box::new(callback)),
-        ).unwrap();
+        net.new_node(node_to.clone(), Some(Box::new(callback)))
+            .unwrap();
 
         net.new_node(node_from.clone(), None).unwrap();
 

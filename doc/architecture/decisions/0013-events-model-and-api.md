@@ -8,7 +8,9 @@ Proposed
 
 ## Context
 
-In the go code we used polling from the UI to discover local state changes, be they in the source-chain or in the DHT.  We want to change this to an event based model where UI (or other clients, like bridged apps) can become observers of events.  Additionally there are system level events (like warrants) as well as other app level definable events that we want consumers of exposed holochain app APIs to be able to access on a push (i.e. observed) basis.
+In the go code we used polling from the UI to discover local state changes, be they in the source-chain or in the DHT.  We want to change this to an event based model where UI (or other clients, like bridged apps) can become listeners to events.  Additionally there are system level events (like warrants) as well as other app level definable events that we want consumers of exposed holochain app APIs to be able to access on a push (i.e. listening) basis.
+
+Note that this is only about events that can be listened to by container/composer context, i.e. by the client of the core_api, NOT by the app nodes themselves.
 
 ## Decision
 
@@ -20,6 +22,7 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
           "event_declarations": [
             {
               "name": "Post",
+              "description: "event emmited when a post is committed",
               "params": null,
               "sends": {
                   "hash": "hash",
@@ -28,7 +31,7 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
           ],
 ```
 
-Note that in the example above we are using the attribute method of declaring the signature, and it declares what the event will send to the observers and what must be passed in as "params" on the observe request which may be useful for qualifying some aspect of what to observe.  See [#134](https://waffle.io/holochain/org/cards/5b4cd03d0df367001d6d12a6) for details.
+Note that in the example above we are using the attribute method of declaring the signature, and it declares what the event will send to the listeners and what must be passed in as "params" on the listen request which may be useful for qualifying some aspect of what to listen for.  See [#134](https://waffle.io/holochain/org/cards/5b4cd03d0df367001d6d12a6) for details.
 
 2. App developers can emit events from their code via a new `emit()` function to be added to the api, e.g. like this:
 
@@ -37,7 +40,7 @@ postHash = commit("Post",{content:"foo"})
 emit("Post",postHash)
 ```
 
-3. Finally, just as you can call any function using the `core_api::call()`, you can register an observer with `core_api::observe()`
+3. Finally, just as you can call any function using the `core_api::call()`, you can register a listener with `core_api::listen()` and you and unregister a listener with `core_api::unlisten()`
 
 ## Consequences
 
@@ -46,3 +49,5 @@ emit("Post",postHash)
 - We need to make sure that app developers understand that this doesn't happen globally, but rather just to the clients that subscribed to the event from the container.
 
 - We need to think through what system events we want to emit.
+
+- We need to remember (and make a separate ADR) for events that happen and can be listened for between nodes at the DHT level.

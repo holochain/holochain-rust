@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install --yes\
   zlib1g-dev \
   curl \
   qt5-default \
-  python2.7
+  python2.7 \
+  gosu
 
 RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
 USER ${DOCKER_BUILD_USER}
@@ -42,3 +43,5 @@ RUN rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
 
 WORKDIR /holochain
+
+USER root

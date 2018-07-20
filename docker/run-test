@@ -1,2 +1,2 @@
 #!/bin/bash
-RUST_BACKTRACE=full docker run -v `pwd`:/holochain --rm sphinxc0re/holochain-rust:develop make test
+RUST_BACKTRACE=full ./docker/run make test

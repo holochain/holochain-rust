@@ -67,8 +67,10 @@ pub mod tests {
     use chain::tests::test_chain;
     use hash_table::{
         entry::{
-            tests::{test_entry, test_entry_b}, Entry,
-        }, header::Header,
+            tests::{test_entry, test_entry_b},
+            Entry,
+        },
+        header::Header,
     };
 
     /// dummy pair

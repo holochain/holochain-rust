@@ -1,2 +1,14 @@
 #!/bin/bash
-docker run -v `pwd`:/holochain --rm -p 3141:3141 -it sphinxc0re/holochain-rust:develop bash
+
+# Detect whether we are on a OSX host, determine host user ID
+# This gives a warning on linux that must be ignored.
+if [ "$(uname)" = "Linux" ]; then
+  # linux detected
+  HOST_UID=$$
+else
+  # There is nothing we need to do in this case. For the holochain user, everything below app/
+  # appears to belong to him. This is a quirk of Docker for Mac.
+  HOST_UID=
+fi
+
+docker run -v `pwd`:/holochain --rm -it holochain/holochain-rust:develop ./docker/entry "$@"

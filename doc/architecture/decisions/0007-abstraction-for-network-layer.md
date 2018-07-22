@@ -26,7 +26,7 @@ Updated 7/20 context:
 
 1. Write our own abstraction layer for the networking library with an API that allows us to build against our needs, and thus makes it easier to choose/switch a networking stack.
 2. Assume that this allows connection to a directly compiled-in p2p layer or connection via thin layer to a p2p transport system service (see ADR #14)
-3. Assume transport layer handles all multiplexing accross different physical transports as well as topological problems (NAT relay etc)
+3. Assume transport layer handles all multiplexing across different physical transports as well as topological problems (NAT relay etc)
 
 ## Consequences
 

@@ -2,4 +2,4 @@
 
 Resource  | Links
 ------------- | -------------
-_Thinking in Systems: A Primer_ by __Donella Meadows__  | [Link]( meadows.pdf)
+_Thinking in Systems: A Primer_ by __Donella Meadows__  | [Link](meadows.pdf)

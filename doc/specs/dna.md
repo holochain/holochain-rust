@@ -135,7 +135,7 @@ They are available in keyword specific Capabilities and function names
           "capability": {
             "membrane": "public"
           },
-          "fn_declarations": [
+          "functions": [
             {
               "name": "newPost",
               "signature" :
@@ -156,7 +156,7 @@ They are available in keyword specific Capabilities and function names
             },
             // ...
           ],
-          "signal_declarations": [
+          "signals": [
             {
               "name": "Post",
               "params": null,
@@ -173,7 +173,7 @@ They are available in keyword specific Capabilities and function names
           "capability": {
             "membrane": "agent",
           },
-          "fn_declarations": [
+          "functions": [
             // see above
           ],
           "code": ".." //s-expression encoded Wasm or Base64 encoded Wasm bytecode
@@ -183,7 +183,7 @@ They are available in keyword specific Capabilities and function names
           "capability": {
             "membrane": "api-key",
           },
-          "fn_declarations": [
+          "functions": [
             // see above
           ],
           "code": ".." //s-expression encoded Wasm or Base64 encoded Wasm bytecode
@@ -194,7 +194,7 @@ They are available in keyword specific Capabilities and function names
             "membrane": "zome"
           },
           ,
-          "fn_declarations": [
+          "functions": [
             // see above
           ],
           "code": ".." //s-expression encoded Wasm or Base64 encoded Wasm bytecode

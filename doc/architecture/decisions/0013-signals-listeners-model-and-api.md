@@ -19,7 +19,7 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
 1. In the DNA you can declare observable signals anywhere you can declare functions.  You can think of this almost identically to declaring a function except that it "goes the other way," i.e. a function def exposes an entry point where an signal def exposes an exit point.  It would look like this:
 
 ``` javascript
-          "signal_declarations": [
+          "signals": [
             {
               "name": "Post",
               "description: "signal emmited when a post is committed",

@@ -33,6 +33,9 @@ enum HcApiFuncIndex {
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
     COMMIT,
+    /// Get an entry from source chain by key (header hash)
+    /// get(key: String) -> Pair
+    GET,
     // Add new API function index here
     // ...
 }

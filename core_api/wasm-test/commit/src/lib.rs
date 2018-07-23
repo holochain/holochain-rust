@@ -2,15 +2,47 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-//extern crate libc;
 
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
+use nucleus::MemoryAllocation;
+
 extern {
-  fn commit(mem_offset: i32, mem_len: i32) -> i32;
+  fn commit(encoded_allocation_of_input: i32) -> i32;
 }
 
+
+
+//--------------------------------------------------------------------------------------------------
+// Memory Heap
+//--------------------------------------------------------------------------------------------------
+
+struct PageStack {
+  top: u16,
+}
+
+impl PageStack {
+
+  fn new(last_allocation: &MemoryAllocation) -> Self {
+    let stack = PageStack { top: last_allocation.mem_offset + last_allocation.mem_len};
+    assert!(stack.self <= 65536);
+    stack
+  }
+  fn allocate(&mut self, size: u16
+  ) -> u16 {
+    let r = self.top;
+    self.top += size;
+    assert!(self.top <= 65536);
+    r
+  }
+
+  fn deallocate(&mut self, allocation: &MemoryAllocation) -> Result<(), ()> {
+    if self.top == allocation.mem_offset + allocation.mem_length {
+      self.top = allocation.mem_offset;
+    }
+  }
+}
 
 //-------------------------------------------------------------------------------------------------
 // HC API funcs
@@ -28,7 +60,7 @@ struct CommitOutputStruct {
 }
 
 /// Commit an entry on source chain and broadcast to dht if entry is public
-fn hc_commit(ptr_data: *mut c_char, entry_type_name: &str, entry_content : &str)
+fn hc_commit(stack: &mut PageStack, entry_type_name: &str, entry_content : &str)
   -> Result<String, &'static str>
 {
   // change args to struct & serialize data
@@ -36,20 +68,26 @@ fn hc_commit(ptr_data: *mut c_char, entry_type_name: &str, entry_content : &str)
     entry_type_name: entry_type_name.to_string(),
     entry_content: entry_content.to_string(),
   };
-  let data_size =  serialize(ptr_data, input);
+  let allocation_of_input =  serialize(stack, input);
 
   // Call WASMI-able commit
-  let mut result_code = 0;
+  let mut encoded_allocation_of_result = 0;
   unsafe {
-    result_code = commit(ptr_data as i32, data_size);
+    encoded_allocation_of_result = commit(allocation_of_input.encode() as i32);
   }
   // Exit if error
-  if result_code != 0  {
-    return Ok(result_code.to_string())
-  }
+//  if encoded_allocation_of_result != 0  {
+//    return Ok(encoded_allocation_of_result.to_string())
+//  }
+
+  let allocation_of_result = MemoryAllocation::new(encoded_allocation_of_result);
+
 
   // Deserialize complex result stored in memory
-  let output : CommitOutputStruct = deserialize(ptr_data);
+  let output : CommitOutputStruct = deserialize(allocation_of_result.mem_offset);
+
+  // FIXME free result & input allocations
+  stack.deallocate(allocation_of_input);
 
   // Return hash
   Ok(output.hash.to_string())
@@ -67,17 +105,21 @@ fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
     serde_json::from_str(actual_str).unwrap()
 }
 
+
 // Write a data struct into a memory buffer as json string
-fn serialize<T: Serialize>(ptr_data: *mut c_char, internal: T) -> i32 {
+fn serialize<T: Serialize>(stack: &mut PageStack, internal: T) -> i32 {
     let json_bytes     = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
-    let ptr_data_safe  = unsafe { slice::from_raw_parts_mut(ptr_data, json_bytes_len) };
+
+    let ptr = stack.allocate(json_bytes_len) as *mut c_char;
+
+    let ptr_safe  = unsafe { slice::from_raw_parts_mut(ptr, json_bytes_len) };
 
     for (i, byte) in json_bytes.iter().enumerate() {
-        ptr_data_safe[i] = *byte as i8;
+      ptr_safe[i] = *byte as i8;
     }
 
-    json_bytes_len as i32
+    MemoryAllocation { mem_offset: ptr_safe, mem_length: json_bytes_len }
 }
 
 
@@ -85,23 +127,26 @@ fn serialize<T: Serialize>(ptr_data: *mut c_char, internal: T) -> i32 {
 // Zome API
 //-------------------------------------------------------------------------------------------------
 
-/// Function called by Instance
-/// param_mem : pointer to memory buffer holding complex input parameters
-/// params_len : size of complex input parameters in memory buffer
-/// returns length of returned data (in number of bytes)
+/// Function called by Holochain Instance
+/// encoded_allocation_of_input : encoded memory offset and length of a memory allocation
+/// returns encoded allocation of output
 #[no_mangle]
-pub extern "C" fn test_dispatch(ptr_data_param: *mut c_char, params_len: usize) -> i32 {
-    let ptr_data_commit = params_len as *mut c_char;
-    let output = test(ptr_data_commit);
-    return serialize(ptr_data_param, output);
+pub extern "C" fn test_dispatch(encoded_allocation_of_input: usize) -> i32 {
+  let allocation_of_input = MemoryBuffer::new(encoded_allocation_of_input);
+  let mut stack = PageStack::new(allocation_of_input);
+
+  // let ptr_data_commit = params_len as *mut c_char;
+  let output = test(&stack);
+  let allocation_of_output = serialize(&stack, output);
+  return allocation_of_output.encode();
 }
 
 
 /// Actual test function code
-fn test(data: *mut c_char) -> CommitOutputStruct
+fn test(stack: &PageStack) -> CommitOutputStruct
 {
   // Call Commit API function
-  let hash = hc_commit(data, "post", "hello");
+  let hash = hc_commit(stack, "post", "hello");
 
   // Return result in complex format
   if let Ok(hash_str) = hash {

@@ -20,21 +20,19 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 /// Create DNA from WAT
 pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
-    let default_wat = format!(
+    let default_wat =
         r#"
                 (module
                     (memory (;0;) 17)
                     (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
                         i32.const 4
                     )
-                    (data (i32.const {})
+                    (data (i32.const 0)
                         "1337"
                     )
                     (export "memory" (memory 0))
                 )
-            "#,
-        nucleus::ribosome::RESULT_OFFSET
-    );
+            "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
 
     // Test WASM code that returns 1337 as integer

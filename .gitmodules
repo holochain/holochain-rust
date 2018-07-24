@@ -1,0 +1,3 @@
+[submodule "net_ipc/tests/n3h"]
+	path = net_ipc/tests/n3h
+	url = git@github.com:holochain/n3h.git

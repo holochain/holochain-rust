@@ -8,4 +8,5 @@ members = [
   "dna",
   "dna_c_binding",
   "test_bin",
+  "net_ipc",
 ]

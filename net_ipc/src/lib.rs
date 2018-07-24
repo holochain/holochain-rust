@@ -12,9 +12,9 @@ extern crate zmq;
 pub mod msg_types;
 #[macro_use]
 pub mod errors;
-mod util;
 pub mod context;
 pub mod message;
+mod util;
 
 mod ipc_client;
 pub use ipc_client::IpcClient;

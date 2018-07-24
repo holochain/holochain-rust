@@ -5,18 +5,24 @@ extern crate failure;
 
 use net_ipc::IpcClient;
 
-fn prep () -> std::process::Child {
-    assert!(std::process::Command::new("git")
-        .args(&["submodule", "update", "--init", "--recursive"])
-        .status()
-        .expect("failed updating git submodules")
-        .success(), "failed updating git submodules");
-    assert!(std::process::Command::new("npm")
-        .args(&["install", "--production"])
-        .current_dir("./tests/n3h")
-        .status()
-        .expect("failed running npm install")
-        .success(), "failed running npm install");
+fn prep() -> std::process::Child {
+    assert!(
+        std::process::Command::new("git")
+            .args(&["submodule", "update", "--init", "--recursive"])
+            .status()
+            .expect("failed updating git submodules")
+            .success(),
+        "failed updating git submodules"
+    );
+    assert!(
+        std::process::Command::new("npm")
+            .args(&["install", "--production"])
+            .current_dir("./tests/n3h")
+            .status()
+            .expect("failed running npm install")
+            .success(),
+        "failed running npm install"
+    );
     std::process::Command::new("node")
         .args(&["./tests/n3h/examples/ipc/echo-server.js"])
         .spawn()
@@ -24,7 +30,7 @@ fn prep () -> std::process::Child {
 }
 
 #[test]
-fn it_can_send_and_call () {
+fn it_can_send_and_call() {
     let mut n3h_server = prep();
     println!("n3h_server pid: {}", n3h_server.id());
 
@@ -39,33 +45,46 @@ fn it_can_send_and_call () {
     let did_call_oth = did_call.clone();
     let did_call_resp_oth = did_call_resp.clone();
 
-    cli.send(b"ab12", b"hello:send", Box::new(move |r| {
-        match did_send_oth.lock() {
-            Ok(mut s) => *s = true,
-            Err(_) => bail!("brains"),
-        }
-        println!("send result: {:?}", r);
-        Ok(())
-    })).unwrap();
-    cli.call(b"ab12", b"hello:call", Box::new(move |r| {
-        match did_call_oth.lock() {
-            Ok(mut s) => *s = true,
-            Err(_) => bail!("brains"),
-        }
-        println!("call result: {:?}", r);
-        Ok(())
-    }), Box::new(move |r| {
-        match did_call_resp_oth.lock() {
-            Ok(mut s) => *s = true,
-            Err(_) => bail!("brains"),
-        }
-        println!("call resp result: {:?}", r);
-        Ok(())
-    })).unwrap();
+    cli.send(
+        b"ab12",
+        b"hello:send",
+        Box::new(move |r| {
+            match did_send_oth.lock() {
+                Ok(mut s) => *s = true,
+                Err(_) => bail!("brains"),
+            }
+            println!("send result: {:?}", r);
+            Ok(())
+        }),
+    ).unwrap();
+    cli.call(
+        b"ab12",
+        b"hello:call",
+        Box::new(move |r| {
+            match did_call_oth.lock() {
+                Ok(mut s) => *s = true,
+                Err(_) => bail!("brains"),
+            }
+            println!("call result: {:?}", r);
+            Ok(())
+        }),
+        Box::new(move |r| {
+            match did_call_resp_oth.lock() {
+                Ok(mut s) => *s = true,
+                Err(_) => bail!("brains"),
+            }
+            println!("call resp result: {:?}", r);
+            Ok(())
+        }),
+    ).unwrap();
     loop {
         let msg = cli.process(1000).unwrap();
-        println!("msg: {:?}, did_send: {:?}, did_call: {:?}, did_call_resp: {:?}", msg, did_send, did_call, did_call_resp);
-        if *did_send.lock().unwrap() && *did_call.lock().unwrap() && *did_call_resp.lock().unwrap() {
+        println!(
+            "msg: {:?}, did_send: {:?}, did_call: {:?}, did_call_resp: {:?}",
+            msg, did_send, did_call, did_call_resp
+        );
+        if *did_send.lock().unwrap() && *did_call.lock().unwrap() && *did_call_resp.lock().unwrap()
+        {
             break;
         }
     }
@@ -78,7 +97,7 @@ fn it_can_send_and_call () {
     println!("echo server off");
 
     println!("attempting to kill zeromq context");
-    cli.close();
+    cli.close().unwrap();
     net_ipc::context::destroy().unwrap();
     println!("zemomq is off");
 }

@@ -1,5 +1,5 @@
-use ::std;
 use failure;
+use std;
 
 #[derive(Debug, Fail)]
 pub enum IpcError {

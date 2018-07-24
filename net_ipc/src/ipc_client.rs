@@ -1,15 +1,14 @@
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
+use std::collections::{hash_map::Entry, HashMap};
 
-use zmq;
 use rmp_serde;
 use serde;
+use zmq;
 
 use context;
-use msg_types::*;
 use errors::*;
-use util::*;
 use message::*;
+use msg_types::*;
+use util::*;
 
 pub type SendResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
 pub type CallResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
@@ -24,7 +23,7 @@ pub struct IpcClient {
 }
 
 impl IpcClient {
-    pub fn new () -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
             socket: context::socket(zmq::ROUTER)?,
             next_id: 0,
@@ -34,7 +33,7 @@ impl IpcClient {
         })
     }
 
-    pub fn close (mut self) -> Result<()> {
+    pub fn close(mut self) -> Result<()> {
         drop(self.socket);
         self.send_callbacks.clear();
         self.call_callbacks.clear();
@@ -42,7 +41,7 @@ impl IpcClient {
         Ok(())
     }
 
-    pub fn connect (&mut self, endpoint: &str) -> Result<()> {
+    pub fn connect(&mut self, endpoint: &str) -> Result<()> {
         let connect_start = get_millis();
         self.socket.connect(endpoint)?;
         loop {
@@ -53,32 +52,32 @@ impl IpcClient {
             self.ping()?;
 
             match self.process(10)? {
-                Some(msg) => {
-                    match msg {
-                        Message::SrvPong(pong) => {
-                            println!("got pong: toServerMs: {}, roundTripMs: {}",
-                                (pong.1 - pong.0).round() as i64,
-                                (get_millis() - pong.0).round() as i64);
-                            break;
-                        }
-                        _ => {
-                            panic!("cannot handle non-pongs during connect");
-                        }
+                Some(msg) => match msg {
+                    Message::SrvPong(pong) => {
+                        println!(
+                            "got pong: toServerMs: {}, roundTripMs: {}",
+                            (pong.1 - pong.0).round() as i64,
+                            (get_millis() - pong.0).round() as i64
+                        );
+                        break;
                     }
-                }
+                    _ => {
+                        panic!("cannot handle non-pongs during connect");
+                    }
+                },
                 None => continue,
             }
         }
         Ok(())
     }
 
-    pub fn ping (&mut self) -> Result<()> {
+    pub fn ping(&mut self) -> Result<()> {
         let ping = get_millis();
         self.priv_send(MSG_CLI_PING, &ping)?;
         Ok(())
     }
 
-    pub fn send (&mut self, to_address: &[u8], data: &[u8], cb: SendResult) -> Result<()> {
+    pub fn send(&mut self, to_address: &[u8], data: &[u8], cb: SendResult) -> Result<()> {
         let id = self.priv_get_id()?;
         self.send_callbacks.insert(id.clone(), cb);
         let snd = MsgCliSend(&id, to_address, data);
@@ -86,7 +85,13 @@ impl IpcClient {
         Ok(())
     }
 
-    pub fn call (&mut self, to_address: &[u8], data: &[u8], cb: CallResult, resp_cb: CallResponseResult) -> Result<()> {
+    pub fn call(
+        &mut self,
+        to_address: &[u8],
+        data: &[u8],
+        cb: CallResult,
+        resp_cb: CallResponseResult,
+    ) -> Result<()> {
         let id = self.priv_get_id()?;
         self.call_callbacks.insert(id.clone(), cb);
         self.call_resp_callbacks.insert(id.clone(), resp_cb);
@@ -95,7 +100,7 @@ impl IpcClient {
         Ok(())
     }
 
-    pub fn process (&mut self, millis: i64) -> Result<Option<Message>> {
+    pub fn process(&mut self, millis: i64) -> Result<Option<Message>> {
         let res = self.socket.poll(zmq::POLLIN, millis)?;
         if res == 0 {
             return Ok(None);
@@ -115,19 +120,13 @@ impl IpcClient {
             }
             MSG_SRV_RESP_OK => {
                 let resp: MsgSrvRespOk = rmp_serde::from_slice(msg)?;
-                match self.send_callbacks.entry(resp.0.clone()) {
-                    Entry::Occupied(mut e) => {
-                        e.get_mut()(Ok(resp.clone()))?;
-                        e.remove();
-                    }
-                    _ => ()
+                if let Entry::Occupied(mut e) = self.send_callbacks.entry(resp.0.clone()) {
+                    e.get_mut()(Ok(resp.clone()))?;
+                    e.remove();
                 }
-                match self.call_callbacks.entry(resp.0.clone()) {
-                    Entry::Occupied(mut e) => {
-                        e.get_mut()(Ok(resp.clone()))?;
-                        e.remove();
-                    }
-                    _ => ()
+                if let Entry::Occupied(mut e) = self.call_callbacks.entry(resp.0.clone()) {
+                    e.get_mut()(Ok(resp.clone()))?;
+                    e.remove();
                 }
                 return Ok(Some(Message::SrvRespOk(resp)));
             }
@@ -141,12 +140,9 @@ impl IpcClient {
             }
             MSG_SRV_RECV_CALL_RESP => {
                 let recv: MsgSrvRecvCallResp = rmp_serde::from_slice(msg)?;
-                match self.call_resp_callbacks.entry(recv.0.clone()) {
-                    Entry::Occupied(mut e) => {
-                        e.get_mut()(Ok(recv.clone()))?;
-                        e.remove();
-                    }
-                    _ => ()
+                if let Entry::Occupied(mut e) = self.call_resp_callbacks.entry(recv.0.clone()) {
+                    e.get_mut()(Ok(recv.clone()))?;
+                    e.remove();
                 }
                 return Ok(Some(Message::SrvRecvCallResp(recv)));
             }
@@ -156,20 +152,19 @@ impl IpcClient {
 
     // -- private -- //
 
-    fn priv_get_id (&mut self) -> Result<Vec<u8>> {
+    fn priv_get_id(&mut self) -> Result<Vec<u8>> {
         self.next_id += 1;
         return Ok(rmp_serde::to_vec(&(self.next_id - 1))?);
     }
 
-    fn priv_send<T> (&mut self, t: u8, data: &T) -> Result<()>
-    where T: serde::Serialize {
+    fn priv_send<T>(&mut self, t: u8, data: &T) -> Result<()>
+    where
+        T: serde::Serialize,
+    {
         let mut data = rmp_serde::to_vec(data)?;
         data.insert(0, t);
-        self.socket.send_multipart(&[
-            &[0x24, 0x24, 0x24, 0x24],
-            &[],
-            &data
-        ], 0)?;
+        self.socket
+            .send_multipart(&[&[0x24, 0x24, 0x24, 0x24], &[], &data], 0)?;
         Ok(())
     }
 }

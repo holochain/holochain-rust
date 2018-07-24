@@ -1,3 +1,10 @@
+use serde_json;
+use nucleus::ribosome::Runtime;
+use nucleus::ribosome::HcApiReturnCode;
+use wasmi::RuntimeArgs;
+use wasmi::RuntimeValue;
+use wasmi::Trap;
+
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
 struct CommitInputStruct {
@@ -10,7 +17,7 @@ struct CommitInputStruct {
 /// args: [1] memory length of complex argument soted in memory
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
-fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     // @TODO assert or return error?
     // @see https://github.com/holochain/holochain-rust/issues/159
     assert!(args.len() == 2);

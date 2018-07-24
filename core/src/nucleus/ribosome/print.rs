@@ -1,3 +1,8 @@
+use nucleus::ribosome::Runtime;
+use wasmi::RuntimeArgs;
+use wasmi::RuntimeValue;
+use wasmi::Trap;
+
 /// HcApiFuncIndex::PRINT function code
 pub fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     let arg: u32 = args.nth(0);

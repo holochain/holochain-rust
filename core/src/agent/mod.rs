@@ -1,5 +1,6 @@
 pub mod keys;
 
+use instance::Observer;
 use agent::keys::Keys;
 use chain::Chain;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
@@ -42,6 +43,7 @@ impl AgentState {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     Commit(Entry),
+    Get(String),
 }
 
 /// Reduce Agent's state according to provided Action
@@ -49,6 +51,7 @@ pub fn reduce(
     old_state: Arc<AgentState>,
     action: &state::Action,
     _action_channel: &Sender<state::ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
     match *action {
         state::Action::Agent(ref agent_action) => {
@@ -56,11 +59,27 @@ pub fn reduce(
             match *agent_action {
                 Action::Commit(ref entry) => {
                     // add entry to source chain
-                    // @TODO this does nothing! it isn't exactly clear what it should do either
+                    // @TODO this does nothing!
+                    // it needs to get something stateless from the agent state that points to
+                    // something stateful that can handle an entire hash table (e.g. actor)
+                    // @see https://github.com/holochain/holochain-rust/issues/135
                     // @see https://github.com/holochain/holochain-rust/issues/148
                     let mut chain = Chain::new(Rc::new(MemTable::new()));
                     chain.push(&entry).unwrap();
-                }
+                },
+                Action::Get(ref hash) => {
+                    // get pair from source chain
+                    // @TODO this does nothing!
+                    // it needs to get something stateless from the agent state that points to
+                    // something stateful that can handle an entire hash table (e.g. actor)
+                    // @see https://github.com/holochain/holochain-rust/issues/135
+                    // @see https://github.com/holochain/holochain-rust/issues/148
+                    let mut chain = Chain::new(Rc::new(MemTable::new()));
+                    let e = Entry::new("fake entry type", "fake entry content");
+                    let p = chain.push(&e).unwrap();
+
+                    chain.get(&p.key());
+                },
             }
             Arc::new(new_state)
         }

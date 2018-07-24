@@ -11,6 +11,7 @@ implement several items:
 - An invocation dispatch in `nucleus::ribosome::call` under `Externals for Runtime`
 - The zome API function signature in `nucleus::ribosome::call` under `resolve_func`
 - A ribosome module implementing the invocation logic as `invoke_*`
+- An agent action if the zome API function has side effects
 
 ### Zome API function index
 
@@ -32,6 +33,8 @@ It should look something like this:
 index if index == HcApiFuncIndex::FOO as usize => invoke_foo(self, &args),
 ```
 
+Where `FOO` and `invoke_foo` should replace `foo` with the canonical name.
+
 ### Zome API function signature
 
 Define the WASMI function signature under `resolve_func`.
@@ -45,3 +48,24 @@ Note that the only allowed value types are 32/64 bit integers and floats.
 
 Passing "complex" data types between zome and rust code is handled by JSON
 string serialization/deserialization and sending the bytes through WASMI.
+
+### Zome API function ribosome module
+
+Each zome API function should have its own module under `nucleus::ribosome::*`.
+
+Implement a public function as `invoke_<canonical name>`. The function must take
+two arguments, a `&mut nucleus::ribosome::Runtime` and a `&wasmi::RuntimeArgs`.
+
+This function will be called by the invocation dispatch (see above).
+
+### Zome API function agent action
+
+If the zome API function will cause side effects to the agent state then it must
+implement and dispatch an action.
+
+Actions are covered in more detail in the agent chapter.
+
+In summary, if a new agent action is needed:
+
+- extend the `agent::Action` enum (with the canonical name if that makes sense)
+- implement the new enum in `agent::reduce`

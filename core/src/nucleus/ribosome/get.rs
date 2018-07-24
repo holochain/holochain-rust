@@ -1,3 +1,10 @@
+use serde_json;
+use nucleus::ribosome::Runtime;
+use nucleus::ribosome::HcApiReturnCode;
+use wasmi::RuntimeArgs;
+use wasmi::RuntimeValue;
+use wasmi::Trap;
+
 #[derive(Deserialize, Default, Debug)]
 struct GetInputStruct {
     key: String,
@@ -36,15 +43,30 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     let input = res_entry.unwrap();
 
     // create Get Action
-    let action = ::state::Action::Agent(::agent::Action::Get(input.clone()));
+    let action = ::state::Action::Agent(::agent::Action::Get(input.key.clone()));
 
-    // Send Action and block for result
-    ::instance::dispatch_action_and_wait(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        action.clone(),
-    );
+    // // Send Action and block for result
+    // ::instance::call_and_wait_for_result(
+    //     &runtime.action_channel,
+    //     &runtime.observer_channel,
+    //     action.clone(),
+    // );
 
-    // @TODO how to get pair back from dispatch?
-    let pair = runtime.action_channel;
+    // // @TODO how to get pair back from dispatch?
+    // let pair = runtime.action_channel;
+
+    // Write Hash of Entry in memory in output format
+    // let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
+    let params_str = input.key;
+    let mut params: Vec<_> = params_str.into_bytes();
+    params.push(0); // Add string terminate character (important)
+
+    // TODO #65 - use our Malloc instead
+    runtime
+        .memory
+        .set(mem_offset, &params)
+        .expect("memory should be writable");
+
+    // Return success in i32 format
+    Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
 }

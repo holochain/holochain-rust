@@ -7,7 +7,6 @@ mod print;
 mod get;
 
 use instance::Observer;
-use serde_json;
 use state;
 use std::sync::mpsc::Sender;
 use nucleus::ribosome::print::invoke_print;

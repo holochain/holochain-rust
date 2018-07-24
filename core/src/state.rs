@@ -79,6 +79,7 @@ impl State {
                 Arc::clone(&self.agent),
                 &action_wrapper.action,
                 action_channel,
+                observer_channel,
             ),
             history: self.history.clone(),
         };

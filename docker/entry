@@ -1,7 +1,5 @@
 #!/bin/bash
 
-ps -augx
-
 if [ -n $HOST_UID ]; then
   OLDID=`id -u holochain`
   if [ $OLDID != $HOST_UID ]; then

@@ -17,4 +17,4 @@ members = []
 serde="1"
 serde_derive="1"
 serde_json="1"
-libc = "0.2.42"
+holochain_core = { path="../../../core"}

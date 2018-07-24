@@ -2,11 +2,12 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate holochain_core;
 
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-use nucleus::MemoryAllocation;
+use holochain_core::nucleus::memory::*;
 
 extern {
   fn commit(encoded_allocation_of_input: i32) -> i32;
@@ -25,24 +26,28 @@ struct PageStack {
 impl PageStack {
 
   fn new(last_allocation: &MemoryAllocation) -> Self {
+    assert!(last_allocation.mem_offset as u32 + last_allocation.mem_len as u32 <= 65535);
     let stack = PageStack { top: last_allocation.mem_offset + last_allocation.mem_len};
-    assert!(stack.self <= 65536);
     stack
   }
   fn allocate(&mut self, size: u16
   ) -> u16 {
+    assert!(self.top as u32 + size as u32 <= 65535);
     let r = self.top;
     self.top += size;
-    assert!(self.top <= 65536);
     r
   }
 
   fn deallocate(&mut self, allocation: &MemoryAllocation) -> Result<(), ()> {
-    if self.top == allocation.mem_offset + allocation.mem_length {
+    if self.top == allocation.mem_offset + allocation.mem_len {
       self.top = allocation.mem_offset;
+      return Ok(());
     }
+    Err(())
   }
-}
+
+} // PageStack
+
 
 //-------------------------------------------------------------------------------------------------
 // HC API funcs
@@ -80,14 +85,15 @@ fn hc_commit(stack: &mut PageStack, entry_type_name: &str, entry_content : &str)
 //    return Ok(encoded_allocation_of_result.to_string())
 //  }
 
-  let allocation_of_result = MemoryAllocation::new(encoded_allocation_of_result);
+  let allocation_of_result = MemoryAllocation::new(encoded_allocation_of_result as u32);
 
 
   // Deserialize complex result stored in memory
-  let output : CommitOutputStruct = deserialize(allocation_of_result.mem_offset);
+  // let ptr: *mut c_char =
+  let output : CommitOutputStruct = deserialize(allocation_of_result.mem_offset as *mut c_char);
 
   // FIXME free result & input allocations
-  stack.deallocate(allocation_of_input);
+  stack.deallocate(&allocation_of_input);
 
   // Return hash
   Ok(output.hash.to_string())
@@ -107,11 +113,12 @@ fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
 
 
 // Write a data struct into a memory buffer as json string
-fn serialize<T: Serialize>(stack: &mut PageStack, internal: T) -> i32 {
+fn serialize<T: Serialize>(stack: &mut PageStack, internal: T) -> MemoryAllocation {
     let json_bytes     = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
+    assert!(json_bytes_len < 65536);
 
-    let ptr = stack.allocate(json_bytes_len) as *mut c_char;
+    let ptr = stack.allocate(json_bytes_len as u16) as *mut c_char;
 
     let ptr_safe  = unsafe { slice::from_raw_parts_mut(ptr, json_bytes_len) };
 
@@ -119,7 +126,7 @@ fn serialize<T: Serialize>(stack: &mut PageStack, internal: T) -> i32 {
       ptr_safe[i] = *byte as i8;
     }
 
-    MemoryAllocation { mem_offset: ptr_safe, mem_length: json_bytes_len }
+    MemoryAllocation { mem_offset: ptr as u16, mem_len: json_bytes_len as u16 }
 }
 
 
@@ -132,18 +139,18 @@ fn serialize<T: Serialize>(stack: &mut PageStack, internal: T) -> i32 {
 /// returns encoded allocation of output
 #[no_mangle]
 pub extern "C" fn test_dispatch(encoded_allocation_of_input: usize) -> i32 {
-  let allocation_of_input = MemoryBuffer::new(encoded_allocation_of_input);
-  let mut stack = PageStack::new(allocation_of_input);
+  let allocation_of_input = MemoryAllocation::new(encoded_allocation_of_input as u32);
+  let mut stack = PageStack::new(&allocation_of_input);
 
   // let ptr_data_commit = params_len as *mut c_char;
-  let output = test(&stack);
-  let allocation_of_output = serialize(&stack, output);
-  return allocation_of_output.encode();
+  let output = test(&mut stack);
+  let allocation_of_output = serialize(&mut stack, output);
+  return allocation_of_output.encode() as i32;
 }
 
 
 /// Actual test function code
-fn test(stack: &PageStack) -> CommitOutputStruct
+fn test(stack: &mut PageStack) -> CommitOutputStruct
 {
   // Call Commit API function
   let hash = hc_commit(stack, "post", "hello");

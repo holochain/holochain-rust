@@ -11,15 +11,15 @@ use wasmi::{
 // WASM Memory Manager
 //--------------------------------------------------------------------------------------------------
 
- #[derive(Clone, Debug)]
-pub struct MemoryManagerRef(Rc<MemoryPageManager>);
-
-impl ::std::ops::Deref for MemoryManagerRef {
-  type Target = MemoryPageManager;
-  fn deref(&self) -> &MemoryPageManager {
-    &self.0
-  }
-}
+// #[derive(Clone, Debug)]
+//pub struct MemoryManagerRef(Rc<MemoryPageManager>);
+//
+//impl ::std::ops::Deref for MemoryManagerRef {
+//  type Target = MemoryPageManager;
+//  fn deref(&self) -> &MemoryPageManager {
+//    &self.0
+//  }
+//}
 
 
 #[derive(Clone, Debug)]
@@ -31,7 +31,10 @@ pub struct MemoryPageManager {
 
 impl MemoryPageManager {
 
-  pub fn new(wasm_instance : ModuleRef) -> /*RefCell<MemoryPageManager>*/ MemoryManagerRef {
+  pub fn new(wasm_instance : ModuleRef)
+    -> /*RefCell<MemoryPageManager>*/ // MemoryManagerRef
+    MemoryPageManager
+  {
     // get wasm memory reference from module
     let wasm_memory = wasm_instance
       .export_by_name("memory")
@@ -45,7 +48,8 @@ impl MemoryPageManager {
       // allocations : Vec::new(),
     };
     // RefCell::new(page_manager)
-    MemoryManagerRef(Rc::new(page_manager))
+    // MemoryManagerRef(Rc::new(page_manager))
+    page_manager
   }
 
   pub fn allocate(&mut self, size: u16) -> Result<MemoryAllocation, &str> {
@@ -127,16 +131,16 @@ impl MemoryAllocation {
       mem_len : (input % 65536) as u16,
     };
     assert!(allocation.mem_len > 0);
-    assert!(allocation.mem_offset + allocation.mem_len <= 65536);
+    assert!((allocation.mem_offset as u32 + allocation.mem_len as u32) <= 65535);
     allocation
   }
 
   pub fn encode(&self) -> u32 {
-    ((self.mem_offset << 16) + self.mem_len) as u32
+    ((self.mem_offset as u32) << 16) + self.mem_len as u32
   }
 }
 
 
 pub fn encode_mem_buffer(mem_offset : u16, mem_len : u16) -> u32 {
-  ((mem_offset << 16) + mem_len) as u32
+  ((mem_offset as u32) << 16) + mem_len as u32
 }

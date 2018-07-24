@@ -67,8 +67,8 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let encoded_allocation: u32 = args.nth(0);
     let allocation = MemoryAllocation::new(encoded_allocation);
     // let mut mem_manager = runtime.memory_manager.borrow_mut();
-    let mem_manager = runtime.memory_manager;
-    let bin_arg = mem_manager.read(&allocation);
+    // let mut mem_manager = runtime.memory_manager;
+    let bin_arg = runtime.memory_manager.read(&allocation);
 
     // deserialize complex argument
     let arg = String::from_utf8(bin_arg).unwrap();
@@ -109,7 +109,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let mut result: Vec<_> = result_str.into_bytes();
     result.push(0); // Add string terminate character (important)
 
-    let allocation_of_result = mem_manager.write(result);
+    let allocation_of_result = runtime.memory_manager.write(result);
     if allocation_of_result.is_err() {
         return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds))
     }
@@ -118,6 +118,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let encoded_allocation = allocation_of_result.unwrap().encode();
     Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
 }
+
 
 //--------------------------------------------------------------------------------------------------
 // Wasm call
@@ -130,7 +131,8 @@ pub struct Runtime {
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
-    memory_manager: MemoryManagerRef,
+    memory_manager : MemoryPageManager,
+    // memory_manager: MemoryManagerRef,
     // memory_manager: RefCell<MemoryPageManager>
 }
 
@@ -202,14 +204,10 @@ pub fn call(
         .expect("Failed to instantiate module")
         .assert_no_start();
 
-    let ref_memory_manager = MemoryPageManager::new(wasm_instance.clone());
-
-    // let mut mem_manager = ref_memory_manager.borrow_mut();
+    // let mut ref_memory_manager = MemoryPageManager::new(wasm_instance.clone());
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
-
-    let allocation_of_input = ref_memory_manager.write(input_parameters);
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
@@ -217,30 +215,43 @@ pub fn call(
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        memory_manager: ref_memory_manager.clone(),
+        // memory_manager: ref_memory_manager.clone(),
+        memory_manager: MemoryPageManager::new(wasm_instance.clone()),
     };
 
-    let encoded_allocation_of_input = allocation_of_input.unwrap().encode();
+    let mut encoded_allocation_of_output: i32 = 0;
+    let mut encoded_allocation_of_input:  u32 = 0;
 
+    // scope for mutable runtime
+    {
+        let mut_runtime = &mut runtime;
+        let allocation_of_input = mut_runtime.memory_manager.write(input_parameters);
+        encoded_allocation_of_input = allocation_of_input.unwrap().encode();
+    }
 
-    // invoke function in wasm instance
-    // arguments are info for wasm on how to retrieve complex input arguments
-    // which have been set in memory module
-    let encoded_allocation_of_output: i32 = wasm_instance
-        .invoke_export(
-            format!("{}_dispatch", function_name).as_str(),
-            &[
-                RuntimeValue::I32(encoded_allocation_of_input as i32),
-            ],
-            &mut runtime,
-        )?
-        .unwrap()
-        .try_into()
-        .unwrap();
+    // scope for mutable runtime
+    {
+        let mut_runtime = &mut runtime;
+        // invoke function in wasm instance
+        // arguments are info for wasm on how to retrieve complex input arguments
+        // which have been set in memory module
+        encoded_allocation_of_output = wasm_instance
+          .invoke_export(
+              format!("{}_dispatch", function_name).as_str(),
+              &[
+                  RuntimeValue::I32(encoded_allocation_of_input as i32),
+              ],
+              // &mut runtime,
+              mut_runtime,
+          )?
+          .unwrap()
+          .try_into()
+          .unwrap();
+    }
 
     // retrieve invoked wasm function's result that got written in memory
     let allocation_of_output = MemoryAllocation::new(encoded_allocation_of_output as u32);
-    let result = ref_memory_manager.read(&allocation_of_output);
+    let result = runtime.memory_manager.read(&allocation_of_output);
     runtime.result = String::from_utf8(result).unwrap();
 
     Ok(runtime.clone())

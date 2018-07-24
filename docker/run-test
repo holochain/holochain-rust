@@ -1,2 +1,2 @@
 #!/bin/bash
-RUST_BACKTRACE=full ./docker/run make test
+./docker/run make test

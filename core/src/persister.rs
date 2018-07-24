@@ -30,6 +30,7 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hash_table::entry::tests::test_entry;
     use std::sync::mpsc::channel;
 
     #[test]
@@ -49,10 +50,8 @@ mod tests {
         let mut store = SimplePersister::new();
 
         let state = State::new();
-        let t = "entryType";
 
-        let entry = ::chain::entry::Entry::new(t, "some hash");
-        let action = ::state::Action::Agent(::agent::Action::Commit(entry));
+        let action = ::state::Action::Agent(::agent::Action::Commit(test_entry()));
         let (sender, _receiver) = channel::<::state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(::state::ActionWrapper::new(action), &sender, &tx_observer);

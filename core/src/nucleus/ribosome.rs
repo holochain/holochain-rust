@@ -82,7 +82,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     // Create Chain Entry
     let entry_input = res_entry.unwrap();
     let entry =
-        ::chain::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
+        ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
     let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));

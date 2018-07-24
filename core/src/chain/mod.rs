@@ -191,7 +191,9 @@ pub mod tests {
     use super::Chain;
     use hash_table::{
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
-        memory::{tests::test_table, MemTable}, pair::Pair, HashTable,
+        memory::{tests::test_table, MemTable},
+        pair::Pair,
+        HashTable,
     };
     use std::rc::Rc;
 

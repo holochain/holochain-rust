@@ -12,14 +12,14 @@ use wasmi::{
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Clone, Debug)]
+/// Struct for managing a WASM Memory Instance as a single page memory stack
 pub struct SinglePageManager {
   stack: SinglePageStack,
   wasm_memory: MemoryRef,
-  // allocations : Vec<MemoryAllocation> // for debugging only?
 }
 
 impl SinglePageManager {
-
+  
   pub fn new(wasm_instance : ModuleRef) -> Self
   {
     // get wasm memory reference from module
@@ -33,31 +33,20 @@ impl SinglePageManager {
     return SinglePageManager {
       stack: SinglePageStack::default(),
       wasm_memory : wasm_memory.clone(),
-      // allocations : Vec::new(),
     };
   }
 
+  /// Allocate on stack without writing in it
   pub fn allocate(&mut self, size: u16) -> Result<SinglePageAllocation, &str> {
     if self.stack.top() as u32 + size as u32 >= 65536 {
       return Err("Out of memory");
     }
     let offset = self.stack.allocate(size);
     let allocation = SinglePageAllocation { offset: offset, length: size};
-    // self.allocations.push(allocation);
     Ok(allocation)
   }
 
-
-  pub fn malloc(&mut self, size: u16) -> Result<u16, &str> {
-    let res = self.allocate(size);
-    if let Ok(mem_buf) = res {
-      return Ok(mem_buf.offset);
-    }
-    Err("out of memory")
-  }
-
-
-  /// Write data on stack
+  /// Write data on top of stack
   pub fn write(&mut self, data : Vec<u8>) -> Result<SinglePageAllocation, &str> {
     let data_len = data.len();
     if data_len > 65536 {
@@ -80,17 +69,12 @@ impl SinglePageManager {
     Ok(mem_buf)
   }
 
-
-  // MemoryAllocation is garanteed to be valid (does not overflow page size)
+  /// Read data somewhere in stack
   pub fn read(&self, allocation : &SinglePageAllocation) -> Vec<u8> {
     return
       self.wasm_memory
       .get(allocation.offset as u32, allocation.length as usize)
       .expect("Successfully retrieve the result")
   }
-
-//  pub fn free(&mut self) {
-//    // TODO
-//  }
 
 }

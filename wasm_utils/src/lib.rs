@@ -40,13 +40,16 @@ pub fn encode_error(offset : u16) -> HcApiReturnCode {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
+/// SinglePageAllocation is a memory allocation garanteed to fit in a WASM 64KiB Memory Page
 pub struct SinglePageAllocation {
   pub offset: u16,
   pub length: u16,
 }
 
-/// Encoded allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
 impl SinglePageAllocation {
+  /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
+  /// A valid allocation must not have a length of zero
+  /// An Encoded Allocation with an offset but no length is actually an encoding of an ErrorCode
   pub fn new(encoded_allocation : u32) -> Result<Self, HcApiReturnCode> {
     let allocation = SinglePageAllocation {
       offset: (encoded_allocation >> 16) as u16,
@@ -73,6 +76,7 @@ impl SinglePageAllocation {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Default, Debug)]
+/// Struct for managing a WASM 64KiB memory page as a stack
 pub struct SinglePageStack {
   top: u16,
 }
@@ -80,17 +84,18 @@ pub struct SinglePageStack {
 
 impl SinglePageStack {
 
+  // A stack can be initialized by giving the last know allocation on this stack
+  pub fn new(last_allocation: &SinglePageAllocation) -> Self {
+    assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
+    let stack = SinglePageStack { top: last_allocation.offset + last_allocation.length };
+    stack
+  }
+
   pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
     let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
     let last_allocation = last_allocation.expect("received error instead of valid encoded allocation");
     assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
     return SinglePageStack::new(&last_allocation);
-  }
-
-  pub fn new(last_allocation: &SinglePageAllocation) -> Self {
-    assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
-    let stack = SinglePageStack { top: last_allocation.offset + last_allocation.length };
-    stack
   }
 
   pub fn allocate(&mut self, size: u16) -> u16 {

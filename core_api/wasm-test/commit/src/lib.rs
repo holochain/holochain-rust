@@ -23,7 +23,8 @@ struct CommitOutputStruct {
   hash: String,
 }
 
-/// Commit an entry on source chain and broadcast to dht if entry is public
+/// Call HC API commit function with proper input struct
+/// return hash of entry added source chain
 fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content : &str)
   -> Result<String, &'static str>
 {

@@ -21,17 +21,17 @@ pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option
     // Default WASM code returns 1337 as integer
     let default_wat =
         r#"
-                (module
-                    (memory (;0;) 17)
-                    (func (export "main_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                        i32.const 4
-                    )
-                    (data (i32.const 0)
-                        "1337"
-                    )
-                    (export "memory" (memory 0))
+            (module
+                (memory (;0;) 17)
+                (func (export "main_dispatch") (param $p0 i32) (result i32)
+                    i32.const 4
                 )
-            "#;
+                (data (i32.const 0)
+                    "1337"
+                )
+                (export "memory" (memory 0))
+            )
+        "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
 
     // Test WASM code that returns 1337 as integer

@@ -21,6 +21,8 @@ struct OutputStruct {
     input_str_val_plus_dog: String,
 }
 
+
+/// Create output out of some modification of input
 fn test(input: InputStruct) -> OutputStruct {
     OutputStruct {
         input_int_val_plus2: input.input_int_val + 2,

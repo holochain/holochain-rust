@@ -238,7 +238,6 @@ pub fn call(
               &[
                   RuntimeValue::I32(encoded_allocation_of_input as i32),
               ],
-              // &mut runtime,
               mut_runtime,
           )?
           .unwrap()
@@ -247,10 +246,12 @@ pub fn call(
     }
 
     // retrieve invoked wasm function's result that got written in memory
-    let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
-    let result = runtime.memory_manager.read(&allocation_of_output);
-    runtime.result = String::from_utf8(result).unwrap();
+    if encoded_allocation_of_output > 0 {
+        let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
+        let result = runtime.memory_manager.read(&allocation_of_output);
 
+        runtime.result = String::from_utf8(result).unwrap();
+    }
     Ok(runtime.clone())
 }
 
@@ -271,7 +272,7 @@ mod tests {
                     (type (;1;) (func (param i32)))
                     (type (;2;) (func))
                     (import "env" "print" (func $print (type 1)))
-                    (func (export "test_print_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                    (func (export "test_print_dispatch") (param $p0 i32) (result i32)
                         i32.const 1337
                         call $print
                         i32.const 0)

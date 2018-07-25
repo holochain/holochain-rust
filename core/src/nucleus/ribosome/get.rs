@@ -4,6 +4,9 @@ use nucleus::ribosome::HcApiReturnCode;
 use wasmi::RuntimeArgs;
 use wasmi::RuntimeValue;
 use wasmi::Trap;
+use snowflake;
+use agent::ActionResult;
+use std::sync::mpsc::channel;
 
 #[derive(Deserialize, Default, Debug)]
 struct GetInputStruct {
@@ -42,31 +45,67 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    // create Get Action
-    let action = ::state::Action::Agent(::agent::Action::Get(input.key.clone()));
+    let action = ::agent::Action::Get{
+        key: input.key.clone(),
+        id: snowflake::ProcessUniqueId::new(),
+    };
 
-    // // Send Action and block for result
-    // ::instance::call_and_wait_for_result(
-    //     &runtime.action_channel,
-    //     &runtime.observer_channel,
-    //     action.clone(),
-    // );
+    let (sender, receiver) = channel();
+    ::instance::dispatch_action_with_observer(
+        &runtime.action_channel,
+        &runtime.observer_channel,
+        ::state::Action::Agent(action.clone()),
+        move |state: &::state::State| {
+            let actions = state.agent().actions().clone();
+            if actions.contains_key(&action) {
+                // @TODO is this unwrap OK since we check the key exists above?
+                let v = actions.get(&action).unwrap();
+                sender
+                    .send(v.clone())
+                    .expect("local channel to be open");
+                true
+            } else {
+                false
+            }
+        },
+    );
+    // TODO #97 - Return error if timeout or something failed
+    // return Err(_);
 
-    // // @TODO how to get pair back from dispatch?
-    // let pair = runtime.action_channel;
+    let action_result = receiver.recv().expect("local channel to work");
 
-    // Write Hash of Entry in memory in output format
-    // let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
-    let params_str = input.key;
-    let mut params: Vec<_> = params_str.into_bytes();
-    params.push(0); // Add string terminate character (important)
+    match action_result {
+        ActionResult::Get(maybe_pair) => {
+            let pair_str = maybe_pair
+                .and_then(|p| Some(p.json()))
+                .unwrap_or_default();
 
-    // TODO #65 - use our Malloc instead
-    runtime
-        .memory
-        .set(mem_offset, &params)
-        .expect("memory should be writable");
+            // write JSON pair to memory
+            let mut params: Vec<_> = pair_str.into_bytes();
+            params.push(0); // Add string terminate character (important)
 
-    // Return success in i32 format
-    Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+            // TODO #65 - use our Malloc instead
+            runtime
+                .memory
+                .set(mem_offset, &params)
+                .expect("memory should be writable");
+
+            // Return success in i32 format
+            Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+        },
+        _ => {
+            panic!("action result of get not get of result action");
+        }
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn get() {
+
+    }
+
 }

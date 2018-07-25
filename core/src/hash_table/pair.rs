@@ -1,5 +1,6 @@
 use chain::Chain;
 use hash_table::{entry::Entry, header::Header, HashTable};
+use serde_json;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -58,6 +59,11 @@ impl Pair {
         && self.header.entry() == self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
+    }
+
+    pub fn json(&self) -> String {
+        // @TODO error handling
+        serde_json::to_string(&self).unwrap()
     }
 }
 

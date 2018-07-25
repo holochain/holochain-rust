@@ -3,12 +3,14 @@ pub mod keys;
 use instance::Observer;
 use agent::keys::Keys;
 use chain::Chain;
+use snowflake;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use state;
 use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
@@ -17,6 +19,8 @@ pub struct AgentState {
     // @see https://github.com/holochain/holochain-rust/issues/137
     // @see https://github.com/holochain/holochain-rust/issues/135
     top_pair: Option<Pair>,
+    // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
+    actions: HashMap<Action, ActionResult>,
 }
 
 impl AgentState {
@@ -25,6 +29,7 @@ impl AgentState {
         AgentState {
             keys: None,
             top_pair: None,
+            actions: HashMap::new(),
         }
     }
 
@@ -38,12 +43,27 @@ impl AgentState {
     pub fn top_pair(&self) -> Option<Pair> {
         self.top_pair.clone()
     }
+
+    pub fn actions(&self) -> HashMap<Action, ActionResult> {
+        self.actions.clone()
+    }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
     Commit(Entry),
-    Get(String),
+    Get {
+        key: String,
+        id: snowflake::ProcessUniqueId,
+    },
+}
+
+impl Eq for Action {}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ActionResult {
+    Commit(String),
+    Get(Option<Pair>),
 }
 
 /// Reduce Agent's state according to provided Action
@@ -66,19 +86,31 @@ pub fn reduce(
                     // @see https://github.com/holochain/holochain-rust/issues/148
                     let mut chain = Chain::new(Rc::new(MemTable::new()));
                     chain.push(&entry).unwrap();
+
+                    let result = chain.push(&entry).unwrap().key();
+                    new_state.actions.insert(
+                        agent_action.clone(),
+                        ActionResult::Commit(result),
+                    );
                 },
-                Action::Get(ref hash) => {
+                Action::Get{ ref key, id: _ } => {
                     // get pair from source chain
                     // @TODO this does nothing!
                     // it needs to get something stateless from the agent state that points to
                     // something stateful that can handle an entire hash table (e.g. actor)
                     // @see https://github.com/holochain/holochain-rust/issues/135
                     // @see https://github.com/holochain/holochain-rust/issues/148
+
+                    // drop in a dummy entry for testing
                     let mut chain = Chain::new(Rc::new(MemTable::new()));
                     let e = Entry::new("fake entry type", "fake entry content");
-                    let p = chain.push(&e).unwrap();
+                    chain.push(&e).unwrap();
 
-                    chain.get(&p.key());
+                    let result = chain.get(&key).unwrap();
+                    new_state.actions.insert(
+                        agent_action.clone(),
+                        ActionResult::Get(result),
+                    );
                 },
             }
             Arc::new(new_state)

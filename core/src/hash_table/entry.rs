@@ -1,7 +1,7 @@
 use hash;
 use multihash::Hash;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
 pub struct Entry {
     content: String,
 

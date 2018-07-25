@@ -1,16 +1,31 @@
+/*!
+This module holds net_ipc custom error types.
+*/
+
 use failure;
 use std;
 
+/**
+net_ipc-specific error types
+*/
 #[derive(Debug, Fail)]
 pub enum IpcError {
+    /// Translate an Option<_> unwrap into a Result::Err
     #[fail(display = "NoneError")]
     NoneError,
+
+    /// Socket timeout
     #[fail(display = "Timeout")]
     Timeout,
+
+    /// Otherwise undefined error message
     #[fail(display = "IpcError: {}", error)]
     GenericError { error: String },
 }
 
+/**
+Macro akin to `bail!()` but returns an IpcError::GenericError.
+*/
 #[macro_export]
 macro_rules! gerr {
     ($e:expr) => {
@@ -25,4 +40,5 @@ macro_rules! gerr {
     };
 }
 
+/// Default result type for net_ipc modules that `use errors::*`.
 pub type Result<T> = std::result::Result<T, failure::Error>;

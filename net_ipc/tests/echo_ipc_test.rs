@@ -3,7 +3,7 @@ extern crate net_ipc;
 #[macro_use]
 extern crate failure;
 
-use net_ipc::IpcClient;
+use net_ipc::ZmqIpcClient;
 
 fn prep() -> std::process::Child {
     assert!(
@@ -34,7 +34,7 @@ fn it_can_send_and_call() {
     let mut n3h_server = prep();
     println!("n3h_server pid: {}", n3h_server.id());
 
-    let mut cli = IpcClient::new().unwrap();
+    let mut cli = ZmqIpcClient::new().unwrap();
     cli.connect("ipc://echo-server.sock").unwrap();
 
     let did_send = std::sync::Arc::new(std::sync::Mutex::new(false));
@@ -48,34 +48,34 @@ fn it_can_send_and_call() {
     cli.send(
         b"ab12",
         b"hello:send",
-        Box::new(move |r| {
+        Some(Box::new(move |r| {
             match did_send_oth.lock() {
                 Ok(mut s) => *s = true,
                 Err(_) => bail!("brains"),
             }
             println!("send result: {:?}", r);
             Ok(())
-        }),
+        })),
     ).unwrap();
     cli.call(
         b"ab12",
         b"hello:call",
-        Box::new(move |r| {
+        Some(Box::new(move |r| {
             match did_call_oth.lock() {
                 Ok(mut s) => *s = true,
                 Err(_) => bail!("brains"),
             }
             println!("call result: {:?}", r);
             Ok(())
-        }),
-        Box::new(move |r| {
+        })),
+        Some(Box::new(move |r| {
             match did_call_resp_oth.lock() {
                 Ok(mut s) => *s = true,
                 Err(_) => bail!("brains"),
             }
             println!("call resp result: {:?}", r);
             Ok(())
-        }),
+        })),
     ).unwrap();
     loop {
         let msg = cli.process(1000).unwrap();
@@ -98,6 +98,6 @@ fn it_can_send_and_call() {
 
     println!("attempting to kill zeromq context");
     cli.close().unwrap();
-    net_ipc::context::destroy().unwrap();
+    ZmqIpcClient::destroy_context().unwrap();
     println!("zemomq is off");
 }

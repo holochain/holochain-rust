@@ -2,7 +2,6 @@ extern crate holochain_core;
 extern crate holochain_dna;
 extern crate wabt;
 
-use holochain_core::*;
 use holochain_dna::{
     wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
 };

@@ -2,13 +2,12 @@
 #[cfg(test)]
 extern crate wabt;
 
+use holochain_wasm_utils::SinglePageAllocation;
 use instance::Observer;
 use serde_json;
 use state;
 use std::sync::mpsc::Sender;
-use std::cell::RefCell;
 
-use ::std::ops::Deref;
 use nucleus::memory::*;
 
 use wasmi::{
@@ -44,10 +43,12 @@ enum HcApiFuncIndex {
 
 /// HcApiFuncIndex::PRINT function code
 fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+    assert!(args.len() == 1);
     let arg: u32 = args.nth(0);
     runtime.print_output.push(arg);
     Ok(None)
 }
+
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
@@ -61,13 +62,12 @@ struct CommitInputStruct {
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
 fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-    assert!(args.len() == 2);
+
+    assert!(args.len() == 1);
 
     // Read complex argument serialized in memory
     let encoded_allocation: u32 = args.nth(0);
-    let allocation = MemoryAllocation::new(encoded_allocation);
-    // let mut mem_manager = runtime.memory_manager.borrow_mut();
-    // let mut mem_manager = runtime.memory_manager;
+    let allocation = SinglePageAllocation::new(encoded_allocation);
     let bin_arg = runtime.memory_manager.read(&allocation);
 
     // deserialize complex argument
@@ -131,9 +131,7 @@ pub struct Runtime {
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
-    memory_manager : MemoryPageManager,
-    // memory_manager: MemoryManagerRef,
-    // memory_manager: RefCell<MemoryPageManager>
+    memory_manager : SinglePageManager,
 }
 
 ///
@@ -216,20 +214,19 @@ pub fn call(
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
         // memory_manager: ref_memory_manager.clone(),
-        memory_manager: MemoryPageManager::new(wasm_instance.clone()),
+        memory_manager: SinglePageManager::new(wasm_instance.clone()),
     };
 
-    let mut encoded_allocation_of_output: i32 = 0;
-    let mut encoded_allocation_of_input:  u32 = 0;
-
-    // scope for mutable runtime
+    // scope for mutable borrow of runtime
+    let encoded_allocation_of_input: u32;
     {
         let mut_runtime = &mut runtime;
         let allocation_of_input = mut_runtime.memory_manager.write(input_parameters);
         encoded_allocation_of_input = allocation_of_input.unwrap().encode();
     }
 
-    // scope for mutable runtime
+    // scope for mutable borrow of runtime
+    let encoded_allocation_of_output: i32;
     {
         let mut_runtime = &mut runtime;
         // invoke function in wasm instance
@@ -250,7 +247,7 @@ pub fn call(
     }
 
     // retrieve invoked wasm function's result that got written in memory
-    let allocation_of_output = MemoryAllocation::new(encoded_allocation_of_output as u32);
+    let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
     let result = runtime.memory_manager.read(&allocation_of_output);
     runtime.result = String::from_utf8(result).unwrap();
 

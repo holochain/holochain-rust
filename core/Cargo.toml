@@ -15,6 +15,7 @@ serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 multihash = "0.8.0"
 rust-base58 = "0.0.4"
+holochain_wasm_utils = { path = "../wasm_utils"}
 
 [dev-dependencies]
 wabt = "0.4"

@@ -12,6 +12,7 @@ extern crate wasmi;
 
 extern crate holochain_agent;
 extern crate holochain_dna;
+extern crate holochain_wasm_utils;
 
 pub mod agent;
 pub mod chain;

@@ -5,6 +5,35 @@ extern crate serde_json;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
+//--------------------------------------------------------------------------------------------------
+// Error Codes
+//--------------------------------------------------------------------------------------------------
+
+/// Enumeration of all possible return codes that an HC API function can return
+#[repr(u32)]
+#[allow(non_camel_case_types)]
+#[derive(Debug)]
+pub enum HcApiReturnCode {
+  SUCCESS = 0,
+  ERROR_SERDE_JSON = 1 << 16,
+  ERROR_PAGE_OVERFLOW = 2 << 16,
+  ERROR = 3 << 16,
+}
+
+
+//pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
+//
+//}
+
+pub fn encode_error(offset : u16) -> HcApiReturnCode {
+  match offset {
+    0 => HcApiReturnCode::SUCCESS,
+    1 => HcApiReturnCode::ERROR_SERDE_JSON,
+    2 => HcApiReturnCode::ERROR_PAGE_OVERFLOW,
+    _ => HcApiReturnCode::ERROR,
+  }
+}
+
 
 //--------------------------------------------------------------------------------------------------
 // Single Page Memory Allocation
@@ -16,16 +45,20 @@ pub struct SinglePageAllocation {
   pub length: u16,
 }
 
-
+/// Encoded allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
 impl SinglePageAllocation {
-  pub fn new(input : u32) -> Self {
+  pub fn new(encoded_allocation : u32) -> Result<Self, HcApiReturnCode> {
     let allocation = SinglePageAllocation {
-      offset: (input >> 16) as u16,
-      length: (input % 65536) as u16,
+      offset: (encoded_allocation >> 16) as u16,
+      length: (encoded_allocation % 65536) as u16,
     };
-    assert!(allocation.length > 0);
-    assert!((allocation.offset as u32 + allocation.length as u32) <= 65535);
-    allocation
+    if allocation.length == 0 {
+      return Err(encode_error(allocation.offset));
+    }
+    if (allocation.offset as u32 + allocation.length as u32) > 65535 {
+      return Err(HcApiReturnCode::ERROR_PAGE_OVERFLOW);
+    }
+    Ok(allocation)
   }
 
   pub fn encode(&self) -> u32 {
@@ -49,6 +82,7 @@ impl SinglePageStack {
 
   pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
     let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
+    let last_allocation = last_allocation.expect("received error instead of valid encoded allocation");
     assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
     return SinglePageStack::new(&last_allocation);
   }
@@ -90,13 +124,23 @@ pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
   serde_json::from_str(actual_str).unwrap()
 }
 
-
-// Helper
-pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> T {
+// Helper for retrieving struct from encoded allocation
+pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32)
+  -> T {
   let allocation = SinglePageAllocation::new(encoded_allocation);
+  let allocation = allocation.expect("received error instead of valid encoded allocation");
   return deserialize(allocation.offset as *mut c_char);
 }
 
+// Helper for retrieving struct or ERROR from encoded allocation
+pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32)
+  -> Result<T, HcApiReturnCode>  {
+  let allocation = SinglePageAllocation::new(encoded_allocation);
+  if let Err(e) = allocation {
+    return Err(e);
+  }
+  return Ok(deserialize(allocation.unwrap().offset as *mut c_char));
+}
 
 // Write a data struct into a memory buffer as json string
 pub fn serialize<T: Serialize>(stack: &mut SinglePageStack, internal: T) -> SinglePageAllocation {

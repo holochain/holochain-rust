@@ -3,6 +3,8 @@
 extern crate wabt;
 
 use holochain_wasm_utils::SinglePageAllocation;
+use holochain_wasm_utils::HcApiReturnCode;
+
 use instance::Observer;
 use serde_json;
 use state;
@@ -20,13 +22,6 @@ use wasmi::{
 // HC API FUNCTION IMPLEMENTATIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all possible return codes that an HC API function can return
-#[repr(usize)]
-#[allow(non_camel_case_types)]
-pub enum HcApiReturnCode {
-    SUCCESS = 0,
-    ERROR_SERDE_JSON,
-}
 
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
@@ -68,6 +63,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     // Read complex argument serialized in memory
     let encoded_allocation: u32 = args.nth(0);
     let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation.expect("received error instead of valid encoded allocation");
     let bin_arg = runtime.memory_manager.read(&allocation);
 
     // deserialize complex argument
@@ -245,10 +241,12 @@ pub fn call(
           .unwrap();
     }
 
+    let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
+
+
     // retrieve invoked wasm function's result that got written in memory
-    if encoded_allocation_of_output > 0 {
-        let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
-        let result = runtime.memory_manager.read(&allocation_of_output);
+    if let Ok(valid_allocation) = allocation_of_output {
+       let result = runtime.memory_manager.read(&valid_allocation);
 
         runtime.result = String::from_utf8(result).unwrap();
     }

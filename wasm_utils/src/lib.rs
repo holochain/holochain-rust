@@ -4,8 +4,6 @@ extern crate serde_json;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-#[allow(unknown_lints)]
-#[allow(cast_lossless)]
 
 //--------------------------------------------------------------------------------------------------
 // Error Codes
@@ -48,6 +46,9 @@ pub struct SinglePageAllocation {
     pub length: u16,
 }
 
+
+#[allow(unknown_lints)]
+#[allow(cast_lossless)]
 impl SinglePageAllocation {
     /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
     /// A valid allocation must not have a length of zero
@@ -83,6 +84,8 @@ pub struct SinglePageStack {
 }
 
 
+#[allow(unknown_lints)]
+#[allow(cast_lossless)]
 impl SinglePageStack {
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new(last_allocation: SinglePageAllocation) -> Self {

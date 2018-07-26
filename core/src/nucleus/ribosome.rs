@@ -2,8 +2,7 @@
 #[cfg(test)]
 extern crate wabt;
 
-use holochain_wasm_utils::SinglePageAllocation;
-use holochain_wasm_utils::HcApiReturnCode;
+use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
 use instance::Observer;
 use serde_json;
@@ -41,7 +40,6 @@ enum HcApiFuncIndex {
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
 fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-
     assert!(args.len() == 1);
 
     // Read complex argument serialized in memory
@@ -76,7 +74,6 @@ struct CommitInputStruct {
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
 fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-
     assert!(args.len() == 1);
 
     // Read complex argument serialized in memory
@@ -126,7 +123,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
 
     let allocation_of_result = runtime.memory_manager.write(result);
     if allocation_of_result.is_err() {
-        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds))
+        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
     }
 
     // Return encoded allocation of result
@@ -146,7 +143,7 @@ pub struct Runtime {
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
-    memory_manager : SinglePageManager,
+    memory_manager: SinglePageManager,
 }
 
 
@@ -250,24 +247,22 @@ pub fn call(
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
         encoded_allocation_of_output = wasm_instance
-          .invoke_export(
-              format!("{}_dispatch", function_name).as_str(),
-              &[
-                  RuntimeValue::I32(encoded_allocation_of_input as i32),
-              ],
-              mut_runtime,
-          )?
-          .unwrap()
-          .try_into()
-          .unwrap();
+            .invoke_export(
+                format!("{}_dispatch", function_name).as_str(),
+                &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
+                mut_runtime,
+            )?
+            .unwrap()
+            .try_into()
+            .unwrap();
     }
 
     let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
 
     // retrieve invoked wasm function's result that got written in memory
     if let Ok(valid_allocation) = allocation_of_output {
-       let result = runtime.memory_manager.read(&valid_allocation);
-       runtime.result = String::from_utf8(result).unwrap();
+        let result = runtime.memory_manager.read(&valid_allocation);
+        runtime.result = String::from_utf8(result).unwrap();
     }
 
     Ok(runtime.clone())

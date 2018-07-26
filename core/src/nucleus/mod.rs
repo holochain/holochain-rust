@@ -1,5 +1,5 @@
-pub mod ribosome;
 pub mod memory;
+pub mod ribosome;
 
 use error::HolochainError;
 use holochain_dna::{

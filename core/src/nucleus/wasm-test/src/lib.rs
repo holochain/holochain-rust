@@ -20,7 +20,7 @@ fn hc_print(mem_stack: &mut SinglePageStack, s: &str) {
     print(allocation_of_input.encode() as i32);
   }
   // Free input allocation and all allocations made inside print()
-  mem_stack.deallocate(&allocation_of_input).expect("deallocate failed");
+  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 }
 
 

@@ -4,6 +4,9 @@ extern crate serde_json;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
+#[allow(unknown_lints)]
+#[allow(cast_lossless)]
+
 //--------------------------------------------------------------------------------------------------
 // Error Codes
 //--------------------------------------------------------------------------------------------------
@@ -63,7 +66,7 @@ impl SinglePageAllocation {
         Ok(allocation)
     }
 
-    pub fn encode(&self) -> u32 {
+    pub fn encode(self) -> u32 {
         ((self.offset as u32) << 16) + self.length as u32
     }
 }
@@ -82,12 +85,11 @@ pub struct SinglePageStack {
 
 impl SinglePageStack {
     // A stack can be initialized by giving the last know allocation on this stack
-    pub fn new(last_allocation: &SinglePageAllocation) -> Self {
+    pub fn new(last_allocation: SinglePageAllocation) -> Self {
         assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
-        let stack = SinglePageStack {
+        SinglePageStack {
             top: last_allocation.offset + last_allocation.length,
-        };
-        stack
+        }
     }
 
     pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
@@ -95,7 +97,7 @@ impl SinglePageStack {
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");
         assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= 65535);
-        return SinglePageStack::new(&last_allocation);
+        return SinglePageStack::new(last_allocation);
     }
 
     pub fn allocate(&mut self, size: u16) -> u16 {
@@ -105,7 +107,7 @@ impl SinglePageStack {
         offset
     }
 
-    pub fn deallocate(&mut self, allocation: &SinglePageAllocation) -> Result<(), ()> {
+    pub fn deallocate(&mut self, allocation: SinglePageAllocation) -> Result<(), ()> {
         if self.top == allocation.offset + allocation.length {
             self.top = allocation.offset;
             return Ok(());
@@ -114,7 +116,7 @@ impl SinglePageStack {
     }
 
     // Getters
-    pub fn top(&self) -> u16 {
+    pub fn top(self) -> u16 {
         self.top
     }
 }
@@ -125,6 +127,8 @@ impl SinglePageStack {
 //-------------------------------------------------------------------------------------------------
 
 // Convert json data in a memory buffer into a meaningful data struct
+#[allow(unknown_lints)]
+#[allow(not_unsafe_ptr_arg_deref)]
 pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
     let actual_str = ptr_safe_c_str.to_str().unwrap();

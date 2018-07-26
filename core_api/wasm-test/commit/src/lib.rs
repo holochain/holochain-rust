@@ -52,7 +52,7 @@ fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_conte
   let output : CommitOutputStruct = result.unwrap();
 
   // Free result & input allocations and all allocations made inside commit()
-  mem_stack.deallocate(&allocation_of_input).expect("deallocate failed");
+  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
   Ok(output.hash.to_string())
@@ -109,7 +109,7 @@ fn hc_commit_fail(mem_stack: &mut SinglePageStack)
   // Deserialize complex result stored in memory
   let output : CommitOutputStruct = result.unwrap();
   // Free result & input allocations and all allocations made inside commit()
-  mem_stack.deallocate(&allocation_of_input).expect("deallocate failed");
+  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
   Ok(output.hash.to_string())

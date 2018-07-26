@@ -9,6 +9,8 @@ extern crate snowflake;
 #[cfg(test)]
 extern crate test_utils;
 extern crate wasmi;
+#[macro_use]
+extern crate bitflags;
 
 extern crate holochain_agent;
 extern crate holochain_dna;
@@ -19,6 +21,7 @@ pub mod chain;
 pub mod context;
 pub mod error;
 pub mod hash;
+pub mod hash_table;
 pub mod instance;
 pub mod logger;
 pub mod network;

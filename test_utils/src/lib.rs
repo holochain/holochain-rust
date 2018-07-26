@@ -3,7 +3,9 @@ extern crate holochain_dna;
 extern crate wabt;
 
 use holochain_dna::{
-    wasm::DnaWasm, zome::{capabilities::Capability, Zome}, Dna,
+    wasm::DnaWasm,
+    zome::{capabilities::Capability, Zome},
+    Dna,
 };
 use std::{fs::File, io::prelude::*};
 use wabt::Wat2Wasm;

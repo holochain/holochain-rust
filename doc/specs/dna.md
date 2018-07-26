@@ -140,8 +140,18 @@ They are available in keyword specific Capabilities and function names
               "name": "newPost",
               "signature" :
               {
-                "input" : [ "string": "post" ],
-                "output" : [ "hash": "hash" ]
+                  "inputs" : [
+                      {
+                          "name": "post",
+                          "type": "string"
+                      }
+                  ],
+                  "outputs" : [
+                      {
+                          "name": "hash",
+                          "type": "string"
+                      }
+                  ]
               },
             },
             // ...

@@ -25,7 +25,7 @@ struct CommitOutputStruct {
 // HC Commit Function Call - Succesful
 //-------------------------------------------------------------------------------------------------
 
-/// Call HC API commit function with proper input struct
+/// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
 fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content : &str)
   -> Result<String, HcApiReturnCode>
@@ -51,7 +51,7 @@ fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_conte
   // Deserialize complex result stored in memory
   let output : CommitOutputStruct = result.unwrap();
 
-  // Free result & input allocations
+  // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(&allocation_of_input).expect("deallocate failed");
 
   // Return hash
@@ -82,7 +82,7 @@ fn test(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 
 
 //-------------------------------------------------------------------------------------------------
-// HC Commit Function Call - Fail
+// HC COMMIT Function Call - Fail
 //-------------------------------------------------------------------------------------------------
 
 // Simulate error in commit function by inputing output struct as input
@@ -108,7 +108,7 @@ fn hc_commit_fail(mem_stack: &mut SinglePageStack)
 
   // Deserialize complex result stored in memory
   let output : CommitOutputStruct = result.unwrap();
-  // Free result & input allocations
+  // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(&allocation_of_input).expect("deallocate failed");
 
   // Return hash

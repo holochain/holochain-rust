@@ -37,10 +37,28 @@ enum HcApiFuncIndex {
 }
 
 /// HcApiFuncIndex::PRINT function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Expecting a string as complex input argument
+/// Returns an HcApiReturnCode as I32
 fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+
     assert!(args.len() == 1);
-    let arg: u32 = args.nth(0);
-    runtime.print_output.push(arg);
+
+    // Read complex argument serialized in memory
+    let encoded_allocation: u32 = args.nth(0);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation.expect("received error instead of valid encoded allocation");
+    let bin_arg = runtime.memory_manager.read(&allocation);
+
+    // deserialize complex argument
+    let arg = String::from_utf8(bin_arg);
+    // Handle failure silently
+    if let Err(_) = arg {
+        return Ok(None);
+    }
+    let arg = arg.unwrap().to_string();
+    println!("{}", arg);
+    runtime.print_output.push_str(&arg);
     Ok(None)
 }
 
@@ -51,6 +69,7 @@ struct CommitInputStruct {
     entry_type_name: String,
     entry_content: String,
 }
+
 
 /// HcApiFuncIndex::COMMIT function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -123,12 +142,13 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone, Debug)]
 pub struct Runtime {
-    print_output: Vec<u32>,
+    print_output: String,
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager : SinglePageManager,
 }
+
 
 ///
 /// Executes an exposed function in a wasm binary
@@ -205,7 +225,7 @@ pub fn call(
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        print_output: vec![],
+        print_output: String::new(),
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
@@ -225,6 +245,7 @@ pub fn call(
     let encoded_allocation_of_output: i32;
     {
         let mut_runtime = &mut runtime;
+
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
@@ -243,62 +264,11 @@ pub fn call(
 
     let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
 
-
     // retrieve invoked wasm function's result that got written in memory
     if let Ok(valid_allocation) = allocation_of_output {
        let result = runtime.memory_manager.read(&valid_allocation);
-
-        runtime.result = String::from_utf8(result).unwrap();
+       runtime.result = String::from_utf8(result).unwrap();
     }
+
     Ok(runtime.clone())
-}
-
-#[cfg(test)]
-mod tests {
-    use self::wabt::Wat2Wasm;
-    use super::*;
-    use std::sync::mpsc::channel;
-
-    fn test_wasm() -> Vec<u8> {
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
-                (module
-                    (type (;0;) (func (result i32)))
-                    (type (;1;) (func (param i32)))
-                    (type (;2;) (func))
-                    (import "env" "print" (func $print (type 1)))
-                    (func (export "test_print_dispatch") (param $p0 i32) (result i32)
-                        i32.const 1337
-                        call $print
-                        i32.const 0)
-                    (func $rust_eh_personality (type 2))
-                    (table (;0;) 1 1 anyfunc)
-                    (memory (;0;) 17)
-                    (global (;0;) (mut i32) (i32.const 1049600))
-                    (export "memory" (memory 0))
-                    (export "rust_eh_personality" (func $rust_eh_personality)))
-            "#,
-            )
-            .unwrap();
-
-        wasm_binary.as_ref().to_vec()
-    }
-
-    #[test]
-    fn test_print() {
-        let (action_channel, _) = channel::<::state::ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
-        let runtime = call(
-            &action_channel,
-            &tx_observer,
-            test_wasm(),
-            "test_print",
-            None,
-        ).expect("test_print should be callable");
-        assert_eq!(runtime.print_output.len(), 1);
-        assert_eq!(runtime.print_output[0], 1337)
-    }
 }

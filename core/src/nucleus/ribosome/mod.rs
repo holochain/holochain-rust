@@ -106,7 +106,7 @@ pub fn call(
                     HcApiFuncIndex::COMMIT as usize,
                 ),
                 "get" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
+                    Signature::new(&[ValueType::I32, ValueType::I32][..], Some(ValueType::I32)),
                     HcApiFuncIndex::GET as usize,
                 ),
                 // Add API function here

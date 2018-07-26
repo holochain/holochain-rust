@@ -152,11 +152,7 @@ pub mod tests {
     #[test]
     /// test entry.hash() against a known value
     fn hash_known() {
-        let t = "fooType";
-        let c1 = "bar";
-        let e1 = Entry::new(t, &c1);
-
-        assert_eq!("QmfMjwGasyzX74517w3gL2Be3sozKMGDRwuGJHgs9m6gfS", e1.hash());
+        assert_eq!("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT", test_entry().hash());
     }
 
     #[test]

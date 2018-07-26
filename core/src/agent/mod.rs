@@ -106,6 +106,8 @@ pub fn reduce(
                     let e = Entry::new("fake entry type", "fake entry content");
                     chain.push(&e).unwrap();
 
+                    // @TODO if the get fails local, do a network get
+
                     let result = chain.get(&key).unwrap();
                     new_state.actions.insert(
                         agent_action.clone(),

@@ -506,11 +506,8 @@ mod tests {
         let result = hc.call("test_zome", "test_cap", "print_hello", r#"{}"#);
 
         // TODO #165 - check runtime.print_output instead
-        // Expect normal OK result
-        match result {
-            Ok(result) => assert_eq!(result,""),
-            Err(_) => assert!(false),
-        };
+        // Expect empty OK result
+        assert!(result.unwrap().is_empty());
 
         // Check in holochain instance's history that the commit event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 6);
@@ -537,11 +534,8 @@ mod tests {
         let result = hc.call("test_zome", "test_cap", "print_multiple", r#"{}"#);
 
         // TODO #165 - check runtime.print_output instead
-        // Expect normal OK result
-        match result {
-            Ok(result) => assert_eq!(result,""),
-            Err(_) => assert!(false),
-        };
+        // Expect empty OK result
+        assert!(result.unwrap().is_empty());
 
         // Check in holochain instance's history that the commit event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 6);

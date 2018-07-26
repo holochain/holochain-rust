@@ -73,21 +73,20 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     );
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
-    assert!(false);
+
     let action_result = receiver.recv().expect("local channel to work");
-    assert!(false);
+
     match action_result {
         ActionResult::Get(maybe_pair) => {
-            let _pair_str = maybe_pair
+            let pair_str = maybe_pair
                 .and_then(|p| Some(p.json()))
                 .unwrap_or_default();
 
             // write JSON pair to memory
-            let mut params: Vec<_> = "dog".to_string().into_bytes();
-            params.push(0); // Add string terminate character (important)
+            let mut params: Vec<_> = pair_str.to_string().into_bytes();
+            // params.push(0); // Add string terminate character (important)
 
             assert!(0 == mem_offset);
-            assert!(false);
 
             // TODO #65 - use our Malloc instead
             runtime
@@ -108,14 +107,18 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 #[cfg(test)]
 mod tests {
     extern crate wabt;
+    extern crate test_utils;
 
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use nucleus::ribosome::call;
-    use instance::Observer;
+    // use instance::Observer;
     use self::wabt::Wat2Wasm;
-    use std::sync::mpsc::channel;
+    // use std::sync::mpsc::channel;
     use super::GetArgs;
     use serde_json;
     use hash_table::entry::tests::test_entry;
+    use ::tests::create_instance;
+    // use test_utils;
 
     pub fn test_args_bytes() -> Vec<u8> {
         let args = GetArgs{
@@ -200,22 +203,26 @@ mod tests {
 
     #[test]
     fn test_get() {
-        let (action_channel, _) = channel::<::state::ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
+        let dna = test_utils::create_test_dna_with_wasm(
+            "test_zome__get".into(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            test_wasm(),
+        );
+        let instance = create_instance(dna);
+
+        // let (action_channel, _action_receive) = channel::<::state::ActionWrapper>();
+        // let (tx_observer, _observer) = channel::<Observer>();
         let runtime = call(
-            &action_channel,
-            &tx_observer,
+            &instance.action_channel(),
+            &instance.observer_channel(),
             test_wasm(),
             "test_get",
             Some(test_args_bytes()),
         ).expect("test_get should be callable");
-        let b = runtime.memory.get(0, 3).unwrap();
+
+        let b = runtime.memory.get(0, 56).unwrap();
         let s = String::from_utf8(b).unwrap();
-        assert_eq!("dog", s);
-        // assert_eq!(runtime.memory.len(), 3);
-        // assert_eq!(runtime.memory[0], "d");
-        // assert_eq!(runtime.memory[1], "o");
-        // assert_eq!(runtime.memory[2], "g");
+        assert_eq!("{\"key\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}", s);
     }
 
 }

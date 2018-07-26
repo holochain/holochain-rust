@@ -35,6 +35,15 @@ impl Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
+
+    pub fn action_channel(&self) -> Sender<ActionWrapper> {
+        self.action_channel.clone()
+    }
+
+    pub fn observer_channel(&self) -> Sender<Observer> {
+        self.observer_channel.clone()
+    }
+
     /// Stack an Action in the Event Queue
     pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
         dispatch_action(&self.action_channel, action)
@@ -70,6 +79,8 @@ impl Instance {
         thread::spawn(move || {
             let mut state_observers: Vec<Box<Observer>> = Vec::new();
 
+            // @TODO this should all be callable outside the loop so that deterministic tests that
+            // don't rely on time can be written
             loop {
                 match rx_action.recv_timeout(Duration::from_millis(REDUX_LOOP_TIMEOUT_MS)) {
                     Ok(action_wrapper) => {

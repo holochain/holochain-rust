@@ -46,12 +46,12 @@ fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Runt
     let encoded_allocation: u32 = args.nth(0);
     let allocation = SinglePageAllocation::new(encoded_allocation);
     let allocation = allocation.expect("received error instead of valid encoded allocation");
-    let bin_arg = runtime.memory_manager.read(&allocation);
+    let bin_arg = runtime.memory_manager.read(allocation);
 
     // deserialize complex argument
     let arg = String::from_utf8(bin_arg);
     // Handle failure silently
-    if let Err(_) = arg {
+    if arg.is_err() {
         return Ok(None);
     }
     let arg = arg.unwrap().to_string();
@@ -80,7 +80,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let encoded_allocation: u32 = args.nth(0);
     let allocation = SinglePageAllocation::new(encoded_allocation);
     let allocation = allocation.expect("received error instead of valid encoded allocation");
-    let bin_arg = runtime.memory_manager.read(&allocation);
+    let bin_arg = runtime.memory_manager.read(allocation);
 
     // deserialize complex argument
     let arg = String::from_utf8(bin_arg).unwrap();
@@ -121,7 +121,7 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let mut result: Vec<_> = result_str.into_bytes();
     result.push(0); // Add string terminate character (important)
 
-    let allocation_of_result = runtime.memory_manager.write(result);
+    let allocation_of_result = runtime.memory_manager.write(&result);
     if allocation_of_result.is_err() {
         return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
     }
@@ -227,14 +227,14 @@ pub fn call(
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
         // memory_manager: ref_memory_manager.clone(),
-        memory_manager: SinglePageManager::new(wasm_instance.clone()),
+        memory_manager: SinglePageManager::new(&wasm_instance),
     };
 
     // scope for mutable borrow of runtime
     let encoded_allocation_of_input: u32;
     {
         let mut_runtime = &mut runtime;
-        let allocation_of_input = mut_runtime.memory_manager.write(input_parameters);
+        let allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
         encoded_allocation_of_input = allocation_of_input.unwrap().encode();
     }
 
@@ -261,7 +261,7 @@ pub fn call(
 
     // retrieve invoked wasm function's result that got written in memory
     if let Ok(valid_allocation) = allocation_of_output {
-        let result = runtime.memory_manager.read(&valid_allocation);
+        let result = runtime.memory_manager.read(valid_allocation);
         runtime.result = String::from_utf8(result).unwrap();
     }
 

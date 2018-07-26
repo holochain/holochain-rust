@@ -14,8 +14,10 @@ pub struct SinglePageManager {
     wasm_memory: MemoryRef,
 }
 
+#[allow(unknown_lints)]
+#[allow(cast_lossless)]
 impl SinglePageManager {
-    pub fn new(wasm_instance: ModuleRef) -> Self {
+    pub fn new(wasm_instance: &ModuleRef) -> Self {
         // get wasm memory reference from module
         let wasm_memory = wasm_instance
             .export_by_name("memory")
@@ -31,20 +33,17 @@ impl SinglePageManager {
     }
 
     /// Allocate on stack without writing in it
-    pub fn allocate(&mut self, size: u16) -> Result<SinglePageAllocation, &str> {
-        if self.stack.top() as u32 + size as u32 >= 65536 {
+    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, &str> {
+        if self.stack.top() as u32 + length as u32 >= 65536 {
             return Err("Out of memory");
         }
-        let offset = self.stack.allocate(size);
-        let allocation = SinglePageAllocation {
-            offset: offset,
-            length: size,
-        };
+        let offset = self.stack.allocate(length);
+        let allocation = SinglePageAllocation { offset, length };
         Ok(allocation)
     }
 
     /// Write data on top of stack
-    pub fn write(&mut self, data: Vec<u8>) -> Result<SinglePageAllocation, &str> {
+    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, &str> {
         let data_len = data.len();
         if data_len > 65536 {
             return Err("data length provided is bigger than 64KiB");
@@ -67,7 +66,7 @@ impl SinglePageManager {
     }
 
     /// Read data somewhere in stack
-    pub fn read(&self, allocation: &SinglePageAllocation) -> Vec<u8> {
+    pub fn read(&self, allocation: SinglePageAllocation) -> Vec<u8> {
         return self
             .wasm_memory
             .get(allocation.offset as u32, allocation.length as usize)

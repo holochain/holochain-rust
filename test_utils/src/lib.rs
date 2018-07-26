@@ -21,8 +21,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 /// Create DNA from WAT
 pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
-    let default_wat =
-        r#"
+    let default_wat = r#"
             (module
                 (memory (;0;) 17)
                 (func (export "main_dispatch") (param $p0 i32) (result i32)

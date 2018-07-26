@@ -474,10 +474,7 @@ mod tests {
 
         // Expect normal OK result with hash
         match result {
-            Ok(result) => assert_eq!(
-                result,
-                r#"{"hash":"fail"}"#
-            ),
+            Ok(result) => assert_eq!(result, r#"{"hash":"fail"}"#),
             Err(_) => assert!(false),
         };
 

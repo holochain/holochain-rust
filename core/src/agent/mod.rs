@@ -110,6 +110,7 @@ pub fn reduce(
                     chain.push(&e).unwrap();
 
                     // @TODO if the get fails local, do a network get
+                    // @see https://github.com/holochain/holochain-rust/issues/167
 
                     let result = chain.get_entry(&key).unwrap();
                     new_state

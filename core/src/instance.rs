@@ -35,7 +35,6 @@ impl Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-
     pub fn action_channel(&self) -> Sender<ActionWrapper> {
         self.action_channel.clone()
     }

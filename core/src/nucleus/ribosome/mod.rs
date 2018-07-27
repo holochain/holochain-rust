@@ -1,14 +1,12 @@
 // In this example we execute a contract funciton exported as "_call"
 mod commit;
-mod print;
 mod get;
+mod print;
 
 use instance::Observer;
+use nucleus::ribosome::{commit::invoke_commit, get::invoke_get, print::invoke_print};
 use state;
 use std::sync::mpsc::Sender;
-use nucleus::ribosome::print::invoke_print;
-use nucleus::ribosome::commit::invoke_commit;
-use nucleus::ribosome::get::invoke_get;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder, MemoryRef,

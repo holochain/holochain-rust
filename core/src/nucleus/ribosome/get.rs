@@ -1,12 +1,9 @@
-use serde_json;
-use nucleus::ribosome::Runtime;
-use nucleus::ribosome::HcApiReturnCode;
-use wasmi::RuntimeArgs;
-use wasmi::RuntimeValue;
-use wasmi::Trap;
-use snowflake;
 use agent::ActionResult;
+use nucleus::ribosome::{HcApiReturnCode, Runtime};
+use serde_json;
+use snowflake;
 use std::sync::mpsc::channel;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -47,7 +44,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = ::agent::Action::Get{
+    let action = ::agent::Action::Get {
         key: input.key.clone(),
         id: snowflake::ProcessUniqueId::new(),
     };
@@ -62,9 +59,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             if actions.contains_key(&action) {
                 // @TODO is this unwrap OK since we check the key exists above?
                 let v = actions.get(&action).unwrap();
-                sender
-                    .send(v.clone())
-                    .expect("local channel to be open");
+                sender.send(v.clone()).expect("local channel to be open");
                 true
             } else {
                 false
@@ -78,9 +73,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     match action_result {
         ActionResult::Get(maybe_pair) => {
-            let pair_str = maybe_pair
-                .and_then(|p| Some(p.json()))
-                .unwrap_or_default();
+            let pair_str = maybe_pair.and_then(|p| Some(p.json())).unwrap_or_default();
 
             // write JSON pair to memory
             let mut params: Vec<_> = pair_str.to_string().into_bytes();
@@ -96,18 +89,17 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
             // Return success in i32 format
             Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
-        },
+        }
         _ => {
             panic!("action result of get not get of result action");
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    extern crate wabt;
     extern crate test_utils;
+    extern crate wabt;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use nucleus::ribosome::call;
@@ -115,18 +107,16 @@ mod tests {
     use self::wabt::Wat2Wasm;
     // use std::sync::mpsc::channel;
     use super::GetArgs;
-    use serde_json;
     use hash_table::entry::tests::test_entry;
-    use ::tests::create_instance;
+    use serde_json;
+    use tests::create_instance;
     // use test_utils;
 
     pub fn test_args_bytes() -> Vec<u8> {
-        let args = GetArgs{
+        let args = GetArgs {
             key: test_entry().hash().into(),
         };
-        serde_json::to_string(&args)
-            .unwrap()
-            .into_bytes()
+        serde_json::to_string(&args).unwrap().into_bytes()
     }
 
     pub fn test_wasm() -> Vec<u8> {
@@ -201,7 +191,7 @@ mod tests {
             Some(test_args_bytes()),
         ).expect("test_get should be callable");
 
-        // @TODO 
+        // @TODO
         let b = runtime.memory.get(0, 222).unwrap();
         let s = String::from_utf8(b).unwrap();
         assert_eq!(

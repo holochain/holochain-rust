@@ -1,10 +1,11 @@
 use nucleus::ribosome::Runtime;
-use wasmi::RuntimeArgs;
-use wasmi::RuntimeValue;
-use wasmi::Trap;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// HcApiFuncIndex::PRINT function code
-pub fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_print(
+    runtime: &mut Runtime,
+    args: &RuntimeArgs,
+) -> Result<Option<RuntimeValue>, Trap> {
     let arg: u32 = args.nth(0);
     runtime.print_output.push(arg);
     Ok(None)
@@ -14,9 +15,9 @@ pub fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<
 mod tests {
     extern crate wabt;
 
+    use self::wabt::Wat2Wasm;
     use instance::Observer;
     use nucleus::ribosome::call;
-    use self::wabt::Wat2Wasm;
     use std::sync::mpsc::channel;
 
     fn test_wasm() -> Vec<u8> {

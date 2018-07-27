@@ -1,16 +1,16 @@
 pub mod keys;
 
-use instance::Observer;
 use agent::keys::Keys;
 use chain::Chain;
-use snowflake;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
+use instance::Observer;
+use snowflake;
 use state;
 use std::{
+    collections::HashMap,
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct AgentState {
@@ -89,12 +89,11 @@ pub fn reduce(
                     chain.push(&entry).unwrap();
 
                     let result = chain.push(&entry).unwrap().key();
-                    new_state.actions.insert(
-                        agent_action.clone(),
-                        ActionResult::Commit(result),
-                    );
-                },
-                Action::Get{ ref key, id: _ } => {
+                    new_state
+                        .actions
+                        .insert(agent_action.clone(), ActionResult::Commit(result));
+                }
+                Action::Get { ref key, id: _ } => {
                     // get pair from source chain
                     // @TODO this does nothing!
                     // it needs to get something stateless from the agent state that points to
@@ -110,11 +109,10 @@ pub fn reduce(
                     // @TODO if the get fails local, do a network get
 
                     let result = chain.get_entry(&key).unwrap();
-                    new_state.actions.insert(
-                        agent_action.clone(),
-                        ActionResult::Get(result),
-                    );
-                },
+                    new_state
+                        .actions
+                        .insert(agent_action.clone(), ActionResult::Get(result));
+                }
             }
             Arc::new(new_state)
         }

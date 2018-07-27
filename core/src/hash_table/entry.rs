@@ -152,7 +152,10 @@ pub mod tests {
     #[test]
     /// test entry.hash() against a known value
     fn hash_known() {
-        assert_eq!("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT", test_entry().hash());
+        assert_eq!(
+            "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT",
+            test_entry().hash()
+        );
     }
 
     #[test]

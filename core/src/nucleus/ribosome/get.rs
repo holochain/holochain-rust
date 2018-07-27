@@ -103,8 +103,7 @@ mod tests {
     use super::GetArgs;
     use hash_table::entry::tests::test_entry;
     use serde_json;
-    use tests::create_instance;
-    // use test_utils;
+    use instance::tests::test_instance;
 
     pub fn test_args_bytes() -> Vec<u8> {
         let args = GetArgs {
@@ -173,7 +172,7 @@ mod tests {
             ReservedCapabilityNames::LifeCycle.as_str().to_string(),
             test_wasm(),
         );
-        let instance = create_instance(dna);
+        let instance = test_instance(dna);
 
         // let (action_channel, _action_receive) = channel::<::state::ActionWrapper>();
         // let (tx_observer, _observer) = channel::<Observer>();

@@ -7,7 +7,7 @@
 
 all: main
 
-PINNED_NIGHTLY ?= nightly-2018-06-01
+CARGO = cargo $(CARGO_ARGS)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -28,9 +28,9 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 
 # apply formatting / style guidelines, and build the rust project
 main:
-	cargo +$(PINNED_NIGHTLY) fmt -- --check
-	cargo +$(PINNED_NIGHTLY) clippy -- -A needless_return
-	cargo build --verbose --all
+	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
+	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
+	$(CARGO) build --all
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -44,16 +44,16 @@ ${C_BINDING_DIRS}:
 test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 
 test_non_c: main
-	cd core/src/nucleus/wasm-test && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && cargo +$(PINNED_NIGHTLY) build --target wasm32-unknown-unknown
-	RUSTFLAGS="-D warnings" cargo test
+	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+	RUSTFLAGS="-D warnings" $(CARGO) test
 
 cov:
-	cargo tarpaulin --all --out Xml
+	$(CARGO) tarpaulin --all --out Xml
 
 fmt:
-	cargo +$(PINNED_NIGHTLY) fmt
+	$(CARGO) +$(TOOLS_NIGHTLY) fmt
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

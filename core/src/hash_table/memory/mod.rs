@@ -4,7 +4,10 @@ use error::HolochainError;
 
 use agent::keys::Keys;
 use hash_table::{
-    pair::Pair, pair_meta::PairMeta, status::{CRUDStatus, LINK_NAME, STATUS_NAME}, HashTable,
+    pair::Pair,
+    pair_meta::PairMeta,
+    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+    HashTable,
 };
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -105,11 +108,14 @@ pub mod tests {
 
     use agent::keys::tests::test_keys;
     use hash_table::{
-        memory::MemTable, pair::tests::{test_pair, test_pair_a, test_pair_b},
+        memory::MemTable,
+        pair::tests::{test_pair, test_pair_a, test_pair_b},
         pair_meta::{
-            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b}, PairMeta,
+            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
+            PairMeta,
         },
-        status::{CRUDStatus, LINK_NAME, STATUS_NAME}, HashTable,
+        status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+        HashTable,
     };
 
     pub fn test_table() -> MemTable {

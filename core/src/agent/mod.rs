@@ -5,7 +5,8 @@ use chain::Chain;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use state;
 use std::{
-    rc::Rc, sync::{mpsc::Sender, Arc},
+    rc::Rc,
+    sync::{mpsc::Sender, Arc},
 };
 
 #[derive(Clone, Debug, PartialEq, Default)]

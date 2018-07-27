@@ -8,10 +8,10 @@ services:
 dist: trusty
 
 install:
-  - docker pull sphinxc0re/holochain-rust:develop
+  - docker pull holochain/holochain-rust:develop
 
 script:
-  . docker/run-test
+  - . docker/run-test
 
 after_success:
   - . docker/run-cov

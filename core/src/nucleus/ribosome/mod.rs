@@ -57,6 +57,25 @@ pub struct Runtime {
     memory: MemoryRef,
 }
 
+pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
+    // @TODO assert or return error?
+    // @see https://github.com/holochain/holochain-rust/issues/159
+    assert_eq!(2, args.len());
+
+    // Read complex argument serialized in memory
+    // @TODO use our Malloced data instead
+    // @see https://github.com/holochain/holochain-rust/issues/65
+
+    let mem_offset: u32 = args.nth(0);
+    let mem_len: u32 = args.nth(1);
+    let bin_arg = runtime
+        .memory
+        .get(mem_offset, mem_len as usize)
+        .expect("Successfully retrieve the arguments");
+
+    String::from_utf8(bin_arg).unwrap()
+}
+
 /// Executes an exposed function in a wasm binary
 pub fn call(
     action_channel: &Sender<state::ActionWrapper>,

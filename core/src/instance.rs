@@ -247,16 +247,20 @@ pub mod tests {
         instance
     }
 
+    pub fn test_instance_blank() -> Instance {
+        test_instance(Dna::new())
+    }
+
     #[test]
     /// smoke test action channel
     fn action_channel() {
-        test_instance().action_channel();
+        test_instance_blank().action_channel();
     }
 
     #[test]
     /// smoke test observer channel
     fn observer_channel() {
-        test_instance().observer_channel();
+        test_instance_blank().observer_channel();
     }
 
     /// This test shows how to call dispatch with a closure that should run

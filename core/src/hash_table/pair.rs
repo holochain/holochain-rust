@@ -61,8 +61,10 @@ impl Pair {
         && self.header.entry_type() == self.entry.entry_type()
     }
 
+    /// serialize the Pair to a canonical JSON string
     pub fn json(&self) -> String {
         // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
         serde_json::to_string(&self).unwrap()
     }
 }
@@ -144,5 +146,14 @@ pub mod tests {
         let p1 = Pair::new(&chain, &e1);
 
         assert!(p1.validate());
+    }
+
+    #[test]
+    /// test serialization as JSON
+    fn json() {
+        assert_eq!(
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            test_pair().json(),
+        );
     }
 }

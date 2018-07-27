@@ -31,8 +31,8 @@ impl SimplePersister {
 mod tests {
     use super::*;
     use hash_table::entry::tests::test_entry;
-    use std::sync::mpsc::channel;
     use snowflake;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate() {
@@ -52,7 +52,7 @@ mod tests {
 
         let state = State::new();
 
-        let action = ::state::Action::Agent(::agent::Action::Commit{
+        let action = ::state::Action::Agent(::agent::Action::Commit {
             entry: test_entry(),
             id: snowflake::ProcessUniqueId::new(),
         });

@@ -1,9 +1,9 @@
+use agent::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use snowflake;
 use std::sync::mpsc::channel;
-use agent::ActionResult;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
@@ -82,7 +82,6 @@ pub fn invoke_commit(
 
     match action_result {
         ActionResult::Commit(hash) => {
-
             // write JSON pair to memory
             let params_str = format!("{{\"hash\":\"{}\"}}", hash);
             let mut params: Vec<_> = params_str.into_bytes();

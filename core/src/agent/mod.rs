@@ -52,7 +52,7 @@ impl AgentState {
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
-    Commit{
+    Commit {
         entry: Entry,
         id: snowflake::ProcessUniqueId,
     },

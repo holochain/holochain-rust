@@ -4,7 +4,6 @@ extern crate serde_json;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-
 //--------------------------------------------------------------------------------------------------
 // Error Codes
 //--------------------------------------------------------------------------------------------------
@@ -20,7 +19,6 @@ pub enum HcApiReturnCode {
     ERROR = 3 << 16,
 }
 
-
 //pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
 //
 //}
@@ -34,7 +32,6 @@ pub fn encode_error(offset: u16) -> HcApiReturnCode {
     }
 }
 
-
 //--------------------------------------------------------------------------------------------------
 // Single Page Memory Allocation
 //--------------------------------------------------------------------------------------------------
@@ -45,7 +42,6 @@ pub struct SinglePageAllocation {
     pub offset: u16,
     pub length: u16,
 }
-
 
 #[allow(unknown_lints)]
 #[allow(cast_lossless)]
@@ -72,7 +68,6 @@ impl SinglePageAllocation {
     }
 }
 
-
 //--------------------------------------------------------------------------------------------------
 // Single Page Memory Stack Manager
 //--------------------------------------------------------------------------------------------------
@@ -82,7 +77,6 @@ impl SinglePageAllocation {
 pub struct SinglePageStack {
     top: u16,
 }
-
 
 #[allow(unknown_lints)]
 #[allow(cast_lossless)]
@@ -123,7 +117,6 @@ impl SinglePageStack {
         self.top
     }
 }
-
 
 //-------------------------------------------------------------------------------------------------
 // Serialization

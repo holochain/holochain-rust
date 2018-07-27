@@ -21,7 +21,6 @@ use wasmi::{
 // HC API FUNCTION IMPLEMENTATIONS
 //--------------------------------------------------------------------------------------------------
 
-
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
 enum HcApiFuncIndex {
@@ -60,14 +59,12 @@ fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Runt
     Ok(None)
 }
 
-
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
 struct CommitInputStruct {
     entry_type_name: String,
     entry_content: String,
 }
-
 
 /// HcApiFuncIndex::COMMIT function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -131,7 +128,6 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
 }
 
-
 //--------------------------------------------------------------------------------------------------
 // Wasm call
 //--------------------------------------------------------------------------------------------------
@@ -145,7 +141,6 @@ pub struct Runtime {
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
 }
-
 
 ///
 /// Executes an exposed function in a wasm binary

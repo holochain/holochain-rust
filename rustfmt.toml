@@ -1,3 +1,2 @@
 imports_indent = "block"
 merge_imports = true
-blank_lines_upper_bound = 2    # Clearer seperation helps scan-ability

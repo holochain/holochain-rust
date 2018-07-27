@@ -91,7 +91,7 @@ pub fn reduce(
                     let mut chain = Chain::new(Rc::new(MemTable::new()));
                     chain.push(&entry).unwrap();
 
-                    let result = chain.push(&entry).unwrap().key();
+                    let result = chain.push(&entry).unwrap().entry().key();
                     new_state
                         .actions
                         .insert(agent_action.clone(), ActionResult::Commit(result));

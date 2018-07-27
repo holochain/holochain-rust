@@ -77,9 +77,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
             // write JSON pair to memory
             let mut params: Vec<_> = pair_str.to_string().into_bytes();
-            // params.push(0); // Add string terminate character (important)
-
-            assert!(0 == mem_offset);
+            params.push(0); // Add string terminate character (important)
 
             // TODO #65 - use our Malloc instead
             runtime
@@ -192,10 +190,10 @@ mod tests {
         ).expect("test_get should be callable");
 
         // @TODO
-        let b = runtime.memory.get(0, 222).unwrap();
+        let b = runtime.memory.get(0, 223).unwrap();
         let s = String::from_utf8(b).unwrap();
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}",
             s,
         );
     }

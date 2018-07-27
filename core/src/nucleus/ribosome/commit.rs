@@ -2,6 +2,8 @@ use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use snowflake;
+use std::sync::mpsc::channel;
+use agent::ActionResult;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
@@ -50,41 +52,53 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action_commit = ::state::Action::Agent(
-        ::agent::Action::Commit {
-            entry: entry.clone(),
-            id: snowflake::ProcessUniqueId::new(),
-        },
-    );
+    let action = ::agent::Action::Commit {
+        entry: entry.clone(),
+        id: snowflake::ProcessUniqueId::new(),
+    };
 
     // Send Action and block for result
-    // TODO #97 - Dispatch with observer so we can check if the action did its job without errors
-    ::instance::dispatch_action_and_wait(
+    let (sender, receiver) = channel();
+    ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        action_commit.clone(),
-        // TODO #131 - add timeout argument and return error on timeout
-        // REDUX_DEFAULT_TIMEOUT_MS,
+        ::state::Action::Agent(action.clone()),
+        move |state: &::state::State| {
+            let actions = state.agent().actions().clone();
+            if actions.contains_key(&action) {
+                // @TODO is this unwrap OK since we check the key exists above?
+                let v = actions.get(&action).unwrap();
+                sender.send(v.clone()).expect("local channel to be open");
+                true
+            } else {
+                false
+            }
+        },
     );
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    // Hash entry
-    // @TODO seems wrong to use the entry hash rather than pair key
-    // @see https://github.com/holochain/holochain-rust/issues/160
-    let hash_str = entry.hash();
+    let action_result = receiver.recv().expect("local channel to work");
 
-    // Write Hash of Entry in memory in output format
-    let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
-    let mut params: Vec<_> = params_str.into_bytes();
-    params.push(0); // Add string terminate character (important)
+    match action_result {
+        ActionResult::Commit(hash) => {
 
-    // TODO #65 - use our Malloc instead
-    runtime
-        .memory
-        .set(mem_offset, &params)
-        .expect("memory should be writable");
+            // write JSON pair to memory
+            let params_str = format!("{{\"hash\":\"{}\"}}", hash);
+            let mut params: Vec<_> = params_str.into_bytes();
+            params.push(0); // Add string terminate character (important)
 
-    // Return success in i32 format
-    Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+            // TODO #65 - use our Malloc instead
+            runtime
+                .memory
+                .set(mem_offset, &params)
+                .expect("memory should be writable");
+
+            // Return success in i32 format
+            Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+        }
+        _ => {
+            panic!("action result of get not get of result action");
+        }
+    }
 }

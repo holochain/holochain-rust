@@ -228,6 +228,30 @@ pub mod tests {
     }
 
     #[test]
+    /// smoke test building a new commit action + result
+    fn action_commit() {
+        test_action_commit();
+        test_action_result_commit();
+
+        // actions have unique ids and are not equal
+        assert_ne!(test_action_commit(), test_action_commit());
+        // the result is equal though
+        assert_eq!(test_action_result_commit(), test_action_result_commit());
+    }
+
+    #[test]
+    /// smoke test building a new get action + result
+    fn action_get() {
+        test_action_get();
+        test_action_result_get();
+
+        // actions have unique ids and are not equal
+        assert_ne!(test_action_get(), test_action_get());
+        // the result is equal though
+        assert_eq!(test_action_result_get(), test_action_result_get());
+    }
+
+    #[test]
     /// test for action commit
     fn agent_state_do_commit() {
         let mut state = test_agent_state();

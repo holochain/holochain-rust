@@ -35,6 +35,22 @@ pub struct MsgCliCall<'a>(
 );
 
 /**
+Client wishes to respond to a `call` message another node sent.
+This message is an array of 4 `&[u8]` slices.
+- index 0 : local message identifier
+- index 1 : remote message identifier
+- index 2 : destination node address
+- index 3 : message data
+*/
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct MsgCliCallResp<'a>(
+    #[serde(with = "serde_bytes")] pub &'a [u8],
+    #[serde(with = "serde_bytes")] pub &'a [u8],
+    #[serde(with = "serde_bytes")] pub &'a [u8],
+    #[serde(with = "serde_bytes")] pub &'a [u8],
+);
+
+/**
 A server response to a client-intiated `ping` message.
 This message is an array of 2 `f64` millisecond epoch timestamp values.
 - index 0 : the echoed initiation time of the originating `ping` message
@@ -111,6 +127,7 @@ This enum is an amalgomation of all the server-sent message types to be used as 
 pub enum Message {
     SrvPong(MsgSrvPong),
     SrvRespOk(MsgSrvRespOk),
+    SrvRespFail(MsgSrvRespFail),
     SrvRecvSend(MsgSrvRecvSend),
     SrvRecvCall(MsgSrvRecvCall),
     SrvRecvCallResp(MsgSrvRecvCallResp),

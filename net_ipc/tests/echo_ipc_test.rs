@@ -3,7 +3,11 @@ extern crate net_ipc;
 #[macro_use]
 extern crate failure;
 
+use std::collections::HashSet;
+
 use net_ipc::ZmqIpcClient;
+use net_ipc::errors::*;
+use std::sync::{Arc, Mutex};
 
 fn prep() -> std::process::Child {
     assert!(
@@ -30,63 +34,305 @@ fn prep() -> std::process::Child {
 }
 
 #[test]
-fn it_can_send_and_call() {
+fn it_can_send_call_and_call_resp() {
     let mut n3h_server = prep();
     println!("n3h_server pid: {}", n3h_server.id());
 
-    let mut cli = ZmqIpcClient::new().unwrap();
-    cli.connect("ipc://echo-server.sock").unwrap();
+    let message_id: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
 
-    let did_send = std::sync::Arc::new(std::sync::Mutex::new(false));
-    let did_call = std::sync::Arc::new(std::sync::Mutex::new(false));
-    let did_call_resp = std::sync::Arc::new(std::sync::Mutex::new(false));
+    let cli = Arc::new(Mutex::new(ZmqIpcClient::new().unwrap()));
+    cli.lock().unwrap().connect("ipc://echo-server.sock").unwrap();
+    //cli.lock().unwrap().connect("ipc:///home/neonphog/projects/n3h/echo-server.sock").unwrap();
 
-    let did_send_oth = did_send.clone();
-    let did_call_oth = did_call.clone();
-    let did_call_resp_oth = did_call_resp.clone();
+    {
+        let cli_clone = cli.clone();
+        let fu = |mut done: Box<FnMut(Result<Option<net_ipc::message::Message>>) -> bool>| {
+            loop {
+                let msg = cli_clone.lock().unwrap().process(10);
+                if done(msg) {
+                    break
+                }
+            }
+        };
 
-    cli.send(
-        b"ab12",
-        b"hello:send",
-        Some(Box::new(move |r| {
-            match did_send_oth.lock() {
-                Ok(mut s) => *s = true,
-                Err(_) => bail!("brains"),
+        let state: Arc<Mutex<HashSet<String>>> =
+            Arc::new(Mutex::new(HashSet::new()));
+
+        println!("# TRY SET FAIL");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().send(
+            b"",
+            b"$$ctrl$$:FAIL",
+            Some(Box::new(move |r| {
+                if let Err(_r) = r {
+                    panic!("failed to set echo server MODE");
+                }
+                state_clone.lock().unwrap().insert("send_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |_msg| {
+            state_clone.lock().unwrap().len() >= 1
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# SET FAIL - success");
+
+        println!("# - sending a `send`... it should fail - #");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().send(
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Ok(r) = r {
+                    panic!("expected error, but got success: {:?}", r);
+                }
+                state_clone.lock().unwrap().insert("send_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            if let Ok(msg) = msg {
+                panic!("expected error, but got success: {:?}", msg);
             }
-            println!("send result: {:?}", r);
-            Ok(())
-        })),
-    ).unwrap();
-    cli.call(
-        b"ab12",
-        b"hello:call",
-        Some(Box::new(move |r| {
-            match did_call_oth.lock() {
-                Ok(mut s) => *s = true,
-                Err(_) => bail!("brains"),
+            state_clone.lock().unwrap().insert("send_result_msg".to_string());
+            state_clone.lock().unwrap().len() >= 2
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# - sending a `call`... it should fail - #");
+
+        let state_clone = state.clone();
+        let state_clone2 = state.clone();
+        cli.lock().unwrap().call(
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Ok(r) = r {
+                    panic!("expected error, but got success: {:?}", r);
+                }
+                state_clone.lock().unwrap().insert("call_result".to_string());
+                Ok(())
+            })),
+            Some(Box::new(move |r| {
+                if let Ok(r) = r {
+                    panic!("expected error, but got success: {:?}", r);
+                }
+                state_clone2.lock().unwrap().insert("call_resp_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            if let Ok(msg) = msg {
+                if let None = msg {
+                    return false
+                }
+                panic!("expected error, but got success: {:?}", msg);
             }
-            println!("call result: {:?}", r);
-            Ok(())
-        })),
-        Some(Box::new(move |r| {
-            match did_call_resp_oth.lock() {
-                Ok(mut s) => *s = true,
-                Err(_) => bail!("brains"),
+            state_clone.lock().unwrap().insert("call_result_msg".to_string());
+            state_clone.lock().unwrap().len() >= 3
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# - sending a `call_resp`... it should fail - #");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().call_resp(
+            b"",
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Ok(r) = r {
+                    panic!("expected error, but got success: {:?}", r);
+                }
+                state_clone.lock().unwrap().insert("call_resp_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            if let Ok(msg) = msg {
+                panic!("expected error, but got success: {:?}", msg);
             }
-            println!("call resp result: {:?}", r);
-            Ok(())
-        })),
-    ).unwrap();
-    loop {
-        let msg = cli.process(1000).unwrap();
-        println!(
-            "msg: {:?}, did_send: {:?}, did_call: {:?}, did_call_resp: {:?}",
-            msg, did_send, did_call, did_call_resp
-        );
-        if *did_send.lock().unwrap() && *did_call.lock().unwrap() && *did_call_resp.lock().unwrap()
-        {
-            break;
-        }
+            state_clone.lock().unwrap().insert("call_resp_result_msg".to_string());
+            state_clone.lock().unwrap().len() >= 2
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# TRY SET ECHO");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().send(
+            b"",
+            b"$$ctrl$$:ECHO",
+            Some(Box::new(move |r| {
+                if let Err(_r) = r {
+                    panic!("failed to set echo server MODE");
+                }
+                state_clone.lock().unwrap().insert("send_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |_msg| {
+            state_clone.lock().unwrap().len() >= 1
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# SET ECHO - success");
+
+        println!("# - sending a `send`... it should succeed - #");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().send(
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Err(r) = r {
+                    panic!("erroneous error: {:?}", r);
+                }
+                state_clone.lock().unwrap().insert("send_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            let msg = match msg {
+                Err(e) => panic!("erroneous error: {:?}", e),
+                Ok(v) => v,
+            };
+            match msg {
+                Some(v) => match v {
+                    net_ipc::message::Message::SrvRespOk(_s) => {
+                        state_clone.lock().unwrap().insert("send_result_msg".to_string());
+                        state_clone.lock().unwrap().len() >= 3
+                    },
+                    net_ipc::message::Message::SrvRecvSend(_s) => {
+                        state_clone.lock().unwrap().insert("send_echo".to_string());
+                        state_clone.lock().unwrap().len() >= 3
+                    },
+                    _ => {
+                        false
+                    }
+                },
+                None => false
+            }
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# - sending a `call`... it should succeed - #");
+
+        let state_clone = state.clone();
+        let state_clone2 = state.clone();
+        let message_id_clone = message_id.clone();
+        cli.lock().unwrap().call(
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Err(r) = r {
+                    panic!("erroneous error: {:?}", r);
+                } else if let Ok(mut r) = r {
+                    message_id_clone.lock().unwrap().clear();
+                    message_id_clone.lock().unwrap().append(&mut r.0);
+                }
+                state_clone.lock().unwrap().insert("call_result".to_string());
+                Ok(())
+            })),
+            Some(Box::new(move |r| {
+                if let Err(r) = r {
+                    panic!("erroneous error: {:?}", r);
+                }
+                state_clone2.lock().unwrap().insert("HANDLED-LATER".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            let msg = match msg {
+                Err(e) => panic!("erroneous error: {:?}", e),
+                Ok(v) => v,
+            };
+            match msg {
+                Some(v) => match v {
+                    net_ipc::message::Message::SrvRespOk(_s) => {
+                        state_clone.lock().unwrap().insert("call_result_msg".to_string());
+                        state_clone.lock().unwrap().len() >= 3
+                    },
+                    net_ipc::message::Message::SrvRecvCall(_s) => {
+                        state_clone.lock().unwrap().insert("call_echo".to_string());
+                        state_clone.lock().unwrap().len() >= 3
+                    },
+                    _ => {
+                        false
+                    }
+                },
+                None => false
+            }
+        }));
+
+        println!("got id: {:?}", &message_id.lock().unwrap().as_slice());
+
+        state.lock().unwrap().clear();
+
+        println!("# - sending a `call_resp`... it should succeed - #");
+
+        let state_clone = state.clone();
+        cli.lock().unwrap().call_resp(
+            message_id.lock().unwrap().as_slice(),
+            b"",
+            b"test",
+            Some(Box::new(move |r| {
+                if let Err(r) = r {
+                    panic!("erroneous error: {:?}", r);
+                }
+                state_clone.lock().unwrap().insert("call_resp_result".to_string());
+                Ok(())
+            })),
+        ).unwrap();
+
+        let state_clone = state.clone();
+        fu(Box::new(move |msg| {
+            let msg = match msg {
+                Err(e) => panic!("erroneous error: {:?}", e),
+                Ok(v) => v,
+            };
+            match msg {
+                Some(v) => {
+                    match v {
+                        net_ipc::message::Message::SrvRespOk(_s) => {
+                            state_clone.lock().unwrap().insert("call_resp_result_msg".to_string());
+                            state_clone.lock().unwrap().len() >= 4
+                        },
+                        net_ipc::message::Message::SrvRecvCallResp(_s) => {
+                            state_clone.lock().unwrap().insert("call_resp_echo_echo".to_string());
+                            state_clone.lock().unwrap().len() >= 4
+                        },
+                        _ => {
+                            false
+                        }
+                    }
+                },
+                None => false
+            }
+        }));
     }
 
     println!("attempting to kill echo server");
@@ -97,7 +343,13 @@ fn it_can_send_and_call() {
     println!("echo server off");
 
     println!("attempting to kill zeromq context");
-    cli.close().unwrap();
+    match Arc::try_unwrap(cli) {
+        Ok(cli) => {
+            let cli = cli.into_inner().unwrap();
+            cli.close().unwrap();
+        }
+        _ => panic!("couldn't un-Arc")
+    }
     ZmqIpcClient::destroy_context().unwrap();
     println!("zemomq is off");
 }

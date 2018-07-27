@@ -13,11 +13,8 @@ use msg_types::*;
 use socket::{IpcSocket, ZmqIpcSocket};
 use util::*;
 
-/// A closure callback type def for getting acknowledgment when performing a `send`.
-pub type SendResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
-
-/// A closure callback type def for getting acknowledgment when performing a `call`.
-pub type CallResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
+/// A closure callback type def for getting acknowledgment when performing a `send`, `call`, or `call_resp`.
+pub type LocalResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
 
 /// A closure callback type def for getting a response from a remote server when performing a `call`.
 pub type CallResponseResult = Box<FnMut(Result<MsgSrvRecvCallResp>) -> Result<()> + Send>;
@@ -30,9 +27,8 @@ This struct takes an abstract socket type mainly to facilitate unit testing. You
 pub struct IpcClient<S: IpcSocket> {
     socket: Box<S>,
     next_id: u64,
-    send_callbacks: HashMap<Vec<u8>, SendResult>,
-    call_callbacks: HashMap<Vec<u8>, CallResult>,
-    call_resp_callbacks: HashMap<Vec<u8>, CallResponseResult>,
+    local_callbacks: HashMap<Vec<u8>, (f64, LocalResult)>,
+    call_resp_callbacks: HashMap<Vec<u8>, (f64, CallResponseResult)>,
 }
 
 impl<S: IpcSocket> IpcClient<S> {
@@ -51,8 +47,7 @@ impl<S: IpcSocket> IpcClient<S> {
         Ok(Self {
             socket: S::new()?,
             next_id: 0,
-            send_callbacks: HashMap::new(),
-            call_callbacks: HashMap::new(),
+            local_callbacks: HashMap::new(),
             call_resp_callbacks: HashMap::new(),
         })
     }
@@ -62,8 +57,7 @@ impl<S: IpcSocket> IpcClient<S> {
     */
     pub fn close(mut self) -> Result<()> {
         self.socket.close()?;
-        self.send_callbacks.clear();
-        self.call_callbacks.clear();
+        self.local_callbacks.clear();
         self.call_resp_callbacks.clear();
         Ok(())
     }
@@ -73,15 +67,19 @@ impl<S: IpcSocket> IpcClient<S> {
     */
     pub fn connect(&mut self, endpoint: &str) -> Result<()> {
         let connect_start = get_millis();
+
+        let mut wait_backoff: i64 = 1;
+
         self.socket.connect(endpoint)?;
         loop {
             if get_millis() - connect_start > 1000.0 {
                 return Err(IpcError::Timeout.into());
             }
 
+            println!("sending ping");
             self.ping()?;
 
-            match self.process(10)? {
+            match self.process(wait_backoff)? {
                 Some(msg) => match msg {
                     Message::SrvPong(pong) => {
                         println!(
@@ -95,8 +93,12 @@ impl<S: IpcSocket> IpcClient<S> {
                         panic!("cannot handle non-pongs during connect");
                     }
                 },
-                None => continue,
+                None => {
+                    wait_backoff *= 2;
+                    continue;
+                }
             }
+
         }
         Ok(())
     }
@@ -113,10 +115,10 @@ impl<S: IpcSocket> IpcClient<S> {
     /**
     Transmit a fire-and-forget `send` message to another node on the p2p network.
     */
-    pub fn send(&mut self, to_address: &[u8], data: &[u8], cb: Option<SendResult>) -> Result<()> {
+    pub fn send(&mut self, to_address: &[u8], data: &[u8], cb: Option<LocalResult>) -> Result<()> {
         let id = self.priv_get_id()?;
         if let Some(cb) = cb {
-            self.send_callbacks.insert(id.clone(), cb);
+            self.local_callbacks.insert(id.clone(), (get_millis(), cb));
         }
         let snd = MsgCliSend(&id, to_address, data);
         self.priv_send(MSG_CLI_SEND, &snd)?;
@@ -130,18 +132,37 @@ impl<S: IpcSocket> IpcClient<S> {
         &mut self,
         to_address: &[u8],
         data: &[u8],
-        cb: Option<CallResult>,
+        cb: Option<LocalResult>,
         resp_cb: Option<CallResponseResult>,
     ) -> Result<()> {
         let id = self.priv_get_id()?;
         if let Some(cb) = cb {
-            self.call_callbacks.insert(id.clone(), cb);
+            self.local_callbacks.insert(id.clone(), (get_millis(), cb));
         }
         if let Some(resp_cb) = resp_cb {
-            self.call_resp_callbacks.insert(id.clone(), resp_cb);
+            self.call_resp_callbacks.insert(id.clone(), (get_millis(), resp_cb));
         }
         let snd = MsgCliCall(&id, &id, to_address, data);
         self.priv_send(MSG_CLI_CALL, &snd)?;
+        Ok(())
+    }
+
+    /**
+    Transmit a response to an RPC-style `call` message some other node sent us.
+    */
+    pub fn call_resp(
+        &mut self,
+        message_id: &[u8],
+        to_address: &[u8],
+        data: &[u8],
+        cb: Option<LocalResult>,
+    ) -> Result<()> {
+        let id = self.priv_get_id()?;
+        if let Some(cb) = cb {
+            self.local_callbacks.insert(id.clone(), (get_millis(), cb));
+        }
+        let snd = MsgCliCallResp(&id, message_id, to_address, data);
+        self.priv_send(MSG_CLI_CALL_RESP, &snd)?;
         Ok(())
     }
 
@@ -169,17 +190,29 @@ impl<S: IpcSocket> IpcClient<S> {
                 return Ok(Some(Message::SrvPong(pong)));
             }
             MSG_SRV_RESP_OK => {
-                println!("parsing: {:?}", msg);
                 let resp: MsgSrvRespOk = rmp_serde::from_slice(msg)?;
-                if let Entry::Occupied(mut e) = self.send_callbacks.entry(resp.0.clone()) {
-                    e.get_mut()(Ok(resp.clone()))?;
-                    e.remove();
-                }
-                if let Entry::Occupied(mut e) = self.call_callbacks.entry(resp.0.clone()) {
-                    e.get_mut()(Ok(resp.clone()))?;
+                if let Entry::Occupied(mut e) = self.local_callbacks.entry(resp.0.clone()) {
+                    e.get_mut().1(Ok(resp.clone()))?;
                     e.remove();
                 }
                 return Ok(Some(Message::SrvRespOk(resp)));
+            }
+            MSG_SRV_RESP_FAIL => {
+                let resp: MsgSrvRespFail = rmp_serde::from_slice(msg)?;
+                let id = resp.0;
+                let resp = format!("code: {}, msg: {}", resp.1, resp.2);
+                let resp = IpcError::GenericError {
+                    error: resp,
+                };
+                if let Entry::Occupied(mut e) = self.local_callbacks.entry(id.clone()) {
+                    e.get_mut().1(Err(resp.clone().into()))?;
+                    e.remove();
+                }
+                if let Entry::Occupied(mut e) = self.call_resp_callbacks.entry(id.clone()) {
+                    e.get_mut().1(Err(resp.clone().into()))?;
+                    e.remove();
+                }
+                return Err(resp.into());
             }
             MSG_SRV_RECV_SEND => {
                 let recv: MsgSrvRecvSend = rmp_serde::from_slice(msg)?;
@@ -192,7 +225,7 @@ impl<S: IpcSocket> IpcClient<S> {
             MSG_SRV_RECV_CALL_RESP => {
                 let recv: MsgSrvRecvCallResp = rmp_serde::from_slice(msg)?;
                 if let Entry::Occupied(mut e) = self.call_resp_callbacks.entry(recv.0.clone()) {
-                    e.get_mut()(Ok(recv.clone()))?;
+                    e.get_mut().1(Ok(recv.clone()))?;
                     e.remove();
                 }
                 return Ok(Some(Message::SrvRecvCallResp(recv)));

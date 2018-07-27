@@ -8,7 +8,7 @@ use std;
 /**
 net_ipc-specific error types
 */
-#[derive(Debug, Fail)]
+#[derive(Debug, Clone, Fail)]
 pub enum IpcError {
     /// Translate an Option<_> unwrap into a Result::Err
     #[fail(display = "NoneError")]

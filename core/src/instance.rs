@@ -82,6 +82,7 @@ impl Instance {
 
             // @TODO this should all be callable outside the loop so that deterministic tests that
             // don't rely on time can be written
+            // @see https://github.com/holochain/holochain-rust/issues/169
             loop {
                 match rx_action.recv_timeout(Duration::from_millis(REDUX_LOOP_TIMEOUT_MS)) {
                     Ok(action_wrapper) => {
@@ -244,6 +245,18 @@ pub mod tests {
         }
 
         instance
+    }
+
+    #[test]
+    /// smoke test action channel
+    fn action_channel() {
+        test_instance().action_channel();
+    }
+
+    #[test]
+    /// smoke test observer channel
+    fn observer_channel() {
+        test_instance().observer_channel();
     }
 
     /// This test shows how to call dispatch with a closure that should run

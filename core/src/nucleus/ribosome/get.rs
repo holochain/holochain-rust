@@ -133,25 +133,6 @@ mod tests {
         let wasm_binary = Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
-            // .convert(
-            //     r#"
-            //     (module
-            //         (type (;0;) (func (result i32)))
-            //         (type (;1;) (func (param i32) (param i32) (result i32)))
-            //         (type (;2;) (func))
-            //         (import "env" "get" (func $get (type 1)))
-            //         (func (export "test_get_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-            //             i32.const 0
-            //             i32.const 46
-            //             call $get)
-            //         (func $rust_eh_personality (type 2))
-            //         (table (;0;) 1 1 anyfunc)
-            //         (memory (;0;) 17)
-            //         (global (;0;) (mut i32) (i32.const 1049600))
-            //         (export "memory" (memory 0))
-            //         (export "rust_eh_personality" (func $rust_eh_personality)))
-            // "#,
-            // )
             .convert(
                 // We don't expect everyone to be a pro at hand-coding WASM so...
                 //
@@ -202,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get() {
+    fn test_get_round_trip() {
         let dna = test_utils::create_test_dna_with_wasm(
             "test_zome__get".into(),
             ReservedCapabilityNames::LifeCycle.as_str().to_string(),
@@ -220,9 +201,13 @@ mod tests {
             Some(test_args_bytes()),
         ).expect("test_get should be callable");
 
-        let b = runtime.memory.get(0, 56).unwrap();
+        // @TODO 
+        let b = runtime.memory.get(0, 222).unwrap();
         let s = String::from_utf8(b).unwrap();
-        assert_eq!("{\"key\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}", s);
+        assert_eq!(
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            s,
+        );
     }
 
 }

@@ -50,6 +50,8 @@ impl Hash for ActionWrapper {
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
+    // @TODO eventually drop stale history
+    // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
 }
 

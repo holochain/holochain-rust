@@ -20,6 +20,7 @@ pub struct AgentState {
     // @see https://github.com/holochain/holochain-rust/issues/135
     top_pair: Option<Pair>,
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
+    // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<Action, ActionResult>,
 }
 
@@ -103,12 +104,12 @@ pub fn reduce(
 
                     // drop in a dummy entry for testing
                     let mut chain = Chain::new(Rc::new(MemTable::new()));
-                    let e = Entry::new("fake entry type", "fake entry content");
+                    let e = Entry::new("testEntryType", "test entry content");
                     chain.push(&e).unwrap();
 
                     // @TODO if the get fails local, do a network get
 
-                    let result = chain.get(&key).unwrap();
+                    let result = chain.get_entry(&key).unwrap();
                     new_state.actions.insert(
                         agent_action.clone(),
                         ActionResult::Get(result),

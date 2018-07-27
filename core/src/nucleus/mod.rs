@@ -35,6 +35,8 @@ impl Default for NucleusStatus {
 pub struct NucleusState {
     dna: Option<Dna>,
     status: NucleusStatus,
+    // @TODO eventually drop stale calls
+    // @see https://github.com/holochain/holochain-rust/issues/166
     ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 

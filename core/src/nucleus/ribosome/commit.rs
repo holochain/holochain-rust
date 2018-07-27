@@ -1,6 +1,7 @@
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use snowflake;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug)]
@@ -49,7 +50,12 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action_commit = ::state::Action::Agent(::agent::Action::Commit(entry.clone()));
+    let action_commit = ::state::Action::Agent(
+        ::agent::Action::Commit {
+            entry: entry.clone(),
+            id: snowflake::ProcessUniqueId::new(),
+        },
+    );
 
     // Send Action and block for result
     // TODO #97 - Dispatch with observer so we can check if the action did its job without errors

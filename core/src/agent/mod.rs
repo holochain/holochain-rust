@@ -52,7 +52,10 @@ impl AgentState {
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
-    Commit(Entry),
+    Commit{
+        entry: Entry,
+        id: snowflake::ProcessUniqueId,
+    },
     Get {
         key: String,
         id: snowflake::ProcessUniqueId,
@@ -78,7 +81,7 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit(ref entry) => {
+                Action::Commit { ref entry, id: _ } => {
                     // add entry to source chain
                     // @TODO this does nothing!
                     // it needs to get something stateless from the agent state that points to

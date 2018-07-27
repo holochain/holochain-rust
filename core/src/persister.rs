@@ -32,6 +32,7 @@ mod tests {
     use super::*;
     use hash_table::entry::tests::test_entry;
     use std::sync::mpsc::channel;
+    use snowflake;
 
     #[test]
     fn can_instantiate() {
@@ -51,7 +52,10 @@ mod tests {
 
         let state = State::new();
 
-        let action = ::state::Action::Agent(::agent::Action::Commit(test_entry()));
+        let action = ::state::Action::Agent(::agent::Action::Commit{
+            entry: test_entry(),
+            id: snowflake::ProcessUniqueId::new(),
+        });
         let (sender, _receiver) = channel::<::state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(::state::ActionWrapper::new(action), &sender, &tx_observer);

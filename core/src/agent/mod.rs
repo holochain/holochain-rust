@@ -45,6 +45,8 @@ impl AgentState {
         self.top_pair.clone()
     }
 
+    /// getter for a copy of self.actions
+    /// uniquely maps action executions to the result of the action
     pub fn actions(&self) -> HashMap<Action, ActionResult> {
         self.actions.clone()
     }
@@ -62,12 +64,83 @@ pub enum Action {
     },
 }
 
+impl Action {
+    pub fn commit(entry: &Entry) -> Action {
+        Action::Commit{
+            id: snowflake::ProcessUniqueId::new(),
+            entry: entry.clone(),
+        }
+    }
+
+    pub fn get(key: &str) -> Action {
+        Action::Get{
+            id: snowflake::ProcessUniqueId::new(),
+            key: key.to_string()
+        }
+    }
+}
+
 impl Eq for Action {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ActionResult {
     Commit(String),
     Get(Option<Pair>),
+}
+
+/// do a commit action against an agent state
+/// intended for use inside the reducer, isolated for unit testing
+fn do_action_commit(state: &mut AgentState, action: &Action) {
+    match action {
+        Action::Commit{ entry, .. } => {
+            // add entry to source chain
+            // @TODO this does nothing!
+            // it needs to get something stateless from the agent state that points to
+            // something stateful that can handle an entire hash table (e.g. actor)
+            // @see https://github.com/holochain/holochain-rust/issues/135
+            // @see https://github.com/holochain/holochain-rust/issues/148
+            let mut chain = Chain::new(Rc::new(MemTable::new()));
+
+            let result = chain.push(&entry).unwrap().entry().key();
+            state
+                .actions
+                .insert(action.clone(), ActionResult::Commit(result));
+        },
+        _ => {
+            panic!("action commit without commit action");
+        }
+    }
+}
+
+/// do a get action against an agent state
+/// intended for use inside the reducer, isolated for unit testing
+fn do_action_get(state: &mut AgentState, action: &Action) {
+    match action {
+        Action::Get{ key, .. } => {
+            // get pair from source chain
+            // @TODO this does nothing!
+            // it needs to get something stateless from the agent state that points to
+            // something stateful that can handle an entire hash table (e.g. actor)
+            // @see https://github.com/holochain/holochain-rust/issues/135
+            // @see https://github.com/holochain/holochain-rust/issues/148
+
+            // drop in a dummy entry for testing
+            let mut chain = Chain::new(Rc::new(MemTable::new()));
+            let e = Entry::new("testEntryType", "test entry content");
+            chain.push(&e).unwrap();
+
+            // @TODO if the get fails local, do a network get
+            // @see https://github.com/holochain/holochain-rust/issues/167
+
+            let result = chain.get_entry(&key).unwrap();
+            state
+                .actions
+                .insert(action.clone(), ActionResult::Get(result));
+        },
+        _ => {
+            panic!("action get without get action");
+        }
+    }
 }
 
 /// Reduce Agent's state according to provided Action
@@ -81,42 +154,12 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                Action::Commit { ref entry, id: _ } => {
-                    // add entry to source chain
-                    // @TODO this does nothing!
-                    // it needs to get something stateless from the agent state that points to
-                    // something stateful that can handle an entire hash table (e.g. actor)
-                    // @see https://github.com/holochain/holochain-rust/issues/135
-                    // @see https://github.com/holochain/holochain-rust/issues/148
-                    let mut chain = Chain::new(Rc::new(MemTable::new()));
-                    chain.push(&entry).unwrap();
-
-                    let result = chain.push(&entry).unwrap().entry().key();
-                    new_state
-                        .actions
-                        .insert(agent_action.clone(), ActionResult::Commit(result));
-                }
-                Action::Get { ref key, id: _ } => {
-                    // get pair from source chain
-                    // @TODO this does nothing!
-                    // it needs to get something stateless from the agent state that points to
-                    // something stateful that can handle an entire hash table (e.g. actor)
-                    // @see https://github.com/holochain/holochain-rust/issues/135
-                    // @see https://github.com/holochain/holochain-rust/issues/148
-
-                    // drop in a dummy entry for testing
-                    let mut chain = Chain::new(Rc::new(MemTable::new()));
-                    let e = Entry::new("testEntryType", "test entry content");
-                    chain.push(&e).unwrap();
-
-                    // @TODO if the get fails local, do a network get
-                    // @see https://github.com/holochain/holochain-rust/issues/167
-
-                    let result = chain.get_entry(&key).unwrap();
-                    new_state
-                        .actions
-                        .insert(agent_action.clone(), ActionResult::Get(result));
-                }
+                ref action @ Action::Commit{ .. } => {
+                    do_action_commit(&mut new_state, &action);
+                },
+                ref action @ Action::Get{ .. } => {
+                    do_action_get(&mut new_state, &action);
+                },
             }
             Arc::new(new_state)
         }
@@ -127,10 +170,37 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::AgentState;
+    use std::collections::HashMap;
+    use super::Action;
+    use hash_table::entry::tests::test_entry;
+    use hash_table::pair::tests::test_pair;
+    use super::do_action_commit;
+    use super::do_action_get;
+    use super::ActionResult;
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {
         AgentState::new()
+    }
+
+    /// builds a dummy action for testing commit
+    pub fn test_action_commit() -> Action {
+        Action::commit(&test_entry())
+    }
+
+    /// builds a dummy action result for testing commit
+    pub fn test_action_result_commit() -> ActionResult {
+        ActionResult::Commit(test_entry().key())
+    }
+
+    /// builds a dummy action for testing get
+    pub fn test_action_get() -> Action {
+        Action::get(&test_entry().key())
+    }
+
+    /// builds a dummy action result for testing get
+    pub fn test_action_result_get() -> ActionResult {
+        ActionResult::Get(Some(test_pair()))
     }
 
     #[test]
@@ -149,5 +219,39 @@ pub mod tests {
     /// test for the agent state top pair getter
     fn agent_state_top_pair() {
         assert_eq!(None, test_agent_state().top_pair());
+    }
+
+    #[test]
+    /// test for the agent state actions getter
+    fn agent_state_actions() {
+        assert_eq!(HashMap::new(), test_agent_state().actions());
+    }
+
+    #[test]
+    /// test for action commit
+    fn agent_state_do_commit() {
+        let mut state = test_agent_state();
+        let action = test_action_commit();
+
+        do_action_commit(&mut state, &action);
+
+        assert_eq!(
+            state.actions().get(&action),
+            Some(&test_action_result_commit()),
+        );
+    }
+
+    #[test]
+    /// test for action get
+    fn agent_state_do_get() {
+        let mut state = test_agent_state();
+        let action = test_action_get();
+
+        do_action_get(&mut state, &action);
+
+        assert_eq!(
+            state.actions().get(&action),
+            Some(&test_action_result_get()),
+        );
     }
 }

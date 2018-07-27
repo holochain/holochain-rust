@@ -1,7 +1,6 @@
 use agent::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
-use snowflake;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -44,10 +43,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = ::agent::Action::Get {
-        key: input.key.clone(),
-        id: snowflake::ProcessUniqueId::new(),
-    };
+    let action = ::agent::Action::get(&input.key);
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(

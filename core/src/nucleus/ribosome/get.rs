@@ -98,9 +98,27 @@ mod tests {
             .canonicalize_lebs(false)
             .write_debug_names(true)
             .convert(
-                // We don't expect everyone to be a pro at hand-coding WASM so...
+                // We don't expect everyone to be a pro at hand-coding WAT so here's a "how to".
+                // WAT does not have comments so code is duplicated in the comments here.
                 //
                 // How this works:
+                //
+                // root of the s-expression tree
+                // (module ...)
+                //
+                // imports must be the first expressions in a module
+                // imports the fn from the rust environment using its canonical zome API function
+                // name as the function named `$<canonical name>` in WAT
+                // define the signature as 2 inputs, 1 output
+                // the signature is the same as the exported "test_get_dispatch" function below as
+                // we want the latter to be a thin wrapper for the former
+                // (import "env" "<canonical name>"
+                //      (func $<canonical name>
+                //          (param i32)
+                //          (param i32)
+                //          (result i32)
+                //      )
+                // )
                 //
                 // only need 1 page of memory for testing
                 // (memory 1)
@@ -118,19 +136,33 @@ mod tests {
                 // (param $offset i32)
                 // (param $length i32)
                 // (result i32)
+                //
+                // call the imported function and pass the exported function arguments straight
+                // through, let the return also fall straight through
+                // `get_local` maps the relevant arguments in the local scope
+                // (call
+                //      $<canonical name>
+                //      (get_local $offset)
+                //      (get_local $length)
+                // )
                 r#"
 (module
-    (import "env" "get" (func $get (type 0)))
+    (import "env" "get"
+        (func $get
+            (param i32)
+            (param i32)
+            (result i32)
+        )
+    )
 
     (memory 1)
     (export "memory" (memory 0))
 
-    (type (;0;) (func (param i32) (param i32) (result i32)))
-
-    (func (export "test_get_dispatch")
-        (param $offset i32)
-        (param $length i32)
-        (result i32)
+    (func
+        (export "test_get_dispatch")
+            (param $offset i32)
+            (param $length i32)
+            (result i32)
 
         (call
             $get

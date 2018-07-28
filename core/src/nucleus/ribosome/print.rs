@@ -11,6 +11,31 @@ pub fn invoke_print(
     Ok(None)
 }
 
+/// HcApiFuncIndex::PRINT function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Expecting a string as complex input argument
+/// Returns an HcApiReturnCode as I32
+fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+    assert!(args.len() == 1);
+
+    // Read complex argument serialized in memory
+    let encoded_allocation: u32 = args.nth(0);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation.expect("received error instead of valid encoded allocation");
+    let bin_arg = runtime.memory_manager.read(allocation);
+
+    // deserialize complex argument
+    let arg = String::from_utf8(bin_arg);
+    // Handle failure silently
+    if arg.is_err() {
+        return Ok(None);
+    }
+    let arg = arg.unwrap().to_string();
+    println!("{}", arg);
+    runtime.print_output.push_str(&arg);
+    Ok(None)
+}
+
 #[cfg(test)]
 mod tests {
     extern crate wabt;

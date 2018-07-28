@@ -1,13 +1,13 @@
 #!/bin/bash
 
-if [ -n "$HOST_UID" ]; then
+if [ -n $HOST_UID ]; then
   OLDID=`id -u holochain`
-  if [ $$OLDID != "$HOST_UID" ]; then
-    usermod -u "$HOST_UID" holochain
-    groupmod -g "$HOST_UID" holochain
-    find /home/holochain -user $$OLDID -exec chown -h $HOST_UID:$HOST_UID {} \;
-    usermod -g "$HOST_UID" holochain
+  if [ $OLDID != $HOST_UID ]; then
+    usermod -u $HOST_UID holochain
+    groupmod -g $HOST_UID holochain
+    usermod -g $HOST_UID holochain
+    chown -R -h $HOST_UID:$HOST_UID /home/holochain
   fi
 fi
 
-$@
+gosu holochain "$@"

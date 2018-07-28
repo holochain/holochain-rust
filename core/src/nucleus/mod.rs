@@ -1,3 +1,4 @@
+pub mod memory;
 pub mod ribosome;
 
 use error::HolochainError;

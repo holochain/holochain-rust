@@ -2,33 +2,30 @@
 #[cfg(test)]
 extern crate wabt;
 
+use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
+
 use instance::Observer;
 use serde_json;
 use state;
 use std::sync::mpsc::Sender;
 
+use nucleus::memory::*;
+
 use wasmi::{
-    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder, MemoryRef,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    ValueType,
 };
 
 //--------------------------------------------------------------------------------------------------
 // HC API FUNCTION IMPLEMENTATIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all possible return codes that an HC API function can return
-#[repr(usize)]
-#[allow(non_camel_case_types)]
-pub enum HcApiReturnCode {
-    SUCCESS = 0,
-    ERROR_SERDE_JSON,
-}
-
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
 enum HcApiFuncIndex {
     /// Print debug information in the console
-    /// print(...)
+    /// print(s : String)
     PRINT = 0,
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
@@ -38,9 +35,27 @@ enum HcApiFuncIndex {
 }
 
 /// HcApiFuncIndex::PRINT function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Expecting a string as complex input argument
+/// Returns an HcApiReturnCode as I32
 fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-    let arg: u32 = args.nth(0);
-    runtime.print_output.push(arg);
+    assert!(args.len() == 1);
+
+    // Read complex argument serialized in memory
+    let encoded_allocation: u32 = args.nth(0);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation.expect("received error instead of valid encoded allocation");
+    let bin_arg = runtime.memory_manager.read(allocation);
+
+    // deserialize complex argument
+    let arg = String::from_utf8(bin_arg);
+    // Handle failure silently
+    if arg.is_err() {
+        return Ok(None);
+    }
+    let arg = arg.unwrap().to_string();
+    println!("{}", arg);
+    runtime.print_output.push_str(&arg);
     Ok(None)
 }
 
@@ -52,21 +67,17 @@ struct CommitInputStruct {
 }
 
 /// HcApiFuncIndex::COMMIT function code
-/// args: [0] memory offset where complex argument is stored
-/// args: [1] memory length of complex argument soted in memory
+/// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
 fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-    assert!(args.len() == 2);
+    assert!(args.len() == 1);
 
     // Read complex argument serialized in memory
-    // TODO - #65 use our Malloced data instead
-    let mem_offset: u32 = args.nth(0);
-    let mem_len: u32 = args.nth(1);
-    let bin_arg = runtime
-        .memory
-        .get(mem_offset, mem_len as usize)
-        .expect("Successfully retrieve the arguments");
+    let encoded_allocation: u32 = args.nth(0);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation.expect("received error instead of valid encoded allocation");
+    let bin_arg = runtime.memory_manager.read(allocation);
 
     // deserialize complex argument
     let arg = String::from_utf8(bin_arg).unwrap();
@@ -103,36 +114,35 @@ fn invoke_commit(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Run
     let hash_str = entry.hash();
 
     // Write Hash of Entry in memory in output format
-    let params_str = format!("{{\"hash\":\"{}\"}}", hash_str);
-    let mut params: Vec<_> = params_str.into_bytes();
-    params.push(0); // Add string terminate character (important)
+    let result_str = format!("{{\"hash\":\"{}\"}}", hash_str);
+    let mut result: Vec<_> = result_str.into_bytes();
+    result.push(0); // Add string terminate character (important)
 
-    // TODO #65 - use our Malloc instead
-    runtime
-        .memory
-        .set(mem_offset, &params)
-        .expect("memory should be writable");
+    let allocation_of_result = runtime.memory_manager.write(&result);
+    if allocation_of_result.is_err() {
+        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+    }
 
-    // Return success in i32 format
-    Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+    // Return encoded allocation of result
+    let encoded_allocation = allocation_of_result.unwrap().encode();
+    Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
 }
 
 //--------------------------------------------------------------------------------------------------
 // Wasm call
 //--------------------------------------------------------------------------------------------------
 
-pub const RESULT_OFFSET: u32 = 0;
-
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone, Debug)]
 pub struct Runtime {
-    print_output: Vec<u32>,
+    print_output: String,
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
-    memory: MemoryRef,
+    memory_manager: SinglePageManager,
 }
 
+///
 /// Executes an exposed function in a wasm binary
 pub fn call(
     action_channel: &Sender<state::ActionWrapper>,
@@ -175,7 +185,7 @@ pub fn call(
                     HcApiFuncIndex::PRINT as usize,
                 ),
                 "commit" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32, ValueType::I32][..], Some(ValueType::I32)),
+                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
                     HcApiFuncIndex::COMMIT as usize,
                 ),
                 // Add API function here
@@ -200,100 +210,55 @@ pub fn call(
         .expect("Failed to instantiate module")
         .assert_no_start();
 
-    // get wasm memory reference from module
-    let wasm_memory = wasm_instance
-        .export_by_name("memory")
-        .expect("all modules compiled with rustc should have an export named 'memory'; qed")
-        .as_memory()
-        .expect("in module generated by rustc export named 'memory' should be a memory; qed")
-        .clone();
+    // let mut ref_memory_manager = MemoryPageManager::new(wasm_instance.clone());
 
-    // write arguments for module call at beginning of memory module
-    let params: Vec<_> = parameters.unwrap_or_default();
-    wasm_memory
-        .set(RESULT_OFFSET, &params)
-        .expect("memory should be writable");
+    // write input arguments for module call in memory Buffer
+    let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        print_output: vec![],
+        print_output: String::new(),
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        memory: wasm_memory.clone(),
+        // memory_manager: ref_memory_manager.clone(),
+        memory_manager: SinglePageManager::new(&wasm_instance),
     };
 
-    // invoke function in wasm instance
-    // arguments are info for wasm on how to retrieve complex input arguments
-    // which have been set in memory module
-    let i32_result_length: i32 = wasm_instance
-        .invoke_export(
-            format!("{}_dispatch", function_name).as_str(),
-            &[
-                RuntimeValue::I32(RESULT_OFFSET as i32),
-                RuntimeValue::I32(params.len() as i32),
-            ],
-            &mut runtime,
-        )?
-        .unwrap()
-        .try_into()
-        .unwrap();
+    // scope for mutable borrow of runtime
+    let encoded_allocation_of_input: u32;
+    {
+        let mut_runtime = &mut runtime;
+        let allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
+        encoded_allocation_of_input = allocation_of_input.unwrap().encode();
+    }
+
+    // scope for mutable borrow of runtime
+    let encoded_allocation_of_output: i32;
+    {
+        let mut_runtime = &mut runtime;
+
+        // invoke function in wasm instance
+        // arguments are info for wasm on how to retrieve complex input arguments
+        // which have been set in memory module
+        encoded_allocation_of_output = wasm_instance
+            .invoke_export(
+                format!("{}_dispatch", function_name).as_str(),
+                &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
+                mut_runtime,
+            )?
+            .unwrap()
+            .try_into()
+            .unwrap();
+    }
+
+    let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
 
     // retrieve invoked wasm function's result that got written in memory
-    let result = wasm_memory
-        .get(RESULT_OFFSET, i32_result_length as usize)
-        .expect("Successfully retrieve the result");
-    runtime.result = String::from_utf8(result).unwrap();
+    if let Ok(valid_allocation) = allocation_of_output {
+        let result = runtime.memory_manager.read(valid_allocation);
+        runtime.result = String::from_utf8(result).unwrap();
+    }
 
     Ok(runtime.clone())
-}
-
-#[cfg(test)]
-mod tests {
-    use self::wabt::Wat2Wasm;
-    use super::*;
-    use std::sync::mpsc::channel;
-
-    fn test_wasm() -> Vec<u8> {
-        let wasm_binary = Wat2Wasm::new()
-            .canonicalize_lebs(false)
-            .write_debug_names(true)
-            .convert(
-                r#"
-                (module
-                    (type (;0;) (func (result i32)))
-                    (type (;1;) (func (param i32)))
-                    (type (;2;) (func))
-                    (import "env" "print" (func $print (type 1)))
-                    (func (export "test_print_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
-                        i32.const 1337
-                        call $print
-                        i32.const 0)
-                    (func $rust_eh_personality (type 2))
-                    (table (;0;) 1 1 anyfunc)
-                    (memory (;0;) 17)
-                    (global (;0;) (mut i32) (i32.const 1049600))
-                    (export "memory" (memory 0))
-                    (export "rust_eh_personality" (func $rust_eh_personality)))
-            "#,
-            )
-            .unwrap();
-
-        wasm_binary.as_ref().to_vec()
-    }
-
-    #[test]
-    fn test_print() {
-        let (action_channel, _) = channel::<::state::ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
-        let runtime = call(
-            &action_channel,
-            &tx_observer,
-            test_wasm(),
-            "test_print",
-            None,
-        ).expect("test_print should be callable");
-        assert_eq!(runtime.print_output.len(), 1);
-        assert_eq!(runtime.print_output[0], 1337)
-    }
 }

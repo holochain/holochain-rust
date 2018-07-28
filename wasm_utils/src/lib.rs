@@ -10,13 +10,13 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 
 /// Enumeration of all possible return codes that an HC API function can return
 #[repr(u32)]
-#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum HcApiReturnCode {
     SUCCESS = 0,
-    ERROR_SERDE_JSON = 1 << 16,
-    ERROR_PAGE_OVERFLOW = 2 << 16,
-    ERROR = 3 << 16,
+    ERROR = 1 << 16,
+    ERROR_SERDE_JSON = 2 << 16,
+    ERROR_PAGE_OVERFLOW = 3 << 16,
+    ERROR_ACTION_RESULT = 4 << 16,
 }
 
 //pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
@@ -26,9 +26,10 @@ pub enum HcApiReturnCode {
 pub fn encode_error(offset: u16) -> HcApiReturnCode {
     match offset {
         0 => HcApiReturnCode::SUCCESS,
-        1 => HcApiReturnCode::ERROR_SERDE_JSON,
-        2 => HcApiReturnCode::ERROR_PAGE_OVERFLOW,
-        _ => HcApiReturnCode::ERROR,
+        2 => HcApiReturnCode::ERROR_SERDE_JSON,
+        3 => HcApiReturnCode::ERROR_PAGE_OVERFLOW,
+        4 => HcApiReturnCode::ERROR_ACTION_RESULT,
+        1 | _ => HcApiReturnCode::ERROR,
     }
 }
 

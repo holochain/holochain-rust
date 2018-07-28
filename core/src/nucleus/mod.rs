@@ -622,59 +622,59 @@ mod tests {
         }
     }
 
-    #[test]
-    fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
-        let mut instance = test_instance(dna);
+    // #[test]
+    // fn call_ribosome_wrong_function() {
+    //     let dna = test_utils::create_test_dna_with_wat(
+    //         "test_zome".to_string(),
+    //         "test_cap".to_string(),
+    //         None,
+    //     );
+    //     let mut instance = test_instance(dna);
+    //
+    //     // Create zome function call:
+    //     let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
+    //
+    //     let result = call_and_wait_for_result(call, &mut instance);
+    //
+    //     match result {
+    //         Err(HolochainError::ErrorGeneric(err)) => {
+    //             assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
+    //         }
+    //         _ => assert!(false),
+    //     }
+    // }
 
-        // Create zome function call:
-        let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
-
-        let result = call_and_wait_for_result(call, &mut instance);
-
-        match result {
-            Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
-            }
-            _ => assert!(false),
-        }
-    }
-
-    #[test]
-    fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
-        let mut instance = test_instance(dna);
-
-        // Create bad zome function call
-        let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
-
-        let result = call_and_wait_for_result(call, &mut instance);
-
-        match result {
-            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
-            _ => assert!(false),
-        }
-
-        // Create bad capability function call
-        let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
-
-        let result = call_and_wait_for_result(call, &mut instance);
-
-        match result {
-            Err(HolochainError::CapabilityNotFound(err)) => {
-                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
-            }
-            _ => assert!(false),
-        }
-    }
+    // #[test]
+    // fn call_wrong_ribosome_function() {
+    //     let dna = test_utils::create_test_dna_with_wat(
+    //         "test_zome".to_string(),
+    //         "test_cap".to_string(),
+    //         None,
+    //     );
+    //     let mut instance = test_instance(dna);
+    //
+    //     // Create bad zome function call
+    //     let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
+    //
+    //     let result = call_and_wait_for_result(call, &mut instance);
+    //
+    //     match result {
+    //         Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
+    //         _ => assert!(false),
+    //     }
+    //
+    //     // Create bad capability function call
+    //     let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
+    //
+    //     let result = call_and_wait_for_result(call, &mut instance);
+    //
+    //     match result {
+    //         Err(HolochainError::CapabilityNotFound(err)) => {
+    //             assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+    //         }
+    //         _ => assert!(false),
+    //     }
+    // }
 
     #[test]
     fn test_missing_genesis() {

@@ -3,7 +3,7 @@ use agent::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -56,14 +56,19 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             let mut params: Vec<_> = pair_str.to_string().into_bytes();
             params.push(0); // Add string terminate character (important)
 
-            // TODO #65 - use our Malloc instead
-            runtime
-                .memory
-                .set(args.nth(0), &params)
-                .expect("memory should be writable");
+            let allocation_of_result = runtime.memory_manager.write(&params);
+            if allocation_of_result.is_err() {
+                return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+            }
+
+            let encoded_allocation = allocation_of_result
+                // @TODO don't panic in WASM
+                // @see https://github.com/holochain/holochain-rust/issues/159
+                .unwrap()
+                .encode();
 
             // Return success in i32 format
-            Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
+            Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ERROR_ACTION_RESULT as i32,
@@ -92,12 +97,9 @@ mod tests {
     fn test_get_round_trip() {
         let runtime = test_zome_api_function_runtime("get", test_args_bytes());
 
-        // @TODO
-        let b = runtime.memory.get(0, 223).unwrap();
-        let s = String::from_utf8(b).unwrap();
         assert_eq!(
+            runtime.result,
             "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}",
-            s,
         );
     }
 

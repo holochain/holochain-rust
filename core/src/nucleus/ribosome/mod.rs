@@ -14,7 +14,7 @@ use nucleus::memory::*;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap,
     ValueType,
 };
 
@@ -22,22 +22,14 @@ use wasmi::{
 // HC API FUNCTION IMPLEMENTATIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all possible return codes that an HC API function can return
-#[repr(usize)]
-#[allow(non_camel_case_types)]
-pub enum HcApiReturnCode {
-    SUCCESS = 0,
-    ERROR_SERDE_JSON,
-    ERROR_ACTION_RESULT,
-}
-
-
 /// List of all the API functions available in Nucleus
 #[repr(usize)]
 enum HcApiFuncIndex {
+    /// Error index for unimplemented functions
+    MISSINGNO = 0,
     /// Print debug information in the console
     /// print(s : String)
-    PRINT = 0,
+    PRINT,
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
     COMMIT,
@@ -62,23 +54,35 @@ pub struct Runtime {
     memory_manager: SinglePageManager,
 }
 
+/// Take standard, memory managed runtime argument bytes, extract and convert to serialized struct
 pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
-    // @TODO assert or return error?
+    // @TODO don't panic in WASM
     // @see https://github.com/holochain/holochain-rust/issues/159
-    assert_eq!(2, args.len());
+    assert_eq!(1, args.len());
 
     // Read complex argument serialized in memory
-    // @TODO use our Malloced data instead
-    // @see https://github.com/holochain/holochain-rust/issues/65
+    let encoded_allocation: u32 = args.nth(0);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = allocation
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .expect("received error instead of valid encoded allocation");
+    let bin_arg = runtime.memory_manager.read(allocation);
 
-    let mem_offset: u32 = args.nth(0);
-    let mem_len: u32 = args.nth(1);
-    let bin_arg = runtime
-        .memory
-        .get(mem_offset, mem_len as usize)
-        .expect("Successfully retrieve the arguments");
+    // deserialize complex argument
+    String::from_utf8(bin_arg)
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .unwrap()
+}
 
-    String::from_utf8(bin_arg).unwrap()
+fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
+    match canonical_name {
+        "print" => HcApiFuncIndex::PRINT,
+        "commit" => HcApiFuncIndex::COMMIT,
+        "get" => HcApiFuncIndex::GET,
+        _ => HcApiFuncIndex::MISSINGNO,
+    }
 }
 
 /// Executes an exposed function in a wasm binary
@@ -99,12 +103,12 @@ pub fn call(
             index: usize,
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
+            // @TODO don't maintain this list manually
+            // @see https://github.com/holochain/holochain-rust/issues/171
             match index {
                 index if index == HcApiFuncIndex::PRINT as usize => invoke_print(self, &args),
                 index if index == HcApiFuncIndex::COMMIT as usize => invoke_commit(self, &args),
                 index if index == HcApiFuncIndex::GET as usize => invoke_get(self, &args),
-                // Add API function code here
-                // ....
                 _ => panic!("unknown function index"),
             }
         }
@@ -118,27 +122,24 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let func_ref = match field_name {
-                "print" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], None),
-                    HcApiFuncIndex::PRINT as usize,
-                ),
-                "commit" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                    HcApiFuncIndex::COMMIT as usize,
-                ),
-                "get" => FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                    HcApiFuncIndex::GET as usize,
-                ),
-                _ => {
+            println!("zzz {}", field_name);
+            let index = index_canonical_name(field_name);
+            match index {
+                HcApiFuncIndex::MISSINGNO => {
+                    println!("foo");
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name
-                    )))
+                    )));
                 }
-            };
-            Ok(func_ref)
+                _ => {
+                    println!("bar");
+                    Ok(FuncInstance::alloc_host(
+                        Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
+                        index as usize,
+                    ))
+                }
+            }
         }
     }
 
@@ -188,6 +189,7 @@ pub fn call(
             )?
             .unwrap()
             .try_into()
+            .unwrap();
     }
 
     let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
@@ -215,7 +217,7 @@ pub mod tests {
 
 
     pub fn test_zome_api_function_wasm(canonical_name: &str) -> Vec<u8> {
-        let wasm_binary = Wat2Wasm::new()
+        Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
             .convert(
@@ -271,7 +273,6 @@ pub mod tests {
     (import "env" "{}"
         (func $zome_api_function
             (param i32)
-            (param i32)
             (result i32)
         )
     )
@@ -281,20 +282,20 @@ pub mod tests {
 
     (func
         (export "test_dispatch")
-            (param $offset i32)
-            (param $length i32)
+            (param $allocation i32)
             (result i32)
 
         (call
             $zome_api_function
-            (get_local $offset)
-            (get_local $length)
+            (get_local $allocation)
         )
     )
 )
                 "#, canonical_name),
             )
-            .unwrap();
+            .unwrap()
+            .as_ref()
+            .to_vec()
     }
 
     pub fn test_zome_api_function_runtime(canonical_name: &str, args_bytes: Vec<u8>) -> Runtime {

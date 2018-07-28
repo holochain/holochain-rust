@@ -196,3 +196,120 @@ pub fn call(
 
     Ok(runtime.clone())
 }
+
+#[cfg(test)]
+pub mod tests {
+    extern crate wabt;
+    use self::wabt::Wat2Wasm;
+    extern crate test_utils;
+    use super::Runtime;
+    use super::call;
+    use ::instance::tests::test_instance;
+
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+
+
+    pub fn test_zome_api_function_wasm(canonical_name: &str) -> Vec<u8> {
+        let wasm_binary = Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(
+                // We don't expect everyone to be a pro at hand-coding WAT so here's a "how to".
+                // WAT does not have comments so code is duplicated in the comments here.
+                //
+                // How this works:
+                //
+                // root of the s-expression tree
+                // (module ...)
+                //
+                // imports must be the first expressions in a module
+                // imports the fn from the rust environment using its canonical zome API function
+                // name as the function named `$<canonical name>` in WAT
+                // define the signature as 2 inputs, 1 output
+                // the signature is the same as the exported "test_get_dispatch" function below as
+                // we want the latter to be a thin wrapper for the former
+                // (import "env" "<canonical name>"
+                //      (func $<canonical name>
+                //          (param i32)
+                //          (param i32)
+                //          (result i32)
+                //      )
+                // )
+                //
+                // only need 1 page of memory for testing
+                // (memory 1)
+                //
+                // all modules compiled with rustc must have an export named "memory" (or fatal)
+                // (export "memory" (memory 0))
+                //
+                // define and export the *_dispatch function that will be called from the
+                // ribosome rust implementation, where * is the fourth arg to `call`
+                // @see nucleus::ribosome::call
+                // (func (export "*_dispatch") ...)
+                //
+                // define the memory offset and length that the serialized input struct can be
+                // found across as params to the exported function, also the function return type
+                // (param $offset i32)
+                // (param $length i32)
+                // (result i32)
+                //
+                // call the imported function and pass the exported function arguments straight
+                // through, let the return also fall straight through
+                // `get_local` maps the relevant arguments in the local scope
+                // (call
+                //      $<canonical name>
+                //      (get_local $offset)
+                //      (get_local $length)
+                // )
+                format!(r#"
+(module
+    (import "env" "{}"
+        (func $zome_api_function
+            (param i32)
+            (param i32)
+            (result i32)
+        )
+    )
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    (func
+        (export "test_dispatch")
+            (param $offset i32)
+            (param $length i32)
+            (result i32)
+
+        (call
+            $zome_api_function
+            (get_local $offset)
+            (get_local $length)
+        )
+    )
+)
+                "#, canonical_name),
+            )
+            .unwrap();
+
+        wasm_binary.as_ref().to_vec()
+    }
+
+    pub fn test_zome_api_function_runtime(canonical_name: &str, args_bytes: Vec<u8>) -> Runtime {
+        let wasm = test_zome_api_function_wasm(canonical_name);
+        let dna = test_utils::create_test_dna_with_wasm(
+            "test_zome".into(),
+            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            wasm.clone(),
+        );
+        let instance = test_instance(dna);
+
+        call(
+            &instance.action_channel(),
+            &instance.observer_channel(),
+            wasm.clone(),
+            "test",
+            Some(args_bytes),
+        ).expect("test should be callable")
+    }
+
+}

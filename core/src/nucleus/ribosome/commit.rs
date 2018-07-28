@@ -6,8 +6,8 @@ use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
-#[derive(Deserialize, Default, Debug)]
-struct CommitInputStruct {
+#[derive(Deserialize, Default, Debug, Serialize)]
+struct CommitArgs {
     entry_type_name: String,
     entry_content: String,
 }
@@ -23,7 +23,7 @@ pub fn invoke_commit(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
-    let res_entry: Result<CommitInputStruct, _> = serde_json::from_str(&args_str);
+    let res_entry: Result<CommitArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
@@ -83,4 +83,38 @@ pub fn invoke_commit(
             HcApiReturnCode::ERROR_ACTION_RESULT as i32,
         ))),
     }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate test_utils;
+    extern crate wabt;
+
+    use super::CommitArgs;
+    use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use hash_table::entry::tests::test_entry;
+    use serde_json;
+
+    pub fn test_args_bytes() -> Vec<u8> {
+        let e = test_entry();
+        let args = CommitArgs {
+            entry_type_name: e.entry_type().into(),
+            entry_content: e.content().into(),
+        };
+        serde_json::to_string(&args).unwrap().into_bytes()
+    }
+
+    #[test]
+    fn test_get_round_trip() {
+        let runtime = test_zome_api_function_runtime("commit", test_args_bytes());
+
+        // @TODO
+        let b = runtime.memory.get(0, 58).unwrap();
+        let s = String::from_utf8(b).unwrap();
+        assert_eq!(
+            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            s,
+        );
+    }
+
 }

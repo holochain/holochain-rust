@@ -66,16 +66,16 @@ pub enum Action {
 
 impl Action {
     pub fn commit(entry: &Entry) -> Action {
-        Action::Commit{
+        Action::Commit {
             id: snowflake::ProcessUniqueId::new(),
             entry: entry.clone(),
         }
     }
 
     pub fn get(key: &str) -> Action {
-        Action::Get{
+        Action::Get {
             id: snowflake::ProcessUniqueId::new(),
-            key: key.to_string()
+            key: key.to_string(),
         }
     }
 }
@@ -92,7 +92,7 @@ pub enum ActionResult {
 /// intended for use inside the reducer, isolated for unit testing
 fn do_action_commit(state: &mut AgentState, action: &Action) {
     match action {
-        Action::Commit{ entry, .. } => {
+        Action::Commit { entry, .. } => {
             // add entry to source chain
             // @TODO this does nothing!
             // it needs to get something stateless from the agent state that points to
@@ -105,7 +105,7 @@ fn do_action_commit(state: &mut AgentState, action: &Action) {
             state
                 .actions
                 .insert(action.clone(), ActionResult::Commit(result));
-        },
+        }
         _ => {
             panic!("action commit without commit action");
         }
@@ -116,7 +116,7 @@ fn do_action_commit(state: &mut AgentState, action: &Action) {
 /// intended for use inside the reducer, isolated for unit testing
 fn do_action_get(state: &mut AgentState, action: &Action) {
     match action {
-        Action::Get{ key, .. } => {
+        Action::Get { key, .. } => {
             // get pair from source chain
             // @TODO this does nothing!
             // it needs to get something stateless from the agent state that points to
@@ -136,7 +136,7 @@ fn do_action_get(state: &mut AgentState, action: &Action) {
             state
                 .actions
                 .insert(action.clone(), ActionResult::Get(result));
-        },
+        }
         _ => {
             panic!("action get without get action");
         }
@@ -154,12 +154,12 @@ pub fn reduce(
         state::Action::Agent(ref agent_action) => {
             let mut new_state: AgentState = (*old_state).clone();
             match *agent_action {
-                ref action @ Action::Commit{ .. } => {
+                ref action @ Action::Commit { .. } => {
                     do_action_commit(&mut new_state, &action);
-                },
-                ref action @ Action::Get{ .. } => {
+                }
+                ref action @ Action::Get { .. } => {
                     do_action_get(&mut new_state, &action);
-                },
+                }
             }
             Arc::new(new_state)
         }
@@ -169,14 +169,9 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::AgentState;
+    use super::{do_action_commit, do_action_get, Action, ActionResult, AgentState};
+    use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
     use std::collections::HashMap;
-    use super::Action;
-    use hash_table::entry::tests::test_entry;
-    use hash_table::pair::tests::test_pair;
-    use super::do_action_commit;
-    use super::do_action_get;
-    use super::ActionResult;
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {

@@ -1,7 +1,7 @@
+use super::runtime_args_to_utf8;
 use agent::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
-use super::runtime_args_to_utf8;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -83,8 +83,8 @@ mod tests {
     // use std::sync::mpsc::channel;
     use super::GetArgs;
     use hash_table::entry::tests::test_entry;
-    use serde_json;
     use instance::tests::test_instance;
+    use serde_json;
 
     pub fn test_args_bytes() -> Vec<u8> {
         let args = GetArgs {

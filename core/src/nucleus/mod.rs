@@ -466,13 +466,12 @@ pub fn reduce(
 #[cfg(test)]
 mod tests {
     extern crate test_utils;
-    use ::instance::tests::test_instance;
     use super::{
         super::{nucleus::Action::*, state::Action::*},
         *,
     };
+    use instance::{tests::test_instance, Instance};
     use std::sync::mpsc::channel;
-    use ::instance::Instance;
 
     #[test]
     fn can_instantiate_nucleus_state() {

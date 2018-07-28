@@ -217,15 +217,11 @@ pub fn dispatch_action(
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use std::thread::sleep;
-    use nucleus::Action::InitApplication;
-    use state::Action::Nucleus;
-    use std::sync::mpsc::channel;
-    use state::State;
     use super::Instance;
-    use holochain_dna::Dna;
-    use std::time::Duration;
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
+    use nucleus::Action::InitApplication;
+    use state::{Action::Nucleus, State};
+    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
 
     /// create a test instance
     pub fn test_instance(dna: Dna) -> Instance {
@@ -249,18 +245,6 @@ pub mod tests {
 
     pub fn test_instance_blank() -> Instance {
         test_instance(Dna::new())
-    }
-
-    #[test]
-    /// smoke test action channel
-    fn action_channel() {
-        test_instance_blank().action_channel();
-    }
-
-    #[test]
-    /// smoke test observer channel
-    fn observer_channel() {
-        test_instance_blank().observer_channel();
     }
 
     /// This test shows how to call dispatch with a closure that should run

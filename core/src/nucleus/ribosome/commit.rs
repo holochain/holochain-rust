@@ -1,8 +1,8 @@
+use super::runtime_args_to_utf8;
 use agent::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
-use super::runtime_args_to_utf8;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked

@@ -35,7 +35,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             let actions = state.agent().actions().clone();
             if actions.contains_key(&action) {
                 // @TODO is this unwrap OK since we check the key exists above?
-                let v = actions.get(&action).unwrap();
+                let v = &actions[&action];
                 sender.send(v.clone()).expect("local channel to be open");
                 true
             } else {
@@ -59,15 +59,15 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             // TODO #65 - use our Malloc instead
             runtime
                 .memory
-                .set(0, &params)
+                .set(args.nth(0), &params)
                 .expect("memory should be writable");
 
             // Return success in i32 format
             Ok(Some(RuntimeValue::I32(HcApiReturnCode::SUCCESS as i32)))
         }
-        _ => {
-            panic!("action result of get not get of result action");
-        }
+        _ => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ERROR_ACTION_RESULT as i32,
+        ))),
     }
 }
 

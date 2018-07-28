@@ -93,7 +93,7 @@ fn serialize<T: Serialize>(ptr_data: *mut c_char, internal: T) -> i32 {
 pub extern "C" fn test_dispatch(ptr_data_param: *mut c_char, params_len: usize) -> i32 {
     let ptr_data_commit = params_len as *mut c_char;
     let output = test(ptr_data_commit);
-    return serialize(ptr_data_param, output);
+    return serialize(ptr_data_param, output)
 }
 
 

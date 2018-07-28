@@ -23,6 +23,7 @@ use wasmi::{
 pub enum HcApiReturnCode {
     SUCCESS = 0,
     ERROR_SERDE_JSON,
+    ERROR_ACTION_RESULT,
 }
 
 /// List of all the API functions available in Nucleus

@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Key {}
 
 impl Key {
@@ -7,7 +7,7 @@ impl Key {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Keys {
     pub_key: Key,
     priv_key: Key,

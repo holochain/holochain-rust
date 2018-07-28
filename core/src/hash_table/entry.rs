@@ -1,7 +1,8 @@
 use hash;
 use multihash::Hash;
+use std::hash::{Hash as StdHash, Hasher};
 
-#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
     content: String,
 
@@ -16,6 +17,16 @@ impl PartialEq for Entry {
         // e.g. two entries with the same content but different type are equal
         // @see https://github.com/holochain/holochain-rust/issues/85
         self.hash() == other.hash()
+    }
+}
+
+/// implement Hash for Entry to match PartialEq logic
+// @TODO is this right?
+// e.g. two entries with the same content but different type are equal
+// @see https://github.com/holochain/holochain-rust/issues/85
+impl StdHash for Entry {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.content.hash(state);
     }
 }
 
@@ -135,6 +146,28 @@ pub mod tests {
 
         // different content different type is not equal
         assert_ne!(Entry::new(t1, c1), Entry::new(t2, c2));
+    }
+
+    #[test]
+    /// tests that hash equality matches PartialEq
+    fn eq_hash() {
+        let c1 = "foo";
+        let c2 = "bar";
+        let t1 = "a";
+        let t2 = "b";
+
+        // same type and content is equal
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t1, c1).hash(),);
+
+        // same type different content is not equal
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t1, c2).hash(),);
+
+        // same content different type is equal
+        // @see https://github.com/holochain/holochain-rust/issues/85
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t2, c1).hash(),);
+
+        // different content different type is not equal
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t2, c2).hash(),);
     }
 
     #[test]

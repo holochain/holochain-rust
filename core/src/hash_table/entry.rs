@@ -190,10 +190,7 @@ pub mod tests {
     #[test]
     /// test entry.hash() against a known value
     fn hash_known() {
-        assert_eq!(
-            test_entry_hash(),
-            test_entry().hash()
-        );
+        assert_eq!(test_entry_hash(), test_entry().hash());
     }
 
     #[test]

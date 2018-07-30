@@ -27,7 +27,7 @@ pub fn invoke_commit(
     if res_entry.is_err() {
         // Return Error code in i32 format
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ERROR_SERDE_JSON as i32,
+            HcApiReturnCode::ErrorSerdeJson as i32,
         )));
     }
 
@@ -84,7 +84,7 @@ pub fn invoke_commit(
             Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ERROR_ACTION_RESULT as i32,
+            HcApiReturnCode::ErrorActionResult as i32,
         ))),
     }
 }
@@ -95,8 +95,8 @@ mod tests {
     extern crate wabt;
 
     use super::CommitArgs;
-    use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use hash_table::entry::tests::test_entry;
+    use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use serde_json;
 
     pub fn test_args_bytes() -> Vec<u8> {

@@ -18,7 +18,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     if res_entry.is_err() {
         // Return Error code in i32 format
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ERROR_SERDE_JSON as i32,
+            HcApiReturnCode::ErrorSerdeJson as i32,
         )));
     }
 
@@ -50,7 +50,9 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     match action_result {
         ActionResult::Get(maybe_pair) => {
-            let pair_str = maybe_pair.and_then(|p| Some(p.to_json())).unwrap_or_default();
+            let pair_str = maybe_pair
+                .and_then(|p| Some(p.to_json()))
+                .unwrap_or_default();
 
             // write JSON pair to memory
             let mut params: Vec<_> = pair_str.to_string().into_bytes();
@@ -71,7 +73,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ERROR_ACTION_RESULT as i32,
+            HcApiReturnCode::ErrorActionResult as i32,
         ))),
     }
 }
@@ -83,8 +85,8 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::test_entry;
-    use serde_json;
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use serde_json;
 
     pub fn test_args_bytes() -> Vec<u8> {
         let args = GetArgs {

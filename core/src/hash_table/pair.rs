@@ -163,19 +163,10 @@ pub mod tests {
     fn json_roundtrip() {
         let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
 
-        assert_eq!(
-            json,
-            test_pair().to_json(),
-        );
+        assert_eq!(json, test_pair().to_json(),);
 
-        assert_eq!(
-            test_pair(),
-            Pair::from_json(&json),
-        );
+        assert_eq!(test_pair(), Pair::from_json(&json),);
 
-        assert_eq!(
-            test_pair(),
-            Pair::from_json(&test_pair().to_json()),
-        );
+        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()),);
     }
 }

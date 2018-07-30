@@ -14,8 +14,7 @@ use nucleus::memory::*;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap,
-    ValueType,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -201,7 +200,6 @@ pub fn call(
     }
 
     Ok(runtime.clone())
-
 }
 
 #[cfg(test)]
@@ -209,12 +207,10 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
-    use super::Runtime;
-    use super::call;
-    use ::instance::tests::test_instance;
+    use super::{call, Runtime};
+    use instance::tests::test_instance;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-
 
     pub fn test_zome_api_function_wasm(canonical_name: &str) -> Vec<u8> {
         Wat2Wasm::new()
@@ -268,7 +264,8 @@ pub mod tests {
                 //      (get_local $offset)
                 //      (get_local $length)
                 // )
-                format!(r#"
+                format!(
+                    r#"
 (module
     (import "env" "{}"
         (func $zome_api_function
@@ -291,7 +288,9 @@ pub mod tests {
         )
     )
 )
-                "#, canonical_name),
+                "#,
+                    canonical_name
+                ),
             )
             .unwrap()
             .as_ref()

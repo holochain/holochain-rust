@@ -12,11 +12,11 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 #[repr(u32)]
 #[derive(Debug)]
 pub enum HcApiReturnCode {
-    SUCCESS = 0,
-    ERROR = 1 << 16,
-    ERROR_SERDE_JSON = 2 << 16,
-    ERROR_PAGE_OVERFLOW = 3 << 16,
-    ERROR_ACTION_RESULT = 4 << 16,
+    Success = 0,
+    Error = 1 << 16,
+    ErrorSerdeJson = 2 << 16,
+    ErrorPageOverflow = 3 << 16,
+    ErrorActionResult = 4 << 16,
 }
 
 //pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
@@ -25,11 +25,11 @@ pub enum HcApiReturnCode {
 
 pub fn encode_error(offset: u16) -> HcApiReturnCode {
     match offset {
-        0 => HcApiReturnCode::SUCCESS,
-        2 => HcApiReturnCode::ERROR_SERDE_JSON,
-        3 => HcApiReturnCode::ERROR_PAGE_OVERFLOW,
-        4 => HcApiReturnCode::ERROR_ACTION_RESULT,
-        1 | _ => HcApiReturnCode::ERROR,
+        0 => HcApiReturnCode::Success,
+        2 => HcApiReturnCode::ErrorSerdeJson,
+        3 => HcApiReturnCode::ErrorPageOverflow,
+        4 => HcApiReturnCode::ErrorActionResult,
+        1 | _ => HcApiReturnCode::Error,
     }
 }
 
@@ -59,7 +59,7 @@ impl SinglePageAllocation {
             return Err(encode_error(allocation.offset));
         }
         if (allocation.offset as u32 + allocation.length as u32) > 65535 {
-            return Err(HcApiReturnCode::ERROR_PAGE_OVERFLOW);
+            return Err(HcApiReturnCode::ErrorPageOverflow);
         }
         Ok(allocation)
     }

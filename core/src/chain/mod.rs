@@ -13,6 +13,10 @@ pub struct ChainIterator<T: HashTable> {
 }
 
 impl<T: HashTable> ChainIterator<T> {
+    // @TODO table implementation is changing anyway so waste of time to mess with ref/value
+    // @see https://github.com/holochain/holochain-rust/issues/135
+    #[allow(unknown_lints)]
+    #[allow(needless_pass_by_value)]
     pub fn new(table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
         ChainIterator {
             current: pair.clone(),
@@ -75,6 +79,10 @@ impl<T: HashTable> IntoIterator for Chain<T> {
 }
 
 impl<T: HashTable> Chain<T> {
+    // @TODO table implementation is changing anyway so waste of time to mess with ref/value
+    // @see https://github.com/holochain/holochain-rust/issues/135
+    #[allow(unknown_lints)]
+    #[allow(needless_pass_by_value)]
     /// build a new Chain against an existing HashTable
     pub fn new(table: Rc<T>) -> Chain<T> {
         Chain {

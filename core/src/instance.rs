@@ -243,6 +243,7 @@ pub mod tests {
         instance
     }
 
+    /// create a test instance with a blank DNA
     pub fn test_instance_blank() -> Instance {
         test_instance(Dna::new())
     }

@@ -604,7 +604,6 @@ mod tests {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
             Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-            //Err(_) => assert!(false),
         }
     }
 

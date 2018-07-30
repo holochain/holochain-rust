@@ -85,6 +85,7 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::test_entry;
+    use hash_table::entry::tests::test_entry_hash;
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use serde_json;
 
@@ -99,9 +100,14 @@ mod tests {
     fn test_get_round_trip() {
         let runtime = test_zome_api_function_runtime("get", test_args_bytes());
 
+        let mut expected = "".to_owned();
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"");
+        expected.push_str(&test_entry_hash());
+        expected.push_str("\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
+
         assert_eq!(
             runtime.result,
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}",
+            expected,
         );
     }
 

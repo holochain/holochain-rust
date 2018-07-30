@@ -116,14 +116,6 @@ mod tests {
             runtime.result,
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
-
-        // @TODO
-        // let b = runtime.memory.get(0, 58).unwrap();
-        // let s = String::from_utf8(b).unwrap();
-        // assert_eq!(
-        //     format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
-        //     s,
-        // );
     }
 
 }

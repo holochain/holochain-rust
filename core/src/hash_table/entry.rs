@@ -116,6 +116,11 @@ pub mod tests {
         Entry::new(&test_type(), &test_content())
     }
 
+    /// the correct hash for test_entry()
+    pub fn test_entry_hash() -> String {
+        "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".into()
+    }
+
     /// dummy entry, same as test_entry()
     pub fn test_entry_a() -> Entry {
         test_entry()
@@ -186,7 +191,7 @@ pub mod tests {
     /// test entry.hash() against a known value
     fn hash_known() {
         assert_eq!(
-            "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT",
+            test_entry_hash(),
             test_entry().hash()
         );
     }

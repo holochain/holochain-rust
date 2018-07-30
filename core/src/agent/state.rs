@@ -172,7 +172,8 @@ pub fn reduce(
                 }
                 ref action @ Action::Get { .. } => {
                     do_action_get(&mut new_state, &action);
-                }
+                } // Add new agent action function dispatch here
+                  // ...
             }
             Arc::new(new_state)
         }

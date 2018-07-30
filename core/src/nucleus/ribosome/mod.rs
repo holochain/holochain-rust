@@ -106,6 +106,8 @@ fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
         "print" => HcApiFuncIndex::Print,
         "commit" => HcApiFuncIndex::Commit,
         "get" => HcApiFuncIndex::Get,
+        // Add new API function name to index mapping here
+        // ...
         _ => HcApiFuncIndex::MissingNo,
     }
 }
@@ -134,6 +136,8 @@ pub fn call(
                 index if index == HcApiFuncIndex::Print as usize => invoke_print(self, &args),
                 index if index == HcApiFuncIndex::Commit as usize => invoke_commit(self, &args),
                 index if index == HcApiFuncIndex::Get as usize => invoke_get(self, &args),
+                // Add new API function name to index mapping here
+                // ...
                 _ => panic!("unknown function index"),
             }
         }

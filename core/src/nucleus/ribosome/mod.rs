@@ -131,9 +131,9 @@ pub fn call(
             // @TODO don't maintain this list manually
             // @see https://github.com/holochain/holochain-rust/issues/171
             match index {
-                index if index == HcApiFuncIndex::PRINT as usize => invoke_print(self, &args),
-                index if index == HcApiFuncIndex::COMMIT as usize => invoke_commit(self, &args),
-                index if index == HcApiFuncIndex::GET as usize => invoke_get(self, &args),
+                index if index == HcApiFuncIndex::Print as usize => invoke_print(self, &args),
+                index if index == HcApiFuncIndex::Commit as usize => invoke_commit(self, &args),
+                index if index == HcApiFuncIndex::Get as usize => invoke_get(self, &args),
                 _ => panic!("unknown function index"),
             }
         }

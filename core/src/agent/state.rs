@@ -111,6 +111,9 @@ fn do_action_commit(state: &mut AgentState, action: &Action) {
             // @see https://github.com/holochain/holochain-rust/issues/148
             let mut chain = Chain::new(Rc::new(MemTable::new()));
 
+            // @TODO successfully validate before pushing a commit
+            // @see https://github.com/holochain/holochain-rust/issues/97
+
             let result = chain.push(&entry).unwrap().entry().key();
             state
                 .actions

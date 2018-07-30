@@ -149,7 +149,7 @@ pub fn call(
         ) -> Result<FuncRef, InterpreterError> {
             let index = index_canonical_name(field_name);
             match index {
-                HcApiFuncIndex::MISSINGNO => {
+                HcApiFuncIndex::MissingNo => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name

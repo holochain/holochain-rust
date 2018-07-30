@@ -20,7 +20,6 @@ struct CommitOutputStruct {
   hash: String,
 }
 
-
 //-------------------------------------------------------------------------------------------------
 // HC Commit Function Call - Succesful
 //-------------------------------------------------------------------------------------------------
@@ -58,7 +57,6 @@ fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_conte
   Ok(output.hash.to_string())
 }
 
-
 /// Actual test function code
 fn test(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 {
@@ -79,7 +77,6 @@ fn test(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
         }
       };
 }
-
 
 //-------------------------------------------------------------------------------------------------
 // HC COMMIT Function Call - Fail

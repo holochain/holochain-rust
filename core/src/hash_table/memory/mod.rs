@@ -10,7 +10,7 @@ use hash_table::{
     HashTable,
 };
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
     meta: HashMap<String, PairMeta>,
@@ -40,7 +40,7 @@ impl HashTable for MemTable {
     }
 
     fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(self.pairs.get(key.into()).and_then(|p| Some(p.clone())))
+        Ok(self.pairs.get(key).and_then(|p| Some(p.clone())))
     }
 
     fn modify(

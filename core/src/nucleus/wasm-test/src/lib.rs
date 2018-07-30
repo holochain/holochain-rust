@@ -3,7 +3,7 @@ extern crate holochain_wasm_utils;
 use holochain_wasm_utils::*;
 
 extern {
-  fn print(encoded_allocation_of_input: i32);
+  fn print(encoded_allocation_of_input: i32) -> i32;
 }
 
 //-------------------------------------------------------------------------------------------------

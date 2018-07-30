@@ -248,6 +248,7 @@ pub mod tests {
         test_instance(Dna::new())
     }
 
+    #[test]
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
     /// needs to return a boolean to indicate that it has successfully observed what
@@ -257,8 +258,6 @@ pub mod tests {
     /// the dna) back over, just so that the test will block until the closure is successfully
     /// run and the assert will actually run.  If we put the assert inside the closure
     /// the test thread could complete before the closure was called.
-
-    #[test]
     fn can_dispatch_with_observer() {
         let mut instance = Instance::new();
         instance.start_action_loop();
@@ -282,6 +281,7 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
         let mut instance = Instance::new();
         assert_eq!(instance.state().nucleus().dna(), None);
@@ -309,6 +309,9 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that an unimplemented genesis allows the nucleus to initialize
+    /// @TODO is this right? should return unimplemented?
+    /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
         let mut dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),
@@ -324,6 +327,7 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that a valid genesis allows the nucleus to initialize
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),
@@ -351,6 +355,7 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that a failed genesis prevents the nucleus from initializing
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),

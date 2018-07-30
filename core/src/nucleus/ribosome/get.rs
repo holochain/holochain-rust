@@ -35,7 +35,8 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
         move |state: &::state::State| {
             let actions = state.agent().actions().clone();
             if actions.contains_key(&action) {
-                // @TODO is this unwrap OK since we check the key exists above?
+                // @TODO never panic in wasm
+                // @see https://github.com/holochain/holochain-rust/issues/159
                 let v = &actions[&action];
                 sender.send(v.clone()).expect("local channel to be open");
                 true

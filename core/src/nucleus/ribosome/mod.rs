@@ -25,16 +25,16 @@ use wasmi::{
 #[repr(usize)]
 enum HcApiFuncIndex {
     /// Error index for unimplemented functions
-    MISSINGNO = 0,
+    MissingNo = 0,
     /// Print debug information in the console
     /// print(s : String)
-    PRINT,
+    Print,
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
-    COMMIT,
+    Commit,
     /// Get an entry from source chain by key (header hash)
     /// get(key: String) -> Pair
-    GET,
+    Get,
     // Add new API function index here
     // ...
 }
@@ -53,7 +53,7 @@ pub struct Runtime {
     memory_manager: SinglePageManager,
 }
 
-/// Take standard, memory managed runtime argument bytes, extract and convert to serialized struct
+/// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
 pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
     // @TODO don't panic in WASM
     // @see https://github.com/holochain/holochain-rust/issues/159
@@ -75,6 +75,8 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
         .unwrap()
 }
 
+/// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
+/// returns a Result suitable to return directly from a zome API function
 pub fn runtime_allocate_encode_str(runtime: &mut Runtime, s: &str) -> Result<Option<RuntimeValue>, Trap> {
     // write str to runtime memory
     let mut s_bytes: Vec<_> = s.to_string().into_bytes();
@@ -95,12 +97,13 @@ pub fn runtime_allocate_encode_str(runtime: &mut Runtime, s: &str) -> Result<Opt
     Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
 }
 
+/// maps canonical zome API function names to an HcApiFuncIndex variant
 fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
     match canonical_name {
-        "print" => HcApiFuncIndex::PRINT,
-        "commit" => HcApiFuncIndex::COMMIT,
-        "get" => HcApiFuncIndex::GET,
-        _ => HcApiFuncIndex::MISSINGNO,
+        "print" => HcApiFuncIndex::Print,
+        "commit" => HcApiFuncIndex::Commit,
+        "get" => HcApiFuncIndex::Get,
+        _ => HcApiFuncIndex::MissingNo,
     }
 }
 
@@ -229,6 +232,8 @@ pub mod tests {
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
+    /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
+    /// and bytes argument
     pub fn test_zome_api_function_wasm(canonical_name: &str) -> Vec<u8> {
         Wat2Wasm::new()
             .canonicalize_lebs(false)
@@ -314,6 +319,11 @@ pub mod tests {
             .to_vec()
     }
 
+    /// given a canonical zome API function name and args as bytes:
+    /// - builds wasm with test_zome_api_function_wasm
+    /// - builds dna and test instance
+    /// - calls the zome API function with passed bytes argument using the instance runtime
+    /// - returns the runtime after the call completes
     pub fn test_zome_api_function_runtime(canonical_name: &str, args_bytes: Vec<u8>) -> Runtime {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(

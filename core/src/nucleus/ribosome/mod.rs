@@ -14,7 +14,7 @@ use nucleus::memory::*;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, ValueType,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind, ValueType,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -75,6 +75,26 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
         .unwrap()
 }
 
+pub fn runtime_allocate_encode_str(runtime: &mut Runtime, s: &str) -> Result<Option<RuntimeValue>, Trap> {
+    // write str to runtime memory
+    let mut s_bytes: Vec<_> = s.to_string().into_bytes();
+    s_bytes.push(0); // Add string terminate character (important)
+
+    let allocation_of_result = runtime.memory_manager.write(&s_bytes);
+    if allocation_of_result.is_err() {
+        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+    }
+
+    let encoded_allocation = allocation_of_result
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .unwrap()
+        .encode();
+
+    // Return success in i32 format
+    Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+}
+
 fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
     match canonical_name {
         "print" => HcApiFuncIndex::PRINT,
@@ -121,18 +141,15 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            println!("zzz {}", field_name);
             let index = index_canonical_name(field_name);
             match index {
                 HcApiFuncIndex::MISSINGNO => {
-                    println!("foo");
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name
                     )));
                 }
                 _ => {
-                    println!("bar");
                     Ok(FuncInstance::alloc_host(
                         Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
                         index as usize,

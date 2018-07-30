@@ -1,9 +1,10 @@
 use super::runtime_args_to_utf8;
+use super::runtime_allocate_encode_str;
 use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -50,27 +51,12 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     match action_result {
         ActionResult::Get(maybe_pair) => {
+            // serialize, allocate and encode result
             let pair_str = maybe_pair
                 .and_then(|p| Some(p.to_json()))
                 .unwrap_or_default();
 
-            // write JSON pair to memory
-            let mut params: Vec<_> = pair_str.to_string().into_bytes();
-            params.push(0); // Add string terminate character (important)
-
-            let allocation_of_result = runtime.memory_manager.write(&params);
-            if allocation_of_result.is_err() {
-                return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
-            }
-
-            let encoded_allocation = allocation_of_result
-                // @TODO don't panic in WASM
-                // @see https://github.com/holochain/holochain-rust/issues/159
-                .unwrap()
-                .encode();
-
-            // Return success in i32 format
-            Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+            runtime_allocate_encode_str(runtime, &pair_str)
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -89,6 +75,7 @@ mod tests {
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use serde_json;
 
+    /// dummy get args from standard test entry
     pub fn test_args_bytes() -> Vec<u8> {
         let args = GetArgs {
             key: test_entry().hash().into(),
@@ -97,6 +84,7 @@ mod tests {
     }
 
     #[test]
+    /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
         let runtime = test_zome_api_function_runtime("get", test_args_bytes());
 

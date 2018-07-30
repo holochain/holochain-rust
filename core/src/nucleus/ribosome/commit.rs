@@ -1,9 +1,10 @@
 use super::runtime_args_to_utf8;
+use super::runtime_allocate_encode_str;
 use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -64,24 +65,11 @@ pub fn invoke_commit(
 
     match action_result {
         ActionResult::Commit(hash) => {
-            // write JSON pair to memory
-            let params_str = format!("{{\"hash\":\"{}\"}}", hash);
-            let mut params: Vec<_> = params_str.into_bytes();
-            params.push(0); // Add string terminate character (important)
-
-            let allocation_of_result = runtime.memory_manager.write(&params);
-            if allocation_of_result.is_err() {
-                return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
-            }
-
-            let encoded_allocation = allocation_of_result
-                // @TODO don't panic in WASM
-                // @see https://github.com/holochain/holochain-rust/issues/159
-                .unwrap()
-                .encode();
-
-            // Return success in i32 format
-            Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+            // serialize, allocate and encode result
+            runtime_allocate_encode_str(
+                runtime,
+                &format!("{{\"hash\":\"{}\"}}", hash)
+            )
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -99,6 +87,7 @@ mod tests {
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use serde_json;
 
+    /// dummy commit args from standard test entry
     pub fn test_args_bytes() -> Vec<u8> {
         let e = test_entry();
         let args = CommitArgs {
@@ -109,6 +98,7 @@ mod tests {
     }
 
     #[test]
+    /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_get_round_trip() {
         let runtime = test_zome_api_function_runtime("commit", test_args_bytes());
 

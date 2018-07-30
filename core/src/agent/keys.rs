@@ -56,6 +56,16 @@ pub mod tests {
         Key::new()
     }
 
+    /// dummy public key
+    pub fn test_public_key() -> Key {
+        test_key()
+    }
+
+    /// dummy private key
+    pub fn test_private_key() -> Key {
+        test_key()
+    }
+
     /// generates a new node id suitable for testing
     pub fn test_node_id() -> String {
         "test node id".into()
@@ -76,6 +86,24 @@ pub mod tests {
     /// smoke test new keys
     fn keys_new() {
         test_keys();
+    }
+
+    #[test]
+    /// tests keys.public_key()
+    fn keys_public_key() {
+        assert_eq!(
+            test_keys().public_key(),
+            test_public_key(),
+        );
+    }
+
+    #[test]
+    /// tests keys.private_key()
+    fn keys_private_key() {
+        assert_eq!(
+            test_keys().private_key(),
+            test_private_key(),
+        );
     }
 
 }

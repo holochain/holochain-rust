@@ -11,11 +11,11 @@ pub fn invoke_print(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<
 
     println!("{}", arg);
     runtime.print_output.push_str(&arg);
-    Ok(None)
+    Ok(Some(RuntimeValue::I32(0 as i32)))
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
 
     pub fn test_print_string() -> String {
@@ -34,8 +34,5 @@ mod tests {
             runtime.print_output,
             test_print_string(),
         );
-
-        // assert_eq!(runtime.print_output.len(), 1);
-        // assert_eq!(runtime.print_output[0], test_args_bytes())
     }
 }

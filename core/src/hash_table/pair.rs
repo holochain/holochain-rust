@@ -62,10 +62,20 @@ impl Pair {
     }
 
     /// serialize the Pair to a canonical JSON string
-    pub fn json(&self) -> String {
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn to_json(&self) -> String {
         // @TODO error handling
         // @see https://github.com/holochain/holochain-rust/issues/168
         serde_json::to_string(&self).unwrap()
+    }
+
+    /// deserialize a Pair from a canonical JSON string
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn from_json(s: &str) -> Pair {
+        let pair: Pair = serde_json::from_str(s).unwrap();
+        pair
     }
 }
 
@@ -149,11 +159,23 @@ pub mod tests {
     }
 
     #[test]
-    /// test serialization as JSON
-    fn json() {
+    /// test JSON roundtrip for pairs
+    fn json_roundtrip() {
+        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
+
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            test_pair().json(),
+            json,
+            test_pair().to_json(),
+        );
+
+        assert_eq!(
+            test_pair(),
+            Pair::from_json(&json),
+        );
+
+        assert_eq!(
+            test_pair(),
+            Pair::from_json(&test_pair().to_json()),
         );
     }
 }

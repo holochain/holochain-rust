@@ -165,15 +165,20 @@ impl<T: HashTable> Chain<T> {
         Ok(self.iter().find(|p| p.header().entry_type() == t))
     }
 
-    /// get the entire chain, top to bottom as a JSON array
+    /// get the entire chain, top to bottom as a JSON array or canonical pairs
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         let as_seq = self.iter().collect::<Vec<Pair>>();
         serde_json::to_string(&as_seq)
     }
 
-    /// restore a valid JSON chain
+    /// restore canonical JSON chain
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: Rc<T>, s: &str) -> Self {
         // @TODO inappropriate unwrap?
+        // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
         as_seq.reverse();
 

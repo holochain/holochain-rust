@@ -50,7 +50,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     match action_result {
         ActionResult::Get(maybe_pair) => {
-            let pair_str = maybe_pair.and_then(|p| Some(p.json())).unwrap_or_default();
+            let pair_str = maybe_pair.and_then(|p| Some(p.to_json())).unwrap_or_default();
 
             // write JSON pair to memory
             let mut params: Vec<_> = pair_str.to_string().into_bytes();

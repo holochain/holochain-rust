@@ -1,5 +1,4 @@
-use super::runtime_args_to_utf8;
-use super::runtime_allocate_encode_str;
+use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
 use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
@@ -67,10 +66,7 @@ pub fn invoke_commit(
     match action_result {
         ActionResult::Commit(hash) => {
             // serialize, allocate and encode result
-            runtime_allocate_encode_str(
-                runtime,
-                &format!("{{\"hash\":\"{}\"}}", hash)
-            )
+            runtime_allocate_encode_str(runtime, &format!("{{\"hash\":\"{}\"}}", hash))
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,

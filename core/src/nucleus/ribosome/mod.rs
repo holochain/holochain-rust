@@ -1,4 +1,3 @@
-// In this example we execute a contract funciton exported as "_call"
 mod commit;
 mod get;
 mod print;
@@ -14,7 +13,8 @@ use nucleus::memory::*;
 
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind, ValueType,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    ValueType,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -77,7 +77,10 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
 
 /// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
 /// returns a Result suitable to return directly from a zome API function
-pub fn runtime_allocate_encode_str(runtime: &mut Runtime, s: &str) -> Result<Option<RuntimeValue>, Trap> {
+pub fn runtime_allocate_encode_str(
+    runtime: &mut Runtime,
+    s: &str,
+) -> Result<Option<RuntimeValue>, Trap> {
     // write str to runtime memory
     let mut s_bytes: Vec<_> = s.to_string().into_bytes();
     s_bytes.push(0); // Add string terminate character (important)
@@ -152,12 +155,10 @@ pub fn call(
                         field_name
                     )));
                 }
-                _ => {
-                    Ok(FuncInstance::alloc_host(
-                        Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                        index as usize,
-                    ))
-                }
+                _ => Ok(FuncInstance::alloc_host(
+                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
+                    index as usize,
+                )),
             }
         }
     }

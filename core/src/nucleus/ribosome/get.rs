@@ -1,5 +1,4 @@
-use super::runtime_args_to_utf8;
-use super::runtime_allocate_encode_str;
+use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
 use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
@@ -71,8 +70,7 @@ mod tests {
     extern crate wabt;
 
     use super::GetArgs;
-    use hash_table::entry::tests::test_entry;
-    use hash_table::entry::tests::test_entry_hash;
+    use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::ribosome::tests::test_zome_api_function_runtime;
     use serde_json;
 
@@ -94,10 +92,7 @@ mod tests {
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
-        assert_eq!(
-            runtime.result,
-            expected,
-        );
+        assert_eq!(runtime.result, expected,);
     }
 
 }

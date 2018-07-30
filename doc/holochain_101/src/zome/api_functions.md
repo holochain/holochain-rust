@@ -54,9 +54,25 @@ returns `None`.
 Canonical name: `commit`
 
 Given an entry type and content, commits to the local source chain and returns
-the hash key if successful. The hash key is the hash of the header associated
-with this commit in the source chain.
+the entry hash if successful. The hash is the hash of the entry associated with
+this commit in the source chain.
 
 ### Get
 
 Canonical name: `get`
+
+Given an entry hash, gets some pair from the DHT if that entry content exists.
+
+Performs lookups from (in order):
+
+- The local source chain
+- The local hash table
+- The distributed hash table
+
+Note that multiple pairs can have the same entry hash, both locally and on the
+DHT across the network.
+
+Note also that two entries with the same content but different types resolve to
+the same entry hash. The entry hash is _only_ unique to the entry content.
+
+Use the header hash to lookup a specific pair.

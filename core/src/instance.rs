@@ -309,6 +309,21 @@ pub mod tests {
     }
 
     #[test]
+    fn test_missing_genesis() {
+        let mut dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+
+        let instance = test_instance(dna);
+
+        assert_eq!(instance.state().history.len(), 4);
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
+    #[test]
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),
@@ -317,7 +332,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
                     i32.const 0
                 )
                 (data (i32.const 0)
@@ -344,7 +359,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
                     i32.const 4
                 )
                 (data (i32.const 0)

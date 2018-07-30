@@ -1,5 +1,5 @@
 use super::runtime_args_to_utf8;
-use agent::ActionResult;
+use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
@@ -24,7 +24,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = ::agent::Action::get(&input.key);
+    let action = ::agent::state::Action::get(&input.key);
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(

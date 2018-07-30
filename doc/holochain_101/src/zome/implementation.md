@@ -12,6 +12,10 @@ implement several items:
 - The zome API function signature in `nucleus::ribosome::call` under `resolve_func`
 - A ribosome module implementing the invocation logic as `invoke_*`
 - An agent action if the zome API function has side effects
+  - `do_action_*` function
+  - dispatch from reducer
+  - `ActionResult`
+  - `Action` variant + method
 - Add a gets hashmap to actaully store the state
 - write a closure that is a sensor to detect the new get and push back to the calling scope
 

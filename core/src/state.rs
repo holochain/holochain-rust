@@ -1,4 +1,4 @@
-use agent::AgentState;
+use agent::state::AgentState;
 use instance::Observer;
 use nucleus::NucleusState;
 use snowflake;
@@ -12,7 +12,7 @@ use std::{
 #[allow(unknown_lints)]
 #[allow(large_enum_variant)]
 pub enum Action {
-    Agent(::agent::Action),
+    Agent(::agent::state::Action),
     Network(::network::Action),
     Nucleus(::nucleus::Action),
 }
@@ -77,7 +77,7 @@ impl State {
                 action_channel,
                 observer_channel,
             ),
-            agent: ::agent::reduce(
+            agent: ::agent::state::reduce(
                 Arc::clone(&self.agent),
                 &action_wrapper.action,
                 action_channel,

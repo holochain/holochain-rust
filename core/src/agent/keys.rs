@@ -1,36 +1,43 @@
 #[derive(Clone, Debug, PartialEq, Default)]
+/// represents a single Key
+/// e.g. private + public keys would be two Key structs
 pub struct Key {}
 
 impl Key {
+    /// returns a new agent Key
     pub fn new() -> Key {
         Key {}
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
+/// represents a set of Keys for an agent
+/// includes both public and private keys
+/// also includes the node id of the agent with these keys
 pub struct Keys {
-    pub_key: Key,
-    priv_key: Key,
+    public_key: Key,
+    private_key: Key,
     node_id: String,
 }
 
 impl Keys {
-    pub fn new<S: Into<String>>(pub_key: &Key, priv_key: &Key, node_id: S) -> Keys {
+    /// returns a new set of agent Keys
+    pub fn new<S: Into<String>>(public_key: &Key, private_key: &Key, node_id: S) -> Keys {
         Keys {
-            pub_key: pub_key.clone(),
-            priv_key: priv_key.clone(),
+            public_key: public_key.clone(),
+            private_key: private_key.clone(),
             node_id: node_id.into(),
         }
     }
 
     /// getter for the public key
-    pub fn pub_key(&self) -> Key {
-        self.pub_key.clone()
+    pub fn public_key(&self) -> Key {
+        self.public_key.clone()
     }
 
     /// getter for the private key
-    pub fn priv_key(&self) -> Key {
-        self.priv_key.clone()
+    pub fn private_key(&self) -> Key {
+        self.private_key.clone()
     }
 
     /// getter for the node id

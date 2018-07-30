@@ -1,5 +1,5 @@
 use super::runtime_args_to_utf8;
-use agent::ActionResult;
+use agent::state::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
@@ -37,7 +37,7 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action = ::agent::Action::commit(&entry);
+    let action = ::agent::state::Action::commit(&entry);
 
     // Send Action and block for result
     let (sender, receiver) = channel();

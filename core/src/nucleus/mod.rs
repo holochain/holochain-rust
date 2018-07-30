@@ -475,6 +475,7 @@ mod tests {
     use std::sync::mpsc::channel;
 
     #[test]
+    /// smoke test the init of a nucleus
     fn can_instantiate_nucleus_state() {
         let nucleus_state = NucleusState::new();
         assert_eq!(nucleus_state.dna, None);
@@ -484,6 +485,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -506,6 +508,7 @@ mod tests {
     }
 
     #[test]
+    /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -571,6 +574,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = FunctionCall::new(
             "myZome".to_string(),
@@ -588,6 +592,7 @@ mod tests {
     }
 
     #[test]
+    /// tests that calling a valid zome function returns a valid result
     fn call_ribosome_function() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),
@@ -608,6 +613,7 @@ mod tests {
     }
 
     #[test]
+    /// tests that calling an invalid DNA returns the correct error
     fn call_ribosome_wrong_dna() {
         let mut instance = Instance::new();
         instance.start_action_loop();
@@ -622,6 +628,7 @@ mod tests {
     }
 
     #[test]
+    /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),
@@ -644,6 +651,7 @@ mod tests {
     }
 
     #[test]
+    /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_ribosome_function() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome".to_string(),

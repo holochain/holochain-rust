@@ -63,8 +63,8 @@ linker = "<your $HOME value here>/NDK/arm/bin/arm-linux-androideabi-clang"
 [target.i686-linux-android]
 ar = "<your $HOME value here>/NDK/x86/bin/i686-linux-android-ar"
 linker = "<your $HOME value here>/NDK/x86/bin/i686-linux-android-clang"
-
 ```
+
 (this toml file needs absolute paths, so you need to prefix the path with your home dir).
 
 4. Now you can add those targets to your rust installation with:

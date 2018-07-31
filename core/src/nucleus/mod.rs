@@ -1,3 +1,4 @@
+pub mod memory;
 pub mod ribosome;
 
 use error::HolochainError;
@@ -35,6 +36,8 @@ impl Default for NucleusStatus {
 pub struct NucleusState {
     dna: Option<Dna>,
     status: NucleusStatus,
+    // @TODO eventually drop stale calls
+    // @see https://github.com/holochain/holochain-rust/issues/166
     ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 
@@ -463,13 +466,16 @@ pub fn reduce(
 
 #[cfg(test)]
 mod tests {
+    extern crate test_utils;
     use super::{
         super::{nucleus::Action::*, state::Action::*},
         *,
     };
+    use instance::{tests::test_instance, Instance};
     use std::sync::mpsc::channel;
 
     #[test]
+    /// smoke test the init of a nucleus
     fn can_instantiate_nucleus_state() {
         let nucleus_state = NucleusState::new();
         assert_eq!(nucleus_state.dna, None);
@@ -479,6 +485,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -501,6 +508,7 @@ mod tests {
     }
 
     #[test]
+    /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -566,6 +574,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = FunctionCall::new(
             "myZome".to_string(),
@@ -581,4 +590,97 @@ mod tests {
         let reduced_nucleus = reduce(nucleus.clone(), &action, &sender, &tx_observer);
         assert_eq!(nucleus, reduced_nucleus);
     }
+
+    #[test]
+    /// tests that calling a valid zome function returns a valid result
+    fn call_ribosome_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create zome function call
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(val) => assert_eq!(val, "1337"),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+        }
+    }
+
+    #[test]
+    /// tests that calling an invalid DNA returns the correct error
+    fn call_ribosome_wrong_dna() {
+        let mut instance = Instance::new();
+        instance.start_action_loop();
+
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::DnaMissing) => {}
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    /// tests that calling a valid zome with invalid function returns the correct error
+    fn call_ribosome_wrong_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create zome function call:
+        let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::ErrorGeneric(err)) => {
+                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
+            }
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    /// tests that calling the wrong zome/capability returns the correct errors
+    fn call_wrong_ribosome_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create bad zome function call
+        let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
+            _ => assert!(false),
+        }
+
+        // Create bad capability function call
+        let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::CapabilityNotFound(err)) => {
+                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+            }
+            _ => assert!(false),
+        }
+    }
+
 }

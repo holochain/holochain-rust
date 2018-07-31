@@ -1,5 +1,6 @@
 use hash;
 use multihash::Hash;
+use std::hash::{Hash as StdHash, Hasher};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -16,6 +17,16 @@ impl PartialEq for Entry {
         // e.g. two entries with the same content but different type are equal
         // @see https://github.com/holochain/holochain-rust/issues/85
         self.hash() == other.hash()
+    }
+}
+
+/// implement Hash for Entry to match PartialEq logic
+// @TODO is this right?
+// e.g. two entries with the same content but different type are equal
+// @see https://github.com/holochain/holochain-rust/issues/85
+impl StdHash for Entry {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.content.hash(state);
     }
 }
 
@@ -105,6 +116,11 @@ pub mod tests {
         Entry::new(&test_type(), &test_content())
     }
 
+    /// the correct hash for test_entry()
+    pub fn test_entry_hash() -> String {
+        "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".into()
+    }
+
     /// dummy entry, same as test_entry()
     pub fn test_entry_a() -> Entry {
         test_entry()
@@ -138,6 +154,28 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that hash equality matches PartialEq
+    fn eq_hash() {
+        let c1 = "foo";
+        let c2 = "bar";
+        let t1 = "a";
+        let t2 = "b";
+
+        // same type and content is equal
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t1, c1).hash(),);
+
+        // same type different content is not equal
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t1, c2).hash(),);
+
+        // same content different type is equal
+        // @see https://github.com/holochain/holochain-rust/issues/85
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t2, c1).hash(),);
+
+        // different content different type is not equal
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t2, c2).hash(),);
+    }
+
+    #[test]
     /// tests for Entry::new()
     fn new() {
         let c = "foo";
@@ -152,11 +190,7 @@ pub mod tests {
     #[test]
     /// test entry.hash() against a known value
     fn hash_known() {
-        let t = "fooType";
-        let c1 = "bar";
-        let e1 = Entry::new(t, &c1);
-
-        assert_eq!("QmfMjwGasyzX74517w3gL2Be3sozKMGDRwuGJHgs9m6gfS", e1.hash());
+        assert_eq!(test_entry_hash(), test_entry().hash());
     }
 
     #[test]

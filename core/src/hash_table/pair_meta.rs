@@ -57,7 +57,7 @@ impl PairMeta {
             pair: pair.key(),
             attribute: attribute.into(),
             value: value.into(),
-            source: keys.node_id().into(),
+            source: keys.node_id(),
         }
     }
 

@@ -71,7 +71,6 @@ pub struct SinglePageAllocation {
 #[allow(unknown_lints)]
 #[allow(cast_lossless)]
 impl SinglePageAllocation {
-
     /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
     /// A valid allocation must not have a length of zero
     /// An Encoded Allocation with an offset but no length is actually an encoding of an ErrorCode
@@ -99,7 +98,6 @@ impl SinglePageAllocation {
     pub fn encode(self) -> u32 {
         u32_merge_bits(self.offset, self.length)
     }
-
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -117,7 +115,9 @@ pub struct SinglePageStack {
 impl SinglePageStack {
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new(last_allocation: SinglePageAllocation) -> Self {
-        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= std::u16::MAX as u32);
+        assert!(
+            last_allocation.offset as u32 + last_allocation.length as u32 <= std::u16::MAX as u32
+        );
         SinglePageStack {
             top: last_allocation.offset + last_allocation.length,
         }
@@ -127,7 +127,9 @@ impl SinglePageStack {
         let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");
-        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= std::u16::MAX as u32);
+        assert!(
+            last_allocation.offset as u32 + last_allocation.length as u32 <= std::u16::MAX as u32
+        );
         return SinglePageStack::new(last_allocation);
     }
 
@@ -215,55 +217,31 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
 #[cfg(test)]
 pub mod tests {
 
-    use super::HcApiReturnCode;
-    use super::SinglePageAllocation;
+    use super::{HcApiReturnCode, SinglePageAllocation};
 
     #[test]
     /// tests that encoding integers for errors returns the correct return code
     fn encode_error() {
-        assert_eq!(
-            super::encode_error(0),
-            HcApiReturnCode::Success,
-        );
+        assert_eq!(super::encode_error(0), HcApiReturnCode::Success,);
 
-        assert_eq!(
-            super::encode_error(1),
-            HcApiReturnCode::Error,
-        );
+        assert_eq!(super::encode_error(1), HcApiReturnCode::Error,);
 
-        assert_eq!(
-            super::encode_error(2),
-            HcApiReturnCode::ErrorSerdeJson,
-        );
+        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorSerdeJson,);
 
-        assert_eq!(
-            super::encode_error(3),
-            HcApiReturnCode::ErrorPageOverflow,
-        );
+        assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow,);
 
-        assert_eq!(
-            super::encode_error(4),
-            HcApiReturnCode::ErrorActionResult,
-        );
+        assert_eq!(super::encode_error(4), HcApiReturnCode::ErrorActionResult,);
     }
 
     #[test]
     /// tests construction and encoding in a new single page allocation
     fn new_spa() {
-
         let i = 0b1010101010101010_0101010101010101;
         let spa = SinglePageAllocation::new(i).unwrap();
 
-        assert_eq!(
-            0b1010101010101010,
-            spa.offset,
-        );
+        assert_eq!(0b1010101010101010, spa.offset,);
 
-        assert_eq!(
-            0b0101010101010101,
-            spa.length,
-        );
-
+        assert_eq!(0b0101010101010101, spa.length,);
     }
 
     #[test]
@@ -310,59 +288,46 @@ pub mod tests {
     #[test]
     /// tests that a SinglePageAllocation returns its encoded offset/length pair as u32
     fn spa_encode() {
-
         let i = 0b1010101010101010_0101010101010101;
         let spa = SinglePageAllocation::new(i).unwrap();
 
-        assert_eq!(
-            i,
-            spa.encode(),
-        );
-
+        assert_eq!(i, spa.encode(),);
     }
 
     #[test]
     /// tests that we can extract the high bits from a u32 into the correct u16
     fn u32_high_bits() {
-
         assert_eq!(
             0b1010101010101010,
             super::u32_high_bits(0b1010101010101010_0101010101010101),
         );
-
     }
 
     #[test]
     /// tests that we can extract the high bits from a u32 into the correct u16
     fn u32_low_bits() {
-
         assert_eq!(
             0b0101010101010101,
             super::u32_low_bits(0b1010101010101010_0101010101010101),
         );
-
     }
 
     #[test]
     /// tests that we can split a u32 into a tuple of high/low bits
     fn u32_split_bits() {
-
         assert_eq!(
             (0b1010101010101010, 0b0101010101010101),
             super::u32_split_bits(0b1010101010101010_0101010101010101),
         );
-
     }
 
     #[test]
     /// tests that we can merge a u16 tuple into a u32
     fn u32_merge_bits() {
-
         assert_eq!(
             0b1010101010101010_0101010101010101,
             super::u32_merge_bits(0b1010101010101010, 0b0101010101010101),
         );
-
     }
 
 }

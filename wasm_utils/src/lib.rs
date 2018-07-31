@@ -10,13 +10,13 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 
 /// Enumeration of all possible return codes that an HC API function can return
 #[repr(u32)]
-#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum HcApiReturnCode {
-    SUCCESS = 0,
-    ERROR_SERDE_JSON = 1 << 16,
-    ERROR_PAGE_OVERFLOW = 2 << 16,
-    ERROR = 3 << 16,
+    Success = 0,
+    Error = 1 << 16,
+    ErrorSerdeJson = 2 << 16,
+    ErrorPageOverflow = 3 << 16,
+    ErrorActionResult = 4 << 16,
 }
 
 //pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
@@ -25,10 +25,11 @@ pub enum HcApiReturnCode {
 
 pub fn encode_error(offset: u16) -> HcApiReturnCode {
     match offset {
-        0 => HcApiReturnCode::SUCCESS,
-        1 => HcApiReturnCode::ERROR_SERDE_JSON,
-        2 => HcApiReturnCode::ERROR_PAGE_OVERFLOW,
-        _ => HcApiReturnCode::ERROR,
+        0 => HcApiReturnCode::Success,
+        2 => HcApiReturnCode::ErrorSerdeJson,
+        3 => HcApiReturnCode::ErrorPageOverflow,
+        4 => HcApiReturnCode::ErrorActionResult,
+        1 | _ => HcApiReturnCode::Error,
     }
 }
 
@@ -58,7 +59,7 @@ impl SinglePageAllocation {
             return Err(encode_error(allocation.offset));
         }
         if (allocation.offset as u32 + allocation.length as u32) > 65535 {
-            return Err(HcApiReturnCode::ERROR_PAGE_OVERFLOW);
+            return Err(HcApiReturnCode::ErrorPageOverflow);
         }
         Ok(allocation)
     }

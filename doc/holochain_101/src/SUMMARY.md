@@ -1,4 +1,5 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
-- [Chapter 2](./chapter_2.md)
+- [State actions](./state/actions.md)
+- [using zome API functions](./zome/api_functions.md)
+- [implementing zome API function](./zome/implementation.md)

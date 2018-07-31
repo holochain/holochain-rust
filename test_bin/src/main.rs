@@ -12,12 +12,14 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+// this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
     println!("Usage: holochain_test_bin <identity>");
     std::process::exit(1);
 }
 
+// this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
     let args: Vec<String> = env::args().collect();

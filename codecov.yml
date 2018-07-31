@@ -1,0 +1,4 @@
+# Repository Yaml
+coverage:
+  round: up
+  range: 85..100

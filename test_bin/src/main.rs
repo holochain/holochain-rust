@@ -12,11 +12,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+#[cfg_attr(tarpaulin, skip)]
 fn usage() {
     println!("Usage: holochain_test_bin <identity>");
     std::process::exit(1);
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let args: Vec<String> = env::args().collect();
 

@@ -82,6 +82,7 @@ impl SinglePageAllocation {
         // zero length allocation = encoding an error api return code
         if allocation.length == 0 {
             // @TODO is it right to return success as Err for 0? what is a "success" error?
+            // @see https://github.com/holochain/holochain-rust/issues/181
             return Err(encode_error(allocation.offset));
         }
 

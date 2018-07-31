@@ -20,7 +20,7 @@ By writing one WASM Ribosome we support more languages than sticking to a JS and
 
 ## Decision
 
-Implement only one WASM ribosome for holochain and have it working for 2 different toolchains/languages (Javascript and Rust or C++ - to bo decided)
+Implement only one WASM ribosome for holochain and have it working for 2 different toolchains/languages (Javascript and Rust or C++ - to be decided)
 
 
 ## Consequences

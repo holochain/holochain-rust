@@ -54,7 +54,7 @@ pub fn u32_split_bits(i: u32) -> (u16, u16) {
 
 /// merges 2x u16 into a single u32
 pub fn u32_merge_bits(high: u16, low: u16) -> u32 {
-    ((high as u32) << 16) + low as u32
+    (u32::from(high) << 16) + u32::from(low)
 }
 
 //--------------------------------------------------------------------------------------------------

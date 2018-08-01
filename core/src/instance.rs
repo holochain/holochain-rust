@@ -1,4 +1,5 @@
 //use error::HolochainError;
+use context::Context;
 use state::*;
 use std::{
     sync::{mpsc::*, Arc, RwLock, RwLockReadGuard},
@@ -69,7 +70,7 @@ impl Instance {
     }
 
     /// Start the Event Loop on a seperate thread
-    pub fn start_action_loop(&mut self) {
+    pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (tx_action, rx_action) = channel::<ActionWrapper>();
         let (tx_observer, rx_observer) = channel::<Observer>();
         self.action_channel = tx_action.clone();
@@ -89,7 +90,12 @@ impl Instance {
                         // Mutate state
                         {
                             let mut state = state_mutex.write().unwrap();
-                            *state = state.reduce(action_wrapper, &tx_action, &tx_observer);
+                            *state = state.reduce(
+                                context.clone(),
+                                action_wrapper,
+                                &tx_action,
+                                &tx_observer,
+                            );
                         }
 
                         // Add new observers
@@ -218,17 +224,70 @@ pub fn dispatch_action(
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
+    use context::Context;
+    use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
+    use logger::Logger;
     use nucleus::Action::InitApplication;
+    use persister::SimplePersister;
     use state::{Action::Nucleus, State};
-    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
+    use std::{
+        fmt,
+        sync::{mpsc::channel, Arc, Mutex},
+        thread::sleep,
+        time::Duration,
+    };
+
+    #[derive(Clone)]
+    pub struct TestLogger {
+        pub log: Vec<String>,
+    }
+
+    impl Logger for TestLogger {
+        fn log(&mut self, msg: String) {
+            self.log.push(msg);
+        }
+    }
+
+    // trying to get a way to print out what has been logged for tests without a read function.
+    // this currently fails
+    impl fmt::Debug for TestLogger {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:?}", self.log)
+        }
+    }
+
+    /// create a test logger
+    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
+        Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
+    }
+
+    /// create a test context and TestLogger pair so we can use the logger in assertions
+    pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        let agent = Agent::from_string(agent_name);
+        let logger = test_logger();
+        (
+            Arc::new(Context {
+                agent,
+                logger: logger.clone(),
+                persister: Arc::new(Mutex::new(SimplePersister::new())),
+            }),
+            logger,
+        )
+    }
+
+    /// create a test context
+    pub fn test_context(agent_name: &str) -> Arc<Context> {
+        let (context, _) = test_context_and_logger(agent_name);
+        context
+    }
 
     /// create a test instance
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
         let action = Nucleus(InitApplication(dna.clone()));
-        instance.start_action_loop();
+        instance.start_action_loop(test_context("jane"));
         instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
@@ -260,7 +319,7 @@ pub mod tests {
     /// the test thread could complete before the closure was called.
     fn can_dispatch_with_observer() {
         let mut instance = Instance::new();
-        instance.start_action_loop();
+        instance.start_action_loop(test_context("jane"));
 
         let dna = Dna::new();
         let (sender, receiver) = channel();
@@ -292,7 +351,7 @@ pub mod tests {
 
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna.clone()));
-        instance.start_action_loop();
+        instance.start_action_loop(test_context("jane"));
 
         // the initial state is not intialized
         assert!(instance.state().nucleus().has_initialized() == false);

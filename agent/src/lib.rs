@@ -18,6 +18,9 @@ impl Agent {
             content: text.to_string(),
         })
     }
+    pub fn to_string(&self) -> String {
+        self.identity.content.clone()
+    }
 }
 
 #[cfg(test)]
@@ -33,5 +36,7 @@ mod tests {
 
         let agent = Agent::from_string("jane");
         assert_eq!(agent.identity.content, "jane".to_string());
+
+        assert_eq!(agent.to_string(), "jane".to_string());
     }
 }

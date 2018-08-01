@@ -13,11 +13,13 @@ impl Agent {
     pub fn new(id: Identity) -> Self {
         Agent { identity: id }
     }
+
     pub fn from_string(text: &str) -> Self {
         Agent::new(Identity {
             content: text.to_string(),
         })
     }
+
     pub fn to_string(&self) -> String {
         self.identity.content.clone()
     }

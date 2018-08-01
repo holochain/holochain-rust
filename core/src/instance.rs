@@ -232,13 +232,12 @@ pub mod tests {
     use persister::SimplePersister;
     use state::{Action::Nucleus, State};
     use std::{
-        fmt,
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct TestLogger {
         pub log: Vec<String>,
     }
@@ -246,14 +245,6 @@ pub mod tests {
     impl Logger for TestLogger {
         fn log(&mut self, msg: String) {
             self.log.push(msg);
-        }
-    }
-
-    // trying to get a way to print out what has been logged for tests without a read function.
-    // this currently fails
-    impl fmt::Debug for TestLogger {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{:?}", self.log)
         }
     }
 

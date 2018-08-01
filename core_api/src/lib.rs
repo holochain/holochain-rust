@@ -177,6 +177,7 @@ mod tests {
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
+    // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = holochain_agent::Agent::from_string(agent_name);
         let logger = test_utils::test_logger();

@@ -1,5 +1,5 @@
 [package]
-name = "wasm-ribosome-test"
+name = "print"
 version = "0.1.0"
 authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
 
@@ -12,3 +12,6 @@ lto = true
 
 [workspace]
 members = []
+
+[dependencies]
+holochain_wasm_utils = { path = "../../../../wasm_utils"}

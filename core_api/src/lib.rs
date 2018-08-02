@@ -239,7 +239,7 @@ mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
                     i32.const 4
                 )
                 (data (i32.const 0)
@@ -271,7 +271,7 @@ mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (param $p1 i32) (result i32)
+                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
                     (loop (br 0))
                     i32.const 0
                 )
@@ -341,7 +341,7 @@ mod tests {
  (memory 1)
  (export "memory" (memory 0))
  (export "hello_dispatch" (func $func0))
- (func $func0 (param $p0 i32) (param $p1 i32) (result i32)
+ (func $func0 (param $p0 i32) (result i32)
        i32.const 16
        )
  (data (i32.const 0)
@@ -418,6 +418,7 @@ mod tests {
     }
 
     #[test]
+    // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
@@ -448,5 +449,92 @@ mod tests {
 
         // Check in holochain instance's history that the commit event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 7);
+    }
+
+    #[test]
+    // TODO #165 - Move test to core/nucleus and use instance directly
+    fn can_call_commit_err() {
+        // Setup the holochain instance
+        let wasm = create_wasm_from_file(
+            "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
+        );
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let agent = HCAgent::from_string("alex");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        // Run the holochain instance
+        hc.start().expect("couldn't start");
+        assert_eq!(hc.state().unwrap().history.len(), 4);
+
+        // Call the exposed wasm function that calls the Commit API function
+        let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
+
+        println!("\t RESULT = {:?}", result);
+
+        // Expect normal OK result with hash
+        match result {
+            Ok(result) => assert_eq!(result, r#"{"hash":"fail"}"#),
+            Err(_) => assert!(false),
+        };
+
+        // Check in holochain instance's history that the commit event has been processed
+        assert_eq!(hc.state().unwrap().history.len(), 6);
+    }
+
+    #[test]
+    // TODO #165 - Move test to core/nucleus and use instance directly
+    fn can_call_print() {
+        // Setup the holochain instance
+        let wasm = create_wasm_from_file(
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/print.wasm",
+        );
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+
+        let agent = HCAgent::from_string("alex");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        // Run the holochain instance
+        hc.start().expect("couldn't start");
+        assert_eq!(hc.state().unwrap().history.len(), 4);
+
+        // Call the exposed wasm function that calls the Commit API function
+        let result = hc.call("test_zome", "test_cap", "print_hello", r#"{}"#);
+
+        // TODO #165 - check runtime.print_output instead
+        // Expect empty OK result
+        assert!(result.unwrap().is_empty());
+
+        // Check in holochain instance's history that the commit event has been processed
+        assert_eq!(hc.state().unwrap().history.len(), 6);
+    }
+
+    #[test]
+    // TODO #165 - Move test to core/nucleus and use instance directly
+    fn can_call_print_multiple() {
+        // Setup the holochain instance
+        let wasm = create_wasm_from_file(
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/print.wasm",
+        );
+        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+
+        let agent = HCAgent::from_string("alex");
+        let (context, _) = test_context(agent.clone());
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+        // Run the holochain instance
+        hc.start().expect("couldn't start");
+        assert_eq!(hc.state().unwrap().history.len(), 4);
+
+        // Call the exposed wasm function that calls the Commit API function
+        let result = hc.call("test_zome", "test_cap", "print_multiple", r#"{}"#);
+
+        // TODO #165 - check runtime.print_output instead
+        // Expect empty OK result
+        assert!(result.unwrap().is_empty());
+
+        // Check in holochain instance's history that the commit event has been processed
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 }

@@ -11,5 +11,6 @@ core/src/nucleus/wasm-test/target
 cobertura.xml
 
 .idea
+.DS_Store
 /**/Makefile
 !/Makefile

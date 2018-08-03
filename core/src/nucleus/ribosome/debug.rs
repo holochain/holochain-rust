@@ -11,8 +11,6 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let arg = runtime_args_to_utf8(runtime, args);
 
-    // @TODO debug instead of print here (remove print entirely)
-    // @see https://github.com/holochain/holochain-rust/issues/93
     println!("{}", arg);
     let _ = runtime.context.log(&arg);
     Ok(Some(RuntimeValue::I32(0 as i32)))

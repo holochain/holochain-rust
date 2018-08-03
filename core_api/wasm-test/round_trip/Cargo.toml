@@ -16,4 +16,4 @@ members = []
 [dependencies]
 serde="1"
 serde_derive="1"
-serde_json="1"
+holochain_wasm_utils = { path = "../../../wasm_utils"}

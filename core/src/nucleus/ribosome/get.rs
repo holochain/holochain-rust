@@ -85,7 +85,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
-        let runtime = test_zome_api_function_runtime("get", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime("get", test_args_bytes());
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"");

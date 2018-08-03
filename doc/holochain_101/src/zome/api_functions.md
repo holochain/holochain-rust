@@ -42,12 +42,11 @@ of the zome API function.
 
 ## Reference
 
-### Print
+### Debug
 
-Canonical name: `print`
+Canonical name: `debug`
 
-Print pushes the passed arguments to the `print_output` of the runtime and
-returns `None`.
+Debug sends the passed arguments to current log that was given to the instance and returns `None`.
 
 ### Commit
 

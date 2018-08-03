@@ -1,6 +1,7 @@
 pub mod memory;
 pub mod ribosome;
 
+use context::Context;
 use error::HolochainError;
 use holochain_dna::{
     zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
@@ -317,6 +318,7 @@ fn reduce_ia(
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
 fn reduce_ezf(
+    context: Arc<Context>,
     nucleus_state: &mut NucleusState,
     fc: &FunctionCall,
     action_channel: &Sender<state::ActionWrapper>,
@@ -341,6 +343,7 @@ fn reduce_ezf(
                 thread::spawn(move || {
                     let result: FunctionResult;
                     match ribosome::call(
+                        context,
                         &action_channel,
                         &tx_observer,
                         code,
@@ -420,6 +423,7 @@ fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
+    context: Arc<Context>,
     old_state: Arc<NucleusState>,
     action: &state::Action,
     action_channel: &Sender<state::ActionWrapper>,
@@ -444,7 +448,13 @@ pub fn reduce(
                 }
 
                 Action::ExecuteZomeFunction(ref fc) => {
-                    reduce_ezf(&mut new_nucleus_state, fc, action_channel, observer_channel);
+                    reduce_ezf(
+                        context,
+                        &mut new_nucleus_state,
+                        fc,
+                        action_channel,
+                        observer_channel,
+                    );
                 }
 
                 Action::ReturnZomeFunctionResult(ref result) => {
@@ -465,14 +475,17 @@ pub fn reduce(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate test_utils;
     use super::{
         super::{nucleus::Action::*, state::Action::*},
         *,
     };
-    use instance::{tests::test_instance, Instance};
-    use std::sync::mpsc::channel;
+    use instance::{
+        tests::{test_context, test_instance},
+        Instance,
+    };
+    use std::sync::{mpsc::channel, Arc};
 
     #[test]
     /// smoke test the init of a nucleus
@@ -495,6 +508,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -518,6 +532,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let initializing_nucleus = reduce(
+            test_context("jimmy"),
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -532,6 +547,7 @@ mod tests {
         // Send ReturnInit(false) Action
         let return_action = Nucleus(ReturnInitializationResult(Some("init failed".to_string())));
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
@@ -547,6 +563,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(
+            test_context("jane"),
             reduced_nucleus.clone(),
             &action,
             &sender.clone(),
@@ -562,6 +579,7 @@ mod tests {
         // Send ReturnInit(None) Action
         let return_action = Nucleus(ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
@@ -587,7 +605,13 @@ mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
-        let reduced_nucleus = reduce(nucleus.clone(), &action, &sender, &tx_observer);
+        let reduced_nucleus = reduce(
+            test_context("jimmy"),
+            nucleus.clone(),
+            &action,
+            &sender,
+            &tx_observer,
+        );
         assert_eq!(nucleus, reduced_nucleus);
     }
 
@@ -616,7 +640,8 @@ mod tests {
     /// tests that calling an invalid DNA returns the correct error
     fn call_ribosome_wrong_dna() {
         let mut instance = Instance::new();
-        instance.start_action_loop();
+
+        instance.start_action_loop(test_context("jane"));
 
         let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);

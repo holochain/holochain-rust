@@ -1,5 +1,6 @@
 use chain::Chain;
 use hash_table::{entry::Entry, header::Header, HashTable};
+use serde_json;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
@@ -58,6 +59,23 @@ impl Pair {
         && self.header.entry() == self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
+    }
+
+    /// serialize the Pair to a canonical JSON string
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn to_json(&self) -> String {
+        // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
+        serde_json::to_string(&self).unwrap()
+    }
+
+    /// deserialize a Pair from a canonical JSON string
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn from_json(s: &str) -> Pair {
+        let pair: Pair = serde_json::from_str(s).unwrap();
+        pair
     }
 }
 
@@ -138,5 +156,17 @@ pub mod tests {
         let p1 = Pair::new(&chain, &e1);
 
         assert!(p1.validate());
+    }
+
+    #[test]
+    /// test JSON roundtrip for pairs
+    fn json_roundtrip() {
+        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
+
+        assert_eq!(json, test_pair().to_json(),);
+
+        assert_eq!(test_pair(), Pair::from_json(&json),);
+
+        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()),);
     }
 }

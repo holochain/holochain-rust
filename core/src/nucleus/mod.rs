@@ -1,5 +1,7 @@
+pub mod memory;
 pub mod ribosome;
 
+use context::Context;
 use error::HolochainError;
 use holochain_dna::{
     zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
@@ -35,6 +37,8 @@ impl Default for NucleusStatus {
 pub struct NucleusState {
     dna: Option<Dna>,
     status: NucleusStatus,
+    // @TODO eventually drop stale calls
+    // @see https://github.com/holochain/holochain-rust/issues/166
     ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 
@@ -314,6 +318,7 @@ fn reduce_ia(
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
 fn reduce_ezf(
+    context: Arc<Context>,
     nucleus_state: &mut NucleusState,
     fc: &FunctionCall,
     action_channel: &Sender<state::ActionWrapper>,
@@ -338,6 +343,7 @@ fn reduce_ezf(
                 thread::spawn(move || {
                     let result: FunctionResult;
                     match ribosome::call(
+                        context,
                         &action_channel,
                         &tx_observer,
                         code,
@@ -417,6 +423,7 @@ fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
+    context: Arc<Context>,
     old_state: Arc<NucleusState>,
     action: &state::Action,
     action_channel: &Sender<state::ActionWrapper>,
@@ -441,7 +448,13 @@ pub fn reduce(
                 }
 
                 Action::ExecuteZomeFunction(ref fc) => {
-                    reduce_ezf(&mut new_nucleus_state, fc, action_channel, observer_channel);
+                    reduce_ezf(
+                        context,
+                        &mut new_nucleus_state,
+                        fc,
+                        action_channel,
+                        observer_channel,
+                    );
                 }
 
                 Action::ReturnZomeFunctionResult(ref result) => {
@@ -462,14 +475,20 @@ pub fn reduce(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    extern crate test_utils;
     use super::{
         super::{nucleus::Action::*, state::Action::*},
         *,
     };
-    use std::sync::mpsc::channel;
+    use instance::{
+        tests::{test_context, test_instance},
+        Instance,
+    };
+    use std::sync::{mpsc::channel, Arc};
 
     #[test]
+    /// smoke test the init of a nucleus
     fn can_instantiate_nucleus_state() {
         let nucleus_state = NucleusState::new();
         assert_eq!(nucleus_state.dna, None);
@@ -479,6 +498,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -488,6 +508,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -501,6 +522,7 @@ mod tests {
     }
 
     #[test]
+    /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
         let action = Nucleus(InitApplication(dna));
@@ -510,6 +532,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let initializing_nucleus = reduce(
+            test_context("jimmy"),
             nucleus.clone(),
             &action,
             &sender.clone(),
@@ -524,6 +547,7 @@ mod tests {
         // Send ReturnInit(false) Action
         let return_action = Nucleus(ReturnInitializationResult(Some("init failed".to_string())));
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
@@ -539,6 +563,7 @@ mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(
+            test_context("jane"),
             reduced_nucleus.clone(),
             &action,
             &sender.clone(),
@@ -554,6 +579,7 @@ mod tests {
         // Send ReturnInit(None) Action
         let return_action = Nucleus(ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
+            test_context("jimmy"),
             initializing_nucleus.clone(),
             &return_action,
             &sender.clone(),
@@ -566,6 +592,7 @@ mod tests {
     }
 
     #[test]
+    /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = FunctionCall::new(
             "myZome".to_string(),
@@ -578,7 +605,107 @@ mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<state::ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
-        let reduced_nucleus = reduce(nucleus.clone(), &action, &sender, &tx_observer);
+        let reduced_nucleus = reduce(
+            test_context("jimmy"),
+            nucleus.clone(),
+            &action,
+            &sender,
+            &tx_observer,
+        );
         assert_eq!(nucleus, reduced_nucleus);
     }
+
+    #[test]
+    /// tests that calling a valid zome function returns a valid result
+    fn call_ribosome_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create zome function call
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(val) => assert_eq!(val, "1337"),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+        }
+    }
+
+    #[test]
+    /// tests that calling an invalid DNA returns the correct error
+    fn call_ribosome_wrong_dna() {
+        let mut instance = Instance::new();
+
+        instance.start_action_loop(test_context("jane"));
+
+        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::DnaMissing) => {}
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    /// tests that calling a valid zome with invalid function returns the correct error
+    fn call_ribosome_wrong_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create zome function call:
+        let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::ErrorGeneric(err)) => {
+                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
+            }
+            _ => assert!(false),
+        }
+    }
+
+    #[test]
+    /// tests that calling the wrong zome/capability returns the correct errors
+    fn call_wrong_ribosome_function() {
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome".to_string(),
+            "test_cap".to_string(),
+            None,
+        );
+        let mut instance = test_instance(dna);
+
+        // Create bad zome function call
+        let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
+            _ => assert!(false),
+        }
+
+        // Create bad capability function call
+        let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
+
+        let result = super::call_and_wait_for_result(call, &mut instance);
+
+        match result {
+            Err(HolochainError::CapabilityNotFound(err)) => {
+                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+            }
+            _ => assert!(false),
+        }
+    }
+
 }

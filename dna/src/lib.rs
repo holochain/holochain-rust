@@ -212,15 +212,19 @@ impl Hash for Dna {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     extern crate base64;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
+    pub fn test_dna() -> Dna {
+        Dna::new()
+    }
+
     #[test]
     fn can_parse_and_output_json() {
-        let dna = Dna::new();
+        let dna = test_dna();
 
         let serialized = serde_json::to_string(&dna).unwrap();
 
@@ -231,7 +235,7 @@ mod tests {
 
     #[test]
     fn can_parse_and_output_json_helpers() {
-        let dna = Dna::new();
+        let dna = test_dna();
 
         let serialized = dna.to_json().unwrap();
 

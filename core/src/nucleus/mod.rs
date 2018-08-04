@@ -7,7 +7,7 @@ use holochain_dna::{
     zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
 };
 use instance::Observer;
-use snowflake;
+// use snowflake;
 use std::{
     sync::{
         mpsc::{channel, Sender},
@@ -24,7 +24,7 @@ use action::ActionWrapper;
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionCall {
-    id: snowflake::ProcessUniqueId,
+    // id: snowflake::ProcessUniqueId,
     pub zome: String,
     pub capability: String,
     pub function: String,
@@ -34,7 +34,7 @@ pub struct FunctionCall {
 impl FunctionCall {
     pub fn new<S: Into<String>>(zome: S, capability: S, function: S, parameters: S) -> Self {
         FunctionCall {
-            id: snowflake::ProcessUniqueId::new(),
+            // id: snowflake::ProcessUniqueId::new(),
             zome: zome.into(),
             capability: capability.into(),
             function: function.into(),
@@ -286,8 +286,10 @@ fn reduce_ezf(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    let signal = action.signal();
-    let function_call = unwrap_to!(signal => Signal::ExecuteZomeFunction);
+    let function_call = match action.signal() {
+        Signal::ExecuteZomeFunction(call) => call,
+        _ => unreachable!(),
+    };
     let fc = function_call.clone();
 
     let mut has_error = false;
@@ -489,12 +491,13 @@ pub fn reduce(
 #[cfg(test)]
 mod tests {
     extern crate test_utils;
+    use holochain_dna::Dna;
     use super::{
-        super::{nucleus::Action::*, state::Action::*},
         *,
     };
     use instance::{tests::test_instance, Instance};
     use std::sync::mpsc::channel;
+    use action::ActionWrapper;
 
     #[test]
     /// smoke test the init of a nucleus
@@ -510,9 +513,9 @@ mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action = Nucleus(InitApplication(dna));
+        let action = Action::new(&Signal::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = channel::<state::ActionWrapper>();
+        let (sender, receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
 
         // Reduce Init action and block until receiving ReturnInit Action
@@ -533,9 +536,9 @@ mod tests {
     /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
-        let action = Nucleus(InitApplication(dna));
+        let action = Action::new(&Signal::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = channel::<state::ActionWrapper>();
+        let (sender, receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
 
         // Reduce Init action and block until receiving ReturnInit Action
@@ -552,7 +555,7 @@ mod tests {
         assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) Action
-        let return_action = Nucleus(ReturnInitializationResult(Some("init failed".to_string())));
+        let return_action = Action::new(&Signal::ReturnInitializationResult(Some("init failed".to_string())));
         let reduced_nucleus = reduce(
             initializing_nucleus.clone(),
             &return_action,
@@ -582,7 +585,7 @@ mod tests {
         );
 
         // Send ReturnInit(None) Action
-        let return_action = Nucleus(ReturnInitializationResult(None));
+        let return_action = Action::new(&Signal::ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
             initializing_nucleus.clone(),
             &return_action,
@@ -605,9 +608,9 @@ mod tests {
             "".to_string(),
         );
 
-        let action = Nucleus(ExecuteZomeFunction(call));
+        let action = Action::new(&Signal::ExecuteZomeFunction(call));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = channel::<state::ActionWrapper>();
+        let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
         let reduced_nucleus = reduce(nucleus.clone(), &action, &sender, &tx_observer);
         assert_eq!(nucleus, reduced_nucleus);

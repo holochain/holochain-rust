@@ -31,7 +31,9 @@ impl SimplePersister {
 mod tests {
     use super::*;
     use hash_table::entry::tests::test_entry;
-    use snowflake;
+    use action::Action;
+    use action::Signal;
+    use action::ActionWrapper;
     use std::sync::mpsc::channel;
 
     #[test]
@@ -52,13 +54,10 @@ mod tests {
 
         let state = State::new();
 
-        let action = ::state::Action::Agent(::agent::state::Action::Commit {
-            entry: test_entry(),
-            id: snowflake::ProcessUniqueId::new(),
-        });
-        let (sender, _receiver) = channel::<::state::ActionWrapper>();
+        let action = Action::new(&Signal::Commit(test_entry()));
+        let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
-        let new_state = state.reduce(::state::ActionWrapper::new(action), &sender, &tx_observer);
+        let new_state = state.reduce(ActionWrapper::new(action), &sender, &tx_observer);
 
         store.save(&new_state);
 

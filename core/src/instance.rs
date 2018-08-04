@@ -221,15 +221,16 @@ pub mod tests {
     extern crate test_utils;
     use super::Instance;
     use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
-    use nucleus::Action::InitApplication;
-    use state::{Action::Nucleus, State};
+    use action::Action;
+    use action::Signal;
+    use state::{State};
     use std::{sync::mpsc::channel, thread::sleep, time::Duration};
 
     /// create a test instance
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
-        let action = Nucleus(InitApplication(dna.clone()));
+        let action = Action::new(&Signal::InitApplication(dna.clone()));
         instance.start_action_loop();
         instance.dispatch_and_wait(action.clone());
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
@@ -267,7 +268,7 @@ pub mod tests {
         let dna = Dna::new();
         let (sender, receiver) = channel();
         instance.dispatch_with_observer(
-            Nucleus(InitApplication(dna.clone())),
+            Action::new(&Signal::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {
                 Some(dna) => {
                     sender.send(dna).expect("test channel must be open");
@@ -289,11 +290,11 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::NucleusStatus::New
+            ::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
-        let action = Nucleus(InitApplication(dna.clone()));
+        let action = Action::new(&Signal::InitApplication(dna.clone()));
         instance.start_action_loop();
 
         // the initial state is not intialized

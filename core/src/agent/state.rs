@@ -11,11 +11,6 @@ use action::Action;
 use action::ActionWrapper;
 use action::Signal;
 
-enum ActionHistory {
-    Key(Action),
-    Value(ActionResponse),
-}
-
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
@@ -188,13 +183,32 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{do_action_commit, do_action_get, Action, ActionResult, AgentState};
+    use super::{handle_commit, handle_get, ActionResponse, AgentState};
     use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
     use std::collections::HashMap;
+    use action::Action;
+    use action::Signal;
+    use hash::tests::test_hash;
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {
         AgentState::new()
+    }
+
+    pub fn test_action_commit() -> Action {
+        Action::new(&Signal::Commit(test_entry()))
+    }
+
+    pub fn test_action_response_commit() -> ActionResponse {
+        ActionResponse::Commit(test_hash())
+    }
+
+    pub fn test_action_response_get() -> ActionResponse {
+        ActionResponse::Get(Some(test_pair()))
+    }
+
+    pub fn test_action_get() -> Action {
+        Action::new(&Signal::Get(test_hash()))
     }
 
     #[test]
@@ -223,29 +237,29 @@ pub mod tests {
 
     #[test]
     /// test for action commit
-    fn agent_state_do_commit() {
+    fn agent_state_handle_commit() {
         let mut state = test_agent_state();
         let action = test_action_commit();
 
-        do_action_commit(&mut state, &action);
+        handle_commit(&mut state, &action);
 
         assert_eq!(
             state.actions().get(&action),
-            Some(&test_action_result_commit()),
+            Some(&test_action_response_commit()),
         );
     }
 
     #[test]
     /// test for action get
-    fn agent_state_do_get() {
+    fn agent_state_handle_get() {
         let mut state = test_agent_state();
         let action = test_action_get();
 
-        do_action_get(&mut state, &action);
+        handle_get(&mut state, &action);
 
         assert_eq!(
             state.actions().get(&action),
-            Some(&test_action_result_get()),
+            Some(&test_action_response_get()),
         );
     }
 }

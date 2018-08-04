@@ -60,8 +60,11 @@ use holochain_core::{
     context::Context,
     error::HolochainError,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, Action::*, FunctionCall, NucleusStatus},
-    state::{Action::*, State},
+    nucleus::{call_and_wait_for_result, FunctionCall},
+    nucleus::state::NucleusStatus,
+    state::State,
+    action::Action,
+    action::Signal,
 };
 use holochain_dna::Dna;
 use std::{
@@ -82,7 +85,7 @@ impl Holochain {
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut instance = Instance::new();
         let name = dna.name.clone();
-        let action = Nucleus(InitApplication(dna));
+        let action = Action::new(&Signal::InitApplication(dna));
         instance.start_action_loop();
 
         let (sender, receiver) = channel();

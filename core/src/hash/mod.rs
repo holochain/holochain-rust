@@ -20,8 +20,13 @@ pub fn serializable_to_b58_hash<S: Serialize>(s: S, hash_type: Hash) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use multihash::Hash;
+    use hash_table::entry::tests::test_entry;
+
+    pub fn test_hash() -> String {
+        test_entry().key()
+    }
 
     #[test]
     /// mimics tests from legacy golang holochain core hashing bytes

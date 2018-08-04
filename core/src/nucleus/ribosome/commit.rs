@@ -39,7 +39,7 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action = Action::new(Signal::Commit(&entry));
+    let action = Action::new(&Signal::Commit(entry));
 
     // Send Action and block for result
     let (sender, receiver) = channel();

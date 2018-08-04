@@ -107,7 +107,8 @@ pub enum ActionResponse {
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
 fn handle_commit (state: &mut AgentState, action: &Action) {
-    let entry = unwrap_to!(action.signal() => Signal::Commit);
+    let signal = action.signal();
+    let entry = unwrap_to!(signal => Signal::Commit);
 
     // add entry to source chain
     // @TODO this does nothing!
@@ -132,7 +133,8 @@ fn handle_commit (state: &mut AgentState, action: &Action) {
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
 fn handle_get (state: &mut AgentState, action: &Action) {
-    let key = unwrap_to!(action.signal() => Signal::Get);
+    let signal = action.signal();
+    let key = unwrap_to!(signal => Signal::Get);
 
     // get pair from source chain
     // @TODO this does nothing!
@@ -159,9 +161,9 @@ fn handle_get (state: &mut AgentState, action: &Action) {
 }
 
 fn resolve_action_handler(action: &Action) -> Option<fn(&mut AgentState, &Action)> {
-    match action {
-        Commit => Some(handle_commit),
-        Get => Some(handle_get),
+    match action.signal() {
+        Signal::Commit(_) => Some(handle_commit),
+        Signal::Get(_) => Some(handle_get),
         _ => None,
     }
 }

@@ -5,7 +5,6 @@ pub mod state;
 use error::HolochainError;
 use holochain_dna::{
     zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
-    Dna,
 };
 use instance::Observer;
 use snowflake;
@@ -45,7 +44,7 @@ impl FunctionCall {
 }
 
 /// WIP - Struct for holding data when requesting an Entry Validation (ValidateEntry Action)
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EntrySubmission {
     pub zome_name: String,
     pub type_name: String,
@@ -101,7 +100,7 @@ pub fn call_and_wait_for_result(
     instance: &mut super::instance::Instance,
 ) -> Result<String, HolochainError> {
     let call_action = Action::new(
-        &Signal::ExecuteZomeFunction(call),
+        &Signal::ExecuteZomeFunction(call.clone()),
     );
 
     // Dispatch action with observer closure that waits for a result in the state
@@ -124,7 +123,7 @@ pub fn call_and_wait_for_result(
     receiver.recv().expect("local channel to work")
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Hash)]
 pub struct FunctionResult {
     call: FunctionCall,
     result: Result<String, HolochainError>,
@@ -154,16 +153,23 @@ impl FunctionResult {
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
-fn reduce_rir(nucleus_state: &mut NucleusState, result: &Option<String>) {
-    if nucleus_state.status() != NucleusStatus::Initializing {
-        nucleus_state.status =
+fn reduce_rir(
+    state: &mut NucleusState,
+    action: &Action,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
+    if state.status() != NucleusStatus::Initializing {
+        state.status =
             NucleusStatus::InitializationFailed(
                 "reduce of ReturnInitializationResult attempted when status != Initializing".into(),
             );
     } else {
+        let signal = action.signal();
+        let result = unwrap_to!(signal => Signal::ReturnInitializationResult);
         match result {
-            None => nucleus_state.status = NucleusStatus::Initialized,
-            Some(err) => nucleus_state.status =
+            None => state.status = NucleusStatus::Initialized,
+            Some(err) => state.status =
                 NucleusStatus::InitializationFailed(err.clone()),
         };
     }
@@ -187,18 +193,21 @@ fn return_initialization_result(
 /// Initialize Nucleus by setting the DNA
 /// and sending ExecuteFunction Action of genesis of each zome
 fn reduce_ia(
-    nucleus_state: &mut NucleusState,
-    dna: &Dna,
+    state: &mut NucleusState,
+    action: &Action,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    match nucleus_state.status() {
+    match state.status() {
         NucleusStatus::New => {
+            let signal = action.signal();
+            let dna = unwrap_to!(signal => Signal::InitApplication);
+
             // Update status
-            nucleus_state.status = NucleusStatus::Initializing;
+            state.status = NucleusStatus::Initializing;
 
             // Set DNA
-            nucleus_state.dna = Some(dna.clone());
+            state.dna = Some(dna.clone());
 
             // Create & launch thread
             let action_channel = action_channel.clone();
@@ -272,22 +281,25 @@ fn reduce_ia(
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
 fn reduce_ezf(
-    nucleus_state: &mut NucleusState,
-    fc: &FunctionCall,
+    state: &mut NucleusState,
+    action: &Action,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    let function_call = fc.clone();
+    let signal = action.signal();
+    let function_call = unwrap_to!(signal => Signal::ExecuteZomeFunction);
+    let fc = function_call.clone();
+
     let mut has_error = false;
     let mut result = FunctionResult::new(
         fc.clone(),
         Err(HolochainError::ErrorGeneric("[]".to_string())),
     );
 
-    if let Some(ref dna) = nucleus_state.dna {
+    if let Some(ref dna) = state.dna {
         if let Some(ref zome) = dna.get_zome(&fc.zome) {
             if let Some(ref wasm) = dna.get_capability(zome, &fc.capability) {
-                nucleus_state.ribosome_calls.insert(fc.clone(), None);
+                state.ribosome_calls.insert(fc.clone(), None);
 
                 let action_channel = action_channel.clone();
                 let tx_observer = observer_channel.clone();
@@ -304,12 +316,15 @@ fn reduce_ezf(
                     ) {
                         Ok(runtime) => {
                             result =
-                                FunctionResult::new(function_call, Ok(runtime.result.to_string()));
+                                FunctionResult::new(
+                                    function_call.clone(),
+                                    Ok(runtime.result.to_string())
+                                );
                         }
 
                         Err(ref error) => {
                             result = FunctionResult::new(
-                                function_call,
+                                function_call.clone(),
                                 Err(HolochainError::ErrorGeneric(format!("{}", error))),
                             );
                         }
@@ -361,11 +376,18 @@ fn reduce_ezf(
 
 /// Reduce ValidateEntry Action
 /// Validate an Entry by calling its validation function
-fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
+fn reduce_ve(
+    state: &mut NucleusState,
+    action: &Action,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
     let mut _has_entry_type = false;
 
     // must have entry_type
-    if let Some(ref dna) = nucleus_state.dna {
+    if let Some(ref dna) = state.dna {
+        let signal = action.signal();
+        let es = unwrap_to!(signal => Signal::ValidateEntry);
         if let Some(ref _wasm) =
             dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
         {
@@ -376,22 +398,29 @@ fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
     }
 }
 
-fn reduce_zfr(nucleus_state: &mut NucleusState, action: &Action) {
-    let fr = unwrap_to!(action.signal() => Signal::ReturnZomeFunctionResult);
+fn reduce_zfr(
+    state: &mut NucleusState,
+    action: &Action,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
+    let signal = action.signal();
+    let fr = unwrap_to!(signal => Signal::ReturnZomeFunctionResult);
 
     // @TODO store the action and result directly
-    nucleus_state
+    state
         .ribosome_calls
         .insert(fr.call(), Some(fr.result()));
 }
 
-fn resolve_action_handler(action: &Action) -> Option<fn(&mut NucleusState, &Action)> {
-    match action {
-        ReturnInitializationResult => Some(reduce_rir),
-        InitApplication => Some(reduce_ia),
-        ExecuteZomeFunction => Some(reduce_ezf),
-        ReturnZomeFunctionResult => Some(reduce_zfr),
-        ValidateEntry => Some(reduce_ve),
+fn resolve_action_handler(action: &Action)
+    -> Option<fn(&mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
+    match action.signal() {
+        Signal::ReturnInitializationResult(_) => Some(reduce_rir),
+        Signal::InitApplication(_) => Some(reduce_ia),
+        Signal::ExecuteZomeFunction(_) => Some(reduce_ezf),
+        Signal::ReturnZomeFunctionResult(_) => Some(reduce_zfr),
+        Signal::ValidateEntry(_) => Some(reduce_ve),
         _ => None,
     }
 }
@@ -408,7 +437,12 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
-            f(&mut new_state, &action);
+            f(
+                &mut new_state,
+                &action,
+                action_channel,
+                observer_channel,
+            );
             Arc::new(new_state)
         },
         None => old_state,

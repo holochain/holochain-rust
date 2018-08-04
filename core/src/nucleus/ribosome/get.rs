@@ -26,7 +26,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = Action::new(Signal::Get(&input.key));
+    let action = Action::new(&Signal::Get(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(

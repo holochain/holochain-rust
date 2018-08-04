@@ -27,6 +27,8 @@ extern crate serde_json;
 extern crate base64;
 extern crate uuid;
 
+use std::hash::{Hash, Hasher};
+
 pub mod wasm;
 pub mod zome;
 
@@ -199,6 +201,13 @@ impl Dna {
             .iter()
             .find(|et| et.name == entry_type_name)?;
         Some(&entry_type.validation)
+    }
+}
+
+impl Hash for Dna {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let s = self.to_json().unwrap();
+        s.hash(state);
     }
 }
 

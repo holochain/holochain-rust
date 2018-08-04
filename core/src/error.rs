@@ -2,7 +2,7 @@ use std::{error::Error, fmt};
 
 /// module for holding Holochain specific errors
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
     InstanceNotActive,

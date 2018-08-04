@@ -2,22 +2,18 @@ use agent::keys::Keys;
 use chain::Chain;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
-// use snowflake;
-use state;
 use std::{
     collections::HashMap,
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
 use action::Action;
-use action::ActionResult;
-use action::commit::Commit;
-use action::commit::CommitResult;
-use action::get::Get;
+use action::ActionWrapper;
+use action::Signal;
 
 enum ActionHistory {
     Key(Action),
-    Value(ActionResult),
+    Value(ActionResponse),
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -31,9 +27,7 @@ pub struct AgentState {
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
-    // commits: HashMap<Commit, CommitResult>,
-    actions: HashMap<ActionHistory::Key, ActionHistory::Value>,
-    // gets: HashMap<Get, GetResult>,
+    actions: HashMap<Action, ActionResponse>,
 }
 
 impl AgentState {
@@ -59,7 +53,7 @@ impl AgentState {
 
     /// getter for a copy of self.actions
     /// uniquely maps action executions to the result of the action
-    pub fn actions<A: Action, AR: ActionResult>(&self) -> HashMap<A, AR> {
+    pub fn actions(&self) -> HashMap<Action, ActionResponse> {
         self.actions.clone()
     }
 }
@@ -101,18 +95,20 @@ impl AgentState {
 
 // impl Eq for Action {}
 
-// #[derive(Clone, Debug, PartialEq)]
-/// the result of a single action performed
+#[derive(Clone, Debug, PartialEq)]
+/// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
-// pub enum ActionResult {
-//     Commit(String),
-//     Get(Option<Pair>),
-// }
+pub enum ActionResponse {
+    Commit(String),
+    Get(Option<Pair>),
+}
 
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn handle_commit (state: &mut AgentState, commit: &Commit) {
+fn handle_commit (state: &mut AgentState, action: &Action) {
+    let entry = unwrap_to!(action.signal() => Signal::Commit);
+
     // add entry to source chain
     // @TODO this does nothing!
     // it needs to get something stateless from the agent state that points to
@@ -124,44 +120,45 @@ fn handle_commit (state: &mut AgentState, commit: &Commit) {
     // @TODO successfully validate before pushing a commit
     // @see https://github.com/holochain/holochain-rust/issues/97
 
-    let result = chain.push(&commit.entry).unwrap().entry().key();
+    let result = chain.push(&entry).unwrap().entry().key();
     state
-        .commits
-        .insert(commit.clone(), CommitResult::new(result));
+        .actions
+        .insert(
+            action.clone(),
+            ActionResponse::Commit(result.clone()),
+        );
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn handle_get (state: &mut AgentState, action: &Get) {
-    match action {
-        Action::Get { key, .. } => {
-            // get pair from source chain
-            // @TODO this does nothing!
-            // it needs to get something stateless from the agent state that points to
-            // something stateful that can handle an entire hash table (e.g. actor)
-            // @see https://github.com/holochain/holochain-rust/issues/135
-            // @see https://github.com/holochain/holochain-rust/issues/148
+fn handle_get (state: &mut AgentState, action: &Action) {
+    let key = unwrap_to!(action.signal() => Signal::Get);
 
-            // drop in a dummy entry for testing
-            let mut chain = Chain::new(Rc::new(MemTable::new()));
-            let e = Entry::new("testEntryType", "test entry content");
-            chain.push(&e).unwrap();
+    // get pair from source chain
+    // @TODO this does nothing!
+    // it needs to get something stateless from the agent state that points to
+    // something stateful that can handle an entire hash table (e.g. actor)
+    // @see https://github.com/holochain/holochain-rust/issues/135
+    // @see https://github.com/holochain/holochain-rust/issues/148
 
-            // @TODO if the get fails local, do a network get
-            // @see https://github.com/holochain/holochain-rust/issues/167
+    // drop in a dummy entry for testing
+    let mut chain = Chain::new(Rc::new(MemTable::new()));
+    let e = Entry::new("testEntryType", "test entry content");
+    chain.push(&e).unwrap();
 
-            let result = chain.get_entry(&key).unwrap();
-            state
-                .actions
-                .insert(action.clone(), ActionResult::Get(result));
-        }
-        _ => {
-            panic!("action get without get action");
-        }
-    }
+    // @TODO if the get fails local, do a network get
+    // @see https://github.com/holochain/holochain-rust/issues/167
+
+    let result = chain.get_entry(&key).unwrap();
+    state
+        .actions
+        .insert(
+            action.clone(),
+            ActionResponse::Get(result.clone()),
+        );
 }
 
-fn resolve_action_handler<A: Action>(action: &A) -> Option<fn(&mut AgentState, &A)> {
+fn resolve_action_handler(action: &Action) -> Option<fn(&mut AgentState, &Action)> {
     match action {
         Commit => Some(handle_commit),
         Get => Some(handle_get),
@@ -170,10 +167,10 @@ fn resolve_action_handler<A: Action>(action: &A) -> Option<fn(&mut AgentState, &
 }
 
 /// Reduce Agent's state according to provided Action
-pub fn reduce<A: Action>(
+pub fn reduce(
     old_state: Arc<AgentState>,
-    action: &A,
-    _action_channel: &Sender<state::ActionWrapper>,
+    action: &Action,
+    _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
     let handler = resolve_action_handler(action);

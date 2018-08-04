@@ -1,10 +1,11 @@
 use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
-use action::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use action::commit::Commit;
+use action::Action;
+use agent::state::ActionResponse;
+use action::Signal;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -38,7 +39,7 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action = Commit::new(&entry);
+    let action = Action::new(Signal::Commit(&entry));
 
     // Send Action and block for result
     let (sender, receiver) = channel();
@@ -65,7 +66,7 @@ pub fn invoke_commit(
     let action_result = receiver.recv().expect("local channel to work");
 
     match action_result {
-        ActionResult::Commit(hash) => {
+        ActionResponse::Commit(hash) => {
             // serialize, allocate and encode result
             runtime_allocate_encode_str(runtime, &format!("{{\"hash\":\"{}\"}}", hash))
         }

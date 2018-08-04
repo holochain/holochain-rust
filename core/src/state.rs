@@ -1,13 +1,11 @@
 use agent::state::AgentState;
 use instance::Observer;
-use nucleus::NucleusState;
-use snowflake;
+use nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
-    hash::{Hash, Hasher},
     sync::{mpsc::Sender, Arc},
 };
-use action::Action;
+use action::ActionWrapper;
 
 // #[derive(Clone, Debug, PartialEq)]
 // #[allow(unknown_lints)]
@@ -17,35 +15,6 @@ use action::Action;
 //     Network(A),
 //     Nucleus(A),
 // }
-
-#[derive(Clone, Debug)]
-pub struct ActionWrapper {
-    pub action: Action,
-    pub id: snowflake::ProcessUniqueId,
-}
-
-impl ActionWrapper {
-    pub fn new(a: Action) -> Self {
-        ActionWrapper {
-            action: a,
-            id: snowflake::ProcessUniqueId::new(),
-        }
-    }
-}
-
-impl PartialEq for ActionWrapper {
-    fn eq(&self, other: &ActionWrapper) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for ActionWrapper {}
-
-impl Hash for ActionWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-    }
-}
 
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct State {

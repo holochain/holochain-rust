@@ -1,10 +1,11 @@
 use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
-use action::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use action::get::Get;
+use action::Action;
+use action::Signal;
+use agent::state::ActionResponse;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -25,7 +26,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = Get::new(&input.key);
+    let action = Action::new(Signal::Get(&input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -51,7 +52,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     let action_result = receiver.recv().expect("local channel to work");
 
     match action_result {
-        ActionResult::Get(maybe_pair) => {
+        ActionResponse::Get(maybe_pair) => {
             // serialize, allocate and encode result
             let pair_str = maybe_pair
                 .and_then(|p| Some(p.to_json()))

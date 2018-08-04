@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 use action::Action;
+use action::ActionWrapper;
 
 pub const REDUX_LOOP_TIMEOUT_MS: u64 = 400;
 pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
@@ -13,7 +14,7 @@ pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
 //#[derive(Clone)]
-pub struct Instance<A: Action> {
+pub struct Instance {
     state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
@@ -35,9 +36,9 @@ impl Observer {
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
-impl<A: Action> Instance<A> {
+impl Instance {
     /// get a clone of the action channel
-    pub fn action_channel(&self) -> Sender<ActionWrapper<A>> {
+    pub fn action_channel(&self) -> Sender<ActionWrapper> {
         self.action_channel.clone()
     }
 
@@ -47,7 +48,7 @@ impl<A: Action> Instance<A> {
     }
 
     /// Stack an Action in the Event Queue
-    pub fn dispatch<A: Action>(&mut self, action: A) -> ActionWrapper<A> {
+    pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
         dispatch_action(&self.action_channel, action)
     }
 
@@ -132,20 +133,20 @@ impl<A: Action> Instance<A> {
     }
 }
 
-impl<A: Action> Default for Instance<A> {
+impl Default for Instance {
     fn default() -> Self {
         Self::new()
     }
 }
 
 /// Send Action to Instance's Event Queue and block until is has been processed.
-pub fn dispatch_action_and_wait<A: Action>(
-    action_channel: &Sender<::state::ActionWrapper>,
+pub fn dispatch_action_and_wait(
+    action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: A,
+    action: Action,
 ) {
     // Wrap Action
-    let wrapper = ::state::ActionWrapper::new(action);
+    let wrapper = ActionWrapper::new(action);
     let wrapper_clone = wrapper.clone();
 
     // Create blocking channel
@@ -184,10 +185,10 @@ pub fn dispatch_action_and_wait<A: Action>(
 }
 
 /// Send Action to the Event Queue and create an Observer for it with the specified closure
-pub fn dispatch_action_with_observer<F, A: Action>(
-    action_channel: &Sender<::state::ActionWrapper>,
+pub fn dispatch_action_with_observer<F>(
+    action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: A,
+    action: Action,
     closure: F,
 ) where
     F: 'static + FnMut(&State) -> bool + Send,
@@ -204,9 +205,9 @@ pub fn dispatch_action_with_observer<F, A: Action>(
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action<A: Action>(
-    action_channel: &Sender<::state::ActionWrapper>,
-    action: A,
+pub fn dispatch_action(
+    action_channel: &Sender<ActionWrapper>,
+    action: Action,
 ) -> ActionWrapper {
     let wrapper = ActionWrapper::new(action);
     action_channel

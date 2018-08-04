@@ -1,14 +1,13 @@
 mod commit;
 mod get;
 mod print;
-use action::Action;
 
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
 use instance::Observer;
 use nucleus::ribosome::{commit::invoke_commit, get::invoke_get, print::invoke_print};
-use state;
 use std::sync::mpsc::Sender;
+use action::ActionWrapper;
 
 use nucleus::memory::*;
 
@@ -49,7 +48,7 @@ enum HcApiFuncIndex {
 pub struct Runtime {
     print_output: String,
     pub result: String,
-    action_channel: Sender<state::ActionWrapper>,
+    action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
 }
@@ -114,8 +113,8 @@ fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
 }
 
 /// Executes an exposed function in a wasm binary
-pub fn call<A: Action>(
-    action_channel: &Sender<state::ActionWrapper>,
+pub fn call(
+    action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
     function_name: &str,

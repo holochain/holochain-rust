@@ -17,6 +17,9 @@ use std::{
     },
     thread,
 };
+use action::Action;
+use action::execute_zome_function::ExecuteZomeFunction;
+use action::return_zome_function_result::ReturnZomeFunctionResult;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
@@ -121,12 +124,12 @@ impl EntrySubmission {
 }
 
 /// Dispatch ExecuteZoneFunction to and block until call has finished.
-pub fn call_zome_and_wait_for_result(
+pub fn call_zome_and_wait_for_result<A: Action>(
     call: FunctionCall,
     action_channel: &Sender<::state::ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Result<String, HolochainError> {
-    let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
+    let call_action = ExecuteZomeFunction::new(call.clone());
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
@@ -152,11 +155,11 @@ pub fn call_zome_and_wait_for_result(
 
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 /// for test only??
-pub fn call_and_wait_for_result(
+pub fn call_and_wait_for_result<A: Action>(
     call: FunctionCall,
-    instance: &mut super::instance::Instance,
+    instance: &mut super::instance::Instance<A>,
 ) -> Result<String, HolochainError> {
-    let call_action = super::state::Action::Nucleus(Action::ExecuteZomeFunction(call.clone()));
+    let call_action = ExecuteZomeFunction::new(&call);
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
@@ -188,16 +191,16 @@ impl FunctionResult {
 }
 
 /// Enum of all Actions that mutates the Nucleus's state
-#[derive(Clone, Debug, PartialEq)]
-#[allow(unknown_lints)]
-#[allow(large_enum_variant)]
-pub enum Action {
-    InitApplication(Dna),
-    ReturnInitializationResult(Option<String>),
-    ExecuteZomeFunction(FunctionCall),
-    ReturnZomeFunctionResult(FunctionResult),
-    ValidateEntry(EntrySubmission),
-}
+// #[derive(Clone, Debug, PartialEq)]
+// #[allow(unknown_lints)]
+// #[allow(large_enum_variant)]
+// pub enum Action {
+//     InitApplication(Dna),
+//     ReturnInitializationResult(Option<String>),
+//     ExecuteZomeFunction(FunctionCall),
+//     ReturnZomeFunctionResult(FunctionResult),
+//     ValidateEntry(EntrySubmission),
+// }
 
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
@@ -217,21 +220,21 @@ fn reduce_rir(nucleus_state: &mut NucleusState, result: &Option<String>) {
 }
 
 /// Helper
-fn return_initialization_result(
+fn return_initialization_result<A: Action>(
     result: Option<String>,
     action_channel: &Sender<state::ActionWrapper>,
 ) {
     action_channel
-        .send(state::ActionWrapper::new(state::Action::Nucleus(
+        .send(state::ActionWrapper::new(
             Action::ReturnInitializationResult(result),
-        )))
+        ))
         .expect("action channel to be open in reducer");
 }
 
 /// Reduce InitApplication Action
 /// Initialize Nucleus by setting the DNA
 /// and sending ExecuteFunction Action of genesis of each zome
-fn reduce_ia(
+fn reduce_ia<A: Action>(
     nucleus_state: &mut NucleusState,
     dna: &Dna,
     action_channel: &Sender<state::ActionWrapper>,
@@ -316,7 +319,7 @@ fn reduce_ia(
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
-fn reduce_ezf(
+fn reduce_ezf<A: Action>(
     nucleus_state: &mut NucleusState,
     fc: &FunctionCall,
     action_channel: &Sender<state::ActionWrapper>,
@@ -362,9 +365,9 @@ fn reduce_ezf(
 
                     // Send ReturnResult Action
                     action_channel
-                        .send(state::ActionWrapper::new(state::Action::Nucleus(
-                            Action::ReturnZomeFunctionResult(result),
-                        )))
+                        .send(state::ActionWrapper::new(
+                            ReturnZomeFunctionResult::new(&result),
+                        ))
                         .expect("action channel to be open in reducer");
                 });
             } else {
@@ -393,9 +396,9 @@ fn reduce_ezf(
     }
     if has_error {
         action_channel
-            .send(state::ActionWrapper::new(state::Action::Nucleus(
-                Action::ReturnZomeFunctionResult(result),
-            )))
+            .send(state::ActionWrapper::new(
+                ReturnZomeFunctionResult::new(&result),
+            ))
             .expect("action channel to be open in reducer");
     }
 }
@@ -417,51 +420,77 @@ fn reduce_ve(nucleus_state: &mut NucleusState, es: &EntrySubmission) {
     }
 }
 
+fn reduce_zfr<A: Action>(nucleus_state: &mut NucleusState, action: &A) {
+    nucleus_state
+        .ribosome_calls
+        .insert(action.call.clone(), Some(action.result.clone()));
+}
+
+fn resolve_action_handler<A: Action>(action: &A) -> Option<fn(&mut NucleusState, &A)> {
+    match action {
+        ReturnInitializationResult => Some(reduce_rir),
+        InitApplication => Some(reduce_ia),
+        ExecuteZomeFunction => Some(reduce_ezf),
+        ReturnZomeFunctionResult => Some(reduce_zfr),
+        ValidateEntry => Some(reduce_ve),
+        _ => None,
+    }
+}
+
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce(
+pub fn reduce<A: Action>(
     old_state: Arc<NucleusState>,
-    action: &state::Action,
+    action: &A,
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<NucleusState> {
-    match *action {
-        state::Action::Nucleus(ref nucleus_action) => {
-            let mut new_nucleus_state: NucleusState = (*old_state).clone();
-
-            match *nucleus_action {
-                Action::ReturnInitializationResult(ref result) => {
-                    reduce_rir(&mut new_nucleus_state, result);
-                }
-
-                Action::InitApplication(ref dna) => {
-                    reduce_ia(
-                        &mut new_nucleus_state,
-                        dna,
-                        action_channel,
-                        observer_channel,
-                    );
-                }
-
-                Action::ExecuteZomeFunction(ref fc) => {
-                    reduce_ezf(&mut new_nucleus_state, fc, action_channel, observer_channel);
-                }
-
-                Action::ReturnZomeFunctionResult(ref result) => {
-                    // Store the Result in the ribosome_calls hashmap
-                    new_nucleus_state
-                        .ribosome_calls
-                        .insert(result.call.clone(), Some(result.result.clone()));
-                }
-
-                Action::ValidateEntry(ref es) => {
-                    reduce_ve(&mut new_nucleus_state, es);
-                }
-            }
-            Arc::new(new_nucleus_state)
-        }
-        _ => old_state,
+    let handler = resolve_action_handler(action);
+    match handler {
+        Some(f) => {
+            let mut new_state: NucleusState = (*old_state).clone();
+            f(&mut new_state, &action);
+            Arc::new(new_state)
+        },
+        None => old_state,
     }
+    // match *action {
+    //     state::Action::Nucleus(ref nucleus_action) => {
+    //         let mut new_nucleus_state: NucleusState = (*old_state).clone();
+    //
+    //         match *nucleus_action {
+    //             Action::ReturnInitializationResult(ref result) => {
+    //                 reduce_rir(&mut new_nucleus_state, result);
+    //             }
+    //
+    //             Action::InitApplication(ref dna) => {
+    //                 reduce_ia(
+    //                     &mut new_nucleus_state,
+    //                     dna,
+    //                     action_channel,
+    //                     observer_channel,
+    //                 );
+    //             }
+    //
+    //             Action::ExecuteZomeFunction(ref fc) => {
+    //                 reduce_ezf(&mut new_nucleus_state, fc, action_channel, observer_channel);
+    //             }
+    //
+    //             Action::ReturnZomeFunctionResult(ref result) => {
+    //                 // Store the Result in the ribosome_calls hashmap
+    //                 new_nucleus_state
+    //                     .ribosome_calls
+    //                     .insert(result.call.clone(), Some(result.result.clone()));
+    //             }
+    //
+    //             Action::ValidateEntry(ref es) => {
+    //                 reduce_ve(&mut new_nucleus_state, es);
+    //             }
+    //         }
+    //         Arc::new(new_nucleus_state)
+    //     }
+    //     _ => old_state,
+    // }
 }
 
 #[cfg(test)]

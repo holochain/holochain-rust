@@ -1,9 +1,10 @@
 use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
-use agent::state::ActionResult;
+use action::ActionResult;
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use action::commit::Commit;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -37,14 +38,14 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action = ::agent::state::Action::commit(&entry);
+    let action = Commit::new(&entry);
 
     // Send Action and block for result
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        ::state::Action::Agent(action.clone()),
+        action.clone(),
         move |state: &::state::State| {
             let actions = state.agent().actions().clone();
             if actions.contains_key(&action) {

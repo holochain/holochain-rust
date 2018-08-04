@@ -2,13 +2,23 @@ use agent::keys::Keys;
 use chain::Chain;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
-use snowflake;
+// use snowflake;
 use state;
 use std::{
     collections::HashMap,
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use action::Action;
+use action::ActionResult;
+use action::commit::Commit;
+use action::commit::CommitResult;
+use action::get::Get;
+
+enum ActionHistory {
+    Key(Action),
+    Value(ActionResult),
+}
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -21,7 +31,9 @@ pub struct AgentState {
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
-    actions: HashMap<Action, ActionResult>,
+    // commits: HashMap<Commit, CommitResult>,
+    actions: HashMap<ActionHistory::Key, ActionHistory::Value>,
+    // gets: HashMap<Get, GetResult>,
 }
 
 impl AgentState {
@@ -47,87 +59,80 @@ impl AgentState {
 
     /// getter for a copy of self.actions
     /// uniquely maps action executions to the result of the action
-    pub fn actions(&self) -> HashMap<Action, ActionResult> {
+    pub fn actions<A: Action, AR: ActionResult>(&self) -> HashMap<A, AR> {
         self.actions.clone()
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+// #[derive(Clone, PartialEq, Hash, Debug)]
 /// a single action to perform
 /// every action must have a unique id or there will be collisions in AgentState::actions
 /// the convenience methods for each action variant generate ids correctly
-pub enum Action {
-    /// zome API function: commit
-    Commit {
-        entry: Entry,
-        id: snowflake::ProcessUniqueId,
-    },
-    /// zome API function: get
-    Get {
-        key: String,
-        id: snowflake::ProcessUniqueId,
-    },
-}
+// pub enum Action {
+//     /// zome API function: commit
+//     Commit {
+//         entry: Entry,
+//         id: snowflake::ProcessUniqueId,
+//     },
+//     /// zome API function: get
+//     Get {
+//         key: String,
+//         id: snowflake::ProcessUniqueId,
+//     },
+// }
+//
+// impl Action {
+//     /// returns a new Action::Commit for the passed entry
+//     pub fn commit(entry: &Entry) -> Action {
+//         Action::Commit {
+//             id: snowflake::ProcessUniqueId::new(),
+//             entry: entry.clone(),
+//         }
+//     }
+//
+//     /// returns a new Action::Get for the passed key
+//     pub fn get(key: &str) -> Action {
+//         Action::Get {
+//             id: snowflake::ProcessUniqueId::new(),
+//             key: key.to_string(),
+//         }
+//     }
+// }
 
-impl Action {
-    /// returns a new Action::Commit for the passed entry
-    pub fn commit(entry: &Entry) -> Action {
-        Action::Commit {
-            id: snowflake::ProcessUniqueId::new(),
-            entry: entry.clone(),
-        }
-    }
+// impl Eq for Action {}
 
-    /// returns a new Action::Get for the passed key
-    pub fn get(key: &str) -> Action {
-        Action::Get {
-            id: snowflake::ProcessUniqueId::new(),
-            key: key.to_string(),
-        }
-    }
-}
-
-impl Eq for Action {}
-
-#[derive(Clone, Debug, PartialEq)]
+// #[derive(Clone, Debug, PartialEq)]
 /// the result of a single action performed
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
-pub enum ActionResult {
-    Commit(String),
-    Get(Option<Pair>),
-}
+// pub enum ActionResult {
+//     Commit(String),
+//     Get(Option<Pair>),
+// }
 
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn do_action_commit(state: &mut AgentState, action: &Action) {
-    match action {
-        Action::Commit { entry, .. } => {
-            // add entry to source chain
-            // @TODO this does nothing!
-            // it needs to get something stateless from the agent state that points to
-            // something stateful that can handle an entire hash table (e.g. actor)
-            // @see https://github.com/holochain/holochain-rust/issues/135
-            // @see https://github.com/holochain/holochain-rust/issues/148
-            let mut chain = Chain::new(Rc::new(MemTable::new()));
+fn handle_commit (state: &mut AgentState, commit: &Commit) {
+    // add entry to source chain
+    // @TODO this does nothing!
+    // it needs to get something stateless from the agent state that points to
+    // something stateful that can handle an entire hash table (e.g. actor)
+    // @see https://github.com/holochain/holochain-rust/issues/135
+    // @see https://github.com/holochain/holochain-rust/issues/148
+    let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-            // @TODO successfully validate before pushing a commit
-            // @see https://github.com/holochain/holochain-rust/issues/97
+    // @TODO successfully validate before pushing a commit
+    // @see https://github.com/holochain/holochain-rust/issues/97
 
-            let result = chain.push(&entry).unwrap().entry().key();
-            state
-                .actions
-                .insert(action.clone(), ActionResult::Commit(result));
-        }
-        _ => {
-            panic!("action commit without commit action");
-        }
-    }
+    let result = chain.push(&commit.entry).unwrap().entry().key();
+    state
+        .commits
+        .insert(commit.clone(), CommitResult::new(result));
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn do_action_get(state: &mut AgentState, action: &Action) {
+fn handle_get (state: &mut AgentState, action: &Get) {
     match action {
         Action::Get { key, .. } => {
             // get pair from source chain
@@ -156,28 +161,29 @@ fn do_action_get(state: &mut AgentState, action: &Action) {
     }
 }
 
+fn resolve_action_handler<A: Action>(action: &A) -> Option<fn(&mut AgentState, &A)> {
+    match action {
+        Commit => Some(handle_commit),
+        Get => Some(handle_get),
+        _ => None,
+    }
+}
+
 /// Reduce Agent's state according to provided Action
-pub fn reduce(
+pub fn reduce<A: Action>(
     old_state: Arc<AgentState>,
-    action: &state::Action,
+    action: &A,
     _action_channel: &Sender<state::ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
-    match *action {
-        state::Action::Agent(ref agent_action) => {
+    let handler = resolve_action_handler(action);
+    match handler {
+        Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            match *agent_action {
-                ref action @ Action::Commit { .. } => {
-                    do_action_commit(&mut new_state, &action);
-                }
-                ref action @ Action::Get { .. } => {
-                    do_action_get(&mut new_state, &action);
-                } // Add new agent action function dispatch here
-                  // ...
-            }
+            f(&mut new_state, &action);
             Arc::new(new_state)
-        }
-        _ => old_state,
+        },
+        None => old_state,
     }
 }
 
@@ -190,26 +196,6 @@ pub mod tests {
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {
         AgentState::new()
-    }
-
-    /// builds a dummy action for testing commit
-    pub fn test_action_commit() -> Action {
-        Action::commit(&test_entry())
-    }
-
-    /// builds a dummy action result for testing commit
-    pub fn test_action_result_commit() -> ActionResult {
-        ActionResult::Commit(test_entry().key())
-    }
-
-    /// builds a dummy action for testing get
-    pub fn test_action_get() -> Action {
-        Action::get(&test_entry().key())
-    }
-
-    /// builds a dummy action result for testing get
-    pub fn test_action_result_get() -> ActionResult {
-        ActionResult::Get(Some(test_pair()))
     }
 
     #[test]
@@ -234,30 +220,6 @@ pub mod tests {
     /// test for the agent state actions getter
     fn agent_state_actions() {
         assert_eq!(HashMap::new(), test_agent_state().actions());
-    }
-
-    #[test]
-    /// smoke test building a new commit action + result
-    fn action_commit() {
-        test_action_commit();
-        test_action_result_commit();
-
-        // actions have unique ids and are not equal
-        assert_ne!(test_action_commit(), test_action_commit());
-        // the result is equal though
-        assert_eq!(test_action_result_commit(), test_action_result_commit());
-    }
-
-    #[test]
-    /// smoke test building a new get action + result
-    fn action_get() {
-        test_action_get();
-        test_action_result_get();
-
-        // actions have unique ids and are not equal
-        assert_ne!(test_action_get(), test_action_get());
-        // the result is equal though
-        assert_eq!(test_action_result_get(), test_action_result_get());
     }
 
     #[test]

@@ -7,15 +7,16 @@ use std::{
     hash::{Hash, Hasher},
     sync::{mpsc::Sender, Arc},
 };
+use action::Action;
 
-#[derive(Clone, Debug, PartialEq)]
-#[allow(unknown_lints)]
-#[allow(large_enum_variant)]
-pub enum Action {
-    Agent(::agent::state::Action),
-    Network(::network::Action),
-    Nucleus(::nucleus::Action),
-}
+// #[derive(Clone, Debug, PartialEq)]
+// #[allow(unknown_lints)]
+// #[allow(large_enum_variant)]
+// pub enum Action<A: Action> {
+//     Agent(A),
+//     Network(A),
+//     Nucleus(A),
+// }
 
 #[derive(Clone, Debug)]
 pub struct ActionWrapper {

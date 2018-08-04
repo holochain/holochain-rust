@@ -1,6 +1,7 @@
 mod commit;
 mod get;
 mod print;
+use action::Action;
 
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
@@ -113,7 +114,7 @@ fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
 }
 
 /// Executes an exposed function in a wasm binary
-pub fn call(
+pub fn call<A: Action>(
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,

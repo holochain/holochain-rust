@@ -99,7 +99,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_get_round_trip() {
-        let runtime = test_zome_api_function_runtime("commit", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime("commit", test_args_bytes());
 
         assert_eq!(
             runtime.result,

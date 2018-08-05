@@ -1,11 +1,14 @@
 mod api;
 pub mod lifecycle;
 
+use context::Context;
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
 use num_traits::FromPrimitive;
 use instance::Observer;
 use nucleus::ribosome::{api::commit::invoke_commit, api::get::invoke_get, api::print::invoke_print};
+use nucleus::ribosome::{commit::invoke_commit, debug::invoke_debug, get::invoke_get};
+use state;
 use std::sync::mpsc::Sender;
 use action::ActionWrapper;
 use std::str::FromStr;
@@ -19,6 +22,8 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
     ValueType,
 };
+
+use std::sync::Arc;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME DEFINITIONS
@@ -47,9 +52,9 @@ pub enum ZomeFunction {
 
     /// Zome API
 
-    /// Print debug information in the console
-    /// print(s : String)
-    Print,
+    /// send debug information to the log
+    /// debug(s : String)
+    Debug,
 
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
@@ -135,9 +140,9 @@ impl ZomeFunction {
 //--------------------------------------------------------------------------------------------------
 
 /// Object holding data to pass around to invoked API functions
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Runtime {
-    print_output: String,
+    context: Arc<Context>,
     pub result: String,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
@@ -193,6 +198,7 @@ pub fn runtime_allocate_encode_str(
 
 /// Executes an exposed function in a wasm binary
 pub fn call(
+    context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
@@ -255,7 +261,7 @@ pub fn call(
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        print_output: String::new(),
+        context,
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
@@ -303,11 +309,13 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
     use super::{call, Runtime};
-    use instance::tests::test_instance;
+    use instance::tests::{test_context_and_logger, test_instance, TestLogger};
+    use std::sync::{Arc, Mutex};
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -402,7 +410,10 @@ pub mod tests {
     /// - builds dna and test instance
     /// - calls the zome API function with passed bytes argument using the instance runtime
     /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(canonical_name: &str, args_bytes: Vec<u8>) -> Runtime {
+    pub fn test_zome_api_function_runtime(
+        canonical_name: &str,
+        args_bytes: Vec<u8>,
+    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             "test_zome".into(),
@@ -410,14 +421,18 @@ pub mod tests {
             wasm.clone(),
         );
         let instance = test_instance(dna);
-
-        call(
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            wasm.clone(),
-            "test",
-            Some(args_bytes),
-        ).expect("test should be callable")
+        let (context, logger) = test_context_and_logger("joan");
+        (
+            call(
+                context,
+                &instance.action_channel(),
+                &instance.observer_channel(),
+                wasm.clone(),
+                "test",
+                Some(args_bytes),
+            ).expect("test should be callable"),
+            logger,
+        )
     }
 
 }

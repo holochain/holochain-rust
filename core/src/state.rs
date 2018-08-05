@@ -1,4 +1,5 @@
 use agent::state::AgentState;
+use context::Context;
 use instance::Observer;
 use nucleus::state::NucleusState;
 use std::{
@@ -36,12 +37,14 @@ impl State {
 
     pub fn reduce(
         &self,
+        context: Arc<Context>,
         action_wrapper: ActionWrapper,
         action_channel: &Sender<ActionWrapper>,
         observer_channel: &Sender<Observer>,
     ) -> Self {
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
+                context,
                 Arc::clone(&self.nucleus),
                 &action_wrapper.action,
                 action_channel,

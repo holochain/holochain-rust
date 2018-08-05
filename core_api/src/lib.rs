@@ -50,7 +50,6 @@
 //!
 //!```
 
-extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
 #[cfg(test)]
@@ -85,8 +84,9 @@ impl Holochain {
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut instance = Instance::new();
         let name = dna.name.clone();
+
         let action = Action::new(&Signal::InitApplication(dna));
-        instance.start_action_loop();
+        instance.start_action_loop(context.clone());
 
         let (sender, receiver) = channel();
 
@@ -171,37 +171,20 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
+    extern crate holochain_agent;
     use super::*;
-    use holochain_agent::Agent as HCAgent;
-    use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+    use holochain_core::{context::Context, persister::SimplePersister};
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-    use std::{
-        fmt,
-        sync::{Arc, Mutex},
-    };
+    use std::sync::{Arc, Mutex};
     use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
 
-    #[derive(Clone)]
-    struct TestLogger {
-        log: Vec<String>,
-    }
-
-    impl Logger for TestLogger {
-        fn log(&mut self, msg: String) {
-            self.log.push(msg);
-        }
-    }
-
-    // trying to get a way to print out what has been logged for tests without a read function.
-    // this currently fails
-    impl fmt::Debug for TestLogger {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{:?}", self.log[0])
-        }
-    }
-
-    fn test_context(agent: holochain_agent::Agent) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
+    // TODO: TestLogger duplicated in test_utils because:
+    //  use holochain_core::{instance::tests::TestLogger};
+    // doesn't work.
+    // @see https://github.com/holochain/holochain-rust/issues/185
+    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
+        let agent = holochain_agent::Agent::from_string(agent_name);
+        let logger = test_utils::test_logger();
         (
             Arc::new(Context {
                 agent: agent,
@@ -216,18 +199,17 @@ mod tests {
     fn can_instantiate() {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
-        let agent = HCAgent::from_string("bob");
-        let (context, test_logger) = test_context(agent.clone());
+        let (context, test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {
             Ok(hc) => {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
-                assert_eq!(hc.context.agent, agent);
+                assert_eq!(hc.context.agent.to_string(), "bob".to_string());
                 assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
-                assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
+                assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
             }
             Err(_) => assert!(false),
         };
@@ -235,7 +217,7 @@ mod tests {
 
     #[test]
     fn fails_instantiate_if_genesis_fails() {
-        let mut dna = create_test_dna_with_wat(
+        let dna = create_test_dna_with_wat(
             "test_zome".to_string(),
             ReservedCapabilityNames::LifeCycle.as_str().to_string(),
             Some(
@@ -254,9 +236,7 @@ mod tests {
             ),
         );
 
-        dna.name = "TestApp".to_string();
-        let agent = HCAgent::from_string("bob");
-        let (context, _test_logger) = test_context(agent.clone());
+        let (context, _test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {
@@ -267,7 +247,7 @@ mod tests {
 
     #[test]
     fn fails_instantiate_if_genesis_times_out() {
-        let mut dna = create_test_dna_with_wat(
+        let dna = create_test_dna_with_wat(
             "test_zome".to_string(),
             ReservedCapabilityNames::LifeCycle.as_str().to_string(),
             Some(
@@ -284,9 +264,7 @@ mod tests {
             ),
         );
 
-        dna.name = "TestApp".to_string();
-        let agent = HCAgent::from_string("bob");
-        let (context, _test_logger) = test_context(agent.clone());
+        let (context, _test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {
@@ -301,8 +279,7 @@ mod tests {
     #[test]
     fn can_start_and_stop() {
         let dna = Dna::new();
-        let agent = HCAgent::from_string("bob");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
 
@@ -354,8 +331,7 @@ mod tests {
 "#;
         let dna =
             create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(), Some(wat));
-        let agent = HCAgent::from_string("bob");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.call("test_zome", "test_cap", "hello", "");
@@ -379,8 +355,7 @@ mod tests {
     #[test]
     fn can_get_state() {
         let dna = Dna::new();
-        let agent = HCAgent::from_string("bob");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
@@ -398,8 +373,7 @@ mod tests {
             "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
         let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
-        let agent = HCAgent::from_string("bob");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         hc.start().expect("couldn't start");
@@ -428,8 +402,7 @@ mod tests {
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
         let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
-        let agent = HCAgent::from_string("alex");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -462,8 +435,7 @@ mod tests {
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
         let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
-        let agent = HCAgent::from_string("alex");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -487,15 +459,14 @@ mod tests {
 
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
-    fn can_call_print() {
+    fn can_call_debug() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/print.wasm",
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
         );
         let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
 
-        let agent = HCAgent::from_string("alex");
-        let (context, _) = test_context(agent.clone());
+        let (context, test_logger) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -503,27 +474,28 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "print_hello", r#"{}"#);
-
-        // TODO #165 - check runtime.print_output instead
-        // Expect empty OK result
+        let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
         assert!(result.unwrap().is_empty());
 
-        // Check in holochain instance's history that the commit event has been processed
+        let test_logger = test_logger.lock().unwrap();
+        assert_eq!(
+            format!("{:?}", *test_logger),
+            "[\"TestApp instantiated\", \"\\\"Hello world!\\\"\"]"
+        );
+        // Check in holochain instance's history that the debug event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
-    fn can_call_print_multiple() {
+    fn can_call_debug_multiple() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/print.wasm",
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
         );
         let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
 
-        let agent = HCAgent::from_string("alex");
-        let (context, _) = test_context(agent.clone());
+        let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -531,13 +503,13 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "print_multiple", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
         // TODO #165 - check runtime.print_output instead
         // Expect empty OK result
         assert!(result.unwrap().is_empty());
 
-        // Check in holochain instance's history that the commit event has been processed
+        // Check in holochain instance's history that the deb event has been processed
         assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 }

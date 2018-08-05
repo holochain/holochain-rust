@@ -2,7 +2,7 @@ use error::HolochainError;
 use state::State;
 
 /// trait that defines the persistence functionality that holochain_core requires
-pub trait Persister {
+pub trait Persister: Send {
     fn save(&mut self, state: &State);
     fn load(&self) -> Result<Option<State>, HolochainError>;
 }
@@ -34,8 +34,9 @@ mod tests {
     use action::Action;
     use action::Signal;
     use action::ActionWrapper;
+    use instance::tests::test_context;
+    use snowflake;
     use std::sync::mpsc::channel;
-
     #[test]
     fn can_instantiate() {
         let store = SimplePersister::new();
@@ -57,7 +58,12 @@ mod tests {
         let action = Action::new(&Signal::Commit(test_entry()));
         let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
-        let new_state = state.reduce(ActionWrapper::new(action), &sender, &tx_observer);
+        let new_state = state.reduce(
+            test_context("jane"),
+            ActionWrapper::new(action),
+            &sender,
+            &tx_observer,
+        );
 
         store.save(&new_state);
 

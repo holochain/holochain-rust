@@ -6,7 +6,7 @@ use chrono::Local;
 use std::fmt;
 
 /// trait that defines the logging functionality that holochain_core requires
-pub trait Logger: fmt::Debug {
+pub trait Logger: fmt::Debug + Send {
     fn log(&mut self, msg: String);
 }
 

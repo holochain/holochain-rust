@@ -83,7 +83,7 @@ mod tests {
 
     use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
-    use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use serde_json;
 
     /// dummy commit args from standard test entry

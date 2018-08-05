@@ -73,7 +73,7 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use serde_json;
 
     /// dummy get args from standard test entry

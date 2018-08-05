@@ -4,15 +4,12 @@ pub mod lifecycle;
 use context::Context;
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
-use num_traits::FromPrimitive;
+use nucleus::ribosome::api::ZomeAPIFunction;
 use instance::Observer;
-use nucleus::ribosome::{api::commit::invoke_commit, api::get::invoke_get, api::debug::invoke_debug};
 use std::sync::mpsc::Sender;
 use action::ActionWrapper;
 use std::str::FromStr;
 
-use nucleus::ribosome::lifecycle::genesis::invoke_genesis;
-use nucleus::ribosome::lifecycle::validate_commit::invoke_validate_commit;
 use nucleus::memory::*;
 
 use wasmi::{
@@ -23,114 +20,20 @@ use wasmi::{
 
 use std::sync::Arc;
 
-//--------------------------------------------------------------------------------------------------
-// ZOME DEFINITIONS
-//--------------------------------------------------------------------------------------------------
+pub trait Defn: FromStr {
 
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
-#[repr(usize)]
-#[derive(FromPrimitive)]
-pub enum ZomeFunction {
-    /// Error index for unimplemented functions
-    MissingNo = 0,
+    /// return the canonical name of this function definition
+    fn as_str(&self) -> &'static str;
 
-    /// LifeCycle Capability
+    /// convert the canonical name of this function to an index
+    fn str_index(s: &str) -> usize;
 
-    /// genesis() -> bool
-    Genesis,
+    /// convert an index to the function definition
+    fn from_index(i: usize) -> Self;
 
-    /// validate_commit() -> bool
-    ValidateCommit,
+    // @TODO how to add something to trait that returns functions with unknown params/return?
+    // fn as_fn(&self) -> fn(_) -> _;
 
-    /// Communication Capability
-
-    /// receive(from : String, message : String) -> String
-    Receive,
-
-    /// Zome API
-
-    /// send debug information to the log
-    /// debug(s : String)
-    Debug,
-
-    /// Commit an entry to source chain
-    /// commit(entry_type : String, entry_content : String) -> Hash
-    Commit,
-
-    /// Get an entry from source chain by key (header hash)
-    /// get(key: String) -> Pair
-    Get,
-}
-
-impl FromStr for ZomeFunction {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "genesis" => Ok(ZomeFunction::Genesis),
-            "validate_commit" => Ok(ZomeFunction::ValidateCommit),
-            "receive" => Ok(ZomeFunction::Receive),
-            "debug" => Ok(ZomeFunction::Debug),
-            "commit" => Ok(ZomeFunction::Commit),
-            "get" => Ok(ZomeFunction::Get),
-            // Add new function name to index mapping here
-            // ...
-            _ => Err("Cannot convert string to ZomeFunction"),
-        }
-    }
-}
-
-impl ZomeFunction {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            ZomeFunction::MissingNo => "",
-            ZomeFunction::Genesis => "genesis",
-            ZomeFunction::ValidateCommit => "validate_commit",
-            ZomeFunction::Receive => "receive",
-            ZomeFunction::Debug => "debug",
-            ZomeFunction::Commit => "commit",
-            ZomeFunction::Get => "get",
-            // Add new function index to string mapping here
-            // ...
-        }
-    }
-
-    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
-        /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(
-            _runtime: &mut Runtime,
-            _args: &RuntimeArgs,
-        ) -> Result<Option<RuntimeValue>, Trap> {
-            Ok(Some(RuntimeValue::I32(0 as i32)))
-        }
-
-        match *self {
-            ZomeFunction::MissingNo => noop,
-            ZomeFunction::Genesis => invoke_genesis,
-            ZomeFunction::ValidateCommit => invoke_validate_commit,
-            // @TODO
-            ZomeFunction::Receive => noop,
-            ZomeFunction::Debug => invoke_debug,
-            ZomeFunction::Commit => invoke_commit,
-            ZomeFunction::Get => invoke_get,
-            // Add new enum to fn mapping here
-            // ...
-        }
-    }
-
-    pub fn str_index(s: &str) -> usize {
-        match ZomeFunction::from_str(s) {
-            Ok(i) => i as usize,
-            Err(_) => ZomeFunction::MissingNo as usize,
-        }
-    }
-
-    pub fn from_index(i: usize) -> Self {
-        match FromPrimitive::from_usize(i) {
-            Some(v) => v,
-            None => ZomeFunction::MissingNo,
-        }
-    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -206,22 +109,22 @@ pub fn call(
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
-    // Describe invokable functions form within Zome
+    // Describe invokable functions from within Zome
     impl Externals for Runtime {
         fn invoke_index(
             &mut self,
             index: usize,
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
-            let zf = ZomeFunction::from_index(index);
+            let zf = ZomeAPIFunction::from_index(index);
             match zf {
-                ZomeFunction::MissingNo => panic!("unknown function index"),
+                ZomeAPIFunction::MissingNo => panic!("unknown function index"),
                 _ => zf.as_fn()(self, &args),
             }
         }
     }
 
-    // Define invokable functions form within Zome
+    // Define invokable functions from within Zome
     struct RuntimeModuleImportResolver;
     impl ModuleImportResolver for RuntimeModuleImportResolver {
         fn resolve_func(
@@ -229,9 +132,9 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let index = ZomeFunction::str_index(&field_name);
+            let index = ZomeAPIFunction::str_index(&field_name);
             match index {
-                index if index == ZomeFunction::MissingNo as usize => {
+                index if index == ZomeAPIFunction::MissingNo as usize => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name

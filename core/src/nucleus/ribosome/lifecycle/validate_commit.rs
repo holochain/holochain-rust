@@ -1,12 +1,12 @@
-use nucleus::ribosome::Runtime;
-use wasmi::RuntimeArgs;
-use wasmi::RuntimeValue;
-use wasmi::Trap;
-use nucleus::ribosome::runtime_allocate_encode_str;
+use std::sync::mpsc::Sender;
+use action::ActionWrapper;
+use instance::Observer;
+use holochain_dna::zome::Zome;
 
-pub fn invoke_validate_commit(
-    runtime: &mut Runtime,
-    _args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
-    runtime_allocate_encode_str(runtime, "")
+pub fn validate_commit(
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+    _zome: Zome,
+) {
+
 }

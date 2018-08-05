@@ -1,4 +1,4 @@
-use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
+use nucleus::ribosome::{runtime_allocate_encode_str, runtime_args_to_utf8};
 use nucleus::ribosome::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;

@@ -13,6 +13,9 @@ extern crate wasmi;
 extern crate bitflags;
 #[macro_use]
 extern crate unwrap_to;
+#[macro_use]
+extern crate num_derive;
+extern crate num_traits;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

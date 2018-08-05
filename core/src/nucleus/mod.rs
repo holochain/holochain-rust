@@ -3,8 +3,9 @@ pub mod ribosome;
 pub mod state;
 
 use error::HolochainError;
+use nucleus::ribosome::ZomeFunction;
 use holochain_dna::{
-    zome::capabilities::{ReservedCapabilityNames, ReservedFunctionNames},
+    zome::capabilities::{ReservedCapabilityNames},
 };
 use instance::Observer;
 // use snowflake;
@@ -221,7 +222,7 @@ fn reduce_ia(
                     let call = FunctionCall::new(
                         zome.name,
                         ReservedCapabilityNames::LifeCycle.as_str().to_string(),
-                        ReservedFunctionNames::Genesis.as_str().to_string(),
+                        ZomeFunction::Genesis.as_str().to_string(),
                         "".to_string(),
                     );
 

@@ -10,7 +10,9 @@ use wasm::DnaWasm;
 /// Enumeration of all Capabilities known and used by HC Core
 /// Enumeration converts to str
 pub enum ReservedCapabilityNames {
+    /// @TODO document what LifeCycle is
     LifeCycle,
+    /// @TODO document what Communication is
     Communication,
 }
 
@@ -30,37 +32,6 @@ impl ReservedCapabilityNames {
         match *self {
             ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
             ReservedCapabilityNames::Communication => "hc_web_gateway",
-        }
-    }
-}
-
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
-pub enum ReservedFunctionNames {
-    /// genesis() -> bool
-    /// Must be in LifeCycle Capability
-    Genesis,
-    /// receive(from : String, message : String) -> String
-    /// Must be in Communication Capability
-    Receive,
-}
-
-impl FromStr for ReservedFunctionNames {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "genesis" => Ok(ReservedFunctionNames::Genesis),
-            "receive" => Ok(ReservedFunctionNames::Receive),
-            _ => Err("Cannot convert string to ReservedFunctionNames"),
-        }
-    }
-}
-
-impl ReservedFunctionNames {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            ReservedFunctionNames::Genesis => "genesis",
-            ReservedFunctionNames::Receive => "receive",
         }
     }
 }

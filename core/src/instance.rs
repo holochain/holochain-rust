@@ -232,11 +232,8 @@ pub mod tests {
     use action::Action;
     use action::Signal;
     use state::{State};
-    use std::{sync::mpsc::channel, thread::sleep, time::Duration};
     use logger::Logger;
-    use nucleus::Action::InitApplication;
     use persister::SimplePersister;
-    use state::{Action::Nucleus, State};
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,

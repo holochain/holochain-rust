@@ -35,7 +35,6 @@ mod tests {
     use action::Signal;
     use action::ActionWrapper;
     use instance::tests::test_context;
-    use snowflake;
     use std::sync::mpsc::channel;
     #[test]
     fn can_instantiate() {

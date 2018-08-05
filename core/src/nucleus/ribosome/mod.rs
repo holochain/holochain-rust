@@ -6,9 +6,7 @@ use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
 use num_traits::FromPrimitive;
 use instance::Observer;
-use nucleus::ribosome::{api::commit::invoke_commit, api::get::invoke_get, api::print::invoke_print};
-use nucleus::ribosome::{commit::invoke_commit, debug::invoke_debug, get::invoke_get};
-use state;
+use nucleus::ribosome::{api::commit::invoke_commit, api::get::invoke_get, api::debug::invoke_debug};
 use std::sync::mpsc::Sender;
 use action::ActionWrapper;
 use std::str::FromStr;
@@ -72,7 +70,7 @@ impl FromStr for ZomeFunction {
             "genesis" => Ok(ZomeFunction::Genesis),
             "validate_commit" => Ok(ZomeFunction::ValidateCommit),
             "receive" => Ok(ZomeFunction::Receive),
-            "print" => Ok(ZomeFunction::Print),
+            "debug" => Ok(ZomeFunction::Debug),
             "commit" => Ok(ZomeFunction::Commit),
             "get" => Ok(ZomeFunction::Get),
             // Add new function name to index mapping here
@@ -89,7 +87,7 @@ impl ZomeFunction {
             ZomeFunction::Genesis => "genesis",
             ZomeFunction::ValidateCommit => "validate_commit",
             ZomeFunction::Receive => "receive",
-            ZomeFunction::Print => "print",
+            ZomeFunction::Debug => "debug",
             ZomeFunction::Commit => "commit",
             ZomeFunction::Get => "get",
             // Add new function index to string mapping here
@@ -112,7 +110,7 @@ impl ZomeFunction {
             ZomeFunction::ValidateCommit => invoke_validate_commit,
             // @TODO
             ZomeFunction::Receive => noop,
-            ZomeFunction::Print => invoke_print,
+            ZomeFunction::Debug => invoke_debug,
             ZomeFunction::Commit => invoke_commit,
             ZomeFunction::Get => invoke_get,
             // Add new enum to fn mapping here

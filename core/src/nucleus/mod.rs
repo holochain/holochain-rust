@@ -156,6 +156,7 @@ impl FunctionResult {
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
 fn reduce_rir(
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action: &Action,
     _action_channel: &Sender<ActionWrapper>,
@@ -195,6 +196,7 @@ fn return_initialization_result(
 /// Initialize Nucleus by setting the DNA
 /// and sending ExecuteFunction Action of genesis of each zome
 fn reduce_ia(
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action: &Action,
     action_channel: &Sender<ActionWrapper>,
@@ -383,6 +385,7 @@ fn reduce_ezf(
 /// Reduce ValidateEntry Action
 /// Validate an Entry by calling its validation function
 fn reduce_ve(
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action: &Action,
     _action_channel: &Sender<ActionWrapper>,
@@ -405,6 +408,7 @@ fn reduce_ve(
 }
 
 fn reduce_zfr(
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action: &Action,
     _action_channel: &Sender<ActionWrapper>,
@@ -420,7 +424,13 @@ fn reduce_zfr(
 }
 
 fn resolve_action_handler(action: &Action)
-    -> Option<fn(&mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
+    -> Option<fn(
+        Arc<Context>,
+        &mut NucleusState,
+        &Action,
+        &Sender<ActionWrapper>,
+        &Sender<Observer>
+    )> {
     match action.signal() {
         Signal::ReturnInitializationResult(_) => Some(reduce_rir),
         Signal::InitApplication(_) => Some(reduce_ia),
@@ -464,8 +474,6 @@ pub mod tests {
     use super::{
         *,
     };
-    use instance::{tests::test_instance, Instance};
-    use std::sync::mpsc::channel;
     use action::ActionWrapper;
     use instance::{
         tests::{test_context, test_instance},

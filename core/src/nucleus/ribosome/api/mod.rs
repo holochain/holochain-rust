@@ -1,18 +1,14 @@
 pub mod commit;
-pub mod get;
 pub mod debug;
+pub mod get;
 
-use nucleus::ribosome::Runtime;
-use wasmi::RuntimeArgs;
-use wasmi::Trap;
-use std::str::FromStr;
-use wasmi::RuntimeValue;
+use nucleus::ribosome::{
+    api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
+    Defn, Runtime,
+};
 use num_traits::FromPrimitive;
-use nucleus::ribosome::Defn;
-use nucleus::ribosome::api::debug::invoke_debug;
-use nucleus::ribosome::api::commit::invoke_commit;
-use nucleus::ribosome::api::get::invoke_get;
-
+use std::str::FromStr;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 // Zome API functions are exposed by HC to zome logic
 
@@ -44,7 +40,6 @@ pub enum ZomeAPIFunction {
 }
 
 impl Defn for ZomeAPIFunction {
-
     fn as_str(&self) -> &'static str {
         match *self {
             ZomeAPIFunction::MissingNo => "",
@@ -67,7 +62,6 @@ impl Defn for ZomeAPIFunction {
             None => ZomeAPIFunction::MissingNo,
         }
     }
-
 }
 
 impl FromStr for ZomeAPIFunction {
@@ -83,13 +77,9 @@ impl FromStr for ZomeAPIFunction {
 }
 
 impl ZomeAPIFunction {
-
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(
-            _runtime: &mut Runtime,
-            _args: &RuntimeArgs,
-        ) -> Result<Option<RuntimeValue>, Trap> {
+        fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
@@ -100,5 +90,4 @@ impl ZomeAPIFunction {
             ZomeAPIFunction::Get => invoke_get,
         }
     }
-
 }

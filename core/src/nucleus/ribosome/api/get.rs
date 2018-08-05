@@ -1,11 +1,11 @@
-use nucleus::ribosome::{runtime_allocate_encode_str, runtime_args_to_utf8};
-use nucleus::ribosome::{HcApiReturnCode, Runtime};
+use action::{Action, Signal};
+use agent::state::ActionResponse;
+use nucleus::ribosome::{
+    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use action::Action;
-use action::Signal;
-use agent::state::ActionResponse;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {

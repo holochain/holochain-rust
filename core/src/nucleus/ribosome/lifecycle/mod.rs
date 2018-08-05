@@ -1,21 +1,20 @@
 pub mod genesis;
 pub mod validate_commit;
-use std::str::FromStr;
-use std::sync::mpsc::Sender;
 use action::ActionWrapper;
-use instance::Observer;
 use holochain_dna::zome::Zome;
-use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
-use nucleus::ribosome::Defn;
-use nucleus::ribosome::lifecycle::genesis::genesis;
+use instance::Observer;
+use nucleus::ribosome::{
+    lifecycle::{genesis::genesis, validate_commit::validate_commit},
+    Defn,
+};
 use num_traits::FromPrimitive;
+use std::{str::FromStr, sync::mpsc::Sender};
 
 // Lifecycle functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
 
 #[derive(FromPrimitive)]
 pub enum LifecycleFunction {
-
     /// Error index for unimplemented functions
     MissingNo = 0,
 
@@ -31,11 +30,9 @@ pub enum LifecycleFunction {
 
     /// receive(from : String, message : String) -> String
     Receive,
-
 }
 
 impl Defn for LifecycleFunction {
-
     fn as_str(&self) -> &'static str {
         match *self {
             LifecycleFunction::MissingNo => "",
@@ -58,7 +55,6 @@ impl Defn for LifecycleFunction {
             None => LifecycleFunction::MissingNo,
         }
     }
-
 }
 
 impl FromStr for LifecycleFunction {
@@ -74,17 +70,16 @@ impl FromStr for LifecycleFunction {
 }
 
 impl LifecycleFunction {
-
-    pub fn as_fn(&self) -> fn(
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-        zome: Zome,) {
-
+    pub fn as_fn(
+        &self,
+    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome)
+    {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
             _zome: Zome,
-        ) {}
+        ) {
+        }
 
         match *self {
             LifecycleFunction::MissingNo => noop,
@@ -94,5 +89,4 @@ impl LifecycleFunction {
             LifecycleFunction::Receive => noop,
         }
     }
-
 }

@@ -21,8 +21,8 @@ pub fn serializable_to_b58_hash<S: Serialize>(s: S, hash_type: Hash) -> String {
 
 #[cfg(test)]
 pub mod tests {
-    use multihash::Hash;
     use hash_table::entry::tests::test_entry;
+    use multihash::Hash;
 
     pub fn test_hash() -> String {
         test_entry().key()

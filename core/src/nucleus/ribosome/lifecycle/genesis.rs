@@ -1,21 +1,19 @@
-use nucleus::FunctionCall;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use nucleus::ribosome::lifecycle::LifecycleFunction;
-use error::HolochainError;
-use holochain_dna::zome::Zome;
-use nucleus::call_zome_and_wait_for_result;
-use std::sync::mpsc::Sender;
 use action::ActionWrapper;
+use error::HolochainError;
+use holochain_dna::zome::{capabilities::ReservedCapabilityNames, Zome};
 use instance::Observer;
-use nucleus::return_initialization_result;
-use nucleus::ribosome::Defn;
+use nucleus::{
+    call_zome_and_wait_for_result, return_initialization_result,
+    ribosome::{lifecycle::LifecycleFunction, Defn},
+    FunctionCall,
+};
+use std::sync::mpsc::Sender;
 
 pub fn genesis(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: Zome,
 ) {
-
     // Make ExecuteZomeFunction Action for genesis()
     let call = FunctionCall::new(
         zome.name,
@@ -25,8 +23,7 @@ pub fn genesis(
     );
 
     // Call Genesis and wait
-    let call_result =
-        call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
+    let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
 
     // genesis returns a string
     // "" == success, otherwise error value

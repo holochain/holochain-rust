@@ -1,4 +1,5 @@
 //use error::HolochainError;
+use action::{Action, ActionWrapper};
 use context::Context;
 use state::*;
 use std::{
@@ -6,8 +7,6 @@ use std::{
     thread,
     time::Duration,
 };
-use action::Action;
-use action::ActionWrapper;
 
 pub const REDUX_LOOP_TIMEOUT_MS: u64 = 400;
 pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
@@ -211,10 +210,7 @@ pub fn dispatch_action_with_observer<F>(
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action(
-    action_channel: &Sender<ActionWrapper>,
-    action: Action,
-) -> ActionWrapper {
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action: Action) -> ActionWrapper {
     let wrapper = ActionWrapper::new(action);
     action_channel
         .send(wrapper.clone())
@@ -226,14 +222,13 @@ pub fn dispatch_action(
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
+    use action::{Action, Signal};
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
-    use action::Action;
-    use action::Signal;
-    use state::{State};
     use logger::Logger;
     use persister::SimplePersister;
+    use state::State;
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,

@@ -4,11 +4,10 @@ pub mod lifecycle;
 use context::Context;
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
-use nucleus::ribosome::api::ZomeAPIFunction;
-use instance::Observer;
-use std::sync::mpsc::Sender;
 use action::ActionWrapper;
-use std::str::FromStr;
+use instance::Observer;
+use nucleus::ribosome::api::ZomeAPIFunction;
+use std::{str::FromStr, sync::mpsc::Sender};
 
 use nucleus::memory::*;
 
@@ -21,7 +20,6 @@ use wasmi::{
 use std::sync::Arc;
 
 pub trait Defn: FromStr {
-
     /// return the canonical name of this function definition
     fn as_str(&self) -> &'static str;
 
@@ -33,7 +31,6 @@ pub trait Defn: FromStr {
 
     // @TODO how to add something to trait that returns functions with unknown params/return?
     // fn as_fn(&self) -> fn(_) -> _;
-
 }
 
 //--------------------------------------------------------------------------------------------------

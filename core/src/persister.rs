@@ -30,10 +30,8 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use action::{Action, ActionWrapper, Signal};
     use hash_table::entry::tests::test_entry;
-    use action::Action;
-    use action::Signal;
-    use action::ActionWrapper;
     use instance::tests::test_context;
     use std::sync::mpsc::channel;
     #[test]

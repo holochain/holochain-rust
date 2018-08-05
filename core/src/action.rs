@@ -1,11 +1,8 @@
-use std::hash::Hash;
-use std::hash::Hasher;
 use hash_table::entry::Entry;
-use nucleus::FunctionCall;
-use nucleus::FunctionResult;
-use nucleus::EntrySubmission;
-use snowflake;
 use holochain_dna::Dna;
+use nucleus::{EntrySubmission, FunctionCall, FunctionResult};
+use snowflake;
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug)]
 // @TODO what is wrapper for?
@@ -37,10 +34,8 @@ impl Hash for ActionWrapper {
     }
 }
 
-
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Signal {
-
     Commit(Entry),
     Get(String),
 
@@ -49,7 +44,6 @@ pub enum Signal {
     ReturnInitializationResult(Option<String>),
     ReturnZomeFunctionResult(FunctionResult),
     ValidateEntry(EntrySubmission),
-
 }
 
 #[derive(PartialEq, Clone, Hash, Debug)]
@@ -59,9 +53,8 @@ pub struct Action {
 }
 
 impl Action {
-
     pub fn new(signal: &Signal) -> Action {
-        Action{
+        Action {
             signal: signal.clone(),
             id: snowflake::ProcessUniqueId::new(),
         }
@@ -70,7 +63,6 @@ impl Action {
     pub fn signal(&self) -> Signal {
         self.signal.clone()
     }
-
 }
 
 impl Eq for Action {}

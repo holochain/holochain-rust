@@ -7,6 +7,11 @@ use error::HolochainError;
 
 use instance::Observer;
 // use snowflake;
+use action::{Action, ActionWrapper, Signal};
+use nucleus::{
+    ribosome::lifecycle::genesis::genesis,
+    state::{NucleusState, NucleusStatus},
+};
 use std::{
     sync::{
         mpsc::{channel, Sender},
@@ -14,12 +19,6 @@ use std::{
     },
     thread,
 };
-use nucleus::state::NucleusState;
-use nucleus::state::NucleusStatus;
-use action::Action;
-use action::Signal;
-use action::ActionWrapper;
-use nucleus::ribosome::lifecycle::genesis::genesis;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -67,9 +66,7 @@ pub fn call_zome_and_wait_for_result(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Result<String, HolochainError> {
-    let call_action = Action::new(
-        &Signal::ExecuteZomeFunction(call.clone()),
-    );
+    let call_action = Action::new(&Signal::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
@@ -99,25 +96,20 @@ pub fn call_and_wait_for_result(
     call: FunctionCall,
     instance: &mut super::instance::Instance,
 ) -> Result<String, HolochainError> {
-    let call_action = Action::new(
-        &Signal::ExecuteZomeFunction(call.clone()),
-    );
+    let call_action = Action::new(&Signal::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
-    instance.dispatch_with_observer(
-        call_action,
-        move |state: &super::state::State| {
-            if let Some(result) = state.nucleus().ribosome_call_result(&call) {
-                sender
-                    .send(result.clone())
-                    .expect("local channel to be open");
-                true
-            } else {
-                false
-            }
-        },
-    );
+    instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
+        if let Some(result) = state.nucleus().ribosome_call_result(&call) {
+            sender
+                .send(result.clone())
+                .expect("local channel to be open");
+            true
+        } else {
+            false
+        }
+    });
 
     // Block until we got that result through the channel:
     receiver.recv().expect("local channel to work")
@@ -134,8 +126,12 @@ impl FunctionResult {
         FunctionResult { call, result }
     }
 
-    pub fn call(&self) -> FunctionCall { self.call.clone() }
-    pub fn result(&self) -> Result<String, HolochainError> { self.result.clone() }
+    pub fn call(&self) -> FunctionCall {
+        self.call.clone()
+    }
+    pub fn result(&self) -> Result<String, HolochainError> {
+        self.result.clone()
+    }
 }
 
 /// Enum of all Actions that mutates the Nucleus's state
@@ -161,32 +157,25 @@ fn reduce_rir(
     _observer_channel: &Sender<Observer>,
 ) {
     if state.status() != NucleusStatus::Initializing {
-        state.status =
-            NucleusStatus::InitializationFailed(
-                "reduce of ReturnInitializationResult attempted when status != Initializing".into(),
-            );
+        state.status = NucleusStatus::InitializationFailed(
+            "reduce of ReturnInitializationResult attempted when status != Initializing".into(),
+        );
     } else {
         let signal = action.signal();
         let result = unwrap_to!(signal => Signal::ReturnInitializationResult);
         match result {
             None => state.status = NucleusStatus::Initialized,
-            Some(err) => state.status =
-                NucleusStatus::InitializationFailed(err.clone()),
+            Some(err) => state.status = NucleusStatus::InitializationFailed(err.clone()),
         };
     }
 }
 
 /// Helper
-fn return_initialization_result(
-    result: Option<String>,
-    action_channel: &Sender<ActionWrapper>,
-) {
+fn return_initialization_result(result: Option<String>, action_channel: &Sender<ActionWrapper>) {
     action_channel
-        .send(ActionWrapper::new(
-            Action::new(
-                &Signal::ReturnInitializationResult(result),
-            ),
-        ))
+        .send(ActionWrapper::new(Action::new(
+            &Signal::ReturnInitializationResult(result),
+        )))
         .expect("action channel to be open in reducer");
 }
 
@@ -219,11 +208,7 @@ fn reduce_ia(
             thread::spawn(move || {
                 //  Call each Zome's genesis()
                 for zome in dna_clone.zomes {
-                    genesis(
-                        &action_channel,
-                        &observer_channel,
-                        zome,
-                    );
+                    genesis(&action_channel, &observer_channel, zome);
                 }
                 // Send Succeeded ReturnInitializationResult Action
                 return_initialization_result(None, &action_channel);
@@ -281,11 +266,10 @@ fn reduce_ezf(
                         Some(function_call.clone().parameters.into_bytes()),
                     ) {
                         Ok(runtime) => {
-                            result =
-                                FunctionResult::new(
-                                    function_call.clone(),
-                                    Ok(runtime.result.to_string())
-                                );
+                            result = FunctionResult::new(
+                                function_call.clone(),
+                                Ok(runtime.result.to_string()),
+                            );
                         }
 
                         Err(ref error) => {
@@ -298,11 +282,9 @@ fn reduce_ezf(
 
                     // Send ReturnResult Action
                     action_channel
-                        .send(ActionWrapper::new(
-                            Action::new(
-                                &Signal::ReturnZomeFunctionResult(result),
-                            ),
-                        ))
+                        .send(ActionWrapper::new(Action::new(
+                            &Signal::ReturnZomeFunctionResult(result),
+                        )))
                         .expect("action channel to be open in reducer");
                 });
             } else {
@@ -331,11 +313,9 @@ fn reduce_ezf(
     }
     if has_error {
         action_channel
-            .send(ActionWrapper::new(
-                Action::new(
-                     &Signal::ReturnZomeFunctionResult(result),
-                 ),
-            ))
+            .send(ActionWrapper::new(Action::new(
+                &Signal::ReturnZomeFunctionResult(result),
+            )))
             .expect("action channel to be open in reducer");
     }
 }
@@ -376,19 +356,13 @@ fn reduce_zfr(
     let fr = unwrap_to!(signal => Signal::ReturnZomeFunctionResult);
 
     // @TODO store the action and result directly
-    state
-        .ribosome_calls
-        .insert(fr.call(), Some(fr.result()));
+    state.ribosome_calls.insert(fr.call(), Some(fr.result()));
 }
 
-fn resolve_action_handler(action: &Action)
-    -> Option<fn(
-        Arc<Context>,
-        &mut NucleusState,
-        &Action,
-        &Sender<ActionWrapper>,
-        &Sender<Observer>
-    )> {
+fn resolve_action_handler(
+    action: &Action,
+) -> Option<fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)>
+{
     match action.signal() {
         Signal::ReturnInitializationResult(_) => Some(reduce_rir),
         Signal::InitApplication(_) => Some(reduce_ia),
@@ -420,7 +394,7 @@ pub fn reduce(
                 observer_channel,
             );
             Arc::new(new_state)
-        },
+        }
         None => old_state,
     }
 }
@@ -428,11 +402,9 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use holochain_dna::Dna;
-    use super::{
-        *,
-    };
+    use super::*;
     use action::ActionWrapper;
+    use holochain_dna::Dna;
     use instance::{
         tests::{test_context, test_instance},
         Instance,
@@ -497,7 +469,9 @@ pub mod tests {
         assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) Action
-        let return_action = Action::new(&Signal::ReturnInitializationResult(Some("init failed".to_string())));
+        let return_action = Action::new(&Signal::ReturnInitializationResult(Some(
+            "init failed".to_string(),
+        )));
         let reduced_nucleus = reduce(
             test_context("jimmy"),
             initializing_nucleus.clone(),

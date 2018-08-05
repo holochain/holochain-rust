@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use error::HolochainError;
 use holochain_dna::Dna;
 use nucleus::FunctionCall;
-use error::HolochainError;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {

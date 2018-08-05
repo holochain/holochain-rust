@@ -21,6 +21,7 @@ extern crate holochain_agent;
 extern crate holochain_dna;
 extern crate holochain_wasm_utils;
 
+pub mod action;
 pub mod agent;
 pub mod chain;
 pub mod context;
@@ -33,4 +34,3 @@ pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
-pub mod action;

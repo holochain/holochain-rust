@@ -1,3 +1,4 @@
+use action::ActionWrapper;
 use agent::state::AgentState;
 use context::Context;
 use instance::Observer;
@@ -6,7 +7,6 @@ use std::{
     collections::HashSet,
     sync::{mpsc::Sender, Arc},
 };
-use action::ActionWrapper;
 
 // #[derive(Clone, Debug, PartialEq)]
 // #[allow(unknown_lints)]

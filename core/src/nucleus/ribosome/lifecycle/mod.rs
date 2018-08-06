@@ -47,12 +47,13 @@ impl FromStr for LifecycleFunction {
 impl LifecycleFunction {
     pub fn as_fn(
         &self,
-    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome) -> LifecycleFunctionResult
+    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome, params: &str) -> LifecycleFunctionResult
     {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
             _zome: Zome,
+            _params: &str,
         ) -> LifecycleFunctionResult {
             LifecycleFunctionResult::Pass
         }

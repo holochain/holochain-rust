@@ -212,7 +212,7 @@ fn reduce_ia(
                     .zomes
                     .iter()
                     .map(|zome|
-                        genesis(&action_channel, &observer_channel, zome.clone())
+                        genesis(&action_channel, &observer_channel, zome.clone(), "")
                     )
                     .collect();
 

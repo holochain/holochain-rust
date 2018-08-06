@@ -14,6 +14,8 @@ pub fn genesis(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: Zome,
+    // we ignore params for genesis
+    _params: &str,
 ) -> LifecycleFunctionResult {
 
     // Make ExecuteZomeFunction Action for genesis()
@@ -28,7 +30,7 @@ pub fn genesis(
     let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
 
     // translate the call result to a lifecycle result
-    let lifecycle_result = match call_result {
+    match call_result {
         // empty string OK = Success
         Ok(ref s) if s.is_empty() => LifecycleFunctionResult::Pass,
 
@@ -40,7 +42,6 @@ pub fn genesis(
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),
         Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
-    };
+    }
 
-    lifecycle_result
 }

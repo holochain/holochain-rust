@@ -19,6 +19,7 @@ use std::{
     },
     thread,
 };
+use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -207,11 +208,45 @@ fn reduce_ia(
 
             thread::spawn(move || {
                 //  Call each Zome's genesis()
-                for zome in dna_clone.zomes {
-                    genesis(&action_channel, &observer_channel, zome);
+                let genesis_results = dna_clone
+                    .zomes
+                    .iter()
+                    .map(|zome| genesis(&action_channel, &observer_channel, zome.clone()))
+                    .collect::<Vec<LifecycleFunctionResult>>();
+
+                assert!(false, "foooz");
+                let aggregate_result = genesis_results
+                    .iter()
+                    .fold(
+                        LifecycleFunctionResult::Pass,
+                        |current, next| {
+                            match current {
+                                // any fail must continue to propagate
+                                LifecycleFunctionResult::Fail(_) => current,
+                                LifecycleFunctionResult::NotImplemented => match next {
+                                    // a not implemented may escalate to a fail
+                                    LifecycleFunctionResult::Fail(_) => next.clone(),
+                                    // otherwise continue propagating whatever we have now
+                                    _ => current,
+                                },
+                                // otherwise propagate next
+                                _ => next.clone(),
+                            }
+                        }
+                    );
+
+                match aggregate_result {
+                    LifecycleFunctionResult::Fail(s) => return_initialization_result(Some(s.to_string()), &action_channel),
+                    _ => return_initialization_result(None, &action_channel),
                 }
+                // for zome in dna_clone.zomes {
+                //     genesis(&action_channel, &observer_channel, zome);
+                // }
                 // Send Succeeded ReturnInitializationResult Action
-                return_initialization_result(None, &action_channel);
+                // return_initialization_result(None, &action_channel);
+                // if let LifecycleFunctionResult::Fail(s) = lifecycle_result {
+                //     return_initialization_result(Some(s.to_string()), &action_channel);
+                // }
             });
         }
         _ => {

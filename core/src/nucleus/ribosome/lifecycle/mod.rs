@@ -32,6 +32,41 @@ pub enum LifecycleFunction {
     Receive,
 }
 
+impl FromStr for LifecycleFunction {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "genesis" => Ok(LifecycleFunction::Genesis),
+            "validate_commit" => Ok(LifecycleFunction::Genesis),
+            "receive" => Ok(LifecycleFunction::Receive),
+            _ => Err("Cannot convert string to LifecycleFunction"),
+        }
+    }
+}
+
+impl LifecycleFunction {
+    pub fn as_fn(
+        &self,
+    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome) -> LifecycleFunctionResult
+    {
+        fn noop(
+            _action_channel: &Sender<ActionWrapper>,
+            _observer_channel: &Sender<Observer>,
+            _zome: Zome,
+        ) -> LifecycleFunctionResult {
+            LifecycleFunctionResult::Pass
+        }
+
+        match *self {
+            LifecycleFunction::MissingNo => noop,
+            LifecycleFunction::Genesis => genesis,
+            LifecycleFunction::ValidateCommit => validate_commit,
+            // @TODO
+            LifecycleFunction::Receive => noop,
+        }
+    }
+}
+
 impl Defn for LifecycleFunction {
     fn as_str(&self) -> &'static str {
         match *self {
@@ -57,36 +92,9 @@ impl Defn for LifecycleFunction {
     }
 }
 
-impl FromStr for LifecycleFunction {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "genesis" => Ok(LifecycleFunction::Genesis),
-            "validate_commit" => Ok(LifecycleFunction::Genesis),
-            "receive" => Ok(LifecycleFunction::Receive),
-            _ => Err("Cannot convert string to LifecycleFunction"),
-        }
-    }
-}
-
-impl LifecycleFunction {
-    pub fn as_fn(
-        &self,
-    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome)
-    {
-        fn noop(
-            _action_channel: &Sender<ActionWrapper>,
-            _observer_channel: &Sender<Observer>,
-            _zome: Zome,
-        ) {
-        }
-
-        match *self {
-            LifecycleFunction::MissingNo => noop,
-            LifecycleFunction::Genesis => genesis,
-            LifecycleFunction::ValidateCommit => validate_commit,
-            // @TODO
-            LifecycleFunction::Receive => noop,
-        }
-    }
+#[derive(Clone)]
+pub enum LifecycleFunctionResult {
+    Pass,
+    Fail(String),
+    NotImplemented,
 }

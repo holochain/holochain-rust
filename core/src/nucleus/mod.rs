@@ -207,27 +207,30 @@ fn reduce_ia(
             let dna_clone = dna.clone();
 
             thread::spawn(move || {
-                // shortcut with success if no zomes
-                if dna_clone.zomes.len() == 0 {
-                    return return_initialization_result(None, &action_channel);
-                }
-
-                let _: Vec<_> = dna_clone
+                // map genesis across every zome
+                let mut results: Vec<_> = dna_clone
                     .zomes
                     .iter()
                     .map(|zome|
                         genesis(&action_channel, &observer_channel, zome.clone())
                     )
-                    .map(|result| {
-                        match result {
-                            LifecycleFunctionResult::Fail(s) => return_initialization_result(
-                                Some(s.to_string()),
-                                &action_channel,
-                            ),
-                            _ => return_initialization_result(None, &action_channel),
-                        }
-                    })
                     .collect();
+
+                // pad out a single pass if there are no zome results
+                if results.is_empty() {
+                    results.push(LifecycleFunctionResult::Pass);
+                }
+
+                // map the genesis results to initialization result responses
+                for result in results {
+                    match result {
+                        LifecycleFunctionResult::Fail(s) => return_initialization_result(
+                            Some(s.to_string()),
+                            &action_channel,
+                        ),
+                        _ => return_initialization_result(None, &action_channel),
+                    }
+                }
             });
         }
         _ => {

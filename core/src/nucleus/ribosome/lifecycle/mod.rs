@@ -7,8 +7,13 @@ use nucleus::ribosome::{
     lifecycle::{genesis::genesis, validate_commit::validate_commit},
     Defn,
 };
+use hash_table::entry::Entry;
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
+use nucleus::FunctionCall;
+use error::HolochainError;
+use nucleus::call_zome_and_wait_for_result;
+use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
 // Lifecycle functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
@@ -91,6 +96,15 @@ impl Defn for LifecycleFunction {
             None => LifecycleFunction::MissingNo,
         }
     }
+
+    fn capabilities(&self) {
+        ReservedCapabilityNames::LifeCycle.as_str().to_string()
+    }
+}
+
+pub enum LifecycleFunctionParams {
+    Genesis,
+    ValidateCommit(Entry),
 }
 
 #[derive(Clone)]
@@ -98,4 +112,38 @@ pub enum LifecycleFunctionResult {
     Pass,
     Fail(String),
     NotImplemented,
+}
+
+pub fn call(
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+    zome: Zome,
+    function: LifecycleFunction,
+    params: LifecycleFunctionParams,
+) -> LifecycleFunctionResult {
+
+    let function_call = FunctionCall::new(
+        zome.name,
+        function.capabilities(),
+        function.as_str().to_string(),
+        params.to_string(),
+    );
+
+    let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
+
+    // translate the call result to a lifecycle result
+    match call_result {
+        // empty string OK = Success
+        Ok(ref s) if s.is_empty() => LifecycleFunctionResult::Pass,
+
+        // things that = NotImplemented
+        Err(HolochainError::CapabilityNotFound(_)) => LifecycleFunctionResult::NotImplemented,
+        Err(HolochainError::ZomeFunctionNotFound(_)) => LifecycleFunctionResult::NotImplemented,
+        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export " + function.as_str() + "_dispatch" => LifecycleFunctionResult::NotImplemented,
+
+        // string value or error = fail
+        Ok(s) => LifecycleFunctionResult::Fail(s),
+        Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
+    }
+
 }

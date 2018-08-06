@@ -6,7 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use instance::Observer;
-// use snowflake;
+use snowflake;
 use action::{Action, ActionWrapper, Signal};
 use nucleus::{
     ribosome::lifecycle::genesis::genesis,
@@ -24,7 +24,7 @@ use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionCall {
-    // id: snowflake::ProcessUniqueId,
+    id: snowflake::ProcessUniqueId,
     pub zome: String,
     pub capability: String,
     pub function: String,
@@ -34,7 +34,7 @@ pub struct FunctionCall {
 impl FunctionCall {
     pub fn new<S: Into<String>>(zome: S, capability: S, function: S, parameters: S) -> Self {
         FunctionCall {
-            // id: snowflake::ProcessUniqueId::new(),
+            id: snowflake::ProcessUniqueId::new(),
             zome: zome.into(),
             capability: capability.into(),
             function: function.into(),
@@ -276,7 +276,7 @@ fn reduce_ezf(
 
                 thread::spawn(move || {
                     let result: FunctionResult;
-                    match ribosome::call(
+                    match ribosome::api::call(
                         context,
                         &action_channel,
                         &tx_observer,

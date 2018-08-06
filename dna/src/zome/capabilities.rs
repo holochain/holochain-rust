@@ -14,6 +14,8 @@ pub enum ReservedCapabilityNames {
     LifeCycle,
     /// @TODO document what Communication is
     Communication,
+    /// @TODO document what ZomeAPIFunction is
+    ZomeAPIFunction,
 }
 
 impl FromStr for ReservedCapabilityNames {
@@ -22,6 +24,7 @@ impl FromStr for ReservedCapabilityNames {
         match s {
             "hc_lifecycle" => Ok(ReservedCapabilityNames::LifeCycle),
             "hc_web_gateway" => Ok(ReservedCapabilityNames::Communication),
+            "hc_zome_api_function" => Ok(ReservedCapabilityNames::ZomeAPIFunction),
             _ => Err("Cannot convert string to ReservedCapabilityNames"),
         }
     }
@@ -32,6 +35,7 @@ impl ReservedCapabilityNames {
         match *self {
             ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
             ReservedCapabilityNames::Communication => "hc_web_gateway",
+            ReservedCapabilityNames::ZomeAPIFunction => "hc_zome_api_function",
         }
     }
 }

@@ -1,4 +1,4 @@
-use nucleus::ribosome::{runtime_args_to_utf8, Runtime};
+use nucleus::ribosome::api::{runtime_args_to_utf8, Runtime};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// HcApiFuncIndex::DEBUG function code

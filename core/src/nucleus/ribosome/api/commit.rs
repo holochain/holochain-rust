@@ -1,6 +1,6 @@
 use action::{Action, Signal};
 use agent::state::ActionResponse;
-use nucleus::ribosome::{
+use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
 use serde_json;

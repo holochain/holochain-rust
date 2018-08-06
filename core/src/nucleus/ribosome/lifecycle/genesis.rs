@@ -30,11 +30,12 @@ pub fn genesis(
     // translate the call result to a lifecycle result
     let lifecycle_result = match call_result {
         // empty string OK = Success
-        Ok(ref s) if s == "" => LifecycleFunctionResult::Pass,
+        Ok(ref s) if s.is_empty() => LifecycleFunctionResult::Pass,
 
         // things that = NotImplemented
         Err(HolochainError::CapabilityNotFound(_)) => LifecycleFunctionResult::NotImplemented,
         Err(HolochainError::ZomeFunctionNotFound(_)) => LifecycleFunctionResult::NotImplemented,
+        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export genesis_dispatch" => LifecycleFunctionResult::NotImplemented,
 
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),
@@ -42,38 +43,4 @@ pub fn genesis(
     };
 
     lifecycle_result
-
-    // // genesis returns a string
-    // // "" == success, otherwise error value
-    // match call_result {
-    //
-    //     Ok(ref s) if s != "" => {
-    //         // Send a failed ReturnInitializationResult Action
-    //         return_initialization_result(Some(s.to_string()), &action_channel);
-    //
-    //         // Kill thread
-    //         // TODO - Instead, Keep track of each zome's initialization.
-    //         // @see https://github.com/holochain/holochain-rust/issues/78
-    //         // Mark this one as failed and continue with other zomes
-    //         return;
-    //     }
-    //     // its okay if hc_lifecycle or genesis not present
-    //     Ok(_) | Err(HolochainError::CapabilityNotFound(_)) => { /* NA */ }
-    //     Err(HolochainError::ErrorGeneric(ref msg))
-    //         if msg == "Function: Module doesn\'t have export genesis_dispatch" =>
-    //     { /* NA */ }
-    //     // Init fails if something failed in genesis called
-    //     Err(err) => {
-    //         // TODO - Create test for this edge case
-    //         // @see https://github.com/holochain/holochain-rust/issues/78
-    //         // Send a failed ReturnInitializationResult Action
-    //         return_initialization_result(Some(err.to_string()), &action_channel);
-    //
-    //         // Kill thread
-    //         // TODO - Instead, Keep track of each zome's initialization.
-    //         // @see https://github.com/holochain/holochain-rust/issues/78
-    //         // Mark this one as failed and continue with other zomes
-    //         return;
-    //     }
-    // }
 }

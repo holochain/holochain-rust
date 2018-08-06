@@ -207,46 +207,27 @@ fn reduce_ia(
             let dna_clone = dna.clone();
 
             thread::spawn(move || {
-                //  Call each Zome's genesis()
-                let genesis_results = dna_clone
+                // shortcut with success if no zomes
+                if dna_clone.zomes.len() == 0 {
+                    return return_initialization_result(None, &action_channel);
+                }
+
+                let _: Vec<_> = dna_clone
                     .zomes
                     .iter()
-                    .map(|zome| genesis(&action_channel, &observer_channel, zome.clone()))
-                    .collect::<Vec<LifecycleFunctionResult>>();
-
-                assert!(false, "foooz");
-                let aggregate_result = genesis_results
-                    .iter()
-                    .fold(
-                        LifecycleFunctionResult::Pass,
-                        |current, next| {
-                            match current {
-                                // any fail must continue to propagate
-                                LifecycleFunctionResult::Fail(_) => current,
-                                LifecycleFunctionResult::NotImplemented => match next {
-                                    // a not implemented may escalate to a fail
-                                    LifecycleFunctionResult::Fail(_) => next.clone(),
-                                    // otherwise continue propagating whatever we have now
-                                    _ => current,
-                                },
-                                // otherwise propagate next
-                                _ => next.clone(),
-                            }
+                    .map(|zome|
+                        genesis(&action_channel, &observer_channel, zome.clone())
+                    )
+                    .map(|result| {
+                        match result {
+                            LifecycleFunctionResult::Fail(s) => return_initialization_result(
+                                Some(s.to_string()),
+                                &action_channel,
+                            ),
+                            _ => return_initialization_result(None, &action_channel),
                         }
-                    );
-
-                match aggregate_result {
-                    LifecycleFunctionResult::Fail(s) => return_initialization_result(Some(s.to_string()), &action_channel),
-                    _ => return_initialization_result(None, &action_channel),
-                }
-                // for zome in dna_clone.zomes {
-                //     genesis(&action_channel, &observer_channel, zome);
-                // }
-                // Send Succeeded ReturnInitializationResult Action
-                // return_initialization_result(None, &action_channel);
-                // if let LifecycleFunctionResult::Fail(s) = lifecycle_result {
-                //     return_initialization_result(Some(s.to_string()), &action_channel);
-                // }
+                    })
+                    .collect();
             });
         }
         _ => {

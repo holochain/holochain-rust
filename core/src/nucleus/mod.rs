@@ -642,7 +642,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
+            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome '\"xxx\"' not found"),
             _ => assert!(false),
         }
 
@@ -653,7 +653,7 @@ pub mod tests {
 
         match result {
             Err(HolochainError::CapabilityNotFound(err)) => {
-                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+                assert_eq!(err, "Capability '\"xxx\"' not found in Zome '\"test_zome\"'")
             }
             _ => assert!(false),
         }

@@ -8,9 +8,8 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use std::thread;
-use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
-use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
+// use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
+// use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -54,43 +53,6 @@ impl AgentState {
     }
 }
 
-// #[derive(Clone, PartialEq, Hash, Debug)]
-/// a single action to perform
-/// every action must have a unique id or there will be collisions in AgentState::actions
-/// the convenience methods for each action variant generate ids correctly
-// pub enum Action {
-//     /// zome API function: commit
-//     Commit {
-//         entry: Entry,
-//         id: snowflake::ProcessUniqueId,
-//     },
-//     /// zome API function: get
-//     Get {
-//         key: String,
-//         id: snowflake::ProcessUniqueId,
-//     },
-// }
-//
-// impl Action {
-//     /// returns a new Action::Commit for the passed entry
-//     pub fn commit(entry: &Entry) -> Action {
-//         Action::Commit {
-//             id: snowflake::ProcessUniqueId::new(),
-//             entry: entry.clone(),
-//         }
-//     }
-//
-//     /// returns a new Action::Get for the passed key
-//     pub fn get(key: &str) -> Action {
-//         Action::Get {
-//             id: snowflake::ProcessUniqueId::new(),
-//             key: key.to_string(),
-//         }
-//     }
-// }
-
-// impl Eq for Action {}
-
 #[derive(Clone, Debug, PartialEq)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
@@ -105,11 +67,11 @@ pub enum ActionResponse {
 fn handle_commit(
     state: &mut AgentState,
     action: &Action,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
 ) {
     let signal = action.signal();
-    let (function_call, entry) = match signal {
+    let (_function_call, entry) = match signal {
         Signal::Commit(r, e) => (r, e),
         _ => unreachable!(),
     };
@@ -122,17 +84,17 @@ fn handle_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    let validate_action_channel = action_channel.clone();
-    let validate_observer_channel = observer_channel.clone();
-    let validate_entry = entry.clone();
-    thread::spawn(move || {
-        validate_commit(
-            &validate_action_channel,
-            &validate_observer_channel,
-            &function_call.zome,
-            LifecycleFunctionParams::ValidateCommit(validate_entry),
-        );
-    });
+    // let validate_action_channel = action_channel.clone();
+    // let validate_observer_channel = observer_channel.clone();
+    // let validate_entry = entry.clone();
+    // thread::spawn(move || {
+    //     validate_commit(
+    //         &validate_action_channel,
+    //         &validate_observer_channel,
+    //         &function_call.zome,
+    //         LifecycleFunctionParams::ValidateCommit(validate_entry),
+    //     );
+    // });
 
     let result = chain.push(&entry).unwrap().entry().key();
     state
@@ -263,11 +225,11 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        handle_commit(
+        let _hc = handle_commit(
             &mut state,
             &action,
-            &instance.action_channel(),
-            &instance.observer_channel(),
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
         );
 
         assert_eq!(
@@ -284,11 +246,11 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        handle_get(
+        let _hg = handle_get(
             &mut state,
             &action,
-            &instance.action_channel(),
-            &instance.observer_channel(),
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
         );
 
         assert_eq!(

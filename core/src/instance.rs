@@ -226,6 +226,7 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
+    use holochain_dna::zome::Zome;
     use logger::Logger;
     use persister::SimplePersister;
     use state::State;
@@ -275,17 +276,70 @@ pub mod tests {
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
-        let action = Action::new(&Signal::InitApplication(dna.clone()));
         instance.start_action_loop(test_context("jane"));
-        instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
-        // Wait for Init to finish
-        while instance.state().history.len() < 4 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
-            println!("Waiting... {}", instance.state().history.len());
-            sleep(Duration::from_millis(10))
+        let action = Action::new(&Signal::InitApplication(dna.clone()));
+        instance.dispatch_and_wait(action.clone());
+
+        assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
+
+        /// fair warning... use test_instance_blank() if you want a minimal instance
+        assert!(!dna.zomes.clone().is_empty(), "Empty zomes = No genesis = infinite loops below!");
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| {
+                match aw.action.signal() {
+                    Signal::InitApplication(_) => true,
+                    _ => false,
+                }
+            }) == None {
+                println!("Waiting for InitApplication");
+                sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| {
+                match aw.action.signal() {
+                    Signal::ExecuteZomeFunction(_) => true,
+                    _ => false,
+                }
+            }) == None {
+                println!("Waiting for ExecuteZomeFunction for genesis");
+                sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| {
+                match aw.action.signal() {
+                    Signal::ReturnZomeFunctionResult(_) => true,
+                    _ => false,
+                }
+            }) == None {
+                println!("Waiting for ReturnZomeFunctionResult from genesis");
+                sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| {
+                match aw.action.signal() {
+                    Signal::ReturnZomeFunctionResult(_) => true,
+                    _ => false,
+                }
+            }) == None {
+                println!("Waiting for ReturnInitializationResult");
+                sleep(Duration::from_millis(10))
         }
 
         instance
@@ -293,7 +347,9 @@ pub mod tests {
 
     /// create a test instance with a blank DNA
     pub fn test_instance_blank() -> Instance {
-        test_instance(Dna::new())
+        let mut dna = Dna::new();
+        dna.zomes.push(Zome::default());
+        test_instance(dna)
     }
 
     #[test]

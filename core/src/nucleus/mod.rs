@@ -223,6 +223,16 @@ fn reduce_ia(
                     .collect();
 
                 // pad out a single pass if there are no zome results
+                // @TODO is this really OK?
+                // should we be steamrolling ahead with an instance that has no zomes and no
+                // genesis?
+                // actually this can cause some really nasty edge case bugs for code that assumes
+                // there is a genesis (real example: wait for length 4 in history) in a loop before
+                // moving forward. it will seem to work OK, but then hang if ever hit with an empty
+                // Dna.
+                // on the flip side, code cannot simply wait for 2 items in history, or even the
+                // initialization result on its own, because then it will miss the genesis
+                // sometimes where a genesis does happen.
                 if results.is_empty() {
                     results.push(LifecycleFunctionResult::Pass);
                 }

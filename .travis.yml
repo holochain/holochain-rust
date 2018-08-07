@@ -15,7 +15,7 @@ script:
 
 env:
   global:
-  - ENCRYPTION_LABEL: "<.... replace with encryption label ....>"
+  - ENCRYPTION_LABEL: "30dd9296640e"
   - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
 
 after_success:

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# this script based off of this gist https://gist.github.com/domenic/ec8b0fc8ab45f39403dd
+
 set -e # Exit with nonzero exit code if anything fails
 
 SOURCE_BRANCH="develop"
@@ -56,10 +59,10 @@ ENCRYPTED_KEY_VAR="encrypted_${ENCRYPTION_LABEL}_key"
 ENCRYPTED_IV_VAR="encrypted_${ENCRYPTION_LABEL}_iv"
 ENCRYPTED_KEY=${!ENCRYPTED_KEY_VAR}
 ENCRYPTED_IV=${!ENCRYPTED_IV_VAR}
-openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in ../../../deploy_key.enc -out ../../../deploy_key -d
-chmod 600 ../../../deploy_key
+openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in ../../../build_docs_key.enc -out ../../../build_docs_key -d
+chmod 600 ../../../build_docs_key
 eval `ssh-agent -s`
-ssh-add deploy_key
+ssh-add build_docs_key
 
 # Now that we're all set up, we can push.
 git push $SSH_REPO $TARGET_BRANCH

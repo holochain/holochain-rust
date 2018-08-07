@@ -97,14 +97,23 @@ impl Defn for LifecycleFunction {
         }
     }
 
-    fn capabilities(&self) {
-        ReservedCapabilityNames::LifeCycle.as_str().to_string()
+    fn capabilities(&self) -> ReservedCapabilityNames {
+        ReservedCapabilityNames::LifeCycle
     }
 }
 
 pub enum LifecycleFunctionParams {
     Genesis,
     ValidateCommit(Entry),
+}
+
+impl ToString for LifecycleFunctionParams {
+    fn to_string(&self) -> String {
+        match self {
+            LifecycleFunctionParams::Genesis => "".to_string(),
+            LifecycleFunctionParams::ValidateCommit(entry) => entry.to_json(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -124,12 +133,12 @@ pub fn call(
 
     let function_call = FunctionCall::new(
         zome.name,
-        function.capabilities(),
+        function.capabilities().as_str().to_string(),
         function.as_str().to_string(),
         params.to_string(),
     );
 
-    let call_result = call_zome_and_wait_for_result(call, &action_channel, &observer_channel);
+    let call_result = call_zome_and_wait_for_result(function_call, &action_channel, &observer_channel);
 
     // translate the call result to a lifecycle result
     match call_result {
@@ -139,7 +148,11 @@ pub fn call(
         // things that = NotImplemented
         Err(HolochainError::CapabilityNotFound(_)) => LifecycleFunctionResult::NotImplemented,
         Err(HolochainError::ZomeFunctionNotFound(_)) => LifecycleFunctionResult::NotImplemented,
-        Err(HolochainError::ErrorGeneric(ref msg)) if msg == "Function: Module doesn\'t have export " + function.as_str() + "_dispatch" => LifecycleFunctionResult::NotImplemented,
+        // @TODO this looks super fragile
+        // without it we get stack overflows, but with it we rely on a specific string
+        Err(HolochainError::ErrorGeneric(ref msg))
+            if msg == &format!("Function: Module doesn\'t have export {}_dispatch", function.as_str()) => 
+            LifecycleFunctionResult::NotImplemented,
 
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),

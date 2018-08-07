@@ -1,6 +1,7 @@
 use hash;
 use multihash::Hash;
 use std::hash::{Hash as StdHash, Hasher};
+use serde_json;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -74,6 +75,23 @@ impl Entry {
     /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
     pub fn key(&self) -> String {
         self.hash()
+    }
+
+    /// serialize the Entry to a canonical JSON string
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn to_json(&self) -> String {
+        // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
+        serde_json::to_string(&self).unwrap()
+    }
+
+    /// deserialize a Entry from a canonical JSON string
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn from_json(s: &str) -> Entry {
+        let entry: Entry = serde_json::from_str(s).unwrap();
+        entry
     }
 }
 

@@ -25,6 +25,7 @@ use nucleus::ribosome::{
     api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
     {Defn},
 };
+use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap, TrapKind};
@@ -82,8 +83,8 @@ impl Defn for ZomeAPIFunction {
         }
     }
 
-    fn capabilities(&self) -> {
-        
+    fn capabilities(&self) -> ReservedCapabilityNames {
+        ReservedCapabilityNames::ZomeAPIFunction
     }
 }
 

@@ -4,7 +4,7 @@ pub mod capabilities;
 pub mod entry_types;
 
 /// Enum for "zome" "config" "error_handling" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum ErrorHandling {
     #[serde(rename = "throw-errors")]
     ThrowErrors,
@@ -18,7 +18,7 @@ impl Default for ErrorHandling {
 }
 
 /// Represents the "config" object on a "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Config {
     /// How errors should be handled within this zome.
     #[serde(default)]
@@ -42,11 +42,11 @@ impl Config {
 }
 
 /// Represents an individual "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Zome {
     /// The name of this zome.
     #[serde(default)]
-    pub name: String,
+    name: String,
 
     /// A description of this zome.
     #[serde(default)]
@@ -67,6 +67,8 @@ pub struct Zome {
     pub capabilities: Vec<capabilities::Capability>,
 }
 
+impl Eq for Zome {}
+
 impl Default for Zome {
     /// Provide defaults for an individual "zome".
     fn default() -> Self {
@@ -82,15 +84,35 @@ impl Default for Zome {
 
 impl Zome {
     /// Allow sane defaults for `Zome::new()`.
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(
+        name: &str,
+        description: &str,
+        config: Config,
+        entry_types: Vec<entry_types::EntryType>,
+        capabilities: Vec<capabilities::Capability>,
+    ) -> Zome {
+        Zome{
+            name: name.into(),
+            description: description.into(),
+            config: config.clone(),
+            entry_types: entry_types.clone(),
+            capabilities: capabilities.clone(),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use serde_json;
+
+    pub fn test_zome_description() -> String {
+        "test zome description".into()
+    }
 
     #[test]
     fn build_and_compare() {
@@ -106,7 +128,7 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let mut zome = Zome::new();
+        let mut zome = Zome::default();
         zome.name = String::from("test");
         zome.description = String::from("test");
         zome.config.error_handling = ErrorHandling::ThrowErrors;

@@ -1,7 +1,7 @@
 use action::{Action, Signal};
 use agent::state::ActionResponse;
 use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, FunctionRuntime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
@@ -12,7 +12,7 @@ struct GetArgs {
     key: String,
 }
 
-pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get(runtime: &mut FunctionRuntime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
     let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);

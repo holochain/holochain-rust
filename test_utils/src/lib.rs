@@ -6,10 +6,9 @@ extern crate wabt;
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use std::sync::{Arc, Mutex};
-
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Zome},
+    zome::{capabilities::Capability, Zome, Config},
     Dna,
 };
 use std::{fmt, fs::File, io::prelude::*};
@@ -53,12 +52,22 @@ pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut zome = Zome::new();
     let mut capability = Capability::new();
     capability.name = cap_name;
     capability.code = DnaWasm { code: wasm };
-    zome.name = zome_name;
-    zome.capabilities.push(capability);
+
+    let mut capabilities = Vec::new();
+    capabilities.push(capability);
+
+    let zome = Zome::new(
+        &zome_name,
+        "some zome description",
+        Config::new(),
+        Vec::new(),
+        capabilities,
+    );
+
+    // zome.capabilities.push(capability);
     dna.zomes.push(zome);
     dna.name = "TestApp".into();
     dna

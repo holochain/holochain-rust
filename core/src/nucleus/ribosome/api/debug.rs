@@ -1,4 +1,4 @@
-use nucleus::ribosome::api::{runtime_args_to_utf8, Runtime};
+use nucleus::ribosome::api::{runtime_args_to_utf8, FunctionRuntime};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// HcApiFuncIndex::DEBUG function code
@@ -6,7 +6,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_debug(
-    runtime: &mut Runtime,
+    runtime: &mut FunctionRuntime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let arg = runtime_args_to_utf8(runtime, args);

@@ -30,10 +30,11 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use action::{Action, ActionWrapper, Signal};
-    use hash_table::entry::tests::test_entry;
+    use action::{ActionWrapper};
     use instance::tests::test_context;
     use std::sync::mpsc::channel;
+    use action::tests::test_action_commit;
+
     #[test]
     fn can_instantiate() {
         let store = SimplePersister::new();
@@ -52,7 +53,8 @@ mod tests {
 
         let state = State::new();
 
-        let action = Action::new(&Signal::Commit(test_entry()));
+        let action = test_action_commit();
+
         let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(

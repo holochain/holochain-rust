@@ -45,7 +45,7 @@ impl ReservedCapabilityNames {
 //--------------------------------------------------------------------------------------------------
 
 /// Enum for Zome Capability "membrane" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum Membrane {
     #[serde(rename = "public")]
     Public,
@@ -65,7 +65,7 @@ impl Default for Membrane {
 }
 
 /// Represents the "capability" sub-object on a "zome" "capabilities" object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct CapabilityType {
     /// How visibility should be handled for this capability.
     #[serde(default)]
@@ -88,7 +88,7 @@ impl CapabilityType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnParameter {
     #[serde(rename = "type")]
     pub parameter_type: String,
@@ -105,14 +105,14 @@ impl FnParameter {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnSignature {
     pub inputs: Vec<FnParameter>,
     pub outputs: Vec<FnParameter>,
 }
 
 /// Represents a zome "fn_declarations" object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnDeclaration {
     /// The name of this fn declaration.
     #[serde(default)]
@@ -141,7 +141,7 @@ impl FnDeclaration {
 }
 
 /// Represents an individual object in the "zome" "capabilities" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
     /// The name of this capability.
     #[serde(default)]

@@ -1,7 +1,6 @@
 pub mod genesis;
 pub mod validate_commit;
 use action::ActionWrapper;
-use holochain_dna::zome::Zome;
 use instance::Observer;
 use nucleus::ribosome::{
     lifecycle::{genesis::genesis, validate_commit::validate_commit},
@@ -52,13 +51,17 @@ impl FromStr for LifecycleFunction {
 impl LifecycleFunction {
     pub fn as_fn(
         &self,
-    ) -> fn(action_channel: &Sender<ActionWrapper>, observer_channel: &Sender<Observer>, zome: Zome, params: &str) -> LifecycleFunctionResult
+    ) -> fn(
+        action_channel: &Sender<ActionWrapper>,
+        observer_channel: &Sender<Observer>,
+        zome: &str,
+        params: LifecycleFunctionParams) -> LifecycleFunctionResult
     {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
-            _zome: Zome,
-            _params: &str,
+            _zome: &str,
+            _params: LifecycleFunctionParams,
         ) -> LifecycleFunctionResult {
             LifecycleFunctionResult::Pass
         }
@@ -126,16 +129,16 @@ pub enum LifecycleFunctionResult {
 pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    zome: Zome,
+    zome: &str,
     function: LifecycleFunction,
     params: LifecycleFunctionParams,
 ) -> LifecycleFunctionResult {
 
     let function_call = FunctionCall::new(
-        zome.name,
-        function.capabilities().as_str().to_string(),
-        function.as_str().to_string(),
-        params.to_string(),
+        zome,
+        &function.capabilities().as_str().to_string(),
+        &function.as_str().to_string(),
+        &params.to_string(),
     );
 
     let call_result = call_zome_and_wait_for_result(function_call, &action_channel, &observer_channel);
@@ -151,7 +154,7 @@ pub fn call(
         // @TODO this looks super fragile
         // without it we get stack overflows, but with it we rely on a specific string
         Err(HolochainError::ErrorGeneric(ref msg))
-            if msg == &format!("Function: Module doesn\'t have export {}_dispatch", function.as_str()) => 
+            if msg == &format!("Function: Module doesn\'t have export {}_dispatch", function.as_str()) =>
             LifecycleFunctionResult::NotImplemented,
 
         // string value or error = fail

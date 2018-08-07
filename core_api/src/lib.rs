@@ -140,18 +140,23 @@ impl Holochain {
     }
 
     /// call a function in a zome
-    pub fn call<T: Into<String>>(
+    pub fn call(
         &mut self,
-        zome: T,
-        cap: T,
-        fn_name: T,
-        params: T,
+        zome: &str,
+        cap: &str,
+        fn_name: &str,
+        params: &str,
     ) -> Result<String, HolochainError> {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(zome.into(), cap.into(), fn_name.into(), params.into());
+        let call = FunctionCall::new(
+            &zome,
+            &cap,
+            &fn_name,
+            &params
+        );
 
         call_and_wait_for_result(call, &mut self.instance)
     }

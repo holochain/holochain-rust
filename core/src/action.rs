@@ -36,7 +36,11 @@ impl Hash for ActionWrapper {
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Signal {
-    Commit(Entry),
+    /// function runtime that triggered the commit signal
+    /// needed to chain results, e.g. validate_commit
+    /// candidate entry to committed
+    /// failed validation will prevent the commit
+    Commit(FunctionCall, Entry),
     Get(String),
 
     ExecuteZomeFunction(FunctionCall),
@@ -66,3 +70,28 @@ impl Action {
 }
 
 impl Eq for Action {}
+
+#[cfg(test)]
+pub mod tests {
+
+    use nucleus::FunctionCall;
+    use action::Action;
+    use action::Signal;
+    use hash_table::entry::tests::test_entry;
+
+    pub fn test_action_commit() -> Action {
+        let fc = FunctionCall::new(
+            "commit test zome",
+            "",
+            "some_function_calling_commit",
+            "",
+        );
+        Action::new(
+            &Signal::Commit(
+                fc,
+                test_entry(),
+            )
+        )
+    }
+
+}

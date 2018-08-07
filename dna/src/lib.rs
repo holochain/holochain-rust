@@ -156,7 +156,7 @@ impl Dna {
 
     /// Return a Zome
     pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes.iter().find(|z| z.name == zome_name)
+        self.zomes.iter().find(|z| z.name() == zome_name)
     }
 
     /// Return a Zome's WASM bytecode for a specified Capability
@@ -181,7 +181,7 @@ impl Dna {
         let zome_name = zome_name.into();
         let capability_name = capability_name.into();
 
-        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let zome = self.zomes.iter().find(|z| z.name() == zome_name)?;
         let capability = zome
             .capabilities
             .iter()
@@ -195,7 +195,7 @@ impl Dna {
         zome_name: &str,
         entry_type_name: &str,
     ) -> Option<&wasm::DnaWasm> {
-        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let zome = self.zomes.iter().find(|z| z.name() == zome_name)?;
         let entry_type = zome
             .entry_types
             .iter()
@@ -322,7 +322,7 @@ pub mod tests {
             uuid: String::from(UNIT_UUID),
             ..Default::default()
         };
-        let mut zome = zome::Zome::new();
+        let mut zome = zome::Zome::default();
         zome.entry_types.push(zome::entry_types::EntryType::new());
         dna.zomes.push(zome);
 

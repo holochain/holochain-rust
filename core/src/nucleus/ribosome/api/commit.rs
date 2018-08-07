@@ -1,7 +1,7 @@
 use action::{Action, Signal};
 use agent::state::ActionResponse;
 use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, FunctionRuntime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
@@ -19,7 +19,7 @@ struct CommitArgs {
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_commit(
-    runtime: &mut Runtime,
+    runtime: &mut FunctionRuntime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
@@ -39,7 +39,7 @@ pub fn invoke_commit(
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
     // Create Commit Action
-    let action = Action::new(&Signal::Commit(entry));
+    let action = Action::new(&Signal::Commit(runtime.function_call.clone(), entry));
 
     // Send Action and block for result
     let (sender, receiver) = channel();

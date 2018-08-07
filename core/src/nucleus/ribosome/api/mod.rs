@@ -25,6 +25,7 @@ use nucleus::ribosome::{
     api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
     {Defn},
 };
+use nucleus::FunctionCall;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
@@ -101,9 +102,9 @@ impl FromStr for ZomeAPIFunction {
 }
 
 impl ZomeAPIFunction {
-    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    pub fn as_fn(&self) -> (fn(&mut FunctionRuntime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+        fn noop(_runtime: &mut FunctionRuntime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
@@ -122,16 +123,17 @@ impl ZomeAPIFunction {
 
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone)]
-pub struct Runtime {
+pub struct FunctionRuntime {
     context: Arc<Context>,
     pub result: String,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
+    function_call: FunctionCall,
 }
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
-pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
+pub fn runtime_args_to_utf8(runtime: &FunctionRuntime, args: &RuntimeArgs) -> String {
     // @TODO don't panic in WASM
     // @see https://github.com/holochain/holochain-rust/issues/159
     assert_eq!(1, args.len());
@@ -155,7 +157,7 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
 /// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
 /// returns a Result suitable to return directly from a zome API function
 pub fn runtime_allocate_encode_str(
-    runtime: &mut Runtime,
+    runtime: &mut FunctionRuntime,
     s: &str,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // write str to runtime memory
@@ -183,14 +185,14 @@ pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
-    function_name: &str,
+    function_call: &FunctionCall,
     parameters: Option<Vec<u8>>,
-) -> Result<Runtime, InterpreterError> {
+) -> Result<FunctionRuntime, InterpreterError> {
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
     // Describe invokable functions from within Zome
-    impl Externals for Runtime {
+    impl Externals for FunctionRuntime {
         fn invoke_index(
             &mut self,
             index: usize,
@@ -241,13 +243,13 @@ pub fn call(
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
-    let mut runtime = Runtime {
+    let mut runtime = FunctionRuntime {
         context,
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        // memory_manager: ref_memory_manager.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
+        function_call: function_call.clone(),
     };
 
     // scope for mutable borrow of runtime
@@ -268,7 +270,7 @@ pub fn call(
         // which have been set in memory module
         encoded_allocation_of_output = wasm_instance
             .invoke_export(
-                format!("{}_dispatch", function_name).as_str(),
+                format!("{}_dispatch", function_call.function.clone()).as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
             )?
@@ -294,9 +296,10 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
-    use nucleus::ribosome::api::{call, Runtime};
+    use nucleus::ribosome::api::{call, FunctionRuntime};
     use instance::tests::{test_context_and_logger, test_instance, TestLogger};
     use std::sync::{Arc, Mutex};
+    use nucleus::FunctionCall;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -394,22 +397,35 @@ pub mod tests {
     pub fn test_zome_api_function_runtime(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+    ) -> (FunctionRuntime, Arc<Mutex<TestLogger>>) {
+        let zome_name = "test_zome";
+        let capability = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+        let function_name = "test";
+        let parameters = "";
+
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
-            "test_zome".into(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            zome_name.into(),
+            capability.clone(),
             wasm.clone(),
         );
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
+
+        let fc = FunctionCall::new(
+            &zome_name,
+            &capability,
+            &function_name,
+            &parameters,
+        );
+
         (
             call(
                 context,
                 &instance.action_channel(),
                 &instance.observer_channel(),
                 wasm.clone(),
-                "test",
+                &fc,
                 Some(args_bytes),
             ).expect("test should be callable"),
             logger,

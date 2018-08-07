@@ -8,6 +8,9 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use std::thread;
+use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
+use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -99,9 +102,17 @@ pub enum ActionResponse {
 
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn handle_commit(state: &mut AgentState, action: &Action) {
+fn handle_commit(
+    state: &mut AgentState,
+    action: &Action,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+) {
     let signal = action.signal();
-    let entry = unwrap_to!(signal => Signal::Commit);
+    let (function_call, entry) = match signal {
+        Signal::Commit(r, e) => (r, e),
+        _ => unreachable!(),
+    };
 
     // add entry to source chain
     // @TODO this does nothing!
@@ -111,8 +122,17 @@ fn handle_commit(state: &mut AgentState, action: &Action) {
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    // @TODO successfully validate before pushing a commit
-    // @see https://github.com/holochain/holochain-rust/issues/97
+    let validate_action_channel = action_channel.clone();
+    let validate_observer_channel = observer_channel.clone();
+    let validate_entry = entry.clone();
+    thread::spawn(move || {
+        validate_commit(
+            &validate_action_channel,
+            &validate_observer_channel,
+            &function_call.zome,
+            LifecycleFunctionParams::ValidateCommit(validate_entry),
+        );
+    });
 
     let result = chain.push(&entry).unwrap().entry().key();
     state
@@ -122,7 +142,12 @@ fn handle_commit(state: &mut AgentState, action: &Action) {
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn handle_get(state: &mut AgentState, action: &Action) {
+fn handle_get(
+    state: &mut AgentState,
+    action: &Action,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
     let signal = action.signal();
     let key = unwrap_to!(signal => Signal::Get);
 
@@ -147,9 +172,10 @@ fn handle_get(state: &mut AgentState, action: &Action) {
         .insert(action.clone(), ActionResponse::Get(result.clone()));
 }
 
-fn resolve_action_handler(action: &Action) -> Option<fn(&mut AgentState, &Action)> {
+fn resolve_action_handler(action: &Action)
+    -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>,)> {
     match action.signal() {
-        Signal::Commit(_) => Some(handle_commit),
+        Signal::Commit(_, _) => Some(handle_commit),
         Signal::Get(_) => Some(handle_get),
         _ => None,
     }
@@ -159,14 +185,19 @@ fn resolve_action_handler(action: &Action) -> Option<fn(&mut AgentState, &Action
 pub fn reduce(
     old_state: Arc<AgentState>,
     action: &Action,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
     let handler = resolve_action_handler(action);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(&mut new_state, &action);
+            f(
+                &mut new_state,
+                &action,
+                action_channel,
+                observer_channel,
+            );
             Arc::new(new_state)
         }
         None => old_state,
@@ -178,16 +209,14 @@ pub mod tests {
     use super::{handle_commit, handle_get, ActionResponse, AgentState};
     use action::{Action, Signal};
     use hash::tests::test_hash;
-    use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
+    use hash_table::{pair::tests::test_pair};
     use std::collections::HashMap;
+    use action::tests::test_action_commit;
+    use instance::tests::test_instance_blank;
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {
         AgentState::new()
-    }
-
-    pub fn test_action_commit() -> Action {
-        Action::new(&Signal::Commit(test_entry()))
     }
 
     pub fn test_action_response_commit() -> ActionResponse {
@@ -232,7 +261,14 @@ pub mod tests {
         let mut state = test_agent_state();
         let action = test_action_commit();
 
-        handle_commit(&mut state, &action);
+        let instance = test_instance_blank();
+
+        handle_commit(
+            &mut state,
+            &action,
+            &instance.action_channel(),
+            &instance.observer_channel(),
+        );
 
         assert_eq!(
             state.actions().get(&action),
@@ -246,7 +282,14 @@ pub mod tests {
         let mut state = test_agent_state();
         let action = test_action_get();
 
-        handle_get(&mut state, &action);
+        let instance = test_instance_blank();
+
+        handle_get(
+            &mut state,
+            &action,
+            &instance.action_channel(),
+            &instance.observer_channel(),
+        );
 
         assert_eq!(
             state.actions().get(&action),

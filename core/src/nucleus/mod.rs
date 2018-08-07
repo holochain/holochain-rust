@@ -20,6 +20,7 @@ use std::{
     thread,
 };
 use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
+use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -32,13 +33,13 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn new<S: Into<String>>(zome: S, capability: S, function: S, parameters: S) -> Self {
+    pub fn new (zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
-            zome: zome.into(),
-            capability: capability.into(),
-            function: function.into(),
-            parameters: parameters.into(),
+            zome: zome.to_string(),
+            capability: capability.to_string(),
+            function: function.to_string(),
+            parameters: parameters.to_string(),
         }
     }
 }
@@ -202,8 +203,8 @@ fn reduce_ia(
             state.dna = Some(dna.clone());
 
             // Create & launch thread
-            let action_channel = action_channel.clone();
-            let observer_channel = observer_channel.clone();
+            let genesis_action_channel = action_channel.clone();
+            let genesis_observer_channel = observer_channel.clone();
             let dna_clone = dna.clone();
 
             thread::spawn(move || {
@@ -212,7 +213,12 @@ fn reduce_ia(
                     .zomes
                     .iter()
                     .map(|zome|
-                        genesis(&action_channel, &observer_channel, zome.clone(), "")
+                        genesis(
+                            &genesis_action_channel,
+                            &genesis_observer_channel,
+                            &zome.name(),
+                            LifecycleFunctionParams::Genesis,
+                        )
                     )
                     .collect();
 
@@ -226,9 +232,9 @@ fn reduce_ia(
                     match result {
                         LifecycleFunctionResult::Fail(s) => return_initialization_result(
                             Some(s.to_string()),
-                            &action_channel,
+                            &genesis_action_channel,
                         ),
-                        _ => return_initialization_result(None, &action_channel),
+                        _ => return_initialization_result(None, &genesis_action_channel),
                     }
                 }
             });
@@ -281,7 +287,7 @@ fn reduce_ezf(
                         &action_channel,
                         &tx_observer,
                         code,
-                        &function_call.function.clone(),
+                        &function_call,
                         Some(function_call.clone().parameters.into_bytes()),
                     ) {
                         Ok(runtime) => {
@@ -311,7 +317,7 @@ fn reduce_ezf(
                 result = FunctionResult::new(
                     fc.clone(),
                     Err(HolochainError::CapabilityNotFound(format!(
-                        "Capability '{}' not found in Zome '{}'",
+                        "Capability '{:?}' not found in Zome '{:?}'",
                         &fc.capability, &fc.zome
                     ))),
                 );
@@ -321,7 +327,7 @@ fn reduce_ezf(
             result = FunctionResult::new(
                 fc.clone(),
                 Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{}' not found",
+                    "Zome '{:?}' not found",
                     &fc.zome
                 ))),
             );
@@ -540,10 +546,10 @@ pub mod tests {
     /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = FunctionCall::new(
-            "myZome".to_string(),
-            "public".to_string(),
-            "bogusfn".to_string(),
-            "".to_string(),
+            "myZome",
+            "public",
+            "bogusfn",
+            "",
         );
 
         let action = Action::new(&Signal::ExecuteZomeFunction(call));

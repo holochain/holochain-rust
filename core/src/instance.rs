@@ -406,7 +406,9 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
         // Wait for Init to finish
+        // @TODO don't use history length in tests
         while instance.state().history.len() < 2 {
+            // @TODO don't use history length in tests
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
@@ -427,6 +429,7 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -455,6 +458,7 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -483,6 +487,7 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }

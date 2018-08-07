@@ -8,15 +8,6 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-// #[derive(Clone, Debug, PartialEq)]
-// #[allow(unknown_lints)]
-// #[allow(large_enum_variant)]
-// pub enum Action<A: Action> {
-//     Agent(A),
-//     Network(A),
-//     Nucleus(A),
-// }
-
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct State {
     nucleus: Arc<NucleusState>,

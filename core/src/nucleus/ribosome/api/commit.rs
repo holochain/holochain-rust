@@ -66,9 +66,9 @@ pub fn invoke_commit(
     let action_result = receiver.recv().expect("local channel to work");
 
     match action_result {
-        ActionResponse::Commit(hash) => {
+        ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &format!("{{\"hash\":\"{}\"}}", hash))
+            runtime_allocate_encode_str(runtime, &action_result.to_json())
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,

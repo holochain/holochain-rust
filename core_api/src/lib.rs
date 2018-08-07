@@ -410,6 +410,7 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
@@ -427,7 +428,8 @@ mod tests {
         };
 
         // Check in holochain instance's history that the commit event has been processed
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        // @TODO don't use history length in tests
+        assert_eq!(hc.state().unwrap().history.len(), 9);
     }
 
     #[test]
@@ -443,6 +445,7 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
@@ -457,6 +460,7 @@ mod tests {
         };
 
         // Check in holochain instance's history that the commit event has been processed
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
@@ -474,6 +478,7 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
@@ -486,6 +491,7 @@ mod tests {
             "[\"TestApp instantiated\", \"\\\"Hello world!\\\"\"]"
         );
         // Check in holochain instance's history that the debug event has been processed
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
@@ -503,6 +509,7 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
@@ -513,6 +520,7 @@ mod tests {
         assert!(result.unwrap().is_empty());
 
         // Check in holochain instance's history that the deb event has been processed
+        // @TODO don't use history length in tests
         assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 }

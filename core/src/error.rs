@@ -19,11 +19,15 @@ impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
     }
+
+    pub fn to_json(&self) -> String {
+        format!("{{\"error\":{}}}", self.to_string())
+    }
 }
 
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{:?}", self)
     }
 }
 
@@ -55,6 +59,13 @@ mod tests {
         } else {
             Ok(())
         }
+    }
+
+    #[test]
+    fn to_string() {
+        let s = "foo";
+        let err = HolochainError::new(s);
+        assert_eq!(s.to_string(), err.to_string());
     }
 
     #[test]

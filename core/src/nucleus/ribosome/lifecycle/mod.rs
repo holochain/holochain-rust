@@ -105,6 +105,7 @@ impl Defn for LifecycleFunction {
     }
 }
 
+#[derive(Debug)]
 pub enum LifecycleFunctionParams {
     Genesis,
     ValidateCommit(Entry),
@@ -119,7 +120,7 @@ impl ToString for LifecycleFunctionParams {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum LifecycleFunctionResult {
     Pass,
     Fail(String),
@@ -141,7 +142,14 @@ pub fn call(
         &params.to_string(),
     );
 
-    let call_result = call_zome_and_wait_for_result(function_call, &action_channel, &observer_channel);
+    let call_result = call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
+
+    // if let LifecycleFunction::ValidateCommit = function {
+    //     println!("{:?}", function_call);
+    //     println!("{:?}", params);
+    //     println!("{:?}", call_result);
+    //     return LifecycleFunctionResult::NotImplemented;
+    // }
 
     // translate the call result to a lifecycle result
     match call_result {

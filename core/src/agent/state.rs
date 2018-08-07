@@ -8,8 +8,10 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-// use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
-// use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
+use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
+use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
+use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
+use error::HolochainError;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -58,8 +60,29 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 pub enum ActionResponse {
-    Commit(String),
+    Commit(Result<String, HolochainError>),
     Get(Option<Pair>),
+}
+
+impl ActionResponse {
+
+    pub fn to_json(&self) -> String {
+        match self {
+            ActionResponse::Commit(result) => {
+                match result {
+                    Ok(hash) => format!("{{\"hash\":{}}}", hash),
+                    Err(err) => (*err).to_json(),
+                }
+            },
+            ActionResponse::Get(result) => {
+                match result {
+                    Some(pair) => pair.to_json(),
+                    None => "".to_string(),
+                }
+            },
+        }
+    }
+
 }
 
 /// do a commit action against an agent state
@@ -67,11 +90,11 @@ pub enum ActionResponse {
 fn handle_commit(
     state: &mut AgentState,
     action: &Action,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
 ) {
     let signal = action.signal();
-    let (_function_call, entry) = match signal {
+    let (function_call, entry) = match signal {
         Signal::Commit(r, e) => (r, e),
         _ => unreachable!(),
     };
@@ -84,19 +107,20 @@ fn handle_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    // let validate_action_channel = action_channel.clone();
-    // let validate_observer_channel = observer_channel.clone();
-    // let validate_entry = entry.clone();
-    // thread::spawn(move || {
-    //     validate_commit(
-    //         &validate_action_channel,
-    //         &validate_observer_channel,
-    //         &function_call.zome,
-    //         LifecycleFunctionParams::ValidateCommit(validate_entry),
-    //     );
-    // });
+    let validate_result = validate_commit(
+        &action_channel,
+        &observer_channel,
+        &function_call.zome,
+        LifecycleFunctionParams::ValidateCommit(entry.clone()),
+    );
 
-    let result = chain.push(&entry).unwrap().entry().key();
+    let result = match validate_result {
+        LifecycleFunctionResult::Fail(s) => Err(HolochainError::new(&s)),
+        _ => {
+            Ok(chain.push(&entry).unwrap().entry().key())
+        },
+    };
+
     state
         .actions
         .insert(action.clone(), ActionResponse::Commit(result.clone()));
@@ -182,7 +206,7 @@ pub mod tests {
     }
 
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(test_hash())
+        ActionResponse::Commit(Ok(test_hash()))
     }
 
     pub fn test_action_response_get() -> ActionResponse {

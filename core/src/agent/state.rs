@@ -98,10 +98,19 @@ fn handle_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    let result = chain.push(&entry).unwrap().entry().key();
+    let result = chain.push(&entry);
+    // translate the pair to an entry key in the result
+    let result = match result {
+        Ok(pair) => Ok(pair.entry().key()),
+        Err(err) => Err(err),
+    };
+
     state
         .actions
-        .insert(action.clone(), ActionResponse::Commit(Ok(result.clone())));
+        .insert(
+            action.clone(),
+            ActionResponse::Commit(result)
+        );
 }
 
 /// do a get action against an agent state

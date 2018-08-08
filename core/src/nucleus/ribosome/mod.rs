@@ -1,11 +1,12 @@
 mod commit;
+mod debug;
 mod get;
-mod print;
 
+use context::Context;
 use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
 
 use instance::Observer;
-use nucleus::ribosome::{commit::invoke_commit, get::invoke_get, print::invoke_print};
+use nucleus::ribosome::{commit::invoke_commit, debug::invoke_debug, get::invoke_get};
 use state;
 use std::sync::mpsc::Sender;
 
@@ -17,6 +18,8 @@ use wasmi::{
     ValueType,
 };
 
+use std::sync::Arc;
+
 //--------------------------------------------------------------------------------------------------
 // HC API FUNCTION IMPLEMENTATIONS
 //--------------------------------------------------------------------------------------------------
@@ -26,9 +29,9 @@ use wasmi::{
 enum HcApiFuncIndex {
     /// Error index for unimplemented functions
     MissingNo = 0,
-    /// Print debug information in the console
-    /// print(s : String)
-    Print,
+    /// send debug information to the log
+    /// debug(s : String)
+    Debug,
     /// Commit an entry to source chain
     /// commit(entry_type : String, entry_content : String) -> Hash
     Commit,
@@ -44,9 +47,9 @@ enum HcApiFuncIndex {
 //--------------------------------------------------------------------------------------------------
 
 /// Object holding data to pass around to invoked API functions
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Runtime {
-    print_output: String,
+    context: Arc<Context>,
     pub result: String,
     action_channel: Sender<state::ActionWrapper>,
     observer_channel: Sender<Observer>,
@@ -103,7 +106,7 @@ pub fn runtime_allocate_encode_str(
 /// maps canonical zome API function names to an HcApiFuncIndex variant
 fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
     match canonical_name {
-        "print" => HcApiFuncIndex::Print,
+        "debug" => HcApiFuncIndex::Debug,
         "commit" => HcApiFuncIndex::Commit,
         "get" => HcApiFuncIndex::Get,
         // Add new API function name to index mapping here
@@ -114,6 +117,7 @@ fn index_canonical_name(canonical_name: &str) -> HcApiFuncIndex {
 
 /// Executes an exposed function in a wasm binary
 pub fn call(
+    context: Arc<Context>,
     action_channel: &Sender<state::ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
@@ -133,7 +137,7 @@ pub fn call(
             // @TODO don't maintain this list manually
             // @see https://github.com/holochain/holochain-rust/issues/171
             match index {
-                index if index == HcApiFuncIndex::Print as usize => invoke_print(self, &args),
+                index if index == HcApiFuncIndex::Debug as usize => invoke_debug(self, &args),
                 index if index == HcApiFuncIndex::Commit as usize => invoke_commit(self, &args),
                 index if index == HcApiFuncIndex::Get as usize => invoke_get(self, &args),
                 // Add new API function name to index mapping here
@@ -181,7 +185,7 @@ pub fn call(
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        print_output: String::new(),
+        context,
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
@@ -229,11 +233,13 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
     use super::{call, Runtime};
-    use instance::tests::test_instance;
+    use instance::tests::{test_context_and_logger, test_instance, TestLogger};
+    use std::sync::{Arc, Mutex};
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -328,7 +334,10 @@ pub mod tests {
     /// - builds dna and test instance
     /// - calls the zome API function with passed bytes argument using the instance runtime
     /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(canonical_name: &str, args_bytes: Vec<u8>) -> Runtime {
+    pub fn test_zome_api_function_runtime(
+        canonical_name: &str,
+        args_bytes: Vec<u8>,
+    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             "test_zome".into(),
@@ -336,14 +345,18 @@ pub mod tests {
             wasm.clone(),
         );
         let instance = test_instance(dna);
-
-        call(
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            wasm.clone(),
-            "test",
-            Some(args_bytes),
-        ).expect("test should be callable")
+        let (context, logger) = test_context_and_logger("joan");
+        (
+            call(
+                context,
+                &instance.action_channel(),
+                &instance.observer_channel(),
+                wasm.clone(),
+                "test",
+                Some(args_bytes),
+            ).expect("test should be callable"),
+            logger,
+        )
     }
 
 }

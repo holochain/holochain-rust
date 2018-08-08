@@ -4,8 +4,11 @@ use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, FunctionRuntime,
 };
 use serde_json;
-use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::sync::mpsc::channel;
+use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
+use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
+use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -38,41 +41,53 @@ pub fn invoke_commit(
     let entry =
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
-    // Create Commit Action
-    let action = Action::new(&Signal::Commit(runtime.function_call.clone(), entry));
-
-    // Send Action and block for result
-    let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
+    let validate_result = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
-        action.clone(),
-        move |state: &::state::State| {
-            let actions = state.agent().actions().clone();
-            if actions.contains_key(&action) {
-                // @TODO never panic in wasm
-                // @see https://github.com/holochain/holochain-rust/issues/159
-                let v = &actions[&action];
-                sender.send(v.clone()).expect("local channel to be open");
-                true
-            } else {
-                false
-            }
-        },
+        &runtime.function_call.zome,
+        LifecycleFunctionParams::ValidateCommit(entry.clone()),
     );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
 
-    let action_result = receiver.recv().expect("local channel to work");
+    match validate_result {
+        LifecycleFunctionResult::Fail(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorLifecycleResult as i32))),
+        // anything other than a fail means we should commit the entry
+        _ => {
+            // Create Commit Action
+            let action = Action::new(&Signal::Commit(runtime.function_call.clone(), entry));
+            // Send Action and block for result
+            let (sender, receiver) = channel();
+            ::instance::dispatch_action_with_observer(
+                &runtime.action_channel,
+                &runtime.observer_channel,
+                action.clone(),
+                move |state: &::state::State| {
+                    let actions = state.agent().actions().clone();
+                    if actions.contains_key(&action) {
+                        // @TODO never panic in wasm
+                        // @see https://github.com/holochain/holochain-rust/issues/159
+                        let v = &actions[&action];
+                        sender.send(v.clone()).expect("local channel to be open");
+                        true
+                    } else {
+                        false
+                    }
+                },
+            );
+            // TODO #97 - Return error if timeout or something failed
+            // return Err(_);
 
-    match action_result {
-        ActionResponse::Commit(_) => {
-            // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &action_result.to_json())
+            let action_result = receiver.recv().expect("local channel to work");
+
+            match action_result {
+                ActionResponse::Commit(_) => {
+                    // serialize, allocate and encode result
+                    runtime_allocate_encode_str(runtime, &action_result.to_json())
+                }
+                _ => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ErrorActionResult as i32,
+                ))),
+            }
         }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
-        ))),
     }
 }
 
@@ -98,7 +113,7 @@ mod tests {
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
-    fn test_get_round_trip() {
+    fn test_commit_round_trip() {
         let (runtime, _) = test_zome_api_function_runtime("commit", test_args_bytes());
 
         assert_eq!(

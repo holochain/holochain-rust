@@ -63,9 +63,11 @@ mod tests {
 
     #[test]
     fn to_string() {
-        let s = "foo";
-        let err = HolochainError::new(s);
-        assert_eq!(s.to_string(), err.to_string());
+        let err = HolochainError::new("foo");
+        assert_eq!(
+            "ErrorGeneric(\"foo\")",
+            err.to_string(),
+        );
     }
 
     #[test]

@@ -8,9 +8,6 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
-use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
-use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
 use error::HolochainError;
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -70,7 +67,7 @@ impl ActionResponse {
         match self {
             ActionResponse::Commit(result) => {
                 match result {
-                    Ok(hash) => format!("{{\"hash\":{}}}", hash),
+                    Ok(hash) => format!("{{\"hash\":\"{}\"}}", hash),
                     Err(err) => (*err).to_json(),
                 }
             },
@@ -87,14 +84,17 @@ impl ActionResponse {
 
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
+/// lifecycle checks (e.g. validate_commit) happen elsewhere because lifecycle functions cause
+/// action reduction to hang
+/// @TODO is there a way to reduce that doesn't block indefinitely on lifecycle fns?
 fn handle_commit(
     state: &mut AgentState,
     action: &Action,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
 ) {
     let signal = action.signal();
-    let (function_call, entry) = match signal {
+    let (_, entry) = match signal {
         Signal::Commit(r, e) => (r, e),
         _ => unreachable!(),
     };
@@ -107,23 +107,10 @@ fn handle_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    let validate_result = validate_commit(
-        &action_channel,
-        &observer_channel,
-        &function_call.zome,
-        LifecycleFunctionParams::ValidateCommit(entry.clone()),
-    );
-
-    let result = match validate_result {
-        LifecycleFunctionResult::Fail(s) => Err(HolochainError::new(&s)),
-        _ => {
-            Ok(chain.push(&entry).unwrap().entry().key())
-        },
-    };
-
+    let result = chain.push(&entry).unwrap().entry().key();
     state
         .actions
-        .insert(action.clone(), ActionResponse::Commit(result.clone()));
+        .insert(action.clone(), ActionResponse::Commit(Ok(result.clone())));
 }
 
 /// do a get action against an agent state

@@ -348,7 +348,6 @@ mod tests {
 
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "hello", "");
-        println!("{:#?}", result);
         match result {
             Ok(result) => assert_eq!(result, "{\"holo\":\"world\"}"),
             Err(_) => assert!(false),
@@ -416,8 +415,6 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
 
-        println!("\t RESULT = {:?}", result);
-
         // Expect normal OK result with hash
         match result {
             Ok(result) => assert_eq!(
@@ -450,8 +447,6 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
-
-        println!("\t RESULT = {:?}", result);
 
         // Expect normal OK result with hash
         match result {

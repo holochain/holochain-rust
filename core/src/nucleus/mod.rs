@@ -87,7 +87,6 @@ pub fn call_zome_and_wait_for_result(
             }
         },
     );
-
     // Block until we got that result through the channel:
     receiver.recv().expect("local channel to work")
 }
@@ -389,7 +388,6 @@ fn reduce_zfr(
 ) {
     let signal = action.signal();
     let fr = unwrap_to!(signal => Signal::ReturnZomeFunctionResult);
-
     // @TODO store the action and result directly
     state.ribosome_calls.insert(fr.call(), Some(fr.result()));
 }

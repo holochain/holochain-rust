@@ -144,13 +144,6 @@ pub fn call(
 
     let call_result = call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
 
-    // if let LifecycleFunction::ValidateCommit = function {
-    //     println!("{:?}", function_call);
-    //     println!("{:?}", params);
-    //     println!("{:?}", call_result);
-    //     return LifecycleFunctionResult::NotImplemented;
-    // }
-
     // translate the call result to a lifecycle result
     match call_result {
         // empty string OK = Success
@@ -167,7 +160,8 @@ pub fn call(
 
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),
-        Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
+        // Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
+        _ => LifecycleFunctionResult::Pass,
     }
 
 }

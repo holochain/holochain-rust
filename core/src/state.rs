@@ -37,13 +37,13 @@ impl State {
             nucleus: ::nucleus::reduce(
                 context,
                 Arc::clone(&self.nucleus),
-                &action_wrapper.action,
+                &action_wrapper.action(),
                 action_channel,
                 observer_channel,
             ),
             agent: ::agent::state::reduce(
                 Arc::clone(&self.agent),
-                &action_wrapper.action,
+                &action_wrapper.action(),
                 action_channel,
                 observer_channel,
             ),

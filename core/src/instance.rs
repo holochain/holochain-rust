@@ -151,7 +151,7 @@ pub fn dispatch_action_and_wait(
     action: Action,
 ) {
     // Wrap Action
-    let wrapper = ActionWrapper::new(action);
+    let wrapper = ActionWrapper::new(&action);
     let wrapper_clone = wrapper.clone();
 
     // Create blocking channel
@@ -211,7 +211,7 @@ pub fn dispatch_action_with_observer<F>(
 
 /// Send Action to the Event Queue
 pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action: Action) -> ActionWrapper {
-    let wrapper = ActionWrapper::new(action);
+    let wrapper = ActionWrapper::new(&action);
     action_channel
         .send(wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
@@ -295,7 +295,7 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action.signal() {
+            .find(|aw| match aw.action().signal() {
                 Signal::InitApplication(_) => true,
                 _ => false,
             }) == None
@@ -308,7 +308,7 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action.signal() {
+            .find(|aw| match aw.action().signal() {
                 Signal::ExecuteZomeFunction(_) => true,
                 _ => false,
             }) == None
@@ -321,7 +321,7 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action.signal() {
+            .find(|aw| match aw.action().signal() {
                 Signal::ReturnZomeFunctionResult(_) => true,
                 _ => false,
             }) == None
@@ -334,7 +334,7 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action.signal() {
+            .find(|aw| match aw.action().signal() {
                 Signal::ReturnZomeFunctionResult(_) => true,
                 _ => false,
             }) == None

@@ -61,7 +61,7 @@ mod tests {
         let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(
             test_context("jane"),
-            ActionWrapper::new(action),
+            ActionWrapper::new(&action),
             &sender,
             &tx_observer,
         );

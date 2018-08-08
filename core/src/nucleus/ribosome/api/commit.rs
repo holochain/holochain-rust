@@ -55,7 +55,7 @@ pub fn invoke_commit(
         // anything other than a fail means we should commit the entry
         _ => {
             // Create Commit Action
-            let action = Action::new(&Signal::Commit(runtime.function_call.clone(), entry));
+            let action = Action::new(&Signal::Commit(entry));
             // Send Action and block for result
             let (sender, receiver) = channel();
             ::instance::dispatch_action_with_observer(

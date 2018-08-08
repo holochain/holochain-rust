@@ -30,7 +30,6 @@ pub mod hash;
 pub mod hash_table;
 pub mod instance;
 pub mod logger;
-pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;

@@ -99,9 +99,8 @@ pub enum Signal {
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, Signal, ActionWrapper};
-    use hash_table::entry::tests::test_entry;
-    use hash_table::entry::tests::test_entry_hash;
+    use action::{Action, ActionWrapper, Signal};
+    use hash_table::entry::tests::{test_entry, test_entry_hash};
 
     /// dummy signal
     pub fn test_signal() -> Signal {

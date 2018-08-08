@@ -107,10 +107,7 @@ fn handle_commit(
 
     state
         .actions
-        .insert(
-            action.clone(),
-            ActionResponse::Commit(result)
-        );
+        .insert(action.clone(), ActionResponse::Commit(result));
 }
 
 /// do a get action against an agent state

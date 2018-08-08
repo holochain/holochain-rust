@@ -159,10 +159,11 @@ They are available in keyword specific Capabilities and function names
           "signals": [
             {
               "name": "Post",
-              "params": null,
-              "description: "signal emmited when a post is committed",
-              "sends": {   // note different signature format, see [#134](https://waffle.io/holochain/org/cards/5b4cd03d0df367001d6d12a6) for details
-                  "hash": "hash",
+              "description": "signal emmited when a post is committed",
+              "config-params": null,
+              "arguments": {
+                  "name": "hash",
+                  "type": "hash"
               },
             // ...
           ],

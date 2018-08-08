@@ -23,15 +23,16 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
             {
               "name": "Post",
               "description: "signal emmited when a post is committed",
-              "params": null,
-              "sends": {
-                  "hash": "hash",
+              "config-params": null,
+              "arguments": {
+                  "name": "hash",
+                  "type": "hash"
               },
             // ...
           ],
 ```
 
-Note that in the example above we are using the attribute method of declaring the signature, and it declares what the signal will send to the listeners and what must be passed in as "params" on the listen request which may be useful for qualifying some aspect of what to listen for.  See [#134](https://waffle.io/holochain/org/cards/5b4cd03d0df367001d6d12a6) for details.
+The above declaration defines what arguments the signal will send to the listeners and additionally a config-param object to be passed in on the listen request which may be useful for qualifying some aspect of what to listen for.
 
 2. App developers can emit signals from their code via a new `emit()` function to be added to the api, e.g. like this:
 
@@ -52,4 +53,6 @@ emit("Post",postHash)
 
 - We need to remember (and make a separate ADR) for signals that happen and can be listened for between nodes at the DHT level.
 
--Only clients that got permission to access the capability the signal is associated with can register a listener.
+- Only clients that got permission to access the capability the signal is associated with can register a listener.
+
+- We need to decide if this will be a full pub/sub model where the producer is fully decoupled from the subscriber with an intermediate handler, or if it will follow the signal/slot pattern where the producer has a reference to the subscriber and sends directly.

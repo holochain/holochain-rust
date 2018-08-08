@@ -3,7 +3,7 @@ pub mod lifecycle;
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
-use std::{str::FromStr};
+use std::str::FromStr;
 
 pub trait Defn: FromStr {
     /// return the canonical name of this function definition

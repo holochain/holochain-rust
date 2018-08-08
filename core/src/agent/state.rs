@@ -1,6 +1,7 @@
 use action::{Action, ActionWrapper, Signal};
 use agent::keys::Keys;
 use chain::Chain;
+use error::HolochainError;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
 use std::{
@@ -8,7 +9,6 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use error::HolochainError;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -62,24 +62,18 @@ pub enum ActionResponse {
 }
 
 impl ActionResponse {
-
     pub fn to_json(&self) -> String {
         match self {
-            ActionResponse::Commit(result) => {
-                match result {
-                    Ok(hash) => format!("{{\"hash\":\"{}\"}}", hash),
-                    Err(err) => (*err).to_json(),
-                }
+            ActionResponse::Commit(result) => match result {
+                Ok(hash) => format!("{{\"hash\":\"{}\"}}", hash),
+                Err(err) => (*err).to_json(),
             },
-            ActionResponse::Get(result) => {
-                match result {
-                    Some(pair) => pair.to_json(),
-                    None => "".to_string(),
-                }
+            ActionResponse::Get(result) => match result {
+                Some(pair) => pair.to_json(),
+                None => "".to_string(),
             },
         }
     }
-
 }
 
 /// do a commit action against an agent state
@@ -145,8 +139,9 @@ fn handle_get(
         .insert(action.clone(), ActionResponse::Get(result.clone()));
 }
 
-fn resolve_action_handler(action: &Action)
-    -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>,)> {
+fn resolve_action_handler(
+    action: &Action,
+) -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
     match action.signal() {
         Signal::Commit(_, _) => Some(handle_commit),
         Signal::Get(_) => Some(handle_get),
@@ -165,12 +160,7 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(
-                &mut new_state,
-                &action,
-                action_channel,
-                observer_channel,
-            );
+            f(&mut new_state, &action, action_channel, observer_channel);
             Arc::new(new_state)
         }
         None => old_state,
@@ -180,12 +170,11 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::{handle_commit, handle_get, ActionResponse, AgentState};
-    use action::{Action, Signal};
+    use action::{tests::test_action_commit, Action, Signal};
     use hash::tests::test_hash;
-    use hash_table::{pair::tests::test_pair};
-    use std::collections::HashMap;
-    use action::tests::test_action_commit;
+    use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
+    use std::collections::HashMap;
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {

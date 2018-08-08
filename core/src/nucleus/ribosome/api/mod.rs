@@ -2,34 +2,29 @@ pub mod commit;
 pub mod debug;
 pub mod get;
 
-use wasmi;
-use wasmi::{
-    Error as InterpreterError,
-    FuncInstance,
-    Signature,
-    ValueType,
-    ImportsBuilder,
-    ModuleInstance,
-};
-use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
-use nucleus::memory::SinglePageManager;
-use std::sync::Arc;
-use context::Context;
-use std::sync::mpsc::Sender;
 use action::ActionWrapper;
-use instance::Observer;
-use wasmi::Externals;
-use wasmi::ModuleImportResolver;
-use wasmi::FuncRef;
-use nucleus::ribosome::{
-    api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
-    {Defn},
-};
-use nucleus::FunctionCall;
+use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
+use instance::Observer;
+use nucleus::{
+    memory::SinglePageManager,
+    ribosome::{
+        api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
+        Defn,
+    },
+    FunctionCall,
+};
 use num_traits::FromPrimitive;
-use std::str::FromStr;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use std::{
+    str::FromStr,
+    sync::{mpsc::Sender, Arc},
+};
+use wasmi::{
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    ValueType,
+};
 
 // Zome API functions are exposed by HC to zome logic
 
@@ -102,9 +97,14 @@ impl FromStr for ZomeAPIFunction {
 }
 
 impl ZomeAPIFunction {
-    pub fn as_fn(&self) -> (fn(&mut FunctionRuntime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    pub fn as_fn(
+        &self,
+    ) -> (fn(&mut FunctionRuntime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(_runtime: &mut FunctionRuntime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+        fn noop(
+            _runtime: &mut FunctionRuntime,
+            _args: &RuntimeArgs,
+        ) -> Result<Option<RuntimeValue>, Trap> {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
@@ -296,10 +296,12 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
-    use nucleus::ribosome::api::{call, FunctionRuntime};
     use instance::tests::{test_context_and_logger, test_instance, TestLogger};
+    use nucleus::{
+        ribosome::api::{call, FunctionRuntime},
+        FunctionCall,
+    };
     use std::sync::{Arc, Mutex};
-    use nucleus::FunctionCall;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -412,12 +414,7 @@ pub mod tests {
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
 
-        let fc = FunctionCall::new(
-            &zome_name,
-            &capability,
-            &function_name,
-            &parameters,
-        );
+        let fc = FunctionCall::new(&zome_name, &capability, &function_name, &parameters);
 
         (
             call(

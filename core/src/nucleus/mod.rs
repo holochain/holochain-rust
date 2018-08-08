@@ -5,13 +5,13 @@ pub mod state;
 use context::Context;
 use error::HolochainError;
 
-use instance::Observer;
-use snowflake;
 use action::{Action, ActionWrapper, Signal};
+use instance::Observer;
 use nucleus::{
-    ribosome::lifecycle::genesis::genesis,
+    ribosome::lifecycle::{genesis::genesis, LifecycleFunctionParams, LifecycleFunctionResult},
     state::{NucleusState, NucleusStatus},
 };
+use snowflake;
 use std::{
     sync::{
         mpsc::{channel, Sender},
@@ -19,8 +19,6 @@ use std::{
     },
     thread,
 };
-use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
-use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -33,7 +31,7 @@ pub struct FunctionCall {
 }
 
 impl FunctionCall {
-    pub fn new (zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
+    pub fn new(zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
         FunctionCall {
             id: snowflake::ProcessUniqueId::new(),
             zome: zome.to_string(),
@@ -211,14 +209,14 @@ fn reduce_ia(
                 let mut results: Vec<_> = dna_clone
                     .zomes
                     .iter()
-                    .map(|zome|
+                    .map(|zome| {
                         genesis(
                             &genesis_action_channel,
                             &genesis_observer_channel,
                             &zome.name(),
                             LifecycleFunctionParams::Genesis,
                         )
-                    )
+                    })
                     .collect();
 
                 // pad out a single pass if there are no zome results
@@ -553,12 +551,7 @@ pub mod tests {
     #[test]
     /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
-        let call = FunctionCall::new(
-            "myZome",
-            "public",
-            "bogusfn",
-            "",
-        );
+        let call = FunctionCall::new("myZome", "public", "bogusfn", "");
 
         let action = Action::new(&Signal::ExecuteZomeFunction(call));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
@@ -660,9 +653,10 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::CapabilityNotFound(err)) => {
-                assert_eq!(err, "Capability '\"xxx\"' not found in Zome '\"test_zome\"'")
-            }
+            Err(HolochainError::CapabilityNotFound(err)) => assert_eq!(
+                err,
+                "Capability '\"xxx\"' not found in Zome '\"test_zome\"'"
+            ),
             _ => assert!(false),
         }
     }

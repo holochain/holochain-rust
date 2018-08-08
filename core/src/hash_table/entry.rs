@@ -1,7 +1,7 @@
 use hash;
 use multihash::Hash;
-use std::hash::{Hash as StdHash, Hasher};
 use serde_json;
+use std::hash::{Hash as StdHash, Hasher};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {

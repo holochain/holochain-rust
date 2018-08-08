@@ -225,8 +225,10 @@ pub mod tests {
     use action::{Action, Signal};
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
-    use holochain_dna::zome::Zome;
+    use holochain_dna::{
+        zome::{capabilities::ReservedCapabilityNames, Zome},
+        Dna,
+    };
     use logger::Logger;
     use persister::SimplePersister;
     use state::State;
@@ -284,62 +286,61 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
 
         /// fair warning... use test_instance_blank() if you want a minimal instance
-        assert!(!dna.zomes.clone().is_empty(), "Empty zomes = No genesis = infinite loops below!");
+        assert!(
+            !dna.zomes.clone().is_empty(),
+            "Empty zomes = No genesis = infinite loops below!"
+        );
 
         while instance
             .state()
             .history
             .iter()
-            .find(|aw| {
-                match aw.action.signal() {
-                    Signal::InitApplication(_) => true,
-                    _ => false,
-                }
-            }) == None {
-                println!("Waiting for InitApplication");
-                sleep(Duration::from_millis(10))
+            .find(|aw| match aw.action.signal() {
+                Signal::InitApplication(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for InitApplication");
+            sleep(Duration::from_millis(10))
         }
 
         while instance
             .state()
             .history
             .iter()
-            .find(|aw| {
-                match aw.action.signal() {
-                    Signal::ExecuteZomeFunction(_) => true,
-                    _ => false,
-                }
-            }) == None {
-                println!("Waiting for ExecuteZomeFunction for genesis");
-                sleep(Duration::from_millis(10))
+            .find(|aw| match aw.action.signal() {
+                Signal::ExecuteZomeFunction(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ExecuteZomeFunction for genesis");
+            sleep(Duration::from_millis(10))
         }
 
         while instance
             .state()
             .history
             .iter()
-            .find(|aw| {
-                match aw.action.signal() {
-                    Signal::ReturnZomeFunctionResult(_) => true,
-                    _ => false,
-                }
-            }) == None {
-                println!("Waiting for ReturnZomeFunctionResult from genesis");
-                sleep(Duration::from_millis(10))
+            .find(|aw| match aw.action.signal() {
+                Signal::ReturnZomeFunctionResult(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ReturnZomeFunctionResult from genesis");
+            sleep(Duration::from_millis(10))
         }
 
         while instance
             .state()
             .history
             .iter()
-            .find(|aw| {
-                match aw.action.signal() {
-                    Signal::ReturnZomeFunctionResult(_) => true,
-                    _ => false,
-                }
-            }) == None {
-                println!("Waiting for ReturnInitializationResult");
-                sleep(Duration::from_millis(10))
+            .find(|aw| match aw.action.signal() {
+                Signal::ReturnZomeFunctionResult(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ReturnInitializationResult");
+            sleep(Duration::from_millis(10))
         }
 
         instance

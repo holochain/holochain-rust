@@ -1,14 +1,14 @@
 use action::{Action, Signal};
 use agent::state::ActionResponse;
-use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, FunctionRuntime,
+use nucleus::ribosome::{
+    api::{runtime_allocate_encode_str, runtime_args_to_utf8, FunctionRuntime, HcApiReturnCode},
+    lifecycle::{
+        validate_commit::validate_commit, LifecycleFunctionParams, LifecycleFunctionResult,
+    },
 };
 use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use std::sync::mpsc::channel;
-use nucleus::ribosome::lifecycle::LifecycleFunctionParams;
-use nucleus::ribosome::lifecycle::LifecycleFunctionResult;
-use nucleus::ribosome::lifecycle::validate_commit::validate_commit;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -49,7 +49,9 @@ pub fn invoke_commit(
     );
 
     match validate_result {
-        LifecycleFunctionResult::Fail(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorLifecycleResult as i32))),
+        LifecycleFunctionResult::Fail(_) => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ErrorLifecycleResult as i32,
+        ))),
         // anything other than a fail means we should commit the entry
         _ => {
             // Create Commit Action

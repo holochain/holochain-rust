@@ -151,12 +151,7 @@ impl Holochain {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(
-            &zome,
-            &cap,
-            &fn_name,
-            &params
-        );
+        let call = FunctionCall::new(&zome, &cap, &fn_name, &params);
 
         call_and_wait_for_result(call, &mut self.instance)
     }

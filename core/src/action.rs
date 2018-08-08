@@ -74,24 +74,13 @@ impl Eq for Action {}
 #[cfg(test)]
 pub mod tests {
 
-    use nucleus::FunctionCall;
-    use action::Action;
-    use action::Signal;
+    use action::{Action, Signal};
     use hash_table::entry::tests::test_entry;
+    use nucleus::FunctionCall;
 
     pub fn test_action_commit() -> Action {
-        let fc = FunctionCall::new(
-            "commit test zome",
-            "",
-            "some_function_calling_commit",
-            "",
-        );
-        Action::new(
-            &Signal::Commit(
-                fc,
-                test_entry(),
-            )
-        )
+        let fc = FunctionCall::new("commit test zome", "", "some_function_calling_commit", "");
+        Action::new(&Signal::Commit(fc, test_entry()))
     }
 
 }

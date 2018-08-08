@@ -30,10 +30,9 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use action::{ActionWrapper};
+    use action::{tests::test_action_commit, ActionWrapper};
     use instance::tests::test_context;
     use std::sync::mpsc::channel;
-    use action::tests::test_action_commit;
 
     #[test]
     fn can_instantiate() {

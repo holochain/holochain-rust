@@ -1,18 +1,20 @@
 pub mod genesis;
 pub mod validate_commit;
 use action::ActionWrapper;
-use instance::Observer;
-use nucleus::ribosome::{
-    lifecycle::{genesis::genesis, validate_commit::validate_commit},
-    Defn,
-};
+use error::HolochainError;
 use hash_table::entry::Entry;
+use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use instance::Observer;
+use nucleus::{
+    call_zome_and_wait_for_result,
+    ribosome::{
+        lifecycle::{genesis::genesis, validate_commit::validate_commit},
+        Defn,
+    },
+    FunctionCall,
+};
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
-use nucleus::FunctionCall;
-use error::HolochainError;
-use nucleus::call_zome_and_wait_for_result;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
 // Lifecycle functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
@@ -55,8 +57,8 @@ impl LifecycleFunction {
         action_channel: &Sender<ActionWrapper>,
         observer_channel: &Sender<Observer>,
         zome: &str,
-        params: LifecycleFunctionParams) -> LifecycleFunctionResult
-    {
+        params: LifecycleFunctionParams,
+    ) -> LifecycleFunctionResult {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
@@ -134,7 +136,6 @@ pub fn call(
     function: LifecycleFunction,
     params: LifecycleFunctionParams,
 ) -> LifecycleFunctionResult {
-
     let function_call = FunctionCall::new(
         zome,
         &function.capabilities().as_str().to_string(),
@@ -142,7 +143,8 @@ pub fn call(
         &params.to_string(),
     );
 
-    let call_result = call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
+    let call_result =
+        call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
 
     // translate the call result to a lifecycle result
     match call_result {
@@ -155,13 +157,17 @@ pub fn call(
         // @TODO this looks super fragile
         // without it we get stack overflows, but with it we rely on a specific string
         Err(HolochainError::ErrorGeneric(ref msg))
-            if msg == &format!("Function: Module doesn\'t have export {}_dispatch", function.as_str()) =>
-            LifecycleFunctionResult::NotImplemented,
+            if msg == &format!(
+                "Function: Module doesn\'t have export {}_dispatch",
+                function.as_str()
+            ) =>
+        {
+            LifecycleFunctionResult::NotImplemented
+        }
 
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),
         // Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
         _ => LifecycleFunctionResult::Pass,
     }
-
 }

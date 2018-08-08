@@ -5,13 +5,17 @@ extern crate wabt;
 
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use std::sync::{Arc, Mutex};
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Zome, Config},
+    zome::{capabilities::Capability, Config, Zome},
     Dna,
 };
-use std::{fmt, fs::File, io::prelude::*};
+use std::{
+    fmt,
+    fs::File,
+    io::prelude::*,
+    sync::{Arc, Mutex},
+};
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem

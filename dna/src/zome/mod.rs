@@ -91,7 +91,7 @@ impl Zome {
         entry_types: Vec<entry_types::EntryType>,
         capabilities: Vec<capabilities::Capability>,
     ) -> Zome {
-        Zome{
+        Zome {
             name: name.into(),
             description: description.into(),
             config: config.clone(),

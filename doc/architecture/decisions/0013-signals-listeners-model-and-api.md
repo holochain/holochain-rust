@@ -22,7 +22,7 @@ We will extend the API in a way that's roughly equivalent to the [Signal-slot pa
           "signals": [
             {
               "name": "Post",
-              "description: "signal emmited when a post is committed",
+              "description": "signal emmited when a post is committed",
               "config-params": null,
               "arguments": {
                   "name": "hash",

@@ -13,7 +13,7 @@ pub struct ActionWrapper {
 }
 
 impl ActionWrapper {
-    /// constructor
+    /// immutable constructor from &Action
     /// internal snowflake ID is automatically set
     pub fn new(a: &Action) -> Self {
         ActionWrapper {
@@ -50,13 +50,17 @@ pub struct Action {
 }
 
 impl Action {
+    /// immutable constructor from &Signal
+    /// snowflake ID is auto generated
     pub fn new(signal: &Signal) -> Action {
         Action {
             signal: signal.clone(),
+            // auto generate id
             id: snowflake::ProcessUniqueId::new(),
         }
     }
 
+    /// read only access to the internal Signal
     pub fn signal(&self) -> Signal {
         self.signal.clone()
     }
@@ -66,17 +70,29 @@ impl Eq for Action {}
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Signal {
-    /// entry to commit
+    /// entry to Commit
     /// MUST already have passed all lifecycle checks
     Commit(Entry),
+    /// hash to Get
     Get(String),
 
+    /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
-    InitApplication(Dna),
-    ReturnInitializationResult(Option<String>),
+    /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(FunctionResult),
+
+    /// initialize an application from a Dna
+    /// not the same as genesis
+    /// may call genesis internally
+    InitApplication(Dna),
+    /// return the result of an InitApplication action
+    ReturnInitializationResult(Option<String>),
+
+    /// ???
+    // @TODO how does this relate to validating a commit?
     ValidateEntry(EntrySubmission),
 
+    /// add a network peer
     AddPeer(String),
 }
 

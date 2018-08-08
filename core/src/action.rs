@@ -58,11 +58,9 @@ impl Eq for Action {}
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Signal {
-    /// function runtime that triggered the commit signal
-    /// needed to chain results, e.g. validate_commit
-    /// candidate entry to committed
-    /// failed validation will prevent the commit
-    Commit(FunctionCall, Entry),
+    /// entry to commit
+    /// MUST already have passed all lifecycle checks
+    Commit(Entry),
     Get(String),
 
     ExecuteZomeFunction(FunctionCall),
@@ -80,11 +78,9 @@ pub mod tests {
     use action::{Action, Signal};
     use hash_table::entry::tests::test_entry;
     use hash_table::entry::tests::test_entry_hash;
-    use nucleus::FunctionCall;
 
     pub fn test_action_commit() -> Action {
-        let fc = FunctionCall::new("commit test zome", "", "some_function_calling_commit", "");
-        Action::new(&Signal::Commit(fc, test_entry()))
+        Action::new(&Signal::Commit(test_entry()))
     }
 
     pub fn test_signal() -> Signal {

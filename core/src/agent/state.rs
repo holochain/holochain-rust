@@ -88,10 +88,7 @@ fn handle_commit(
     _observer_channel: &Sender<Observer>,
 ) {
     let signal = action.signal();
-    let (_, entry) = match signal {
-        Signal::Commit(r, e) => (r, e),
-        _ => unreachable!(),
-    };
+    let entry = unwrap_to!(signal => Signal::Commit);
 
     // add entry to source chain
     // @TODO this does nothing!
@@ -143,7 +140,7 @@ fn resolve_action_handler(
     action: &Action,
 ) -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
     match action.signal() {
-        Signal::Commit(_, _) => Some(handle_commit),
+        Signal::Commit(_) => Some(handle_commit),
         Signal::Get(_) => Some(handle_get),
         _ => None,
     }

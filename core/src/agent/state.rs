@@ -174,6 +174,7 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;
+    use error::HolochainError;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -253,6 +254,28 @@ pub mod tests {
         assert_eq!(
             state.actions().get(&action),
             Some(&test_action_response_get()),
+        );
+    }
+
+    #[test]
+    /// test response to json
+    fn test_response_to_json() {
+        assert_eq!(
+            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            ActionResponse::Commit(Ok(test_pair())).to_json(),
+        );
+        assert_eq!(
+            "{\"error\":\"some error\"}",
+            ActionResponse::Commit(Err(HolochainError::new("some error"))).to_json(),
+        );
+
+        assert_eq!(
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            ActionResponse::Get(Some(test_pair())).to_json(),
+        );
+        assert_eq!(
+            "",
+            ActionResponse::Get(None).to_json(),
         );
     }
 }

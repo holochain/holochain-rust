@@ -291,6 +291,8 @@ pub mod tests {
             "Empty zomes = No genesis = infinite loops below!"
         );
 
+        // @TODO abstract and DRY this out
+        // @see https://github.com/holochain/holochain-rust/issues/195
         while instance
             .state()
             .history
@@ -408,8 +410,10 @@ pub mod tests {
 
         // Wait for Init to finish
         // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         while instance.state().history.len() < 2 {
             // @TODO don't use history length in tests
+            // @see https://github.com/holochain/holochain-rust/issues/195
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
@@ -431,6 +435,7 @@ pub mod tests {
         let instance = test_instance(dna);
 
         // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -460,6 +465,7 @@ pub mod tests {
         let instance = test_instance(dna);
 
         // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -489,6 +495,7 @@ pub mod tests {
         let instance = test_instance(dna);
 
         // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }

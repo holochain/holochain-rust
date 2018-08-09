@@ -126,9 +126,12 @@ impl FunctionResult {
         FunctionResult { call, result }
     }
 
+    /// read only access to call
     pub fn call(&self) -> FunctionCall {
         self.call.clone()
     }
+
+    /// read only access to result
     pub fn result(&self) -> Result<String, HolochainError> {
         self.result.clone()
     }
@@ -442,6 +445,69 @@ pub mod tests {
         Instance,
     };
     use std::sync::{mpsc::channel, Arc};
+
+    /// dummy zome name compatible with FunctionCall
+    pub fn test_zome() -> String {
+        "foo zome".to_string()
+    }
+
+    /// dummy capability compatible with FunctionCall
+    pub fn test_capability() -> String {
+        "foo capability".to_string()
+    }
+
+    /// dummy function name compatible with FunctionCall
+    pub fn test_function() -> String {
+        "foo_function".to_string()
+    }
+
+    /// dummy parameters compatible with FunctionCall
+    pub fn test_parameters() -> String{
+        "".to_string()
+    }
+
+    /// dummy function call
+    pub fn test_function_call() -> FunctionCall {
+        FunctionCall::new(
+            &test_zome(),
+            &test_capability(),
+            &test_function(),
+            &test_parameters(),
+        )
+    }
+
+    /// dummy function result
+    pub fn test_function_result() -> FunctionResult {
+        FunctionResult::new(
+            test_function_call(),
+            Ok("foo".to_string()),
+        )
+    }
+
+    #[test]
+    /// test the equality and uniqueness of function calls (based on internal snowflakes)
+    fn test_function_call_eq() {
+        let fc1 = test_function_call();
+        let fc2 = test_function_call();
+
+        assert_eq!(fc1, fc1);
+        assert_ne!(fc1, fc2);
+    }
+
+    #[test]
+    /// test access to function result's function call
+    fn test_function_result_call () {
+        let fc = test_function_call();
+        let fr = FunctionResult::new(fc.clone(), Ok("foo".to_string()));
+
+        assert_eq!(fr.call(), fc);
+    }
+
+    #[test]
+    /// test access to the result of function result
+    fn test_function_result_result() {
+        assert_eq!(test_function_result().result(), Ok("foo".to_string()));
+    }
 
     #[test]
     /// smoke test the init of a nucleus

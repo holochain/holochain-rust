@@ -62,6 +62,8 @@ pub enum ActionResponse {
     Get(Option<Pair>),
 }
 
+// @TODO abstract this to a standard trait
+// @see https://github.com/holochain/holochain-rust/issues/196
 impl ActionResponse {
     /// serialize data or error to JSON
     // @TODO implement this as a round tripping trait

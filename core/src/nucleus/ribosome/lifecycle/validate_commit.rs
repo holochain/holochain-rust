@@ -10,13 +10,13 @@ pub fn validate_commit(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: &str,
-    params: LifecycleFunctionParams,
+    params: &LifecycleFunctionParams,
 ) -> LifecycleFunctionResult {
     call(
         action_channel,
         observer_channel,
         zome,
-        LifecycleFunction::ValidateCommit,
+        &LifecycleFunction::ValidateCommit,
         params,
     )
 }

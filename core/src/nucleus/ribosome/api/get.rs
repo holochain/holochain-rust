@@ -35,7 +35,7 @@ pub fn invoke_get(
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        action.clone(),
+        &action.clone(),
         move |state: &::state::State| {
             let actions = state.agent().actions().clone();
             if actions.contains_key(&action) {

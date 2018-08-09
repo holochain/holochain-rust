@@ -58,13 +58,13 @@ impl LifecycleFunction {
         action_channel: &Sender<ActionWrapper>,
         observer_channel: &Sender<Observer>,
         zome: &str,
-        params: LifecycleFunctionParams,
+        params: &LifecycleFunctionParams,
     ) -> LifecycleFunctionResult {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
             _zome: &str,
-            _params: LifecycleFunctionParams,
+            _params: &LifecycleFunctionParams,
         ) -> LifecycleFunctionResult {
             LifecycleFunctionResult::Pass
         }
@@ -135,8 +135,8 @@ pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: &str,
-    function: LifecycleFunction,
-    params: LifecycleFunctionParams,
+    function: &LifecycleFunction,
+    params: &LifecycleFunctionParams,
 ) -> LifecycleFunctionResult {
     let function_call = FunctionCall::new(
         zome,

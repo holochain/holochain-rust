@@ -48,24 +48,24 @@ impl Instance {
     }
 
     /// Stack an Action in the Event Queue
-    pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
-        dispatch_action(&self.action_channel, action)
+    pub fn dispatch(&mut self, action: &Action) -> ActionWrapper {
+        dispatch_action(&self.action_channel, &action)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
-    pub fn dispatch_and_wait(&mut self, action: Action) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action);
+    pub fn dispatch_and_wait(&mut self, action: &Action) {
+        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, &action);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    pub fn dispatch_with_observer<F>(&mut self, action: Action, closure: F)
+    pub fn dispatch_with_observer<F>(&mut self, action: &Action, closure: F)
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
             &self.action_channel,
             &self.observer_channel,
-            action,
+            &action,
             closure,
         )
     }
@@ -148,7 +148,7 @@ impl Default for Instance {
 pub fn dispatch_action_and_wait(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: Action,
+    action: &Action,
 ) {
     // Wrap Action
     let wrapper = ActionWrapper::new(&action);
@@ -193,7 +193,7 @@ pub fn dispatch_action_and_wait(
 pub fn dispatch_action_with_observer<F>(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: Action,
+    action: &Action,
     closure: F,
 ) where
     F: 'static + FnMut(&State) -> bool + Send,
@@ -206,11 +206,11 @@ pub fn dispatch_action_with_observer<F>(
     observer_channel
         .send(observer)
         .expect("observer channel to be open");
-    dispatch_action(action_channel, action);
+    dispatch_action(action_channel, &action);
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action: Action) -> ActionWrapper {
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action: &Action) -> ActionWrapper {
     let wrapper = ActionWrapper::new(&action);
     action_channel
         .send(wrapper.clone())
@@ -281,7 +281,7 @@ pub mod tests {
         instance.start_action_loop(test_context("jane"));
 
         let action = Action::new(&Signal::InitApplication(dna.clone()));
-        instance.dispatch_and_wait(action.clone());
+        instance.dispatch_and_wait(&action);
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
 
@@ -372,7 +372,7 @@ pub mod tests {
         let dna = Dna::new();
         let (sender, receiver) = channel();
         instance.dispatch_with_observer(
-            Action::new(&Signal::InitApplication(dna.clone())),
+            &Action::new(&Signal::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {
                 Some(dna) => {
                     sender.send(dna).expect("test channel must be open");
@@ -405,7 +405,7 @@ pub mod tests {
         // the initial state is not intialized
         assert!(instance.state().nucleus().has_initialized() == false);
 
-        instance.dispatch_and_wait(action.clone());
+        instance.dispatch_and_wait(&action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
         // Wait for Init to finish

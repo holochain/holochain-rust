@@ -73,7 +73,7 @@ pub fn call_zome_and_wait_for_result(
     ::instance::dispatch_action_with_observer(
         action_channel,
         observer_channel,
-        call_action,
+        &call_action,
         move |state: &super::state::State| {
             if let Some(result) = state.nucleus().ribosome_call_result(&call) {
                 sender
@@ -99,7 +99,7 @@ pub fn call_and_wait_for_result(
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
-    instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
+    instance.dispatch_with_observer(&call_action, move |state: &super::state::State| {
         if let Some(result) = state.nucleus().ribosome_call_result(&call) {
             sender
                 .send(result.clone())
@@ -139,6 +139,8 @@ impl FunctionResult {
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
+#[allow(unknown_lints)]
+#[allow(needless_pass_by_value)]
 fn reduce_rir(
     _context: Arc<Context>,
     state: &mut NucleusState,
@@ -172,6 +174,8 @@ fn return_initialization_result(result: Option<String>, action_channel: &Sender<
 /// Reduce InitApplication Action
 /// Initialize Nucleus by setting the DNA
 /// and sending ExecuteFunction Action of genesis of each zome
+#[allow(unknown_lints)]
+#[allow(needless_pass_by_value)]
 fn reduce_ia(
     _context: Arc<Context>,
     state: &mut NucleusState,
@@ -205,7 +209,7 @@ fn reduce_ia(
                             &genesis_action_channel,
                             &genesis_observer_channel,
                             &zome.name(),
-                            LifecycleFunctionParams::Genesis,
+                            &LifecycleFunctionParams::Genesis,
                         )
                     })
                     .collect();
@@ -345,6 +349,8 @@ fn reduce_ezf(
 
 /// Reduce ValidateEntry Action
 /// Validate an Entry by calling its validation function
+#[allow(unknown_lints)]
+#[allow(needless_pass_by_value)]
 fn reduce_ve(
     _context: Arc<Context>,
     state: &mut NucleusState,
@@ -370,6 +376,8 @@ fn reduce_ve(
 
 /// reduce ReturnZomeFunctionResult
 /// simply drops function call into ribosome_calls state
+#[allow(unknown_lints)]
+#[allow(needless_pass_by_value)]
 fn reduce_rzfr(
     _context: Arc<Context>,
     state: &mut NucleusState,

@@ -11,13 +11,13 @@ pub fn genesis(
     observer_channel: &Sender<Observer>,
     zome: &str,
     // we ignore params for genesis
-    params: LifecycleFunctionParams,
+    params: &LifecycleFunctionParams,
 ) -> LifecycleFunctionResult {
     call(
         action_channel,
         observer_channel,
         zome,
-        LifecycleFunction::Genesis,
+        &LifecycleFunction::Genesis,
         params,
     )
 }

@@ -45,7 +45,7 @@ pub fn invoke_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
         &runtime.function_call.zome,
-        LifecycleFunctionParams::ValidateCommit(entry.clone()),
+        &LifecycleFunctionParams::ValidateCommit(entry.clone()),
     );
 
     match validate_result {
@@ -61,7 +61,7 @@ pub fn invoke_commit(
             ::instance::dispatch_action_with_observer(
                 &runtime.action_channel,
                 &runtime.observer_channel,
-                action.clone(),
+                &action.clone(),
                 move |state: &::state::State| {
                     let actions = state.agent().actions().clone();
                     if actions.contains_key(&action) {

@@ -88,7 +88,7 @@ impl Holochain {
 
         let (sender, receiver) = channel();
 
-        instance.dispatch_with_observer(action, move |state: &State| {
+        instance.dispatch_with_observer(&action, move |state: &State| {
             let nucleus_state = state.nucleus();
             if nucleus_state.has_initialized() || nucleus_state.has_initialization_failed() {
                 sender

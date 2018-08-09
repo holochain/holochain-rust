@@ -19,7 +19,7 @@ pub struct ActionWrapper {
 }
 
 impl ActionWrapper {
-    /// immutable constructor from &Action
+    /// constructor from &Action
     /// internal snowflake ID is automatically set
     pub fn new(a: &Action) -> Self {
         ActionWrapper {
@@ -56,7 +56,7 @@ pub struct Action {
 }
 
 impl Action {
-    /// immutable constructor from &Signal
+    /// constructor from &Signal
     /// snowflake ID is auto generated
     pub fn new(signal: &Signal) -> Action {
         Action {

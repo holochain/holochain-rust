@@ -18,5 +18,6 @@ pub trait Defn: FromStr {
     fn capabilities(&self) -> ReservedCapabilityNames;
 
     // @TODO how to add something to trait that returns functions with unknown params/return?
+    // @see https://github.com/holochain/holochain-rust/issues/202
     // fn as_fn(&self) -> fn(_) -> _;
 }

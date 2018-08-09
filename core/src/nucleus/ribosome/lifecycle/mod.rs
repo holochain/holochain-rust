@@ -18,6 +18,7 @@ use std::{str::FromStr, sync::mpsc::Sender};
 
 // Lifecycle functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
+// @see https://github.com/holochain/holochain-rust/issues/200
 
 #[derive(FromPrimitive)]
 pub enum LifecycleFunction {
@@ -73,6 +74,7 @@ impl LifecycleFunction {
             LifecycleFunction::Genesis => genesis,
             LifecycleFunction::ValidateCommit => validate_commit,
             // @TODO
+            // @see https://github.com/holochain/holochain-rust/issues/201
             LifecycleFunction::Receive => noop,
         }
     }
@@ -167,7 +169,6 @@ pub fn call(
 
         // string value or error = fail
         Ok(s) => LifecycleFunctionResult::Fail(s),
-        // Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
-        _ => LifecycleFunctionResult::Pass,
+        Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
     }
 }

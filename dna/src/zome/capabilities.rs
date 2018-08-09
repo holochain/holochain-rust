@@ -11,10 +11,13 @@ use wasm::DnaWasm;
 /// Enumeration converts to str
 pub enum ReservedCapabilityNames {
     /// @TODO document what LifeCycle is
+    /// @see https://github.com/holochain/holochain-rust/issues/204
     LifeCycle,
     /// @TODO document what Communication is
+    /// @see https://github.com/holochain/holochain-rust/issues/204
     Communication,
     /// @TODO document what ZomeAPIFunction is
+    /// @see https://github.com/holochain/holochain-rust/issues/204
     ZomeAPIFunction,
 }
 

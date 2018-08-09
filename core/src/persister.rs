@@ -6,6 +6,7 @@ pub trait Persister: Send {
     // @TODO how does save/load work with snowflake IDs?
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
+    // @see https://github.com/holochain/holochain-rust/issues/203
     fn save(&mut self, state: &State);
     fn load(&self) -> Result<Option<State>, HolochainError>;
 }

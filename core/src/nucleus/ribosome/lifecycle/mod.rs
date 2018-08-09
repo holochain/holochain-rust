@@ -124,7 +124,7 @@ impl ToString for LifecycleFunctionParams {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum LifecycleFunctionResult {
     Pass,
     Fail(String),
@@ -171,4 +171,106 @@ pub fn call(
         Ok(s) => LifecycleFunctionResult::Fail(s),
         Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+    extern crate test_utils;
+    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    extern crate holochain_agent;
+    extern crate wabt;
+    use self::wabt::Wat2Wasm;
+    use instance::{tests::test_instance, Instance};
+
+    /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
+    /// and bytes argument
+    pub fn test_lifecycle_function_wasm(canonical_name: &str, result: i32) -> Vec<u8> {
+        Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(
+                // We don't expect everyone to be a pro at hand-coding WAT so here's a "how to".
+                // WAT does not have comments so code is duplicated in the comments here.
+                //
+                // How this works:
+                //
+                // root of the s-expression tree
+                // (module ...)
+                //
+                // imports must be the first expressions in a module
+                // imports the fn from the rust environment using its canonical zome API function
+                // name as the function named `$zome_api_function` in WAT
+                // define the signature as 1 input, 1 output
+                // the signature is the same as the exported "test_dispatch" function below as
+                // we want the latter to be a thin wrapper for the former
+                // (import "env" "<canonical name>"
+                //      (func $zome_api_function
+                //          (param i32)
+                //          (result i32)
+                //      )
+                // )
+                //
+                // only need 1 page of memory for testing
+                // (memory 1)
+                //
+                // all modules compiled with rustc must have an export named "memory" (or fatal)
+                // (export "memory" (memory 0))
+                //
+                // define and export the test_dispatch function that will be called from the
+                // ribosome rust implementation, where "test" is the fourth arg to `call`
+                // @see `test_zome_api_function_runtime`
+                // @see nucleus::ribosome::call
+                // (func (export "test_dispatch") ...)
+                //
+                // define the memory allocation for the memory manager that the serialized input
+                // struct can be found across as an i32 to the exported function, also the function
+                // return type is i32
+                // (param $allocation i32)
+                // (result i32)
+                //
+                // call the imported function and pass the exported function arguments straight
+                // through, let the return also fall straight through
+                // `get_local` maps the relevant arguments in the local scope
+                // (call
+                //      $zome_api_function
+                //      (get_local $allocation)
+                // )
+                format!(
+                    r#"
+(module
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    (func
+        (export "{}_dispatch")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const {})
+    )
+)
+                "#,
+                    canonical_name, result,
+                ),
+            )
+            .unwrap()
+            .as_ref()
+            .to_vec()
+    }
+
+    pub fn test_lifecycle_function_instance(
+        zome: &str,
+        canonical_name: &str,
+        result: i32,
+    ) -> Instance {
+        let dna = test_utils::create_test_dna_with_wasm(
+            zome,
+            ReservedCapabilityNames::LifeCycle.as_str(),
+            test_lifecycle_function_wasm(canonical_name, result),
+        );
+
+        test_instance(dna)
+    }
+
 }

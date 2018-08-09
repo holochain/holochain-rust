@@ -48,6 +48,8 @@ pub fn invoke_commit(
         &LifecycleFunctionParams::ValidateCommit(entry.clone()),
     );
 
+    // @TODO test that failing validation prevents commits happening
+    // @see https://github.com/holochain/holochain-rust/issues/206
     match validate_result {
         LifecycleFunctionResult::Fail(_) => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorLifecycleResult as i32,

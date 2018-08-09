@@ -12,6 +12,7 @@
 - [WASM](./wasm.md)
 - [Building Apps](./building_apps.md)
   - [using zome API functions](./zome/api_functions.md)
+  - [using lifecycle functions](./zome/lifecycle_functions.md)
   - [implementing zome API function](./zome/implementation.md)
 - [Command Line Tools](./command_line_tools.md)
 - [Holochain Across Platforms](./holochain_across_platforms.md)

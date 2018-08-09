@@ -36,9 +36,9 @@ Parameters: none
 
 Called the first time a dApp initializes.
 
-`Pass`: the dApp will initialize
-`NotImplemented`: the dApp will initialize
-`Fail` (any reason): the dApp will NOT initialize
+- `Pass`: the dApp will initialize
+- `NotImplemented`: the dApp will initialize
+- `Fail` (any reason): the dApp will NOT initialize
 
 ### ValidateCommit
 
@@ -47,7 +47,6 @@ Parameters: The candidate entry to be committed
 
 Called internally by the `commit` Zome API function.
 
-`Pass`: the entry will be committed
-`NotImplemented`: the entry will be committed
-`Fail` (any reason): the entry will NOT be committed and `commit` will return a
-`HcApiReturnCode::ErrorLifecycleResult` error code.
+- `Pass`: the entry will be committed
+- `NotImplemented`: the entry will be committed
+- `Fail` (any reason): the entry will NOT be committed and `commit` will return a `HcApiReturnCode::ErrorLifecycleResult` error code.

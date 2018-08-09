@@ -1,5 +1,6 @@
 FROM holochain/holochain-rust:develop
 
+RUN rustup default stable
 RUN cargo install mdbook --vers "^0.1.0"
 
 WORKDIR /holochain/doc/holochain_101

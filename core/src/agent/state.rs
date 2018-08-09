@@ -171,8 +171,7 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
-    use action::{tests::test_action_commit, Action, Signal};
-    use hash::tests::test_hash;
+    use action::{tests::test_action_commit, tests::test_action_get};
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;
@@ -190,11 +189,6 @@ pub mod tests {
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
         ActionResponse::Get(Some(test_pair()))
-    }
-
-    /// dummy action for a get of test_hash()
-    pub fn test_action_get() -> Action {
-        Action::new(&Signal::Get(test_hash()))
     }
 
     #[test]

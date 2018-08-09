@@ -113,6 +113,7 @@ pub mod tests {
 
     use action::{Action, ActionWrapper, Signal};
     use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use hash::tests::test_hash;
 
     /// dummy signal
     pub fn test_signal() -> Signal {
@@ -127,6 +128,11 @@ pub mod tests {
     /// dummy action with commit of test_entry()
     pub fn test_action_commit() -> Action {
         Action::new(&Signal::Commit(test_entry()))
+    }
+
+    /// dummy action for a get of test_hash()
+    pub fn test_action_get() -> Action {
+        Action::new(&Signal::Get(test_hash()))
     }
 
     /// dummy action wrapper with test_action()

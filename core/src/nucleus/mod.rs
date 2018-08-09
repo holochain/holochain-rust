@@ -19,6 +19,7 @@ use std::{
     },
     thread,
 };
+use action::NucleusReduceFn;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -392,7 +393,7 @@ fn reduce_zfr(
 
 fn resolve_action_handler(
     action: &Action,
-) -> Option<fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)>
+) -> Option<NucleusReduceFn>
 {
     match action.signal() {
         Signal::ReturnInitializationResult(_) => Some(reduce_rir),

@@ -9,6 +9,7 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use action::AgentReduceFn;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -57,15 +58,18 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 pub enum ActionResponse {
-    Commit(Result<String, HolochainError>),
+    Commit(Result<Pair, HolochainError>),
     Get(Option<Pair>),
 }
 
 impl ActionResponse {
+    /// serialize data or error to JSON
+    // @TODO implement this as a round tripping trait
+    // @see https://github.com/holochain/holochain-rust/issues/193
     pub fn to_json(&self) -> String {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(hash) => format!("{{\"hash\":\"{}\"}}", hash),
+                Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
                 Err(err) => (*err).to_json(),
             },
             ActionResponse::Get(result) => match result {
@@ -81,7 +85,7 @@ impl ActionResponse {
 /// lifecycle checks (e.g. validate_commit) happen elsewhere because lifecycle functions cause
 /// action reduction to hang
 /// @TODO is there a way to reduce that doesn't block indefinitely on lifecycle fns?
-fn handle_commit(
+fn reduce_commit(
     state: &mut AgentState,
     action: &Action,
     _action_channel: &Sender<ActionWrapper>,
@@ -98,21 +102,14 @@ fn handle_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    let result = chain.push(&entry);
-    // translate the pair to an entry key in the result
-    let result = match result {
-        Ok(pair) => Ok(pair.entry().key()),
-        Err(err) => Err(err),
-    };
-
     state
         .actions
-        .insert(action.clone(), ActionResponse::Commit(result));
+        .insert(action.clone(), ActionResponse::Commit(chain.push(&entry)));
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn handle_get(
+fn reduce_get(
     state: &mut AgentState,
     action: &Action,
     _action_channel: &Sender<ActionWrapper>,
@@ -142,12 +139,13 @@ fn handle_get(
         .insert(action.clone(), ActionResponse::Get(result.clone()));
 }
 
-fn resolve_action_handler(
+/// maps incoming action to the correct handler
+fn resolve_reducer(
     action: &Action,
-) -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
+) -> Option<AgentReduceFn> {
     match action.signal() {
-        Signal::Commit(_) => Some(handle_commit),
-        Signal::Get(_) => Some(handle_get),
+        Signal::Commit(_) => Some(reduce_commit),
+        Signal::Get(_) => Some(reduce_get),
         _ => None,
     }
 }
@@ -159,7 +157,7 @@ pub fn reduce(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
-    let handler = resolve_action_handler(action);
+    let handler = resolve_reducer(action);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
@@ -172,26 +170,29 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{handle_commit, handle_get, ActionResponse, AgentState};
+    use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
     use action::{tests::test_action_commit, Action, Signal};
     use hash::tests::test_hash;
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;
 
-    /// builds a dummy agent state for testing
+    /// dummy agent state
     pub fn test_agent_state() -> AgentState {
         AgentState::new()
     }
 
+    /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_hash()))
+        ActionResponse::Commit(Ok(test_pair()))
     }
 
+    /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
         ActionResponse::Get(Some(test_pair()))
     }
 
+    /// dummy action for a get of test_hash()
     pub fn test_action_get() -> Action {
         Action::new(&Signal::Get(test_hash()))
     }
@@ -222,13 +223,13 @@ pub mod tests {
 
     #[test]
     /// test for action commit
-    fn agent_state_handle_commit() {
+    fn test_reduce_commit() {
         let mut state = test_agent_state();
         let action = test_action_commit();
 
         let instance = test_instance_blank();
 
-        let _hc = handle_commit(
+        reduce_commit(
             &mut state,
             &action,
             &instance.action_channel().clone(),
@@ -243,13 +244,13 @@ pub mod tests {
 
     #[test]
     /// test for action get
-    fn agent_state_handle_get() {
+    fn test_reduce_get() {
         let mut state = test_agent_state();
         let action = test_action_get();
 
         let instance = test_instance_blank();
 
-        let _hg = handle_get(
+        reduce_get(
             &mut state,
             &action,
             &instance.action_channel().clone(),

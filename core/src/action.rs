@@ -3,6 +3,12 @@ use holochain_dna::Dna;
 use nucleus::{EntrySubmission, FunctionCall, FunctionResult};
 use snowflake;
 use std::hash::{Hash, Hasher};
+use agent::state::AgentState;
+use std::sync::mpsc::Sender;
+use instance::Observer;
+use std::sync::Arc;
+use context::Context;
+use nucleus::state::NucleusState;
 
 #[derive(Clone, Debug)]
 // @TODO what is wrapper for?
@@ -95,6 +101,12 @@ pub enum Signal {
     /// add a network peer
     AddPeer(String),
 }
+
+/// function signature for action handler functions
+// @TODO merge these into a single signature
+// @see https://github.com/holochain/holochain-rust/issues/194
+pub type AgentReduceFn = fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type NucleusReduceFn = fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
 
 #[cfg(test)]
 pub mod tests {

@@ -45,7 +45,7 @@ fn _def_new_uuid() -> String {
 }
 
 /// Represents the top-level holochain dna object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dna {
     /// The top-level "name" of a holochain application.
     #[serde(default)]
@@ -208,6 +208,13 @@ impl Hash for Dna {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let s = self.to_json().unwrap();
         s.hash(state);
+    }
+}
+
+impl PartialEq for Dna {
+    fn eq(&self, other: &Dna) -> bool {
+        // need to guarantee that PartialEq and Hash always agree
+        self.to_json().unwrap() == other.to_json().unwrap()
     }
 }
 

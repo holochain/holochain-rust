@@ -27,7 +27,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 }
 
 /// Create DNA from WAT
-pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
+pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
     let default_wat = r#"
             (module
@@ -54,10 +54,10 @@ pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let mut capability = Capability::new();
-    capability.name = cap_name;
+    capability.name = cap_name.to_string();
     capability.code = DnaWasm { code: wasm };
 
     let mut capabilities = Vec::new();
@@ -66,9 +66,9 @@ pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<
     let zome = Zome::new(
         &zome_name,
         "some zome description",
-        Config::new(),
-        Vec::new(),
-        capabilities,
+        &Config::new(),
+        &Vec::new(),
+        &capabilities,
     );
 
     // zome.capabilities.push(capability);

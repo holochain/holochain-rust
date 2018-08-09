@@ -87,9 +87,9 @@ impl Zome {
     pub fn new(
         name: &str,
         description: &str,
-        config: Config,
-        entry_types: Vec<entry_types::EntryType>,
-        capabilities: Vec<capabilities::Capability>,
+        config: &Config,
+        entry_types: &Vec<entry_types::EntryType>,
+        capabilities: &Vec<capabilities::Capability>,
     ) -> Zome {
         Zome {
             name: name.into(),

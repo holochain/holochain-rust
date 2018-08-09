@@ -1,14 +1,14 @@
+use agent::state::AgentState;
+use context::Context;
 use hash_table::entry::Entry;
 use holochain_dna::Dna;
-use nucleus::{EntrySubmission, FunctionCall, FunctionResult};
-use snowflake;
-use std::hash::{Hash, Hasher};
-use agent::state::AgentState;
-use std::sync::mpsc::Sender;
 use instance::Observer;
-use std::sync::Arc;
-use context::Context;
-use nucleus::state::NucleusState;
+use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
+use snowflake;
+use std::{
+    hash::{Hash, Hasher},
+    sync::{mpsc::Sender, Arc},
+};
 
 #[derive(Clone, Debug)]
 // @TODO what is wrapper for?
@@ -106,14 +106,15 @@ pub enum Signal {
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
-pub type NucleusReduceFn = fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type NucleusReduceFn =
+    fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
 
 #[cfg(test)]
 pub mod tests {
 
     use action::{Action, ActionWrapper, Signal};
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
     use hash::tests::test_hash;
+    use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::tests::test_function_result;
 
     /// dummy signal
@@ -137,9 +138,7 @@ pub mod tests {
     }
 
     pub fn test_action_rzfr() -> Action {
-        Action::new(
-            &Signal::ReturnZomeFunctionResult(test_function_result())
-        )
+        Action::new(&Signal::ReturnZomeFunctionResult(test_function_result()))
     }
 
     /// dummy action wrapper with test_action()

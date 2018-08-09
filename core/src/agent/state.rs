@@ -1,4 +1,4 @@
-use action::{Action, ActionWrapper, Signal};
+use action::{Action, ActionWrapper, AgentReduceFn, Signal};
 use agent::keys::Keys;
 use chain::Chain;
 use error::HolochainError;
@@ -9,7 +9,6 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use action::AgentReduceFn;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -142,9 +141,7 @@ fn reduce_get(
 }
 
 /// maps incoming action to the correct handler
-fn resolve_reducer(
-    action: &Action,
-) -> Option<AgentReduceFn> {
+fn resolve_reducer(action: &Action) -> Option<AgentReduceFn> {
     match action.signal() {
         Signal::Commit(_) => Some(reduce_commit),
         Signal::Get(_) => Some(reduce_get),
@@ -173,7 +170,7 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
-    use action::{tests::test_action_commit, tests::test_action_get};
+    use action::tests::{test_action_commit, test_action_get};
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;

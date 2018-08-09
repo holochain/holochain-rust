@@ -646,11 +646,7 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome function returns a valid result
     fn call_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let mut instance = test_instance(dna);
 
         // Create zome function call
@@ -683,11 +679,7 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let mut instance = test_instance(dna);
 
         // Create zome function call:
@@ -706,11 +698,7 @@ pub mod tests {
     #[test]
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_ribosome_function() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let mut instance = test_instance(dna);
 
         // Create bad zome function call

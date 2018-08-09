@@ -216,8 +216,8 @@ mod tests {
     #[test]
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            ReservedCapabilityNames::LifeCycle.as_str(),
             Some(
                 r#"
             (module
@@ -246,8 +246,8 @@ mod tests {
     #[test]
     fn fails_instantiate_if_genesis_times_out() {
         let dna = create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            ReservedCapabilityNames::LifeCycle.as_str(),
             Some(
                 r#"
             (module
@@ -327,8 +327,7 @@ mod tests {
        )
  )
 "#;
-        let dna =
-            create_test_dna_with_wat("test_zome".to_string(), "test_cap".to_string(), Some(wat));
+        let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -369,7 +368,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -398,7 +397,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -433,7 +432,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -465,7 +464,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
 
         let (context, test_logger) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -498,7 +497,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome".to_string(), "test_cap".to_string(), wasm);
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
 
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

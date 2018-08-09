@@ -406,11 +406,8 @@ pub mod tests {
         let parameters = "";
 
         let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna = test_utils::create_test_dna_with_wasm(
-            zome_name.into(),
-            capability.clone(),
-            wasm.clone(),
-        );
+        let dna =
+            test_utils::create_test_dna_with_wasm(zome_name.into(), &capability, wasm.clone());
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
 

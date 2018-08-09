@@ -425,11 +425,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
+        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
 
         let instance = test_instance(dna);
@@ -444,8 +440,8 @@ pub mod tests {
     /// tests that a valid genesis allows the nucleus to initialize
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            ReservedCapabilityNames::LifeCycle.as_str(),
             Some(
                 r#"
             (module
@@ -474,8 +470,8 @@ pub mod tests {
     /// tests that a failed genesis prevents the nucleus from initializing
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            ReservedCapabilityNames::LifeCycle.as_str(),
             Some(
                 r#"
             (module

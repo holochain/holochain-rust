@@ -277,4 +277,14 @@ pub mod tests {
     fn key() {
         assert_eq!(test_entry().hash(), test_entry().key());
     }
+
+    #[test]
+    /// test that we can round trip through JSON
+    fn json_round_trip() {
+        let e = test_entry_a();
+        let expected = "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}";
+        assert_eq!(expected, e.to_json());
+        assert_eq!(e, Entry::from_json(expected));
+        assert_eq!(e, Entry::from_json(&e.to_json()));
+    }
 }

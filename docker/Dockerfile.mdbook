@@ -1,4 +1,4 @@
-FROM sphinxc0re/holochain-rust
+FROM holochain/holochain-rust:develop
 
 RUN cargo install mdbook --vers "^0.1.0"
 

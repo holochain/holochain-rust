@@ -1,13 +1,18 @@
+extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_dna;
 extern crate wabt;
+
+use holochain_agent::Agent;
+use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use std::sync::{Arc, Mutex};
 
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{capabilities::Capability, Zome},
     Dna,
 };
-use std::{fs::File, io::prelude::*};
+use std::{fmt, fs::File, io::prelude::*};
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
@@ -55,5 +60,47 @@ pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<
     zome.name = zome_name;
     zome.capabilities.push(capability);
     dna.zomes.push(zome);
+    dna.name = "TestApp".into();
     dna
+}
+
+#[derive(Clone)]
+pub struct TestLogger {
+    pub log: Vec<String>,
+}
+
+impl Logger for TestLogger {
+    fn log(&mut self, msg: String) {
+        self.log.push(msg);
+    }
+}
+
+// trying to get a way to print out what has been logged for tests without a read function.
+// this currently fails
+impl fmt::Debug for TestLogger {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.log)
+    }
+}
+
+pub fn test_logger() -> Arc<Mutex<TestLogger>> {
+    Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
+}
+
+pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    let agent = Agent::from_string(agent_name);
+    let logger = test_logger();
+    (
+        Arc::new(Context {
+            agent,
+            logger: logger.clone(),
+            persister: Arc::new(Mutex::new(SimplePersister::new())),
+        }),
+        logger,
+    )
+}
+
+pub fn test_context(agent_name: &str) -> Arc<Context> {
+    let (context, _) = test_context_and_logger(agent_name);
+    context
 }

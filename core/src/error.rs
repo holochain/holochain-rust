@@ -20,8 +20,11 @@ impl HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
     }
 
+    /// standard JSON representation for an error
+    /// @TODO round trip this
+    /// @see https://github.com/holochain/holochain-rust/issues/193
     pub fn to_json(&self) -> String {
-        format!("{{\"error\":{}}}", self.to_string())
+        format!("{{\"error\":\"{}\"}}", self.description())
     }
 }
 
@@ -62,12 +65,21 @@ mod tests {
     }
 
     #[test]
+    /// test that we can convert an error to a string
     fn to_string() {
         let err = HolochainError::new("foo");
         assert_eq!("ErrorGeneric(\"foo\")", err.to_string(),);
     }
 
     #[test]
+    /// test that we can convert an error to valid JSON
+    fn test_to_json() {
+        let err = HolochainError::new("foo");
+        assert_eq!("{\"error\":\"foo\"}", err.to_json());
+    }
+
+    #[test]
+    /// smoke test new errors
     fn can_instantiate() {
         let err = HolochainError::new("borked");
         if let HolochainError::ErrorGeneric(err_msg) = err {
@@ -78,6 +90,7 @@ mod tests {
     }
 
     #[test]
+    /// test errors as a result and destructuring
     fn can_raise_holochain_error() {
         let result = raises_holochain_error(true);
         match result {
@@ -90,6 +103,7 @@ mod tests {
     }
 
     #[test]
+    /// test errors as a returned result
     fn can_return_result() {
         let result = raises_holochain_error(false);
         let result = match result {

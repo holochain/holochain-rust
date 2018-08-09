@@ -24,6 +24,7 @@ pub mod tests {
     use hash_table::entry::tests::test_entry;
     use multihash::Hash;
 
+    /// dummy hash based on the key of test_entry()
     pub fn test_hash() -> String {
         test_entry().key()
     }

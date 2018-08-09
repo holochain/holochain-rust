@@ -88,15 +88,15 @@ impl Zome {
         name: &str,
         description: &str,
         config: &Config,
-        entry_types: &Vec<entry_types::EntryType>,
-        capabilities: &Vec<capabilities::Capability>,
+        entry_types: &[entry_types::EntryType],
+        capabilities: &[capabilities::Capability],
     ) -> Zome {
         Zome {
             name: name.into(),
             description: description.into(),
             config: config.clone(),
-            entry_types: entry_types.clone(),
-            capabilities: capabilities.clone(),
+            entry_types: entry_types.to_owned(),
+            capabilities: capabilities.to_owned(),
         }
     }
 

@@ -26,7 +26,6 @@ pub mod tests {
 
     use super::validate_commit;
     use hash_table::entry::tests::test_entry;
-    use holochain_wasm_utils::HcApiReturnCode;
     use nucleus::ribosome::{
         lifecycle::{
             tests::test_lifecycle_function_instance, LifecycleFunction, LifecycleFunctionParams,

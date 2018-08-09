@@ -8,7 +8,7 @@ SOURCE_BRANCH="develop"
 TARGET_BRANCH="gh-pages"
 
 function doCompile {
-  . docker/build-mdbook
+  . docker/build-mdbook-image && . docker/build-mdbook
 }
 
 # Pull requests and commits to other branches shouldn't build

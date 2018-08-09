@@ -8,5 +8,3 @@ WORKDIR /holochain/doc/holochain_101
 EXPOSE 3000
 # Port for websocket (live reload)
 EXPOSE 3001
-
-CMD mdbook serve -i 0.0.0.0 -p 3000 -w 3001

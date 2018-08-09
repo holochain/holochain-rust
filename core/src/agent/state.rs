@@ -171,10 +171,10 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
     use action::tests::{test_action_commit, test_action_get};
+    use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;
-    use error::HolochainError;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -273,9 +273,6 @@ pub mod tests {
             "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
             ActionResponse::Get(Some(test_pair())).to_json(),
         );
-        assert_eq!(
-            "",
-            ActionResponse::Get(None).to_json(),
-        );
+        assert_eq!("", ActionResponse::Get(None).to_json(),);
     }
 }

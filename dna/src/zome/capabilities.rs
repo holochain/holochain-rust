@@ -7,6 +7,7 @@ use wasm::DnaWasm;
 // Reserved Capabilities and functions names
 //--------------------------------------------------------------------------------------------------
 
+#[derive(Debug, PartialEq)]
 /// Enumeration of all Capabilities known and used by HC Core
 /// Enumeration converts to str
 pub enum ReservedCapabilityNames {
@@ -186,6 +187,41 @@ impl Capability {
 mod tests {
     use super::*;
     use serde_json;
+
+    #[test]
+    /// test that ReservedCapabilityNames can be created from a canonical string
+    fn test_capabilities_from_str() {
+        assert_eq!(
+            Ok(ReservedCapabilityNames::LifeCycle),
+            ReservedCapabilityNames::from_str("hc_lifecycle"),
+        );
+        assert_eq!(
+            Ok(ReservedCapabilityNames::Communication),
+            ReservedCapabilityNames::from_str("hc_web_gateway"),
+        );
+        assert_eq!(
+            Ok(ReservedCapabilityNames::ZomeAPIFunction),
+            ReservedCapabilityNames::from_str("hc_zome_api_function"),
+        );
+        assert_eq!(
+            Err("Cannot convert string to ReservedCapabilityNames"),
+            ReservedCapabilityNames::from_str("foo"),
+        );
+    }
+
+    #[test]
+    /// test that a canonical string can be created from ReservedCapabilityNames
+    fn test_capabilities_as_str() {
+        assert_eq!(ReservedCapabilityNames::LifeCycle.as_str(), "hc_lifecycle",);
+        assert_eq!(
+            ReservedCapabilityNames::Communication.as_str(),
+            "hc_web_gateway",
+        );
+        assert_eq!(
+            ReservedCapabilityNames::ZomeAPIFunction.as_str(),
+            "hc_zome_api_function",
+        );
+    }
 
     #[test]
     fn build_and_compare() {

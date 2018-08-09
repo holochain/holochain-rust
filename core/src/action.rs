@@ -114,6 +114,7 @@ pub mod tests {
     use action::{Action, ActionWrapper, Signal};
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use hash::tests::test_hash;
+    use nucleus::tests::test_function_result;
 
     /// dummy signal
     pub fn test_signal() -> Signal {
@@ -133,6 +134,12 @@ pub mod tests {
     /// dummy action for a get of test_hash()
     pub fn test_action_get() -> Action {
         Action::new(&Signal::Get(test_hash()))
+    }
+
+    pub fn test_action_rzfr() -> Action {
+        Action::new(
+            &Signal::ReturnZomeFunctionResult(test_function_result())
+        )
     }
 
     /// dummy action wrapper with test_action()

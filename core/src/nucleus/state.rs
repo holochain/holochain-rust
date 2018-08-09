@@ -64,3 +64,15 @@ impl NucleusState {
         self.status.clone()
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::NucleusState;
+
+    /// dummy nucleus state
+    pub fn test_nucleus_state() -> NucleusState {
+        NucleusState::new()
+    }
+
+}

@@ -137,18 +137,6 @@ impl FunctionResult {
     }
 }
 
-/// Enum of all Actions that mutates the Nucleus's state
-// #[derive(Clone, Debug, PartialEq)]
-// #[allow(unknown_lints)]
-// #[allow(large_enum_variant)]
-// pub enum Action {
-//     InitApplication(Dna),
-//     ReturnInitializationResult(Option<String>),
-//     ExecuteZomeFunction(FunctionCall),
-//     ReturnZomeFunctionResult(FunctionResult),
-//     ValidateEntry(EntrySubmission),
-// }
-
 /// Reduce ReturnInitializationResult Action
 /// On initialization success, set Initialized status
 /// otherwise set the failed message
@@ -381,7 +369,9 @@ fn reduce_ve(
     }
 }
 
-fn reduce_zfr(
+/// reduce ReturnZomeFunctionResult
+/// simply drops function call into ribosome_calls state
+fn reduce_rzfr(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action: &Action,
@@ -391,10 +381,11 @@ fn reduce_zfr(
     let signal = action.signal();
     let fr = unwrap_to!(signal => Signal::ReturnZomeFunctionResult);
     // @TODO store the action and result directly
+    // @see https://github.com/holochain/holochain-rust/issues/198
     state.ribosome_calls.insert(fr.call(), Some(fr.result()));
 }
 
-fn resolve_action_handler(
+fn resolve_reducer(
     action: &Action,
 ) -> Option<NucleusReduceFn>
 {
@@ -402,7 +393,7 @@ fn resolve_action_handler(
         Signal::ReturnInitializationResult(_) => Some(reduce_rir),
         Signal::InitApplication(_) => Some(reduce_ia),
         Signal::ExecuteZomeFunction(_) => Some(reduce_ezf),
-        Signal::ReturnZomeFunctionResult(_) => Some(reduce_zfr),
+        Signal::ReturnZomeFunctionResult(_) => Some(reduce_rzfr),
         Signal::ValidateEntry(_) => Some(reduce_ve),
         _ => None,
     }
@@ -417,7 +408,7 @@ pub fn reduce(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<NucleusState> {
-    let handler = resolve_action_handler(action);
+    let handler = resolve_reducer(action);
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
@@ -445,6 +436,9 @@ pub mod tests {
         Instance,
     };
     use std::sync::{mpsc::channel, Arc};
+    use instance::tests::test_instance_blank;
+    use action::tests::test_action_rzfr;
+    use nucleus::state::tests::test_nucleus_state;
 
     /// dummy zome name compatible with FunctionCall
     pub fn test_zome() -> String {
@@ -517,6 +511,29 @@ pub mod tests {
         assert_eq!(nucleus_state.has_initialized(), false);
         assert_eq!(nucleus_state.has_initialization_failed(), false);
         assert_eq!(nucleus_state.status(), NucleusStatus::New);
+    }
+
+    #[test]
+    fn test_reduce_rzfr() {
+        let context = test_context("jimmy");
+        let instance = test_instance_blank();
+        let mut state = test_nucleus_state();
+        let action = test_action_rzfr();
+
+        // @TODO don't juggle signals to get at action in state
+        // @see https://github.com/holochain/holochain-rust/issues/198
+        let signal = action.signal();
+        let fr = unwrap_to!(signal => Signal::ReturnZomeFunctionResult);
+
+        reduce_rzfr(
+            context,
+            &mut state,
+            &action,
+            &instance.action_channel(),
+            &instance.observer_channel(),
+        );
+
+        assert!(state.ribosome_calls.contains_key(&fr.call()));
     }
 
     #[test]

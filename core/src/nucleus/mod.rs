@@ -5,7 +5,7 @@ pub mod state;
 use context::Context;
 use error::HolochainError;
 
-use action::{Action, ActionWrapper, Signal};
+use action::{Action, ActionWrapper, NucleusReduceFn, Signal};
 use instance::Observer;
 use nucleus::{
     ribosome::lifecycle::{genesis::genesis, LifecycleFunctionParams, LifecycleFunctionResult},
@@ -19,7 +19,6 @@ use std::{
     },
     thread,
 };
-use action::NucleusReduceFn;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -385,10 +384,7 @@ fn reduce_rzfr(
     state.ribosome_calls.insert(fr.call(), Some(fr.result()));
 }
 
-fn resolve_reducer(
-    action: &Action,
-) -> Option<NucleusReduceFn>
-{
+fn resolve_reducer(action: &Action) -> Option<NucleusReduceFn> {
     match action.signal() {
         Signal::ReturnInitializationResult(_) => Some(reduce_rir),
         Signal::InitApplication(_) => Some(reduce_ia),
@@ -429,16 +425,14 @@ pub fn reduce(
 pub mod tests {
     extern crate test_utils;
     use super::*;
-    use action::ActionWrapper;
+    use action::{tests::test_action_rzfr, ActionWrapper};
     use holochain_dna::Dna;
     use instance::{
-        tests::{test_context, test_instance},
+        tests::{test_context, test_instance, test_instance_blank},
         Instance,
     };
-    use std::sync::{mpsc::channel, Arc};
-    use instance::tests::test_instance_blank;
-    use action::tests::test_action_rzfr;
     use nucleus::state::tests::test_nucleus_state;
+    use std::sync::{mpsc::channel, Arc};
 
     /// dummy zome name compatible with FunctionCall
     pub fn test_zome() -> String {
@@ -456,7 +450,7 @@ pub mod tests {
     }
 
     /// dummy parameters compatible with FunctionCall
-    pub fn test_parameters() -> String{
+    pub fn test_parameters() -> String {
         "".to_string()
     }
 
@@ -472,10 +466,7 @@ pub mod tests {
 
     /// dummy function result
     pub fn test_function_result() -> FunctionResult {
-        FunctionResult::new(
-            test_function_call(),
-            Ok("foo".to_string()),
-        )
+        FunctionResult::new(test_function_call(), Ok("foo".to_string()))
     }
 
     #[test]
@@ -490,7 +481,7 @@ pub mod tests {
 
     #[test]
     /// test access to function result's function call
-    fn test_function_result_call () {
+    fn test_function_result_call() {
         let fc = test_function_call();
         let fr = FunctionResult::new(fc.clone(), Ok("foo".to_string()));
 
@@ -514,6 +505,7 @@ pub mod tests {
     }
 
     #[test]
+    /// test for returning zome function result actions
     fn test_reduce_rzfr() {
         let context = test_context("jimmy");
         let instance = test_instance_blank();

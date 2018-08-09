@@ -7,9 +7,9 @@ state wraps references to "long term memory".
 
 The global state is implemented as Redux style reducers. Any module can dispatch
 an action to the global state. The action will be "reduced" to a new state tree
-value by the modules responsible for each branch of the state tree. The return
-values from a reduction can either be polled directly from the state tree in a
-thread, or through a call/response model where the return value is a new action.
+value by the modules responsible for each branch of the state tree. The response
+values from a reduction must be polled directly from the state tree in a thread
+using a "sensor" closure in an observer.
 
 Actions are stateless/immutable data structures that are dispatched by modules
 to communicate a request to do something potentially state changing. Everything

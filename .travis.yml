@@ -13,6 +13,12 @@ install:
 script:
   - . docker/run-test
 
+env:
+  global:
+  - ENCRYPTION_LABEL: "30dd9296640e"
+  - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+
 after_success:
   - . docker/run-cov
   - bash <(curl -s https://codecov.io/bash)
+  - bash ./travis-update-book.sh

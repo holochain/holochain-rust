@@ -1,2 +1,23 @@
-imports_indent = "block"
-merge_imports = true
+# Blocker
+wrap_comments                = true # Keep everything within max_width
+fn_single_line               = true # For accessors
+imports_layout               = "HorizontalVertical" # Multiline horizontal imports is hard to read/scan
+force_multiline_blocks       = true # Avoid potential mistakes or bugs. Same reason than forcing braces for one line ifs
+normalize_comments           = true # Consistency and nested comments
+struct_field_align_threshold = 20   # scan-ability
+blank_lines_upper_bound      = 2    # Clearer seperation helps scan-ability
+
+# Important
+tab_spaces          = 2 # Helps save screen space and keep code below max_width
+indent_style        = "Visual" # scan-ability - helps to not confuse fn args with next block especially when braces are at end of line
+control_brace_style = "AlwaysNextLine" # scan-ability - don't have to search for opening braces at end of lines
+brace_style         = "AlwaysNextLine" # scan-ability - don't have to search for opening braces at end of lines
+
+# Preference
+comment_width  = 100 # fits dual editor window on 24" + IDE panels
+max_width      = 120 # fits dual editor window on 24"
+imports_indent = "block" # scan-ability
+
+# Not sure
+unstable_features     = true
+# license_template_path = "Copyright {\d+} The Holochain Core Developers."

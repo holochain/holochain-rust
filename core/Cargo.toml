@@ -19,6 +19,9 @@ bitflags = "1.0"
 holochain_wasm_utils = { path = "../wasm_utils"}
 riker = "0.1.1"
 riker-default = "0.1.1"
+riker-patterns = "0.1.0"
+futures-preview = "0.2.2"
+lazy_static = "1.1.0"
 
 [dev-dependencies]
 wabt = "0.4"

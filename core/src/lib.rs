@@ -13,6 +13,10 @@ extern crate wasmi;
 extern crate bitflags;
 extern crate riker;
 extern crate riker_default;
+extern crate riker_patterns;
+extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

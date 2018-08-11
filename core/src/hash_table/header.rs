@@ -1,6 +1,6 @@
 use chain::Chain;
 use hash;
-use hash_table::{entry::Entry, HashTable};
+use hash_table::{entry::Entry};
 use multihash::Hash;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
@@ -38,7 +38,7 @@ impl Header {
     /// chain::SourceChain trait and should not need to be handled manually
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Header {
+    pub fn new(chain: &Chain, entry: &Entry) -> Header {
         Header {
             entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps

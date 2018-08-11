@@ -1,26 +1,49 @@
-pub mod actor;
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;
-use std::{fmt, rc::Rc};
+use std::{fmt};
+use riker::actors::*;
+use hash_table::actor::HashTableProtocol;
+use riker_default::DefaultModel;
+
+lazy_static! {
+    pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
+        let chain_model: DefaultModel<ChainProtocol> = DefaultModel::new();
+        ActorSystem::new(&chain_model).unwrap()
+    };
+}
+
+#[derive(Debug, Clone)]
+pub enum ChainProtocol {
+    Push(Entry),
+    PushResult(Result<Pair, HolochainError>),
+    GetEntry(String),
+    GetEntryResult(Result<Option<Pair>, HolochainError>),
+}
+
+impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
+
+    fn into(self) -> ActorMsg<ChainProtocol> {
+        ActorMsg::User(self)
+    }
+
+}
 
 #[derive(Clone)]
-pub struct ChainIterator<T: HashTable> {
-    // @TODO thread safe table references
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    table: Rc<T>,
+pub struct ChainIterator {
+    table: ActorRef<HashTableProtocol>,
     current: Option<Pair>,
 }
 
-impl<T: HashTable> ChainIterator<T> {
+impl ChainIterator {
     // @TODO table implementation is changing anyway so waste of time to mess with ref/value
     // @see https://github.com/holochain/holochain-rust/issues/135
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
+    pub fn new(table: ActorRef<HashTableProtocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
-            table: Rc::clone(&table),
+            table: table.clone(),
         }
     }
 
@@ -30,7 +53,7 @@ impl<T: HashTable> ChainIterator<T> {
     }
 }
 
-impl<T: HashTable> Iterator for ChainIterator<T> {
+impl Iterator for ChainIterator {
     type Item = Pair;
 
     fn next(&mut self) -> Option<Pair> {
@@ -44,15 +67,39 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
     }
 }
 
-pub struct Chain<T: HashTable> {
+pub struct Chain {
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
-    table: Rc<T>,
+    table: ActorRef<HashTableProtocol>,
     top: Option<Pair>,
 }
 
-impl<T: HashTable> PartialEq for Chain<T> {
-    fn eq(&self, other: &Chain<T>) -> bool {
+impl Actor for Chain {
+    type Msg = ChainProtocol;
+
+    fn receive(
+        &mut self,
+        context: &Context<Self::Msg>,
+        message: Self::Msg,
+        sender: Option<ActorRef<Self::Msg>>,
+    ) {
+        println!("received {}", message);
+        sender.try_tell(
+            match message {
+                ChainProtocol::Push(entry) => {
+                    ChainProtocol::PushResult(self.push(entry))
+                },
+                ChainProtocol::GetEntry(key) => {
+                    ChainProtocol::GetEntryResult(self.get_entry(&key))
+                },
+            },
+            Some(context.myself()),
+        ).unwrap();
+    }
+}
+
+impl PartialEq for Chain {
+    fn eq(&self, other: &Chain) -> bool {
         // an invalid chain is like NaN... not even equal to itself
         self.validate() &&
         other.validate() &&
@@ -61,34 +108,42 @@ impl<T: HashTable> PartialEq for Chain<T> {
     }
 }
 
-impl<T: HashTable> Eq for Chain<T> {}
+impl Eq for Chain {}
 
-impl<T: HashTable> fmt::Debug for Chain<T> {
+impl fmt::Debug for Chain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Chain {{ top: {:?} }}", self.top)
     }
 }
 
-impl<T: HashTable> IntoIterator for Chain<T> {
+impl IntoIterator for Chain {
     type Item = Pair;
-    type IntoIter = ChainIterator<T>;
+    type IntoIter = ChainIterator;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
-impl<T: HashTable> Chain<T> {
+impl Chain {
     // @TODO table implementation is changing anyway so waste of time to mess with ref/value
     // @see https://github.com/holochain/holochain-rust/issues/135
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
     /// build a new Chain against an existing HashTable
-    pub fn new(table: Rc<T>) -> Chain<T> {
+    pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
         Chain {
             top: None,
-            table: Rc::clone(&table),
+            table: table.clone(),
         }
+    }
+
+    pub fn actor(table: &ActorRef<HashTableProtocol>) -> BoxActor<ChainProtocol> {
+        Box::new(Chain::new(&table))
+    }
+
+    pub fn props(table: &ActorRef<HashTableProtocol>) -> BoxActorProd<ChainProtocol> {
+        Props::new_args(Box::new(Chain::actor), &table)
     }
 
     /// returns a clone of the top Pair
@@ -97,8 +152,8 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> Rc<T> {
-        Rc::clone(&self.table)
+    pub fn table(&self) -> ActorRef<HashTableProtocol> {
+        self.table.clone()
     }
 
     /// private pair-oriented version of push() (which expects Entries)
@@ -122,7 +177,7 @@ impl<T: HashTable> Chain<T> {
 
         // @TODO implement incubator for thread safety
         // @see https://github.com/holochain/holochain-rust/issues/135
-        let table = Rc::get_mut(&mut self.table).unwrap();
+        let table = &mut self.table;
         let result = table.commit(&pair);
         if result.is_ok() {
             self.top = Some(pair.clone());
@@ -148,7 +203,7 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
-    pub fn iter(&self) -> ChainIterator<T> {
+    pub fn iter(&self) -> ChainIterator {
         ChainIterator::new(self.table(), &self.top())
     }
 
@@ -184,7 +239,7 @@ impl<T: HashTable> Chain<T> {
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: Rc<T>, s: &str) -> Self {
+    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Self {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();

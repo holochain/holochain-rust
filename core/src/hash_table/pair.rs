@@ -1,5 +1,5 @@
 use chain::Chain;
-use hash_table::{entry::Entry, header::Header, HashTable};
+use hash_table::{entry::Entry, header::Header};
 use serde_json;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -18,7 +18,7 @@ impl Pair {
     /// now be valid, the new Y' will include correct headers pointing to X.
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Pair {
+    pub fn new(chain: &Chain, entry: &Entry) -> Pair {
         let header = Header::new(chain, entry);
 
         let p = Pair {

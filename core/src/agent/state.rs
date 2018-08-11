@@ -1,6 +1,6 @@
 use agent::keys::Keys;
 use chain::Chain;
-use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
+use hash_table::{entry::Entry, pair::Pair};
 use instance::Observer;
 use riker::actors::*;
 use riker_default::DefaultModel;
@@ -8,10 +8,15 @@ use snowflake;
 use state;
 use std::{
     collections::HashMap,
-    rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use chain::actor::ChainActor;
+use chain::ChainProtocol;
+use hash_table::actor::HashTableActor;
+use hash_table::HashTable;
+use hash_table::actor::HashTableProtocol;
+use futures::executor::block_on;
+use riker_patterns::ask::ask;
+use chain::CHAIN_SYS;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -25,23 +30,25 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<Action, ActionResult>,
-    chain: ActorRef<String>,
+    chain: ActorRef<ChainProtocol>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new() -> AgentState {
-        let model: DefaultModel<String> = DefaultModel::new();
-        let sys = ActorSystem::new(&model).unwrap();
+    pub fn new<T: HashTable>(table: T) -> AgentState {
+        let table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
+        let table_sys = ActorSystem::new(&table_model).unwrap();
+        let table_props = HashTableActor::props(&table);
+        let table_actor = table_sys.actor_of(table_props, "table").unwrap();
 
-        let props = ChainActor::props();
-        let actor = sys.actor_of(props, "actor-name-here").unwrap();
+        let chain_props = Chain::props(&table_actor);
+        let chain = CHAIN_SYS.actor_of(chain_props, "chain").unwrap();
 
         AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
-            chain: actor,
+            chain,
         }
     }
 
@@ -114,22 +121,28 @@ pub enum ActionResult {
 fn do_action_commit(state: &mut AgentState, action: &Action) {
     match action {
         Action::Commit { entry, .. } => {
-            // add entry to source chain
-            // @TODO this does nothing!
-            // it needs to get something stateless from the agent state that points to
-            // something stateful that can handle an entire hash table (e.g. actor)
-            // @see https://github.com/holochain/holochain-rust/issues/135
-            // @see https://github.com/holochain/holochain-rust/issues/148
-            let mut chain = Chain::new(Rc::new(MemTable::new()));
-
             // @TODO successfully validate before pushing a commit
             // @see https://github.com/holochain/holochain-rust/issues/97
 
-            let result = chain.push(&entry).unwrap().entry().key();
+            let a = ask(
+                &(*CHAIN_SYS),
+                &state.chain,
+                ChainProtocol::Push(entry.clone()),
+            );
+            // .push(&entry).unwrap().entry().key();
+            let response = block_on(a).unwrap();
+            let result = match response {
+                ChainProtocol::PushResult(r) => {
+                    r.unwrap().entry().key()
+                }
+            };
             state
                 .actions
-                .insert(action.clone(), ActionResult::Commit(result));
-        }
+                .insert(
+                    action.clone(),
+                    ActionResult::Commit(result),
+                );
+        },
         _ => {
             panic!("action commit without commit action");
         }
@@ -141,25 +154,31 @@ fn do_action_commit(state: &mut AgentState, action: &Action) {
 fn do_action_get(state: &mut AgentState, action: &Action) {
     match action {
         Action::Get { key, .. } => {
-            // get pair from source chain
-            // @TODO this does nothing!
-            // it needs to get something stateless from the agent state that points to
-            // something stateful that can handle an entire hash table (e.g. actor)
-            // @see https://github.com/holochain/holochain-rust/issues/135
-            // @see https://github.com/holochain/holochain-rust/issues/148
 
             // drop in a dummy entry for testing
-            let mut chain = Chain::new(Rc::new(MemTable::new()));
-            let e = Entry::new("testEntryType", "test entry content");
-            chain.push(&e).unwrap();
+            let mut chain = state.chain;
+
+            let a = ask(
+                &(*CHAIN_SYS),
+                &state.chain,
+                ChainProtocol::GetEntry(key.clone()),
+            );
+            let response = block_on(a).unwrap();
+            let result = match response {
+                ChainProtocol::GetEntryResult(r) => {
+                    r.unwrap()
+                },
+            };
 
             // @TODO if the get fails local, do a network get
             // @see https://github.com/holochain/holochain-rust/issues/167
 
-            let result = chain.get_entry(&key).unwrap();
             state
                 .actions
-                .insert(action.clone(), ActionResult::Get(result));
+                .insert(
+                    action.clone(),
+                    ActionResult::Get(result),
+                );
         }
         _ => {
             panic!("action get without get action");

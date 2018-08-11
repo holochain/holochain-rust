@@ -7,13 +7,13 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV DOCKER_BUILD_USER holochain
 
 # The Rust version used for the Wasm builds
-ENV WASM_NIGHTLY nightly-2018-06-01
+ENV WASM_NIGHTLY nightly-2018-08-06
 
 # The Rust version used for the tools
-ENV TOOLS_NIGHTLY nightly-2018-07-17
+ENV TOOLS_NIGHTLY nightly-2018-08-06
 
 # The Rust version that is used everywhere else
-ENV CORE_RUST_VERSION stable
+ENV CORE_RUST_VERSION nightly-2018-08-06
 
 RUN apt-get update && apt-get install --yes\
   libssl-dev \

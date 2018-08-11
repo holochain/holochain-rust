@@ -1,4 +1,4 @@
-// pub mod memory;
+pub mod actor;
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;

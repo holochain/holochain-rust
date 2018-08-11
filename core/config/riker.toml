@@ -1,0 +1,37 @@
+debug = true
+
+[log]
+# max level to log
+level = "debug"
+
+# log format to use
+# correlates to format!(log_format, date=, time=, level=, module=, body=);
+# since named parameters are used the order of the fields is flexible
+# the formatting of each field can be changed also
+# e.g. to completely hide a field: {module:.0}
+# See: https://doc.rust-lang.org/std/fmt/#syntax
+
+# {date}    the calendar day
+# {time}    the calendar time
+# {level}   the level for the entry
+# {module}  the module path originating the entry
+# {body}    the message body
+log_format = "{date} {time} {level} [{module}] {body}"
+date_format = "%Y-%m-%d"
+time_format = "%H:%M:%S%:z"
+
+[mailbox]
+# maximum number of messages to process in each execution of mailbox
+# the mailbox will be rescheduled if there are any remaining messages
+msg_process_limit = 1000
+
+[dispatcher]
+# number of threads available to the CPU pool
+pool_size = 4
+
+[scheduler]
+frequency_millis = 50
+
+[cqrs]
+# number of seconds of inactivity after which a cqrs actor will sleep
+sleep_after_secs = 120

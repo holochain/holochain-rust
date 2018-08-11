@@ -2,6 +2,8 @@ use agent::keys::Keys;
 use chain::Chain;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
+use riker::actors::*;
+use riker_default::DefaultModel;
 use snowflake;
 use state;
 use std::{
@@ -9,8 +11,9 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use chain::actor::ChainActor;
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
@@ -22,15 +25,23 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<Action, ActionResult>,
+    chain: ActorRef<String>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new() -> AgentState {
+        let model: DefaultModel<String> = DefaultModel::new();
+        let sys = ActorSystem::new(&model).unwrap();
+
+        let props = ChainActor::props();
+        let actor = sys.actor_of(props, "actor-name-here").unwrap();
+
         AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
+            chain: actor,
         }
     }
 
@@ -186,6 +197,20 @@ pub mod tests {
     use super::{do_action_commit, do_action_get, Action, ActionResult, AgentState};
     use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
     use std::collections::HashMap;
+    use riker::actor::Tell;
+    use std::thread;
+
+    #[test]
+    fn test_actor_receive() {
+        let state = test_agent_state();
+
+        state.chain.tell("hi".to_string(), None);
+        let chain = state.chain.clone();
+        let handle = thread::spawn(move || {
+            chain.tell("thread hi!".to_string(), None);
+        });
+        handle.join().unwrap();
+    }
 
     /// builds a dummy agent state for testing
     pub fn test_agent_state() -> AgentState {

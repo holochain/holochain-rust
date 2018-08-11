@@ -11,6 +11,8 @@ extern crate test_utils;
 extern crate wasmi;
 #[macro_use]
 extern crate bitflags;
+extern crate riker;
+extern crate riker_default;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

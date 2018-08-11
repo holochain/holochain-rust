@@ -47,7 +47,7 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,

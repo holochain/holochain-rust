@@ -17,6 +17,8 @@ multihash = "0.8.0"
 rust-base58 = "0.0.4"
 bitflags = "1.0"
 holochain_wasm_utils = { path = "../wasm_utils"}
+riker = "0.1.1"
+riker-default = "0.1.1"
 
 [dev-dependencies]
 wabt = "0.4"

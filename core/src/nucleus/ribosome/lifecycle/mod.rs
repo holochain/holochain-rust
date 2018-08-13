@@ -104,7 +104,7 @@ impl Defn for LifecycleFunction {
         }
     }
 
-    fn capabilities(&self) -> ReservedCapabilityNames {
+    fn capability(&self) -> ReservedCapabilityNames {
         ReservedCapabilityNames::LifeCycle
     }
 }
@@ -140,7 +140,7 @@ pub fn call(
 ) -> LifecycleFunctionResult {
     let function_call = FunctionCall::new(
         zome,
-        &function.capabilities().as_str().to_string(),
+        &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
         &params.to_string(),
     );

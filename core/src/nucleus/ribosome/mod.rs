@@ -15,7 +15,7 @@ pub trait Defn: FromStr {
     /// convert an index to the function definition
     fn from_index(i: usize) -> Self;
 
-    fn capabilities(&self) -> ReservedCapabilityNames;
+    fn capability(&self) -> ReservedCapabilityNames;
 
     // @TODO how to add something to trait that returns functions with unknown params/return?
     // @see https://github.com/holochain/holochain-rust/issues/202

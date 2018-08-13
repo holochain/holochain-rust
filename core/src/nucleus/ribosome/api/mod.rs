@@ -79,7 +79,7 @@ impl Defn for ZomeAPIFunction {
         }
     }
 
-    fn capabilities(&self) -> ReservedCapabilityNames {
+    fn capability(&self) -> ReservedCapabilityNames {
         ReservedCapabilityNames::ZomeAPIFunction
     }
 }

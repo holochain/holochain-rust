@@ -20,7 +20,7 @@ use std::{str::FromStr, sync::mpsc::Sender};
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
 // @see https://github.com/holochain/holochain-rust/issues/200
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug, PartialEq)]
 pub enum LifecycleFunction {
     /// Error index for unimplemented functions
     MissingNo = 0,
@@ -44,7 +44,7 @@ impl FromStr for LifecycleFunction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "genesis" => Ok(LifecycleFunction::Genesis),
-            "validate_commit" => Ok(LifecycleFunction::Genesis),
+            "validate_commit" => Ok(LifecycleFunction::ValidateCommit),
             "receive" => Ok(LifecycleFunction::Receive),
             _ => Err("Cannot convert string to LifecycleFunction"),
         }
@@ -181,6 +181,8 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     use instance::{tests::test_instance, Instance};
+    use nucleus::ribosome::lifecycle::LifecycleFunction;
+    use std::str::FromStr;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -271,6 +273,28 @@ pub mod tests {
         );
 
         test_instance(dna)
+    }
+
+    #[test]
+    /// test the FromStr implementation for LifecycleFunction
+    fn test_from_str() {
+        assert_eq!(
+            LifecycleFunction::Genesis,
+            LifecycleFunction::from_str("genesis").unwrap(),
+        );
+        assert_eq!(
+            LifecycleFunction::ValidateCommit,
+            LifecycleFunction::from_str("validate_commit").unwrap(),
+        );
+        assert_eq!(
+            LifecycleFunction::Receive,
+            LifecycleFunction::from_str("receive").unwrap(),
+        );
+
+        assert_eq!(
+            "Cannot convert string to LifecycleFunction",
+            LifecycleFunction::from_str("foo").unwrap_err(),
+        );
     }
 
 }

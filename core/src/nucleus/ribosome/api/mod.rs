@@ -35,7 +35,7 @@ use wasmi::{
 /// Enumeration of all Zome functions known and used by HC Core
 /// Enumeration converts to str
 #[repr(usize)]
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug, PartialEq)]
 pub enum ZomeAPIFunction {
     /// Error index for unimplemented functions
     MissingNo = 0,
@@ -302,6 +302,8 @@ pub mod tests {
         FunctionCall,
     };
     use std::sync::{Arc, Mutex};
+    use super::ZomeAPIFunction;
+    use std::str::FromStr;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -424,6 +426,28 @@ pub mod tests {
             ).expect("test should be callable"),
             logger,
         )
+    }
+
+    #[test]
+    /// test the FromStr implementation for ZomeAPIFunction
+    fn test_from_str() {
+        assert_eq!(
+            ZomeAPIFunction::Debug,
+            ZomeAPIFunction::from_str("debug").unwrap(),
+        );
+        assert_eq!(
+            ZomeAPIFunction::Commit,
+            ZomeAPIFunction::from_str("commit").unwrap(),
+        );
+        assert_eq!(
+            ZomeAPIFunction::Get,
+            ZomeAPIFunction::from_str("get").unwrap(),
+        );
+
+        assert_eq!(
+            "Cannot convert string to ZomeAPIFunction",
+            ZomeAPIFunction::from_str("foo").unwrap_err(),
+        );
     }
 
 }

@@ -165,9 +165,9 @@ fn reduce_rir(
 /// Helper
 fn return_initialization_result(result: Option<String>, action_channel: &Sender<ActionWrapper>) {
     action_channel
-        .send(ActionWrapper::new(
-            &Action::ReturnInitializationResult(result),
-        ))
+        .send(ActionWrapper::new(&Action::ReturnInitializationResult(
+            result,
+        )))
         .expect("action channel to be open in reducer");
 }
 
@@ -309,9 +309,9 @@ fn reduce_ezf(
 
                     // Send ReturnResult Action
                     action_channel
-                        .send(ActionWrapper::new(
-                            &Action::ReturnZomeFunctionResult(result),
-                        ))
+                        .send(ActionWrapper::new(&Action::ReturnZomeFunctionResult(
+                            result,
+                        )))
                         .expect("action channel to be open in reducer");
                 });
             } else {
@@ -340,9 +340,9 @@ fn reduce_ezf(
     }
     if has_error {
         action_channel
-            .send(ActionWrapper::new(
-                &Action::ReturnZomeFunctionResult(result),
-            ))
+            .send(ActionWrapper::new(&Action::ReturnZomeFunctionResult(
+                result,
+            )))
             .expect("action channel to be open in reducer");
     }
 }

@@ -1,10 +1,8 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, Runtime, HcApiReturnCode},
-    callback::{
-        validate_commit::validate_commit, CallbackParams, CallbackResult,
-    },
+    api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
 };
 use serde_json;
 use std::sync::mpsc::channel;

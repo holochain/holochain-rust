@@ -1,5 +1,5 @@
 //use error::HolochainError;
-use action::{ActionWrapper};
+use action::ActionWrapper;
 use context::Context;
 use state::*;
 use std::{
@@ -54,7 +54,11 @@ impl Instance {
 
     /// Stack an Action in the Event Queue and block until is has been processed.
     pub fn dispatch_and_wait(&mut self, action_wrapper: &ActionWrapper) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, &action_wrapper);
+        dispatch_action_and_wait(
+            &self.action_channel,
+            &self.observer_channel,
+            &action_wrapper,
+        );
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -207,7 +211,10 @@ pub fn dispatch_action_with_observer<F>(
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: &ActionWrapper) -> ActionWrapper {
+pub fn dispatch_action(
+    action_channel: &Sender<ActionWrapper>,
+    action_wrapper: &ActionWrapper,
+) -> ActionWrapper {
     action_channel
         .send(action_wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
@@ -221,11 +228,9 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{
-        zome::{Zome},
-        Dna,
-    };
+    use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
+    use nucleus::ribosome::{callback::Callback, Defn};
     use persister::SimplePersister;
     use state::State;
     use std::{
@@ -233,8 +238,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use nucleus::ribosome::callback::Callback;
-    use nucleus::ribosome::Defn;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {

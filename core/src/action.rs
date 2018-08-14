@@ -36,7 +36,7 @@ impl ActionWrapper {
 
     /// read only access to id
     pub fn id(&self) -> snowflake::ProcessUniqueId {
-        self.id.clone()
+        self.id
     }
 }
 
@@ -88,7 +88,8 @@ pub enum Action {
 /// function signature for action handler functions
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
-pub type AgentReduceFn = fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type AgentReduceFn =
+    fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 pub type NucleusReduceFn =
     fn(Arc<Context>, &mut NucleusState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 

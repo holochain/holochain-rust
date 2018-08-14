@@ -171,11 +171,13 @@ impl Holochain {
 mod tests {
     extern crate holochain_agent;
     use super::*;
-    use holochain_core::{context::Context, persister::SimplePersister};
+    use holochain_core::{
+        context::Context,
+        nucleus::ribosome::{callback::Callback, Defn},
+        persister::SimplePersister,
+    };
     use std::sync::{Arc, Mutex};
     use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
-    use holochain_core::nucleus::ribosome::callback::Callback;
-    use holochain_core::nucleus::ribosome::Defn;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};

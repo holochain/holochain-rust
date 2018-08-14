@@ -104,9 +104,10 @@ fn reduce_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
-    state
-        .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(chain.push(&entry)));
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::Commit(chain.push(&entry)),
+    );
 }
 
 /// do a get action against an agent state
@@ -161,7 +162,12 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(&mut new_state, &action_wrapper, action_channel, observer_channel);
+            f(
+                &mut new_state,
+                &action_wrapper,
+                action_channel,
+                observer_channel,
+            );
             Arc::new(new_state)
         }
         None => old_state,

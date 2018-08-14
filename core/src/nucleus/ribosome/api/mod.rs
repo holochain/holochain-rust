@@ -108,14 +108,9 @@ impl FromStr for ZomeAPIFunction {
 }
 
 impl ZomeAPIFunction {
-    pub fn as_fn(
-        &self,
-    ) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(
-            _runtime: &mut Runtime,
-            _args: &RuntimeArgs,
-        ) -> Result<Option<RuntimeValue>, Trap> {
+        fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
@@ -307,14 +302,16 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
+    use super::ZomeAPIFunction;
     use instance::tests::{test_context_and_logger, test_instance, TestLogger};
     use nucleus::{
         ribosome::api::{call, Runtime},
         FunctionCall,
     };
-    use std::sync::{Arc, Mutex};
-    use super::ZomeAPIFunction;
-    use std::str::FromStr;
+    use std::{
+        str::FromStr,
+        sync::{Arc, Mutex},
+    };
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 

@@ -1,6 +1,6 @@
 pub mod genesis;
-pub mod validate_commit;
 pub mod receive;
+pub mod validate_commit;
 
 use action::ActionWrapper;
 use error::HolochainError;
@@ -10,7 +10,7 @@ use instance::Observer;
 use nucleus::{
     call_zome_and_wait_for_result,
     ribosome::{
-        callback::{genesis::genesis, validate_commit::validate_commit, receive::receive},
+        callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
         Defn,
     },
     FunctionCall,
@@ -193,14 +193,13 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
     extern crate holochain_agent;
+    extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     use instance::{tests::test_instance, Instance};
-    use nucleus::ribosome::callback::Callback;
+    use nucleus::ribosome::{callback::Callback, Defn};
     use std::str::FromStr;
-    use nucleus::ribosome::Defn;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -279,14 +278,13 @@ pub mod tests {
             .to_vec()
     }
 
-    pub fn test_callback_instance(
-        zome: &str,
-        canonical_name: &str,
-        result: i32,
-    ) -> Instance {
+    pub fn test_callback_instance(zome: &str, canonical_name: &str, result: i32) -> Instance {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
-            Callback::from_str(canonical_name).unwrap().capability().as_str(),
+            Callback::from_str(canonical_name)
+                .unwrap()
+                .capability()
+                .as_str(),
             test_callback_wasm(canonical_name, result),
         );
 
@@ -296,18 +294,12 @@ pub mod tests {
     #[test]
     /// test the FromStr implementation for LifecycleFunction
     fn test_from_str() {
-        assert_eq!(
-            Callback::Genesis,
-            Callback::from_str("genesis").unwrap(),
-        );
+        assert_eq!(Callback::Genesis, Callback::from_str("genesis").unwrap(),);
         assert_eq!(
             Callback::ValidateCommit,
             Callback::from_str("validate_commit").unwrap(),
         );
-        assert_eq!(
-            Callback::Receive,
-            Callback::from_str("receive").unwrap(),
-        );
+        assert_eq!(Callback::Receive, Callback::from_str("receive").unwrap(),);
 
         assert_eq!(
             "Cannot convert string to Callback",

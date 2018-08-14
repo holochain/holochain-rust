@@ -1,9 +1,7 @@
 use super::call;
 use action::ActionWrapper;
 use instance::Observer;
-use nucleus::ribosome::callback::{
-    Callback, CallbackParams, CallbackResult,
-};
+use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
 use std::sync::mpsc::Sender;
 
 pub fn genesis(
@@ -27,18 +25,14 @@ pub mod tests {
 
     use super::genesis;
     use nucleus::ribosome::{
-        callback::{
-            tests::test_callback_instance, Callback, CallbackParams,
-            CallbackResult,
-        },
+        callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
         Defn,
     };
 
     #[test]
     fn pass() {
         let zome = "test_zome";
-        let instance =
-            test_callback_instance(zome, Callback::Genesis.as_str(), 0);
+        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0);
 
         let result = genesis(
             &instance.action_channel(),
@@ -73,8 +67,7 @@ pub mod tests {
     #[test]
     fn fail() {
         let zome = "test_zome";
-        let instance =
-            test_callback_instance(zome, Callback::Genesis.as_str(), 1);
+        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
 
         let result = genesis(
             &instance.action_channel(),

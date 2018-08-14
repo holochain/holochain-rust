@@ -253,7 +253,7 @@ fn fn_names_as_vec(
         .capabilities
         .iter()
         .find(|&c| c.name == capability_name)?
-        .fn_declarations
+        .functions
         .iter()
         .map(|fn_declaration| {
             let raw = match CString::new(fn_declaration.name.clone()) {
@@ -295,10 +295,9 @@ fn fn_parameters_as_vec(
         .capabilities
         .iter()
         .find(|&c| c.name == capability_name)?
-        .fn_declarations
+        .functions
         .iter()
         .find(|&function| function.name == function_name)?
-        .signature
         .inputs
         .iter()
         .map(|input| {

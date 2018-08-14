@@ -275,13 +275,11 @@ mod tests {
                                 "capability": {
                                     "membrane": "public"
                                 },
-                                "fn_declarations": [
+                                "functions": [
                                     {
                                         "name": "test",
-                                        "signature": {
-                                            "inputs": [],
-                                            "outputs": []
-                                        }
+                                        "inputs": [],
+                                        "outputs": []
                                     }
                                 ],
                                 "code": {

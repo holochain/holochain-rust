@@ -130,19 +130,14 @@ impl FnParameter {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct FnSignature {
-    pub inputs: Vec<FnParameter>,
-    pub outputs: Vec<FnParameter>,
-}
-
 /// Represents a zome "fn_declarations" object.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct FnDeclaration {
     /// The name of this fn declaration.
     #[serde(default)]
     pub name: String,
-    pub signature: FnSignature,
+    pub inputs: Vec<FnParameter>,
+    pub outputs: Vec<FnParameter>,
 }
 
 impl Default for FnDeclaration {
@@ -150,10 +145,8 @@ impl Default for FnDeclaration {
     fn default() -> Self {
         FnDeclaration {
             name: String::from(""),
-            signature: FnSignature {
-                inputs: Vec::new(),
-                outputs: Vec::new(),
-            },
+            inputs: Vec::new(),
+            outputs: Vec::new(),
         }
     }
 }
@@ -178,7 +171,7 @@ pub struct Capability {
 
     /// "fn_declarations" array
     #[serde(default)]
-    pub fn_declarations: Vec<FnDeclaration>,
+    pub functions: Vec<FnDeclaration>,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -191,7 +184,7 @@ impl Default for Capability {
         Capability {
             name: String::from(""),
             capability: CapabilityType::new(),
-            fn_declarations: Vec::new(),
+            functions: Vec::new(),
             code: DnaWasm::new(),
         }
     }
@@ -217,24 +210,21 @@ mod tests {
                 "capability": {
                     "membrane": "agent"
                 },
-                "fn_declarations": [
+                "functions": [
                     {
                         "name": "test",
-                        "signature" :
-                        {
-                            "inputs" : [
-                                {
-                                    "name": "post",
-                                    "type": "string"
-                                }
-                            ],
-                            "outputs" : [
-                                {
-                                    "name": "hash",
-                                    "type": "string"
-                                }
-                            ]
-                        }
+                        "inputs" : [
+                            {
+                                "name": "post",
+                                "type": "string"
+                            }
+                        ],
+                        "outputs" : [
+                            {
+                                "name": "hash",
+                                "type": "string"
+                            }
+                        ]
                     }
                 ],
                 "code": {
@@ -249,9 +239,9 @@ mod tests {
         fn_dec.name = String::from("test");
         let input = FnParameter::new("post", "string");
         let output = FnParameter::new("hash", "string");
-        fn_dec.signature.inputs.push(input);
-        fn_dec.signature.outputs.push(output);
-        cap.fn_declarations.push(fn_dec);
+        fn_dec.inputs.push(input);
+        fn_dec.outputs.push(output);
+        cap.functions.push(fn_dec);
         cap.code.code = vec![0, 1, 2, 3];
 
         assert_eq!(fixture, cap);

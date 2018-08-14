@@ -11,8 +11,12 @@ use std::{
 };
 
 #[derive(Clone, Debug)]
-// @TODO what is wrapper for?
-// https://github.com/holochain/holochain-rust/issues/192
+/// Wrapper for actions that provides a unique ID
+/// The unique ID is needed for state tracking to ensure that we can differentiate between two
+/// Action dispatches containing the same value when doing "time travel debug".
+/// The standard approach is to drop the ActionWrapper into the key of a state history HashMap and
+/// use the convenience unwrap_to! macro to extract the action data in a reducer.
+/// All reducer functions must accept an ActionWrapper so all dispatchers take an ActionWrapper.
 pub struct ActionWrapper {
     action: Action,
     id: snowflake::ProcessUniqueId,
@@ -127,7 +131,7 @@ pub mod tests {
 
     #[test]
     /// smoke test actions
-    pub fn new_action() {
+    fn new_action() {
         let a1 = test_action();
         let a2 = test_action();
 
@@ -137,7 +141,7 @@ pub mod tests {
 
     #[test]
     /// tests that new action wrappers take an action and ensure uniqueness
-    pub fn new_action_wrapper() {
+    fn new_action_wrapper() {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
@@ -148,12 +152,23 @@ pub mod tests {
 
     #[test]
     /// tests read access to actions
-    pub fn action_signal() {
+    fn action_wrapper_action() {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
         assert_eq!(aw1.action(), aw2.action());
         assert_eq!(aw1.action(), test_action());
+    }
+
+    #[test]
+    /// tests read access to action wrapper ids
+    fn action_wrapper_id() {
+        // can't set the ID directly (by design)
+        // at least test that IDs are unique, and that hitting the id() method doesn't error
+        let aw1 = test_action_wrapper();
+        let aw2 = test_action_wrapper();
+
+        assert_ne!(aw1.id(), aw2.id());
     }
 
 }

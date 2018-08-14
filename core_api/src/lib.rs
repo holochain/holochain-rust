@@ -172,9 +172,10 @@ mod tests {
     extern crate holochain_agent;
     use super::*;
     use holochain_core::{context::Context, persister::SimplePersister};
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     use std::sync::{Arc, Mutex};
     use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
+    use holochain_core::nucleus::ribosome::callback::Callback;
+    use holochain_core::nucleus::ribosome::Defn;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -217,7 +218,7 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            ReservedCapabilityNames::LifeCycle.as_str(),
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module
@@ -247,7 +248,7 @@ mod tests {
     fn fails_instantiate_if_genesis_times_out() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            ReservedCapabilityNames::LifeCycle.as_str(),
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module

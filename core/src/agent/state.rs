@@ -83,9 +83,10 @@ impl ActionResponse {
 
 /// do a commit action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-/// lifecycle checks (e.g. validate_commit) happen elsewhere because lifecycle functions cause
+/// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
-/// @TODO is there a way to reduce that doesn't block indefinitely on lifecycle fns?
+/// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
+/// @see https://github.com/holochain/holochain-rust/issues/222
 fn reduce_commit(
     state: &mut AgentState,
     action: &Action,

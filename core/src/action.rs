@@ -77,7 +77,7 @@ impl Eq for Action {}
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Signal {
     /// entry to Commit
-    /// MUST already have passed all lifecycle checks
+    /// MUST already have passed all callback checks
     Commit(Entry),
     /// hash to Get
     Get(String),

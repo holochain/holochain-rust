@@ -11,15 +11,16 @@ use wasm::DnaWasm;
 /// Enumeration of all Capabilities known and used by HC Core
 /// Enumeration converts to str
 pub enum ReservedCapabilityNames {
+    /// Development placeholder, no production fn should use MissingNo
+    MissingNo,
+
     /// @TODO document what LifeCycle is
     /// @see https://github.com/holochain/holochain-rust/issues/204
     LifeCycle,
+
     /// @TODO document what Communication is
     /// @see https://github.com/holochain/holochain-rust/issues/204
     Communication,
-    /// @TODO document what ZomeAPIFunction is
-    /// @see https://github.com/holochain/holochain-rust/issues/204
-    ZomeAPIFunction,
 }
 
 impl FromStr for ReservedCapabilityNames {
@@ -28,7 +29,6 @@ impl FromStr for ReservedCapabilityNames {
         match s {
             "hc_lifecycle" => Ok(ReservedCapabilityNames::LifeCycle),
             "hc_web_gateway" => Ok(ReservedCapabilityNames::Communication),
-            "hc_zome_api_function" => Ok(ReservedCapabilityNames::ZomeAPIFunction),
             _ => Err("Cannot convert string to ReservedCapabilityNames"),
         }
     }
@@ -39,7 +39,7 @@ impl ReservedCapabilityNames {
         match *self {
             ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
             ReservedCapabilityNames::Communication => "hc_web_gateway",
-            ReservedCapabilityNames::ZomeAPIFunction => "hc_zome_api_function",
+            ReservedCapabilityNames::MissingNo => "",
         }
     }
 }
@@ -200,10 +200,6 @@ mod tests {
             ReservedCapabilityNames::from_str("hc_web_gateway"),
         );
         assert_eq!(
-            Ok(ReservedCapabilityNames::ZomeAPIFunction),
-            ReservedCapabilityNames::from_str("hc_zome_api_function"),
-        );
-        assert_eq!(
             Err("Cannot convert string to ReservedCapabilityNames"),
             ReservedCapabilityNames::from_str("foo"),
         );
@@ -216,10 +212,6 @@ mod tests {
         assert_eq!(
             ReservedCapabilityNames::Communication.as_str(),
             "hc_web_gateway",
-        );
-        assert_eq!(
-            ReservedCapabilityNames::ZomeAPIFunction.as_str(),
-            "hc_zome_api_function",
         );
     }
 

@@ -65,7 +65,7 @@ impl Defn for ZomeAPIFunction {
         }
     }
 
-    fn str_index(s: &str) -> usize {
+    fn str_to_index(s: &str) -> usize {
         match ZomeAPIFunction::from_str(s) {
             Ok(i) => i as usize,
             Err(_) => ZomeAPIFunction::MissingNo as usize,
@@ -80,7 +80,18 @@ impl Defn for ZomeAPIFunction {
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
-        ReservedCapabilityNames::ZomeAPIFunction
+        match *self {
+            ZomeAPIFunction::MissingNo => ReservedCapabilityNames::MissingNo,
+            // @TODO what should this be?
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
+            // @TODO what should this be?
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            ZomeAPIFunction::Commit => ReservedCapabilityNames::MissingNo,
+            // @TODO what should this be?
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            ZomeAPIFunction::Get => ReservedCapabilityNames::MissingNo,
+        }
     }
 }
 
@@ -99,10 +110,10 @@ impl FromStr for ZomeAPIFunction {
 impl ZomeAPIFunction {
     pub fn as_fn(
         &self,
-    ) -> (fn(&mut FunctionRuntime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    ) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(
-            _runtime: &mut FunctionRuntime,
+            _runtime: &mut Runtime,
             _args: &RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             Ok(Some(RuntimeValue::I32(0 as i32)))
@@ -123,7 +134,7 @@ impl ZomeAPIFunction {
 
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone)]
-pub struct FunctionRuntime {
+pub struct Runtime {
     context: Arc<Context>,
     pub result: String,
     action_channel: Sender<ActionWrapper>,
@@ -133,7 +144,7 @@ pub struct FunctionRuntime {
 }
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
-pub fn runtime_args_to_utf8(runtime: &FunctionRuntime, args: &RuntimeArgs) -> String {
+pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
     // @TODO don't panic in WASM
     // @see https://github.com/holochain/holochain-rust/issues/159
     assert_eq!(1, args.len());
@@ -157,7 +168,7 @@ pub fn runtime_args_to_utf8(runtime: &FunctionRuntime, args: &RuntimeArgs) -> St
 /// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
 /// returns a Result suitable to return directly from a zome API function
 pub fn runtime_allocate_encode_str(
-    runtime: &mut FunctionRuntime,
+    runtime: &mut Runtime,
     s: &str,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // write str to runtime memory
@@ -187,12 +198,12 @@ pub fn call(
     wasm: Vec<u8>,
     function_call: &FunctionCall,
     parameters: Option<Vec<u8>>,
-) -> Result<FunctionRuntime, InterpreterError> {
+) -> Result<Runtime, InterpreterError> {
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).unwrap();
 
     // Describe invokable functions from within Zome
-    impl Externals for FunctionRuntime {
+    impl Externals for Runtime {
         fn invoke_index(
             &mut self,
             index: usize,
@@ -214,7 +225,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let index = ZomeAPIFunction::str_index(&field_name);
+            let index = ZomeAPIFunction::str_to_index(&field_name);
             match index {
                 index if index == ZomeAPIFunction::MissingNo as usize => {
                     return Err(InterpreterError::Function(format!(
@@ -243,7 +254,7 @@ pub fn call(
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
-    let mut runtime = FunctionRuntime {
+    let mut runtime = Runtime {
         context,
         result: String::new(),
         action_channel: action_channel.clone(),
@@ -298,7 +309,7 @@ pub mod tests {
     extern crate test_utils;
     use instance::tests::{test_context_and_logger, test_instance, TestLogger};
     use nucleus::{
-        ribosome::api::{call, FunctionRuntime},
+        ribosome::api::{call, Runtime},
         FunctionCall,
     };
     use std::sync::{Arc, Mutex};
@@ -401,9 +412,9 @@ pub mod tests {
     pub fn test_zome_api_function_runtime(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (FunctionRuntime, Arc<Mutex<TestLogger>>) {
+    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
         let zome_name = "test_zome";
-        let capability = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+        let capability = ReservedCapabilityNames::MissingNo.as_str().to_string();
         let function_name = "test";
         let parameters = "";
 

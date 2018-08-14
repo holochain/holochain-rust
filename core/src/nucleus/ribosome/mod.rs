@@ -1,5 +1,5 @@
 pub mod api;
-pub mod lifecycle;
+pub mod callback;
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -10,7 +10,7 @@ pub trait Defn: FromStr {
     fn as_str(&self) -> &'static str;
 
     /// convert the canonical name of this function to an index
-    fn str_index(s: &str) -> usize;
+    fn str_to_index(s: &str) -> usize;
 
     /// convert an index to the function definition
     fn from_index(i: usize) -> Self;

@@ -1,5 +1,7 @@
 pub mod genesis;
 pub mod validate_commit;
+pub mod receive;
+
 use action::ActionWrapper;
 use error::HolochainError;
 use hash_table::entry::Entry;
@@ -8,7 +10,7 @@ use instance::Observer;
 use nucleus::{
     call_zome_and_wait_for_result,
     ribosome::{
-        lifecycle::{genesis::genesis, validate_commit::validate_commit},
+        callback::{genesis::genesis, validate_commit::validate_commit, receive::receive},
         Defn,
     },
     FunctionCall,
@@ -16,22 +18,24 @@ use nucleus::{
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
 
-// Lifecycle functions are zome logic called by HC actions
+// Callback functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
 // @see https://github.com/holochain/holochain-rust/issues/200
 
 #[derive(FromPrimitive, Debug, PartialEq)]
-pub enum LifecycleFunction {
+pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,
+
+    /// MissingNo Capability
+
+    /// validate_commit() -> bool
+    ValidateCommit,
 
     /// LifeCycle Capability
 
     /// genesis() -> bool
     Genesis,
-
-    /// validate_commit() -> bool
-    ValidateCommit,
 
     /// Communication Capability
 
@@ -39,93 +43,107 @@ pub enum LifecycleFunction {
     Receive,
 }
 
-impl FromStr for LifecycleFunction {
+impl FromStr for Callback {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "genesis" => Ok(LifecycleFunction::Genesis),
-            "validate_commit" => Ok(LifecycleFunction::ValidateCommit),
-            "receive" => Ok(LifecycleFunction::Receive),
-            _ => Err("Cannot convert string to LifecycleFunction"),
+            "genesis" => Ok(Callback::Genesis),
+            "validate_commit" => Ok(Callback::ValidateCommit),
+            "receive" => Ok(Callback::Receive),
+            "" => Ok(Callback::MissingNo),
+            _ => Err("Cannot convert string to Callback"),
         }
     }
 }
 
-impl LifecycleFunction {
+impl Callback {
     pub fn as_fn(
         &self,
     ) -> fn(
         action_channel: &Sender<ActionWrapper>,
         observer_channel: &Sender<Observer>,
         zome: &str,
-        params: &LifecycleFunctionParams,
-    ) -> LifecycleFunctionResult {
+        params: &CallbackParams,
+    ) -> CallbackResult {
         fn noop(
             _action_channel: &Sender<ActionWrapper>,
             _observer_channel: &Sender<Observer>,
             _zome: &str,
-            _params: &LifecycleFunctionParams,
-        ) -> LifecycleFunctionResult {
-            LifecycleFunctionResult::Pass
+            _params: &CallbackParams,
+        ) -> CallbackResult {
+            CallbackResult::Pass
         }
 
         match *self {
-            LifecycleFunction::MissingNo => noop,
-            LifecycleFunction::Genesis => genesis,
-            LifecycleFunction::ValidateCommit => validate_commit,
-            // @TODO
+            Callback::MissingNo => noop,
+            Callback::Genesis => genesis,
+            Callback::ValidateCommit => validate_commit,
+            // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
-            LifecycleFunction::Receive => noop,
+            Callback::Receive => receive,
         }
     }
 }
 
-impl Defn for LifecycleFunction {
+impl Defn for Callback {
     fn as_str(&self) -> &'static str {
         match *self {
-            LifecycleFunction::MissingNo => "",
-            LifecycleFunction::Genesis => "genesis",
-            LifecycleFunction::ValidateCommit => "validate_commit",
-            LifecycleFunction::Receive => "receive",
+            Callback::MissingNo => "",
+            Callback::Genesis => "genesis",
+            Callback::ValidateCommit => "validate_commit",
+            Callback::Receive => "receive",
         }
     }
 
-    fn str_index(s: &str) -> usize {
-        match LifecycleFunction::from_str(s) {
+    fn str_to_index(s: &str) -> usize {
+        match Callback::from_str(s) {
             Ok(i) => i as usize,
-            Err(_) => LifecycleFunction::MissingNo as usize,
+            Err(_) => Callback::MissingNo as usize,
         }
     }
 
     fn from_index(i: usize) -> Self {
         match FromPrimitive::from_usize(i) {
             Some(v) => v,
-            None => LifecycleFunction::MissingNo,
+            None => Callback::MissingNo,
         }
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
-        ReservedCapabilityNames::LifeCycle
+        match *self {
+            Callback::MissingNo => ReservedCapabilityNames::MissingNo,
+            Callback::Genesis => ReservedCapabilityNames::LifeCycle,
+            // @TODO needs a sensible capability
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            Callback::ValidateCommit => ReservedCapabilityNames::MissingNo,
+            // @TODO call this from somewhere
+            // @see https://github.com/holochain/holochain-rust/issues/201
+            Callback::Receive => ReservedCapabilityNames::Communication,
+        }
     }
 }
 
 #[derive(Debug)]
-pub enum LifecycleFunctionParams {
+pub enum CallbackParams {
     Genesis,
     ValidateCommit(Entry),
+    // @TODO call this from somewhere
+    // @see https://github.com/holochain/holochain-rust/issues/201
+    Receive,
 }
 
-impl ToString for LifecycleFunctionParams {
+impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            LifecycleFunctionParams::Genesis => "".to_string(),
-            LifecycleFunctionParams::ValidateCommit(entry) => entry.to_json(),
+            CallbackParams::Genesis => "".to_string(),
+            CallbackParams::ValidateCommit(entry) => entry.to_json(),
+            CallbackParams::Receive => "".to_string(),
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum LifecycleFunctionResult {
+pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
@@ -135,9 +153,9 @@ pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: &str,
-    function: &LifecycleFunction,
-    params: &LifecycleFunctionParams,
-) -> LifecycleFunctionResult {
+    function: &Callback,
+    params: &CallbackParams,
+) -> CallbackResult {
     let function_call = FunctionCall::new(
         zome,
         &function.capability().as_str().to_string(),
@@ -151,11 +169,11 @@ pub fn call(
     // translate the call result to a lifecycle result
     match call_result {
         // empty string OK = Success
-        Ok(ref s) if s.is_empty() => LifecycleFunctionResult::Pass,
+        Ok(ref s) if s.is_empty() => CallbackResult::Pass,
 
         // things that = NotImplemented
-        Err(HolochainError::CapabilityNotFound(_)) => LifecycleFunctionResult::NotImplemented,
-        Err(HolochainError::ZomeFunctionNotFound(_)) => LifecycleFunctionResult::NotImplemented,
+        Err(HolochainError::CapabilityNotFound(_)) => CallbackResult::NotImplemented,
+        Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
         // @TODO this looks super fragile
         // without it we get stack overflows, but with it we rely on a specific string
         Err(HolochainError::ErrorGeneric(ref msg))
@@ -164,29 +182,29 @@ pub fn call(
                 function.as_str()
             ) =>
         {
-            LifecycleFunctionResult::NotImplemented
+            CallbackResult::NotImplemented
         }
 
         // string value or error = fail
-        Ok(s) => LifecycleFunctionResult::Fail(s),
-        Err(err) => LifecycleFunctionResult::Fail(err.to_string()),
+        Ok(s) => CallbackResult::Fail(s),
+        Err(err) => CallbackResult::Fail(err.to_string()),
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
     extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     use instance::{tests::test_instance, Instance};
-    use nucleus::ribosome::lifecycle::LifecycleFunction;
+    use nucleus::ribosome::callback::Callback;
     use std::str::FromStr;
+    use nucleus::ribosome::Defn;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
-    pub fn test_lifecycle_function_wasm(canonical_name: &str, result: i32) -> Vec<u8> {
+    pub fn test_callback_wasm(canonical_name: &str, result: i32) -> Vec<u8> {
         Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
@@ -261,15 +279,15 @@ pub mod tests {
             .to_vec()
     }
 
-    pub fn test_lifecycle_function_instance(
+    pub fn test_callback_instance(
         zome: &str,
         canonical_name: &str,
         result: i32,
     ) -> Instance {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
-            ReservedCapabilityNames::LifeCycle.as_str(),
-            test_lifecycle_function_wasm(canonical_name, result),
+            Callback::from_str(canonical_name).unwrap().capability().as_str(),
+            test_callback_wasm(canonical_name, result),
         );
 
         test_instance(dna)
@@ -279,21 +297,21 @@ pub mod tests {
     /// test the FromStr implementation for LifecycleFunction
     fn test_from_str() {
         assert_eq!(
-            LifecycleFunction::Genesis,
-            LifecycleFunction::from_str("genesis").unwrap(),
+            Callback::Genesis,
+            Callback::from_str("genesis").unwrap(),
         );
         assert_eq!(
-            LifecycleFunction::ValidateCommit,
-            LifecycleFunction::from_str("validate_commit").unwrap(),
+            Callback::ValidateCommit,
+            Callback::from_str("validate_commit").unwrap(),
         );
         assert_eq!(
-            LifecycleFunction::Receive,
-            LifecycleFunction::from_str("receive").unwrap(),
+            Callback::Receive,
+            Callback::from_str("receive").unwrap(),
         );
 
         assert_eq!(
-            "Cannot convert string to LifecycleFunction",
-            LifecycleFunction::from_str("foo").unwrap_err(),
+            "Cannot convert string to Callback",
+            Callback::from_str("foo").unwrap_err(),
         );
     }
 

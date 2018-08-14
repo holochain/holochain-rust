@@ -8,7 +8,7 @@ use error::HolochainError;
 use action::{Action, ActionWrapper, NucleusReduceFn, Signal};
 use instance::Observer;
 use nucleus::{
-    ribosome::lifecycle::{genesis::genesis, LifecycleFunctionParams, LifecycleFunctionResult},
+    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::{NucleusState, NucleusStatus},
 };
 use snowflake;
@@ -209,7 +209,7 @@ fn reduce_ia(
                             &genesis_action_channel,
                             &genesis_observer_channel,
                             &zome.name(),
-                            &LifecycleFunctionParams::Genesis,
+                            &CallbackParams::Genesis,
                         )
                     })
                     .collect();
@@ -226,13 +226,13 @@ fn reduce_ia(
                 // initialization result on its own, because then it will miss the genesis
                 // sometimes where a genesis does happen.
                 if results.is_empty() {
-                    results.push(LifecycleFunctionResult::Pass);
+                    results.push(CallbackResult::Pass);
                 }
 
                 // map the genesis results to initialization result responses
                 for result in results {
                     match result {
-                        LifecycleFunctionResult::Fail(s) => return_initialization_result(
+                        CallbackResult::Fail(s) => return_initialization_result(
                             Some(s.to_string()),
                             &genesis_action_channel,
                         ),

@@ -226,7 +226,7 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{
-        zome::{capabilities::ReservedCapabilityNames, Zome},
+        zome::{Zome},
         Dna,
     };
     use logger::Logger;
@@ -237,6 +237,8 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
+    use nucleus::ribosome::callback::Callback;
+    use nucleus::ribosome::Defn;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -426,7 +428,7 @@ pub mod tests {
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
         let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+        dna.zomes[0].capabilities[0].name = Callback::Genesis.capability().as_str().to_string();
 
         let instance = test_instance(dna);
 
@@ -441,7 +443,7 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            ReservedCapabilityNames::LifeCycle.as_str(),
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module
@@ -471,7 +473,7 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            ReservedCapabilityNames::LifeCycle.as_str(),
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module

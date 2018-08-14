@@ -1,9 +1,9 @@
 use action::{Action, Signal};
 use agent::state::ActionResponse;
 use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, FunctionRuntime, HcApiReturnCode},
-    lifecycle::{
-        validate_commit::validate_commit, LifecycleFunctionParams, LifecycleFunctionResult,
+    api::{runtime_allocate_encode_str, runtime_args_to_utf8, Runtime, HcApiReturnCode},
+    callback::{
+        validate_commit::validate_commit, CallbackParams, CallbackResult,
     },
 };
 use serde_json;
@@ -22,7 +22,7 @@ struct CommitArgs {
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_commit(
-    runtime: &mut FunctionRuntime,
+    runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
@@ -45,14 +45,14 @@ pub fn invoke_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
         &runtime.function_call.zome,
-        &LifecycleFunctionParams::ValidateCommit(entry.clone()),
+        &CallbackParams::ValidateCommit(entry.clone()),
     );
 
     // @TODO test that failing validation prevents commits happening
     // @see https://github.com/holochain/holochain-rust/issues/206
     match validate_result {
-        LifecycleFunctionResult::Fail(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorLifecycleResult as i32,
+        CallbackResult::Fail(_) => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ErrorCallbackResult as i32,
         ))),
         // anything other than a fail means we should commit the entry
         _ => {

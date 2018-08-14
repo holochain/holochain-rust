@@ -93,7 +93,7 @@ pub enum Action {
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn =
-    fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
+    fn(Arc<Context>, &mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 pub type NucleusReduceFn =
     fn(Arc<Context>, &mut NucleusState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 

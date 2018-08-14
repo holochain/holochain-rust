@@ -9,6 +9,7 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use context::Context;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -88,6 +89,7 @@ impl ActionResponse {
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
 /// @see https://github.com/holochain/holochain-rust/issues/222
 fn reduce_commit(
+    _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
     _action_channel: &Sender<ActionWrapper>,
@@ -113,6 +115,7 @@ fn reduce_commit(
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
 fn reduce_get(
+    _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
     _action_channel: &Sender<ActionWrapper>,
@@ -153,6 +156,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
+    context: Arc<Context>,
     old_state: Arc<AgentState>,
     action_wrapper: &ActionWrapper,
     action_channel: &Sender<ActionWrapper>,
@@ -163,6 +167,7 @@ pub fn reduce(
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
             f(
+                context,
                 &mut new_state,
                 &action_wrapper,
                 action_channel,
@@ -182,6 +187,7 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
     use std::collections::HashMap;
+    use instance::tests::test_context;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -231,6 +237,7 @@ pub mod tests {
         let instance = test_instance_blank();
 
         reduce_commit(
+            test_context("bob"),
             &mut state,
             &action_wrapper,
             &instance.action_channel().clone(),
@@ -252,6 +259,7 @@ pub mod tests {
         let instance = test_instance_blank();
 
         reduce_get(
+            test_context("foo"),
             &mut state,
             &action_wrapper,
             &instance.action_channel().clone(),

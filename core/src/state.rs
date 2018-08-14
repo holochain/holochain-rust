@@ -35,13 +35,14 @@ impl State {
     ) -> Self {
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
-                context,
+                context.clone(),
                 Arc::clone(&self.nucleus),
                 &action_wrapper,
                 action_channel,
                 observer_channel,
             ),
             agent: ::agent::state::reduce(
+                context.clone(),
                 Arc::clone(&self.agent),
                 &action_wrapper,
                 action_channel,

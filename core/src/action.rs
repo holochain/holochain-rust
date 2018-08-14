@@ -104,6 +104,7 @@ pub mod tests {
     use hash::tests::test_hash;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::tests::test_function_result;
+    use test_utils::calculate_hash;
 
     /// dummy action
     pub fn test_action() -> Action {
@@ -169,6 +170,18 @@ pub mod tests {
         let aw2 = test_action_wrapper();
 
         assert_ne!(aw1.id(), aw2.id());
+    }
+
+    #[test]
+    /// tests that action wrapper hashes are unique
+    fn action_wrapper_hash() {
+        let aw1 = test_action_wrapper();
+        let aw2 = test_action_wrapper();
+
+        assert_ne!(
+            calculate_hash(&aw1),
+            calculate_hash(&aw2),
+        );
     }
 
 }

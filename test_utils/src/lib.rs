@@ -3,6 +3,8 @@ extern crate holochain_core;
 extern crate holochain_dna;
 extern crate wabt;
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
@@ -17,6 +19,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wabt::Wat2Wasm;
+use std::hash::Hash;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -116,4 +119,13 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
 pub fn test_context(agent_name: &str) -> Arc<Context> {
     let (context, _) = test_context_and_logger(agent_name);
     context
+}
+
+/// calculates the native Rust hash
+/// has nothing to do with our hashing e.g. multihash
+/// @see https://doc.rust-lang.org/std/hash/index.html
+pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }

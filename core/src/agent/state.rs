@@ -1,6 +1,7 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
 use chain::Chain;
+use context::Context;
 use error::HolochainError;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
@@ -9,7 +10,6 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use context::Context;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -185,9 +185,8 @@ pub mod tests {
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
-    use instance::tests::test_instance_blank;
+    use instance::tests::{test_context, test_instance_blank};
     use std::collections::HashMap;
-    use instance::tests::test_context;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {

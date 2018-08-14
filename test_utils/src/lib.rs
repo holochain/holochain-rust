@@ -3,8 +3,6 @@ extern crate holochain_core;
 extern crate holochain_dna;
 extern crate wabt;
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hasher;
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
@@ -13,13 +11,14 @@ use holochain_dna::{
     Dna,
 };
 use std::{
+    collections::hash_map::DefaultHasher,
     fmt,
     fs::File,
+    hash::{Hash, Hasher},
     io::prelude::*,
     sync::{Arc, Mutex},
 };
 use wabt::Wat2Wasm;
-use std::hash::Hash;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {

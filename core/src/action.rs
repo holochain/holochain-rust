@@ -178,10 +178,7 @@ pub mod tests {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
-        assert_ne!(
-            calculate_hash(&aw1),
-            calculate_hash(&aw2),
-        );
+        assert_ne!(calculate_hash(&aw1), calculate_hash(&aw2),);
     }
 
 }

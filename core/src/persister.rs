@@ -34,7 +34,7 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use action::{tests::test_action_commit, ActionWrapper};
+    use action::{tests::test_action_wrapper_commit, ActionWrapper};
     use instance::tests::test_context;
     use std::sync::mpsc::channel;
 
@@ -56,13 +56,13 @@ mod tests {
 
         let state = State::new();
 
-        let action = test_action_commit();
+        let action_wrapper = test_action_wrapper_commit();
 
         let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(
             test_context("jane"),
-            ActionWrapper::new(&action),
+            action_wrapper.clone(),
             &sender,
             &tx_observer,
         );

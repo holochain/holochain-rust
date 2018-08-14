@@ -1,4 +1,4 @@
-use action::{Action, Signal};
+use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use nucleus::ribosome::{
     api::{runtime_allocate_encode_str, runtime_args_to_utf8, Runtime, HcApiReturnCode},
@@ -57,19 +57,19 @@ pub fn invoke_commit(
         // anything other than a fail means we should commit the entry
         _ => {
             // Create Commit Action
-            let action = Action::new(&Signal::Commit(entry));
+            let action_wrapper = ActionWrapper::new(&Action::Commit(entry));
             // Send Action and block for result
             let (sender, receiver) = channel();
             ::instance::dispatch_action_with_observer(
                 &runtime.action_channel,
                 &runtime.observer_channel,
-                &action.clone(),
+                &action_wrapper.clone(),
                 move |state: &::state::State| {
                     let actions = state.agent().actions().clone();
-                    if actions.contains_key(&action) {
+                    if actions.contains_key(&action_wrapper) {
                         // @TODO never panic in wasm
                         // @see https://github.com/holochain/holochain-rust/issues/159
-                        let v = &actions[&action];
+                        let v = &actions[&action_wrapper];
                         sender.send(v.clone()).expect("local channel to be open");
                         true
                     } else {

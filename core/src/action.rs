@@ -33,6 +33,11 @@ impl ActionWrapper {
     pub fn action(&self) -> Action {
         self.action.clone()
     }
+
+    /// read only access to id
+    pub fn id(&self) -> snowflake::ProcessUniqueId {
+        self.id.clone()
+    }
 }
 
 impl PartialEq for ActionWrapper {
@@ -44,38 +49,16 @@ impl PartialEq for ActionWrapper {
 impl Eq for ActionWrapper {}
 
 impl Hash for ActionWrapper {
+    /// @TODO dangerous when persisted!
+    /// snowflake only guarantees uniqueness per process
+    /// @see https://github.com/holochain/holochain-rust/issues/203
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
 
-#[derive(PartialEq, Clone, Hash, Debug)]
-pub struct Action {
-    signal: Signal,
-    id: snowflake::ProcessUniqueId,
-}
-
-impl Action {
-    /// constructor from &Signal
-    /// snowflake ID is auto generated
-    pub fn new(signal: &Signal) -> Action {
-        Action {
-            signal: signal.clone(),
-            // auto generate id
-            id: snowflake::ProcessUniqueId::new(),
-        }
-    }
-
-    /// read only access to the internal Signal
-    pub fn signal(&self) -> Signal {
-        self.signal.clone()
-    }
-}
-
-impl Eq for Action {}
-
 #[derive(Clone, PartialEq, Hash, Debug)]
-pub enum Signal {
+pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(Entry),
@@ -105,40 +88,21 @@ pub enum Signal {
 /// function signature for action handler functions
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
-pub type AgentReduceFn = fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type AgentReduceFn = fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 pub type NucleusReduceFn =
-    fn(Arc<Context>, &mut NucleusState, &Action, &Sender<ActionWrapper>, &Sender<Observer>);
+    fn(Arc<Context>, &mut NucleusState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper, Signal};
+    use action::{Action, ActionWrapper};
     use hash::tests::test_hash;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::tests::test_function_result;
 
-    /// dummy signal
-    pub fn test_signal() -> Signal {
-        Signal::Get(test_entry_hash())
-    }
-
-    /// dummy action with test_signal()
+    /// dummy action
     pub fn test_action() -> Action {
-        Action::new(&test_signal())
-    }
-
-    /// dummy action with commit of test_entry()
-    pub fn test_action_commit() -> Action {
-        Action::new(&Signal::Commit(test_entry()))
-    }
-
-    /// dummy action for a get of test_hash()
-    pub fn test_action_get() -> Action {
-        Action::new(&Signal::Get(test_hash()))
-    }
-
-    pub fn test_action_rzfr() -> Action {
-        Action::new(&Signal::ReturnZomeFunctionResult(test_function_result()))
+        Action::Get(test_entry_hash())
     }
 
     /// dummy action wrapper with test_action()
@@ -146,57 +110,49 @@ pub mod tests {
         ActionWrapper::new(&test_action())
     }
 
-    #[test]
-    /// smoke test signals
-    pub fn new_signal() {
-        let s1 = test_signal();
-        let s2 = test_signal();
+    /// dummy action wrapper with commit of test_entry()
+    pub fn test_action_wrapper_commit() -> ActionWrapper {
+        ActionWrapper::new(&Action::Commit(test_entry()))
+    }
 
-        // unlike actions and wrappers, signals are equal to themselves
-        assert_eq!(s1, s2);
+    /// dummy action for a get of test_hash()
+    pub fn test_action_wrapper_get() -> ActionWrapper {
+        ActionWrapper::new(&Action::Get(test_hash()))
+    }
+
+    pub fn test_action_wrapper_rzfr() -> ActionWrapper {
+        ActionWrapper::new(&Action::ReturnZomeFunctionResult(test_function_result()))
     }
 
     #[test]
-    /// tests that new actions take a signal and ensure uniqueness
+    /// smoke test actions
     pub fn new_action() {
         let a1 = test_action();
         let a2 = test_action();
 
-        // snowflake enforces uniqueness
-        assert_eq!(a1, a1);
-        assert_ne!(a1, a2);
+        // unlike actions and wrappers, signals are equal to themselves
+        assert_eq!(a1, a2);
     }
 
     #[test]
-    /// tests read access to action signals
-    pub fn action_signal() {
-        let a1 = test_action();
-        let a2 = test_action();
-
-        assert_eq!(a1.signal(), a2.signal());
-        assert_eq!(a1.signal(), test_signal());
-    }
-
-    #[test]
-    /// tests action wrappers take actions and ensure uniqueness
+    /// tests that new action wrappers take an action and ensure uniqueness
     pub fn new_action_wrapper() {
-        let w1 = test_action_wrapper();
-        let w2 = test_action_wrapper();
+        let aw1 = test_action_wrapper();
+        let aw2 = test_action_wrapper();
 
         // snowflake enforces uniqueness
-        assert_eq!(w1, w1);
-        assert_ne!(w1, w2);
+        assert_eq!(aw1, aw1);
+        assert_ne!(aw1, aw2);
     }
 
     #[test]
-    /// read access to action from wrapper
-    pub fn action_wrapper_action() {
-        let a = test_action();
-        let w = ActionWrapper::new(&a);
+    /// tests read access to actions
+    pub fn action_signal() {
+        let aw1 = test_action_wrapper();
+        let aw2 = test_action_wrapper();
 
-        assert_eq!(w.action(), a);
-        // new actions won't be equal due to id
-        assert_ne!(w.action(), test_action());
+        assert_eq!(aw1.action(), aw2.action());
+        assert_eq!(aw1.action(), test_action());
     }
 
 }

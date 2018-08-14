@@ -56,7 +56,7 @@ extern crate holochain_dna;
 extern crate test_utils;
 
 use holochain_core::{
-    action::{Action, Signal},
+    action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
     instance::Instance,
@@ -83,7 +83,7 @@ impl Holochain {
         let mut instance = Instance::new();
         let name = dna.name.clone();
 
-        let action = Action::new(&Signal::InitApplication(dna));
+        let action = ActionWrapper::new(&Action::InitApplication(dna));
         instance.start_action_loop(context.clone());
 
         let (sender, receiver) = channel();

@@ -1,5 +1,5 @@
 //use error::HolochainError;
-use action::{Action, ActionWrapper};
+use action::{ActionWrapper};
 use context::Context;
 use state::*;
 use std::{
@@ -48,24 +48,24 @@ impl Instance {
     }
 
     /// Stack an Action in the Event Queue
-    pub fn dispatch(&mut self, action: &Action) -> ActionWrapper {
-        dispatch_action(&self.action_channel, &action)
+    pub fn dispatch(&mut self, action_wrapper: &ActionWrapper) -> ActionWrapper {
+        dispatch_action(&self.action_channel, &action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
-    pub fn dispatch_and_wait(&mut self, action: &Action) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, &action);
+    pub fn dispatch_and_wait(&mut self, action_wrapper: &ActionWrapper) {
+        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, &action_wrapper);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    pub fn dispatch_with_observer<F>(&mut self, action: &Action, closure: F)
+    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: &ActionWrapper, closure: F)
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
             &self.action_channel,
             &self.observer_channel,
-            &action,
+            &action_wrapper,
             closure,
         )
     }
@@ -148,18 +148,15 @@ impl Default for Instance {
 pub fn dispatch_action_and_wait(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
 ) {
-    // Wrap Action
-    let wrapper = ActionWrapper::new(&action);
-    let wrapper_clone = wrapper.clone();
-
     // Create blocking channel
     let (sender, receiver) = channel::<bool>();
 
     // Create blocking observer
+    let observer_action_wrapper = action_wrapper.clone();
     let closure = move |state: &State| {
-        if state.history.contains(&wrapper_clone) {
+        if state.history.contains(&observer_action_wrapper) {
             sender
                 .send(true)
                 .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
@@ -180,7 +177,7 @@ pub fn dispatch_action_and_wait(
 
     // Send action to instance
     action_channel
-        .send(wrapper)
+        .send(action_wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 
     // Block until Observer has sensed the completion of the Action
@@ -193,7 +190,7 @@ pub fn dispatch_action_and_wait(
 pub fn dispatch_action_with_observer<F>(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     closure: F,
 ) where
     F: 'static + FnMut(&State) -> bool + Send,
@@ -206,23 +203,22 @@ pub fn dispatch_action_with_observer<F>(
     observer_channel
         .send(observer)
         .expect("observer channel to be open");
-    dispatch_action(action_channel, &action);
+    dispatch_action(action_channel, &action_wrapper);
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action: &Action) -> ActionWrapper {
-    let wrapper = ActionWrapper::new(&action);
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: &ActionWrapper) -> ActionWrapper {
     action_channel
-        .send(wrapper.clone())
+        .send(action_wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-    wrapper
+    action_wrapper.clone()
 }
 
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
-    use action::{Action, Signal};
+    use action::{Action, ActionWrapper};
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{
@@ -282,8 +278,8 @@ pub mod tests {
         let mut instance = Instance::new();
         instance.start_action_loop(test_context("jane"));
 
-        let action = Action::new(&Signal::InitApplication(dna.clone()));
-        instance.dispatch_and_wait(&action);
+        let action_wrapper = ActionWrapper::new(&Action::InitApplication(dna.clone()));
+        instance.dispatch_and_wait(&action_wrapper);
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
 
@@ -299,8 +295,8 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action().signal() {
-                Signal::InitApplication(_) => true,
+            .find(|aw| match aw.action() {
+                Action::InitApplication(_) => true,
                 _ => false,
             }) == None
         {
@@ -312,8 +308,8 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action().signal() {
-                Signal::ExecuteZomeFunction(_) => true,
+            .find(|aw| match aw.action() {
+                Action::ExecuteZomeFunction(_) => true,
                 _ => false,
             }) == None
         {
@@ -325,8 +321,8 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action().signal() {
-                Signal::ReturnZomeFunctionResult(_) => true,
+            .find(|aw| match aw.action() {
+                Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
             }) == None
         {
@@ -338,8 +334,8 @@ pub mod tests {
             .state()
             .history
             .iter()
-            .find(|aw| match aw.action().signal() {
-                Signal::ReturnZomeFunctionResult(_) => true,
+            .find(|aw| match aw.action() {
+                Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
             }) == None
         {
@@ -374,7 +370,7 @@ pub mod tests {
         let dna = Dna::new();
         let (sender, receiver) = channel();
         instance.dispatch_with_observer(
-            &Action::new(&Signal::InitApplication(dna.clone())),
+            &ActionWrapper::new(&Action::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {
                 Some(dna) => {
                     sender.send(dna).expect("test channel must be open");
@@ -401,7 +397,7 @@ pub mod tests {
 
         let dna = Dna::new();
 
-        let action = Action::new(&Signal::InitApplication(dna.clone()));
+        let action = ActionWrapper::new(&Action::InitApplication(dna.clone()));
         instance.start_action_loop(test_context("jane"));
 
         // the initial state is not intialized

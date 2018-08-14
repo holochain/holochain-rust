@@ -23,6 +23,8 @@ pub struct NucleusState {
     pub status: NucleusStatus,
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
+    // @TODO should this use the standard ActionWrapper/ActionResponse format?
+    // @see https://github.com/holochain/holochain-rust/issues/196
     pub ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
 }
 

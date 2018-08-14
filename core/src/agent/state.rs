@@ -1,4 +1,4 @@
-use action::{Action, ActionWrapper, AgentReduceFn, Signal};
+use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
 use chain::Chain;
 use error::HolochainError;
@@ -21,7 +21,7 @@ pub struct AgentState {
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
-    actions: HashMap<Action, ActionResponse>,
+    actions: HashMap<ActionWrapper, ActionResponse>,
 }
 
 impl AgentState {
@@ -47,7 +47,7 @@ impl AgentState {
 
     /// getter for a copy of self.actions
     /// uniquely maps action executions to the result of the action
-    pub fn actions(&self) -> HashMap<Action, ActionResponse> {
+    pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
         self.actions.clone()
     }
 }
@@ -89,12 +89,12 @@ impl ActionResponse {
 /// @see https://github.com/holochain/holochain-rust/issues/222
 fn reduce_commit(
     state: &mut AgentState,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) {
-    let signal = action.signal();
-    let entry = unwrap_to!(signal => Signal::Commit);
+    let action = action_wrapper.action();
+    let entry = unwrap_to!(action => Action::Commit);
 
     // add entry to source chain
     // @TODO this does nothing!
@@ -106,19 +106,19 @@ fn reduce_commit(
 
     state
         .actions
-        .insert(action.clone(), ActionResponse::Commit(chain.push(&entry)));
+        .insert(action_wrapper.clone(), ActionResponse::Commit(chain.push(&entry)));
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
 fn reduce_get(
     state: &mut AgentState,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) {
-    let signal = action.signal();
-    let key = unwrap_to!(signal => Signal::Get);
+    let action = action_wrapper.action();
+    let key = unwrap_to!(action => Action::Get);
 
     // get pair from source chain
     // @TODO this does nothing!
@@ -138,14 +138,14 @@ fn reduce_get(
     let result = chain.get_entry(&key).unwrap();
     state
         .actions
-        .insert(action.clone(), ActionResponse::Get(result.clone()));
+        .insert(action_wrapper.clone(), ActionResponse::Get(result.clone()));
 }
 
 /// maps incoming action to the correct handler
-fn resolve_reducer(action: &Action) -> Option<AgentReduceFn> {
-    match action.signal() {
-        Signal::Commit(_) => Some(reduce_commit),
-        Signal::Get(_) => Some(reduce_get),
+fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
+    match action_wrapper.action() {
+        Action::Commit(_) => Some(reduce_commit),
+        Action::Get(_) => Some(reduce_get),
         _ => None,
     }
 }
@@ -153,15 +153,15 @@ fn resolve_reducer(action: &Action) -> Option<AgentReduceFn> {
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
     old_state: Arc<AgentState>,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
-    let handler = resolve_reducer(action);
+    let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(&mut new_state, &action, action_channel, observer_channel);
+            f(&mut new_state, &action_wrapper, action_channel, observer_channel);
             Arc::new(new_state)
         }
         None => old_state,
@@ -171,7 +171,7 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
-    use action::tests::{test_action_commit, test_action_get};
+    use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::test_instance_blank;
@@ -220,19 +220,19 @@ pub mod tests {
     /// test for action commit
     fn test_reduce_commit() {
         let mut state = test_agent_state();
-        let action = test_action_commit();
+        let action_wrapper = test_action_wrapper_commit();
 
         let instance = test_instance_blank();
 
         reduce_commit(
             &mut state,
-            &action,
+            &action_wrapper,
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
 
         assert_eq!(
-            state.actions().get(&action),
+            state.actions().get(&action_wrapper),
             Some(&test_action_response_commit()),
         );
     }
@@ -241,19 +241,19 @@ pub mod tests {
     /// test for action get
     fn test_reduce_get() {
         let mut state = test_agent_state();
-        let action = test_action_get();
+        let action_wrapper = test_action_wrapper_get();
 
         let instance = test_instance_blank();
 
         reduce_get(
             &mut state,
-            &action,
+            &action_wrapper,
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
 
         assert_eq!(
-            state.actions().get(&action),
+            state.actions().get(&action_wrapper),
             Some(&test_action_response_get()),
         );
     }

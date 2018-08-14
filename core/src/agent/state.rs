@@ -229,7 +229,7 @@ pub mod tests {
     }
 
     #[test]
-    /// test for action commit
+    /// test for reducing commit
     fn test_reduce_commit() {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_commit();
@@ -251,7 +251,7 @@ pub mod tests {
     }
 
     #[test]
-    /// test for action get
+    /// test for reducing get
     fn test_reduce_get() {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_get();

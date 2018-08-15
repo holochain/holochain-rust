@@ -1,8 +1,21 @@
 use riker::actors::*;
 use hash_table::HashTable;
+use riker_default::DefaultModel;
+use hash_table::pair::Pair;
+use error::HolochainError;
+
+lazy_static! {
+    pub static ref HASH_TABLE_SYS: ActorSystem<HashTableProtocol> = {
+        let hash_table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
+        ActorSystem::new(&hash_table_model).unwrap()
+    };
+}
 
 #[derive(Debug, Clone)]
 pub enum HashTableProtocol {
+    /// HashTable::get()
+    Get(String),
+    GetResponse(Result<Option<Pair>, HolochainError>),
 
 }
 
@@ -33,4 +46,10 @@ impl<T: HashTable> HashTableActor<T> {
     pub fn props(table: &T) -> BoxActorProd<HashTableProtocol> {
         Props::new(Box::new_args(HashTableActor::actor, &table))
     }
+}
+
+#[test]
+pub mod tests {
+
+
 }

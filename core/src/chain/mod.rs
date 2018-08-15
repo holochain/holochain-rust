@@ -5,6 +5,9 @@ use std::{fmt};
 use riker::actors::*;
 use hash_table::actor::HashTableProtocol;
 use riker_default::DefaultModel;
+use riker_patterns::ask::ask;
+use hash_table::actor::HASH_TABLE_SYS;
+use futures::executor::block_on;
 
 lazy_static! {
     pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
@@ -19,6 +22,12 @@ pub enum ChainProtocol {
     PushResult(Result<Pair, HolochainError>),
     GetEntry(String),
     GetEntryResult(Result<Option<Pair>, HolochainError>),
+}
+
+impl fmt::Display for ChainProtocol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
@@ -62,7 +71,18 @@ impl Iterator for ChainIterator {
                         .and_then(|p| p.header().next())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| self.table.get(&h).unwrap());
+                        .and_then(|h| {
+                            let a = ask(
+                                &(*HASH_TABLE_SYS),
+                                &self.table,
+                                HashTableProtocol::Get(h.to_string()),
+                            );
+                            let response = block_on(a).unwrap();
+                            let result = match response {
+                                HashTableProtocol::GetResponse(r) => r,
+                            };
+                            result.unwrap()
+                        });
         ret
     }
 }
@@ -87,7 +107,7 @@ impl Actor for Chain {
         sender.try_tell(
             match message {
                 ChainProtocol::Push(entry) => {
-                    ChainProtocol::PushResult(self.push(entry))
+                    ChainProtocol::PushResult(self.push(&entry))
                 },
                 ChainProtocol::GetEntry(key) => {
                     ChainProtocol::GetEntryResult(self.get_entry(&key))
@@ -139,11 +159,11 @@ impl Chain {
     }
 
     pub fn actor(table: &ActorRef<HashTableProtocol>) -> BoxActor<ChainProtocol> {
-        Box::new(Chain::new(&table))
+        Box::new(Chain::new(table.clone()))
     }
 
     pub fn props(table: &ActorRef<HashTableProtocol>) -> BoxActorProd<ChainProtocol> {
-        Props::new_args(Box::new(Chain::actor), &table)
+        Props::new_args(Box::new(Chain::actor), &table.clone())
     }
 
     /// returns a clone of the top Pair
@@ -154,6 +174,15 @@ impl Chain {
     /// returns a reference to the underlying HashTable
     pub fn table(&self) -> ActorRef<HashTableProtocol> {
         self.table.clone()
+    }
+
+    pub fn ask_table_and_wait(&self, message: HashTableProtocol) {
+        let a = ask(
+            &(*HASH_TABLE_SYS),
+            &self.table,
+            message
+        );
+        block_on(a).unwrap()
     }
 
     /// private pair-oriented version of push() (which expects Entries)
@@ -175,10 +204,9 @@ impl Chain {
             )));
         }
 
-        // @TODO implement incubator for thread safety
-        // @see https://github.com/holochain/holochain-rust/issues/135
-        let table = &mut self.table;
-        let result = table.commit(&pair);
+        let commit_response = self.ask_table_and_wait(HashTableProtocol::Commit(pair.clone()));
+        let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
+
         if result.is_ok() {
             self.top = Some(pair.clone());
         }

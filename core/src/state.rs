@@ -1,4 +1,3 @@
-use action::ActionWrapper;
 use agent::state::AgentState;
 use context::Context;
 use instance::Observer;
@@ -8,44 +7,10 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 use hash_table::memory::MemTable;
-
-#[derive(Clone, Debug, PartialEq)]
-#[allow(unknown_lints)]
-#[allow(large_enum_variant)]
-pub enum Action {
-    Agent(::agent::state::Action),
-    Network(::network::Action),
-    Nucleus(::nucleus::Action),
-}
-
-#[derive(Clone, Debug)]
-pub struct ActionWrapper {
-    pub action: Action,
-    pub id: snowflake::ProcessUniqueId,
-}
-
-impl ActionWrapper {
-    pub fn new(a: Action) -> Self {
-        ActionWrapper {
-            action: a,
-            id: snowflake::ProcessUniqueId::new(),
-        }
-    }
-}
-
-impl PartialEq for ActionWrapper {
-    fn eq(&self, other: &ActionWrapper) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for ActionWrapper {}
-
-impl Hash for ActionWrapper {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-    }
-}
+use action::ActionWrapper;
+use chain::Chain;
+use chain::actor::ChainActor;
+use hash_table::actor::HashTableActor;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
@@ -59,11 +24,17 @@ pub struct State {
 impl State {
     pub fn new() -> Self {
         // @TODO file table
-        let table = MemTable::new();
+        let chain_actor = ChainActor::new_ref(
+            Chain::new(
+                HashTableActor::new_ref(
+                    MemTable::new(),
+                ),
+            ),
+        );
 
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(table)),
+            agent: Arc::new(AgentState::new(chain_actor)),
             history: HashSet::new(),
         }
     }

@@ -1,26 +1,16 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
-use chain::Chain;
-use hash_table::{entry::Entry, pair::Pair};
 use instance::Observer;
 use riker::actors::*;
-use snowflake;
-use state;
 use context::Context;
 use error::HolochainError;
-use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
-use instance::Observer;
+use hash_table::{pair::Pair};
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use chain::ChainProtocol;
-use hash_table::actor::HashTableActor;
-use hash_table::HashTable;
-use futures::executor::block_on;
-use riker_patterns::ask::ask;
-use chain::CHAIN_SYS;
-use hash_table::actor::HASH_TABLE_SYS;
+use chain::actor::ChainProtocol;
+use chain::actor::AskChain;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -39,29 +29,13 @@ pub struct AgentState {
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new<HT: HashTable>(table: HT) -> AgentState {
-
-        let table_props = HashTableActor::props(table);
-        let table_actor = HASH_TABLE_SYS.actor_of(table_props, "table").unwrap();
-
-        let chain_props = Chain::props(table_actor.clone());
-        let chain = CHAIN_SYS.actor_of(chain_props, "chain").unwrap();
-
+    pub fn new(chain: ActorRef<ChainProtocol>) -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
-            chain,
+            chain: chain.clone(),
         }
-    }
-
-    fn ask_chain_for_response(&self, message: ChainProtocol) -> ChainProtocol {
-        let a = ask(
-            &(*CHAIN_SYS),
-            &self.chain,
-            message
-        );
-        block_on(a).unwrap()
     }
 
     /// getter for a copy of self.keys
@@ -130,19 +104,19 @@ fn reduce_commit(
     // @TODO successfully validate before pushing a commit
     // @see https://github.com/holochain/holochain-rust/issues/97
 
-    let response = state.ask_chain_for_response(
+    let response = state.chain.ask(
         ChainProtocol::Push(entry.clone()),
     );
     let result = unwrap_to!(response => ChainProtocol::PushResult);
     // commit returns the entry key not the pair, from the action's perspective as this is
     // what the zome API expects
-    let result = result.clone().unwrap().entry().key();
+    let result = result.clone();
 
     state
         .actions
         .insert(
             action_wrapper.clone(),
-            ActionResult::Commit(result),
+            ActionResponse::Commit(result),
         );
 }
 
@@ -158,7 +132,7 @@ fn reduce_get(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
-    let response = state.ask_chain_for_response(
+    let response = state.chain.ask(
         ChainProtocol::GetEntry(key.clone()),
     );
     let result = unwrap_to!(response => ChainProtocol::GetEntryResult);
@@ -170,7 +144,7 @@ fn reduce_get(
         .actions
         .insert(
             action_wrapper.clone(),
-            ActionResult::Get(result.clone().unwrap()),
+            ActionResponse::Get(result.clone().unwrap()),
         );
 }
 
@@ -216,24 +190,23 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
     use std::collections::HashMap;
-    use riker::actor::Tell;
-    use std::thread;
+    use chain::actor::tests::test_chain_actor;
 
     #[test]
     fn test_actor_receive() {
         let state = test_agent_state();
 
-        state.chain.tell("hi".to_string(), None);
-        let chain = state.chain.clone();
-        let handle = thread::spawn(move || {
-            chain.tell("thread hi!".to_string(), None);
-        });
-        handle.join().unwrap();
+        // state.chain.tell("hi".to_string(), None);
+        // let chain = state.chain.clone();
+        // let handle = thread::spawn(move || {
+        //     chain.tell("thread hi!".to_string(), None);
+        // });
+        // handle.join().unwrap();
     }
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new()
+        AgentState::new(test_chain_actor())
     }
 
     /// dummy action response for a successful commit as test_pair()

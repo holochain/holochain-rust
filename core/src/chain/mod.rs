@@ -1,42 +1,17 @@
+pub mod actor;
+
+use riker::actors::*;
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair};
 use serde_json;
 use std::{fmt};
-use riker::actors::*;
 use hash_table::actor::HashTableProtocol;
-use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
 use hash_table::actor::HASH_TABLE_SYS;
 use futures::executor::block_on;
-
-lazy_static! {
-    pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
-        let chain_model: DefaultModel<ChainProtocol> = DefaultModel::new();
-        ActorSystem::new(&chain_model).unwrap()
-    };
-}
-
-#[derive(Debug, Clone)]
-pub enum ChainProtocol {
-    Push(Entry),
-    PushResult(Result<Pair, HolochainError>),
-    GetEntry(String),
-    GetEntryResult(Result<Option<Pair>, HolochainError>),
-}
-
-impl fmt::Display for ChainProtocol {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
-
-    fn into(self) -> ActorMsg<ChainProtocol> {
-        ActorMsg::User(self)
-    }
-
-}
+use chain::actor::ChainProtocol;
+use hash_table::actor::AskHashTable;
+use chain::actor::AskChain;
 
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -85,38 +60,12 @@ impl Iterator for ChainIterator {
     }
 }
 
+#[derive(Clone)]
 pub struct Chain {
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
     table: ActorRef<HashTableProtocol>,
     top: Option<Pair>,
-}
-
-impl Actor for Chain {
-    type Msg = ChainProtocol;
-
-    fn receive(
-        &mut self,
-        context: &Context<Self::Msg>,
-        message: Self::Msg,
-        sender: Option<ActorRef<Self::Msg>>,
-    ) {
-        println!("received {}", message);
-        sender.try_tell(
-            match message {
-                ChainProtocol::Push(entry) => {
-                    ChainProtocol::PushResult(self.push(&entry))
-                },
-                ChainProtocol::PushResult(_) => unreachable!(),
-
-                ChainProtocol::GetEntry(key) => {
-                    ChainProtocol::GetEntryResult(self.get_entry(&key))
-                },
-                ChainProtocol::GetEntryResult(_) => unreachable!(),
-            },
-            Some(context.myself()),
-        ).unwrap();
-    }
 }
 
 impl PartialEq for Chain {
@@ -147,24 +96,12 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-    // @TODO table implementation is changing anyway so waste of time to mess with ref/value
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
-    /// build a new Chain against an existing HashTable
+
     pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
         Chain {
             top: None,
             table: table.clone(),
         }
-    }
-
-    pub fn actor(table: ActorRef<HashTableProtocol>) -> BoxActor<ChainProtocol> {
-        Box::new(Chain::new(table))
-    }
-
-    pub fn props(table: ActorRef<HashTableProtocol>) -> BoxActorProd<ChainProtocol> {
-        Props::new_args(Box::new(Chain::actor), table)
     }
 
     /// returns a clone of the top Pair
@@ -177,18 +114,8 @@ impl Chain {
         self.table.clone()
     }
 
-    /// asks the table something and blocks for a response
-    fn ask_table_for_response(&self, message: HashTableProtocol) -> HashTableProtocol {
-        let a = ask(
-            &(*HASH_TABLE_SYS),
-            &self.table,
-            message
-        );
-        block_on(a).unwrap()
-    }
-
     /// private pair-oriented version of push() (which expects Entries)
-    fn push_pair(&mut self, pair: Pair) -> Result<Pair, HolochainError> {
+    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
             return Err(HolochainError::new(
                 "attempted to push an invalid pair for this chain",
@@ -206,14 +133,14 @@ impl Chain {
             )));
         }
 
-        let commit_response = self.ask_table_for_response(HashTableProtocol::Commit(pair.clone()));
+        let commit_response = self.table.ask(HashTableProtocol::Commit(pair.clone()));
         let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
 
         if result.is_ok() {
             self.top = Some(pair.clone());
         }
         match result {
-            Ok(_) => Ok(pair),
+            Ok(_) => Ok(pair.clone()),
             Err(e) => Err(e.clone()),
         }
     }
@@ -224,7 +151,7 @@ impl Chain {
     /// the newly created and pushed Pair is returned in the fn Result
     pub fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
-        self.push_pair(pair)
+        self.push_pair(&pair)
     }
 
     /// returns true if all pairs in the chain pass validation
@@ -239,7 +166,7 @@ impl Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask_table_for_response(HashTableProtocol::Get(k.to_string()));
+        let response = self.table.ask(HashTableProtocol::Get(k.to_string()));
         unwrap_to!(response => HashTableProtocol::GetResponse).clone()
     }
 
@@ -270,18 +197,38 @@ impl Chain {
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Self {
+    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Chain {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
         as_seq.reverse();
 
         let mut chain = Chain::new(table);
+
         for p in as_seq {
-            chain.push_pair(p).unwrap();
+            chain.push_pair(&p).unwrap();
+            // let response = chain.ask(ChainProtocol::PushPair(p));
+            // let result = unwrap_to!(response => ChainProtocol::PushResult);
+            // result.clone().unwrap();
         }
         chain
     }
+}
+
+trait SourceChain {
+
+    fn push(&mut self, &Entry) -> Result<Pair, HolochainError>;
+
+}
+
+impl SourceChain for ActorRef<ChainProtocol> {
+
+    fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+        let response = &self.ask(ChainProtocol::Push(entry.clone()));
+        let result = unwrap_to!(response => ChainProtocol::PushResult);
+        result.clone()
+    }
+
 }
 
 #[cfg(test)]
@@ -295,10 +242,11 @@ pub mod tests {
         HashTable,
     };
     use std::rc::Rc;
+    use hash_table::actor::tests::test_table_actor;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
-        Chain::new(Rc::new(test_table()))
+        Chain::new(test_table_actor())
     }
 
     #[test]

@@ -50,7 +50,7 @@ where
 }
 
 /// Represents web assembly code.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct DnaWasm {
     /// The actual binary WebAssembly bytecode goes here.
     #[serde(

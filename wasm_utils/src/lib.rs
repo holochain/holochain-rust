@@ -19,6 +19,7 @@ pub enum HcApiReturnCode {
     ErrorSerdeJson = 2 << 16,
     ErrorPageOverflow = 3 << 16,
     ErrorActionResult = 4 << 16,
+    ErrorCallbackResult = 5 << 16,
 }
 
 //pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {

@@ -27,6 +27,8 @@ extern crate serde_json;
 extern crate base64;
 extern crate uuid;
 
+use std::hash::{Hash, Hasher};
+
 pub mod wasm;
 pub mod zome;
 
@@ -43,7 +45,7 @@ fn _def_new_uuid() -> String {
 }
 
 /// Represents the top-level holochain dna object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dna {
     /// The top-level "name" of a holochain application.
     #[serde(default)]
@@ -154,7 +156,7 @@ impl Dna {
 
     /// Return a Zome
     pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes.iter().find(|z| z.name == zome_name)
+        self.zomes.iter().find(|z| z.name() == zome_name)
     }
 
     /// Return a Zome's WASM bytecode for a specified Capability
@@ -179,7 +181,7 @@ impl Dna {
         let zome_name = zome_name.into();
         let capability_name = capability_name.into();
 
-        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let zome = self.zomes.iter().find(|z| z.name() == zome_name)?;
         let capability = zome
             .capabilities
             .iter()
@@ -193,7 +195,7 @@ impl Dna {
         zome_name: &str,
         entry_type_name: &str,
     ) -> Option<&wasm::DnaWasm> {
-        let zome = self.zomes.iter().find(|z| z.name == zome_name)?;
+        let zome = self.zomes.iter().find(|z| z.name() == zome_name)?;
         let entry_type = zome
             .entry_types
             .iter()
@@ -202,16 +204,34 @@ impl Dna {
     }
 }
 
+impl Hash for Dna {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let s = self.to_json().unwrap();
+        s.hash(state);
+    }
+}
+
+impl PartialEq for Dna {
+    fn eq(&self, other: &Dna) -> bool {
+        // need to guarantee that PartialEq and Hash always agree
+        self.to_json().unwrap() == other.to_json().unwrap()
+    }
+}
+
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     extern crate base64;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
+    pub fn test_dna() -> Dna {
+        Dna::new()
+    }
+
     #[test]
     fn can_parse_and_output_json() {
-        let dna = Dna::new();
+        let dna = test_dna();
 
         let serialized = serde_json::to_string(&dna).unwrap();
 
@@ -222,7 +242,7 @@ mod tests {
 
     #[test]
     fn can_parse_and_output_json_helpers() {
-        let dna = Dna::new();
+        let dna = test_dna();
 
         let serialized = dna.to_json().unwrap();
 
@@ -309,7 +329,7 @@ mod tests {
             uuid: String::from(UNIT_UUID),
             ..Default::default()
         };
-        let mut zome = zome::Zome::new();
+        let mut zome = zome::Zome::default();
         zome.entry_types.push(zome::entry_types::EntryType::new());
         dna.zomes.push(zome);
 

@@ -1,11 +1,10 @@
+use action::ActionWrapper;
 use agent::state::AgentState;
 use context::Context;
 use instance::Observer;
-use nucleus::NucleusState;
-use snowflake;
+use nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
-    hash::{Hash, Hasher},
     sync::{mpsc::Sender, Arc},
 };
 use hash_table::memory::MemTable;
@@ -78,15 +77,16 @@ impl State {
     ) -> Self {
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
-                context,
+                context.clone(),
                 Arc::clone(&self.nucleus),
-                &action_wrapper.action,
+                &action_wrapper,
                 action_channel,
                 observer_channel,
             ),
             agent: ::agent::state::reduce(
+                context.clone(),
                 Arc::clone(&self.agent),
-                &action_wrapper.action,
+                &action_wrapper,
                 action_channel,
                 observer_channel,
             ),

@@ -1,4 +1,4 @@
-use nucleus::ribosome::{runtime_args_to_utf8, Runtime};
+use nucleus::ribosome::api::{runtime_args_to_utf8, Runtime};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// HcApiFuncIndex::DEBUG function code
@@ -18,7 +18,7 @@ pub fn invoke_debug(
 
 #[cfg(test)]
 pub mod tests {
-    use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {

@@ -13,7 +13,7 @@ pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
 
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
-//#[derive(Clone)]
+#[derive(Clone)]
 pub struct Instance {
     state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
@@ -74,14 +74,21 @@ impl Instance {
         )
     }
 
-    /// Start the Event Loop on a seperate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>) {
+    /// Returns recievers for actions and observers that get added to this instance
+    fn start_listening(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
         let (tx_action, rx_action) = channel::<ActionWrapper>();
         let (tx_observer, rx_observer) = channel::<Observer>();
         self.action_channel = tx_action.clone();
         self.observer_channel = tx_observer.clone();
 
-        let state_mutex = self.state.clone();
+        (rx_action, rx_observer)
+    }
+
+    /// Start the Event Loop on a seperate thread
+    pub fn start_action_loop(&mut self, context: Arc<Context>) {
+        let (rx_action, rx_observer) = self.start_listening();
+
+        let sync_self = self.clone();
 
         thread::spawn(move || {
             let mut state_observers: Vec<Box<Observer>> = Vec::new();
@@ -92,39 +99,57 @@ impl Instance {
             loop {
                 match rx_action.recv_timeout(Duration::from_millis(REDUX_LOOP_TIMEOUT_MS)) {
                     Ok(action_wrapper) => {
-                        // Mutate state
-                        {
-                            let mut state = state_mutex.write().unwrap();
-                            *state = state.reduce(
-                                context.clone(),
-                                action_wrapper,
-                                &tx_action,
-                                &tx_observer,
-                            );
-                        }
-
-                        // Add new observers
-                        while let Ok(observer) = rx_observer.try_recv() {
-                            state_observers.push(Box::new(observer));
-                        }
-
-                        // Run all observer closures
-                        {
-                            let state = state_mutex.read().unwrap();
-                            state_observers = state_observers
-                                .into_iter()
-                                .map(|mut observer| {
-                                    observer.check(&state);
-                                    observer
-                                })
-                                .filter(|observer| !observer.done)
-                                .collect::<Vec<_>>();
-                        }
+                        state_observers = sync_self.process_action(
+                            action_wrapper,
+                            state_observers,
+                            &rx_observer,
+                            &context,
+                        );
                     }
                     Err(ref _recv_error) => {}
                 }
             }
         });
+    }
+
+    /// Calls the reducers for an action and calls the observers with the new state
+    /// returns the new vector of observers
+    fn process_action(
+        &self,
+        action_wrapper: ActionWrapper,
+        mut state_observers: Vec<Box<Observer>>,
+        rx_observer: &Receiver<Observer>,
+        context: &Arc<Context>,
+    ) -> Vec<Box<Observer>>{
+        // Mutate state
+        {
+            let mut state = self.state.write().unwrap();
+            *state = state.reduce(
+                context.clone(),
+                action_wrapper,
+                &self.action_channel,
+                &self.observer_channel,
+            );
+        }
+
+        // Add new observers
+        // this must happen after reducing because reducers can add observers.
+        while let Ok(observer) = rx_observer.try_recv() {
+            state_observers.push(Box::new(observer));
+        }
+
+        // Run all observer closures
+        {
+            let state = self.state.read().unwrap();
+            state_observers
+                .into_iter()
+                .map(|mut observer| {
+                    observer.check(&state);
+                    observer
+                })
+                .filter(|observer| !observer.done)
+                .collect::<Vec<_>>()
+        }
     }
 
     pub fn new() -> Self {

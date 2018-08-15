@@ -1,6 +1,8 @@
-use super::{runtime_allocate_encode_str, runtime_args_to_utf8};
-use agent::state::ActionResult;
-use nucleus::ribosome::{HcApiReturnCode, Runtime};
+use action::{Action, ActionWrapper};
+use agent::state::ActionResponse;
+use nucleus::ribosome::api::{
+    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -24,19 +26,19 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action = ::agent::state::Action::get(&input.key);
+    let action_wrapper = ActionWrapper::new(&Action::Get(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        ::state::Action::Agent(action.clone()),
+        &action_wrapper.clone(),
         move |state: &::state::State| {
             let actions = state.agent().actions().clone();
-            if actions.contains_key(&action) {
+            if actions.contains_key(&action_wrapper) {
                 // @TODO never panic in wasm
                 // @see https://github.com/holochain/holochain-rust/issues/159
-                let v = &actions[&action];
+                let v = &actions[&action_wrapper];
                 sender.send(v.clone()).expect("local channel to be open");
                 true
             } else {
@@ -50,7 +52,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     let action_result = receiver.recv().expect("local channel to work");
 
     match action_result {
-        ActionResult::Get(maybe_pair) => {
+        ActionResponse::Get(maybe_pair) => {
             // serialize, allocate and encode result
             let pair_str = maybe_pair
                 .and_then(|p| Some(p.to_json()))
@@ -71,7 +73,7 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::ribosome::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use serde_json;
 
     /// dummy get args from standard test entry

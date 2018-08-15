@@ -28,16 +28,15 @@ global state.
 
 ## Actions
 
-The `action` module defines 3 layers of nesting for actions:
+The `action` module defines actions and action wrappers:
 
-- `ActionWrapper`: struct needed for ???, contains a unique ID and the `Action`
-- `Action`: struct contains a unique ID for the action and the `Signal`
-- `Signal`: enum of specific data to a given action, e.g. `Signal::Commit`
+- `ActionWrapper`: struct contains a unique ID for the action and the `Action`
+- `Action`: enum of specific data to a given action, e.g. `Action::Commit`
 
 Processing an incoming action is a 3 step process:
 
 0. Implement `reduce` to resolve and dispatch to a handler
-0. Resolve the action signal to an appropriate handler
+0. Resolve the action to an appropriate handler
 0. Implement handler logic
 
 ### Reduce
@@ -49,15 +48,15 @@ dispatch logic should be split to facilitate clean unit testing.
 ```rust
 pub fn reduce(
     old_state: Arc<FooState>,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
-  let handler = resolve_action_handler(action);
+  let handler = resolve_action_handler(action_wrapper);
   match handler {
       Some(f) => {
           let mut new_state: FooState = (*old_state).clone();
-          f(&mut new_state, &action, action_channel, observer_channel);
+          f(&mut new_state, &action_wrapper, action_channel, observer_channel);
           Arc::new(new_state)
       }
       None => old_state,
@@ -71,11 +70,11 @@ The action handler should map signals to action handlers.
 
 ```rust
 fn resolve_action_handler(
-    action: &Action,
-) -> Option<fn(&mut AgentState, &Action, &Sender<ActionWrapper>, &Sender<Observer>)> {
-    match action.signal() {
-        Signal::Commit(_, _) => Some(handle_commit),
-        Signal::Get(_) => Some(handle_get),
+    action_wrapper: &ActionWrapper,
+) -> Option<fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>)> {
+    match action_wrapper.action() {
+        Action::Commit(_, _) => Some(handle_commit),
+        Action::Get(_) => Some(handle_get),
         _ => None,
     }
 }
@@ -85,26 +84,27 @@ fn resolve_action_handler(
 
 Each handler should respond to one action signal and mutate the relevant state.
 
-The standard pattern is to maintain a `HashMap` of incoming actions against the
-result of that action from the perspective of the current module. Each action
-has a unique `id` internally so there will be no key collisions.
+The standard pattern is to maintain a `HashMap` of incoming action wrappers
+against the result of their action from the perspective of the current module.
+Each action wrapper has a unique `id` internally so there will be no key
+collisions.
 
 ```rust
 fn handle_foo(
     state: &mut FooState,
-    action: &Action,
+    action_wrapper: &ActionWrapper,
     _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) {
-    let signal = action.signal();
-    let bar = unwrap_to!(signal => Signal::Bar);
+    let action = action_wrapper.action();
+    let bar = unwrap_to!(action => Action::Bar);
 
     // do something with bar...
     let result = bar.do_something();
 
     state
         .actions
-        .insert(action.clone(), ActionResponse::Bar(result.clone()));
+        .insert(action_wrapper.clone(), ActionResponse::Bar(result.clone()));
 }
 ```
 
@@ -130,8 +130,8 @@ and mutated by dispatching an action:
 
 ```rust
 let entry = Entry::new( ... );
-let action = Action::new(&Signal::Commit(entry));
-instance.dispatch(action);
+let action_wrapper = ActionWrapper::new(&Action::Commit(entry));
+instance.dispatch(action_wrapper);
 ```
 
 Instance calls reduce on the state with the next action to consume:
@@ -148,7 +148,7 @@ pub fn consume_next_action(&mut self) {
 The main reducer creates a new State object and calls the sub-reducers:
 
 ```rust
-pub fn reduce(&mut self, action: &Action) -> Self {
+pub fn reduce(&mut self, action_wrapper: &ActionWrapper) -> Self {
     let mut new_state = State {
         nucleus: ::nucleus::reduce( ... ),
         agent: ::agent::reduce( ... )
@@ -159,8 +159,8 @@ pub fn reduce(&mut self, action: &Action) -> Self {
 }
 ```
 
-Each incoming action is logged in the main state `history` to facilitate testing
-and "time travel" debugging.
+Each incoming action wrapper is logged in the main state `history` to facilitate
+testing and "time travel" debugging.
 
 Sub-module state slices are included in `state::State` as counted references.
 

@@ -34,6 +34,8 @@ through the rest if you miss something.
 DO add a doc comment summarising what the zome function does and sketching the
 function signature.
 
+DO extend the relevant unit tests.
+
 Do NOT add to the start or middle of the enum as that will renumber the other
 zome functions.
 
@@ -125,9 +127,8 @@ Actions are covered in more detail in the state chapter.
 
 In summary, if a new agent action (for example) is needed:
 
-- extend the `action::Signal` enum
+- extend the `action::Action` enum
+  - this sets the data type, the `ActionWrapper` provides a unique ID
   - use the canonical name if that makes sense
-  - implement a constructor method in the enum impl
-  - include a snowflake ID or there will be key collisions in the state history
 - extend an `ActionResult` enum if the action has a return value
 - implement a reducer for the new action

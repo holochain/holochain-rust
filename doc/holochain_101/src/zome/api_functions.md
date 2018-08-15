@@ -5,7 +5,7 @@
 A zome API function is any Holochain core functionality that is exposed as a
 callable function within zome code.
 
-Compare this to a lifecycle function, which is implemented in the zome language 
+Compare this to a callback function, which is implemented in the zome language 
 and called by Holochain.
 
 So, zome functions are called by Holochain, which execute logic in the zome

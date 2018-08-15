@@ -10,7 +10,7 @@ by the zome.
 Callback functions are passed some parameters and expected to return one of
 three possible `CallbackParams` variants:
 
-- `Pass`: The lifecycle function has executed/validated successfully
+- `Pass`: The callback function has executed/validated successfully
 - `NotImplemented`: The callback function was not found in the current zome
 - `Fail(String)`: The callback function failed for the given reason
 

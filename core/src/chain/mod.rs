@@ -1,5 +1,5 @@
 use error::HolochainError;
-use hash_table::{entry::Entry, pair::Pair, HashTable};
+use hash_table::{entry::Entry, pair::Pair};
 use serde_json;
 use std::{fmt};
 use riker::actors::*;
@@ -78,10 +78,8 @@ impl Iterator for ChainIterator {
                                 HashTableProtocol::Get(h.to_string()),
                             );
                             let response = block_on(a).unwrap();
-                            let result = match response {
-                                HashTableProtocol::GetResponse(r) => r,
-                            };
-                            result.unwrap()
+                            let result = unwrap_to!(response => HashTableProtocol::GetResponse);
+                            result.clone().unwrap()
                         });
         ret
     }
@@ -109,9 +107,12 @@ impl Actor for Chain {
                 ChainProtocol::Push(entry) => {
                     ChainProtocol::PushResult(self.push(&entry))
                 },
+                ChainProtocol::PushResult(_) => unreachable!(),
+
                 ChainProtocol::GetEntry(key) => {
                     ChainProtocol::GetEntryResult(self.get_entry(&key))
                 },
+                ChainProtocol::GetEntryResult(_) => unreachable!(),
             },
             Some(context.myself()),
         ).unwrap();
@@ -158,12 +159,12 @@ impl Chain {
         }
     }
 
-    pub fn actor(table: &ActorRef<HashTableProtocol>) -> BoxActor<ChainProtocol> {
-        Box::new(Chain::new(table.clone()))
+    pub fn actor(table: ActorRef<HashTableProtocol>) -> BoxActor<ChainProtocol> {
+        Box::new(Chain::new(table))
     }
 
-    pub fn props(table: &ActorRef<HashTableProtocol>) -> BoxActorProd<ChainProtocol> {
-        Props::new_args(Box::new(Chain::actor), &table.clone())
+    pub fn props(table: ActorRef<HashTableProtocol>) -> BoxActorProd<ChainProtocol> {
+        Props::new_args(Box::new(Chain::actor), table)
     }
 
     /// returns a clone of the top Pair
@@ -176,7 +177,8 @@ impl Chain {
         self.table.clone()
     }
 
-    pub fn ask_table_and_wait(&self, message: HashTableProtocol) {
+    /// asks the table something and blocks for a response
+    fn ask_table_for_response(&self, message: HashTableProtocol) -> HashTableProtocol {
         let a = ask(
             &(*HASH_TABLE_SYS),
             &self.table,
@@ -204,7 +206,7 @@ impl Chain {
             )));
         }
 
-        let commit_response = self.ask_table_and_wait(HashTableProtocol::Commit(pair.clone()));
+        let commit_response = self.ask_table_for_response(HashTableProtocol::Commit(pair.clone()));
         let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
 
         if result.is_ok() {
@@ -212,7 +214,7 @@ impl Chain {
         }
         match result {
             Ok(_) => Ok(pair),
-            Err(e) => Err(e),
+            Err(e) => Err(e.clone()),
         }
     }
 
@@ -237,7 +239,8 @@ impl Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        self.table.get(k)
+        let response = self.ask_table_for_response(HashTableProtocol::Get(k.to_string()));
+        unwrap_to!(response => HashTableProtocol::GetResponse).clone()
     }
 
     /// get an Entry by Entry key from the HashTable if it exists
@@ -287,14 +290,14 @@ pub mod tests {
     use super::Chain;
     use hash_table::{
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
-        memory::{tests::test_table, MemTable},
+        memory::{tests::test_table},
         pair::Pair,
         HashTable,
     };
     use std::rc::Rc;
 
     /// builds a dummy chain for testing
-    pub fn test_chain() -> Chain<MemTable> {
+    pub fn test_chain() -> Chain {
         Chain::new(Rc::new(test_table()))
     }
 

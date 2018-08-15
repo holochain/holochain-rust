@@ -17,6 +17,8 @@ extern crate riker_patterns;
 extern crate futures;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate unwrap_to;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

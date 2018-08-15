@@ -3,7 +3,6 @@ use chain::Chain;
 use hash_table::{entry::Entry, pair::Pair};
 use instance::Observer;
 use riker::actors::*;
-use riker_default::DefaultModel;
 use snowflake;
 use state;
 use std::{
@@ -13,10 +12,10 @@ use std::{
 use chain::ChainProtocol;
 use hash_table::actor::HashTableActor;
 use hash_table::HashTable;
-use hash_table::actor::HashTableProtocol;
 use futures::executor::block_on;
 use riker_patterns::ask::ask;
 use chain::CHAIN_SYS;
+use hash_table::actor::HASH_TABLE_SYS;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -35,13 +34,12 @@ pub struct AgentState {
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new<T: HashTable>(table: T) -> AgentState {
-        let table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
-        let table_sys = ActorSystem::new(&table_model).unwrap();
-        let table_props = HashTableActor::props(&table);
-        let table_actor = table_sys.actor_of(table_props, "table").unwrap();
+    pub fn new<HT: HashTable>(table: HT) -> AgentState {
 
-        let chain_props = Chain::props(&table_actor);
+        let table_props = HashTableActor::props(table);
+        let table_actor = HASH_TABLE_SYS.actor_of(table_props, "table").unwrap();
+
+        let chain_props = Chain::props(table_actor.clone());
         let chain = CHAIN_SYS.actor_of(chain_props, "chain").unwrap();
 
         AgentState {
@@ -50,6 +48,15 @@ impl AgentState {
             actions: HashMap::new(),
             chain,
         }
+    }
+
+    fn ask_chain_for_response(&self, message: ChainProtocol) -> ChainProtocol {
+        let a = ask(
+            &(*CHAIN_SYS),
+            &self.chain,
+            message
+        );
+        block_on(a).unwrap()
     }
 
     /// getter for a copy of self.keys
@@ -124,18 +131,14 @@ fn do_action_commit(state: &mut AgentState, action: &Action) {
             // @TODO successfully validate before pushing a commit
             // @see https://github.com/holochain/holochain-rust/issues/97
 
-            let a = ask(
-                &(*CHAIN_SYS),
-                &state.chain,
+            let response = state.ask_chain_for_response(
                 ChainProtocol::Push(entry.clone()),
             );
-            // .push(&entry).unwrap().entry().key();
-            let response = block_on(a).unwrap();
-            let result = match response {
-                ChainProtocol::PushResult(r) => {
-                    r.unwrap().entry().key()
-                }
-            };
+            let result = unwrap_to!(response => ChainProtocol::PushResult);
+            // commit returns the entry key not the pair, from the action's perspective as this is
+            // what the zome API expects
+            let result = result.clone().unwrap().entry().key();
+
             state
                 .actions
                 .insert(
@@ -155,20 +158,10 @@ fn do_action_get(state: &mut AgentState, action: &Action) {
     match action {
         Action::Get { key, .. } => {
 
-            // drop in a dummy entry for testing
-            let mut chain = state.chain;
-
-            let a = ask(
-                &(*CHAIN_SYS),
-                &state.chain,
+            let response = state.ask_chain_for_response(
                 ChainProtocol::GetEntry(key.clone()),
             );
-            let response = block_on(a).unwrap();
-            let result = match response {
-                ChainProtocol::GetEntryResult(r) => {
-                    r.unwrap()
-                },
-            };
+            let result = unwrap_to!(response => ChainProtocol::GetEntryResult);
 
             // @TODO if the get fails local, do a network get
             // @see https://github.com/holochain/holochain-rust/issues/167
@@ -177,7 +170,7 @@ fn do_action_get(state: &mut AgentState, action: &Action) {
                 .actions
                 .insert(
                     action.clone(),
-                    ActionResult::Get(result),
+                    ActionResult::Get(result.clone().unwrap()),
                 );
         }
         _ => {

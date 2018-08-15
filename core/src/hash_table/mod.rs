@@ -10,7 +10,7 @@ use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 
-pub trait HashTable {
+pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     fn setup(&mut self) -> Result<(), HolochainError>;
     fn teardown(&mut self) -> Result<(), HolochainError>;

@@ -8,6 +8,7 @@ use std::{
     hash::{Hash, Hasher},
     sync::{mpsc::Sender, Arc},
 };
+use hash_table::memory::MemTable;
 
 #[derive(Clone, Debug, PartialEq)]
 #[allow(unknown_lints)]
@@ -58,9 +59,12 @@ pub struct State {
 
 impl State {
     pub fn new() -> Self {
+        // @TODO file table
+        let table = MemTable::new();
+
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new()),
+            agent: Arc::new(AgentState::new(table)),
             history: HashSet::new(),
         }
     }

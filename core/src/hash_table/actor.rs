@@ -17,6 +17,10 @@ pub enum HashTableProtocol {
     Get(String),
     GetResponse(Result<Option<Pair>, HolochainError>),
 
+    /// HashTable::commit()
+    Commit(Pair),
+    CommitResponse(Result<(), HolochainError>),
+
 }
 
 impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
@@ -28,28 +32,46 @@ impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
 }
 
 #[derive(Clone, Debug)]
-pub struct HashTableActor<T: HashTable> {
-    table: T,
+pub struct HashTableActor<HT: HashTable> {
+    table: HT,
 }
 
-impl<T: HashTable> HashTableActor<T> {
-    pub fn new(table: T) -> HashTableActor<T> {
+impl<HT: HashTable> HashTableActor<HT> {
+    pub fn new (table: HT) -> HashTableActor<HT> {
         HashTableActor {
             table
         }
     }
 
-    pub fn actor(table: &T) -> BoxActor<HashTableProtocol> {
-        Box::new(HashTableActor::new(&table))
+    pub fn actor(table: HT) -> BoxActor<HashTableProtocol> {
+        Box::new(HashTableActor::new(table))
     }
 
-    pub fn props(table: &T) -> BoxActorProd<HashTableProtocol> {
-        Props::new(Box::new_args(HashTableActor::actor, &table))
+    pub fn props(table: HT) -> BoxActorProd<HashTableProtocol> {
+        Props::new_args(Box::new(HashTableActor::actor), table)
     }
 }
 
-#[test]
+impl<HT: HashTable> Actor for HashTableActor<HT> {
+    type Msg = HashTableProtocol;
+
+    fn receive(
+        &mut self,
+        _context: &Context<Self::Msg>,
+        _message: Self::Msg,
+        _sender: Option<ActorRef<Self::Msg>>,
+    ) {
+
+    }
+
+}
+
+#[cfg(test)]
 pub mod tests {
 
+    #[test]
+    fn round_trip() {
+
+    }
 
 }

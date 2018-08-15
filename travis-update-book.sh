@@ -7,10 +7,6 @@ set -e # Exit with nonzero exit code if anything fails
 SOURCE_BRANCH="develop"
 TARGET_BRANCH="gh-pages"
 
-function doCompile {
-  . docker/build-mdbook-image && . docker/build-mdbook
-}
-
 # Pull requests and commits to other branches shouldn't build
 if [ "$TRAVIS_PULL_REQUEST" != "false" -o "$TRAVIS_BRANCH" != "$SOURCE_BRANCH" ]; then
     echo "Not on develop branch, or is a pull request; exiting."
@@ -28,13 +24,16 @@ git clone -b $TARGET_BRANCH $REPO doc/holochain_101/working
 # Clean out existing contents
 cd doc/holochain_101/working
 git ls-files | xargs rm -rf
-cd ../../..
 
-# Run our compile script
-doCompile
+# move up to holochain_101
+cd ..
+# Run our compile script, which creates the 'book' directory and the HTML, etc. files
+mdbook build
+# move back up to main dir
+cd ../..
 
-# Move all our built files into the working directory
-mv doc/holochain_101/book/* doc/holochain_101/working
+# Copy all our built files into the working directory
+cp -a doc/holochain_101/book/. doc/holochain_101/working
 
 # Move a copy of our Github Pages config file back into the directory
 cp _config.yml doc/holochain_101/working/_config.yml
@@ -63,7 +62,7 @@ ENCRYPTED_IV=${!ENCRYPTED_IV_VAR}
 openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in ../../../build_docs_key.enc -out ../../../build_docs_key -d
 chmod 600 ../../../build_docs_key
 eval `ssh-agent -s`
-ssh-add build_docs_key
+ssh-add ../../../build_docs_key
 
 # Now that we're all set up, we can push.
 git push $SSH_REPO $TARGET_BRANCH

@@ -1,6 +1,5 @@
 use riker_default::DefaultModel;
 use riker::actors::*;
-use std::{fmt};
 use futures::executor::block_on;
 use riker_patterns::ask::ask;
 use hash_table::entry::Entry;
@@ -8,6 +7,7 @@ use hash_table::pair::Pair;
 use error::HolochainError;
 use chain::Chain;
 use chain::SourceChain;
+use snowflake;
 
 lazy_static! {
     pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
@@ -40,12 +40,6 @@ pub enum ChainProtocol {
 impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
     fn into(self) -> ActorMsg<ChainProtocol> {
         ActorMsg::User(self)
-    }
-}
-
-impl fmt::Display for ChainProtocol {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 
@@ -127,7 +121,7 @@ impl ChainActor {
     pub fn new_ref(chain: Chain) -> ActorRef<ChainProtocol> {
         CHAIN_SYS.actor_of(
             ChainActor::props(chain),
-            "chain",
+            &snowflake::ProcessUniqueId::new().to_string(),
         ).unwrap()
     }
 
@@ -142,7 +136,7 @@ impl Actor for ChainActor {
         message: Self::Msg,
         sender: Option<ActorRef<Self::Msg>>,
     ) {
-        println!("received {}", message);
+        println!("received {:?}", message);
         sender.try_tell(
             match message {
                 ChainProtocol::TopPair => ChainProtocol::TopPairResult(self.chain.top_pair()),

@@ -7,6 +7,7 @@ use serde_json;
 use std::{fmt};
 use hash_table::actor::HashTableProtocol;
 use hash_table::actor::AskHashTable;
+use hash_table::HashTable;
 
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -170,8 +171,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        let commit_response = self.table.ask(HashTableProtocol::Commit(pair.clone()));
-        let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
+        let result = self.table.commit(&pair.clone());
 
         if result.is_ok() {
             self.top_pair = Some(pair.clone());
@@ -226,13 +226,12 @@ pub mod tests {
     use super::Chain;
     use hash_table::{
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
-        memory::{tests::test_table},
         pair::Pair,
     };
-    use std::rc::Rc;
     use chain::actor::ChainActor;
     use hash_table::actor::tests::test_table_actor;
     use chain::SourceChain;
+    use hash_table::HashTable;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -286,17 +285,17 @@ pub mod tests {
     /// tests for chain.table()
     fn table_push() {
         let table_actor = test_table_actor();
-        let chain = Chain::new(table_actor);
-        let chain_actor = ChainActor::new_ref(chain);
+        let chain = Chain::new(table_actor.clone());
+        let mut chain_actor = ChainActor::new_ref(chain);
 
         // test that adding something to the chain adds to the table
         let pair = chain_actor.push_entry(&test_entry()).unwrap();
 
-        assert_eq!(Some(pair.clone()), table_actor.get_pair(&pair.key()).unwrap(),);
+        assert_eq!(Some(pair.clone()), table_actor.get(&pair.key()).unwrap(),);
         assert_eq!(Some(pair.clone()), chain_actor.get_pair(&pair.key()).unwrap(),);
         assert_eq!(
+            table_actor.get(&pair.key()).unwrap(),
             chain_actor.get_pair(&pair.key()).unwrap(),
-            table_actor.get_pair(&pair.key()).unwrap(),
         );
     }
 
@@ -305,7 +304,7 @@ pub mod tests {
     fn push() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top());
+        assert_eq!(None, chain.top_pair());
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();
@@ -317,7 +316,7 @@ pub mod tests {
 
         // we should be able to do it again
         let e2 = test_entry_b();
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
 
         assert_eq!(Some(p2.clone()), chain.top_pair());
         assert_eq!(e2, p2.entry());
@@ -441,8 +440,8 @@ pub mod tests {
     fn top_type() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+        assert_eq!(None, chain.top_pair_type(&test_type_a()));
+        assert_eq!(None, chain.top_pair_type(&test_type_b()));
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
@@ -450,21 +449,21 @@ pub mod tests {
 
         // type a should be p1
         // type b should be None
-        let p1 = chain.push(&e1).unwrap();
-        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+        let p1 = chain.push_entry(&e1).unwrap();
+        assert_eq!(Some(p1.clone()), chain.top_pair_type(&test_type_a()));
+        assert_eq!(None, chain.top_pair_type(&test_type_b()));
 
         // type a should still be p1
         // type b should be p2
-        let p2 = chain.push(&e2).unwrap();
-        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+        let p2 = chain.push_entry(&e2).unwrap();
+        assert_eq!(Some(p1.clone()), chain.top_pair_type(&test_type_a()));
+        assert_eq!(Some(p2.clone()), chain.top_pair_type(&test_type_b()));
 
         // type a should be p3
         // type b should still be p2
-        let p3 = chain.push(&e3).unwrap();
-        assert_eq!(Some(p3.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+        let p3 = chain.push_entry(&e3).unwrap();
+        assert_eq!(Some(p3.clone()), chain.top_pair_type(&test_type_a()));
+        assert_eq!(Some(p2.clone()), chain.top_pair_type(&test_type_b()));
     }
 
     #[test]
@@ -476,9 +475,9 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
         // into_iter() returns clones of pairs
         let mut i = 0;
@@ -498,15 +497,15 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        chain.push(&e1).unwrap();
-        chain.push(&e2).unwrap();
-        chain.push(&e3).unwrap();
+        chain.push_entry(&e1).unwrap();
+        chain.push_entry(&e2).unwrap();
+        chain.push_entry(&e3).unwrap();
 
         let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"time\":\"\",\"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]";
         assert_eq!(expected_json, chain.to_json().unwrap());
 
-        let table = test_table();
-        assert_eq!(chain, Chain::from_json(Rc::new(table), expected_json));
+        let table_actor = test_table_actor();
+        assert_eq!(chain, Chain::from_json(table_actor, expected_json));
     }
 
 }

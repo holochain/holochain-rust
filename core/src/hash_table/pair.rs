@@ -90,6 +90,7 @@ pub mod tests {
         },
         header::Header,
     };
+    use chain::SourceChain;
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -141,7 +142,7 @@ pub mod tests {
         let mut chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let p = chain.push(&e).unwrap();
+        let p = chain.push_entry(&e).unwrap();
 
         assert_eq!(e, p.entry());
     }

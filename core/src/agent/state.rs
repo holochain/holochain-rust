@@ -187,7 +187,7 @@ pub mod tests {
 
     #[test]
     fn test_actor_receive() {
-        let state = test_agent_state();
+        // let state = test_agent_state();
 
         // state.chain.tell("hi".to_string(), None);
         // let chain = state.chain.clone();

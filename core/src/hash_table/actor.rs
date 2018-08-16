@@ -5,12 +5,68 @@ use hash_table::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
 use riker_patterns::ask::ask;
+use hash_table::pair_meta::PairMeta;
+use agent::keys::Keys;
+use snowflake;
 
 lazy_static! {
     pub static ref HASH_TABLE_SYS: ActorSystem<HashTableProtocol> = {
         let hash_table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
         ActorSystem::new(&hash_table_model).unwrap()
     };
+}
+
+#[derive(Debug, Clone)]
+pub enum HashTableProtocol {
+    /// HashTable::setup()
+    Setup,
+    SetupResult(Result<(), HolochainError>),
+
+    /// HashTable::teardown()
+    Teardown,
+    TeardownResult(Result<(), HolochainError>),
+
+    /// HashTable::modify()
+    Modify{
+        keys: Keys,
+        old_pair: Pair,
+        new_pair: Pair,
+    },
+    ModifyResult(Result<(), HolochainError>),
+
+    /// HashTable::retract()
+    Retract{
+        keys: Keys,
+        pair: Pair,
+    },
+    RetractResult(Result<(), HolochainError>),
+
+    /// HashTable::assert_meta()
+    AssertMeta(PairMeta),
+    AssertMetaResult(Result<(), HolochainError>),
+
+    /// HashTable::get_meta()
+    GetMeta(String),
+    GetMetaResult(Result<Option<PairMeta>, HolochainError>),
+
+    /// HashTable::get_pair_meta()
+    GetPairMeta(Pair),
+    GetPairMetaResult(Result<Vec<PairMeta>, HolochainError>),
+
+    /// HashTable::get()
+    GetPair(String),
+    GetPairResult(Result<Option<Pair>, HolochainError>),
+
+    /// HashTable::commit()
+    Commit(Pair),
+    CommitResult(Result<(), HolochainError>),
+
+}
+
+impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
+    fn into(self) -> ActorMsg<HashTableProtocol> {
+        ActorMsg::User(self)
+    }
 }
 
 /// anything that can be asked HashTableProtocol and block on responses
@@ -33,22 +89,57 @@ impl AskHashTable for ActorRef<HashTableProtocol> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum HashTableProtocol {
-    /// HashTable::get()
-    GetPair(String),
-    GetPairResult(Result<Option<Pair>, HolochainError>),
+impl HashTable for ActorRef<HashTableProtocol> {
+    fn setup(&mut self) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::Setup);
+        unwrap_to!(response => HashTableProtocol::SetupResult).clone()
+    }
 
-    /// HashTable::commit()
-    Commit(Pair),
-    CommitResponse(Result<(), HolochainError>),
+    fn teardown(&mut self) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::Teardown);
+        unwrap_to!(response => HashTableProtocol::TeardownResult).clone()
+    }
 
-}
+    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::Commit(pair.clone()));
+        unwrap_to!(response => HashTableProtocol::CommitResult).clone()
+    }
 
-impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
+    fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+        let response = self.ask(HashTableProtocol::GetPair(key.to_string()));
+        unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
+    }
 
-    fn into(self) -> ActorMsg<HashTableProtocol> {
-        ActorMsg::User(self)
+    fn modify(&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair,) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::Modify{
+            keys: keys.clone(),
+            old_pair: old_pair.clone(),
+            new_pair: new_pair.clone(),
+        });
+        unwrap_to!(response => HashTableProtocol::ModifyResult).clone()
+    }
+
+    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::Retract{
+            keys: keys.clone(),
+            pair: pair.clone(),
+        });
+        unwrap_to!(response => HashTableProtocol::RetractResult).clone()
+    }
+
+    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+        let response = self.ask(HashTableProtocol::AssertMeta(meta.clone()));
+        unwrap_to!(response => HashTableProtocol::AssertMetaResult).clone()
+    }
+
+    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+        let response = self.ask(HashTableProtocol::GetMeta(key.to_string()));
+        unwrap_to!(response => HashTableProtocol::GetMetaResult).clone()
+    }
+
+    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+        let response = self.ask(HashTableProtocol::GetPairMeta(pair.clone()));
+        unwrap_to!(response => HashTableProtocol::GetPairMetaResult).clone()
     }
 
 }
@@ -77,7 +168,7 @@ impl<HT: HashTable> HashTableActor<HT> {
     pub fn new_ref(table: HT) -> ActorRef<HashTableProtocol> {
         HASH_TABLE_SYS.actor_of(
             HashTableActor::props(table),
-            "table",
+            &snowflake::ProcessUniqueId::new().to_string(),
         ).unwrap()
     }
 
@@ -88,10 +179,43 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
     fn receive(
         &mut self,
-        _context: &Context<Self::Msg>,
-        _message: Self::Msg,
-        _sender: Option<ActorRef<Self::Msg>>,
+        context: &Context<Self::Msg>,
+        message: Self::Msg,
+        sender: Option<ActorRef<Self::Msg>>,
     ) {
+        println!("received {:?}", message);
+
+        sender.try_tell(
+            match message {
+                HashTableProtocol::Setup => HashTableProtocol::SetupResult(self.table.setup()),
+                HashTableProtocol::SetupResult(_) => unreachable!(),
+
+                HashTableProtocol::Teardown => HashTableProtocol::TeardownResult(self.table.teardown()),
+                HashTableProtocol::TeardownResult(_) => unreachable!(),
+
+                HashTableProtocol::Commit(pair) => HashTableProtocol::CommitResult(self.table.commit(&pair)),
+                HashTableProtocol::CommitResult(_) => unreachable!(),
+
+                HashTableProtocol::GetPair(hash) => HashTableProtocol::GetPairResult(self.table.get(&hash)),
+                HashTableProtocol::GetPairResult(_) => unreachable!(),
+
+                HashTableProtocol::Modify{keys, old_pair, new_pair} => HashTableProtocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
+                HashTableProtocol::ModifyResult(_) => unreachable!(),
+
+                HashTableProtocol::Retract{keys, pair} => HashTableProtocol::RetractResult(self.table.retract(&keys, &pair)),
+                HashTableProtocol::RetractResult(_) => unreachable!(),
+
+                HashTableProtocol::AssertMeta(pair_meta) => HashTableProtocol::AssertMetaResult(self.table.assert_meta(&pair_meta)),
+                HashTableProtocol::AssertMetaResult(_) => unreachable!(),
+
+                HashTableProtocol::GetMeta(key) => HashTableProtocol::GetMetaResult(self.table.get_meta(&key)),
+                HashTableProtocol::GetMetaResult(_) => unreachable!(),
+
+                HashTableProtocol::GetPairMeta(pair) => HashTableProtocol::GetPairMetaResult(self.table.get_pair_meta(&pair)),
+                HashTableProtocol::GetPairMetaResult(_) => unreachable!(),
+            },
+            Some(context.myself()),
+        ).unwrap();
 
     }
 
@@ -106,7 +230,7 @@ pub mod tests {
     use hash_table::actor::HashTableProtocol;
 
     pub fn test_table_actor() -> ActorRef<HashTableProtocol> {
-        HashTableActor::new_ref(test_table());
+        HashTableActor::new_ref(test_table())
     }
 
     #[test]

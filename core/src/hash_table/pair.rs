@@ -2,6 +2,7 @@ use chain::Chain;
 use hash_table::{entry::Entry, header::Header, HashTable};
 use serde_json;
 
+/// Pairs are entries with their headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
     header: Header,
@@ -10,40 +11,44 @@ pub struct Pair {
 
 impl Pair {
     /// build a new Pair from a chain and entry
+    ///
     /// Header is generated automatically
+    ///
     /// a Pair is immutable, but the chain is mutable if chain.push() is used.
+    ///
     /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
     /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
     /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
     /// now be valid, the new Y' will include correct headers pointing to X.
+    ///
+    /// panics if entry is somehow invalid
+    ///
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Pair {
-        let header = Header::new(chain, entry);
+    pub fn new<T: HashTable>(chain: &Chain<T>, entry: Entry) -> Pair {
+        let header = Header::new(chain, &entry);
 
         let p = Pair {
-            header: header.clone(),
-            entry: entry.clone(),
+            header: header,
+            entry: entry,
         };
 
-        if !p.validate() {
-            // we panic as no code path should attempt to create invalid pairs
-            // creating a Pair is an internal process of chain.push() and is deterministic based on
-            // an immutable Entry (that itself cannot be invalid), so this should never happen.
-            panic!("attempted to create an invalid pair");
-        };
+        // we panic as no code path should attempt to create invalid pairs
+        // creating a Pair is an internal process of chain.push() and is deterministic based on
+        // an immutable Entry (that itself cannot be invalid), so this should never happen.
+        assert!(p.validate(), "attempted to create an invalid pair");
 
         p
     }
 
     /// header getter
-    pub fn header(&self) -> Header {
-        self.header.clone()
+    pub fn header(&self) -> &Header {
+        &self.header
     }
 
     /// entry getter
-    pub fn entry(&self) -> Entry {
-        self.entry.clone()
+    pub fn entry(&self) -> &Entry {
+        &self.entry
     }
 
     /// key used in hash table lookups and other references
@@ -62,19 +67,23 @@ impl Pair {
     }
 
     /// serialize the Pair to a canonical JSON string
+    ///
+    /// panics if it fails to serialize
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn to_json(&self) -> String {
         // @TODO error handling
         // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).unwrap()
+        serde_json::to_string(&self).expect("should serialize without error")
     }
 
     /// deserialize a Pair from a canonical JSON string
+    ///
+    /// panics if string isn't valid JSON
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(s: &str) -> Pair {
-        let pair: Pair = serde_json::from_str(s).unwrap();
+        let pair: Pair = serde_json::from_str(s).expect("json should be valid");
         pair
     }
 }
@@ -93,7 +102,7 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        Pair::new(&test_chain(), &test_entry())
+        Pair::new(&test_chain(), test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -103,7 +112,7 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        Pair::new(&test_chain(), &test_entry_b())
+        Pair::new(&test_chain(), test_entry_b())
     }
 
     #[test]
@@ -117,9 +126,9 @@ pub mod tests {
         assert_eq!(h1.entry(), e1.hash());
         assert_eq!(h1.next(), None);
 
-        let p1 = Pair::new(&chain, &e1);
-        assert_eq!(e1, p1.entry());
-        assert_eq!(h1, p1.header());
+        let p1 = Pair::new(&chain, e1.clone());
+        assert_eq!(&e1, p1.entry());
+        assert_eq!(&h1, p1.header());
     }
 
     #[test]
@@ -130,9 +139,9 @@ pub mod tests {
         let c = "bar";
         let e = Entry::new(t, c);
         let h = Header::new(&chain, &e);
-        let p = Pair::new(&chain, &e);
+        let p = Pair::new(&chain, e);
 
-        assert_eq!(h, p.header());
+        assert_eq!(&h, p.header());
     }
 
     #[test]
@@ -141,9 +150,11 @@ pub mod tests {
         let mut chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let p = chain.push(&e).unwrap();
+        let p = chain
+            .push(&e)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(e, p.entry());
+        assert_eq!(&e, p.entry());
     }
 
     #[test]
@@ -153,7 +164,7 @@ pub mod tests {
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");
-        let p1 = Pair::new(&chain, &e1);
+        let p1 = Pair::new(&chain, e1);
 
         assert!(p1.validate());
     }
@@ -161,12 +172,12 @@ pub mod tests {
     #[test]
     /// test JSON roundtrip for pairs
     fn json_roundtrip() {
-        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
+        let json = r#"{"header":{"entry_type":"testEntryType","time":"","next":null,"entry":"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT","type_next":null,"signature":""},"entry":{"content":"test entry content","entry_type":"testEntryType"}}"#;
 
-        assert_eq!(json, test_pair().to_json(),);
+        assert_eq!(json, test_pair().to_json());
 
-        assert_eq!(test_pair(), Pair::from_json(&json),);
+        assert_eq!(test_pair(), Pair::from_json(&json));
 
-        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()),);
+        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()));
     }
 }

@@ -26,7 +26,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
 
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(&Action::Get(input.key));
+    let action_wrapper = ActionWrapper::new(Action::Get(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -34,29 +34,32 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
         &runtime.observer_channel,
         &action_wrapper.clone(),
         move |state: &::state::State| {
-            let actions = state.agent().actions().clone();
-            if actions.contains_key(&action_wrapper) {
-                // @TODO never panic in wasm
-                // @see https://github.com/holochain/holochain-rust/issues/159
-                let v = &actions[&action_wrapper];
-                sender.send(v.clone()).expect("local channel to be open");
-                true
-            } else {
-                false
+            let mut actions_copy = state.agent().actions();
+            match actions_copy.remove(&action_wrapper) {
+                Some(v) => {
+                    // @TODO never panic in wasm
+                    // @see https://github.com/holochain/holochain-rust/issues/159
+                    sender
+                        .send(v)
+                        // the channel stays connected until the first message has been sent
+                        // if this fails that means that it was called after having returned done=true
+                        .expect("observer called after done");
+
+                    true
+                }
+                None => false,
             }
         },
     );
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    let action_result = receiver.recv().expect("local channel to work");
+    let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
         ActionResponse::Get(maybe_pair) => {
             // serialize, allocate and encode result
-            let pair_str = maybe_pair
-                .and_then(|p| Some(p.to_json()))
-                .unwrap_or_default();
+            let pair_str = maybe_pair.map(|p| p.to_json()).unwrap_or_default();
 
             runtime_allocate_encode_str(runtime, &pair_str)
         }
@@ -94,7 +97,7 @@ mod tests {
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
-        assert_eq!(runtime.result, expected,);
+        assert_eq!(runtime.result, expected);
     }
 
 }

@@ -39,7 +39,7 @@ pub enum Callback {
 
     /// Communication Capability
 
-    /// receive(from : String, message : String) -> String
+    /// receive(from: String, message: String) -> String
     Receive,
 }
 
@@ -272,8 +272,7 @@ pub mod tests {
                 "#,
                     canonical_name, result,
                 ),
-            )
-            .unwrap()
+            ).expect("string literal should be valid WAT")
             .as_ref()
             .to_vec()
     }
@@ -282,7 +281,7 @@ pub mod tests {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
             Callback::from_str(canonical_name)
-                .unwrap()
+                .expect("string argument canonical_name should be valid callback")
                 .capability()
                 .as_str(),
             test_callback_wasm(canonical_name, result),
@@ -294,16 +293,22 @@ pub mod tests {
     #[test]
     /// test the FromStr implementation for LifecycleFunction
     fn test_from_str() {
-        assert_eq!(Callback::Genesis, Callback::from_str("genesis").unwrap(),);
+        assert_eq!(
+            Callback::Genesis,
+            Callback::from_str("genesis").expect("string literal should be valid callback")
+        );
         assert_eq!(
             Callback::ValidateCommit,
-            Callback::from_str("validate_commit").unwrap(),
+            Callback::from_str("validate_commit").expect("string literal should be valid callback"),
         );
-        assert_eq!(Callback::Receive, Callback::from_str("receive").unwrap(),);
+        assert_eq!(
+            Callback::Receive,
+            Callback::from_str("receive").expect("string literal should be valid callback")
+        );
 
         assert_eq!(
             "Cannot convert string to Callback",
-            Callback::from_str("foo").unwrap_err(),
+            Callback::from_str("foo").expect_err("string literal shouldn't be valid callback"),
         );
     }
 

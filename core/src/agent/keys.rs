@@ -91,13 +91,13 @@ pub mod tests {
     #[test]
     /// tests keys.public_key()
     fn keys_public_key() {
-        assert_eq!(test_keys().public_key(), test_public_key(),);
+        assert_eq!(test_keys().public_key(), test_public_key());
     }
 
     #[test]
     /// tests keys.private_key()
     fn keys_private_key() {
-        assert_eq!(test_keys().private_key(), test_private_key(),);
+        assert_eq!(test_keys().private_key(), test_private_key());
     }
 
 }

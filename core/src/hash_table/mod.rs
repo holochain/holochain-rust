@@ -31,7 +31,7 @@ pub trait HashTable {
 
     // meta
     /// assert a given PairMeta in the HashTable
-    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+    fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError>;
     /// lookup a PairMeta from the HashTable by key
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair

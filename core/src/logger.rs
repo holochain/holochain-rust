@@ -3,10 +3,9 @@
 //! gets emitted globaly from the container.
 
 use chrono::Local;
-use std::fmt;
 
 /// trait that defines the logging functionality that holochain_core requires
-pub trait Logger: fmt::Debug + Send {
+pub trait Logger: Send {
     fn log(&mut self, msg: String);
 }
 
@@ -23,10 +22,4 @@ impl Logger for SimpleLogger {
     // fn new() -> SimpleLogger {
     //      SimpleLogger {}
     // }
-}
-
-impl fmt::Debug for SimpleLogger {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<empty>")
-    }
 }

@@ -66,7 +66,7 @@ pub fn call_zome_and_wait_for_result(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Result<String, HolochainError> {
-    let call_action_wrapper = ActionWrapper::new(&Action::ExecuteZomeFunction(call.clone()));
+    let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
@@ -95,7 +95,7 @@ pub fn call_and_wait_for_result(
     call: FunctionCall,
     instance: &mut super::instance::Instance,
 ) -> Result<String, HolochainError> {
-    let call_action = ActionWrapper::new(&Action::ExecuteZomeFunction(call.clone()));
+    let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
@@ -165,10 +165,9 @@ fn reduce_rir(
 /// Helper
 fn return_initialization_result(result: Option<String>, action_channel: &Sender<ActionWrapper>) {
     action_channel
-        .send(ActionWrapper::new(&Action::ReturnInitializationResult(
+        .send(ActionWrapper::new(Action::ReturnInitializationResult(
             result,
-        )))
-        .expect("action channel to be open in reducer");
+        ))).expect("action channel to be open in reducer");
 }
 
 /// Reduce InitApplication Action
@@ -211,8 +210,7 @@ fn reduce_ia(
                             &zome.name(),
                             &CallbackParams::Genesis,
                         )
-                    })
-                    .collect();
+                    }).collect();
 
                 // pad out a single pass if there are no zome results
                 // @TODO is this really OK?
@@ -261,7 +259,7 @@ fn reduce_ezf(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    let function_call = match action_wrapper.action() {
+    let function_call = match action_wrapper.action().clone() {
         Action::ExecuteZomeFunction(call) => call,
         _ => unreachable!(),
     };
@@ -309,9 +307,7 @@ fn reduce_ezf(
 
                     // Send ReturnResult Action
                     action_channel
-                        .send(ActionWrapper::new(&Action::ReturnZomeFunctionResult(
-                            result,
-                        )))
+                        .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
                         .expect("action channel to be open in reducer");
                 });
             } else {
@@ -340,9 +336,7 @@ fn reduce_ezf(
     }
     if has_error {
         action_channel
-            .send(ActionWrapper::new(&Action::ReturnZomeFunctionResult(
-                result,
-            )))
+            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
             .expect("action channel to be open in reducer");
     }
 }
@@ -540,7 +534,7 @@ pub mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(&Action::InitApplication(dna));
+        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
@@ -553,7 +547,7 @@ pub mod tests {
             &sender.clone(),
             &tx_observer.clone(),
         );
-        receiver.recv().unwrap_or_else(|_| panic!("channel failed"));
+        receiver.recv().expect("channel failed");
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);
@@ -564,7 +558,7 @@ pub mod tests {
     /// test that we can initialize and send/receive result values from a nucleus
     fn can_reduce_return_init_result_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(&Action::InitApplication(dna));
+        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();
@@ -577,14 +571,14 @@ pub mod tests {
             &sender.clone(),
             &tx_observer.clone(),
         );
-        receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
+        receiver.recv().expect("receiver fail");
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
         assert_eq!(initializing_nucleus.has_initialization_failed(), false);
         assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(false) ActionWrapper
-        let return_action_wrapper = ActionWrapper::new(&Action::ReturnInitializationResult(Some(
+        let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(Some(
             "init failed".to_string(),
         )));
         let reduced_nucleus = reduce(
@@ -610,7 +604,7 @@ pub mod tests {
             &sender.clone(),
             &tx_observer.clone(),
         );
-        receiver.recv().unwrap_or_else(|_| panic!("receiver fail"));
+        receiver.recv().expect("receiver shouldn't fail");
 
         assert_eq!(
             reduced_nucleus.status(),
@@ -618,7 +612,7 @@ pub mod tests {
         );
 
         // Send ReturnInit(None) ActionWrapper
-        let return_action_wrapper = ActionWrapper::new(&Action::ReturnInitializationResult(None));
+        let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
             test_context("jimmy"),
             initializing_nucleus.clone(),
@@ -637,7 +631,7 @@ pub mod tests {
     fn can_reduce_execfn_action() {
         let call = FunctionCall::new("myZome", "public", "bogusfn", "");
 
-        let action_wrapper = ActionWrapper::new(&Action::ExecuteZomeFunction(call));
+        let action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = channel::<ActionWrapper>();
         let (tx_observer, _observer) = channel::<Observer>();

@@ -58,10 +58,7 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
             &*ptr
         };
 
-        let json = match dna.to_json() {
-            Ok(s) => s,
-            Err(_) => return std::ptr::null_mut(),
-        };
+        let json = dna.to_json();
 
         let json = match CString::new(json) {
             Ok(s) => s,
@@ -186,8 +183,7 @@ fn zome_names_as_vec(dna: &Dna) -> Option<Vec<*const c_char>> {
                     Err(_) => std::ptr::null(),
                 };
                 raw as *const c_char
-            })
-            .collect::<Vec<*const c_char>>(),
+            }).collect::<Vec<*const c_char>>(),
     )
 }
 
@@ -224,8 +220,7 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        })
-        .collect::<Vec<*const c_char>>();
+        }).collect::<Vec<*const c_char>>();
     Some(result)
 }
 
@@ -261,8 +256,7 @@ fn fn_names_as_vec(
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        })
-        .collect::<Vec<*const c_char>>();
+        }).collect::<Vec<*const c_char>>();
     Some(result)
 }
 
@@ -307,8 +301,7 @@ fn fn_parameters_as_vec(
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        })
-        .collect::<Vec<*const c_char>>();
+        }).collect::<Vec<*const c_char>>();
     Some(result)
 }
 

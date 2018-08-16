@@ -10,13 +10,13 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-#[derive(Clone, Debug)]
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
 /// Action dispatches containing the same value when doing "time travel debug".
 /// The standard approach is to drop the ActionWrapper into the key of a state history HashMap and
 /// use the convenience unwrap_to! macro to extract the action data in a reducer.
 /// All reducer functions must accept an ActionWrapper so all dispatchers take an ActionWrapper.
+#[derive(Clone, Debug)]
 pub struct ActionWrapper {
     action: Action,
     id: snowflake::ProcessUniqueId,
@@ -25,22 +25,22 @@ pub struct ActionWrapper {
 impl ActionWrapper {
     /// constructor from &Action
     /// internal snowflake ID is automatically set
-    pub fn new(a: &Action) -> Self {
+    pub fn new(a: Action) -> Self {
         ActionWrapper {
-            action: a.clone(),
+            action: a,
             // auto generate id
             id: snowflake::ProcessUniqueId::new(),
         }
     }
 
     /// read only access to action
-    pub fn action(&self) -> Action {
-        self.action.clone()
+    pub fn action(&self) -> &Action {
+        &self.action
     }
 
     /// read only access to id
-    pub fn id(&self) -> snowflake::ProcessUniqueId {
-        self.id
+    pub fn id(&self) -> &snowflake::ProcessUniqueId {
+        &self.id
     }
 }
 
@@ -90,12 +90,10 @@ pub enum Action {
 }
 
 /// function signature for action handler functions
-// @TODO merge these into a single signature
-// @see https://github.com/holochain/holochain-rust/issues/194
-pub type AgentReduceFn =
-    fn(Arc<Context>, &mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
-pub type NucleusReduceFn =
-    fn(Arc<Context>, &mut NucleusState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type AgentReduceFn = ReduceFn<AgentState>;
+pub type NucleusReduceFn = ReduceFn<NucleusState>;
+pub type ReduceFn<S> =
+    fn(Arc<Context>, &mut S, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
 
 #[cfg(test)]
 pub mod tests {
@@ -113,21 +111,21 @@ pub mod tests {
 
     /// dummy action wrapper with test_action()
     pub fn test_action_wrapper() -> ActionWrapper {
-        ActionWrapper::new(&test_action())
+        ActionWrapper::new(test_action())
     }
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(&Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry()))
     }
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(&Action::Get(test_hash()))
+        ActionWrapper::new(Action::Get(test_hash()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(&Action::ReturnZomeFunctionResult(test_function_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_function_result()))
     }
 
     #[test]
@@ -158,7 +156,7 @@ pub mod tests {
         let aw2 = test_action_wrapper();
 
         assert_eq!(aw1.action(), aw2.action());
-        assert_eq!(aw1.action(), test_action());
+        assert_eq!(aw1.action(), &test_action());
     }
 
     #[test]
@@ -178,7 +176,7 @@ pub mod tests {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
-        assert_ne!(calculate_hash(&aw1), calculate_hash(&aw2),);
+        assert_ne!(calculate_hash(&aw1), calculate_hash(&aw2));
     }
 
 }

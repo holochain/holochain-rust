@@ -103,7 +103,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 }
 
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from_string(agent_name);
+    let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
         Arc::new(Context {

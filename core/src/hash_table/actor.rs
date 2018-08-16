@@ -36,8 +36,8 @@ impl AskHashTable for ActorRef<HashTableProtocol> {
 #[derive(Debug, Clone)]
 pub enum HashTableProtocol {
     /// HashTable::get()
-    Get(String),
-    GetResponse(Result<Option<Pair>, HolochainError>),
+    GetPair(String),
+    GetPairResult(Result<Option<Pair>, HolochainError>),
 
     /// HashTable::commit()
     Commit(Pair),

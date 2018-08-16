@@ -2,6 +2,7 @@ use chain::Chain;
 use hash;
 use hash_table::{entry::Entry};
 use multihash::Hash;
+use chain::SourceChain;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -44,13 +45,10 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
-            next: chain.top().and_then(|p| Some(p.header().hash())),
+            next: chain.top_pair().and_then(|p| Some(p.header().hash())),
             entry: entry.hash().to_string(),
             type_next: chain
-                .top_type(&entry.entry_type())
-                // @TODO inappropriate unwrap()?
-                // @see https://github.com/holochain/holochain-rust/issues/147
-                .unwrap()
+                .top_pair_type(&entry.entry_type())
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71

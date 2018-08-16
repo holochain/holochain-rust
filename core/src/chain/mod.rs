@@ -6,12 +6,7 @@ use hash_table::{entry::Entry, pair::Pair};
 use serde_json;
 use std::{fmt};
 use hash_table::actor::HashTableProtocol;
-use riker_patterns::ask::ask;
-use hash_table::actor::HASH_TABLE_SYS;
-use futures::executor::block_on;
-use chain::actor::ChainProtocol;
 use hash_table::actor::AskHashTable;
-use chain::actor::AskChain;
 
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -47,13 +42,8 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            let a = ask(
-                                &(*HASH_TABLE_SYS),
-                                &self.table,
-                                HashTableProtocol::Get(h.to_string()),
-                            );
-                            let response = block_on(a).unwrap();
-                            let result = unwrap_to!(response => HashTableProtocol::GetResponse);
+                            let response = self.table.ask(HashTableProtocol::GetPair(h.to_string()));
+                            let result = unwrap_to!(response => HashTableProtocol::GetPairResult);
                             result.clone().unwrap()
                         });
         ret
@@ -65,7 +55,7 @@ pub struct Chain {
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
     table: ActorRef<HashTableProtocol>,
-    top: Option<Pair>,
+    top_pair: Option<Pair>,
 }
 
 impl PartialEq for Chain {
@@ -74,7 +64,7 @@ impl PartialEq for Chain {
         self.validate() &&
         other.validate() &&
         // header hashing ensures that if the tops match the whole chain matches
-        self.top() == other.top()
+        self.top_pair() == other.top_pair()
     }
 }
 
@@ -82,7 +72,7 @@ impl Eq for Chain {}
 
 impl fmt::Debug for Chain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Chain {{ top: {:?} }}", self.top)
+        write!(f, "Chain {{ top: {:?} }}", self.top_pair)
     }
 }
 
@@ -99,14 +89,9 @@ impl Chain {
 
     pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
         Chain {
-            top: None,
+            top_pair: None,
             table: table.clone(),
         }
-    }
-
-    /// returns a clone of the top Pair
-    pub fn top(&self) -> Option<Pair> {
-        self.top.clone()
     }
 
     /// returns a reference to the underlying HashTable
@@ -114,76 +99,14 @@ impl Chain {
         self.table.clone()
     }
 
-    /// private pair-oriented version of push() (which expects Entries)
-    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        if !(pair.validate()) {
-            return Err(HolochainError::new(
-                "attempted to push an invalid pair for this chain",
-            ));
-        }
-
-        let top_pair = self.top().and_then(|p| Some(p.key()));
-        let next_pair = pair.header().next();
-
-        if top_pair != next_pair {
-            return Err(HolochainError::new(&format!(
-                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                top_pair.clone(),
-                next_pair.clone()
-            )));
-        }
-
-        let commit_response = self.table.ask(HashTableProtocol::Commit(pair.clone()));
-        let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
-
-        if result.is_ok() {
-            self.top = Some(pair.clone());
-        }
-        match result {
-            Ok(_) => Ok(pair.clone()),
-            Err(e) => Err(e.clone()),
-        }
-    }
-
-    /// push a new Entry on to the top of the Chain
-    /// the Pair for the new Entry is automatically generated and validated against the current top
-    /// Pair to ensure the chain links up correctly across the underlying table data
-    /// the newly created and pushed Pair is returned in the fn Result
-    pub fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = Pair::new(self, entry);
-        self.push_pair(&pair)
-    }
-
     /// returns true if all pairs in the chain pass validation
-    pub fn validate(&self) -> bool {
+    fn validate(&self) -> bool {
         self.iter().all(|p| p.validate())
     }
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
-    pub fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top())
-    }
-
-    /// get a Pair by Pair/Header key from the HashTable if it exists
-    pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.ask(HashTableProtocol::Get(k.to_string()));
-        unwrap_to!(response => HashTableProtocol::GetResponse).clone()
-    }
-
-    /// get an Entry by Entry key from the HashTable if it exists
-    pub fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
-        // @TODO - this is a slow way to do a lookup
-        // @see https://github.com/holochain/holochain-rust/issues/50
-        Ok(self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
-    }
-
-    /// get the top Pair by Entry type
-    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(self.iter().find(|p| p.header().entry_type() == t))
+    fn iter(&self) -> ChainIterator {
+        ChainIterator::new(self.table(), &self.top_pair())
     }
 
     /// get the entire chain, top to bottom as a JSON array or canonical pairs
@@ -213,22 +136,88 @@ impl Chain {
         }
         chain
     }
-}
-
-trait SourceChain {
-
-    fn push(&mut self, &Entry) -> Result<Pair, HolochainError>;
 
 }
 
-impl SourceChain for ActorRef<ChainProtocol> {
+impl SourceChain for Chain {
 
-    fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let response = &self.ask(ChainProtocol::Push(entry.clone()));
-        let result = unwrap_to!(response => ChainProtocol::PushResult);
-        result.clone()
+    /// returns a clone of the top Pair
+    fn top_pair(&self) -> Option<Pair> {
+        self.top_pair.clone()
     }
 
+    /// get the top Pair by Entry type
+    fn top_pair_type(&self, t: &str) -> Option<Pair> {
+        self.iter().find(|p| p.header().entry_type() == t)
+    }
+
+    /// private pair-oriented version of push() (which expects Entries)
+    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+        if !(pair.validate()) {
+            return Err(HolochainError::new(
+                "attempted to push an invalid pair for this chain",
+            ));
+        }
+
+        let top_pair = self.top_pair().and_then(|p| Some(p.key()));
+        let next_pair = pair.header().next();
+
+        if top_pair != next_pair {
+            return Err(HolochainError::new(&format!(
+                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                top_pair.clone(),
+                next_pair.clone()
+            )));
+        }
+
+        let commit_response = self.table.ask(HashTableProtocol::Commit(pair.clone()));
+        let result = unwrap_to!(commit_response => HashTableProtocol::CommitResponse);
+
+        if result.is_ok() {
+            self.top_pair = Some(pair.clone());
+        }
+        match result {
+            Ok(_) => Ok(pair.clone()),
+            Err(e) => Err(e.clone()),
+        }
+    }
+
+    /// push a new Entry on to the top of the Chain
+    /// the Pair for the new Entry is automatically generated and validated against the current top
+    /// Pair to ensure the chain links up correctly across the underlying table data
+    /// the newly created and pushed Pair is returned in the fn Result
+    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+        let pair = Pair::new(self, entry);
+        self.push_pair(&pair)
+    }
+
+    /// get a Pair by Pair/Header key from the HashTable if it exists
+    fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+        let response = self.table.ask(HashTableProtocol::GetPair(k.to_string()));
+        unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
+    }
+
+    /// get an Entry by Entry key from the HashTable if it exists
+    fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        Ok(self
+                .iter()
+                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                // @see https://github.com/holochain/holochain-rust/issues/145
+                .find(|p| p.entry().hash() == entry_hash))
+    }
+}
+
+pub trait SourceChain {
+    fn top_pair(&self) -> Option<Pair>;
+    fn top_pair_type(&self, t: &str) -> Option<Pair>;
+
+    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
+    fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
+
+    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
+    fn get_pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
 }
 
 #[cfg(test)]
@@ -239,10 +228,11 @@ pub mod tests {
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         memory::{tests::test_table},
         pair::Pair,
-        HashTable,
     };
     use std::rc::Rc;
+    use chain::actor::ChainActor;
     use hash_table::actor::tests::test_table_actor;
+    use chain::SourceChain;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -265,11 +255,11 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        c1.push(&e1).unwrap();
-        c2.push(&e1).unwrap();
-        c3.push(&e2).unwrap();
+        c1.push_entry(&e1).unwrap();
+        c2.push_entry(&e1).unwrap();
+        c3.push_entry(&e2).unwrap();
 
-        assert_eq!(c1.top(), c2.top());
+        assert_eq!(c1.top_pair(), c2.top_pair());
         assert_eq!(c1, c2);
 
         assert_ne!(c1, c3);
@@ -280,29 +270,34 @@ pub mod tests {
     /// tests for chain.top()
     fn top() {
         let mut chain = test_chain();
-        assert_eq!(None, chain.top());
+        assert_eq!(None, chain.top_pair());
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
-        assert_eq!(Some(p1), chain.top());
+        let p1 = chain.push_entry(&e1).unwrap();
+        assert_eq!(Some(p1), chain.top_pair());
 
-        let p2 = chain.push(&e2).unwrap();
-        assert_eq!(Some(p2), chain.top());
+        let p2 = chain.push_entry(&e2).unwrap();
+        assert_eq!(Some(p2), chain.top_pair());
     }
 
     #[test]
     /// tests for chain.table()
-    fn table() {
-        let t = test_table();
-        let mut c = Chain::new(Rc::new(t));
+    fn table_push() {
+        let table_actor = test_table_actor();
+        let chain = Chain::new(table_actor);
+        let chain_actor = ChainActor::new_ref(chain);
+
         // test that adding something to the chain adds to the table
-        let p = c.push(&test_entry()).unwrap();
-        let tr = Rc::new(c.table());
-        assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap(),);
-        assert_eq!(Some(p.clone()), tr.get(&p.key()).unwrap(),);
-        assert_eq!(c.table().get(&p.key()).unwrap(), tr.get(&p.key()).unwrap(),);
+        let pair = chain_actor.push_entry(&test_entry()).unwrap();
+
+        assert_eq!(Some(pair.clone()), table_actor.get_pair(&pair.key()).unwrap(),);
+        assert_eq!(Some(pair.clone()), chain_actor.get_pair(&pair.key()).unwrap(),);
+        assert_eq!(
+            chain_actor.get_pair(&pair.key()).unwrap(),
+            table_actor.get_pair(&pair.key()).unwrap(),
+        );
     }
 
     #[test]
@@ -314,9 +309,9 @@ pub mod tests {
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
 
-        assert_eq!(Some(p1.clone()), chain.top());
+        assert_eq!(Some(p1.clone()), chain.top_pair());
         assert_eq!(e1, p1.entry());
         assert_eq!(e1.hash(), p1.header().entry());
 
@@ -324,7 +319,7 @@ pub mod tests {
         let e2 = test_entry_b();
         let p2 = chain.push(&e2).unwrap();
 
-        assert_eq!(Some(p2.clone()), chain.top());
+        assert_eq!(Some(p2.clone()), chain.top_pair());
         assert_eq!(e2, p2.entry());
         assert_eq!(e2.hash(), p2.header().entry());
     }
@@ -339,10 +334,10 @@ pub mod tests {
 
         assert!(chain.validate());
 
-        chain.push(&e1).unwrap();
+        chain.push_entry(&e1).unwrap();
         assert!(chain.validate());
 
-        chain.push(&e2).unwrap();
+        chain.push_entry(&e2).unwrap();
         assert!(chain.validate());
     }
 
@@ -351,8 +346,8 @@ pub mod tests {
     fn round_trip() {
         let mut c = test_chain();
         let e = test_entry();
-        let p = c.push(&e).unwrap();
-        assert_eq!(Some(p.clone()), c.get(&p.key()).unwrap(),);
+        let p = c.push_entry(&e).unwrap();
+        assert_eq!(Some(p.clone()), c.get_pair(&p.key()).unwrap(),);
     }
 
     #[test]
@@ -363,8 +358,8 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
 
         assert_eq!(vec![p2, p1], chain.iter().collect::<Vec<Pair>>());
     }
@@ -377,9 +372,9 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
-        let _p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let _p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e1).unwrap();
 
         assert_eq!(
             vec![p3, p1],
@@ -399,17 +394,17 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
-        assert_eq!(None, chain.get("").unwrap());
-        assert_eq!(Some(p1.clone()), chain.get(&p1.key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get(&p2.key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get(&p3.key()).unwrap());
-        assert_eq!(Some(p1.clone()), chain.get(&p1.header().key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get(&p2.header().key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get(&p3.header().key()).unwrap());
+        assert_eq!(None, chain.get_pair("").unwrap());
+        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.key()).unwrap());
+        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.header().key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.header().key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.header().key()).unwrap());
     }
 
     #[test]
@@ -421,9 +416,9 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
         assert_eq!(None, chain.get_entry("").unwrap());
         // @TODO at this point we have p3 with the same entry key as p1...

@@ -7,6 +7,7 @@ use hash_table::entry::Entry;
 use hash_table::pair::Pair;
 use error::HolochainError;
 use chain::Chain;
+use chain::SourceChain;
 
 lazy_static! {
     pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
@@ -15,8 +16,42 @@ lazy_static! {
     };
 }
 
+#[derive(Debug, Clone)]
+pub enum ChainProtocol {
+    TopPair,
+    TopPairResult(Option<Pair>),
+
+    TopPairType(String),
+    TopPairTypeResult(Option<Pair>),
+
+    PushEntry(Entry),
+    PushEntryResult(Result<Pair, HolochainError>),
+
+    PushPair(Pair),
+    PushPairResult(Result<Pair, HolochainError>),
+
+    GetEntry(String),
+    GetEntryResult(Result<Option<Pair>, HolochainError>),
+
+    GetPair(String),
+    GetPairResult(Result<Option<Pair>, HolochainError>),
+}
+
+impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
+    fn into(self) -> ActorMsg<ChainProtocol> {
+        ActorMsg::User(self)
+    }
+}
+
+impl fmt::Display for ChainProtocol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// anything that can be asked ChainProtocol and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
+/// convenience wrappers around chain struct methods
 pub trait AskChain {
     fn ask(&self, message: ChainProtocol) -> ChainProtocol;
 }
@@ -33,26 +68,36 @@ impl AskChain for ActorRef<ChainProtocol> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ChainProtocol {
-    Push(Entry),
-    PushPair(Pair),
-    PushResult(Result<Pair, HolochainError>),
+impl SourceChain for ActorRef<ChainProtocol> {
 
-    GetEntry(String),
-    GetEntryResult(Result<Option<Pair>, HolochainError>),
-}
-
-impl fmt::Display for ChainProtocol {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+    fn top_pair(&self) -> Option<Pair> {
+        let response = self.ask(ChainProtocol::TopPair);
+        unwrap_to!(response => ChainProtocol::TopPairResult).clone()
     }
-}
 
-impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
+    fn top_pair_type(&self, t: &str) -> Option<Pair> {
+        let response = self.ask(ChainProtocol::TopPairType(t.to_string()));
+        unwrap_to!(response => ChainProtocol::TopPairTypeResult).clone()
+    }
 
-    fn into(self) -> ActorMsg<ChainProtocol> {
-        ActorMsg::User(self)
+    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+        let response = self.ask(ChainProtocol::PushEntry(entry.clone()));
+        unwrap_to!(response => ChainProtocol::PushEntryResult).clone()
+    }
+
+    fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+        let response = self.ask(ChainProtocol::GetEntry(entry_hash.to_string()));
+        unwrap_to!(response => ChainProtocol::GetEntryResult).clone()
+    }
+
+    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+        let response = self.ask(ChainProtocol::PushPair(pair.clone()));
+        unwrap_to!(response => ChainProtocol::PushPairResult).clone()
+    }
+
+    fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+        let response = self.ask(ChainProtocol::GetPair(k.to_string()));
+        unwrap_to!(response => ChainProtocol::GetPairResult).clone()
     }
 
 }
@@ -100,12 +145,23 @@ impl Actor for ChainActor {
         println!("received {}", message);
         sender.try_tell(
             match message {
-                ChainProtocol::Push(entry) => ChainProtocol::PushResult(self.chain.push(&entry)),
-                ChainProtocol::PushPair(pair) => ChainProtocol::PushResult(self.chain.push_pair(&pair)),
-                ChainProtocol::PushResult(_) => unreachable!(),
+                ChainProtocol::TopPair => ChainProtocol::TopPairResult(self.chain.top_pair()),
+                ChainProtocol::TopPairResult(_) => unreachable!(),
+
+                ChainProtocol::TopPairType(t) => ChainProtocol::TopPairTypeResult(self.chain.top_pair_type(&t)),
+                ChainProtocol::TopPairTypeResult(_) => unreachable!(),
+
+                ChainProtocol::PushPair(pair) => ChainProtocol::PushPairResult(self.chain.push_pair(&pair)),
+                ChainProtocol::PushPairResult(_) => unreachable!(),
+
+                ChainProtocol::PushEntry(entry) => ChainProtocol::PushEntryResult(self.chain.push_entry(&entry)),
+                ChainProtocol::PushEntryResult(_) => unreachable!(),
 
                 ChainProtocol::GetEntry(key) => ChainProtocol::GetEntryResult(self.chain.get_entry(&key)),
                 ChainProtocol::GetEntryResult(_) => unreachable!(),
+
+                ChainProtocol::GetPair(key) => ChainProtocol::GetPairResult(self.chain.get_pair(&key)),
+                ChainProtocol::GetPairResult(_) => unreachable!(),
             },
             Some(context.myself()),
         ).unwrap();

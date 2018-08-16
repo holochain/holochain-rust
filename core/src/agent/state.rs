@@ -11,6 +11,7 @@ use std::{
 };
 use chain::actor::ChainProtocol;
 use chain::actor::AskChain;
+use chain::SourceChain;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -104,19 +105,11 @@ fn reduce_commit(
     // @TODO successfully validate before pushing a commit
     // @see https://github.com/holochain/holochain-rust/issues/97
 
-    let response = state.chain.ask(
-        ChainProtocol::Push(entry.clone()),
-    );
-    let result = unwrap_to!(response => ChainProtocol::PushResult);
-    // commit returns the entry key not the pair, from the action's perspective as this is
-    // what the zome API expects
-    let result = result.clone();
-
     state
         .actions
         .insert(
             action_wrapper.clone(),
-            ActionResponse::Commit(result),
+            ActionResponse::Commit(state.chain.push_entry(&entry)),
         );
 }
 

@@ -7,6 +7,7 @@ core_api/wasm-test/round_trip/target
 core_api/wasm-test/commit/target
 core/src/nucleus/ribosome/target
 core/src/nucleus/wasm-test/target
+build_docs_key
 
 cobertura.xml
 

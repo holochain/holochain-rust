@@ -43,12 +43,18 @@ There is also a docker build that allows local build, serve, watch and live relo
 From the root of the repo, run:
 
 ```shell
-. docker/build-mdbook && . docker/run-mdbook
+. docker/build-mdbook-image && . docker/run-mdbook
 ```
 
 Once the book has built and is serving, visit `http://localhost:3000` in the browser.
 
 You can edit the markdown files in `doc/holochain_101` and the book will live reload.
+
+To do a one-time build of the files to HTML, run:
+
+```shell
+. docker/build-mdbook
+```
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
@@ -60,5 +66,4 @@ rovided in the LICENSE file (GPLv3).  This program is distributed in the hope th
 t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  PURPOSE.
 
-**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are u
-sing GPL while we're getting the matter sorted out.
+**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.

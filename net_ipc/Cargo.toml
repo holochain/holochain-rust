@@ -1,5 +1,5 @@
 [package]
-name = "net_ipc"
+name = "holochain_net_ipc"
 version = "0.1.0"
 authors = ["neonphog <neonphog@gmail.com>"]
 

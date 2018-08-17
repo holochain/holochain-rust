@@ -1,6 +1,4 @@
-/*!
-This module represents a holochain application's inter-process-communication connection to an external p2p process.
-*/
+//! This module represents a holochain application's inter-process-communication connection to an external p2p process.
 
 use std::collections::{hash_map::Entry, HashMap};
 
@@ -19,11 +17,9 @@ pub type LocalResult = Box<FnMut(Result<MsgSrvRespOk>) -> Result<()> + Send>;
 /// A closure callback type def for getting a response from a remote server when performing a `call`.
 pub type CallResponseResult = Box<FnMut(Result<MsgSrvRecvCallResp>) -> Result<()> + Send>;
 
-/**
-IPC communication client structure. Allows connection to an external process that manages p2p communications.
-
-This struct takes an abstract socket type mainly to facilitate unit testing. You will mainly instantiate the exported ZmqIpcClient type definition.
-*/
+/// IPC communication client structure. Allows connection to an external process that manages p2p communications.
+///
+/// This struct takes an abstract socket type mainly to facilitate unit testing. You will mainly instantiate the exported ZmqIpcClient type definition.
 pub struct IpcClient<S: IpcSocket> {
     socket: Box<S>,
     next_id: u64,
@@ -32,17 +28,13 @@ pub struct IpcClient<S: IpcSocket> {
 }
 
 impl<S: IpcSocket> IpcClient<S> {
-    /**
-    Perform any underlying socket library cleanup. Call this before your application exits.
-    */
+    /// Perform any underlying socket library cleanup. Call this before your application exits.
     pub fn destroy_context() -> Result<()> {
         S::destroy_context()?;
         Ok(())
     }
 
-    /**
-    Get a new IpcClient instance.
-    */
+    /// Get a new IpcClient instance.
     pub fn new() -> Result<Self> {
         Ok(Self {
             socket: S::new()?,
@@ -52,9 +44,7 @@ impl<S: IpcSocket> IpcClient<S> {
         })
     }
 
-    /**
-    Close this specific IpcClient connection.
-    */
+    /// Close this specific IpcClient connection.
     pub fn close(mut self) -> Result<()> {
         self.socket.close()?;
         self.local_callbacks.clear();
@@ -62,9 +52,7 @@ impl<S: IpcSocket> IpcClient<S> {
         Ok(())
     }
 
-    /**
-    Connect this IpcClient to a p2p ipc server.
-    */
+    /// Connect this IpcClient to a p2p ipc server.
     pub fn connect(&mut self, endpoint: &str) -> Result<()> {
         let connect_start = get_millis();
 
@@ -98,23 +86,18 @@ impl<S: IpcSocket> IpcClient<S> {
                     continue;
                 }
             }
-
         }
         Ok(())
     }
 
-    /**
-    Send a heartbeat message to the ipc server.
-    */
+    /// Send a heartbeat message to the ipc server.
     pub fn ping(&mut self) -> Result<()> {
         let ping = get_millis();
         self.priv_send(MSG_CLI_PING, &ping)?;
         Ok(())
     }
 
-    /**
-    Transmit a fire-and-forget `send` message to another node on the p2p network.
-    */
+    /// Transmit a fire-and-forget `send` message to another node on the p2p network.
     pub fn send(&mut self, to_address: &[u8], data: &[u8], cb: Option<LocalResult>) -> Result<()> {
         let id = self.priv_get_id()?;
         if let Some(cb) = cb {
@@ -125,9 +108,7 @@ impl<S: IpcSocket> IpcClient<S> {
         Ok(())
     }
 
-    /**
-    Transmit an RPC-style `call` message to another node on the p2p network.
-    */
+    /// Transmit an RPC-style `call` message to another node on the p2p network.
     pub fn call(
         &mut self,
         to_address: &[u8],
@@ -140,16 +121,15 @@ impl<S: IpcSocket> IpcClient<S> {
             self.local_callbacks.insert(id.clone(), (get_millis(), cb));
         }
         if let Some(resp_cb) = resp_cb {
-            self.call_resp_callbacks.insert(id.clone(), (get_millis(), resp_cb));
+            self.call_resp_callbacks
+                .insert(id.clone(), (get_millis(), resp_cb));
         }
         let snd = MsgCliCall(&id, &id, to_address, data);
         self.priv_send(MSG_CLI_CALL, &snd)?;
         Ok(())
     }
 
-    /**
-    Transmit a response to an RPC-style `call` message some other node sent us.
-    */
+    /// Transmit a response to an RPC-style `call` message some other node sent us.
     pub fn call_resp(
         &mut self,
         message_id: &[u8],
@@ -166,12 +146,10 @@ impl<S: IpcSocket> IpcClient<S> {
         Ok(())
     }
 
-    /**
-    Allow IPC client to do any needed processing.
-    This should be called regularly to make sure any maintenance tasks are executed properly, and to avoid incoming data backing up in memory.
-
-    If there are no incoming messages waiting in the queue, `millis` indicates how long we should block waiting for one. It is perfectly valid to pass in `0` for `millis`.
-    */
+    /// Allow IPC client to do any needed processing.
+    /// This should be called regularly to make sure any maintenance tasks are executed properly, and to avoid incoming data backing up in memory.
+    ///
+    /// If there are no incoming messages waiting in the queue, `millis` indicates how long we should block waiting for one. It is perfectly valid to pass in `0` for `millis`.
     pub fn process(&mut self, millis: i64) -> Result<Option<Message>> {
         if !self.socket.poll(millis)? {
             return Ok(None);
@@ -180,7 +158,7 @@ impl<S: IpcSocket> IpcClient<S> {
         // we have data, let's fetch it
         let res = self.socket.recv()?;
         if res.len() != 3 {
-            gerr!("bad msg len: {}", res.len());
+            bail_generic!("bad msg len: {}", res.len());
         }
 
         let (t, msg) = res[2].split_first().ok_or(IpcError::NoneError)?;
@@ -201,9 +179,7 @@ impl<S: IpcSocket> IpcClient<S> {
                 let resp: MsgSrvRespFail = rmp_serde::from_slice(msg)?;
                 let id = resp.0;
                 let resp = format!("code: {}, msg: {}", resp.1, resp.2);
-                let resp = IpcError::GenericError {
-                    error: resp,
-                };
+                let resp = IpcError::GenericError { error: resp };
                 if let Entry::Occupied(mut e) = self.local_callbacks.entry(id.clone()) {
                     e.get_mut().1(Err(resp.clone().into()))?;
                     e.remove();

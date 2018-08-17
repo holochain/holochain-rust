@@ -10,14 +10,14 @@ lazy_static! {
 pub fn socket(socket_type: zmq::SocketType) -> Result<zmq::Socket> {
     match ZMQ_CTX.lock() {
         Ok(s) => Ok(s.socket(socket_type)?),
-        Err(_) => gerr!("cannot access zmq context"),
+        Err(_) => bail_generic!("cannot access zmq context"),
     }
 }
 
 pub fn destroy() -> Result<()> {
     match ZMQ_CTX.lock() {
         Ok(mut s) => s.destroy()?,
-        Err(_) => gerr!("cannot access zmq context"),
+        Err(_) => bail_generic!("cannot access zmq context"),
     }
     Ok(())
 }

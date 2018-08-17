@@ -1,6 +1,4 @@
-/*!
-This module holds message type u8 constants.
-*/
+//! This module holds message type u8 constants.
 
 // -- client initiated messages -- //
 

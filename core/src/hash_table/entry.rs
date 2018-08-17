@@ -1,5 +1,6 @@
 use hash;
 use multihash::Hash;
+use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -74,6 +75,23 @@ impl Entry {
     /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
     pub fn key(&self) -> String {
         self.hash()
+    }
+
+    /// serialize the Entry to a canonical JSON string
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn to_json(&self) -> String {
+        // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
+        serde_json::to_string(&self).unwrap()
+    }
+
+    /// deserialize a Entry from a canonical JSON string
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    pub fn from_json(s: &str) -> Entry {
+        let entry: Entry = serde_json::from_str(s).unwrap();
+        entry
     }
 }
 
@@ -258,5 +276,15 @@ pub mod tests {
     /// tests for entry.key()
     fn key() {
         assert_eq!(test_entry().hash(), test_entry().key());
+    }
+
+    #[test]
+    /// test that we can round trip through JSON
+    fn json_round_trip() {
+        let e = test_entry_a();
+        let expected = "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}";
+        assert_eq!(expected, e.to_json());
+        assert_eq!(e, Entry::from_json(expected));
+        assert_eq!(e, Entry::from_json(&e.to_json()));
     }
 }

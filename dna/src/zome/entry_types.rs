@@ -3,7 +3,7 @@
 use wasm::DnaWasm;
 
 /// Enum for Zome EntryType "sharing" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum Sharing {
     #[serde(rename = "public")]
     Public,
@@ -21,7 +21,7 @@ impl Default for Sharing {
 }
 
 /// An individual object in a "links_to" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct LinksTo {
     /// The target_type of this links_to entry
     #[serde(default)]
@@ -55,7 +55,7 @@ impl LinksTo {
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct EntryType {
     /// The name of this entry type.
     #[serde(default)]

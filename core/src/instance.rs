@@ -1,4 +1,5 @@
 //use error::HolochainError;
+use action::ActionWrapper;
 use context::Context;
 use state::*;
 use std::{
@@ -47,24 +48,28 @@ impl Instance {
     }
 
     /// Stack an Action in the Event Queue
-    pub fn dispatch(&mut self, action: Action) -> ActionWrapper {
-        dispatch_action(&self.action_channel, action)
+    pub fn dispatch(&mut self, action_wrapper: &ActionWrapper) -> ActionWrapper {
+        dispatch_action(&self.action_channel, &action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
-    pub fn dispatch_and_wait(&mut self, action: Action) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action);
+    pub fn dispatch_and_wait(&mut self, action_wrapper: &ActionWrapper) {
+        dispatch_action_and_wait(
+            &self.action_channel,
+            &self.observer_channel,
+            &action_wrapper,
+        );
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    pub fn dispatch_with_observer<F>(&mut self, action: Action, closure: F)
+    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: &ActionWrapper, closure: F)
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
             &self.action_channel,
             &self.observer_channel,
-            action,
+            &action_wrapper,
             closure,
         )
     }
@@ -145,20 +150,17 @@ impl Default for Instance {
 
 /// Send Action to Instance's Event Queue and block until is has been processed.
 pub fn dispatch_action_and_wait(
-    action_channel: &Sender<::state::ActionWrapper>,
+    action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: Action,
+    action_wrapper: &ActionWrapper,
 ) {
-    // Wrap Action
-    let wrapper = ::state::ActionWrapper::new(action);
-    let wrapper_clone = wrapper.clone();
-
     // Create blocking channel
     let (sender, receiver) = channel::<bool>();
 
     // Create blocking observer
+    let observer_action_wrapper = action_wrapper.clone();
     let closure = move |state: &State| {
-        if state.history.contains(&wrapper_clone) {
+        if state.history.contains(&observer_action_wrapper) {
             sender
                 .send(true)
                 .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
@@ -179,7 +181,7 @@ pub fn dispatch_action_and_wait(
 
     // Send action to instance
     action_channel
-        .send(wrapper)
+        .send(action_wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
 
     // Block until Observer has sensed the completion of the Action
@@ -190,9 +192,9 @@ pub fn dispatch_action_and_wait(
 
 /// Send Action to the Event Queue and create an Observer for it with the specified closure
 pub fn dispatch_action_with_observer<F>(
-    action_channel: &Sender<::state::ActionWrapper>,
+    action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action: Action,
+    action_wrapper: &ActionWrapper,
     closure: F,
 ) where
     F: 'static + FnMut(&State) -> bool + Send,
@@ -205,32 +207,32 @@ pub fn dispatch_action_with_observer<F>(
     observer_channel
         .send(observer)
         .expect("observer channel to be open");
-    dispatch_action(action_channel, action);
+    dispatch_action(action_channel, &action_wrapper);
 }
 
 /// Send Action to the Event Queue
 pub fn dispatch_action(
-    action_channel: &Sender<::state::ActionWrapper>,
-    action: Action,
+    action_channel: &Sender<ActionWrapper>,
+    action_wrapper: &ActionWrapper,
 ) -> ActionWrapper {
-    let wrapper = ActionWrapper::new(action);
     action_channel
-        .send(wrapper.clone())
+        .send(action_wrapper.clone())
         .unwrap_or_else(|_| panic!(DISPATCH_WITHOUT_CHANNELS));
-    wrapper
+    action_wrapper.clone()
 }
 
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
+    use action::{Action, ActionWrapper};
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{zome::capabilities::ReservedCapabilityNames, Dna};
+    use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
-    use nucleus::Action::InitApplication;
+    use nucleus::ribosome::{callback::Callback, Defn};
     use persister::SimplePersister;
-    use state::{Action::Nucleus, State};
+    use state::State;
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
@@ -277,16 +279,70 @@ pub mod tests {
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
-        let action = Nucleus(InitApplication(dna.clone()));
         instance.start_action_loop(test_context("jane"));
-        instance.dispatch_and_wait(action.clone());
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
-        // Wait for Init to finish
-        while instance.state().history.len() < 4 {
-            // TODO - #21
-            // This println! should be converted to either a call to the app logger, or to the core debug log.
-            println!("Waiting... {}", instance.state().history.len());
+        let action_wrapper = ActionWrapper::new(&Action::InitApplication(dna.clone()));
+        instance.dispatch_and_wait(&action_wrapper);
+
+        assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
+
+        /// fair warning... use test_instance_blank() if you want a minimal instance
+        assert!(
+            !dna.zomes.clone().is_empty(),
+            "Empty zomes = No genesis = infinite loops below!"
+        );
+
+        // @TODO abstract and DRY this out
+        // @see https://github.com/holochain/holochain-rust/issues/195
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::InitApplication(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for InitApplication");
+            sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::ExecuteZomeFunction(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ExecuteZomeFunction for genesis");
+            sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::ReturnZomeFunctionResult(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ReturnZomeFunctionResult from genesis");
+            sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::ReturnZomeFunctionResult(_) => true,
+                _ => false,
+            }) == None
+        {
+            println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
 
@@ -295,7 +351,9 @@ pub mod tests {
 
     /// create a test instance with a blank DNA
     pub fn test_instance_blank() -> Instance {
-        test_instance(Dna::new())
+        let mut dna = Dna::new();
+        dna.zomes.push(Zome::default());
+        test_instance(dna)
     }
 
     #[test]
@@ -315,7 +373,7 @@ pub mod tests {
         let dna = Dna::new();
         let (sender, receiver) = channel();
         instance.dispatch_with_observer(
-            Nucleus(InitApplication(dna.clone())),
+            &ActionWrapper::new(&Action::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {
                 Some(dna) => {
                     sender.send(dna).expect("test channel must be open");
@@ -337,21 +395,26 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::NucleusStatus::New
+            ::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
-        let action = Nucleus(InitApplication(dna.clone()));
+
+        let action = ActionWrapper::new(&Action::InitApplication(dna.clone()));
         instance.start_action_loop(test_context("jane"));
 
         // the initial state is not intialized
         assert!(instance.state().nucleus().has_initialized() == false);
 
-        instance.dispatch_and_wait(action.clone());
+        instance.dispatch_and_wait(&action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
 
         // Wait for Init to finish
+        // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         while instance.state().history.len() < 2 {
+            // @TODO don't use history length in tests
+            // @see https://github.com/holochain/holochain-rust/issues/195
             println!("Waiting... {}", instance.state().history.len());
             sleep(Duration::from_millis(10));
         }
@@ -363,15 +426,13 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            "test_cap".to_string(),
-            None,
-        );
-        dna.zomes[0].capabilities[0].name = ReservedCapabilityNames::LifeCycle.as_str().to_string();
+        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.zomes[0].capabilities[0].name = Callback::Genesis.capability().as_str().to_string();
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -380,8 +441,8 @@ pub mod tests {
     /// tests that a valid genesis allows the nucleus to initialize
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module
@@ -400,6 +461,8 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
@@ -408,8 +471,8 @@ pub mod tests {
     /// tests that a failed genesis prevents the nucleus from initializing
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
-            "test_zome".to_string(),
-            ReservedCapabilityNames::LifeCycle.as_str().to_string(),
+            "test_zome",
+            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module
@@ -428,6 +491,8 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        // @TODO don't use history length in tests
+        // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }

@@ -1,18 +1,23 @@
-language: rust
-
-cache: cargo
-
 services:
   - docker
 
 dist: trusty
 
-install:
-  - docker pull holochain/holochain-rust:develop
+jobs:
+  include:
+    - stage: "All"
+      name: "Tests"
+      install: docker pull holochain/holochain-rust:develop
+      script: . docker/run-test
+      after_success:
+        - . docker/run-cov
+        - bash <(curl -s https://codecov.io/bash)
+    - name: "Mdbook Build"
+      language: rust
+      cache: cargo
+      install: cargo install mdbook --vers "^0.1.0" || echo "Mdbook already installed"
+      script: ./travis-update-book.sh
+      env:
+        - ENCRYPTION_LABEL: "30dd9296640e"
+        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
 
-script:
-  - . docker/run-test
-
-after_success:
-  - . docker/run-cov
-  - bash <(curl -s https://codecov.io/bash)

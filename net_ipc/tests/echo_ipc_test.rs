@@ -20,22 +20,22 @@ fn prep() -> std::process::Child {
     assert!(
         std::process::Command::new("npm")
             .args(&["install", "--production"])
-            .current_dir("./tests/n3h")
+            .current_dir("./tests/node-p2p-ipc")
             .status()
             .expect("failed running npm install")
             .success(),
         "failed running npm install"
     );
     std::process::Command::new("node")
-        .args(&["./tests/n3h/examples/ipc/echo-server.js"])
+        .args(&["./tests/node-p2p-ipc/examples/echo-server.js"])
         .spawn()
         .expect("failed running npm install")
 }
 
 #[test]
 fn it_can_send_call_and_call_resp() {
-    let mut n3h_server = prep();
-    println!("n3h_server pid: {}", n3h_server.id());
+    let mut node_ipc_server = prep();
+    println!("node_ipc_server pid: {}", node_ipc_server.id());
 
     let message_id: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
 
@@ -399,9 +399,9 @@ fn it_can_send_call_and_call_resp() {
 
     println!("attempting to kill echo server");
     unsafe {
-        libc::kill(n3h_server.id() as i32, libc::SIGTERM);
+        libc::kill(node_ipc_server.id() as i32, libc::SIGTERM);
     }
-    n3h_server.wait().unwrap();
+    node_ipc_server.wait().unwrap();
     println!("echo server off");
 
     println!("attempting to kill zeromq context");

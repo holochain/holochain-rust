@@ -1,7 +1,6 @@
+extern crate failure;
 extern crate holochain_net_ipc as net_ipc;
 extern crate libc;
-#[macro_use]
-extern crate failure;
 
 use std::collections::HashSet;
 

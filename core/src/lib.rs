@@ -28,6 +28,7 @@ extern crate holochain_dna;
 extern crate holochain_wasm_utils;
 extern crate config;
 
+pub mod actor;
 pub mod action;
 pub mod agent;
 pub mod chain;

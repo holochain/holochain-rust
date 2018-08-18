@@ -5,13 +5,13 @@ use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair};
 use serde_json;
 use std::{fmt};
-use hash_table::actor::HashTableProtocol;
 use hash_table::actor::AskHashTable;
 use hash_table::HashTable;
+use actor::Protocol;
 
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<HashTableProtocol>,
+    table: ActorRef<Protocol>,
     current: Option<Pair>,
 }
 
@@ -20,7 +20,7 @@ impl ChainIterator {
     // @see https://github.com/holochain/holochain-rust/issues/135
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<HashTableProtocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
             table: table.clone(),
@@ -43,8 +43,8 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            let response = self.table.ask(HashTableProtocol::GetPair(h.to_string()));
-                            let result = unwrap_to!(response => HashTableProtocol::GetPairResult);
+                            let response = self.table.ask(Protocol::HashTableGetPair(h.to_string()));
+                            let result = unwrap_to!(response => Protocol::HashTableGetPairResult);
                             result.clone().unwrap()
                         });
         ret
@@ -55,7 +55,7 @@ impl Iterator for ChainIterator {
 pub struct Chain {
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
-    table: ActorRef<HashTableProtocol>,
+    table: ActorRef<Protocol>,
     top_pair: Option<Pair>,
 }
 
@@ -88,7 +88,7 @@ impl IntoIterator for Chain {
 
 impl Chain {
 
-    pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
+    pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
             top_pair: None,
             table: table.clone(),
@@ -96,7 +96,7 @@ impl Chain {
     }
 
     /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> ActorRef<HashTableProtocol> {
+    pub fn table(&self) -> ActorRef<Protocol> {
         self.table.clone()
     }
 
@@ -121,7 +121,7 @@ impl Chain {
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Chain {
+    pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Chain {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
@@ -193,8 +193,8 @@ impl SourceChain for Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.ask(HashTableProtocol::GetPair(k.to_string()));
-        unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
+        let response = self.table.ask(Protocol::HashTableGetPair(k.to_string()));
+        unwrap_to!(response => Protocol::HashTableGetPairResult).clone()
     }
 
     /// get an Entry by Entry key from the HashTable if it exists

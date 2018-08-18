@@ -9,7 +9,7 @@ use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use chain::actor::ChainProtocol;
+use actor::Protocol;
 use chain::actor::AskChain;
 use chain::SourceChain;
 
@@ -25,12 +25,12 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ActorRef<ChainProtocol>,
+    chain: ActorRef<Protocol>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ActorRef<ChainProtocol>) -> AgentState {
+    pub fn new(chain: ActorRef<Protocol>) -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
@@ -126,9 +126,9 @@ fn reduce_get(
     let key = unwrap_to!(action => Action::Get);
 
     let response = state.chain.ask(
-        ChainProtocol::GetEntry(key.clone()),
+        Protocol::ChainGetEntry(key.clone()),
     );
-    let result = unwrap_to!(response => ChainProtocol::GetEntryResult);
+    let result = unwrap_to!(response => Protocol::ChainGetEntryResult);
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

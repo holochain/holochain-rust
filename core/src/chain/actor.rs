@@ -8,99 +8,93 @@ use error::HolochainError;
 use chain::Chain;
 use chain::SourceChain;
 use snowflake;
-use riker_default::SimpleLogger;
 use riker::kernel::Dispatcher;
-use config::Config;
-use futures::{Future, Never};
-use riker::futures_util::spawn;
-use riker_default::DeadLettersActor;
-use riker_default::BasicTimer;
-use riker_default::MapVec;
-use riker::system::NoIo;
-use futures::executor::{ThreadPool, ThreadPoolBuilder};
+// use hash_table::actor::HASH_TABLE_SYS;
+use actor::SYS;
+use actor::Protocol;
 
-struct ChainModel;
+// struct ChainModel;
+//
+// // @see https://github.com/riker-rs/riker/blob/master/riker-default/riker-dispatcher/src/lib.rs
+// pub struct ChainDispatcher {
+//     inner: ThreadPool,
+// }
+//
+// impl Dispatcher for ChainDispatcher {
+//     fn new(_config: &Config, _: bool) -> ChainDispatcher {
+//         ChainDispatcher {
+//             inner: ThreadPoolBuilder::new()
+//                                         .pool_size(4)
+//                                         .name_prefix("pool-thread-chain-#")
+//                                         .create()
+//                                         .unwrap()
+//         }
+//     }
+//
+//     fn execute<F>(&mut self, f: F)
+//         where F: Future<Item=(), Error=Never> + Send + 'static
+//     {
+//         self.inner.run(spawn(f)).unwrap();
+//     }
+// }
+//
+// impl Model for ChainModel {
+//     type Msg = Protocol;
+//     type Dis = ChainDispatcher;
+//     type Ded = DeadLettersActor<Self::Msg>;
+//     type Tmr = BasicTimer<Self::Msg>;
+//     type Evs = MapVec<Self::Msg>;
+//     type Tcp = NoIo<Self::Msg>;
+//     type Udp = NoIo<Self::Msg>;
+//     type Log = SimpleLogger<Self::Msg>;
+// }
 
-// @see https://github.com/riker-rs/riker/blob/master/riker-default/riker-dispatcher/src/lib.rs
-pub struct ChainDispatcher {
-    inner: ThreadPool,
-}
+// lazy_static! {
+//     pub static ref CHAIN_SYS: ActorSystem<Protocol> = {
+//         // let chain_model: DefaultModel<Protocol> = DefaultModel::new();
+//         let chain_model = ChainModel{};
+//         ActorSystem::new(&chain_model).unwrap()
+//     };
+// }
 
-impl Dispatcher for ChainDispatcher {
-    fn new(_config: &Config, _: bool) -> ChainDispatcher {
-        ChainDispatcher {
-            inner: ThreadPoolBuilder::new()
-                                        .pool_size(4)
-                                        .name_prefix("pool-thread-chain-#")
-                                        .create()
-                                        .unwrap()
-        }
-    }
+// #[derive(Debug, Clone)]
+// pub enum Protocol {
+//     TopPair,
+//     TopPairResult(Option<Pair>),
+//
+//     TopPairType(String),
+//     TopPairTypeResult(Option<Pair>),
+//
+//     PushEntry(Entry),
+//     PushEntryResult(Result<Pair, HolochainError>),
+//
+//     PushPair(Pair),
+//     PushPairResult(Result<Pair, HolochainError>),
+//
+//     GetEntry(String),
+//     GetEntryResult(Result<Option<Pair>, HolochainError>),
+//
+//     GetPair(String),
+//     GetPairResult(Result<Option<Pair>, HolochainError>),
+// }
 
-    fn execute<F>(&mut self, f: F)
-        where F: Future<Item=(), Error=Never> + Send + 'static
-    {
-        self.inner.run(spawn(f)).unwrap();
-    }
-}
+// impl Into<ActorMsg<Protocol>> for Protocol {
+//     fn into(self) -> ActorMsg<Protocol> {
+//         ActorMsg::User(self)
+//     }
+// }
 
-impl Model for ChainModel {
-    type Msg = ChainProtocol;
-    type Dis = ChainDispatcher;
-    type Ded = DeadLettersActor<Self::Msg>;
-    type Tmr = BasicTimer<Self::Msg>;
-    type Evs = MapVec<Self::Msg>;
-    type Tcp = NoIo<Self::Msg>;
-    type Udp = NoIo<Self::Msg>;
-    type Log = SimpleLogger<Self::Msg>;
-}
-
-lazy_static! {
-    pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
-        // let chain_model: DefaultModel<ChainProtocol> = DefaultModel::new();
-        let chain_model = ChainModel{};
-        ActorSystem::new(&chain_model).unwrap()
-    };
-}
-
-#[derive(Debug, Clone)]
-pub enum ChainProtocol {
-    TopPair,
-    TopPairResult(Option<Pair>),
-
-    TopPairType(String),
-    TopPairTypeResult(Option<Pair>),
-
-    PushEntry(Entry),
-    PushEntryResult(Result<Pair, HolochainError>),
-
-    PushPair(Pair),
-    PushPairResult(Result<Pair, HolochainError>),
-
-    GetEntry(String),
-    GetEntryResult(Result<Option<Pair>, HolochainError>),
-
-    GetPair(String),
-    GetPairResult(Result<Option<Pair>, HolochainError>),
-}
-
-impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
-    fn into(self) -> ActorMsg<ChainProtocol> {
-        ActorMsg::User(self)
-    }
-}
-
-/// anything that can be asked ChainProtocol and block on responses
+/// anything that can be asked Protocol and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 /// convenience wrappers around chain struct methods
 pub trait AskChain {
-    fn ask(&self, message: ChainProtocol) -> ChainProtocol;
+    fn ask(&self, message: Protocol) -> Protocol;
 }
 
-impl AskChain for ActorRef<ChainProtocol> {
-    fn ask(&self, message: ChainProtocol) -> ChainProtocol {
+impl AskChain for ActorRef<Protocol> {
+    fn ask(&self, message: Protocol) -> Protocol {
         let a = ask(
-            &(*CHAIN_SYS),
+            &(*SYS),
             self,
             message,
         );
@@ -109,36 +103,36 @@ impl AskChain for ActorRef<ChainProtocol> {
     }
 }
 
-impl SourceChain for ActorRef<ChainProtocol> {
+impl SourceChain for ActorRef<Protocol> {
 
     fn top_pair(&self) -> Option<Pair> {
-        let response = self.ask(ChainProtocol::TopPair);
-        unwrap_to!(response => ChainProtocol::TopPairResult).clone()
+        let response = self.ask(Protocol::ChainTopPair);
+        unwrap_to!(response => Protocol::ChainTopPairResult).clone()
     }
 
     fn top_pair_type(&self, t: &str) -> Option<Pair> {
-        let response = self.ask(ChainProtocol::TopPairType(t.to_string()));
-        unwrap_to!(response => ChainProtocol::TopPairTypeResult).clone()
+        let response = self.ask(Protocol::ChainTopPairType(t.to_string()));
+        unwrap_to!(response => Protocol::ChainTopPairTypeResult).clone()
     }
 
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let response = self.ask(ChainProtocol::PushEntry(entry.clone()));
-        unwrap_to!(response => ChainProtocol::PushEntryResult).clone()
+        let response = self.ask(Protocol::ChainPushEntry(entry.clone()));
+        unwrap_to!(response => Protocol::ChainPushEntryResult).clone()
     }
 
     fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask(ChainProtocol::GetEntry(entry_hash.to_string()));
-        unwrap_to!(response => ChainProtocol::GetEntryResult).clone()
+        let response = self.ask(Protocol::ChainGetEntry(entry_hash.to_string()));
+        unwrap_to!(response => Protocol::ChainGetEntryResult).clone()
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        let response = self.ask(ChainProtocol::PushPair(pair.clone()));
-        unwrap_to!(response => ChainProtocol::PushPairResult).clone()
+        let response = self.ask(Protocol::ChainPushPair(pair.clone()));
+        unwrap_to!(response => Protocol::ChainPushPairResult).clone()
     }
 
     fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask(ChainProtocol::GetPair(k.to_string()));
-        unwrap_to!(response => ChainProtocol::GetPairResult).clone()
+        let response = self.ask(Protocol::ChainGetPair(k.to_string()));
+        unwrap_to!(response => Protocol::ChainGetPairResult).clone()
     }
 
 }
@@ -157,16 +151,16 @@ impl ChainActor {
         }
     }
 
-    pub fn actor(chain: Chain) -> BoxActor<ChainProtocol> {
+    pub fn actor(chain: Chain) -> BoxActor<Protocol> {
         Box::new(ChainActor::new(chain))
     }
 
-    pub fn props(chain: Chain) -> BoxActorProd<ChainProtocol> {
+    pub fn props(chain: Chain) -> BoxActorProd<Protocol> {
         Props::new_args(Box::new(ChainActor::actor), chain)
     }
 
-    pub fn new_ref(chain: Chain) -> ActorRef<ChainProtocol> {
-        CHAIN_SYS.actor_of(
+    pub fn new_ref(chain: Chain) -> ActorRef<Protocol> {
+        SYS.actor_of(
             ChainActor::props(chain),
             &snowflake::ProcessUniqueId::new().to_string(),
         ).unwrap()
@@ -175,7 +169,7 @@ impl ChainActor {
 }
 
 impl Actor for ChainActor {
-    type Msg = ChainProtocol;
+    type Msg = Protocol;
 
     fn receive(
         &mut self,
@@ -186,23 +180,24 @@ impl Actor for ChainActor {
         println!("received {:?}", message);
         sender.try_tell(
             match message {
-                ChainProtocol::TopPair => ChainProtocol::TopPairResult(self.chain.top_pair()),
-                ChainProtocol::TopPairResult(_) => unreachable!(),
+                Protocol::ChainTopPair => Protocol::ChainTopPairResult(self.chain.top_pair()),
+                Protocol::ChainTopPairResult(_) => unreachable!(),
 
-                ChainProtocol::TopPairType(t) => ChainProtocol::TopPairTypeResult(self.chain.top_pair_type(&t)),
-                ChainProtocol::TopPairTypeResult(_) => unreachable!(),
+                Protocol::ChainTopPairType(t) => Protocol::ChainTopPairTypeResult(self.chain.top_pair_type(&t)),
+                Protocol::ChainTopPairTypeResult(_) => unreachable!(),
 
-                ChainProtocol::PushPair(pair) => ChainProtocol::PushPairResult(self.chain.push_pair(&pair)),
-                ChainProtocol::PushPairResult(_) => unreachable!(),
+                Protocol::ChainPushPair(pair) => Protocol::ChainPushPairResult(self.chain.push_pair(&pair)),
+                Protocol::ChainPushPairResult(_) => unreachable!(),
 
-                ChainProtocol::PushEntry(entry) => ChainProtocol::PushEntryResult(self.chain.push_entry(&entry)),
-                ChainProtocol::PushEntryResult(_) => unreachable!(),
+                Protocol::ChainPushEntry(entry) => Protocol::ChainPushEntryResult(self.chain.push_entry(&entry)),
+                Protocol::ChainPushEntryResult(_) => unreachable!(),
 
-                ChainProtocol::GetEntry(key) => ChainProtocol::GetEntryResult(self.chain.get_entry(&key)),
-                ChainProtocol::GetEntryResult(_) => unreachable!(),
+                Protocol::ChainGetEntry(key) => Protocol::ChainGetEntryResult(self.chain.get_entry(&key)),
+                Protocol::ChainGetEntryResult(_) => unreachable!(),
 
-                ChainProtocol::GetPair(key) => ChainProtocol::GetPairResult(self.chain.get_pair(&key)),
-                ChainProtocol::GetPairResult(_) => unreachable!(),
+                Protocol::ChainGetPair(key) => Protocol::ChainGetPairResult(self.chain.get_pair(&key)),
+                Protocol::ChainGetPairResult(_) => unreachable!(),
+                _ => unreachable!(),
             },
             Some(context.myself()),
         ).unwrap();
@@ -214,9 +209,9 @@ pub mod tests {
     use super::ChainActor;
     use riker::actors::*;
     use chain::tests::test_chain;
-    use chain::actor::ChainProtocol;
+    use chain::actor::Protocol;
 
-    pub fn test_chain_actor() -> ActorRef<ChainProtocol> {
+    pub fn test_chain_actor() -> ActorRef<Protocol> {
         ChainActor::new_ref(test_chain())
     }
 

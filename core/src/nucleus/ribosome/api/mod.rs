@@ -312,6 +312,8 @@ pub mod tests {
         str::FromStr,
         sync::{Arc, Mutex},
     };
+    use context::Context;
+    use instance::Instance;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -401,28 +403,30 @@ pub mod tests {
             .to_vec()
     }
 
-    /// given a canonical zome API function name and args as bytes:
-    /// - builds wasm with test_zome_api_function_wasm
-    /// - builds dna and test instance
-    /// - calls the zome API function with passed bytes argument using the instance runtime
-    /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(
-        canonical_name: &str,
+    pub fn test_zome_name() -> String {
+        "test_zome".to_string()
+    }
+
+    pub fn test_capability() -> String {
+        ReservedCapabilityNames::MissingNo.as_str().to_string()
+    }
+
+    pub fn test_function_name() -> String {
+        "test".to_string()
+    }
+
+    pub fn test_parameters() -> String {
+        String::new()
+    }
+
+    pub fn test_zome_api_function_call(
+        context: Arc<Context>,
+        logger: Arc<Mutex<TestLogger>>,
+        instance: &Instance,
+        wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
-        let zome_name = "test_zome";
-        let capability = ReservedCapabilityNames::MissingNo.as_str().to_string();
-        let function_name = "test";
-        let parameters = "";
-
-        let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna =
-            test_utils::create_test_dna_with_wasm(zome_name.into(), &capability, wasm.clone());
-        let instance = test_instance(dna);
-        let (context, logger) = test_context_and_logger("joan");
-
-        let fc = FunctionCall::new(&zome_name, &capability, &function_name, &parameters);
-
+        let fc = FunctionCall::new(&test_zome_name(), &test_capability(), &test_function_name(), &test_parameters());
         (
             call(
                 context,
@@ -434,6 +438,24 @@ pub mod tests {
             ).expect("test should be callable"),
             logger,
         )
+    }
+
+    /// given a canonical zome API function name and args as bytes:
+    /// - builds wasm with test_zome_api_function_wasm
+    /// - builds dna and test instance
+    /// - calls the zome API function with passed bytes argument using the instance runtime
+    /// - returns the runtime after the call completes
+    pub fn test_zome_api_function_runtime(
+        canonical_name: &str,
+        args_bytes: Vec<u8>,
+    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+        let wasm = test_zome_api_function_wasm(canonical_name);
+        let dna =
+            test_utils::create_test_dna_with_wasm(&test_zome_name(), &test_capability(), wasm.clone());
+        let instance = test_instance(dna);
+        let (context, logger) = test_context_and_logger("joan");
+
+        test_zome_api_function_call(context, logger, &instance, &wasm, args_bytes)
     }
 
     #[test]

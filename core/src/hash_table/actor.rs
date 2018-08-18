@@ -7,19 +7,21 @@ use riker_patterns::ask::ask;
 use hash_table::pair_meta::PairMeta;
 use agent::keys::Keys;
 use snowflake;
-use riker::kernel::Dispatcher;
-use futures::{Future};
-use riker::futures_util::spawn;
-use riker_default::DeadLettersActor;
-use riker_default::BasicTimer;
-use riker_default::MapVec;
-use riker_default::SimpleLogger;
-use riker::system::NoIo;
-use riker_patterns::ask::Ask;
-use futures::channel::oneshot::Canceled;
-use futures::Async::Ready;
+// use riker::kernel::Dispatcher;
+// use futures::{Future};
+// use riker::futures_util::spawn;
+// use riker_default::DeadLettersActor;
+// use riker_default::BasicTimer;
+// use riker_default::MapVec;
+// use riker_default::SimpleLogger;
+// use riker::system::NoIo;
+// use riker_patterns::ask::Ask;
+// use futures::channel::oneshot::Canceled;
+// use futures::Async::Ready;
 use actor::Protocol;
 use actor::SYS;
+// use futures::executor::spawn_with_handle;
+// use futures::executor::SpawnWithHandle;
 
 // struct HashTableModel;
 //
@@ -71,7 +73,7 @@ use actor::SYS;
 //     }
 // }
 
-// type HTAsk = Box<Future<Item=Protocol, HashTableError=Canceled> + Send>;
+// type HTAsk = Box<Future<Item=Protocol, Error=Canceled> + Send>;
 
 /// anything that can be asked Protocol aHashTablend block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
@@ -95,6 +97,7 @@ impl AskHashTable for ActorRef<Protocol> {
         // println!("{:?}", &(*HASH_TABLE_SYS);
         // println!("asking table");
         block_on(a).unwrap()
+        // spawn_with_handle(a)
     }
 }
 

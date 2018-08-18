@@ -73,9 +73,21 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    // use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    use instance::tests::test_instance;
+    use self::wabt::Wat2Wasm;
     use nucleus::ribosome::api::commit::tests::test_commit_args_bytes;
     use serde_json;
+    use nucleus::ribosome::api::tests::test_zome_name;
+    use nucleus::ribosome::api::tests::test_capability;
+    // use nucleus::ribosome::api::tests::test_zome_api_function_call;
+    use instance::tests::test_context_and_logger;
+    use std::sync::Arc;
+    use nucleus::ribosome::api::tests::test_parameters;
+    use nucleus::{
+        ribosome::api::{call},
+        FunctionCall,
+    };
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -85,16 +97,98 @@ mod tests {
         serde_json::to_string(&args).unwrap().into_bytes()
     }
 
+    pub fn test_get_round_trip_wat() -> Vec<u8> {
+        Wat2Wasm::new()
+            .canonicalize_lebs(false)
+            .write_debug_names(true)
+            .convert(
+                // format!(
+                    r#"
+(module
+    (import "env" "get"
+        (func $get
+            (param i32)
+            (result i32)
+        )
+    )
+
+    (import "env" "commit"
+        (func $commit
+            (param i32)
+            (result i32)
+        )
+    )
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    (func
+        (export "get_dispatch")
+            (param $allocation i32)
+            (result i32)
+
+        (call
+            $get
+            (get_local $allocation)
+        )
+    )
+
+    (func
+        (export "commit_dispatch")
+            (param $allocation i32)
+            (result i32)
+
+        (call
+            $commit
+            (get_local $allocation)
+        )
+    )
+)
+                "#,
+                    // canonical_name
+                // ),
+            )
+            .unwrap()
+            .as_ref()
+            .to_vec()
+    }
+
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
-        let (commit_runtime, _) = test_zome_api_function_runtime("commit", test_commit_args_bytes());
+        let wasm = test_get_round_trip_wat();
+        let dna =
+            test_utils::create_test_dna_with_wasm(&test_zome_name(), &test_capability(), wasm.clone());
+        let instance = test_instance(dna);
+        let (context, _) = test_context_and_logger("joan");
+
+        let commit_call = FunctionCall::new(&test_zome_name(), &test_capability(), &"commit", &test_parameters());
+        let commit_runtime = call(
+            Arc::clone(&context),
+            &instance.action_channel(),
+            &instance.observer_channel(),
+            wasm.clone(),
+            &commit_call,
+            Some(test_commit_args_bytes()),
+        ).expect("test should be callable");
+
+        // let (commit_runtime, _) = test_zome_api_function_call(Arc::clone(&context), Arc::clone(&logger), &instance, &wasm, test_commit_args_bytes());
         assert_eq!(
             commit_runtime.result,
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
 
-        let (get_runtime, _) = test_zome_api_function_runtime("get", test_get_args_bytes());
+        // let (get_runtime, _) = test_zome_api_function_call(Arc::clone(&context), Arc::clone(&logger), &instance, &wasm, test_get_args_bytes());
+
+        let get_call = FunctionCall::new(&test_zome_name(), &test_capability(), &"get", &test_parameters());
+        let get_runtime = call(
+            Arc::clone(&context),
+            &instance.action_channel(),
+            &instance.observer_channel(),
+            wasm.clone(),
+            &get_call,
+            Some(test_get_args_bytes()),
+        ).expect("test should be callable");
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"");

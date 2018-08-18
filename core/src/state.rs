@@ -9,7 +9,7 @@ use std::{
 use hash_table::memory::MemTable;
 use action::ActionWrapper;
 use chain::Chain;
-use chain::actor::ChainActor;
+// use chain::actor::ChainActor;
 use hash_table::actor::HashTableActor;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -24,17 +24,17 @@ pub struct State {
 impl State {
     pub fn new() -> Self {
         // @TODO file table
-        let chain_actor = ChainActor::new_ref(
-            Chain::new(
+        // let chain_actor = ChainActor::new_ref(
+        let chain = Chain::new(
                 HashTableActor::new_ref(
                     MemTable::new(),
                 ),
-            ),
-        );
+            );
+        // );
 
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(chain_actor)),
+            agent: Arc::new(AgentState::new(chain)),
             history: HashSet::new(),
         }
     }

@@ -8,6 +8,7 @@ use std::{fmt};
 use hash_table::actor::AskHashTable;
 use hash_table::HashTable;
 use actor::Protocol;
+// use futures::executor::block_on;
 
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -38,14 +39,17 @@ impl Iterator for ChainIterator {
 
     fn next(&mut self) -> Option<Pair> {
         let ret = self.current();
+        println!("next current: {:?}", ret);
         self.current = ret.clone()
                         .and_then(|p| p.header().next())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            let response = self.table.ask(Protocol::HashTableGetPair(h.to_string()));
-                            let result = unwrap_to!(response => Protocol::HashTableGetPairResult);
-                            result.clone().unwrap()
+                            // let response = self.table.ask(Protocol::HashTableGetPair(h.to_string()));
+                            // let result = unwrap_to!(response => Protocol::HashTableGetPairResult);
+                            // println!("next: {:?}", result);
+                            // result.clone().unwrap()
+                            self.table.get(&h.to_string()).unwrap()
                         });
         ret
     }
@@ -107,6 +111,7 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
+        println!("at iter: {:?}", self);
         ChainIterator::new(self.table(), &self.top_pair())
     }
 
@@ -176,6 +181,8 @@ impl SourceChain for Chain {
         if result.is_ok() {
             self.top_pair = Some(pair.clone());
         }
+
+        println!("after commit: {:?}", self);
         match result {
             Ok(_) => Ok(pair.clone()),
             Err(e) => Err(e.clone()),
@@ -199,6 +206,7 @@ impl SourceChain for Chain {
 
     /// get an Entry by Entry key from the HashTable if it exists
     fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+        println!("get entry: {:?}", entry_hash);
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self

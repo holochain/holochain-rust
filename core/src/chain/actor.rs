@@ -8,7 +8,7 @@ use error::HolochainError;
 use chain::Chain;
 use chain::SourceChain;
 use snowflake;
-use riker::kernel::Dispatcher;
+// use riker::kernel::Dispatcher;
 // use hash_table::actor::HASH_TABLE_SYS;
 use actor::SYS;
 use actor::Protocol;

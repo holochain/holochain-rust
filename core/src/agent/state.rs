@@ -1,7 +1,7 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
 use instance::Observer;
-use riker::actors::*;
+// use riker::actors::*;
 use context::Context;
 use error::HolochainError;
 use hash_table::{pair::Pair};
@@ -9,9 +9,10 @@ use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use actor::Protocol;
-use chain::actor::AskChain;
+// use actor::Protocol;
+// use chain::actor::AskChain;
 use chain::SourceChain;
+use chain::Chain;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -25,12 +26,12 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ActorRef<Protocol>,
+    chain: Chain,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ActorRef<Protocol>) -> AgentState {
+    pub fn new(chain: Chain) -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
@@ -111,6 +112,7 @@ fn reduce_commit(
             action_wrapper.clone(),
             ActionResponse::Commit(state.chain.push_entry(&entry)),
         );
+    println!("chain commit: {:?}", state.chain);
 }
 
 /// do a get action against an agent state
@@ -122,13 +124,19 @@ fn reduce_get(
     _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) {
+    println!("chain get: {:?}", state.chain);
+
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
-    let response = state.chain.ask(
-        Protocol::ChainGetEntry(key.clone()),
-    );
-    let result = unwrap_to!(response => Protocol::ChainGetEntryResult);
+    let result = state.chain.get_entry(&key.clone());
+
+    println!("result: {:?}", result);
+
+    // let response = state.chain.ask(
+    //     Protocol::ChainGetEntry(key.clone()),
+    // );
+    // let result = unwrap_to!(response => Protocol::ChainGetEntryResult);
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
@@ -169,6 +177,7 @@ pub fn reduce(
                 action_channel,
                 observer_channel,
             );
+            println!("reduce: {:?}", new_state.chain);
             Arc::new(new_state)
         }
         None => old_state,
@@ -183,7 +192,8 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
     use std::collections::HashMap;
-    use chain::actor::tests::test_chain_actor;
+    // use chain::actor::tests::test_chain_actor;
+    use chain::tests::test_chain;
 
     #[test]
     fn test_actor_receive() {
@@ -199,7 +209,7 @@ pub mod tests {
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new(test_chain_actor())
+        AgentState::new(test_chain())
     }
 
     /// dummy action response for a successful commit as test_pair()

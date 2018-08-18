@@ -74,10 +74,11 @@ mod tests {
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::api::commit::tests::test_commit_args_bytes;
     use serde_json;
 
     /// dummy get args from standard test entry
-    pub fn test_args_bytes() -> Vec<u8> {
+    pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetArgs {
             key: test_entry().hash().into(),
         };
@@ -87,14 +88,20 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("get", test_args_bytes());
+        let (commit_runtime, _) = test_zome_api_function_runtime("commit", test_commit_args_bytes());
+        assert_eq!(
+            commit_runtime.result,
+            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+        );
+
+        let (get_runtime, _) = test_zome_api_function_runtime("get", test_get_args_bytes());
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"");
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
-        assert_eq!(runtime.result, expected,);
+        assert_eq!(get_runtime.result, expected,);
     }
 
 }

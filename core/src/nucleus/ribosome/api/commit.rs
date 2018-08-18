@@ -94,7 +94,7 @@ pub fn invoke_commit(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
@@ -104,7 +104,7 @@ mod tests {
     use serde_json;
 
     /// dummy commit args from standard test entry
-    pub fn test_args_bytes() -> Vec<u8> {
+    pub fn test_commit_args_bytes() -> Vec<u8> {
         let e = test_entry();
         let args = CommitArgs {
             entry_type_name: e.entry_type().into(),
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("commit", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime("commit", test_commit_args_bytes());
 
         assert_eq!(
             runtime.result,

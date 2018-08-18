@@ -26,6 +26,7 @@ extern crate num_traits;
 extern crate holochain_agent;
 extern crate holochain_dna;
 extern crate holochain_wasm_utils;
+extern crate config;
 
 pub mod action;
 pub mod agent;

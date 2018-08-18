@@ -1,4 +1,4 @@
-use riker_default::DefaultModel;
+// use riker_default::DefaultModel;
 use riker::actors::*;
 use futures::executor::block_on;
 use riker_patterns::ask::ask;
@@ -8,10 +8,57 @@ use error::HolochainError;
 use chain::Chain;
 use chain::SourceChain;
 use snowflake;
+use riker_default::SimpleLogger;
+use riker::kernel::Dispatcher;
+use config::Config;
+use futures::{Future, Never};
+use riker::futures_util::spawn;
+use riker_default::DeadLettersActor;
+use riker_default::BasicTimer;
+use riker_default::MapVec;
+use riker::system::NoIo;
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+
+struct ChainModel;
+
+// @see https://github.com/riker-rs/riker/blob/master/riker-default/riker-dispatcher/src/lib.rs
+pub struct ChainDispatcher {
+    inner: ThreadPool,
+}
+
+impl Dispatcher for ChainDispatcher {
+    fn new(_config: &Config, _: bool) -> ChainDispatcher {
+        ChainDispatcher {
+            inner: ThreadPoolBuilder::new()
+                                        .pool_size(4)
+                                        .name_prefix("pool-thread-chain-#")
+                                        .create()
+                                        .unwrap()
+        }
+    }
+
+    fn execute<F>(&mut self, f: F)
+        where F: Future<Item=(), Error=Never> + Send + 'static
+    {
+        self.inner.run(spawn(f)).unwrap();
+    }
+}
+
+impl Model for ChainModel {
+    type Msg = ChainProtocol;
+    type Dis = ChainDispatcher;
+    type Ded = DeadLettersActor<Self::Msg>;
+    type Tmr = BasicTimer<Self::Msg>;
+    type Evs = MapVec<Self::Msg>;
+    type Tcp = NoIo<Self::Msg>;
+    type Udp = NoIo<Self::Msg>;
+    type Log = SimpleLogger<Self::Msg>;
+}
 
 lazy_static! {
     pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
-        let chain_model: DefaultModel<ChainProtocol> = DefaultModel::new();
+        // let chain_model: DefaultModel<ChainProtocol> = DefaultModel::new();
+        let chain_model = ChainModel{};
         ActorSystem::new(&chain_model).unwrap()
     };
 }
@@ -52,13 +99,13 @@ pub trait AskChain {
 
 impl AskChain for ActorRef<ChainProtocol> {
     fn ask(&self, message: ChainProtocol) -> ChainProtocol {
-        block_on(
-            ask(
-                &(*CHAIN_SYS),
-                self,
-                message,
-            )
-        ).unwrap()
+        let a = ask(
+            &(*CHAIN_SYS),
+            self,
+            message,
+        );
+        println!("asking chain");
+        block_on(a).unwrap()
     }
 }
 

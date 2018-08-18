@@ -1,6 +1,6 @@
 use riker::actors::*;
 use hash_table::HashTable;
-use riker_default::DefaultModel;
+// use riker_default::DefaultModel;
 use hash_table::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
@@ -8,10 +8,57 @@ use riker_patterns::ask::ask;
 use hash_table::pair_meta::PairMeta;
 use agent::keys::Keys;
 use snowflake;
+use riker::kernel::Dispatcher;
+use config::Config;
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use futures::{Future, Never};
+use riker::futures_util::spawn;
+use riker_default::DeadLettersActor;
+use riker_default::BasicTimer;
+use riker_default::MapVec;
+use riker_default::SimpleLogger;
+use riker::system::NoIo;
+
+struct HashTableModel;
+
+// @see https://github.com/riker-rs/riker/blob/master/riker-default/riker-dispatcher/src/lib.rs
+pub struct HashTableDispatcher {
+    inner: ThreadPool,
+}
+
+impl Dispatcher for HashTableDispatcher {
+    fn new(_config: &Config, _: bool) -> HashTableDispatcher {
+        HashTableDispatcher {
+            inner: ThreadPoolBuilder::new()
+                                        .pool_size(4)
+                                        .name_prefix("pool-thread-hash-table-#")
+                                        .create()
+                                        .unwrap()
+        }
+    }
+
+    fn execute<F>(&mut self, f: F)
+        where F: Future<Item=(), Error=Never> + Send + 'static
+    {
+        self.inner.run(spawn(f)).unwrap();
+    }
+}
+
+impl Model for HashTableModel {
+    type Msg = HashTableProtocol;
+    type Dis = HashTableDispatcher;
+    type Ded = DeadLettersActor<Self::Msg>;
+    type Tmr = BasicTimer<Self::Msg>;
+    type Evs = MapVec<Self::Msg>;
+    type Tcp = NoIo<Self::Msg>;
+    type Udp = NoIo<Self::Msg>;
+    type Log = SimpleLogger<Self::Msg>;
+}
 
 lazy_static! {
     pub static ref HASH_TABLE_SYS: ActorSystem<HashTableProtocol> = {
-        let hash_table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
+        // let hash_table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
+        let hash_table_model = HashTableModel{};
         ActorSystem::new(&hash_table_model).unwrap()
     };
 }
@@ -72,20 +119,18 @@ impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
 /// anything that can be asked HashTableProtocol and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 pub trait AskHashTable {
-
     fn ask(&self, message: HashTableProtocol) -> HashTableProtocol;
-
 }
 
 impl AskHashTable for ActorRef<HashTableProtocol> {
     fn ask(&self, message: HashTableProtocol) -> HashTableProtocol {
-        block_on(
-            ask(
-                &(*HASH_TABLE_SYS),
-                self,
-                message,
-            )
-        ).unwrap()
+        let a = ask(
+            &(*HASH_TABLE_SYS),
+            self,
+            message,
+        );
+        println!("asking table");
+        block_on(a).unwrap()
     }
 }
 

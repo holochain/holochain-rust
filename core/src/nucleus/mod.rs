@@ -33,6 +33,8 @@ pub struct FunctionCall {
 impl FunctionCall {
     pub fn new(zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
         FunctionCall {
+            // @TODO
+            // can we defer to the ActionWrapper id?
             id: snowflake::ProcessUniqueId::new(),
             zome: zome.to_string(),
             capability: capability.to_string(),

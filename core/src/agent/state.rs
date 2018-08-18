@@ -1,17 +1,19 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
-use chain::Chain;
+use instance::Observer;
+use riker::actors::*;
 use context::Context;
 use error::HolochainError;
-use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
-use instance::Observer;
+use hash_table::{pair::Pair};
 use std::{
     collections::HashMap,
-    rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use chain::actor::ChainProtocol;
+use chain::actor::AskChain;
+use chain::SourceChain;
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
@@ -23,15 +25,17 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
+    chain: ActorRef<ChainProtocol>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new() -> AgentState {
+    pub fn new(chain: ActorRef<ChainProtocol>) -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
+            chain: chain.clone(),
         }
     }
 
@@ -98,18 +102,15 @@ fn reduce_commit(
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
 
-    // add entry to source chain
-    // @TODO this does nothing!
-    // it needs to get something stateless from the agent state that points to
-    // something stateful that can handle an entire hash table (e.g. actor)
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    // @see https://github.com/holochain/holochain-rust/issues/148
-    let mut chain = Chain::new(Rc::new(MemTable::new()));
+    // @TODO successfully validate before pushing a commit
+    // @see https://github.com/holochain/holochain-rust/issues/97
 
-    state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::Commit(chain.push(&entry)),
-    );
+    state
+        .actions
+        .insert(
+            action_wrapper.clone(),
+            ActionResponse::Commit(state.chain.push_entry(&entry)),
+        );
 }
 
 /// do a get action against an agent state
@@ -124,25 +125,20 @@ fn reduce_get(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
-    // get pair from source chain
-    // @TODO this does nothing!
-    // it needs to get something stateless from the agent state that points to
-    // something stateful that can handle an entire hash table (e.g. actor)
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    // @see https://github.com/holochain/holochain-rust/issues/148
-
-    // drop in a dummy entry for testing
-    let mut chain = Chain::new(Rc::new(MemTable::new()));
-    let e = Entry::new("testEntryType", "test entry content");
-    chain.push(&e).unwrap();
+    let response = state.chain.ask(
+        ChainProtocol::GetEntry(key.clone()),
+    );
+    let result = unwrap_to!(response => ChainProtocol::GetEntryResult);
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
-    let result = chain.get_entry(&key).unwrap();
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Get(result.clone()));
+        .insert(
+            action_wrapper.clone(),
+            ActionResponse::Get(result.clone().unwrap()),
+        );
 }
 
 /// maps incoming action to the correct handler
@@ -187,10 +183,23 @@ pub mod tests {
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
     use std::collections::HashMap;
+    use chain::actor::tests::test_chain_actor;
+
+    #[test]
+    fn test_actor_receive() {
+        // let state = test_agent_state();
+
+        // state.chain.tell("hi".to_string(), None);
+        // let chain = state.chain.clone();
+        // let handle = thread::spawn(move || {
+        //     chain.tell("thread hi!".to_string(), None);
+        // });
+        // handle.join().unwrap();
+    }
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new()
+        AgentState::new(test_chain_actor())
     }
 
     /// dummy action response for a successful commit as test_pair()

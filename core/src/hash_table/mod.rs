@@ -4,13 +4,15 @@ pub mod memory;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
+pub mod actor;
 
 use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 
-pub trait HashTable {
+pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
+    // @TODO does this make sense at the trait level?
     fn setup(&mut self) -> Result<(), HolochainError>;
     fn teardown(&mut self) -> Result<(), HolochainError>;
 

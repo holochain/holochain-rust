@@ -1,4 +1,3 @@
-use action::ActionWrapper;
 use agent::state::AgentState;
 use context::Context;
 use instance::Observer;
@@ -7,8 +6,13 @@ use std::{
     collections::HashSet,
     sync::{mpsc::Sender, Arc},
 };
+use hash_table::memory::MemTable;
+use action::ActionWrapper;
+use chain::Chain;
+use chain::actor::ChainActor;
+use hash_table::actor::HashTableActor;
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
@@ -19,9 +23,18 @@ pub struct State {
 
 impl State {
     pub fn new() -> Self {
+        // @TODO file table
+        let chain_actor = ChainActor::new_ref(
+            Chain::new(
+                HashTableActor::new_ref(
+                    MemTable::new(),
+                ),
+            ),
+        );
+
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new()),
+            agent: Arc::new(AgentState::new(chain_actor)),
             history: HashSet::new(),
         }
     }

@@ -64,9 +64,9 @@ impl Defn for ZomeAPIFunction {
     fn as_str(&self) -> &'static str {
         match *self {
             ZomeAPIFunction::MissingNo => "",
-            ZomeAPIFunction::Debug => "debug",
-            ZomeAPIFunction::Commit => "commit",
-            ZomeAPIFunction::Get => "get",
+            ZomeAPIFunction::Debug => "hc_debug",
+            ZomeAPIFunction::Commit => "hc_commit",
+            ZomeAPIFunction::Get => "hc_get",
             ZomeAPIFunction::InitGlobals => "hc_init_globals",
         }
     }
@@ -108,9 +108,9 @@ impl FromStr for ZomeAPIFunction {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "debug" => Ok(ZomeAPIFunction::Debug),
-            "commit" => Ok(ZomeAPIFunction::Commit),
-            "get" => Ok(ZomeAPIFunction::Get),
+            "hc_debug" => Ok(ZomeAPIFunction::Debug),
+            "hc_commit" => Ok(ZomeAPIFunction::Commit),
+            "hc_get" => Ok(ZomeAPIFunction::Get),
             "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }

@@ -9,7 +9,6 @@ use std::{
     collections::HashSet,
     sync::{mpsc::Sender, Arc},
 };
-// use chain::actor::ChainActor;
 use hash_table::actor::HashTableActor;
 
 #[derive(Clone, PartialEq, Debug)]

@@ -73,7 +73,6 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    // use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use self::wabt::Wat2Wasm;
     use instance::tests::test_instance;
     use nucleus::ribosome::api::{
@@ -81,7 +80,6 @@ mod tests {
         tests::{test_capability, test_zome_name},
     };
     use serde_json;
-    // use nucleus::ribosome::api::tests::test_zome_api_function_call;
     use instance::tests::test_context_and_logger;
     use nucleus::{
         ribosome::api::{call, tests::test_parameters},
@@ -102,7 +100,6 @@ mod tests {
             .canonicalize_lebs(false)
             .write_debug_names(true)
             .convert(
-                // format!(
                 r#"
 (module
     (import "env" "get"
@@ -145,8 +142,6 @@ mod tests {
     )
 )
                 "#,
-                // canonical_name
-                // ),
             )
             .unwrap()
             .as_ref()
@@ -180,13 +175,10 @@ mod tests {
             Some(test_commit_args_bytes()),
         ).expect("test should be callable");
 
-        // let (commit_runtime, _) = test_zome_api_function_call(Arc::clone(&context), Arc::clone(&logger), &instance, &wasm, test_commit_args_bytes());
         assert_eq!(
             commit_runtime.result,
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
-
-        // let (get_runtime, _) = test_zome_api_function_call(Arc::clone(&context), Arc::clone(&logger), &instance, &wasm, test_get_args_bytes());
 
         let get_call = FunctionCall::new(
             &test_zome_name(),

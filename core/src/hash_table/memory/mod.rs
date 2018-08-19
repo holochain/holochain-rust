@@ -40,7 +40,6 @@ impl HashTable for MemTable {
     }
 
     fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        println!("get: {:?}", key);
         Ok(self.pairs.get(key).and_then(|p| Some(p.clone())))
     }
 

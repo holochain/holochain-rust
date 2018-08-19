@@ -19,7 +19,6 @@ pub struct AgentState {
     keys: Option<Keys>,
     // @TODO how should this work with chains/HTs?
     // @see https://github.com/holochain/holochain-rust/issues/137
-    // @see https://github.com/holochain/holochain-rust/issues/135
     top_pair: Option<Pair>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
@@ -109,7 +108,6 @@ fn reduce_commit(
         action_wrapper.clone(),
         ActionResponse::Commit(state.chain.push_entry(&entry)),
     );
-    println!("chain commit: {:?}", state.chain);
 }
 
 /// do a get action against an agent state
@@ -121,19 +119,10 @@ fn reduce_get(
     _action_channel: &Sender<ActionWrapper>,
     _observer_channel: &Sender<Observer>,
 ) {
-    println!("chain get: {:?}", state.chain);
-
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
     let result = state.chain.get_entry(&key.clone());
-
-    println!("result: {:?}", result);
-
-    // let response = state.chain.ask(
-    //     Protocol::ChainGetEntry(key.clone()),
-    // );
-    // let result = unwrap_to!(response => Protocol::ChainGetEntryResult);
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
@@ -172,7 +161,6 @@ pub fn reduce(
                 action_channel,
                 observer_channel,
             );
-            println!("reduce: {:?}", new_state.chain);
             Arc::new(new_state)
         }
         None => old_state,

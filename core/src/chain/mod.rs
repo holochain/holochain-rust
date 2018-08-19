@@ -1,23 +1,24 @@
-use actor::Protocol;
 use error::HolochainError;
-use hash_table::{actor::AskHashTable, entry::Entry, pair::Pair, HashTable};
+use hash_table::{
+    actor::{AskHashTable, HashTableProtocol},
+    entry::Entry,
+    pair::Pair,
+    HashTable,
+};
 use riker::actors::*;
 use serde_json;
 use std::fmt;
-// use futures::executor::block_on;
 
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<Protocol>,
+    table: ActorRef<HashTableProtocol>,
     current: Option<Pair>,
 }
 
 impl ChainIterator {
-    // @TODO table implementation is changing anyway so waste of time to mess with ref/value
-    // @see https://github.com/holochain/holochain-rust/issues/135
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table: ActorRef<HashTableProtocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
             table: table.clone(),
@@ -35,16 +36,11 @@ impl Iterator for ChainIterator {
 
     fn next(&mut self) -> Option<Pair> {
         let ret = self.current();
-        println!("next current: {:?}", ret);
         self.current = ret.clone()
                         .and_then(|p| p.header().next())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            // let response = self.table.ask(Protocol::HashTableGetPair(h.to_string()));
-                            // let result = unwrap_to!(response => Protocol::HashTableGetPairResult);
-                            // println!("next: {:?}", result);
-                            // result.clone().unwrap()
                             self.table.get(&h.to_string()).unwrap()
                         });
         ret
@@ -53,9 +49,7 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone)]
 pub struct Chain {
-    // @TODO thread safe table references
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    table: ActorRef<Protocol>,
+    table: ActorRef<HashTableProtocol>,
     top_pair: Option<Pair>,
 }
 
@@ -87,7 +81,7 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-    pub fn new(table: ActorRef<Protocol>) -> Chain {
+    pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
         Chain {
             top_pair: None,
             table: table.clone(),
@@ -95,7 +89,7 @@ impl Chain {
     }
 
     /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> ActorRef<Protocol> {
+    pub fn table(&self) -> ActorRef<HashTableProtocol> {
         self.table.clone()
     }
 
@@ -106,7 +100,6 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
-        println!("at iter: {:?}", self);
         ChainIterator::new(self.table(), &self.top_pair())
     }
 
@@ -121,7 +114,7 @@ impl Chain {
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Chain {
+    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Chain {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
@@ -131,9 +124,6 @@ impl Chain {
 
         for p in as_seq {
             chain.push_pair(&p).unwrap();
-            // let response = chain.ask(ChainProtocol::PushPair(p));
-            // let result = unwrap_to!(response => ChainProtocol::PushResult);
-            // result.clone().unwrap();
         }
         chain
     }
@@ -175,7 +165,6 @@ impl SourceChain for Chain {
             self.top_pair = Some(pair.clone());
         }
 
-        println!("after commit: {:?}", self);
         match result {
             Ok(_) => Ok(pair.clone()),
             Err(e) => Err(e.clone()),
@@ -193,13 +182,12 @@ impl SourceChain for Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.ask(Protocol::HashTableGetPair(k.to_string()));
-        unwrap_to!(response => Protocol::HashTableGetPairResult).clone()
+        let response = self.table.ask(HashTableProtocol::GetPair(k.to_string()));
+        unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
     }
 
     /// get an Entry by Entry key from the HashTable if it exists
     fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
-        println!("get entry: {:?}", entry_hash);
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self

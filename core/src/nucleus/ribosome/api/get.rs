@@ -71,20 +71,19 @@ mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use self::wabt::Wat2Wasm;
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use self::wabt::Wat2Wasm;
-    use instance::tests::test_instance;
-    use nucleus::ribosome::api::{
-        commit::tests::test_commit_args_bytes,
-        tests::{test_capability, test_zome_name},
-    };
-    use serde_json;
-    use instance::tests::test_context_and_logger;
+    use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{call, tests::test_parameters},
+        ribosome::api::{
+            call,
+            commit::tests::test_commit_args_bytes,
+            tests::{test_capability, test_parameters, test_zome_name},
+        },
         FunctionCall,
     };
+    use serde_json;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry

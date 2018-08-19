@@ -2,14 +2,13 @@ use action::ActionWrapper;
 use agent::state::AgentState;
 use chain::Chain;
 use context::Context;
-use hash_table::memory::MemTable;
+use hash_table::{actor::HashTableActor, memory::MemTable};
 use instance::Observer;
 use nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
     sync::{mpsc::Sender, Arc},
 };
-use hash_table::actor::HashTableActor;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {

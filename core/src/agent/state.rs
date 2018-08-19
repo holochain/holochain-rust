@@ -1,14 +1,14 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
-use instance::Observer;
+use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
 use hash_table::pair::Pair;
+use instance::Observer;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use chain::{Chain, SourceChain};
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers

@@ -1,6 +1,7 @@
 pub mod commit;
 pub mod debug;
 pub mod get;
+pub mod init_globals;
 
 use action::ActionWrapper;
 use context::Context;
@@ -10,7 +11,7 @@ use instance::Observer;
 use nucleus::{
     memory::SinglePageManager,
     ribosome::{
-        api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
+        api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get, init_globals::invoke_init_globals},
         Defn,
     },
     FunctionCall,
@@ -23,7 +24,7 @@ use std::{
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
-    ValueType,
+    ValueType, GlobalInstance, GlobalDescriptor, GlobalRef,
 };
 
 // Zome API functions are exposed by HC to zome logic
@@ -53,6 +54,10 @@ pub enum ZomeAPIFunction {
     /// Get an entry from source chain by key (header hash)
     /// get(key: String) -> Pair
     Get,
+
+    /// Init App Globals
+    /// hc_init_globals() -> InitGlobalsOutput
+    InitGlobals,
 }
 
 impl Defn for ZomeAPIFunction {
@@ -62,6 +67,7 @@ impl Defn for ZomeAPIFunction {
             ZomeAPIFunction::Debug => "debug",
             ZomeAPIFunction::Commit => "commit",
             ZomeAPIFunction::Get => "get",
+            ZomeAPIFunction::InitGlobals => "hc_init_globals",
         }
     }
 
@@ -91,6 +97,9 @@ impl Defn for ZomeAPIFunction {
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
             ZomeAPIFunction::Get => ReservedCapabilityNames::MissingNo,
+            // @TODO what should this be?
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
         }
     }
 }
@@ -102,6 +111,7 @@ impl FromStr for ZomeAPIFunction {
             "debug" => Ok(ZomeAPIFunction::Debug),
             "commit" => Ok(ZomeAPIFunction::Commit),
             "get" => Ok(ZomeAPIFunction::Get),
+            "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }
     }
@@ -119,6 +129,7 @@ impl ZomeAPIFunction {
             ZomeAPIFunction::Debug => invoke_debug,
             ZomeAPIFunction::Commit => invoke_commit,
             ZomeAPIFunction::Get => invoke_get,
+            ZomeAPIFunction::InitGlobals => invoke_init_globals,
         }
     }
 }
@@ -234,16 +245,42 @@ pub fn call(
                 )),
             }
         }
+
+//        fn resolve_global(
+//            &self,
+//            field_name: &str,
+//            _global_type: &GlobalDescriptor,
+//        ) -> Result<GlobalRef, InterpreterError> {
+//            // let index = ZomeApiGlobal::str_to_index(&field_name);
+//            println!(" !!! resolve_global CALLED : {}!!!", field_name);
+//            let index = 42;
+//            match index {
+//                _ => {
+////                        let glob : GlobalRef = GlobalInstance::alloc(
+////                            RuntimeValue::I32(424),
+////                            false, // only immutable globals are possible to export at the moment
+////                        );
+////                        println!(" !!! resolve_global YOUPI !!!");
+////                        Ok(glob)
+//                        Err(InterpreterError::Global("fuck it".to_string()))
+//                }
+//            }
+//        }
     }
+
 
     // Create Imports with previously described Resolver
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
+
     // Create module instance from wasm module, and without starting it
     let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
-        .assert_no_start();
+      ;
+        //.assert_no_start();
+//      .run_start(&mut wasmi::NopExternals)
+//      .unwrap();
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
@@ -254,9 +291,40 @@ pub fn call(
         result: String::new(),
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
-        memory_manager: SinglePageManager::new(&wasm_instance),
+        memory_manager: SinglePageManager::new(&wasm_instance.not_started_instance()),
         function_call: function_call.clone(),
     };
+
+    println!(" !! RUNNING START !!!!!!");
+
+    let wasm_instance = wasm_instance
+      .run_start(&mut runtime)
+      .expect("Failed to run start function in module");
+
+    // scope for mutable borrow of runtime
+    {
+        let mut_runtime = &mut runtime;
+
+        // invoke function in wasm instance
+        // arguments are info for wasm on how to retrieve complex input arguments
+        // which have been set in memory module
+        let _unused_output: i32 = wasm_instance
+          .invoke_export(
+              "manual_start",
+              &[],
+              mut_runtime,
+          )?
+          .unwrap()
+          .try_into()
+          .unwrap();
+    }
+
+//    let wasm_globals = wasm_instance
+//      .export_by_name("data")
+//      .expect("all modules compiled with rustc should have an export named 'global'; qed")
+//      .as_global()
+//      .expect("in module generated by rustc export named 'memory' should be a memory; qed")
+//      .clone();
 
     // scope for mutable borrow of runtime
     let encoded_allocation_of_input: u32;

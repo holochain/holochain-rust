@@ -1,0 +1,61 @@
+
+use nucleus::ribosome::api::{runtime_args_to_utf8, runtime_allocate_encode_str, Runtime};
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+
+use serde_json;
+
+#[derive(Deserialize, Serialize, Default)]
+struct InitGlobalsOutput {
+    app_name: String,
+    app_dna_hash: String,
+    app_key_hash: String,
+    app_agent_hash: String,
+    app_agent_top_hash: String,
+    app_agent_str: String,
+}
+
+/// HcApiFuncIndex::INIT_GLOBALS secret function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Not expecting complex input
+/// Returns an HcApiReturnCode as I32
+pub fn invoke_init_globals(
+    runtime: &mut Runtime,
+    _args: &RuntimeArgs,
+) -> Result<Option<RuntimeValue>, Trap> {
+
+    println!("!! invoke_init_globals !!!");
+
+    let globals = InitGlobalsOutput {
+        app_name: "ich".to_string(),
+        app_dna_hash: "ni".to_string(),
+        app_key_hash: "san".to_string(),
+        app_agent_hash: "shi".to_string(),
+        app_agent_top_hash: "go".to_string(),
+        app_agent_str: "rocku".to_string(),
+    };
+
+    return runtime_allocate_encode_str(
+        runtime,
+        &serde_json::to_string(&globals).unwrap());
+
+   // Ok(Some(RuntimeValue::I32(0 as i32)))
+}
+
+
+#[cfg(test)]
+pub mod tests {
+    //use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+
+    #[test]
+    /// test that bytes passed to debug end up in the log
+    fn test_init_globals() {
+//        let (_runtime, logger) = test_zome_api_function_runtime("debug", test_args_bytes());
+//        let result = logger.lock();
+//        match result {
+//            Err(_) => assert!(false),
+//            Ok(logger) => {
+//                assert_eq!(format!("{:?}", logger.log), "[\"foo\"]".to_string());
+//            }
+//        }
+    }
+}

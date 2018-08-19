@@ -1,13 +1,9 @@
-pub mod actor;
-
-use riker::actors::*;
-use error::HolochainError;
-use hash_table::{entry::Entry, pair::Pair};
-use serde_json;
-use std::{fmt};
-use hash_table::actor::AskHashTable;
-use hash_table::HashTable;
 use actor::Protocol;
+use error::HolochainError;
+use hash_table::{actor::AskHashTable, entry::Entry, pair::Pair, HashTable};
+use riker::actors::*;
+use serde_json;
+use std::fmt;
 // use futures::executor::block_on;
 
 #[derive(Clone)]
@@ -91,7 +87,6 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-
     pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
             top_pair: None,
@@ -142,11 +137,9 @@ impl Chain {
         }
         chain
     }
-
 }
 
 impl SourceChain for Chain {
-
     /// returns a clone of the top Pair
     fn top_pair(&self) -> Option<Pair> {
         self.top_pair.clone()
@@ -232,14 +225,13 @@ pub trait SourceChain {
 pub mod tests {
 
     use super::Chain;
+    use chain::SourceChain;
     use hash_table::{
+        actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         pair::Pair,
+        HashTable,
     };
-    use chain::actor::ChainActor;
-    use hash_table::actor::tests::test_table_actor;
-    use chain::SourceChain;
-    use hash_table::HashTable;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -293,17 +285,16 @@ pub mod tests {
     /// tests for chain.table()
     fn table_push() {
         let table_actor = test_table_actor();
-        let chain = Chain::new(table_actor.clone());
-        let mut chain_actor = ChainActor::new_ref(chain);
+        let mut chain = Chain::new(table_actor.clone());
 
         // test that adding something to the chain adds to the table
-        let pair = chain_actor.push_entry(&test_entry()).unwrap();
+        let pair = chain.push_entry(&test_entry()).unwrap();
 
         assert_eq!(Some(pair.clone()), table_actor.get(&pair.key()).unwrap(),);
-        assert_eq!(Some(pair.clone()), chain_actor.get_pair(&pair.key()).unwrap(),);
+        assert_eq!(Some(pair.clone()), chain.get_pair(&pair.key()).unwrap(),);
         assert_eq!(
             table_actor.get(&pair.key()).unwrap(),
-            chain_actor.get_pair(&pair.key()).unwrap(),
+            chain.get_pair(&pair.key()).unwrap(),
         );
     }
 
@@ -409,9 +400,18 @@ pub mod tests {
         assert_eq!(Some(p1.clone()), chain.get_pair(&p1.key()).unwrap());
         assert_eq!(Some(p2.clone()), chain.get_pair(&p2.key()).unwrap());
         assert_eq!(Some(p3.clone()), chain.get_pair(&p3.key()).unwrap());
-        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.header().key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.header().key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.header().key()).unwrap());
+        assert_eq!(
+            Some(p1.clone()),
+            chain.get_pair(&p1.header().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p2.clone()),
+            chain.get_pair(&p2.header().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p3.clone()),
+            chain.get_pair(&p3.header().key()).unwrap()
+        );
     }
 
     #[test]

@@ -303,7 +303,11 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
     use super::ZomeAPIFunction;
-    use instance::tests::{test_context_and_logger, test_instance, TestLogger};
+    use context::Context;
+    use instance::{
+        tests::{test_context_and_logger, test_instance, TestLogger},
+        Instance,
+    };
     use nucleus::{
         ribosome::api::{call, Runtime},
         FunctionCall,
@@ -312,8 +316,6 @@ pub mod tests {
         str::FromStr,
         sync::{Arc, Mutex},
     };
-    use context::Context;
-    use instance::Instance;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -426,7 +428,12 @@ pub mod tests {
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
-        let fc = FunctionCall::new(&test_zome_name(), &test_capability(), &test_function_name(), &test_parameters());
+        let fc = FunctionCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            &test_function_name(),
+            &test_parameters(),
+        );
         (
             call(
                 context,
@@ -450,8 +457,11 @@ pub mod tests {
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna =
-            test_utils::create_test_dna_with_wasm(&test_zome_name(), &test_capability(), wasm.clone());
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
 

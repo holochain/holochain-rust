@@ -1,14 +1,11 @@
-use hash_table::pair::Pair;
-use riker_default::DefaultModel;
-use riker::actors::*;
-use hash_table::entry::Entry;
-use error::HolochainError;
 use agent::keys::Keys;
-use hash_table::pair_meta::PairMeta;
+use error::HolochainError;
+use hash_table::{entry::Entry, pair::Pair, pair_meta::PairMeta};
+use riker::actors::*;
+use riker_default::DefaultModel;
 
 #[derive(Clone, Debug)]
 pub enum Protocol {
-
     ChainTopPair,
     ChainTopPairResult(Option<Pair>),
 
@@ -36,7 +33,7 @@ pub enum Protocol {
     HashTableTeardownResult(Result<(), HolochainError>),
 
     /// HashTable::modify()
-    HashTableModify{
+    HashTableModify {
         keys: Keys,
         old_pair: Pair,
         new_pair: Pair,
@@ -44,7 +41,7 @@ pub enum Protocol {
     HashTableModifyResult(Result<(), HolochainError>),
 
     /// HashTable::retract()
-    HashTableRetract{
+    HashTableRetract {
         keys: Keys,
         pair: Pair,
     },

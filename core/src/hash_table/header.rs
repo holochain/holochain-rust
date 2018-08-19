@@ -1,8 +1,7 @@
-use chain::Chain;
+use chain::{Chain, SourceChain};
 use hash;
-use hash_table::{entry::Entry};
+use hash_table::entry::Entry;
 use multihash::Hash;
-use chain::SourceChain;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
@@ -117,9 +116,8 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::tests::test_chain;
+    use chain::{tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
-    use chain::SourceChain;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {

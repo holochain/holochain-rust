@@ -1,10 +1,10 @@
+pub mod actor;
 pub mod entry;
 pub mod header;
 pub mod memory;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
-pub mod actor;
 
 use agent::keys::Keys;
 use error::HolochainError;

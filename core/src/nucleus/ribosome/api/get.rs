@@ -74,20 +74,20 @@ mod tests {
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     // use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
-    use instance::tests::test_instance;
     use self::wabt::Wat2Wasm;
-    use nucleus::ribosome::api::commit::tests::test_commit_args_bytes;
+    use instance::tests::test_instance;
+    use nucleus::ribosome::api::{
+        commit::tests::test_commit_args_bytes,
+        tests::{test_capability, test_zome_name},
+    };
     use serde_json;
-    use nucleus::ribosome::api::tests::test_zome_name;
-    use nucleus::ribosome::api::tests::test_capability;
     // use nucleus::ribosome::api::tests::test_zome_api_function_call;
     use instance::tests::test_context_and_logger;
-    use std::sync::Arc;
-    use nucleus::ribosome::api::tests::test_parameters;
     use nucleus::{
-        ribosome::api::{call},
+        ribosome::api::{call, tests::test_parameters},
         FunctionCall,
     };
+    use std::sync::Arc;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -103,7 +103,7 @@ mod tests {
             .write_debug_names(true)
             .convert(
                 // format!(
-                    r#"
+                r#"
 (module
     (import "env" "get"
         (func $get
@@ -145,7 +145,7 @@ mod tests {
     )
 )
                 "#,
-                    // canonical_name
+                // canonical_name
                 // ),
             )
             .unwrap()
@@ -157,12 +157,20 @@ mod tests {
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
         let wasm = test_get_round_trip_wat();
-        let dna =
-            test_utils::create_test_dna_with_wasm(&test_zome_name(), &test_capability(), wasm.clone());
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
         let instance = test_instance(dna);
         let (context, _) = test_context_and_logger("joan");
 
-        let commit_call = FunctionCall::new(&test_zome_name(), &test_capability(), &"commit", &test_parameters());
+        let commit_call = FunctionCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            &"commit",
+            &test_parameters(),
+        );
         let commit_runtime = call(
             Arc::clone(&context),
             &instance.action_channel(),
@@ -180,7 +188,12 @@ mod tests {
 
         // let (get_runtime, _) = test_zome_api_function_call(Arc::clone(&context), Arc::clone(&logger), &instance, &wasm, test_get_args_bytes());
 
-        let get_call = FunctionCall::new(&test_zome_name(), &test_capability(), &"get", &test_parameters());
+        let get_call = FunctionCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            &"get",
+            &test_parameters(),
+        );
         let get_runtime = call(
             Arc::clone(&context),
             &instance.action_channel(),

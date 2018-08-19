@@ -4,15 +4,14 @@ use instance::Observer;
 // use riker::actors::*;
 use context::Context;
 use error::HolochainError;
-use hash_table::{pair::Pair};
+use hash_table::pair::Pair;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
 // use actor::Protocol;
 // use chain::actor::AskChain;
-use chain::SourceChain;
-use chain::Chain;
+use chain::{Chain, SourceChain};
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -31,7 +30,7 @@ pub struct AgentState {
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: Chain) -> AgentState {
+    pub fn new(chain: &Chain) -> AgentState {
         AgentState {
             keys: None,
             top_pair: None,
@@ -106,12 +105,10 @@ fn reduce_commit(
     // @TODO successfully validate before pushing a commit
     // @see https://github.com/holochain/holochain-rust/issues/97
 
-    state
-        .actions
-        .insert(
-            action_wrapper.clone(),
-            ActionResponse::Commit(state.chain.push_entry(&entry)),
-        );
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::Commit(state.chain.push_entry(&entry)),
+    );
     println!("chain commit: {:?}", state.chain);
 }
 
@@ -141,12 +138,10 @@ fn reduce_get(
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
-    state
-        .actions
-        .insert(
-            action_wrapper.clone(),
-            ActionResponse::Get(result.clone().unwrap()),
-        );
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::Get(result.clone().unwrap()),
+    );
 }
 
 /// maps incoming action to the correct handler
@@ -188,28 +183,15 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use chain::tests::test_chain;
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
-    use std::collections::HashMap;
-    // use chain::actor::tests::test_chain_actor;
-    use chain::tests::test_chain;
-
-    #[test]
-    fn test_actor_receive() {
-        // let state = test_agent_state();
-
-        // state.chain.tell("hi".to_string(), None);
-        // let chain = state.chain.clone();
-        // let handle = thread::spawn(move || {
-        //     chain.tell("thread hi!".to_string(), None);
-        // });
-        // handle.join().unwrap();
-    }
+    use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new(test_chain())
+        AgentState::new(&test_chain())
     }
 
     /// dummy action response for a successful commit as test_pair()
@@ -272,22 +254,46 @@ pub mod tests {
     /// test for reducing get
     fn test_reduce_get() {
         let mut state = test_agent_state();
-        let action_wrapper = test_action_wrapper_get();
+        let context = test_context("foo");
 
         let instance = test_instance_blank();
 
+        let aw1 = test_action_wrapper_get();
         reduce_get(
-            test_context("foo"),
+            Arc::clone(&context),
             &mut state,
-            &action_wrapper,
+            &aw1,
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
 
-        assert_eq!(
-            state.actions().get(&action_wrapper),
-            Some(&test_action_response_get()),
+        // nothing has been committed so the get must be None
+        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::Get(None)),);
+
+        // do a round trip
+        reduce_commit(
+            Arc::clone(&context),
+            &mut state,
+            &test_action_wrapper_commit(),
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
         );
+
+        let aw2 = test_action_wrapper_get();
+        reduce_get(
+            Arc::clone(&context),
+            &mut state,
+            &aw2,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+
+        assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
+    }
+
+    #[test]
+    fn test_round_trip_threads() {
+        // @TODO
     }
 
     #[test]

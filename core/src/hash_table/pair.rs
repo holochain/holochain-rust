@@ -82,7 +82,7 @@ impl Pair {
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use chain::tests::test_chain;
+    use chain::{tests::test_chain, SourceChain};
     use hash_table::{
         entry::{
             tests::{test_entry, test_entry_b},
@@ -90,7 +90,6 @@ pub mod tests {
         },
         header::Header,
     };
-    use chain::SourceChain;
 
     /// dummy pair
     pub fn test_pair() -> Pair {

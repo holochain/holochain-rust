@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
 use instance::Observer;
-// use riker::actors::*;
 use context::Context;
 use error::HolochainError;
 use hash_table::pair::Pair;
@@ -9,8 +8,6 @@ use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-// use actor::Protocol;
-// use chain::actor::AskChain;
 use chain::{Chain, SourceChain};
 
 #[derive(Clone, Debug, PartialEq)]

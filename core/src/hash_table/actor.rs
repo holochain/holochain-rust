@@ -7,20 +7,6 @@ use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
 use snowflake;
 
-// use riker::kernel::Dispatcher;
-// use futures::{Future};
-// use riker::futures_util::spawn;
-// use riker_default::DeadLettersActor;
-// use riker_default::BasicTimer;
-// use riker_default::MapVec;
-// use riker_default::SimpleLogger;
-// use riker::system::NoIo;
-// use riker_patterns::ask::Ask;
-// use futures::channel::oneshot::Canceled;
-// use futures::Async::Ready;
-// use futures::executor::spawn_with_handle;
-// use futures::executor::SpawnWithHandle;
-
 #[derive(Clone, Debug)]
 pub enum HashTableProtocol {
     /// HashTable::setup()

@@ -66,5 +66,4 @@ rovided in the LICENSE file (GPLv3).  This program is distributed in the hope th
 t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  PURPOSE.
 
-**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are u
-sing GPL while we're getting the matter sorted out.
+**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.

@@ -282,18 +282,21 @@ pub mod tests {
         let (tx2, rx2) = mpsc::channel();
         thread::spawn(move || {
             rx1.recv().unwrap();
-            table_actor_thread.commit(&test_pair()).unwrap();
-            tx2.send(true).unwrap();
+            let pair = test_pair();
+            table_actor_thread.commit(&pair).unwrap();
+            tx2.send(pair).unwrap();
         });
 
         let table_actor_thread = table_actor.clone();
-        thread::spawn(move || {
-            rx2.recv().unwrap();
+        let handle = thread::spawn(move || {
+            let pair = rx2.recv().unwrap();
             assert_eq!(
-                table_actor_thread.get(&test_pair().key()).unwrap(),
+                table_actor_thread.get(&pair.key()).unwrap(),
                 Some(test_pair()),
             );
         });
+
+        handle.join().unwrap();
     }
 
 }

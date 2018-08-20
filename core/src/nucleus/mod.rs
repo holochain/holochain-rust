@@ -281,7 +281,7 @@ fn reduce_ezf(
                 let action_channel = action_channel.clone();
                 let tx_observer = observer_channel.clone();
                 let code = wasm.code.clone();
-                let app_name= state.dna().unwrap().name;
+                let app_name = state.dna().unwrap().name;
                 thread::spawn(move || {
                     let result: FunctionResult;
                     match ribosome::api::call(

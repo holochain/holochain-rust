@@ -11,7 +11,10 @@ use instance::Observer;
 use nucleus::{
     memory::SinglePageManager,
     ribosome::{
-        api::{commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry, init_globals::invoke_init_globals},
+        api::{
+            commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry,
+            init_globals::invoke_init_globals,
+        },
         Defn,
     },
     FunctionCall,
@@ -147,7 +150,7 @@ pub struct Runtime {
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
     function_call: FunctionCall,
-    pub app_name : String,
+    pub app_name: String,
 }
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
@@ -199,7 +202,7 @@ pub fn runtime_allocate_encode_str(
 
 /// Executes an exposed function in a wasm binary
 pub fn call(
-    app_name : &str,
+    app_name: &str,
     context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
@@ -249,11 +252,9 @@ pub fn call(
         }
     }
 
-
     // Create Imports with previously described Resolver
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
-
 
     // Create module instance from wasm module, and without starting it
     let wasm_instance = ModuleInstance::new(&module, &imports)

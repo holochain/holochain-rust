@@ -12,7 +12,10 @@ struct GetArgs {
     key: String,
 }
 
-pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_entry(
+    runtime: &mut Runtime,
+    args: &RuntimeArgs,
+) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
     let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);

@@ -55,8 +55,8 @@ pub enum HashTableProtocol {
 
 lazy_static! {
     pub static ref HASH_TABLE_SYS: ActorSystem<HashTableProtocol> = {
-        let hash_table_model: DefaultModel<HashTableProtocol> = DefaultModel::new();
-        ActorSystem::new(&hash_table_model).unwrap()
+        let model: DefaultModel<HashTableProtocol> = DefaultModel::new();
+        ActorSystem::new(&model).unwrap()
     };
 }
 
@@ -66,9 +66,9 @@ impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
     }
 }
 
-/// anything that can be asked Protocol aHashTablend block on responses
+/// anything that can be asked of HashTable and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
-pub trait AskHashTable {
+pub trait AskHashTable: HashTable {
     fn ask(&self, message: HashTableProtocol) -> HashTableProtocol;
 }
 
@@ -177,6 +177,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
     ) {
         sender
             .try_tell(
+                // deliberately exhaustively matching here, don't give into _ temptation
                 match message {
                     HashTableProtocol::Setup => HashTableProtocol::SetupResult(self.table.setup()),
                     HashTableProtocol::SetupResult(_) => unreachable!(),

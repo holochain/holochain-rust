@@ -14,9 +14,6 @@ use std::{
 /// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
-    // @TODO how should this work with chains/HTs?
-    // @see https://github.com/holochain/holochain-rust/issues/137
-    top_pair: Option<Pair>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -29,7 +26,6 @@ impl AgentState {
     pub fn new(chain: &Chain) -> AgentState {
         AgentState {
             keys: None,
-            top_pair: None,
             actions: HashMap::new(),
             chain: chain.clone(),
         }
@@ -40,10 +36,9 @@ impl AgentState {
         self.keys.clone()
     }
 
-    /// getter for a copy of self.top_pair
-    /// should be used with a source chain for validation/safety
-    pub fn top_pair(&self) -> Option<Pair> {
-        self.top_pair.clone()
+    /// getter for the chain
+    pub fn chain(&self) -> Chain {
+        self.chain.clone()
     }
 
     /// getter for a copy of self.actions
@@ -199,12 +194,6 @@ pub mod tests {
     /// test for the agent state keys getter
     fn agent_state_keys() {
         assert_eq!(None, test_agent_state().keys());
-    }
-
-    #[test]
-    /// test for the agent state top pair getter
-    fn agent_state_top_pair() {
-        assert_eq!(None, test_agent_state().top_pair());
     }
 
     #[test]

@@ -44,7 +44,7 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
-            next: chain.top_pair().and_then(|p| Some(p.header().hash())),
+            next: chain.get_top_pair().and_then(|p| Some(p.header().hash())),
             entry: entry.hash().to_string(),
             type_next: chain
                 .top_pair_type(&entry.entry_type())

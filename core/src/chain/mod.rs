@@ -1,3 +1,5 @@
+pub mod actor;
+
 use error::HolochainError;
 use hash_table::{
     actor::{AskHashTable, HashTableProtocol},
@@ -8,6 +10,9 @@ use hash_table::{
 use riker::actors::*;
 use serde_json;
 use std::fmt;
+use chain::actor::ChainActor;
+use chain::actor::ChainProtocol;
+use chain::actor::AskChain;
 
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -49,17 +54,18 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone)]
 pub struct Chain {
+    actor: ActorRef<ChainProtocol>,
     table: ActorRef<HashTableProtocol>,
-    top_pair: Option<Pair>,
 }
 
 impl PartialEq for Chain {
+    // @TODO can we just check the actors are equal? is actor equality a thing?
     fn eq(&self, other: &Chain) -> bool {
         // an invalid chain is like NaN... not even equal to itself
         self.validate() &&
         other.validate() &&
         // header hashing ensures that if the tops match the whole chain matches
-        self.top_pair() == other.top_pair()
+        self.get_top_pair() == other.get_top_pair()
     }
 }
 
@@ -67,7 +73,7 @@ impl Eq for Chain {}
 
 impl fmt::Debug for Chain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Chain {{ top: {:?} }}", self.top_pair)
+        write!(f, "Chain {{ top: {:?} }}", self.get_top_pair())
     }
 }
 
@@ -83,7 +89,7 @@ impl IntoIterator for Chain {
 impl Chain {
     pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
         Chain {
-            top_pair: None,
+            actor: ChainActor::new_ref(),
             table: table.clone(),
         }
     }
@@ -100,7 +106,7 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top_pair())
+        ChainIterator::new(self.table(), &self.get_top_pair())
     }
 
     /// get the entire chain, top to bottom as a JSON array or canonical pairs
@@ -131,8 +137,12 @@ impl Chain {
 
 impl SourceChain for Chain {
     /// returns a clone of the top Pair
-    fn top_pair(&self) -> Option<Pair> {
-        self.top_pair.clone()
+    fn get_top_pair(&self) -> Option<Pair> {
+        self.actor.get_top_pair()
+    }
+
+    fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
+        self.actor.set_top_pair(&pair)
     }
 
     /// get the top Pair by Entry type
@@ -148,7 +158,7 @@ impl SourceChain for Chain {
             ));
         }
 
-        let top_pair = self.top_pair().and_then(|p| Some(p.key()));
+        let top_pair = self.get_top_pair().and_then(|p| Some(p.key()));
         let next_pair = pair.header().next();
 
         if top_pair != next_pair {
@@ -162,7 +172,9 @@ impl SourceChain for Chain {
         let result = self.table.commit(&pair.clone());
 
         if result.is_ok() {
-            self.top_pair = Some(pair.clone());
+            // @TODO instead of unwrapping this, move all the above validation logic inside of
+            // set_top_pair()
+            self.set_top_pair(&Some(pair.clone())).unwrap();
         }
 
         match result {
@@ -182,7 +194,9 @@ impl SourceChain for Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+        // println!("get");
         let response = self.table.ask(HashTableProtocol::GetPair(k.to_string()));
+        // println!("response");
         unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
     }
 
@@ -198,8 +212,10 @@ impl SourceChain for Chain {
     }
 }
 
+// @TODO should SourceChain have a bound on HashTable for consistency?
 pub trait SourceChain {
-    fn top_pair(&self) -> Option<Pair>;
+    fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
+    fn get_top_pair(&self) -> Option<Pair>;
     fn top_pair_type(&self, t: &str) -> Option<Pair>;
 
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
@@ -246,7 +262,7 @@ pub mod tests {
         c2.push_entry(&e1).unwrap();
         c3.push_entry(&e2).unwrap();
 
-        assert_eq!(c1.top_pair(), c2.top_pair());
+        assert_eq!(c1.get_top_pair(), c2.get_top_pair());
         assert_eq!(c1, c2);
 
         assert_ne!(c1, c3);
@@ -254,19 +270,35 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for chain.top()
-    fn top() {
+    /// tests for chain.top_pair()
+    fn top_pair() {
         let mut chain = test_chain();
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(None, chain.get_top_pair());
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
         let p1 = chain.push_entry(&e1).unwrap();
-        assert_eq!(Some(p1), chain.top_pair());
+        assert_eq!(Some(p1), chain.get_top_pair());
 
         let p2 = chain.push_entry(&e2).unwrap();
-        assert_eq!(Some(p2), chain.top_pair());
+        assert_eq!(Some(p2), chain.get_top_pair());
+    }
+
+    #[test]
+    /// tests that the chain state is consistent across clones
+    fn clone_safe() {
+        let c1 = test_chain();
+        let mut c2 = c1.clone();
+        let e = test_entry();
+
+        assert_eq!(None, c1.get_top_pair());
+        assert_eq!(None, c2.get_top_pair());
+
+        let pair = c2.push_entry(&e).unwrap();
+
+        assert_eq!(Some(pair.clone()), c2.get_top_pair());
+        assert_eq!(c1.get_top_pair(), c2.get_top_pair());
     }
 
     #[test]
@@ -291,13 +323,13 @@ pub mod tests {
     fn push() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(None, chain.get_top_pair());
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();
         let p1 = chain.push_entry(&e1).unwrap();
 
-        assert_eq!(Some(p1.clone()), chain.top_pair());
+        assert_eq!(Some(p1.clone()), chain.get_top_pair());
         assert_eq!(e1, p1.entry());
         assert_eq!(e1.hash(), p1.header().entry());
 
@@ -305,7 +337,7 @@ pub mod tests {
         let e2 = test_entry_b();
         let p2 = chain.push_entry(&e2).unwrap();
 
-        assert_eq!(Some(p2.clone()), chain.top_pair());
+        assert_eq!(Some(p2.clone()), chain.get_top_pair());
         assert_eq!(e2, p2.entry());
         assert_eq!(e2.hash(), p2.header().entry());
     }

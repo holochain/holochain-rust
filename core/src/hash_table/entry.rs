@@ -65,7 +65,7 @@ impl Entry {
         self.entry_type.clone()
     }
 
-    /// returns true if the entry is valid
+    /// returns true iff the entry is valid
     pub fn validate(&self) -> bool {
         // always valid if immutable and new() enforces validity
         true
@@ -79,7 +79,6 @@ impl Entry {
 
     /// serialize the Entry to a canonical JSON string
     ///
-    /// panics if it fails to serialize
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn to_json(&self) -> String {
@@ -90,7 +89,9 @@ impl Entry {
 
     /// deserialize an Entry from a canonical JSON string
     ///
-    /// panics if string isn't valid JSON
+    /// # Panics
+    ///
+    /// Panics if the string passed isn't valid JSON.
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     /// @TODO don't return invalid entries

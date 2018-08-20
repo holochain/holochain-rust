@@ -179,7 +179,10 @@ impl<T: HashTable> Chain<T> {
 
     /// restore canonical JSON chain
     ///
-    /// panics if string isn't valid JSON or pairs fail to validate
+    /// # Panics
+    ///
+    /// Panics if the string passed isn't valid JSON or pairs fail to validate
+    ///
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: Rc<T>, s: &str) -> Self {

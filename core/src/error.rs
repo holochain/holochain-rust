@@ -105,6 +105,6 @@ mod tests {
     fn can_return_result() {
         let result = raises_holochain_error(false);
 
-        assert_eq!(result, Ok(()))
+        assert!(result.is_ok());
     }
 }

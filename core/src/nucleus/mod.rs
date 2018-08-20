@@ -73,7 +73,7 @@ pub fn call_zome_and_wait_for_result(
     ::instance::dispatch_action_with_observer(
         action_channel,
         observer_channel,
-        &call_action_wrapper,
+        call_action_wrapper,
         move |state: &super::state::State| {
             if let Some(result) = state.nucleus().ribosome_call_result(&call) {
                 sender
@@ -99,7 +99,7 @@ pub fn call_and_wait_for_result(
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
-    instance.dispatch_with_observer(&call_action, move |state: &super::state::State| {
+    instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
         if let Some(result) = state.nucleus().ribosome_call_result(&call) {
             sender
                 .send(result.clone())

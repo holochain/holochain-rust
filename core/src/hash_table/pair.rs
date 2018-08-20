@@ -21,7 +21,9 @@ impl Pair {
     /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
     /// now be valid, the new Y' will include correct headers pointing to X.
     ///
-    /// panics if entry is somehow invalid
+    /// # Panics
+    ///
+    /// Panics if entry is somehow invalid
     ///
     /// @see chain::entry::Entry
     /// @see chain::header::Header
@@ -68,7 +70,6 @@ impl Pair {
 
     /// serialize the Pair to a canonical JSON string
     ///
-    /// panics if it fails to serialize
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn to_json(&self) -> String {
@@ -79,7 +80,9 @@ impl Pair {
 
     /// deserialize a Pair from a canonical JSON string
     ///
-    /// panics if string isn't valid JSON
+    /// # Panics
+    ///
+    /// Panics if the string given isn't valid JSON.
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(s: &str) -> Pair {

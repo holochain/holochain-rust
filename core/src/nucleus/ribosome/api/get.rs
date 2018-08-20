@@ -32,7 +32,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        &action_wrapper.clone(),
+        action_wrapper.clone(),
         move |state: &::state::State| {
             let mut actions_copy = state.agent().actions();
             match actions_copy.remove(&action_wrapper) {

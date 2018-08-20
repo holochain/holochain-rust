@@ -42,24 +42,36 @@ impl Instance {
     }
 
     /// Stack an Action in the Event Queue
-    pub fn dispatch(&mut self, action_wrapper: &ActionWrapper) -> ActionWrapper {
-        dispatch_action(&self.action_channel, &action_wrapper)
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before `start_action_loop`.
+    pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
+        dispatch_action(&self.action_channel, action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
         dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_wrapper);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: &ActionWrapper, closure: F)
+    ///
+    /// # Panics
+    ///
+    /// Panics if called before `start_action_loop`.
+    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: ActionWrapper, closure: F)
     where
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
             &self.action_channel,
             &self.observer_channel,
-            &action_wrapper,
+            action_wrapper,
             closure,
         )
     }
@@ -114,6 +126,7 @@ impl Instance {
         });
     }
 
+    /// Creates a new Instance with disconnected channels.
     pub fn new() -> Self {
         let (tx_action, _) = channel();
         let (tx_observer, _) = channel();
@@ -139,7 +152,9 @@ impl Default for Instance {
 
 /// Send Action to Instance's Event Queue and block until is has been processed.
 ///
-/// panics if called before start_action_loop
+/// # Panics
+///
+/// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
@@ -162,29 +177,22 @@ pub fn dispatch_action_and_wait(
             false
         }
     };
-    let observer = Observer {
-        sensor: Box::new(closure),
-    };
 
-    // Send observer to instance
-    observer_channel
-        .send(observer)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
-
-    // Send action to instance
-    action_channel
-        .send(action_wrapper.clone())
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+    dispatch_action_with_observer(&action_channel, &observer_channel, action_wrapper, closure);
 
     // Block until Observer has sensed the completion of the Action
     receiver.recv().expect(DISPATCH_WITHOUT_CHANNELS);
 }
 
 /// Send Action to the Event Queue and create an Observer for it with the specified closure
+///
+/// # Panics
+///
+/// Panics if the channels passed are disconnected.
 pub fn dispatch_action_with_observer<F>(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
-    action_wrapper: &ActionWrapper,
+    action_wrapper: ActionWrapper,
     closure: F,
 ) where
     F: 'static + FnMut(&State) -> bool + Send,
@@ -196,18 +204,18 @@ pub fn dispatch_action_with_observer<F>(
     observer_channel
         .send(observer)
         .expect(DISPATCH_WITHOUT_CHANNELS);
-    dispatch_action(action_channel, &action_wrapper);
+    dispatch_action(action_channel, action_wrapper);
 }
 
 /// Send Action to the Event Queue
-pub fn dispatch_action(
-    action_channel: &Sender<ActionWrapper>,
-    action_wrapper: &ActionWrapper,
-) -> ActionWrapper {
+///
+/// # Panics
+///
+/// Panics if the channels passed are disconnected.
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
     action_channel
-        .send(action_wrapper.clone())
+        .send(action_wrapper)
         .expect(DISPATCH_WITHOUT_CHANNELS);
-    action_wrapper.clone()
 }
 
 #[cfg(test)]
@@ -362,7 +370,7 @@ pub mod tests {
         let dna = Dna::new();
         let (sender, receiver) = channel();
         instance.dispatch_with_observer(
-            &ActionWrapper::new(Action::InitApplication(dna.clone())),
+            ActionWrapper::new(Action::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {
                 Some(dna) => {
                     sender

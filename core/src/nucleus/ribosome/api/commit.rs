@@ -61,7 +61,7 @@ pub fn invoke_commit(
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
-        &action_wrapper.clone(),
+        action_wrapper.clone(),
         move |state: &::state::State| {
             let mut actions_copy = state.agent().actions();
             match actions_copy.remove(&action_wrapper) {

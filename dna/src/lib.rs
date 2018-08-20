@@ -165,13 +165,14 @@ impl Dna {
         zome: &'a zome::Zome,
         capability_name: &str,
     ) -> Option<&'a wasm::DnaWasm> {
-        zome.capabilities
+        let capability = zome
+            .capabilities
             .iter()
-            .find(|c| c.name == capability_name)
-            .map(|capability| &capability.code)
+            .find(|c| c.name == capability_name)?;
+        Some(&capability.code)
     }
 
-    /// Return a Zome's WASM bytecode for a specified Capability
+    /// Find a Zome and return it's WASM bytecode for a specified Capability
     pub fn get_wasm_for_capability<T: Into<String>>(
         &self,
         zome_name: T,
@@ -179,11 +180,9 @@ impl Dna {
     ) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
         let capability_name = capability_name.into();
-
-        self.zomes
-            .iter()
-            .find(|z| z.name() == zome_name)
-            .and_then(|zome| self.get_capability(&zome, &capability_name))
+        let zome = self.get_zome(&zome_name)?;
+        let capability = self.get_capability(&zome, &capability_name)?;
+        Some(capability)
     }
 
     /// Return a Zome's WASM bytecode for the validation of an entry

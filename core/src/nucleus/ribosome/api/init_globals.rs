@@ -8,10 +8,10 @@ use serde_json;
 struct InitGlobalsOutput {
     app_name: String,
     app_dna_hash: String,
-    app_key_hash: String,
-    app_agent_hash: String,
-    app_agent_top_hash: String,
-    app_agent_str: String,
+    app_agent_id_str: String,
+    app_agent_key_hash: String,
+    app_agent_initial_hash: String,
+    app_agent_latest_hash: String,
 }
 
 /// HcApiFuncIndex::INIT_GLOBALS secret function code
@@ -26,10 +26,10 @@ pub fn invoke_init_globals(
     let globals = InitGlobalsOutput {
         app_name: "FIXME-app_name".to_string(),
         app_dna_hash: "FIXME-app_dna_hash".to_string(),
-        app_key_hash: "FIXME-app_key_hash".to_string(),
-        app_agent_hash: "FIXME-app_agent_hash".to_string(),
-        app_agent_top_hash: "FIXME-app_agent_top_hash".to_string(),
-        app_agent_str: "FIXME-app_agent_str".to_string(),
+        app_agent_id_str: "FIXME-app_agent_id_str".to_string(),
+        app_agent_key_hash: "FIXME-app_agent_key_hash".to_string(),
+        app_agent_initial_hash: "FIXME-app_agent_initial_hash".to_string(),
+        app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
     };
 
     return runtime_allocate_encode_str(

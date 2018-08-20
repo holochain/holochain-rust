@@ -26,13 +26,15 @@ pub fn invoke_init_globals(
     let globals = InitGlobalsOutput {
         app_name: runtime.app_name.to_string(),
 
-        // TODO Implement Dna hash
+        // TODO #232 - Implement Dna hash
         app_dna_hash: "FIXME-app_dna_hash".to_string(),
 
         app_agent_id_str: runtime.context.agent.to_string(),
 
-        // TODO Implement agent key hash and identity entry hashes
+        // TODO #233 - Implement agent pub key hash
         app_agent_key_hash: "FIXME-app_agent_key_hash".to_string(),
+
+        // TODO #234 - Implement agent identity entry hashes
         app_agent_initial_hash: "FIXME-app_agent_initial_hash".to_string(),
         app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
     };

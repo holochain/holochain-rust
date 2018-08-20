@@ -40,18 +40,16 @@ pub fn invoke_init_globals(
 
 #[cfg(test)]
 pub mod tests {
-    //use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+  use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
 
-    #[test]
-    /// test that bytes passed to debug end up in the log
-    fn test_init_globals() {
-//        let (_runtime, logger) = test_zome_api_function_runtime("debug", test_args_bytes());
-//        let result = logger.lock();
-//        match result {
-//            Err(_) => assert!(false),
-//            Ok(logger) => {
-//                assert_eq!(format!("{:?}", logger.log), "[\"foo\"]".to_string());
-//            }
-//        }
-    }
+  #[test]
+  /// test that bytes passed to debug end up in the log
+  fn test_init_globals() {
+    let input : Vec<u8> = vec![];
+    let (runtime, _) = test_zome_api_function_runtime("hc_init_globals", input);
+    assert_eq!(
+      runtime.result.to_string(),
+      "{\"app_name\":\"FIXME-app_name\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"FIXME-app_agent_id_str\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
+        .to_string());
+  }
 }

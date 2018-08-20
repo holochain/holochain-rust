@@ -33,7 +33,7 @@ pub mod tests {
     #[test]
     /// test that bytes passed to debug end up in the log
     fn test_debug() {
-        let (_runtime, logger) = test_zome_api_function_runtime("debug", test_args_bytes());
+        let (_runtime, logger) = test_zome_api_function_runtime("hc_debug", test_args_bytes());
         let result = logger.lock();
         match result {
             Err(_) => assert!(false),

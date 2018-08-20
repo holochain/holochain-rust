@@ -11,7 +11,7 @@ use instance::Observer;
 use nucleus::{
     memory::SinglePageManager,
     ribosome::{
-        api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get, init_globals::invoke_init_globals},
+        api::{commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry, init_globals::invoke_init_globals},
         Defn,
     },
     FunctionCall,
@@ -48,12 +48,12 @@ pub enum ZomeAPIFunction {
     Debug,
 
     /// Commit an entry to source chain
-    /// commit(entry_type : String, entry_content : String) -> Hash
-    Commit,
+    /// commit_entry(entry_type : String, entry_content : String) -> Hash
+    CommitEntry,
 
     /// Get an entry from source chain by key (header hash)
-    /// get(key: String) -> Pair
-    Get,
+    /// get_entry(key: String) -> Pair
+    GetEntry,
 
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
@@ -65,8 +65,8 @@ impl Defn for ZomeAPIFunction {
         match *self {
             ZomeAPIFunction::MissingNo => "",
             ZomeAPIFunction::Debug => "hc_debug",
-            ZomeAPIFunction::Commit => "hc_commit",
-            ZomeAPIFunction::Get => "hc_get",
+            ZomeAPIFunction::CommitEntry => "hc_commit_entry",
+            ZomeAPIFunction::GetEntry => "hc_get_entry",
             ZomeAPIFunction::InitGlobals => "hc_init_globals",
         }
     }
@@ -93,10 +93,10 @@ impl Defn for ZomeAPIFunction {
             ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Commit => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Get => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::GetEntry => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
             ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
@@ -109,8 +109,8 @@ impl FromStr for ZomeAPIFunction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "hc_debug" => Ok(ZomeAPIFunction::Debug),
-            "hc_commit" => Ok(ZomeAPIFunction::Commit),
-            "hc_get" => Ok(ZomeAPIFunction::Get),
+            "hc_commit_entry" => Ok(ZomeAPIFunction::CommitEntry),
+            "hc_get_entry" => Ok(ZomeAPIFunction::GetEntry),
             "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }
@@ -127,8 +127,8 @@ impl ZomeAPIFunction {
         match *self {
             ZomeAPIFunction::MissingNo => noop,
             ZomeAPIFunction::Debug => invoke_debug,
-            ZomeAPIFunction::Commit => invoke_commit,
-            ZomeAPIFunction::Get => invoke_get,
+            ZomeAPIFunction::CommitEntry => invoke_commit_entry,
+            ZomeAPIFunction::GetEntry => invoke_get_entry,
             ZomeAPIFunction::InitGlobals => invoke_init_globals,
         }
     }
@@ -245,27 +245,6 @@ pub fn call(
                 )),
             }
         }
-
-//        fn resolve_global(
-//            &self,
-//            field_name: &str,
-//            _global_type: &GlobalDescriptor,
-//        ) -> Result<GlobalRef, InterpreterError> {
-//            // let index = ZomeApiGlobal::str_to_index(&field_name);
-//            println!(" !!! resolve_global CALLED : {}!!!", field_name);
-//            let index = 42;
-//            match index {
-//                _ => {
-////                        let glob : GlobalRef = GlobalInstance::alloc(
-////                            RuntimeValue::I32(424),
-////                            false, // only immutable globals are possible to export at the moment
-////                        );
-////                        println!(" !!! resolve_global YOUPI !!!");
-////                        Ok(glob)
-//                        Err(InterpreterError::Global("fuck it".to_string()))
-//                }
-//            }
-//        }
     }
 
 
@@ -478,11 +457,11 @@ pub mod tests {
             ZomeAPIFunction::from_str("debug").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::Commit,
+            ZomeAPIFunction::CommitEntry,
             ZomeAPIFunction::from_str("commit").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::Get,
+            ZomeAPIFunction::GetEntry,
             ZomeAPIFunction::from_str("get").unwrap(),
         );
 

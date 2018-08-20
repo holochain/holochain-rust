@@ -19,7 +19,7 @@ struct CommitArgs {
 /// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_commit(
+pub fn invoke_commit_entry(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("commit", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime("hc_commit_entry", test_args_bytes());
 
         assert_eq!(
             runtime.result,

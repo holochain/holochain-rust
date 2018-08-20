@@ -292,7 +292,7 @@ pub mod tests {
     }
 
     #[test]
-    /// test the FromStr implementation for LifecycleFunction
+    /// test the FromStr implementation for Lifecycle Function
     fn test_from_str() {
         assert_eq!(Callback::Genesis, Callback::from_str("genesis").unwrap(),);
         assert_eq!(

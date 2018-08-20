@@ -5,7 +5,7 @@ extern crate serde_derive;
 use holochain_wasm_utils::*;
 
 extern {
-  fn hc_commit(encoded_allocation_of_input: i32) -> i32;
+  fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
 }
 
 
@@ -39,7 +39,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
   unsafe {
-    encoded_allocation_of_result = hc_commit(allocation_of_input.encode() as i32);
+    encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Check for ERROR in encoding
   let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
@@ -95,7 +95,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
   unsafe {
-    encoded_allocation_of_result = hc_commit(allocation_of_input.encode() as i32);
+    encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // DECODE ERROR
   let result = try_deserialize_allocation(encoded_allocation_of_result as u32);

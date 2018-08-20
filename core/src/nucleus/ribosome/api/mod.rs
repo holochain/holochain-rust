@@ -141,12 +141,13 @@ impl ZomeAPIFunction {
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone)]
 pub struct Runtime {
-    context: Arc<Context>,
+    pub context: Arc<Context>,
     pub result: String,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
     function_call: FunctionCall,
+    pub app_name : String,
 }
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
@@ -198,6 +199,7 @@ pub fn runtime_allocate_encode_str(
 
 /// Executes an exposed function in a wasm binary
 pub fn call(
+    app_name : &str,
     context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
@@ -269,6 +271,7 @@ pub fn call(
         observer_channel: observer_channel.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
         function_call: function_call.clone(),
+        app_name: app_name.to_string(),
     };
 
     // scope for mutable borrow of runtime
@@ -431,6 +434,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna =
             test_utils::create_test_dna_with_wasm(zome_name.into(), &capability, wasm.clone());
+        let app_name = dna.name.to_string();
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
 
@@ -438,6 +442,7 @@ pub mod tests {
 
         (
             call(
+                &app_name,
                 context,
                 &instance.action_channel(),
                 &instance.observer_channel(),
@@ -454,15 +459,15 @@ pub mod tests {
     fn test_from_str() {
         assert_eq!(
             ZomeAPIFunction::Debug,
-            ZomeAPIFunction::from_str("debug").unwrap(),
+            ZomeAPIFunction::from_str("hc_debug").unwrap(),
         );
         assert_eq!(
             ZomeAPIFunction::CommitEntry,
-            ZomeAPIFunction::from_str("commit").unwrap(),
+            ZomeAPIFunction::from_str("hc_commit_entry").unwrap(),
         );
         assert_eq!(
             ZomeAPIFunction::GetEntry,
-            ZomeAPIFunction::from_str("get").unwrap(),
+            ZomeAPIFunction::from_str("hc_get_entry").unwrap(),
         );
 
         assert_eq!(

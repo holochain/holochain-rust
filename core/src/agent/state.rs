@@ -277,11 +277,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_round_trip_threads() {
-        // @TODO
-    }
-
-    #[test]
     /// test response to json
     fn test_response_to_json() {
         assert_eq!(

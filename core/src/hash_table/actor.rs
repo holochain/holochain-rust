@@ -237,12 +237,63 @@ pub mod tests {
     use super::HashTableActor;
     use hash_table::{actor::HashTableProtocol, memory::tests::test_table};
     use riker::actors::*;
+    use hash::tests::test_hash;
+    use hash_table::HashTable;
+    use hash_table::pair::tests::test_pair;
+    use std::thread;
+    use std::sync::mpsc;
 
     pub fn test_table_actor() -> ActorRef<HashTableProtocol> {
         HashTableActor::new_ref(test_table())
     }
 
     #[test]
-    fn round_trip() {}
+    fn round_trip() {
+        let mut table_actor = test_table_actor();
+
+        assert_eq!(
+            table_actor.get(&test_hash()).unwrap(),
+            None,
+        );
+
+        table_actor.commit(&test_pair()).unwrap();
+
+        assert_eq!(
+            table_actor.get(&test_pair().key()).unwrap(),
+            Some(test_pair()),
+        );
+    }
+
+    #[test]
+    fn test_round_trip_threads() {
+        let table_actor = test_table_actor();
+
+        let table_actor_thread = table_actor.clone();
+        let (tx1, rx1) = mpsc::channel();
+        thread::spawn(move || {
+            assert_eq!(
+                table_actor_thread.get(&test_hash()).unwrap(),
+                None,
+            );
+            tx1.send(true).unwrap();
+        });
+
+        let mut table_actor_thread = table_actor.clone();
+        let (tx2, rx2) = mpsc::channel();
+        thread::spawn(move || {
+            rx1.recv().unwrap();
+            table_actor_thread.commit(&test_pair()).unwrap();
+            tx2.send(true).unwrap();
+        });
+
+        let table_actor_thread = table_actor.clone();
+        thread::spawn(move || {
+            rx2.recv().unwrap();
+            assert_eq!(
+                table_actor_thread.get(&test_pair().key()).unwrap(),
+                Some(test_pair()),
+            );
+        });
+    }
 
 }

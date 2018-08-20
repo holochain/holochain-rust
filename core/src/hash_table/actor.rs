@@ -265,6 +265,11 @@ pub mod tests {
     }
 
     #[test]
+    /// we want to show two things here:
+    /// - we can clone some stateful thing (i.e. actor ref) and mutate one clone and have that
+    ///   consistent across all the clones
+    /// - we can send the cloned stateful thing into threads and have them see a consistent world
+    ///   view without juggling direct message passing through channels
     fn test_round_trip_threads() {
         let table_actor = test_table_actor();
 
@@ -275,15 +280,18 @@ pub mod tests {
                 table_actor_thread.get(&test_hash()).unwrap(),
                 None,
             );
+            // kick off the next thread
             tx1.send(true).unwrap();
         });
 
+        // mutate this clone of the original actor ref
         let mut table_actor_thread = table_actor.clone();
         let (tx2, rx2) = mpsc::channel();
         thread::spawn(move || {
             rx1.recv().unwrap();
             let pair = test_pair();
             table_actor_thread.commit(&pair).unwrap();
+            // push the committed pair through to the next thread
             tx2.send(pair).unwrap();
         });
 
@@ -292,7 +300,7 @@ pub mod tests {
             let pair = rx2.recv().unwrap();
             assert_eq!(
                 table_actor_thread.get(&pair.key()).unwrap(),
-                Some(test_pair()),
+                Some(pair),
             );
         });
 

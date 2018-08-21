@@ -90,6 +90,8 @@ pub enum Action {
 }
 
 /// function signature for action handler functions
+// @TODO merge these into a single signature
+// @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> =

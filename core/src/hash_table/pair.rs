@@ -2,6 +2,9 @@ use chain::Chain;
 use hash_table::{entry::Entry, header::Header, HashTable};
 use serde_json;
 
+/// Struct for holding a source chain "Item"
+/// It is like a pair holding the entry and header separately
+/// The source chain being a hash table, the key of a Pair is the hash of its Header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
     header: Header,
@@ -56,7 +59,7 @@ impl Pair {
         // the header and entry must validate independently
         self.header.validate() && self.entry.validate()
         // the header entry hash must be the same as the entry hash
-        && self.header.entry() == self.entry.hash()
+        && self.header.entry_hash() == self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
     }
@@ -114,7 +117,7 @@ pub mod tests {
         let e1 = Entry::new(t, "some content");
         let h1 = Header::new(&chain, &e1);
 
-        assert_eq!(h1.entry(), e1.hash());
+        assert_eq!(h1.entry_hash(), e1.hash());
         assert_eq!(h1.next(), None);
 
         let p1 = Pair::new(&chain, &e1);
@@ -141,7 +144,7 @@ pub mod tests {
         let mut chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let p = chain.push(&e).unwrap();
+        let p = chain.push_entry(&e).unwrap();
 
         assert_eq!(e, p.entry());
     }
@@ -161,7 +164,7 @@ pub mod tests {
     #[test]
     /// test JSON roundtrip for pairs
     fn json_roundtrip() {
-        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
+        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"same_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
 
         assert_eq!(json, test_pair().to_json(),);
 

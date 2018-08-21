@@ -10,6 +10,7 @@ use hash_table::{
     HashTable,
 };
 
+/// Struct Implemenating the HashTable Trait which stores the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
@@ -93,7 +94,7 @@ impl HashTable for MemTable {
         let mut metas = self
             .meta
             .values()
-            .filter(|&m| m.pair() == pair.key())
+            .filter(|&m| m.pair_hash() == pair.key())
             .cloned()
             .collect::<Vec<PairMeta>>();
         // @TODO should this be sorted at all at this point?

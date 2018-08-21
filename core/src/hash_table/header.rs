@@ -3,6 +3,9 @@ use hash;
 use hash_table::{entry::Entry, HashTable};
 use multihash::Hash;
 
+/// Header of a source chain "Item"
+/// The hash of the Header is used as the Item's key in the source chain hash table
+/// Headers are linked to next header in chain and next header of same type in chain
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
@@ -16,9 +19,9 @@ pub struct Header {
     /// link to the immediately preceding header, None is valid only for genesis
     next: Option<String>,
     /// mandatory link to the entry for this header
-    entry: String,
+    entry_hash: String,
     /// link to the most recent header of the same type, None is valid only for the first of type
-    type_next: Option<String>,
+    same_next: Option<String>,
     /// agent's cryptographic signature
     signature: String,
 }
@@ -45,8 +48,8 @@ impl Header {
             // https://github.com/holochain/holochain-rust/issues/70
             time: String::new(),
             next: chain.top().and_then(|p| Some(p.header().hash())),
-            entry: entry.hash().to_string(),
-            type_next: chain
+            entry_hash: entry.hash().to_string(),
+            same_next: chain
                 .top_type(&entry.entry_type())
                 // @TODO inappropriate unwrap()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
@@ -74,13 +77,13 @@ impl Header {
     }
 
     /// entry getter
-    pub fn entry(&self) -> String {
-        self.entry.clone()
+    pub fn entry_hash(&self) -> String {
+        self.entry_hash.clone()
     }
 
     /// type_next getter
-    pub fn type_next(&self) -> Option<String> {
-        self.type_next.clone()
+    pub fn same_next(&self) -> Option<String> {
+        self.same_next.clone()
     }
 
     /// signature getter
@@ -96,8 +99,8 @@ impl Header {
             + &self.entry_type
             + &self.time
             + &self.next.clone().unwrap_or_default()
-            + &self.entry
-            + &self.type_next.clone().unwrap_or_default()
+            + &self.entry_hash
+            + &self.same_next.clone().unwrap_or_default()
             + &self.signature;
 
         // @TODO the hashing algo should not be hardcoded
@@ -157,7 +160,7 @@ mod tests {
         // different state is different
         let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
-        chain2.push(&e).unwrap();
+        chain2.push_entry(&e).unwrap();
 
         assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
     }
@@ -170,7 +173,7 @@ mod tests {
         let e = Entry::new(t, "foo");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry(), e.hash());
+        assert_eq!(h.entry_hash(), e.hash());
         assert_eq!(h.next(), None);
         assert_ne!(h.hash(), "");
         assert!(h.validate());
@@ -206,14 +209,14 @@ mod tests {
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t, "");
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
         let h1 = p1.header();
 
         assert_eq!(h1.next(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
         let h2 = p2.header();
 
         assert_eq!(h2.next(), Some(h1.hash()));
@@ -229,7 +232,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry(), e.hash());
+        assert_eq!(h.entry_hash(), e.hash());
     }
 
     #[test]
@@ -241,24 +244,24 @@ mod tests {
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t1, "");
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
         let h1 = p1.header();
 
-        assert_eq!(h1.type_next(), None);
+        assert_eq!(h1.same_next(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
         let h2 = p2.header();
 
-        assert_eq!(h2.type_next(), None);
+        assert_eq!(h2.same_next(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
-        let p3 = chain.push(&e3).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
         let h3 = p3.header();
 
-        assert_eq!(h3.type_next(), Some(h1.hash()));
+        assert_eq!(h3.same_next(), Some(h1.hash()));
     }
 
     #[test]
@@ -336,9 +339,9 @@ mod tests {
         let e = Entry::new(t, c);
         let h = Header::new(&chain, &e);
 
-        let p1 = chain.push(&e).unwrap();
+        let p1 = chain.push_entry(&e).unwrap();
         // p2 will have a different hash to p1 with the same entry as the chain state is different
-        let p2 = chain.push(&e).unwrap();
+        let p2 = chain.push_entry(&e).unwrap();
 
         assert_eq!(h.hash(), p1.header().hash());
         assert_ne!(h.hash(), p2.header().hash());

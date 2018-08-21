@@ -9,6 +9,10 @@ use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 
+
+/// Trait of the data structure storing the source chain
+/// source chain is stored as a hash table of Pairs.
+/// Pair is a pair holding an Entry and its Header
 pub trait HashTable {
     // internal state management
     fn setup(&mut self) -> Result<(), HolochainError>;

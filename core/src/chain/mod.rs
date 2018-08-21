@@ -44,6 +44,8 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
     }
 }
 
+/// Struct representing the source chain.
+/// It mostly just manages the HashTable and adds extra logic
 pub struct Chain<T: HashTable> {
     // @TODO thread safe table references
     // @see https://github.com/holochain/holochain-rust/issues/135
@@ -137,7 +139,7 @@ impl<T: HashTable> Chain<T> {
     /// the Pair for the new Entry is automatically generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned in the fn Result
-    pub fn push(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+    pub fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
         self.push_pair(pair)
     }
@@ -153,7 +155,7 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+    pub fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         self.table.get(k)
     }
 
@@ -231,9 +233,9 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        c1.push(&e1).unwrap();
-        c2.push(&e1).unwrap();
-        c3.push(&e2).unwrap();
+        c1.push_entry(&e1).unwrap();
+        c2.push_entry(&e1).unwrap();
+        c3.push_entry(&e2).unwrap();
 
         assert_eq!(c1.top(), c2.top());
         assert_eq!(c1, c2);
@@ -251,10 +253,10 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
         assert_eq!(Some(p1), chain.top());
 
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
         assert_eq!(Some(p2), chain.top());
     }
 
@@ -264,7 +266,7 @@ pub mod tests {
         let t = test_table();
         let mut c = Chain::new(Rc::new(t));
         // test that adding something to the chain adds to the table
-        let p = c.push(&test_entry()).unwrap();
+        let p = c.push_entry(&test_entry()).unwrap();
         let tr = Rc::new(c.table());
         assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap(),);
         assert_eq!(Some(p.clone()), tr.get(&p.key()).unwrap(),);
@@ -280,19 +282,19 @@ pub mod tests {
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
 
         assert_eq!(Some(p1.clone()), chain.top());
         assert_eq!(e1, p1.entry());
-        assert_eq!(e1.hash(), p1.header().entry());
+        assert_eq!(e1.hash(), p1.header().entry_hash());
 
         // we should be able to do it again
         let e2 = test_entry_b();
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
 
         assert_eq!(Some(p2.clone()), chain.top());
         assert_eq!(e2, p2.entry());
-        assert_eq!(e2.hash(), p2.header().entry());
+        assert_eq!(e2.hash(), p2.header().entry_hash());
     }
 
     #[test]
@@ -305,10 +307,10 @@ pub mod tests {
 
         assert!(chain.validate());
 
-        chain.push(&e1).unwrap();
+        chain.push_entry(&e1).unwrap();
         assert!(chain.validate());
 
-        chain.push(&e2).unwrap();
+        chain.push_entry(&e2).unwrap();
         assert!(chain.validate());
     }
 
@@ -317,8 +319,8 @@ pub mod tests {
     fn round_trip() {
         let mut c = test_chain();
         let e = test_entry();
-        let p = c.push(&e).unwrap();
-        assert_eq!(Some(p.clone()), c.get(&p.key()).unwrap(),);
+        let p = c.push_entry(&e).unwrap();
+        assert_eq!(Some(p.clone()), c.get_pair(&p.key()).unwrap(),);
     }
 
     #[test]
@@ -329,8 +331,8 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
 
         assert_eq!(vec![p2, p1], chain.iter().collect::<Vec<Pair>>());
     }
@@ -343,9 +345,9 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push(&e1).unwrap();
-        let _p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let _p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e1).unwrap();
 
         assert_eq!(
             vec![p3, p1],
@@ -365,17 +367,17 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
-        assert_eq!(None, chain.get("").unwrap());
-        assert_eq!(Some(p1.clone()), chain.get(&p1.key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get(&p2.key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get(&p3.key()).unwrap());
-        assert_eq!(Some(p1.clone()), chain.get(&p1.header().key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get(&p2.header().key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get(&p3.header().key()).unwrap());
+        assert_eq!(None, chain.get_pair("").unwrap());
+        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.key()).unwrap());
+        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.header().key()).unwrap());
+        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.header().key()).unwrap());
+        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.header().key()).unwrap());
     }
 
     #[test]
@@ -387,9 +389,9 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
         assert_eq!(None, chain.get_entry("").unwrap());
         // @TODO at this point we have p3 with the same entry key as p1...
@@ -421,19 +423,19 @@ pub mod tests {
 
         // type a should be p1
         // type b should be None
-        let p1 = chain.push(&e1).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
         assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
         assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
 
         // type a should still be p1
         // type b should be p2
-        let p2 = chain.push(&e2).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
         assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
         assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
 
         // type a should be p3
         // type b should still be p2
-        let p3 = chain.push(&e3).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
         assert_eq!(Some(p3.clone()), chain.top_type(&test_type_a()).unwrap());
         assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
     }
@@ -447,9 +449,9 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push(&e1).unwrap();
-        let p2 = chain.push(&e2).unwrap();
-        let p3 = chain.push(&e3).unwrap();
+        let p1 = chain.push_entry(&e1).unwrap();
+        let p2 = chain.push_entry(&e2).unwrap();
+        let p3 = chain.push_entry(&e3).unwrap();
 
         // into_iter() returns clones of pairs
         let mut i = 0;
@@ -469,11 +471,42 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        chain.push(&e1).unwrap();
-        chain.push(&e2).unwrap();
-        chain.push(&e3).unwrap();
+        chain.push_entry(&e1).unwrap();
+        chain.push_entry(&e2).unwrap();
+        chain.push_entry(&e3).unwrap();
 
-        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"time\":\"\",\"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]";
+        let expected_json = "[{\
+        \"header\":{\
+            \"entry_type\":\"testEntryType\",\
+            \"time\":\"\",\
+            \"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\
+            \"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\
+            \"same_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\
+            \"signature\":\"\"},\
+        \"entry\":{\
+            \"content\":\"test entry content\",\
+            \"entry_type\":\"testEntryType\"}},\
+        {\"header\":{\
+            \"entry_type\":\"testEntryTypeB\",\
+            \"time\":\"\",\
+            \"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\
+            \"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\
+            \"same_next\":null,\
+            \"signature\":\"\"},\
+        \"entry\":{\
+            \"content\":\"other test entry content\",\
+            \"entry_type\":\"testEntryTypeB\"}},\
+        {\"header\":{\
+            \"entry_type\":\"testEntryType\",\
+            \"time\":\"\",\
+            \"next\":null,\
+            \"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\
+            \"same_next\":null,\
+            \"signature\":\"\"},\
+        \"entry\":{\
+            \"content\":\"test entry content\",\
+            \"entry_type\":\"testEntryType\"}\
+        }]";
         assert_eq!(expected_json, chain.to_json().unwrap());
 
         let table = test_table();

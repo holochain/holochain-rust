@@ -2,28 +2,31 @@ pub mod actor;
 
 use error::HolochainError;
 use hash_table::{
-    actor::{AskHashTable, HashTableProtocol},
+    // actor::{AskHashTable},
     entry::Entry,
     pair::Pair,
-    HashTable,
+    // HashTable,
 };
 use riker::actors::*;
 use serde_json;
 use std::fmt;
 use chain::actor::ChainActor;
-use chain::actor::ChainProtocol;
+// use chain::actor::ChainProtocol;
 use chain::actor::AskChain;
+use actor::Protocol;
+use actor::AskSelf;
+use hash_table::HashTable;
 
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<HashTableProtocol>,
+    table: ActorRef<Protocol>,
     current: Option<Pair>,
 }
 
 impl ChainIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<HashTableProtocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
             table: table.clone(),
@@ -52,10 +55,10 @@ impl Iterator for ChainIterator {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Chain {
-    actor: ActorRef<ChainProtocol>,
-    table: ActorRef<HashTableProtocol>,
+    actor: ActorRef<Protocol>,
+    table: ActorRef<Protocol>,
 }
 
 impl PartialEq for Chain {
@@ -71,12 +74,6 @@ impl PartialEq for Chain {
 
 impl Eq for Chain {}
 
-impl fmt::Debug for Chain {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Chain {{ top: {:?} }}", self.get_top_pair())
-    }
-}
-
 impl IntoIterator for Chain {
     type Item = Pair;
     type IntoIter = ChainIterator;
@@ -87,7 +84,7 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-    pub fn new(table: ActorRef<HashTableProtocol>) -> Chain {
+    pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
             actor: ChainActor::new_ref(),
             table: table.clone(),
@@ -95,7 +92,7 @@ impl Chain {
     }
 
     /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> ActorRef<HashTableProtocol> {
+    pub fn table(&self) -> ActorRef<Protocol> {
         self.table.clone()
     }
 
@@ -120,7 +117,7 @@ impl Chain {
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: ActorRef<HashTableProtocol>, s: &str) -> Chain {
+    pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Chain {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
@@ -152,16 +149,20 @@ impl SourceChain for Chain {
 
     /// private pair-oriented version of push() (which expects Entries)
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+        println!("start");
         if !(pair.validate()) {
+            println!("validate fail");
             return Err(HolochainError::new(
                 "attempted to push an invalid pair for this chain",
             ));
         }
 
+        println!("get top");
         let top_pair = self.get_top_pair().and_then(|p| Some(p.key()));
         let next_pair = pair.header().next();
 
         if top_pair != next_pair {
+            println!("top pair fail");
             return Err(HolochainError::new(&format!(
                 "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
                 top_pair.clone(),
@@ -169,18 +170,24 @@ impl SourceChain for Chain {
             )));
         }
 
+        println!("commit");
         let result = self.table.commit(&pair.clone());
 
         if result.is_ok() {
+            println!("top");
             // @TODO instead of unwrapping this, move all the above validation logic inside of
             // set_top_pair()
+            // @TODO if top pair set fails but commit succeeds?
             self.set_top_pair(&Some(pair.clone())).unwrap();
         }
 
-        match result {
+        println!("match");
+        let ret = match result {
             Ok(_) => Ok(pair.clone()),
             Err(e) => Err(e.clone()),
-        }
+        };
+        println!("done");
+        ret
     }
 
     /// push a new Entry on to the top of the Chain
@@ -188,16 +195,18 @@ impl SourceChain for Chain {
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned in the fn Result
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+        println!("push entry");
         let pair = Pair::new(self, entry);
+        println!("push pair");
         self.push_pair(&pair)
     }
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         // println!("get");
-        let response = self.table.ask(HashTableProtocol::GetPair(k.to_string()));
+        let response = self.table.ask(Protocol::GetPair(k.to_string()));
         // println!("response");
-        unwrap_to!(response => HashTableProtocol::GetPairResult).clone()
+        unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
     /// get an Entry by Entry key from the HashTable if it exists
@@ -234,8 +243,13 @@ pub mod tests {
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         pair::Pair,
-        HashTable,
+        // HashTable,
     };
+    use hash_table::HashTable;
+    use std::{thread, time};
+    use actor::Protocol;
+    use riker::actors::*;
+
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -366,6 +380,25 @@ pub mod tests {
         let e = test_entry();
         let p = c.push_entry(&e).unwrap();
         assert_eq!(Some(p.clone()), c.get_pair(&p.key()).unwrap(),);
+    }
+
+    #[test]
+    /// show that we can push the chain a bit without issues e.g. async
+    fn round_trip_stress_test() {
+        let h = thread::spawn( || {
+            let mut chain = test_chain();
+            let entry = test_entry();
+
+            for _ in 1..100 {
+                // println!("{:?}", chain);
+                chain.push_entry(&entry).unwrap();
+                // assert_eq!(
+                //     Some(pair.clone()),
+                //     chain.get_pair(&pair.key()).unwrap(),
+                // );
+            }
+        });
+        h.join().unwrap();
     }
 
     #[test]

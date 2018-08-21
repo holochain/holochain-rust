@@ -1,10 +1,13 @@
-use riker_default::DefaultModel;
+// use riker_default::DefaultModel;
 use riker::actors::*;
 use snowflake;
 use hash_table::pair::Pair;
 use error::HolochainError;
-use riker_patterns::ask::ask;
-use futures::executor::block_on;
+// use riker_patterns::ask::ask;
+// use futures::executor::block_on;
+use actor::SYS;
+use actor::Protocol;
+use actor::AskSelf;
 
 #[derive(Clone, Debug)]
 pub enum ChainProtocol {
@@ -15,44 +18,44 @@ pub enum ChainProtocol {
     GetTopPairResult(Option<Pair>),
 }
 
-lazy_static! {
-    // @TODO Riker docs say make only one actor system per application but this seems weird advice
-    // if that were true, how could actors be in crates?
-    // if that were true, how could we have domain specific protocols?
-    pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
-        let model: DefaultModel<ChainProtocol> = DefaultModel::new();
-        ActorSystem::new(&model).unwrap()
-    };
-}
+// lazy_static! {
+//     // @TODO Riker docs say make only one actor system per application but this seems weird advice
+//     // if that were true, how could actors be in crates?
+//     // if that were true, how could we have domain specific protocols?
+//     pub static ref CHAIN_SYS: ActorSystem<ChainProtocol> = {
+//         let model: DefaultModel<ChainProtocol> = DefaultModel::new();
+//         ActorSystem::new(&model).unwrap()
+//     };
+// }
 
-impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
-    fn into(self) -> ActorMsg<ChainProtocol> {
-        ActorMsg::User(self)
-    }
-}
+// impl Into<ActorMsg<ChainProtocol>> for ChainProtocol {
+//     fn into(self) -> ActorMsg<ChainProtocol> {
+//         ActorMsg::User(self)
+//     }
+// }
 
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 pub trait AskChain {
-    fn ask(&self, message: ChainProtocol) -> ChainProtocol;
+    // fn ask(&self, message: Protocol) -> Protocol;
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
     fn get_top_pair(&self) -> Option<Pair>;
 }
 
-impl AskChain for ActorRef<ChainProtocol> {
-    fn ask(&self, message: ChainProtocol) -> ChainProtocol {
-        let a = ask(&(*CHAIN_SYS), self, message);
-        block_on(a).unwrap()
-    }
+impl AskChain for ActorRef<Protocol> {
+    // fn ask(&self, message: Protocol) -> Protocol {
+    //     let a = ask(&(*SYS), self, message);
+    //     block_on(a).unwrap()
+    // }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask(ChainProtocol::SetTopPair(pair.clone()));
-        unwrap_to!(response => ChainProtocol::SetTopPairResult).clone()
+        let response = self.ask(Protocol::SetTopPair(pair.clone()));
+        unwrap_to!(response => Protocol::SetTopPairResult).clone()
     }
 
     fn get_top_pair(&self) -> Option<Pair> {
-        let response = self.ask(ChainProtocol::GetTopPair);
-        unwrap_to!(response => ChainProtocol::GetTopPairResult).clone()
+        let response = self.ask(Protocol::GetTopPair);
+        unwrap_to!(response => Protocol::GetTopPairResult).clone()
     }
 }
 
@@ -67,16 +70,16 @@ impl ChainActor {
         }
     }
 
-    pub fn actor() -> BoxActor<ChainProtocol> {
+    pub fn actor() -> BoxActor<Protocol> {
         Box::new(ChainActor::new())
     }
 
-    pub fn props() -> BoxActorProd<ChainProtocol> {
+    pub fn props() -> BoxActorProd<Protocol> {
         Props::new(Box::new(ChainActor::actor))
     }
 
-    pub fn new_ref() -> ActorRef<ChainProtocol> {
-        CHAIN_SYS
+    pub fn new_ref() -> ActorRef<Protocol> {
+        SYS
             .actor_of(
                 ChainActor::props(),
                 &snowflake::ProcessUniqueId::new().to_string(),
@@ -86,7 +89,7 @@ impl ChainActor {
 }
 
 impl Actor for ChainActor {
-    type Msg = ChainProtocol;
+    type Msg = Protocol;
 
     fn receive(
         &mut self,
@@ -94,17 +97,25 @@ impl Actor for ChainActor {
         message: Self::Msg,
         sender: Option<ActorRef<Self::Msg>>,
     ) {
+        println!("rec: {:?}", message);
         sender.try_tell(
             // deliberately exhaustively matching here, don't give into _ temptation
             match message {
-                ChainProtocol::SetTopPair(p) => {
+                Protocol::SetTopPair(p) => {
                     self.top_pair = p;
-                    ChainProtocol::SetTopPairResult(Ok(self.top_pair.clone()))
+                    Protocol::SetTopPairResult(Ok(self.top_pair.clone()))
                 },
-                ChainProtocol::SetTopPairResult(_) => unreachable!(),
+                Protocol::SetTopPairResult(_) => unreachable!(),
 
-                ChainProtocol::GetTopPair => ChainProtocol::GetTopPairResult(self.top_pair.clone()),
-                ChainProtocol::GetTopPairResult(_) => unreachable!(),
+                Protocol::GetTopPair => {
+                    println!("get top pair inner");
+                    let ret = self.top_pair.clone();
+                    println!("inner: {:?}", ret);
+                    Protocol::GetTopPairResult(ret)
+                },
+                Protocol::GetTopPairResult(_) => unreachable!(),
+
+                _ => unreachable!(),
             },
             Some(context.myself()),
         )

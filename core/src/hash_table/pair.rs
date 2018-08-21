@@ -26,12 +26,12 @@ impl Pair {
             entry: entry.clone(),
         };
 
-        if !p.validate() {
-            // we panic as no code path should attempt to create invalid pairs
-            // creating a Pair is an internal process of chain.push() and is deterministic based on
-            // an immutable Entry (that itself cannot be invalid), so this should never happen.
-            panic!("attempted to create an invalid pair");
-        };
+        // if !p.validate() {
+        //     // we panic as no code path should attempt to create invalid pairs
+        //     // creating a Pair is an internal process of chain.push() and is deterministic based on
+        //     // an immutable Entry (that itself cannot be invalid), so this should never happen.
+        //     panic!("attempted to create an invalid pair");
+        // };
 
         p
     }

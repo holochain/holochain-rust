@@ -298,7 +298,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::InitApplication(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for InitApplication");
             sleep(Duration::from_millis(10))
@@ -311,7 +312,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ExecuteZomeFunction(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ExecuteZomeFunction for genesis");
             sleep(Duration::from_millis(10))
@@ -324,7 +326,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ReturnZomeFunctionResult from genesis");
             sleep(Duration::from_millis(10))
@@ -337,7 +340,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))

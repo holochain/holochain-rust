@@ -167,7 +167,8 @@ fn return_initialization_result(result: Option<String>, action_channel: &Sender<
     action_channel
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             result,
-        ))).expect("action channel to be open in reducer");
+        )))
+        .expect("action channel to be open in reducer");
 }
 
 /// Reduce InitApplication Action
@@ -210,7 +211,8 @@ fn reduce_ia(
                             &zome.name(),
                             &CallbackParams::Genesis,
                         )
-                    }).collect();
+                    })
+                    .collect();
 
                 // pad out a single pass if there are no zome results
                 // @TODO is this really OK?

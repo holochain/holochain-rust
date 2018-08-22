@@ -281,7 +281,8 @@ pub fn call(
                 format!("{}_dispatch", function_call.function.clone()).as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
-            )?.unwrap()
+            )?
+            .unwrap()
             .try_into()
             .unwrap();
     }
@@ -396,7 +397,8 @@ pub mod tests {
                 "#,
                     canonical_name
                 ),
-            ).unwrap()
+            )
+            .unwrap()
             .as_ref()
             .to_vec()
     }

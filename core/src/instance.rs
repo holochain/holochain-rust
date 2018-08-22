@@ -75,7 +75,7 @@ impl Instance {
     }
 
     /// Returns recievers for actions and observers that get added to this instance
-    fn start_listening(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
+    fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
         let (tx_action, rx_action) = channel::<ActionWrapper>();
         let (tx_observer, rx_observer) = channel::<Observer>();
         self.action_channel = tx_action.clone();
@@ -86,7 +86,7 @@ impl Instance {
 
     /// Start the Event Loop on a seperate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
-        let (rx_action, rx_observer) = self.start_listening();
+        let (rx_action, rx_observer) = self.initialize_channels();
 
         let sync_self = self.clone();
 
@@ -120,7 +120,7 @@ impl Instance {
         mut state_observers: Vec<Box<Observer>>,
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
-    ) -> Vec<Box<Observer>>{
+    ) -> Vec<Box<Observer>> {
         // Mutate state
         {
             let mut state = self.state.write().unwrap();
@@ -250,7 +250,8 @@ pub fn dispatch_action(
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
-    use action::{Action, ActionWrapper};
+    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
+    use agent::state::tests::test_action_response_get;
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
@@ -372,6 +373,52 @@ pub mod tests {
         }
 
         instance
+    }
+
+    #[test]
+    /// This tests calling `process_action`
+    /// with an action that dispatches no new ones.
+    /// It tests that the desired effects do happen
+    /// to the state and that no observers or actions
+    /// are sent on the passed channels.
+    pub fn can_process_action() {
+        let mut instance = Instance::new();
+
+        let context = test_context("jane");
+        let (rx_action, rx_observer) = instance.initialize_channels();
+
+        let aw = test_action_wrapper_get();
+        let new_observers = instance.process_action(
+            aw.clone(),
+            Vec::new(), // start with no observers
+            &rx_observer,
+            &context,
+        );
+
+        // test that the get action added no observers or actions
+        assert!(new_observers.is_empty());
+
+        let rx_action_is_empty = match rx_action.try_recv() {
+            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            _ => false,
+        };
+        assert!(rx_action_is_empty);
+
+        let rx_observer_is_empty = match rx_observer.try_recv() {
+            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            _ => false,
+        };
+        assert!(rx_observer_is_empty);
+
+        // Borrow the state lock
+        let state = instance.state();
+        // Clone the agent Arc
+        let actions = state.agent().actions();
+        let response = actions
+            .get(&aw)
+            .expect("action and reponse should be added after Get action dispatch");
+
+        assert_eq!(response, &test_action_response_get());
     }
 
     /// create a test instance with a blank DNA

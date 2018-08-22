@@ -1,6 +1,6 @@
 use chain::Chain;
 use hash;
-use hash_table::{entry::Entry, HashTable};
+use hash_table::{entry::Entry, HashTable, /*entry::EntryKind,*/ HashString};
 use multihash::Hash;
 
 /// Header of a source chain "Item"
@@ -15,15 +15,15 @@ pub struct Header {
     /// system types may have associated "subconscious" behavior
     entry_type: String,
     /// ISO8601 time stamp
-    time: String,
-    /// link to the immediately preceding header, None is valid only for genesis
-    next: Option<String>,
-    /// mandatory link to the entry for this header
-    entry_hash: String,
-    /// link to the most recent header of the same type, None is valid only for the first of type
-    same_next: Option<String>,
-    /// agent's cryptographic signature
-    signature: String,
+    timestamp: String,
+    /// Key to the immediately preceding header. Only the genesis ChainLink can have None as valid
+    prev: Option<HashString>,
+    /// Key to the entry of this header
+    entry_hash: HashString,
+    /// agent's cryptographic signature of the entry
+    entry_signature: String,
+    /// Key to the most recent header of the same type, None is valid only for the first of that type
+    prev_same: Option<HashString>,
 }
 
 impl PartialEq for Header {
@@ -46,10 +46,10 @@ impl Header {
             entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
-            time: String::new(),
-            next: chain.top().and_then(|p| Some(p.header().hash())),
+            timestamp: String::new(),
+            prev: chain.top().and_then(|p| Some(p.header().hash())),
             entry_hash: entry.hash().to_string(),
-            same_next: chain
+            prev_same: chain
                 .top_type(&entry.entry_type())
                 // @TODO inappropriate unwrap()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
@@ -57,7 +57,7 @@ impl Header {
                 .and_then(|p| Some(p.header().hash())),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
-            signature: String::new(),
+            entry_signature: String::new(),
         }
     }
 
@@ -67,13 +67,13 @@ impl Header {
     }
 
     /// time getter
-    pub fn time(&self) -> String {
-        self.time.clone()
+    pub fn timestamp(&self) -> String {
+        self.timestamp.clone()
     }
 
     /// next getter
-    pub fn next(&self) -> Option<String> {
-        self.next.clone()
+    pub fn prev(&self) -> Option<String> {
+        self.prev.clone()
     }
 
     /// entry getter
@@ -82,13 +82,13 @@ impl Header {
     }
 
     /// type_next getter
-    pub fn same_next(&self) -> Option<String> {
-        self.same_next.clone()
+    pub fn prev_same(&self) -> Option<String> {
+        self.prev_same.clone()
     }
 
     /// signature getter
-    pub fn signature(&self) -> String {
-        self.signature.clone()
+    pub fn entry_signature(&self) -> String {
+        self.entry_signature.clone()
     }
 
     /// hashes the header
@@ -97,11 +97,11 @@ impl Header {
         // @see https://github.com/holochain/holochain-rust/issues/103
         let string_to_hash = String::new()
             + &self.entry_type
-            + &self.time
-            + &self.next.clone().unwrap_or_default()
+            + &self.timestamp
+            + &self.prev.clone().unwrap_or_default()
             + &self.entry_hash
-            + &self.same_next.clone().unwrap_or_default()
-            + &self.signature;
+            + &self.prev_same.clone().unwrap_or_default()
+            + &self.entry_signature;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
@@ -174,7 +174,7 @@ mod tests {
         let h = Header::new(&chain, &e);
 
         assert_eq!(h.entry_hash(), e.hash());
-        assert_eq!(h.next(), None);
+        assert_eq!(h.prev(), None);
         assert_ne!(h.hash(), "");
         assert!(h.validate());
     }
@@ -198,7 +198,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.time(), "");
+        assert_eq!(h.timestamp(), "");
     }
 
     #[test]
@@ -212,14 +212,14 @@ mod tests {
         let p1 = chain.push_entry(&e1).unwrap();
         let h1 = p1.header();
 
-        assert_eq!(h1.next(), None);
+        assert_eq!(h1.prev(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
         let p2 = chain.push_entry(&e2).unwrap();
         let h2 = p2.header();
 
-        assert_eq!(h2.next(), Some(h1.hash()));
+        assert_eq!(h2.prev(), Some(h1.hash()));
     }
 
     #[test]
@@ -247,21 +247,21 @@ mod tests {
         let p1 = chain.push_entry(&e1).unwrap();
         let h1 = p1.header();
 
-        assert_eq!(h1.same_next(), None);
+        assert_eq!(h1.prev_same(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
         let p2 = chain.push_entry(&e2).unwrap();
         let h2 = p2.header();
 
-        assert_eq!(h2.same_next(), None);
+        assert_eq!(h2.prev_same(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
         let p3 = chain.push_entry(&e3).unwrap();
         let h3 = p3.header();
 
-        assert_eq!(h3.same_next(), Some(h1.hash()));
+        assert_eq!(h3.prev_same(), Some(h1.hash()));
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!("", h.signature());
+        assert_eq!("", h.entry_signature());
     }
 
     #[test]

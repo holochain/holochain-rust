@@ -284,7 +284,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"same_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
             ActionResponse::Get(Some(test_pair())).to_json(),
         );
         assert_eq!("", ActionResponse::Get(None).to_json(),);

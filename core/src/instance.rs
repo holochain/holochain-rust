@@ -308,6 +308,20 @@ pub mod tests {
         }
 
         while instance
+          .state()
+          .history
+          .iter()
+          .find(|aw| match aw.action() {
+              Action::Commit(_) => true, // FIXME
+              _ => false,
+          }) == None
+          {
+              println!("Waiting for Commit for genesis");
+              sleep(Duration::from_millis(10))
+          }
+
+
+        while instance
             .state()
             .history
             .iter()
@@ -433,7 +447,7 @@ pub mod tests {
 
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
+        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -463,7 +477,7 @@ pub mod tests {
 
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
+        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -493,7 +507,7 @@ pub mod tests {
 
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
+        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized() == false);
     }
 }

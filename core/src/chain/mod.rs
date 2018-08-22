@@ -36,7 +36,7 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
     fn next(&mut self) -> Option<Pair> {
         let ret = self.current();
         self.current = ret.clone()
-                        .and_then(|p| p.header().next())
+                        .and_then(|p| p.header().prev())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| self.table.get(&h).unwrap());
@@ -112,7 +112,7 @@ impl<T: HashTable> Chain<T> {
         }
 
         let top_pair = self.top().and_then(|p| Some(p.key()));
-        let next_pair = pair.header().next();
+        let next_pair = pair.header().prev();
 
         if top_pair != next_pair {
             return Err(HolochainError::new(&format!(
@@ -475,38 +475,8 @@ pub mod tests {
         chain.push_entry(&e2).unwrap();
         chain.push_entry(&e3).unwrap();
 
-        let expected_json = "[{\
-        \"header\":{\
-            \"entry_type\":\"testEntryType\",\
-            \"time\":\"\",\
-            \"next\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\
-            \"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\
-            \"same_next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\
-            \"signature\":\"\"},\
-        \"entry\":{\
-            \"content\":\"test entry content\",\
-            \"entry_type\":\"testEntryType\"}},\
-        {\"header\":{\
-            \"entry_type\":\"testEntryTypeB\",\
-            \"time\":\"\",\
-            \"next\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\
-            \"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\
-            \"same_next\":null,\
-            \"signature\":\"\"},\
-        \"entry\":{\
-            \"content\":\"other test entry content\",\
-            \"entry_type\":\"testEntryTypeB\"}},\
-        {\"header\":{\
-            \"entry_type\":\"testEntryType\",\
-            \"time\":\"\",\
-            \"next\":null,\
-            \"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\
-            \"same_next\":null,\
-            \"signature\":\"\"},\
-        \"entry\":{\
-            \"content\":\"test entry content\",\
-            \"entry_type\":\"testEntryType\"}\
-        }]";
+        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"prev\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
+        ;
         assert_eq!(expected_json, chain.to_json().unwrap());
 
         let table = test_table();

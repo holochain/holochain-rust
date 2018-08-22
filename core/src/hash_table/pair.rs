@@ -118,7 +118,7 @@ pub mod tests {
         let h1 = Header::new(&chain, &e1);
 
         assert_eq!(h1.entry_hash(), e1.hash());
-        assert_eq!(h1.next(), None);
+        assert_eq!(h1.prev(), None);
 
         let p1 = Pair::new(&chain, &e1);
         assert_eq!(e1, p1.entry());
@@ -164,7 +164,8 @@ pub mod tests {
     #[test]
     /// test JSON roundtrip for pairs
     fn json_roundtrip() {
-        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"same_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}";
+        let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}"
+        ;
 
         assert_eq!(json, test_pair().to_json(),);
 

@@ -36,7 +36,7 @@ fn main() {
 
     //let dna = holochain_dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
-    let agent = Agent::from_string(identity);
+    let agent = Agent::from_string(identity.to_string());
     let context = Context {
         agent,
         logger: Arc::new(Mutex::new(SimpleLogger {})),

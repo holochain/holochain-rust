@@ -58,10 +58,7 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
             &*ptr
         };
 
-        let json = match dna.to_json() {
-            Ok(s) => s,
-            Err(_) => return std::ptr::null_mut(),
-        };
+        let json = dna.to_json();
 
         let json = match CString::new(json) {
             Ok(s) => s,

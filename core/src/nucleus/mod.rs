@@ -6,8 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
-use instance::Observer;
-use instance::dispatch_action_with_observer;
+use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::{NucleusState, NucleusStatus},
@@ -221,7 +220,7 @@ fn reduce_ia(
 
             // TODO - Change to `dispatch_action_with_observer`
             // since we want to make sure commit succeeded
-            ::instance::dispatch_action(&genesis_action_channel,&commit_genesis_action);
+            ::instance::dispatch_action(&genesis_action_channel, &commit_genesis_action);
         }
 
         // map genesis across every zome
@@ -256,10 +255,9 @@ fn reduce_ia(
         // map the genesis results to initialization result responses
         for result in results {
             match result {
-                CallbackResult::Fail(s) => return_initialization_result(
-                    Some(s.to_string()),
-                    &genesis_action_channel,
-                ),
+                CallbackResult::Fail(s) => {
+                    return_initialization_result(Some(s.to_string()), &genesis_action_channel)
+                }
                 _ => return_initialization_result(None, &genesis_action_channel),
             }
         }

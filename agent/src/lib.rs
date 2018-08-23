@@ -11,7 +11,6 @@ impl Identity {
     }
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Agent {
     identity: Identity,

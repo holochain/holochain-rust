@@ -227,18 +227,18 @@ pub mod tests {
     use super::Instance;
     use action::{Action, ActionWrapper};
     use context::Context;
+    use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::ribosome::{callback::Callback, Defn};
     use persister::SimplePersister;
-    use hash_table::sys_entry::EntryType;
     use state::State;
     use std::{
+        str::FromStr,
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
-        str::FromStr,
     };
 
     #[derive(Clone, Debug)]
@@ -303,28 +303,32 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::InitApplication(_) => true,
                 _ => false,
-            }) == None
+            })
+            == None
         {
             println!("Waiting for InitApplication");
             sleep(Duration::from_millis(10))
         }
 
         while instance
-          .state()
-          .history
-          .iter()
-          .find(|aw| match aw.action() {
-              Action::Commit(entry) => {
-                  assert_eq!(EntryType::from_str(&entry.entry_type()).unwrap(), EntryType::Dna);
-                  true
-              },
-              _ => false,
-          }) == None
-          {
-              println!("Waiting for Commit for genesis");
-              sleep(Duration::from_millis(10))
-          }
-
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::Commit(entry) => {
+                    assert_eq!(
+                        EntryType::from_str(&entry.entry_type()).unwrap(),
+                        EntryType::Dna
+                    );
+                    true
+                }
+                _ => false,
+            })
+            == None
+        {
+            println!("Waiting for Commit for genesis");
+            sleep(Duration::from_millis(10))
+        }
 
         while instance
             .state()
@@ -333,7 +337,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ExecuteZomeFunction(_) => true,
                 _ => false,
-            }) == None
+            })
+            == None
         {
             println!("Waiting for ExecuteZomeFunction for genesis");
             sleep(Duration::from_millis(10))
@@ -346,7 +351,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
-            }) == None
+            })
+            == None
         {
             println!("Waiting for ReturnZomeFunctionResult from genesis");
             sleep(Duration::from_millis(10))
@@ -359,7 +365,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
-            }) == None
+            })
+            == None
         {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))

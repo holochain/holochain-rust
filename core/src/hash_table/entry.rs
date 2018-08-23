@@ -3,7 +3,6 @@ use multihash::Hash;
 use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
 
-
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]

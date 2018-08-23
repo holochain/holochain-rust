@@ -375,9 +375,18 @@ pub mod tests {
         assert_eq!(Some(p1.clone()), chain.get_pair(&p1.key()).unwrap());
         assert_eq!(Some(p2.clone()), chain.get_pair(&p2.key()).unwrap());
         assert_eq!(Some(p3.clone()), chain.get_pair(&p3.key()).unwrap());
-        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.header().key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.header().key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.header().key()).unwrap());
+        assert_eq!(
+            Some(p1.clone()),
+            chain.get_pair(&p1.header().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p2.clone()),
+            chain.get_pair(&p2.header().key()).unwrap()
+        );
+        assert_eq!(
+            Some(p3.clone()),
+            chain.get_pair(&p3.header().key()).unwrap()
+        );
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use chain::Chain;
 use hash;
-use hash_table::{entry::Entry, HashTable, HashString};
+use hash_table::{entry::Entry, HashString, HashTable};
 use multihash::Hash;
 
 /// Header of a source chain "Item"

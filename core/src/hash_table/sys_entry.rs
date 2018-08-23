@@ -6,8 +6,7 @@ use std::str::FromStr;
 
 pub trait ToEntry {
     fn to_entry(&self) -> Entry;
-    // FIXME - Maybe change to `new_from_entry` ?
-    fn from_entry(&Entry) -> Self;
+    fn new_from_entry(&Entry) -> Self;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -73,10 +72,11 @@ impl EntryType {
 
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
+        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
         Entry::new(EntryType::Dna.as_str(), &self.to_json().unwrap())
     }
 
-    fn from_entry(entry: &Entry) -> Self {
+    fn new_from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
         return Dna::new_from_json(&entry.content()).expect("entry is not a valid Dna Entry");
     }
@@ -87,11 +87,12 @@ impl ToEntry for Dna {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Agent {
+
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::AgentId.as_str(), &self.to_string())
     }
 
-    fn from_entry(entry: &Entry) -> Self {
+    fn new_from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::AgentId);
         let id_content: String =
             serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");

@@ -218,9 +218,11 @@ fn reduce_ia(
             let genesis_entry = dna_clone.to_entry();
             let commit_genesis_action = ActionWrapper::new(&Action::Commit(genesis_entry));
 
-            // TODO - Change to `dispatch_action_with_observer`
-            // since we want to make sure commit succeeded
-            ::instance::dispatch_action(&genesis_action_channel, &commit_genesis_action);
+            // Send Action and wait for it
+            ::instance::dispatch_action_and_wait(
+                &genesis_action_channel,
+                &genesis_observer_channel,
+                &commit_genesis_action);
         }
 
         // map genesis across every zome

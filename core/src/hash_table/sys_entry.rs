@@ -22,6 +22,8 @@ macro_rules! sys_prefix {
     ($s:expr) => ( concat!("%", $s) )
 }
 
+// Enum for listing all System Entry Types
+// Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq)]
 pub enum EntryType {
   AgentId,
@@ -36,6 +38,7 @@ pub enum EntryType {
 
 impl FromStr for EntryType {
   type Err = usize;
+  // Note: Function always return Ok()
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
       sys_prefix!("agent_id") => Ok(EntryType::AgentId),
@@ -113,48 +116,52 @@ impl ToEntry for Agent {
 
 #[cfg(test)]
 pub mod tests {
-//  extern crate test_utils;
-//  extern crate holochain_agent;
-//  use super::*;
-////  extern crate holochain_core;
-////  use holochain_core::{
-////    context::Context,
-////    nucleus::ribosome::{callback::Callback, Defn},
-////    persister::SimplePersister,
-////  };
-//  use std::sync::{Arc, Mutex};
-//  use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
-//
-//  use instance::{
-//    tests::{test_context, test_instance, test_instance_blank},
-//    Instance,
-//  };
+  extern crate test_utils;
+
+  use holochain_dna::Dna;
+  use hash_table::entry::Entry;
+  use holochain_agent::Agent;
+  use holochain_agent::Identity;
+  use action::ActionWrapper;
+  use action::Action;
+  use hash_table::sys_entry::EntryType;
+  use hash_table::sys_entry::ToEntry;
+  use std::{
+    sync::{mpsc::channel, Arc, Mutex},
+    str::FromStr,
+  };
+
+  use instance::{
+    tests::{test_context, test_instance, test_instance_blank},
+    Instance,
+  };
 
   // Committing a DnaEntry to source chain should work
   #[test]
   fn can_commit_dna() {
-//    // FIXME
-//    // Setup the holochain instance
-//    let wasm = create_wasm_from_file(
-//      "wasm-test/source_chain/target/wasm32-unknown-unknown/debug/source_chain.wasm",
-//    );
-//    let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
-//    let (context, _) = test_context("alex");
-//
-//
-//    let mut hc = Holochain::new(dna.clone(), context).unwrap();
-//    // Run the holochain instance
-//    hc.start().expect("couldn't start");
-//    // Call the exposed wasm function that calls the Commit API function
-//    let result = hc.call("test_zome", "test_cap", "can_commit_dna", r#"{}"#);
-//    // Expect normal OK result with hash
-//    match result {
-//      Ok(result) => assert_eq!(
-//        result,
-//        r#"{"hash":"QmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5"}"#
-//      ),
-//      Err(_) => assert!(false),
-//    };
+    // Create Context, Agent, Dna, and Commit AgentIdEntry Action
+    let context = test_context("alex");
+    let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+    let dna_entry = dna.to_entry();
+    let commit_action = ActionWrapper::new(&Action::Commit(dna_entry));
+
+    // Set up instance and dispatch action
+    let mut instance = Instance::new();
+    instance.start_action_loop(context);
+    instance.dispatch_and_wait(&commit_action);
+
+    // Check if AgentIdEntry is found
+    let mut count = 0;
+    instance.state().history.iter()
+            .find(|aw| match aw.action() {
+              Action::Commit(entry) => {
+                assert_eq!(EntryType::from_str(&entry.entry_type()).unwrap(), EntryType::Dna);
+                count += 1;
+                true
+              },
+              _ => false,
+            });
+    assert_eq!(count, 1);
 
   }
 
@@ -169,7 +176,28 @@ pub mod tests {
   // Committing an AgentIdEntry to source chain should work
   #[test]
   fn can_commit_agent() {
-    // FIXME
+    // Create Context, Agent and Commit AgentIdEntry Action
+    let context = test_context("alex");
+    let agent_entry = context.agent.to_entry();
+    let commit_agent_action = ActionWrapper::new(&Action::Commit(agent_entry));
+
+    // Set up instance and dispatch action
+    let mut instance = Instance::new();
+    instance.start_action_loop(context);
+    instance.dispatch_and_wait(&commit_agent_action);
+
+    // Check if AgentIdEntry is found
+    let mut count = 0;
+    instance.state().history.iter()
+      .find(|aw| match aw.action() {
+        Action::Commit(entry) => {
+          assert_eq!(EntryType::from_str(&entry.entry_type()).unwrap(), EntryType::AgentId);
+          count += 1;
+          true
+        },
+        _ => false,
+      });
+    assert_eq!(count, 1);
   }
 
 

@@ -43,11 +43,11 @@ pub enum ZomeAPIFunction {
     /// Zome API
 
     /// send debug information to the log
-    /// debug(s : String)
+    /// debug(s: String)
     Debug,
 
     /// Commit an entry to source chain
-    /// commit(entry_type : String, entry_content : String) -> Hash
+    /// commit(entry_type: String, entry_content: String) -> Hash
     Commit,
 
     /// Get an entry from source chain by key (header hash)
@@ -186,6 +186,8 @@ pub fn runtime_allocate_encode_str(
 }
 
 /// Executes an exposed function in a wasm binary
+///
+/// panics if wasm isn't valid
 pub fn call(
     context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
@@ -195,7 +197,7 @@ pub fn call(
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
     // Create wasm module from wasm binary
-    let module = wasmi::Module::from_buffer(wasm).unwrap();
+    let module = wasmi::Module::from_buffer(wasm).expect("wasm should be valid");
 
     // Describe invokable functions from within Zome
     impl Externals for Runtime {

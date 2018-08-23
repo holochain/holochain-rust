@@ -23,7 +23,7 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::from_string("bob");
+//! let agent = Agent::from_string("bob".to_string());
 //! let context = Context {
 //!     agent: agent,
 //!     logger: Arc::new(Mutex::new(SimpleLogger {})),
@@ -83,12 +83,12 @@ impl Holochain {
         let mut instance = Instance::new();
         let name = dna.name.clone();
 
-        let action = ActionWrapper::new(&Action::InitApplication(dna));
+        let action = ActionWrapper::new(Action::InitApplication(dna));
         instance.start_action_loop(context.clone());
 
         let (sender, receiver) = channel();
 
-        instance.dispatch_with_observer(&action, move |state: &State| {
+        instance.dispatch_with_observer(action, move |state: &State| {
             let nucleus_state = state.nucleus();
             if nucleus_state.has_initialized() || nucleus_state.has_initialization_failed() {
                 sender
@@ -184,7 +184,7 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = holochain_agent::Agent::from_string(agent_name);
+        let agent = holochain_agent::Agent::from_string(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
             Arc::new(Context {

@@ -73,7 +73,7 @@ impl EntryType {
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(EntryType::Dna.as_str(), &self.to_json().unwrap())
+        Entry::new(EntryType::Dna.as_str(), &self.to_json())
     }
 
     fn new_from_entry(entry: &Entry) -> Self {
@@ -110,18 +110,12 @@ pub mod tests {
 
     use action::{Action, ActionWrapper};
     use hash_table::{
-        entry::Entry,
         sys_entry::{EntryType, ToEntry},
     };
-    use holochain_agent::{Agent, Identity};
-    use holochain_dna::Dna;
-    use std::{
-        str::FromStr,
-        sync::{mpsc::channel, Arc, Mutex},
-    };
+    use std::str::FromStr;
 
     use instance::{
-        tests::{test_context, test_instance, test_instance_blank},
+        tests::test_context,
         Instance,
     };
 
@@ -130,14 +124,14 @@ pub mod tests {
     fn can_commit_dna() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(&Action::Commit(dna_entry));
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry));
 
         // Set up instance and dispatch action
         let mut instance = Instance::new();
         instance.start_action_loop(context);
-        instance.dispatch_and_wait(&commit_action);
+        instance.dispatch_and_wait(commit_action);
 
         // Check if AgentIdEntry is found
         let mut count = 0;
@@ -171,12 +165,12 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(&Action::Commit(agent_entry));
+        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry));
 
         // Set up instance and dispatch action
         let mut instance = Instance::new();
         instance.start_action_loop(context);
-        instance.dispatch_and_wait(&commit_agent_action);
+        instance.dispatch_and_wait(commit_agent_action);
 
         // Check if AgentIdEntry is found
         let mut count = 0;

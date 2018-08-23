@@ -4,6 +4,8 @@ use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;
 use std::{fmt, rc::Rc};
 
+/// Iterator type for pairs in a chain
+/// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator<T: HashTable> {
     // @TODO thread safe table references
@@ -17,30 +19,26 @@ impl<T: HashTable> ChainIterator<T> {
     // @see https://github.com/holochain/holochain-rust/issues/135
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: Rc<T>, pair: &Option<Pair>) -> ChainIterator<T> {
+    pub fn new(table: Rc<T>, pair: Option<Pair>) -> ChainIterator<T> {
         ChainIterator {
-            current: pair.clone(),
+            current: pair,
             table: Rc::clone(&table),
         }
-    }
-
-    /// returns the current pair representing the iterator internal state
-    fn current(&self) -> Option<Pair> {
-        self.current.clone()
     }
 }
 
 impl<T: HashTable> Iterator for ChainIterator<T> {
     type Item = Pair;
 
+    /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<Pair> {
-        let ret = self.current();
-        self.current = ret.clone()
+        let previous = self.current.take();
+        self.current = previous.as_ref()
                         .and_then(|p| p.header().prev())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| self.table.get(&h).unwrap());
-        ret
+                        .and_then(|h| self.table.get(&h).expect("getting from a table shouldn't fail"));
+        previous
     }
 }
 
@@ -71,10 +69,12 @@ impl<T: HashTable> fmt::Debug for Chain<T> {
     }
 }
 
+/// Turns a chain into an iterator over it's Pairs
 impl<T: HashTable> IntoIterator for Chain<T> {
     type Item = Pair;
     type IntoIter = ChainIterator<T>;
 
+    /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -93,9 +93,9 @@ impl<T: HashTable> Chain<T> {
         }
     }
 
-    /// returns a clone of the top Pair
-    pub fn top(&self) -> Option<Pair> {
-        self.top.clone()
+    /// returns a reference to the top Pair
+    pub fn top(&self) -> &Option<Pair> {
+        &self.top
     }
 
     /// returns a reference to the underlying HashTable
@@ -111,28 +111,24 @@ impl<T: HashTable> Chain<T> {
             ));
         }
 
-        let top_pair = self.top().and_then(|p| Some(p.key()));
+        let top_pair = self.top().as_ref().map(|p| p.key());
         let next_pair = pair.header().prev();
 
         if top_pair != next_pair {
             return Err(HolochainError::new(&format!(
                 "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                top_pair.clone(),
-                next_pair.clone()
+                top_pair, next_pair,
             )));
         }
 
         // @TODO implement incubator for thread safety
         // @see https://github.com/holochain/holochain-rust/issues/135
-        let table = Rc::get_mut(&mut self.table).unwrap();
-        let result = table.commit(&pair);
-        if result.is_ok() {
+        let table = Rc::get_mut(&mut self.table).ok_or(HolochainError::new(
+            "attempted to push while table is already borrowed",
+        ))?;
+        table.commit(&pair)?;
             self.top = Some(pair.clone());
-        }
-        match result {
-            Ok(_) => Ok(pair),
-            Err(e) => Err(e),
-        }
+        Ok(pair)
     }
 
     /// push a new Entry on to the top of the Chain
@@ -140,7 +136,7 @@ impl<T: HashTable> Chain<T> {
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned in the fn Result
     pub fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = Pair::new(self, entry);
+        let pair = Pair::new(self, entry.clone());
         self.push_pair(pair)
     }
 
@@ -151,7 +147,7 @@ impl<T: HashTable> Chain<T> {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     pub fn iter(&self) -> ChainIterator<T> {
-        ChainIterator::new(self.table(), &self.top())
+        ChainIterator::new(self.table(), self.top().clone())
     }
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
@@ -184,17 +180,22 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// restore canonical JSON chain
+    ///
+    /// # Panics
+    ///
+    /// Panics if the string passed isn't valid JSON or pairs fail to validate
+    ///
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: Rc<T>, s: &str) -> Self {
-        // @TODO inappropriate unwrap?
+        // @TODO inappropriate expect?
         // @see https://github.com/holochain/holochain-rust/issues/168
-        let mut as_seq: Vec<Pair> = serde_json::from_str(s).unwrap();
+        let mut as_seq: Vec<Pair> = serde_json::from_str(s).expect("argument should be valid json");
         as_seq.reverse();
 
         let mut chain = Chain::new(table);
         for p in as_seq {
-            chain.push_pair(p).unwrap();
+            chain.push_pair(p).expect("pair should be valid");
         }
         chain
     }
@@ -233,9 +234,12 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        c1.push_entry(&e1).unwrap();
-        c2.push_entry(&e1).unwrap();
-        c3.push_entry(&e2).unwrap();
+        c1.push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        c2.push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        c3.push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(c1.top(), c2.top());
         assert_eq!(c1, c2);
@@ -248,16 +252,20 @@ pub mod tests {
     /// tests for chain.top()
     fn top() {
         let mut chain = test_chain();
-        assert_eq!(None, chain.top());
+        assert_eq!(&None, chain.top());
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        assert_eq!(Some(p1), chain.top());
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        assert_eq!(&Some(p1), chain.top());
 
-        let p2 = chain.push_entry(&e2).unwrap();
-        assert_eq!(Some(p2), chain.top());
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        assert_eq!(&Some(p2), chain.top());
     }
 
     #[test]
@@ -266,11 +274,20 @@ pub mod tests {
         let t = test_table();
         let mut c = Chain::new(Rc::new(t));
         // test that adding something to the chain adds to the table
-        let p = c.push_entry(&test_entry()).unwrap();
+        let p = c
+            .push_entry(&test_entry())
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let tr = Rc::new(c.table());
-        assert_eq!(Some(p.clone()), c.table().get(&p.key()).unwrap(),);
-        assert_eq!(Some(p.clone()), tr.get(&p.key()).unwrap(),);
-        assert_eq!(c.table().get(&p.key()).unwrap(), tr.get(&p.key()).unwrap(),);
+        let chain_entry = c
+            .table()
+            .get(&p.key())
+            .expect("getting an entry from a chain shouldn't fail");
+        assert_eq!(Some(&p), chain_entry.as_ref());
+        let tr_entry = tr
+            .get(&p.key())
+            .expect("getting an entry from a chain shouldn't fail");
+        assert_eq!(Some(&p), tr_entry.as_ref());
+        assert_eq!(chain_entry, tr_entry);
     }
 
     #[test]
@@ -278,22 +295,26 @@ pub mod tests {
     fn push() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top());
+        assert_eq!(&None, chain.top());
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();
-        let p1 = chain.push_entry(&e1).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(p1.clone()), chain.top());
-        assert_eq!(e1, p1.entry());
+        assert_eq!(Some(&p1), chain.top().as_ref());
+        assert_eq!(&e1, p1.entry());
         assert_eq!(e1.hash(), p1.header().entry_hash());
 
         // we should be able to do it again
         let e2 = test_entry_b();
-        let p2 = chain.push_entry(&e2).unwrap();
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(p2.clone()), chain.top());
-        assert_eq!(e2, p2.entry());
+        assert_eq!(Some(&p2), chain.top().as_ref());
+        assert_eq!(&e2, p2.entry());
         assert_eq!(e2.hash(), p2.header().entry_hash());
     }
 
@@ -307,10 +328,14 @@ pub mod tests {
 
         assert!(chain.validate());
 
-        chain.push_entry(&e1).unwrap();
+        chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert!(chain.validate());
 
-        chain.push_entry(&e2).unwrap();
+        chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert!(chain.validate());
     }
 
@@ -319,8 +344,15 @@ pub mod tests {
     fn round_trip() {
         let mut c = test_chain();
         let e = test_entry();
-        let p = c.push_entry(&e).unwrap();
-        assert_eq!(Some(p.clone()), c.get_pair(&p.key()).unwrap(),);
+        let p = c
+            .push_entry(&e)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        assert_eq!(
+            Some(&p),
+            c.get_pair(&p.key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
     }
 
     #[test]
@@ -331,8 +363,12 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        let p2 = chain.push_entry(&e2).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(vec![p2, p1], chain.iter().collect::<Vec<Pair>>());
     }
@@ -345,9 +381,15 @@ pub mod tests {
         let e1 = test_entry_a();
         let e2 = test_entry_b();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        let _p2 = chain.push_entry(&e2).unwrap();
-        let p3 = chain.push_entry(&e1).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let _p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p3 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
             vec![p3, p1],
@@ -367,25 +409,64 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        let p2 = chain.push_entry(&e2).unwrap();
-        let p3 = chain.push_entry(&e3).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p3 = chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.get_pair("").unwrap());
-        assert_eq!(Some(p1.clone()), chain.get_pair(&p1.key()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.get_pair(&p2.key()).unwrap());
-        assert_eq!(Some(p3.clone()), chain.get_pair(&p3.key()).unwrap());
         assert_eq!(
-            Some(p1.clone()),
-            chain.get_pair(&p1.header().key()).unwrap()
+            None,
+            chain
+                .get_pair("")
+                .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
-            Some(p2.clone()),
-            chain.get_pair(&p2.header().key()).unwrap()
+            Some(&p1),
+            chain
+                .get_pair(&p1.key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
         );
         assert_eq!(
-            Some(p3.clone()),
-            chain.get_pair(&p3.header().key()).unwrap()
+            Some(&p2),
+            chain
+                .get_pair(&p2.key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            Some(&p3),
+            chain
+                .get_pair(&p3.key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
+
+        assert_eq!(
+            Some(&p1),
+            chain
+                .get_pair(&p1.header().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            Some(&p2),
+            chain
+                .get_pair(&p2.header().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            Some(&p3),
+            chain
+                .get_pair(&p3.header().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
         );
     }
 
@@ -398,23 +479,43 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        let p2 = chain.push_entry(&e2).unwrap();
-        let p3 = chain.push_entry(&e3).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p3 = chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.get_entry("").unwrap());
+        assert_eq!(
+            None,
+            chain
+                .get_entry("")
+                .expect("getting an entry from a chain shouldn't fail")
+        );
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
-            Some(p3.clone()),
-            chain.get_entry(&p1.entry().key()).unwrap()
+            Some(&p3),
+            chain
+                .get_entry(&p1.entry().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
         );
         assert_eq!(
-            Some(p2.clone()),
-            chain.get_entry(&p2.entry().key()).unwrap()
+            Some(&p2),
+            chain
+                .get_entry(&p2.entry().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
         );
         assert_eq!(
-            Some(p3.clone()),
-            chain.get_entry(&p3.entry().key()).unwrap()
+            Some(&p3),
+            chain
+                .get_entry(&p3.entry().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
         );
     }
 
@@ -423,8 +524,18 @@ pub mod tests {
     fn top_type() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+        assert_eq!(
+            None,
+            chain
+                .top_type(&test_type_a())
+                .expect("finding top entry of a given type shouldn't fail")
+        );
+        assert_eq!(
+            None,
+            chain
+                .top_type(&test_type_b())
+                .expect("finding top entry of a given type shouldn't fail")
+        );
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
@@ -432,21 +543,63 @@ pub mod tests {
 
         // type a should be p1
         // type b should be None
-        let p1 = chain.push_entry(&e1).unwrap();
-        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(None, chain.top_type(&test_type_b()).unwrap());
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        assert_eq!(
+            Some(&p1),
+            chain
+                .top_type(&test_type_a())
+                .expect("finding top entry of a given type shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            None,
+            chain
+                .top_type(&test_type_b())
+                .expect("finding top entry of a given type shouldn't fail")
+        );
 
         // type a should still be p1
         // type b should be p2
-        let p2 = chain.push_entry(&e2).unwrap();
-        assert_eq!(Some(p1.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        assert_eq!(
+            Some(&p1),
+            chain
+                .top_type(&test_type_a())
+                .expect("finding top entry of a given type shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            Some(&p2),
+            chain
+                .top_type(&test_type_b())
+                .expect("finding top entry of a given type shouldn't fail")
+                .as_ref()
+        );
 
         // type a should be p3
         // type b should still be p2
-        let p3 = chain.push_entry(&e3).unwrap();
-        assert_eq!(Some(p3.clone()), chain.top_type(&test_type_a()).unwrap());
-        assert_eq!(Some(p2.clone()), chain.top_type(&test_type_b()).unwrap());
+        let p3 = chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+
+        assert_eq!(
+            Some(&p3),
+            chain
+                .top_type(&test_type_a())
+                .expect("finding top entry of a given type shouldn't fail")
+                .as_ref()
+        );
+        assert_eq!(
+            Some(&p2),
+            chain
+                .top_type(&test_type_b())
+                .expect("finding top entry of a given type shouldn't fail")
+                .as_ref()
+        );
     }
 
     #[test]
@@ -458,17 +611,18 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        let p1 = chain.push_entry(&e1).unwrap();
-        let p2 = chain.push_entry(&e2).unwrap();
-        let p3 = chain.push_entry(&e3).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let p3 = chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         // into_iter() returns clones of pairs
-        let mut i = 0;
-        let expected = [p3.clone(), p2.clone(), p1.clone()];
-        for p in chain {
-            assert_eq!(expected[i], p);
-            i = i + 1;
-        }
+        assert_eq!(vec![p3, p2, p1], chain.into_iter().collect::<Vec<Pair>>());
     }
 
     #[test]
@@ -480,13 +634,22 @@ pub mod tests {
         let e2 = test_entry_b();
         let e3 = test_entry_a();
 
-        chain.push_entry(&e1).unwrap();
-        chain.push_entry(&e2).unwrap();
-        chain.push_entry(&e3).unwrap();
+        chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"prev\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
         ;
-        assert_eq!(expected_json, chain.to_json().unwrap());
+                assert_eq!(
+            expected_json,
+            chain.to_json().expect("chain shouldn't fail to serialize")
+        );
 
         let table = test_table();
         assert_eq!(chain, Chain::from_json(Rc::new(table), expected_json));

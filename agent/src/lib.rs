@@ -21,10 +21,8 @@ impl Agent {
         Agent { identity: id }
     }
 
-    pub fn from_string(text: &str) -> Self {
-        Agent::new(Identity {
-            content: text.to_string(),
-        })
+    pub fn from_string(text: String) -> Self {
+        Agent::new(Identity { content: text })
     }
 
     pub fn to_string(&self) -> String {
@@ -43,7 +41,7 @@ mod tests {
         });
         assert_eq!(agent.identity.content, "bob".to_string());
 
-        let agent = Agent::from_string("jane");
+        let agent = Agent::from_string("jane".to_string());
         assert_eq!(agent.identity.content, "jane".to_string());
 
         assert_eq!(agent.to_string(), "jane".to_string());

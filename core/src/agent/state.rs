@@ -134,12 +134,14 @@ fn reduce_get(
     // drop in a dummy entry for testing
     let mut chain = Chain::new(Rc::new(MemTable::new()));
     let e = Entry::new("testEntryType", "test entry content");
-    chain.push_entry(&e).unwrap();
+    chain.push_entry(&e).expect("test entry should be valid");
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
-    let result = chain.get_entry(&key).unwrap();
+    let result = chain
+        .get_entry(&key)
+        .expect("should be able to get entry that we just added");
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Get(result.clone()));
@@ -287,6 +289,6 @@ pub mod tests {
             "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
             ActionResponse::Get(Some(test_pair())).to_json(),
         );
-        assert_eq!("", ActionResponse::Get(None).to_json(),);
+        assert_eq!("", ActionResponse::Get(None).to_json());
     }
 }

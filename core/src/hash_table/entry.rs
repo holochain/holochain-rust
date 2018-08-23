@@ -50,11 +50,11 @@ impl Entry {
     pub fn hash(&self) -> String {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = self.content.clone();
+        let string_to_hash = &self.content;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
+        hash::str_to_b58_hash(string_to_hash, Hash::SHA2256)
     }
 
     /// content getter
@@ -67,9 +67,9 @@ impl Entry {
         self.entry_type.clone()
     }
 
-    /// returns true if the entry is valid
+    /// returns true iff the entry is valid
     pub fn validate(&self) -> bool {
-        // always valid iff immutable and new() enforces validity
+        // always valid if immutable and new() enforces validity
         true
     }
 
@@ -80,19 +80,25 @@ impl Entry {
     }
 
     /// serialize the Entry to a canonical JSON string
+    ///
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn to_json(&self) -> String {
         // @TODO error handling
         // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).unwrap()
+        serde_json::to_string(&self).expect("should serialize without error")
     }
 
-    /// deserialize a Entry from a canonical JSON string
+    /// deserialize an Entry from a canonical JSON string
+    ///
+    /// # Panics
+    ///
+    /// Panics if the string passed isn't valid JSON.
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
+    /// @TODO don't return invalid entries
     pub fn from_json(s: &str) -> Entry {
-        let entry: Entry = serde_json::from_str(s).unwrap();
+        let entry: Entry = serde_json::from_str(s).expect("JSON should be valid");
         entry
     }
 }
@@ -182,17 +188,17 @@ pub mod tests {
         let t2 = "b";
 
         // same type and content is equal
-        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t1, c1).hash(),);
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t1, c1).hash());
 
         // same type different content is not equal
-        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t1, c2).hash(),);
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t1, c2).hash());
 
         // same content different type is equal
         // @see https://github.com/holochain/holochain-rust/issues/85
-        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t2, c1).hash(),);
+        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t2, c1).hash());
 
         // different content different type is not equal
-        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t2, c2).hash(),);
+        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t2, c2).hash());
     }
 
     #[test]
@@ -284,7 +290,7 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let e = test_entry_a();
-        let expected = "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}";
+        let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
         assert_eq!(expected, e.to_json());
         assert_eq!(e, Entry::from_json(expected));
         assert_eq!(e, Entry::from_json(&e.to_json()));

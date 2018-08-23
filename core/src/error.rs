@@ -1,3 +1,4 @@
+use self::HolochainError::*;
 use std::{error::Error, fmt};
 
 /// module for holding Holochain specific errors
@@ -38,8 +39,6 @@ impl fmt::Display for HolochainError {
     }
 }
 
-use self::HolochainError::*;
-
 impl Error for HolochainError {
     fn description(&self) -> &str {
         match self {
@@ -72,37 +71,32 @@ mod tests {
     /// test that we can convert an error to a string
     fn to_string() {
         let err = HolochainError::new("foo");
-        assert_eq!("ErrorGeneric(\"foo\")", err.to_string(),);
+        assert_eq!(r#"ErrorGeneric("foo")"#, err.to_string());
     }
 
     #[test]
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!("{\"error\":\"foo\"}", err.to_json());
+        assert_eq!(r#"{"error":"foo"}"#, err.to_json());
     }
 
     #[test]
     /// smoke test new errors
     fn can_instantiate() {
         let err = HolochainError::new("borked");
-        if let HolochainError::ErrorGeneric(err_msg) = err {
-            assert_eq!(err_msg, "borked")
-        } else {
-            assert!(false)
-        }
+
+        assert_eq!(HolochainError::ErrorGeneric("borked".to_string()), err);
     }
 
     #[test]
     /// test errors as a result and destructuring
     fn can_raise_holochain_error() {
-        let result = raises_holochain_error(true);
-        match result {
-            Ok(_) => assert!(false),
-            Err(err) => match err {
-                HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "borked"),
-                _ => assert!(false),
-            },
+        let err = raises_holochain_error(true).expect_err("should return an error when yes=true");
+
+        match err {
+            HolochainError::ErrorGeneric(msg) => assert_eq!(msg, "borked"),
+            _ => panic!("raises_holochain_error should return an ErrorGeneric"),
         };
     }
 
@@ -110,10 +104,7 @@ mod tests {
     /// test errors as a returned result
     fn can_return_result() {
         let result = raises_holochain_error(false);
-        let result = match result {
-            Ok(x) => x,
-            Err(_) => panic!(),
-        };
-        assert_eq!(result, ())
+
+        assert!(result.is_ok());
     }
 }

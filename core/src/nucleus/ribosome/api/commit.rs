@@ -25,71 +25,74 @@ pub fn invoke_commit(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
-    let res_entry: Result<CommitArgs, _> = serde_json::from_str(&args_str);
-    // Exit on error
-    if res_entry.is_err() {
-        // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorSerdeJson as i32,
-        )));
-    }
+    let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
+        Ok(entry_input) => entry_input,
+        // Exit on error
+        Err(_) => {
+            // Return Error code in i32 format
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ErrorSerdeJson as i32,
+            )));
+        }
+    };
 
     // Create Chain Entry
-    let entry_input = res_entry.unwrap();
     let entry =
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
-    let validate_result = validate_commit(
+    // @TODO test that failing validation prevents commits happening
+    // @see https://github.com/holochain/holochain-rust/issues/206
+    if let CallbackResult::Fail(_) = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
         &runtime.function_call.zome,
         &CallbackParams::ValidateCommit(entry.clone()),
-    );
-
-    // @TODO test that failing validation prevents commits happening
-    // @see https://github.com/holochain/holochain-rust/issues/206
-    match validate_result {
-        CallbackResult::Fail(_) => Ok(Some(RuntimeValue::I32(
+    ) {
+        return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorCallbackResult as i32,
-        ))),
-        // anything other than a fail means we should commit the entry
-        _ => {
-            // Create Commit Action
-            let action_wrapper = ActionWrapper::new(&Action::Commit(entry));
-            // Send Action and block for result
-            let (sender, receiver) = channel();
-            ::instance::dispatch_action_with_observer(
-                &runtime.action_channel,
-                &runtime.observer_channel,
-                &action_wrapper.clone(),
-                move |state: &::state::State| {
-                    let actions = state.agent().actions().clone();
-                    if actions.contains_key(&action_wrapper) {
-                        // @TODO never panic in wasm
-                        // @see https://github.com/holochain/holochain-rust/issues/159
-                        let v = &actions[&action_wrapper];
-                        sender.send(v.clone()).expect("local channel to be open");
-                        true
-                    } else {
-                        false
-                    }
-                },
-            );
-            // TODO #97 - Return error if timeout or something failed
-            // return Err(_);
+        )));
+    }
+    // anything other than a fail means we should commit the entry
 
-            let action_result = receiver.recv().expect("local channel to work");
+    // Create Commit Action
+    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
+    // Send Action and block for result
+    let (sender, receiver) = channel();
+    ::instance::dispatch_action_with_observer(
+        &runtime.action_channel,
+        &runtime.observer_channel,
+        action_wrapper.clone(),
+        move |state: &::state::State| {
+            let mut actions_copy = state.agent().actions();
+            match actions_copy.remove(&action_wrapper) {
+                Some(v) => {
+                    // @TODO never panic in wasm
+                    // @see https://github.com/holochain/holochain-rust/issues/159
+                    sender
+                        .send(v)
+                        // the channel stays connected until the first message has been sent
+                        // if this fails that means that it was called after having returned done=true
+                        .expect("observer called after done");
 
-            match action_result {
-                ActionResponse::Commit(_) => {
-                    // serialize, allocate and encode result
-                    runtime_allocate_encode_str(runtime, &action_result.to_json())
+                    true
                 }
-                _ => Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ErrorActionResult as i32,
-                ))),
+                None => false,
             }
+        },
+    );
+    // TODO #97 - Return error if timeout or something failed
+    // return Err(_);
+
+    let action_result = receiver.recv().expect("observer dropped before done");
+
+    match action_result {
+        ActionResponse::Commit(_) => {
+            // serialize, allocate and encode result
+            runtime_allocate_encode_str(runtime, &action_result.to_json())
         }
+        _ => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ErrorActionResult as i32,
+        ))),
     }
 }
 
@@ -110,7 +113,9 @@ mod tests {
             entry_type_name: e.entry_type().into(),
             entry_content: e.content().into(),
         };
-        serde_json::to_string(&args).unwrap().into_bytes()
+        serde_json::to_string(&args)
+            .expect("args should serialize")
+            .into_bytes()
     }
 
     #[test]

@@ -39,6 +39,7 @@ impl Header {
     /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
     /// chain::SourceChain trait and should not need to be handled manually
+    ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Header {
@@ -47,14 +48,14 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
-            prev: chain.top().and_then(|p| Some(p.header().hash())),
+            prev: chain.top().as_ref().map(|p| p.header().hash()),
             entry_hash: entry.hash().to_string(),
             prev_same: chain
                 .top_type(&entry.entry_type())
-                // @TODO inappropriate unwrap()?
+                // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
-                .unwrap()
-                .and_then(|p| Some(p.header().hash())),
+                .expect("top type should never error")
+                .map(|p| p.header().hash()),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             entry_signature: String::new(),
@@ -85,13 +86,15 @@ impl Header {
     pub fn hash(&self) -> String {
         // @TODO this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = String::new()
-            + &self.entry_type
-            + &self.timestamp
-            + &self.prev.clone().unwrap_or_default()
-            + &self.entry_hash
-            + &self.prev_same.clone().unwrap_or_default()
-            + &self.entry_signature;
+        let pieces: [&str; 6] = [
+            &self.entry_type,
+            &self.timestamp,
+            &self.prev.clone().unwrap_or_default(),
+            &self.entry_hash,
+            &self.prev_same.clone().unwrap_or_default(),
+            &self.entry_signature,
+        ];
+        let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
@@ -117,7 +120,7 @@ mod tests {
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
-        test_pair().header()
+        test_pair().header().clone()
     }
 
     #[test]
@@ -150,7 +153,9 @@ mod tests {
         // different state is different
         let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
-        chain2.push_entry(&e).unwrap();
+        chain2
+            .push_entry(&e)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
     }
@@ -199,14 +204,18 @@ mod tests {
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t, "");
-        let p1 = chain.push_entry(&e1).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
         assert_eq!(h1.prev(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
-        let p2 = chain.push_entry(&e2).unwrap();
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
         assert_eq!(h2.prev(), Some(h1.hash()));
@@ -234,21 +243,27 @@ mod tests {
 
         // first header is genesis so next should be None
         let e1 = Entry::new(t1, "");
-        let p1 = chain.push_entry(&e1).unwrap();
+        let p1 = chain
+            .push_entry(&e1)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
         assert_eq!(h1.prev_same(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
-        let p2 = chain.push_entry(&e2).unwrap();
+        let p2 = chain
+            .push_entry(&e2)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
         assert_eq!(h2.prev_same(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
-        let p3 = chain.push_entry(&e3).unwrap();
+        let p3 = chain
+            .push_entry(&e3)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
         assert_eq!(h3.prev_same(), Some(h1.hash()));
@@ -329,9 +344,13 @@ mod tests {
         let e = Entry::new(t, c);
         let h = Header::new(&chain, &e);
 
-        let p1 = chain.push_entry(&e).unwrap();
+        let p1 = chain
+            .push_entry(&e)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         // p2 will have a different hash to p1 with the same entry as the chain state is different
-        let p2 = chain.push_entry(&e).unwrap();
+        let p2 = chain
+            .push_entry(&e)
+            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(h.hash(), p1.header().hash());
         assert_ne!(h.hash(), p2.header().hash());

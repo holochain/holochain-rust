@@ -138,15 +138,15 @@ They are available in keyword specific Capabilities and function names
           "functions": [
             {
               "name": "newPost",
-              "signature" :
+              "signature":
               {
-                  "inputs" : [
+                  "inputs": [
                       {
                           "name": "post",
                           "type": "string"
                       }
                   ],
-                  "outputs" : [
+                  "outputs": [
                       {
                           "name": "hash",
                           "type": "string"

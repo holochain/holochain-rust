@@ -208,7 +208,7 @@ mod tests {
     #[test]
     /// test that a canonical string can be created from ReservedCapabilityNames
     fn test_capabilities_as_str() {
-        assert_eq!(ReservedCapabilityNames::LifeCycle.as_str(), "hc_lifecycle",);
+        assert_eq!(ReservedCapabilityNames::LifeCycle.as_str(), "hc_lifecycle");
         assert_eq!(
             ReservedCapabilityNames::Communication.as_str(),
             "hc_web_gateway",
@@ -226,15 +226,15 @@ mod tests {
                 "fn_declarations": [
                     {
                         "name": "test",
-                        "signature" :
+                        "signature":
                         {
-                            "inputs" : [
+                            "inputs": [
                                 {
                                     "name": "post",
                                     "type": "string"
                                 }
                             ],
-                            "outputs" : [
+                            "outputs": [
                                 {
                                     "name": "hash",
                                     "type": "string"

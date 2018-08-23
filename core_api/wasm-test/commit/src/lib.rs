@@ -26,7 +26,7 @@ struct CommitOutputStruct {
 
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
-fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content : &str)
+fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content: &str)
   -> Result<String, HcApiReturnCode>
 {
   // Put args in struct and serialize into memory
@@ -48,7 +48,7 @@ fn hc_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_conte
   }
 
   // Deserialize complex result stored in memory
-  let output : CommitOutputStruct = result.unwrap();
+  let output: CommitOutputStruct = result.unwrap();
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
@@ -104,7 +104,7 @@ fn hc_commit_fail(mem_stack: &mut SinglePageStack)
   }
 
   // Deserialize complex result stored in memory
-  let output : CommitOutputStruct = result.unwrap();
+  let output: CommitOutputStruct = result.unwrap();
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 

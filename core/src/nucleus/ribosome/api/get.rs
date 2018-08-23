@@ -78,9 +78,15 @@ mod tests {
     extern crate wabt;
 
     use super::GetArgs;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use serde_json;
+    use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use nucleus::ribosome::{
+        api::{
+            tests::test_zome_api_function_runtime,
+            ZomeAPIFunction,
+        },
+        Defn,
+    };
 
     /// dummy get args from standard test entry
     pub fn test_args_bytes() -> Vec<u8> {
@@ -93,7 +99,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("hc_get_entry", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime(ZomeAPIFunction::GetEntry.as_str(), test_args_bytes());
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"");

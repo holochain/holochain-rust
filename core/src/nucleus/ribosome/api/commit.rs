@@ -103,7 +103,13 @@ mod tests {
 
     use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
-    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::{
+        api::{
+            tests::test_zome_api_function_runtime,
+            ZomeAPIFunction,
+        },
+        Defn,
+    };
     use serde_json;
 
     /// dummy commit args from standard test entry
@@ -121,7 +127,7 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("hc_commit_entry", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime(ZomeAPIFunction::CommitEntry.as_str(), test_args_bytes());
 
         assert_eq!(
             runtime.result,

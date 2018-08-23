@@ -321,7 +321,7 @@ pub mod tests {
                 }
                 _ => false,
             })
-            == None
+            .is_none()
         {
             println!("Waiting for Commit for genesis");
             sleep(Duration::from_millis(10))

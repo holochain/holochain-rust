@@ -1,6 +1,7 @@
 pub mod entry;
 pub mod header;
 pub mod memory;
+pub mod file;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;

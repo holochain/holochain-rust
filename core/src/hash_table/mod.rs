@@ -12,8 +12,6 @@ use hash_table::{pair::Pair, pair_meta::PairMeta};
 
 pub type HashString = String;
 
-pub type EntryString = String;
-
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Pairs.
 /// Pair is a pair holding an Entry and its Header

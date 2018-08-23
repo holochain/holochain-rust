@@ -21,7 +21,7 @@ use std::{
     thread,
 };
 
-use hash_table::sys_entry::*;
+use hash_table::sys_entry::ToEntry;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

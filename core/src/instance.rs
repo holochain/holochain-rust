@@ -232,11 +232,13 @@ pub mod tests {
     use logger::Logger;
     use nucleus::ribosome::{callback::Callback, Defn};
     use persister::SimplePersister;
+    use hash_table::sys_entry::EntryType;
     use state::State;
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
+        str::FromStr,
     };
 
     #[derive(Clone, Debug)]
@@ -312,7 +314,10 @@ pub mod tests {
           .history
           .iter()
           .find(|aw| match aw.action() {
-              Action::Commit(_) => true, // FIXME
+              Action::Commit(entry) => {
+                  assert_eq!(EntryType::from_str(&entry.entry_type()).unwrap(), EntryType::Dna);
+                  true
+              },
               _ => false,
           }) == None
           {

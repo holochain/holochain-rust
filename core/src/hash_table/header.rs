@@ -1,6 +1,6 @@
 use chain::Chain;
 use hash;
-use hash_table::{entry::Entry, HashTable, /*entry::EntryKind,*/ HashString};
+use hash_table::{entry::Entry, HashTable, HashString};
 use multihash::Hash;
 
 /// Header of a source chain "Item"
@@ -16,7 +16,7 @@ pub struct Header {
     entry_type: String,
     /// ISO8601 time stamp
     timestamp: String,
-    /// Key to the immediately preceding header. Only the genesis ChainLink can have None as valid
+    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
     prev: Option<HashString>,
     /// Key to the entry of this header
     entry_hash: HashString,
@@ -61,32 +61,22 @@ impl Header {
         }
     }
 
-    /// entry_type getter
+    /// getters
     pub fn entry_type(&self) -> String {
         self.entry_type.clone()
     }
-
-    /// time getter
     pub fn timestamp(&self) -> String {
         self.timestamp.clone()
     }
-
-    /// next getter
     pub fn prev(&self) -> Option<String> {
         self.prev.clone()
     }
-
-    /// entry getter
     pub fn entry_hash(&self) -> String {
         self.entry_hash.clone()
     }
-
-    /// type_next getter
     pub fn prev_same(&self) -> Option<String> {
         self.prev_same.clone()
     }
-
-    /// signature getter
     pub fn entry_signature(&self) -> String {
         self.entry_signature.clone()
     }

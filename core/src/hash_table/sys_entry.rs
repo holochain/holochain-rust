@@ -8,7 +8,7 @@ use serde_json;
 
 pub trait ToEntry {
   fn to_entry(&self) -> Entry;
-  // Maybe change to `new_from_entry` ?
+  // FIXME - Maybe change to `new_from_entry` ?
   fn from_entry(&Entry) -> Self;
 }
 
@@ -17,11 +17,12 @@ pub trait ToEntry {
 // Entry Type
 //-------------------------------------------------------------------------------------------------
 
+// Macro for statically concatanating the system entry prefix for entry types of system entries
 macro_rules! sys_prefix {
     ($s:expr) => ( concat!("%", $s) )
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EntryType {
   AgentId,
   Deletion,

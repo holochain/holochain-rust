@@ -15,13 +15,13 @@ Depending on whether your interest is specific, or general, you may wish to read
 
 ### Going Live with Holochain Apps
 
-**Readers:** You're involved in the conception, development, or design of a Holochain app, and you've got to know how to get your app out into the world, into the hands of the people who need it. You've got questions like "how do updates to the app work?" "how do I track performance of the app?" "what are best practices for security?"
+**Readers:** You're involved in the conception, development, or design of a Holochain app, and you've got to know how to get your app out into the world, into the hands of the people who need it. You've got questions like "How do updates to the app work?", "How do I track performance of the app?", "What are best practices for security?"
 
 **Writing:** General Audience
 
 ### Extending the Holochain Platform
 
-**Readers:** You want to look at Holochain itself, not what you can build with it, and see what you can do, or contribute. You've got ideas for Holochain and got skills to pull them off. You're reading the Holochain source code, or source documentation. Maybe you want to enable app development in a whole other language not available yet, or maybe to run Holochain on a device or platform not supported yet. You can make sense of terse technical language, and direct yourself well.
+**Readers:** You want to look at Holochain itself, not what you can build with it, but to see what you can tweak, or contribute. You've got ideas for Holochain and got skills to pull them off. You're reading the Holochain source code, or source documentation. Maybe you want to enable app development in a whole other language not available yet, or maybe to run Holochain on a device or platform not supported yet. You can make sense of terse technical language, and direct yourself well.
 
 **Writing:** Technical, Explanatory & How-to
 

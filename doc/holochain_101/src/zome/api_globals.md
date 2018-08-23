@@ -1,7 +1,7 @@
 # Zome API Constants and Application Variables
 
 There are two kinds of API values that are available in zome code:
- 1. system global constants
+ 1. system-wide global constants
  2. app-specific global variables
 
 ## Reference
@@ -9,11 +9,11 @@ There are two kinds of API values that are available in zome code:
 Note: Full reference is available in language-specific API Reference documentation.
 (TODO add links)
 
-### System global constants
+### System-wide global constants
 
 | Name        | Purpose           | 
 | ------------- |:-------------| 
-| VERSION      | Version of the Holochain software | 
+| VERSION      | Version of the Holochain software running the zome | 
 | HashNotFound      | Value returned when a hash provided could not be found. | 
 | Status | Enum holding all possible state of an entry. | 
 | GetEntryMask | Mask values used for calling the `get_entry` Zome API Function. |

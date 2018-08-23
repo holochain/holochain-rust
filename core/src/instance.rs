@@ -92,24 +92,24 @@ impl Instance {
             // don't rely on time can be written
             // @see https://github.com/holochain/holochain-rust/issues/169
             for action_wrapper in rx_action {
-                        // Mutate state
-                        {
+                // Mutate state
+                {
                     let mut state = state_mutex
                         .write()
                         .expect("owners of the state RwLock shouldn't panic");
-                            *state = state.reduce(
+                    *state = state.reduce(
                         Arc::clone(&context),
-                                action_wrapper,
-                                &tx_action,
-                                &tx_observer,
-                            );
-                        }
+                        action_wrapper,
+                        &tx_action,
+                        &tx_observer,
+                    );
+                }
 
-                        // Add new observers
+                // Add new observers
                 state_observers.extend(rx_observer.try_iter());
 
-                        // Run all observer closures
-                        {
+                // Run all observer closures
+                {
                     let state = state_mutex
                         .read()
                         .expect("owners of the state RwLock shouldn't panic");
@@ -334,7 +334,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ExecuteZomeFunction(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ExecuteZomeFunction for genesis");
             sleep(Duration::from_millis(10))
@@ -347,7 +348,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnZomeFunctionResult(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ReturnZomeFunctionResult from genesis");
             sleep(Duration::from_millis(10))
@@ -360,7 +362,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
                 _ => false,
-            }).is_none()
+            })
+            .is_none()
         {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))

@@ -37,9 +37,9 @@ impl Pair {
             entry: entry,
         };
 
-            // we panic as no code path should attempt to create invalid pairs
-            // creating a Pair is an internal process of chain.push() and is deterministic based on
-            // an immutable Entry (that itself cannot be invalid), so this should never happen.
+        // we panic as no code path should attempt to create invalid pairs
+        // creating a Pair is an internal process of chain.push() and is deterministic based on
+        // an immutable Entry (that itself cannot be invalid), so this should never happen.
         assert!(p.validate(), "attempted to create an invalid pair");
 
         p

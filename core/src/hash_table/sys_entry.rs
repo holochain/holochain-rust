@@ -87,7 +87,6 @@ impl ToEntry for Dna {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Agent {
-
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::AgentId.as_str(), &self.to_string())
     }
@@ -109,15 +108,10 @@ pub mod tests {
     extern crate test_utils;
 
     use action::{Action, ActionWrapper};
-    use hash_table::{
-        sys_entry::{EntryType, ToEntry},
-    };
+    use hash_table::sys_entry::{EntryType, ToEntry};
     use std::str::FromStr;
 
-    use instance::{
-        tests::test_context,
-        Instance,
-    };
+    use instance::{tests::test_context, Instance};
 
     // Committing a DnaEntry to source chain should work
     #[test]

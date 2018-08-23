@@ -222,7 +222,8 @@ fn reduce_ia(
             ::instance::dispatch_action_and_wait(
                 &genesis_action_channel,
                 &genesis_observer_channel,
-                commit_genesis_action);
+                commit_genesis_action,
+            );
         }
 
         // map genesis across every zome

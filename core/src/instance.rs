@@ -4,7 +4,7 @@ use context::Context;
 use state::State;
 use std::{
     sync::{
-        mpsc::{channel, Sender, Receiver},
+        mpsc::{channel, Receiver, Sender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -120,7 +120,8 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
-            let mut state = self.state
+            let mut state = self
+                .state
                 .write()
                 .expect("owners of the state RwLock shouldn't panic");
             *state = state.reduce(
@@ -136,7 +137,8 @@ impl Instance {
 
         // Run all observer closures
         {
-            let state = self.state
+            let state = self
+                .state
                 .read()
                 .expect("owners of the state RwLock shouldn't panic");
             let mut i = 0;

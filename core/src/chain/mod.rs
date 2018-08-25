@@ -37,7 +37,7 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
                         .and_then(|p| p.header().next())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| self.table.get(&h).expect("getting from a table shouldn't fail"));
+                        .and_then(|h| self.table.pair(&h).expect("getting from a table shouldn't fail"));
         previous
     }
 }
@@ -124,7 +124,7 @@ impl<T: HashTable> Chain<T> {
         let table = Rc::get_mut(&mut self.table).ok_or(HolochainError::new(
             "attempted to push while table is already borrowed",
         ))?;
-        table.commit(&pair)?;
+        table.commit_pair(&pair)?;
         self.top = Some(pair.clone());
         Ok(pair)
     }
@@ -150,7 +150,7 @@ impl<T: HashTable> Chain<T> {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     pub fn get(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        self.table.get(k)
+        self.table.pair(k)
     }
 
     /// get an Entry by Entry key from the HashTable if it exists

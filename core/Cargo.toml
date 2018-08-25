@@ -20,6 +20,7 @@ holochain_wasm_utils = { path = "../wasm_utils"}
 unwrap_to = "0.1.0"
 num-traits = "0.2"
 num-derive = "0.2"
+walkdir = "2"
 
 [dev-dependencies]
 wabt = "0.4"

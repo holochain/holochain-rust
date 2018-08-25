@@ -1,5 +1,10 @@
 use self::HolochainError::*;
 use std::{error::Error, fmt};
+use walkdir::Error as WalkdirError;
+use std::path::Path;
+use std::io;
+use std::io::Error as IoError;
+use json::ToJson;
 
 /// module for holding Holochain specific errors
 
@@ -14,18 +19,21 @@ pub enum HolochainError {
     ZomeNotFound(String),
     CapabilityNotFound(String),
     ZomeFunctionNotFound(String),
+    IoError(String),
+    SerializationError(String),
 }
 
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
     }
+}
 
-    /// standard JSON representation for an error
+impl ToJson for HolochainError {
     /// @TODO round trip this
     /// @see https://github.com/holochain/holochain-rust/issues/193
-    pub fn to_json(&self) -> String {
-        format!("{{\"error\":\"{}\"}}", self.description())
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(format!("{{\"error\":\"{}\"}}", self.description()))
     }
 }
 
@@ -51,7 +59,36 @@ impl Error for HolochainError {
             ZomeNotFound(err_msg) => &err_msg,
             CapabilityNotFound(err_msg) => &err_msg,
             ZomeFunctionNotFound(err_msg) => &err_msg,
+            IoError(err_msg) => &err_msg,
         }
+    }
+}
+
+fn reason_for_io_error(error: &IoError) -> String {
+    match error.kind() {
+        io::ErrorKind::InvalidData => format!("contains invalid data: {}", error),
+        io::ErrorKind::PermissionDenied => format!("missing permissions to read: {}", error),
+        _ => format!("unexpected error: {}", error),
+    }
+}
+
+impl From<WalkdirError> for HolochainError {
+    fn from(error: WalkdirError) -> Self {
+        // adapted from https://docs.rs/walkdir/2.2.5/walkdir/struct.Error.html#example
+        let path = error.path().unwrap_or(Path::new("")).display();
+        let reason = match error.io_error() {
+            Some(inner) => reason_for_io_error(inner),
+            None => String::new(),
+        };
+        HolochainError::IoError(
+            format!("error at path: {}, reason: {}", path, reason)
+        )
+    }
+}
+
+impl From<IoError> for HolochainError {
+    fn from(error: IoError) -> Self {
+        HolochainError::IoError(reason_for_io_error(&error))
     }
 }
 

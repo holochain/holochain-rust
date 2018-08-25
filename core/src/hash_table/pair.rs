@@ -1,6 +1,8 @@
 use chain::Chain;
 use hash_table::{entry::Entry, header::Header, HashTable};
-use serde_json;
+use json::ToJson;
+use json::FromJson;
+use json::RoundTripJson;
 
 /// Pairs are entries with their headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -67,29 +69,17 @@ impl Pair {
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
     }
-
-    /// serialize the Pair to a canonical JSON string
-    ///
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> String {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).expect("should serialize without error")
-    }
-
-    /// deserialize a Pair from a canonical JSON string
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string given isn't valid JSON.
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(s: &str) -> Pair {
-        let pair: Pair = serde_json::from_str(s).expect("json should be valid");
-        pair
-    }
 }
+
+/// @TODO return canonical JSON
+/// @see https://github.com/holochain/holochain-rust/issues/75
+impl ToJson for Pair {}
+
+/// @TODO accept canonical JSON
+/// @see https://github.com/holochain/holochain-rust/issues/75
+impl FromJson for Pair {}
+
+impl RoundTripJson for Pair {}
 
 #[cfg(test)]
 pub mod tests {

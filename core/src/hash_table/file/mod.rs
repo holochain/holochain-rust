@@ -3,13 +3,14 @@ use std::path::Path;
 use error::HolochainError;
 use std::fs;
 
-use agent::keys::Keys;
 use hash_table::{
     pair::Pair,
     pair_meta::PairMeta,
-    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };
+use json::ToJson;
+use walkdir::WalkDir;
+use json::FromJson;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct FileTable {
@@ -53,93 +54,65 @@ impl FileTable {
 }
 
 impl HashTable for FileTable {
-    fn setup(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
 
-    fn teardown(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
-
-    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         fs::write(
             self.pair_key_path(&pair.key()),
-            pair.to_json(),
+            pair.to_json().unwrap(),
         );
         // @TODO real result
         Ok(())
     }
 
-    fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO real result
         Ok(
             Some(
                 Pair::from_json(
                     &fs::read_to_string(self.pair_key_path(key)).unwrap()
-                )
+                ).unwrap()
             )
         )
         // Ok(self.pairs.get(key).cloned())
     }
 
-    fn modify(
-        &mut self,
-        keys: &Keys,
-        old_pair: &Pair,
-        new_pair: &Pair,
-    ) -> Result<(), HolochainError> {
-        self.commit(new_pair)?;
-
-        // @TODO what if meta fails when commit succeeds?
-        // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(PairMeta::new(
-            keys,
-            &old_pair,
-            STATUS_NAME,
-            &CRUDStatus::MODIFIED.bits().to_string(),
-        ))?;
-
-        // @TODO what if meta fails when commit succeeds?
-        // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
-    }
-
-    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        self.assert_meta(PairMeta::new(
-            keys,
-            &pair,
-            STATUS_NAME,
-            &CRUDStatus::DELETED.bits().to_string(),
-        ))
-    }
-
-    fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
+    fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
         fs::write(
             self.meta_key_path(&meta.key()),
-            meta.to_json(),
+            meta.to_json().unwrap(),
         );
         // TODO real result
         Ok(())
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
         // @TODO real result
         Ok(
             Some(
                 PairMeta::from_json(
                     &fs::read_to_string(self.meta_key_path(key)).unwrap()
-                )
+                ).unwrap()
             )
         )
     }
 
-    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let mut metas = self
-            .meta
-            .values()
-            .filter(|&m| m.pair() == pair.key())
-            .cloned()
-            .collect::<Vec<PairMeta>>();
+    fn all_metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+        let mut metas = Vec::new();
+
+        // this is a brute force approach that involves reading and parsing every file
+        // big meta data should be backed by something indexable like sqlite
+        for meta in WalkDir::new(self.metas_dir()) {
+            let path = meta?.path();
+            let meta_parsed = PairMeta::from_json(
+                &fs::read_to_string(
+                    &path.to_string_lossy().to_string()
+                )?
+            )?;
+            if meta_parsed.pair() == pair.key() {
+                metas.push(meta_parsed);
+            }
+        }
+
         // @TODO should this be sorted at all at this point?
         // @see https://github.com/holochain/holochain-rust/issues/144
         metas.sort();

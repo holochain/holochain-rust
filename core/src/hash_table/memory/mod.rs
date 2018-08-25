@@ -2,11 +2,9 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
-use agent::keys::Keys;
 use hash_table::{
     pair::Pair,
     pair_meta::PairMeta,
-    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };
 
@@ -26,64 +24,26 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
-    fn setup(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
 
-    fn teardown(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
-
-    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.pairs.insert(pair.key(), pair.clone());
         Ok(())
     }
 
-    fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
         Ok(self.pairs.get(key).cloned())
     }
 
-    fn modify(
-        &mut self,
-        keys: &Keys,
-        old_pair: &Pair,
-        new_pair: &Pair,
-    ) -> Result<(), HolochainError> {
-        self.commit(new_pair)?;
-
-        // @TODO what if meta fails when commit succeeds?
-        // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(PairMeta::new(
-            keys,
-            &old_pair,
-            STATUS_NAME,
-            &CRUDStatus::MODIFIED.bits().to_string(),
-        ))?;
-
-        // @TODO what if meta fails when commit succeeds?
-        // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
-    }
-
-    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        self.assert_meta(PairMeta::new(
-            keys,
-            &pair,
-            STATUS_NAME,
-            &CRUDStatus::DELETED.bits().to_string(),
-        ))
-    }
-
-    fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
+    fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
         self.meta.insert(meta.key(), meta);
         Ok(())
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
         Ok(self.meta.get(key).cloned())
     }
 
-    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+    fn all_metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
         let mut metas = self
             .meta
             .values()

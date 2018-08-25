@@ -10,6 +10,7 @@ use std::{
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use json::ToJson;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -72,10 +73,10 @@ impl ActionResponse {
         match self {
             ActionResponse::Commit(result) => match result {
                 Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
-                Err(err) => (*err).to_json(),
+                Err(err) => (*err).to_json().unwrap(),
             },
             ActionResponse::Get(result) => match result {
-                Some(pair) => pair.to_json(),
+                Some(pair) => pair.to_json().unwrap(),
                 None => "".to_string(),
             },
         }

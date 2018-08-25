@@ -3,6 +3,9 @@ use hash::serializable_to_b58_hash;
 use hash_table::pair::Pair;
 use multihash::Hash;
 use std::cmp::Ordering;
+use json::ToJson;
+use json::FromJson;
+use json::RoundTripJson;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
@@ -86,6 +89,12 @@ impl PairMeta {
         serializable_to_b58_hash(&self, Hash::SHA2256)
     }
 }
+
+impl ToJson for PairMeta {}
+
+impl FromJson for PairMeta {}
+
+impl RoundTripJson for PairMeta {}
 
 #[cfg(test)]
 pub mod tests {

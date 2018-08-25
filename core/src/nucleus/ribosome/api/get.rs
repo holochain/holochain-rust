@@ -6,6 +6,7 @@ use nucleus::ribosome::api::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use json::ToJson;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -59,7 +60,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     match action_result {
         ActionResponse::Get(maybe_pair) => {
             // serialize, allocate and encode result
-            let pair_str = maybe_pair.map(|p| p.to_json()).unwrap_or_default();
+            let pair_str = maybe_pair.map(|p| p.to_json().unwrap()).unwrap_or_default();
 
             runtime_allocate_encode_str(runtime, &pair_str)
         }

@@ -16,6 +16,7 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
+extern crate walkdir;
 
 extern crate holochain_agent;
 extern crate holochain_dna;
@@ -33,3 +34,4 @@ pub mod logger;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
+pub mod json;

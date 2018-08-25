@@ -15,13 +15,8 @@ pub struct Context {
 impl Context {
     // helper function to make it easier to call the logger
     pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
-        let result = self.logger.lock();
-        match result {
-            Err(_) => return Err(HolochainError::LoggingError),
-            Ok(mut logger) => {
-                logger.log(msg.to_string());
-            }
-        }
+        let mut logger = self.logger.lock().or(Err(HolochainError::LoggingError))?;
+        logger.log(msg.to_string());
         Ok(())
     }
 }

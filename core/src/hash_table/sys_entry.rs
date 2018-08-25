@@ -113,7 +113,7 @@ pub mod tests {
 
     use instance::{tests::test_context, Instance};
 
-    // Committing a DnaEntry to source chain should work
+    /// Committing a DnaEntry to source chain should work
     #[test]
     fn can_commit_dna() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
@@ -128,7 +128,7 @@ pub mod tests {
         instance.dispatch_and_wait(commit_action);
 
         // Check if AgentIdEntry is found
-        let mut count = 0;
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
             .history
@@ -139,21 +139,13 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::Dna
                     );
-                    count += 1;
                     true
                 }
                 _ => false,
             });
-        assert_eq!(count, 1);
     }
 
-    // Committing a DnaEntry to source chain should work only if first entry
-    #[test]
-    fn cannot_commit_dna() {
-        // FIXME
-    }
-
-    // Committing an AgentIdEntry to source chain should work
+    /// Committing an AgentIdEntry to source chain should work
     #[test]
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
@@ -167,7 +159,7 @@ pub mod tests {
         instance.dispatch_and_wait(commit_agent_action);
 
         // Check if AgentIdEntry is found
-        let mut count = 0;
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
             .history
@@ -178,17 +170,9 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::AgentId
                     );
-                    count += 1;
                     true
                 }
                 _ => false,
             });
-        assert_eq!(count, 1);
-    }
-
-    // Committing an AgentIdEntry to source chain should work only as second entry
-    #[test]
-    fn cannot_commit_agent() {
-        // FIXME
     }
 }

@@ -209,7 +209,6 @@ fn reduce_ia(
     let genesis_action_channel = action_channel.clone();
     let genesis_observer_channel = observer_channel.clone();
     let dna_clone = dna.clone();
-    // let action_wrapper_clone = action_wrapper.clone();
 
     thread::spawn(move || {
         // Send Commit Action for Genesis Entry
@@ -241,7 +240,7 @@ fn reduce_ia(
             .collect();
 
         // pad out a single pass if there are no zome results
-        // @TODO is this really OK?
+        // @TODO #78 - is this really OK?
         // should we be steamrolling ahead with an instance that has no zomes and no
         // genesis?
         // actually this can cause some really nasty edge case bugs for code that assumes

@@ -62,24 +62,29 @@ impl Header {
         }
     }
 
-    /// getters
-    pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
+    /// entry_type getter
+    pub fn entry_type(&self) -> &str {
+        &self.entry_type
     }
-    pub fn timestamp(&self) -> String {
-        self.timestamp.clone()
+    /// timestamp getter
+    pub fn timestamp(&self) -> &str {
+        &self.timestamp
     }
+    /// prev getter
     pub fn prev(&self) -> Option<String> {
         self.prev.clone()
     }
-    pub fn entry_hash(&self) -> String {
-        self.entry_hash.clone()
+    /// entry_hash getter
+    pub fn entry_hash(&self) -> &str {
+        &self.entry_hash
     }
+    /// prev_same getter
     pub fn prev_same(&self) -> Option<String> {
         self.prev_same.clone()
     }
-    pub fn entry_signature(&self) -> String {
-        self.entry_signature.clone()
+    /// entry_signature getter
+    pub fn entry_signature(&self) -> &str {
+        &self.entry_signature
     }
 
     /// hashes the header

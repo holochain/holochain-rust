@@ -160,6 +160,7 @@ pub mod tests {
     use hash_table::test_util::test_modify_pair;
     use hash_table::test_util::test_retract_pair;
     use hash_table::test_util::test_meta_round_trip;
+    use hash_table::test_util::test_all_metas_for_pair;
 
     use hash_table::{
         file::FileTable,
@@ -224,35 +225,10 @@ pub mod tests {
         test_meta_round_trip(&mut table);
     }
 
-    // #[test]
-    // /// all PairMeta for a Pair can be retrieved with get_pair_meta
-    // fn get_pair_meta() {
-    //     let mut ht = test_table();
-    //     let p = test_pair();
-    //     let m1 = test_pair_meta_a();
-    //     let m2 = test_pair_meta_b();
-    //     let empty_vec: Vec<PairMeta> = Vec::new();
-    //
-    //     assert_eq!(
-    //         empty_vec,
-    //         ht.get_pair_meta(&p)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    //
-    //     ht.assert_meta(m1.clone())
-    //         .expect("asserting metadata shouldn't fail");
-    //     assert_eq!(
-    //         vec![m1.clone()],
-    //         ht.get_pair_meta(&p)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    //
-    //     ht.assert_meta(m2.clone())
-    //         .expect("asserting metadata shouldn't fail");
-    //     assert_eq!(
-    //         vec![m2, m1],
-    //         ht.get_pair_meta(&p)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    // }
+    #[test]
+    /// all PairMeta for a Pair can be retrieved with get_pair_meta
+    fn all_metas_for_pair() {
+        let (mut table, _dir) = test_table();
+        test_all_metas_for_pair(&mut table);
+    }
 }

@@ -63,17 +63,13 @@ pub mod tests {
 
     use hash_table::{
         memory::MemTable,
-        pair::tests::{test_pair},
-        pair_meta::{
-            tests::{test_pair_meta_a, test_pair_meta_b},
-            PairMeta,
-        },
         HashTable,
     };
     use hash_table::test_util::test_pair_round_trip;
     use hash_table::test_util::test_modify_pair;
     use hash_table::test_util::test_retract_pair;
     use hash_table::test_util::test_meta_round_trip;
+    use hash_table::test_util::test_all_metas_for_pair;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -130,31 +126,6 @@ pub mod tests {
     /// all PairMeta for a Pair can be retrieved with all_metas_for_pair
     fn all_metas_for_pair() {
         let mut table = test_table();
-        let pair = test_pair();
-        let meta_a = test_pair_meta_a();
-        let meta_b = test_pair_meta_b();
-        let empty_vec: Vec<PairMeta> = Vec::new();
-
-        assert_eq!(
-            empty_vec,
-            table.all_metas_for_pair(&pair)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
-
-        table.assert_pair_meta(&meta_a)
-            .expect("asserting metadata shouldn't fail");
-        assert_eq!(
-            vec![meta_a.clone()],
-            table.all_metas_for_pair(&pair)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
-
-        table.assert_pair_meta(&meta_b)
-            .expect("asserting metadata shouldn't fail");
-        assert_eq!(
-            vec![meta_b, meta_a],
-            table.all_metas_for_pair(&pair)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
+        test_all_metas_for_pair(&mut table);
     }
 }

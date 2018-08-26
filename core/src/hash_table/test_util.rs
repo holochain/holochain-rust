@@ -9,6 +9,8 @@ use hash_table::status::LINK_NAME;
 use hash_table::status::STATUS_NAME;
 use key::Key;
 use hash_table::pair_meta::tests::test_pair_meta;
+use hash_table::pair_meta::tests::test_pair_meta_a;
+use hash_table::pair_meta::tests::test_pair_meta_b;
 
 // standard tests that should pass for every hash table implementation
 
@@ -89,5 +91,34 @@ pub fn test_meta_round_trip<HT: HashTable> (table: &mut HT) {
         table.pair_meta(&meta.key())
             .expect("getting the metadata on a pair shouldn't fail")
             .as_ref()
+    );
+}
+
+pub fn test_all_metas_for_pair<HT: HashTable> (table: &mut HT) {
+    let pair = test_pair();
+    let meta_a = test_pair_meta_a();
+    let meta_b = test_pair_meta_b();
+    let empty_vec: Vec<PairMeta> = Vec::new();
+
+    assert_eq!(
+        empty_vec,
+        table.all_metas_for_pair(&pair)
+            .expect("getting the metadata on a pair shouldn't fail")
+    );
+
+    table.assert_pair_meta(&meta_a)
+        .expect("asserting metadata shouldn't fail");
+    assert_eq!(
+        vec![meta_a.clone()],
+        table.all_metas_for_pair(&pair)
+            .expect("getting the metadata on a pair shouldn't fail")
+    );
+
+    table.assert_pair_meta(&meta_b)
+        .expect("asserting metadata shouldn't fail");
+    assert_eq!(
+        vec![meta_b, meta_a],
+        table.all_metas_for_pair(&pair)
+            .expect("getting the metadata on a pair shouldn't fail")
     );
 }

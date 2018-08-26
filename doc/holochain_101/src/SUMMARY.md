@@ -3,6 +3,7 @@
 - [Welcome](./welcome.md)
 - [Planning a dApp](./planning_a_dapp.md)
 - [Building Holochain Apps](./building_apps.md)
+  - [using zome API global variables](./zome/api_globals.md)
   - [using zome API functions](./zome/api_functions.md)
     - [implementing zome API functions](./zome/implementation.md)
   - [using callback functions](./zome/callback_functions.md)

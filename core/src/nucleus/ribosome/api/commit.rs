@@ -20,7 +20,7 @@ struct CommitArgs {
 /// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_commit(
+pub fn invoke_commit_entry(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
@@ -108,6 +108,10 @@ mod tests {
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::{
+        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        Defn,
+    };
     use serde_json;
 
     /// dummy commit args from standard test entry
@@ -125,7 +129,10 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("commit", test_args_bytes());
+        let (runtime, _) = test_zome_api_function_runtime(
+            ZomeAPIFunction::CommitEntry.as_str(),
+            test_args_bytes(),
+        );
 
         assert_eq!(
             runtime.result,

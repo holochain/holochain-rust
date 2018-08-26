@@ -218,11 +218,10 @@ fn reduce_ia(
             let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
 
             // Send Action and wait for it
-            ::instance::dispatch_action_and_wait(
+            // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
+            ::instance::dispatch_action(
                 &genesis_action_channel,
-                &genesis_observer_channel,
-                commit_genesis_action,
-            );
+                commit_genesis_action);
         }
 
         // map genesis across every zome

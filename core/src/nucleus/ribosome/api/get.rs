@@ -12,7 +12,10 @@ struct GetArgs {
     key: String,
 }
 
-pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_entry(
+    runtime: &mut Runtime,
+    args: &RuntimeArgs,
+) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
     let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);
@@ -76,7 +79,10 @@ mod tests {
 
     use super::GetArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
+    use nucleus::ribosome::{
+        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        Defn,
+    };
     use serde_json;
 
     /// dummy get args from standard test entry
@@ -90,7 +96,8 @@ mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime("get", test_args_bytes());
+        let (runtime, _) =
+            test_zome_api_function_runtime(ZomeAPIFunction::GetEntry.as_str(), test_args_bytes());
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"");

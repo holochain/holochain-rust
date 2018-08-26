@@ -166,6 +166,11 @@ impl<T: HashTable> Chain<T> {
                 .find(|p| p.entry().hash() == entry_hash))
     }
 
+    /// get the top Pair by Entry type
+    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
+        Ok(self.iter().find(|p| p.header().entry_type() == t))
+    }
+
     /// restore canonical JSON chain
     ///
     /// # Panics
@@ -186,11 +191,6 @@ impl<T: HashTable> Chain<T> {
             chain.push_pair(p).expect("pair should be valid");
         }
         chain
-    }
-
-    /// get the top Pair by Entry type
-    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(self.iter().find(|p| p.header().entry_type() == t))
     }
 }
 

@@ -32,6 +32,7 @@ use std::hash::{Hash, Hasher};
 pub mod wasm;
 pub mod zome;
 
+use std::collections::HashMap;
 use uuid::Uuid;
 
 /// serde helper, provides a default empty object
@@ -73,7 +74,7 @@ pub struct Dna {
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
-    pub zomes: Vec<zome::Zome>,
+    pub zomes: HashMap<String, zome::Zome>,
 }
 
 impl Default for Dna {
@@ -86,7 +87,7 @@ impl Default for Dna {
             uuid: _def_new_uuid(),
             dna_spec_version: String::from("2.0"),
             properties: _def_empty_object(),
-            zomes: Vec::new(),
+            zomes: HashMap::new(),
         }
     }
 }
@@ -156,7 +157,7 @@ impl Dna {
 
     /// Return a Zome
     pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes.iter().find(|z| z.name() == zome_name)
+        self.zomes.get(zome_name)
     }
 
     /// Return a Zome's WASM bytecode for a specified Capability
@@ -191,7 +192,7 @@ impl Dna {
         zome_name: &str,
         entry_type_name: &str,
     ) -> Option<&wasm::DnaWasm> {
-        let zome = self.zomes.iter().find(|z| z.name() == zome_name)?;
+        let zome = self.get_zome(zome_name)?;
         let entry_type = zome
             .entry_types
             .iter()
@@ -259,9 +260,8 @@ pub mod tests {
                 "properties": {
                     "test": "test"
                 },
-                "zomes": [
-                    {
-                        "name": "test",
+                "zomes": {
+                    "test": {
                         "description": "test",
                         "config": {
                             "error_handling": "throw-errors"
@@ -304,7 +304,7 @@ pub mod tests {
                             }
                         ]
                     }
-                ]
+                }
             }"#,
         ).replace(char::is_whitespace, "");
 
@@ -325,7 +325,7 @@ pub mod tests {
         };
         let mut zome = zome::Zome::default();
         zome.entry_types.push(zome::entry_types::EntryType::new());
-        dna.zomes.push(zome);
+        dna.zomes.insert("".to_string(), zome);
 
         let fixture = Dna::new_from_json(
             r#"{
@@ -335,9 +335,8 @@ pub mod tests {
                 "uuid": "00000000-0000-0000-0000-000000000000",
                 "dna_spec_version": "2.0",
                 "properties": {},
-                "zomes": [
-                    {
-                        "name": "",
+                "zomes": {
+                    "": {
                         "description": "",
                         "config": {
                             "error_handling": "throw-errors"
@@ -350,7 +349,7 @@ pub mod tests {
                             }
                         ]
                     }
-                ]
+                }
             }"#,
         ).unwrap();
 
@@ -371,14 +370,14 @@ pub mod tests {
     fn parse_with_defaults_zome() {
         let dna = Dna::new_from_json(
             r#"{
-                "zomes": [
-                    {}
-                ]
+                "zomes": {
+                    "0": {}
+                }
             }"#,
         ).unwrap();
 
         assert_eq!(
-            dna.zomes[0].config.error_handling,
+            dna.zomes.get("0").unwrap().config.error_handling,
             zome::ErrorHandling::ThrowErrors
         )
     }
@@ -387,18 +386,18 @@ pub mod tests {
     fn parse_with_defaults_entry_type() {
         let dna = Dna::new_from_json(
             r#"{
-                "zomes": [
-                    {
+                "zomes": {
+                    "0": {
                         "entry_types": [
                             {}
                         ]
                     }
-                ]
+                }
             }"#,
         ).unwrap();
 
         assert_eq!(
-            dna.zomes[0].entry_types[0].sharing,
+            dna.zomes.get("0").unwrap().entry_types[0].sharing,
             zome::entry_types::Sharing::Public
         );
     }
@@ -407,8 +406,8 @@ pub mod tests {
     fn parse_wasm() {
         let dna = Dna::new_from_json(
             r#"{
-                "zomes": [
-                    {
+                "zomes": {
+                    "0": {
                         "entry_types": [
                             {
                                 "validation": {
@@ -417,13 +416,13 @@ pub mod tests {
                             }
                         ]
                     }
-                ]
+                }
             }"#,
         ).unwrap();
 
         assert_eq!(
             vec![0, 1, 2, 3],
-            dna.zomes[0].entry_types[0].validation.code
+            dna.zomes.get("0").unwrap().entry_types[0].validation.code
         );
     }
 
@@ -442,11 +441,11 @@ pub mod tests {
     fn parse_fail_if_bad_type_zome() {
         Dna::new_from_json(
             r#"{
-                "zomes": [
-                    {
-                        "name": 42
+                "zomes": {
+                    "0": {
+                        "description": 42
                     }
-                ]
+                }
             }"#,
         ).unwrap();
     }
@@ -456,15 +455,15 @@ pub mod tests {
     fn parse_fail_if_bad_type_entry_type() {
         Dna::new_from_json(
             r#"{
-                "zomes": [
-                    {
+                "zomes": {
+                    "0": {
                         "entry_types": [
                             {
                                 "name": 42
                             }
                         ]
                     }
-                ]
+                }
             }"#,
         ).unwrap();
     }
@@ -522,8 +521,8 @@ pub mod tests {
                 "properties": {
                     "test": "test"
                 },
-                "zomes": [
-                    {
+                "zomes": {
+                    "test zome": {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
@@ -549,7 +548,7 @@ pub mod tests {
                             }
                         ]
                     }
-                ]
+                }
             }"#,
         ).unwrap();
 

@@ -66,7 +66,6 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     capabilities.push(capability);
 
     let zome = Zome::new(
-        &zome_name,
         "some zome description",
         &Config::new(),
         &Vec::new(),
@@ -74,7 +73,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     );
 
     // zome.capabilities.push(capability);
-    dna.zomes.push(zome);
+    dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna
 }

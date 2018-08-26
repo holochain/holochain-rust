@@ -44,10 +44,6 @@ impl Config {
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Zome {
-    /// The name of this zome.
-    #[serde(default)]
-    name: String,
-
     /// A description of this zome.
     #[serde(default)]
     pub description: String,
@@ -73,7 +69,6 @@ impl Default for Zome {
     /// Provide defaults for an individual "zome".
     fn default() -> Self {
         Zome {
-            name: String::from(""),
             description: String::from(""),
             config: Config::new(),
             entry_types: Vec::new(),
@@ -85,23 +80,17 @@ impl Default for Zome {
 impl Zome {
     /// Allow sane defaults for `Zome::new()`.
     pub fn new(
-        name: &str,
         description: &str,
         config: &Config,
         entry_types: &[entry_types::EntryType],
         capabilities: &[capabilities::Capability],
     ) -> Zome {
         Zome {
-            name: name.into(),
             description: description.into(),
             config: config.clone(),
             entry_types: entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
         }
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
     }
 }
 
@@ -118,7 +107,6 @@ pub mod tests {
     fn build_and_compare() {
         let fixture: Zome = serde_json::from_str(
             r#"{
-                "name": "test",
                 "description": "test",
                 "config": {
                     "error_handling": "throw-errors"
@@ -129,7 +117,6 @@ pub mod tests {
         ).unwrap();
 
         let mut zome = Zome::default();
-        zome.name = String::from("test");
         zome.description = String::from("test");
         zome.config.error_handling = ErrorHandling::ThrowErrors;
 

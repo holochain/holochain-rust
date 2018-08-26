@@ -8,10 +8,11 @@ use agent::keys::tests::test_keys;
 use hash_table::status::LINK_NAME;
 use hash_table::status::STATUS_NAME;
 use key::Key;
+use hash_table::pair_meta::tests::test_pair_meta;
 
 // standard tests that should pass for every hash table implementation
 
-pub fn test_round_trip<HT: HashTable> (table: &mut HT) {
+pub fn test_pair_round_trip<HT: HashTable> (table: &mut HT) {
     let pair = test_pair();
     table.commit_pair(&pair).expect("should be able to commit valid pair");
     assert_eq!(table.pair(&pair.key()), Ok(Some(pair)));
@@ -69,5 +70,24 @@ pub fn test_retract_pair<HT: HashTable> (table: &mut HT) {
         )],
         table.all_metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail"),
+    );
+}
+
+pub fn test_meta_round_trip<HT: HashTable> (table: &mut HT) {
+    let meta = test_pair_meta();
+
+    assert_eq!(
+        None,
+        table.pair_meta(&meta.key())
+            .expect("getting the metadata on a pair shouldn't fail")
+    );
+
+    table.assert_pair_meta(&meta)
+        .expect("asserting metadata shouldn't fail");
+    assert_eq!(
+        Some(&meta),
+        table.pair_meta(&meta.key())
+            .expect("getting the metadata on a pair shouldn't fail")
+            .as_ref()
     );
 }

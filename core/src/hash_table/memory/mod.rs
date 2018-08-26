@@ -65,15 +65,15 @@ pub mod tests {
         memory::MemTable,
         pair::tests::{test_pair},
         pair_meta::{
-            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
+            tests::{test_pair_meta_a, test_pair_meta_b},
             PairMeta,
         },
         HashTable,
     };
-    use hash_table::test_util::test_round_trip;
+    use hash_table::test_util::test_pair_round_trip;
     use hash_table::test_util::test_modify_pair;
     use hash_table::test_util::test_retract_pair;
-    use key::Key;
+    use hash_table::test_util::test_meta_round_trip;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -102,7 +102,7 @@ pub mod tests {
     #[test]
     /// Pairs can round trip through table.commit() and table.get()
     fn pair_round_trip() {
-        test_round_trip(&mut test_table());
+        test_pair_round_trip(&mut test_table());
     }
 
     #[test]
@@ -123,22 +123,7 @@ pub mod tests {
     /// PairMeta can round trip through table.assert_meta() and table.get_meta()
     fn meta_round_trip() {
         let mut table = test_table();
-        let meta = test_pair_meta();
-
-        assert_eq!(
-            None,
-            table.pair_meta(&meta.key())
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
-
-        table.assert_pair_meta(&meta)
-            .expect("asserting metadata shouldn't fail");
-        assert_eq!(
-            Some(&meta),
-            table.pair_meta(&meta.key())
-                .expect("getting the metadata on a pair shouldn't fail")
-                .as_ref()
-        );
+        test_meta_round_trip(&mut table);
     }
 
     #[test]

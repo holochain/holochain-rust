@@ -156,9 +156,10 @@ pub mod tests {
     use tempfile::tempdir;
     use tempfile::TempDir;
     use hash_table::HashTable;
-    use hash_table::test_util::test_round_trip;
+    use hash_table::test_util::test_pair_round_trip;
     use hash_table::test_util::test_modify_pair;
     use hash_table::test_util::test_retract_pair;
+    use hash_table::test_util::test_meta_round_trip;
 
     use hash_table::{
         file::FileTable,
@@ -199,7 +200,7 @@ pub mod tests {
     /// Pairs can round trip through table.commit() and table.get()
     fn pair_round_trip() {
         let (mut table, _dir) = test_table();
-        test_round_trip(&mut table);
+        test_pair_round_trip(&mut table);
     }
 
     #[test]
@@ -215,29 +216,14 @@ pub mod tests {
         let (mut table, _dir) = test_table();
         test_retract_pair(&mut table);
     }
-    //
-    // #[test]
-    // /// PairMeta can round trip through table.assert_meta() and table.get_meta()
-    // fn meta_round_trip() {
-    //     let mut ht = test_table();
-    //     let m = test_pair_meta();
-    //
-    //     assert_eq!(
-    //         None,
-    //         ht.get_meta(&m.key())
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    //
-    //     ht.assert_meta(m.clone())
-    //         .expect("asserting metadata shouldn't fail");
-    //     assert_eq!(
-    //         Some(&m),
-    //         ht.get_meta(&m.key())
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //             .as_ref()
-    //     );
-    // }
-    //
+
+    #[test]
+    /// PairMeta can round trip through table.assert_meta() and table.get_meta()
+    fn meta_round_trip() {
+        let (mut table, _dir) = test_table();
+        test_meta_round_trip(&mut table);
+    }
+
     // #[test]
     // /// all PairMeta for a Pair can be retrieved with get_pair_meta
     // fn get_pair_meta() {

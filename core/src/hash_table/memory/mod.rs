@@ -7,6 +7,7 @@ use hash_table::{
     pair_meta::PairMeta,
     HashTable,
 };
+use key::Key;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
@@ -34,8 +35,8 @@ impl HashTable for MemTable {
         Ok(self.pairs.get(key).cloned())
     }
 
-    fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
-        self.meta.insert(meta.key(), meta);
+    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+        self.meta.insert(meta.key(), meta.clone());
         Ok(())
     }
 
@@ -63,15 +64,17 @@ pub mod tests {
     use agent::keys::tests::test_keys;
     use hash_table::{
         memory::MemTable,
-        pair::tests::{test_pair, test_pair_a, test_pair_b},
+        pair::tests::{test_pair},
         pair_meta::{
             tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
             PairMeta,
         },
-        status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+        status::{CRUDStatus, STATUS_NAME},
         HashTable,
     };
     use hash_table::test_util::test_round_trip;
+    use hash_table::test_util::test_modify_pair;
+    use key::Key;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -105,35 +108,9 @@ pub mod tests {
 
     #[test]
     /// Pairs can be modified through table.modify()
-    fn modify() {
-        let mut ht = test_table();
-        let p1 = test_pair_a();
-        let p2 = test_pair_b();
-
-        ht.commit_pair(&p1).expect("should be able to commit valid pair");
-        ht.modify_pair(&test_keys(), &p1, &p2)
-            .expect("should be able to edit with valid pair");
-
-        assert_eq!(
-            vec![
-                PairMeta::new(&test_keys(), &p1, LINK_NAME, &p2.key()),
-                PairMeta::new(
-                    &test_keys(),
-                    &p1,
-                    STATUS_NAME,
-                    &CRUDStatus::MODIFIED.bits().to_string(),
-                ),
-            ],
-            ht.all_metas_for_pair(&p1)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
-
-        let empty_vec: Vec<PairMeta> = Vec::new();
-        assert_eq!(
-            empty_vec,
-            ht.all_metas_for_pair(&p2)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
+    fn modify_pair() {
+        let mut table = test_table();
+        test_modify_pair(&mut table);
     }
 
     #[test]
@@ -168,19 +145,19 @@ pub mod tests {
     /// PairMeta can round trip through table.assert_meta() and table.get_meta()
     fn meta_round_trip() {
         let mut table = test_table();
-        let m = test_pair_meta();
+        let meta = test_pair_meta();
 
         assert_eq!(
             None,
-            table.pair_meta(&m.key())
+            table.pair_meta(&meta.key())
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        table.assert_pair_meta(m.clone())
+        table.assert_pair_meta(&meta)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            Some(&m),
-            table.pair_meta(&m.key())
+            Some(&meta),
+            table.pair_meta(&meta.key())
                 .expect("getting the metadata on a pair shouldn't fail")
                 .as_ref()
         );
@@ -189,31 +166,31 @@ pub mod tests {
     #[test]
     /// all PairMeta for a Pair can be retrieved with all_metas_for_pair
     fn all_metas_for_pair() {
-        let mut ht = test_table();
-        let p = test_pair();
-        let m1 = test_pair_meta_a();
-        let m2 = test_pair_meta_b();
+        let mut table = test_table();
+        let pair = test_pair();
+        let meta_a = test_pair_meta_a();
+        let meta_b = test_pair_meta_b();
         let empty_vec: Vec<PairMeta> = Vec::new();
 
         assert_eq!(
             empty_vec,
-            ht.all_metas_for_pair(&p)
+            table.all_metas_for_pair(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        ht.assert_pair_meta(m1.clone())
+        table.assert_pair_meta(&meta_a)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            vec![m1.clone()],
-            ht.all_metas_for_pair(&p)
+            vec![meta_a.clone()],
+            table.all_metas_for_pair(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        ht.assert_pair_meta(m2.clone())
+        table.assert_pair_meta(&meta_b)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            vec![m2, m1],
-            ht.all_metas_for_pair(&p)
+            vec![meta_b, meta_a],
+            table.all_metas_for_pair(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
     }

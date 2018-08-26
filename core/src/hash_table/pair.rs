@@ -5,6 +5,7 @@ use json::FromJson;
 use json::RoundTripJson;
 use serde_json;
 use error::HolochainError;
+use key::Key;
 
 /// Pairs are entries with their headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -57,11 +58,6 @@ impl Pair {
         &self.entry
     }
 
-    /// key used in hash table lookups and other references
-    pub fn key(&self) -> String {
-        self.header.hash()
-    }
-
     /// true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header and entry must validate independently
@@ -70,6 +66,12 @@ impl Pair {
         && self.header.entry() == self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
+    }
+}
+
+impl Key for Pair {
+    fn key(&self) -> String {
+        self.header.hash()
     }
 }
 

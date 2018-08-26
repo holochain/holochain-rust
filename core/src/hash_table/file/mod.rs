@@ -12,6 +12,27 @@ use json::ToJson;
 use walkdir::WalkDir;
 use json::FromJson;
 use std::fs::create_dir_all;
+use key::Key;
+
+// folders actually... wish-it-was-tables
+enum Table {
+    Pairs,
+    Metas,
+}
+
+// things that can be serialized and put in a file... wish-it-was-rows
+trait Row: ToJson + Key {}
+impl Row for Pair {}
+impl Row for PairMeta {}
+
+impl ToString for Table {
+    fn to_string(&self) -> String {
+        match self {
+            Table::Pairs => "pairs",
+            Table::Metas => "metas",
+        }.to_string()
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct FileTable {
@@ -28,20 +49,16 @@ impl FileTable {
         }
     }
 
-    fn dir (&self, name: &str) -> String {
-        let dir_string = format!("{}/{}", self.path, name);
-        // let path = Path::from(&dir_string);
+    fn dir (&self, table: Table) -> String {
+        let dir_string = format!("{}/{}", self.path, table.to_string());
         // @TODO be more efficient here
         // @TODO avoid unwrap
         create_dir_all(&dir_string).unwrap();
         dir_string
     }
 
-    fn pairs_dir(&self) -> String {
-        self.dir("pairs")
-    }
-
-    fn key_path(&self, dir: &str, key: &str) -> String {
+    fn row_path(&self, table: Table, key: &str) -> String {
+        let dir = self.dir(table);
         format!(
             "{}/{}.json",
             dir,
@@ -49,16 +66,28 @@ impl FileTable {
         )
     }
 
-    fn pair_key_path(&self, key: &str) -> String {
-        self.key_path(&self.pairs_dir(), key)
+    fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
+        match fs::write(
+            self.row_path(table, &row.key()),
+            row.to_json().unwrap(),
+        ) {
+            Err(e) => Err(HolochainError::from(e)),
+            _ => Ok(()),
+        }
     }
 
-    fn metas_dir(&self) -> String {
-        format!("{}/meta", self.path)
-    }
-
-    fn meta_key_path(&self, key: &str) -> String {
-        self.key_path(&self.metas_dir(), key)
+    /// Returns a JSON string option for the given key in the given table
+    fn lookup(&self, table: Table, key: &str) -> Result<Option<String>, HolochainError> {
+        let path_string = self.row_path(table, key);
+        if Path::new(&path_string).is_file() {
+            match fs::read_to_string(path_string) {
+                Ok(v) => Ok(Some(v)),
+                Err(e) => Err(HolochainError::from(e)),
+            }
+        }
+        else {
+            Ok(None)
+        }
     }
 
 }
@@ -66,45 +95,27 @@ impl FileTable {
 impl HashTable for FileTable {
 
     fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        match fs::write(
-            self.pair_key_path(&pair.key()),
-            pair.to_json().unwrap(),
-        ) {
-            Err(e) => Err(HolochainError::from(e)),
-            _ => Ok(()),
-        }
+        self.upsert(Table::Pairs, pair)
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        // @TODO real result
         Ok(
-            Some(
-                Pair::from_json(
-                    &fs::read_to_string(self.pair_key_path(key)).unwrap()
-                ).unwrap()
-            )
+            self
+                .lookup(Table::Pairs, key)?
+                // @TODO don't unwrap here
+                .and_then(|s| Some(Pair::from_json(&s).unwrap()))
         )
-        // Ok(self.pairs.get(key).cloned())
     }
 
-    fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
-        match fs::write(
-            self.meta_key_path(&meta.key()),
-            meta.to_json().unwrap(),
-        ) {
-            Err(e) => Err(HolochainError::from(e)),
-            _ => Ok(()),
-        }
+    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+        self.upsert(Table::Metas, meta)
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        // @TODO real result
         Ok(
-            Some(
-                PairMeta::from_json(
-                    &fs::read_to_string(self.meta_key_path(key)).unwrap()
-                ).unwrap()
-            )
+            self
+                .lookup(Table::Metas, key)?
+                .and_then(|s| Some(PairMeta::from_json(&s).unwrap()))
         )
     }
 
@@ -113,16 +124,22 @@ impl HashTable for FileTable {
 
         // this is a brute force approach that involves reading and parsing every file
         // big meta data should be backed by something indexable like sqlite
-        for meta in WalkDir::new(self.metas_dir()) {
+        for meta in WalkDir::new(self.dir(Table::Metas)) {
             let meta = meta.unwrap();
             let path = meta.path();
-            let meta_parsed = PairMeta::from_json(
-                &fs::read_to_string(
-                    &path.to_string_lossy().to_string()
-                )?
-            )?;
-            if meta_parsed.pair() == pair.key() {
-                metas.push(meta_parsed);
+            let key = path.file_stem();
+            match key {
+                Some(k) => {
+                    match self.pair_meta(&k.to_string_lossy())? {
+                        Some(pair_meta) => {
+                            if pair_meta.pair() == pair.key() {
+                                metas.push(pair_meta);
+                            }
+                        }
+                        None => {},
+                    }
+                },
+                None => {},
             }
         }
 
@@ -140,6 +157,7 @@ pub mod tests {
     use tempfile::TempDir;
     use hash_table::HashTable;
     use hash_table::test_util::test_round_trip;
+    use hash_table::test_util::test_modify_pair;
 
     use hash_table::{
         file::FileTable,
@@ -182,39 +200,13 @@ pub mod tests {
         let (mut table, _dir) = test_table();
         test_round_trip(&mut table);
     }
-    //
-    // #[test]
-    // /// Pairs can be modified through table.modify()
-    // fn modify() {
-    //     let mut ht = test_table();
-    //     let p1 = test_pair_a();
-    //     let p2 = test_pair_b();
-    //
-    //     ht.commit(&p1).expect("should be able to commit valid pair");
-    //     ht.modify(&test_keys(), &p1, &p2)
-    //         .expect("should be able to edit with valid pair");
-    //
-    //     assert_eq!(
-    //         vec![
-    //             PairMeta::new(&test_keys(), &p1, LINK_NAME, &p2.key()),
-    //             PairMeta::new(
-    //                 &test_keys(),
-    //                 &p1,
-    //                 STATUS_NAME,
-    //                 &CRUDStatus::MODIFIED.bits().to_string(),
-    //             ),
-    //         ],
-    //         ht.get_pair_meta(&p1)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    //
-    //     let empty_vec: Vec<PairMeta> = Vec::new();
-    //     assert_eq!(
-    //         empty_vec,
-    //         ht.get_pair_meta(&p2)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    // }
+
+    #[test]
+    /// Pairs can be modified through table.modify()
+    fn modify_pair() {
+        let (mut table, _dir) = test_table();
+        test_modify_pair(&mut table);
+    }
     //
     // #[test]
     // /// Pairs can be retracted through table.retract()

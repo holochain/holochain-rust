@@ -8,6 +8,7 @@ use json::FromJson;
 use json::RoundTripJson;
 use serde_json;
 use error::HolochainError;
+use key::Key;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
@@ -85,9 +86,10 @@ impl PairMeta {
     pub fn source(&self) -> String {
         self.source.clone()
     }
+}
 
-    /// the key for hash table lookups, e.g. table.get_meta()
-    pub fn key(&self) -> String {
+impl Key for PairMeta {
+    fn key(&self) -> String {
         serializable_to_b58_hash(&self, Hash::SHA2256)
     }
 }
@@ -125,6 +127,7 @@ pub mod tests {
     use agent::keys::tests::test_keys;
     use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
     use std::cmp::Ordering;
+    use key::Key;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {

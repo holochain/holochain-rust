@@ -3,6 +3,7 @@ use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;
 use std::{fmt, rc::Rc};
+use key::Key;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -210,6 +211,7 @@ pub mod tests {
     };
     use std::rc::Rc;
     use hash_table::HashTable;
+    use key::Key;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {
@@ -272,19 +274,19 @@ pub mod tests {
         let t = test_table();
         let mut c = Chain::new(Rc::new(t));
         // test that adding something to the chain adds to the table
-        let p = c
+        let pair = c
             .push(&test_entry())
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let tr = Rc::new(c.table());
         let chain_entry = c
             .table()
-            .pair(&p.key())
+            .pair(&pair.key())
             .expect("getting an entry from a chain shouldn't fail");
-        assert_eq!(Some(&p), chain_entry.as_ref());
+        assert_eq!(Some(&pair), chain_entry.as_ref());
         let tr_entry = tr
-            .pair(&p.key())
+            .pair(&pair.key())
             .expect("getting an entry from a chain shouldn't fail");
-        assert_eq!(Some(&p), tr_entry.as_ref());
+        assert_eq!(Some(&pair), tr_entry.as_ref());
         assert_eq!(chain_entry, tr_entry);
     }
 

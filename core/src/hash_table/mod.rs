@@ -14,6 +14,7 @@ use hash_table::{pair::Pair, pair_meta::PairMeta};
 use hash_table::status::CRUDStatus;
 use hash_table::status::STATUS_NAME;
 use hash_table::status::LINK_NAME;
+use key::Key;
 
 pub trait HashTable {
     // internal state management
@@ -43,7 +44,7 @@ pub trait HashTable {
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(PairMeta::new(
+        self.assert_pair_meta(&PairMeta::new(
             keys,
             &old_pair,
             STATUS_NAME,
@@ -52,12 +53,12 @@ pub trait HashTable {
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
+        self.assert_pair_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
     }
 
     /// set the status of a Pair to DELETED
     fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        self.assert_pair_meta(PairMeta::new(
+        self.assert_pair_meta(&PairMeta::new(
             keys,
             &pair,
             STATUS_NAME,
@@ -67,7 +68,7 @@ pub trait HashTable {
 
     // meta
     /// assert a given PairMeta in the HashTable
-    fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError>;
+    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
     /// lookup a PairMeta from the HashTable by key
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair

@@ -35,12 +35,20 @@ pub struct FileTable {
 }
 
 impl FileTable {
-    pub fn new(path: &str) -> FileTable {
-        // @TODO unwrap
-        let canonical = Path::new(path).canonicalize().unwrap();
-        FileTable {
-            // @TODO is lossy string right?
-            path: canonical.to_string_lossy().to_string(),
+    pub fn new(path: &str) -> Result<FileTable, HolochainError> {
+        let canonical = Path::new(path).canonicalize()?;
+        if canonical.is_dir() {
+            Ok(
+                FileTable {
+                    path: match canonical.to_str() {
+                        Some(p) => p.to_string(),
+                        None => { return Err(HolochainError::IoError("could not convert path to string".to_string())); },
+                    }
+                }
+            )
+        }
+        else {
+            Err(HolochainError::IoError("path is not a directory".to_string()))
         }
     }
 
@@ -148,7 +156,7 @@ pub mod tests {
     /// @see https://docs.rs/tempfile/3.0.3/tempfile/struct.TempDir.html
     pub fn test_table() -> (FileTable, TempDir) {
         let dir = tempdir().unwrap();
-        (FileTable::new(dir.path().to_str().unwrap()), dir)
+        (FileTable::new(dir.path().to_str().unwrap()).unwrap(), dir)
     }
 
     #[test]

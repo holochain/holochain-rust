@@ -5,6 +5,7 @@ use std::path::Path;
 use std::io;
 use std::io::Error as IoError;
 use json::ToJson;
+use serde_json::Error as SerdeError;
 
 /// module for holding Holochain specific errors
 
@@ -30,8 +31,6 @@ impl HolochainError {
 }
 
 impl ToJson for HolochainError {
-    /// @TODO round trip this
-    /// @see https://github.com/holochain/holochain-rust/issues/193
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(format!("{{\"error\":\"{}\"}}", self.description()))
     }
@@ -90,6 +89,12 @@ impl From<WalkdirError> for HolochainError {
 impl From<IoError> for HolochainError {
     fn from(error: IoError) -> Self {
         HolochainError::IoError(reason_for_io_error(&error))
+    }
+}
+
+impl From<SerdeError> for HolochainError {
+    fn from(error: SerdeError) -> Self {
+        HolochainError::SerializationError(error.to_string())
     }
 }
 

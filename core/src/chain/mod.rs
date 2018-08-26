@@ -4,6 +4,7 @@ use hash_table::{entry::Entry, pair::Pair, HashTable};
 use serde_json;
 use std::{fmt, rc::Rc};
 use key::Key;
+use json::ToJson;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -165,27 +166,13 @@ impl<T: HashTable> Chain<T> {
                 .find(|p| p.entry().hash() == entry_hash))
     }
 
-    /// get the top Pair by Entry type
-    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(self.iter().find(|p| p.header().entry_type() == t))
-    }
-
-    /// get the entire chain, top to bottom as a JSON array or canonical pairs
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        let as_seq = self.iter().collect::<Vec<Pair>>();
-        serde_json::to_string(&as_seq)
-    }
-
     /// restore canonical JSON chain
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string passed isn't valid JSON or pairs fail to validate
     ///
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
+    ///
+    /// @TODO implement as FromJson trait once actors land
+    /// @see https://github.com/holochain/holochain-rust/issues/247
     pub fn from_json(table: Rc<T>, s: &str) -> Self {
         // @TODO inappropriate expect?
         // @see https://github.com/holochain/holochain-rust/issues/168
@@ -197,6 +184,21 @@ impl<T: HashTable> Chain<T> {
             chain.push_pair(p).expect("pair should be valid");
         }
         chain
+    }
+
+    /// get the top Pair by Entry type
+    pub fn top_type(&self, t: &str) -> Result<Option<Pair>, HolochainError> {
+        Ok(self.iter().find(|p| p.header().entry_type() == t))
+    }
+}
+
+impl<T: HashTable> ToJson for Chain<T> {
+    /// get the entire chain, top to bottom as a JSON array or canonical pairs
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn to_json(&self) -> Result<String, HolochainError> {
+        let as_seq = self.iter().collect::<Vec<Pair>>();
+        Ok(serde_json::to_string(&as_seq)?)
     }
 }
 
@@ -212,6 +214,7 @@ pub mod tests {
     use std::rc::Rc;
     use hash_table::HashTable;
     use key::Key;
+    use json::ToJson;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {

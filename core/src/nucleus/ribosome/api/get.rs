@@ -21,7 +21,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     if res_entry.is_err() {
         // Return Error code in i32 format
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorSerdeJson as i32,
+            HcApiReturnCode::ErrorJson as i32,
         )));
     }
 

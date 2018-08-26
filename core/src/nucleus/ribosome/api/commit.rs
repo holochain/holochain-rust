@@ -7,6 +7,7 @@ use nucleus::ribosome::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use json::ToJson;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -31,7 +32,7 @@ pub fn invoke_commit(
         Err(_) => {
             // Return Error code in i32 format
             return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ErrorSerdeJson as i32,
+                HcApiReturnCode::ErrorJson as i32,
             )));
         }
     };
@@ -88,7 +89,15 @@ pub fn invoke_commit(
     match action_result {
         ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &action_result.to_json())
+            let json = action_result.to_json();
+            match json {
+                Ok(j) => {
+                    runtime_allocate_encode_str(runtime, &j)
+                },
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ErrorJson as i32,
+                ))),
+            }
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,

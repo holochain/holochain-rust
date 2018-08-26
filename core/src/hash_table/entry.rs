@@ -2,6 +2,10 @@ use hash;
 use multihash::Hash;
 use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
+use json::ToJson;
+use error::HolochainError;
+use json::FromJson;
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -76,34 +80,29 @@ impl Entry {
     pub fn key(&self) -> String {
         self.hash()
     }
+}
 
-    /// serialize the Entry to a canonical JSON string
-    ///
+impl ToJson for Entry {
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> String {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).expect("should serialize without error")
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(&self)?)
     }
+}
 
-    /// deserialize an Entry from a canonical JSON string
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string passed isn't valid JSON.
+impl FromJson for Entry {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    /// @TODO don't return invalid entries
-    pub fn from_json(s: &str) -> Entry {
-        let entry: Entry = serde_json::from_str(s).expect("JSON should be valid");
-        entry
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        Ok(serde_json::from_str(s)?)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::Entry;
+    use json::ToJson;
+    use json::FromJson;
 
     /// dummy entry type
     pub fn test_type() -> String {
@@ -289,8 +288,8 @@ pub mod tests {
     fn json_round_trip() {
         let e = test_entry_a();
         let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
-        assert_eq!(expected, e.to_json());
-        assert_eq!(e, Entry::from_json(expected));
-        assert_eq!(e, Entry::from_json(&e.to_json()));
+        assert_eq!(expected, e.to_json().unwrap());
+        assert_eq!(e, Entry::from_json(expected).unwrap());
+        assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
     }
 }

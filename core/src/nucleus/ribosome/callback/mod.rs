@@ -17,6 +17,7 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
+use json::ToJson;
 
 // Callback functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
@@ -136,7 +137,8 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json(),
+            // @TODO avoid unwrap here
+            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap(),
             CallbackParams::Receive => "".to_string(),
         }
     }

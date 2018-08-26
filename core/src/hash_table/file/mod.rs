@@ -41,17 +41,20 @@ impl FileTable {
     pub fn new(path: &str) -> Result<FileTable, HolochainError> {
         let canonical = Path::new(path).canonicalize()?;
         if canonical.is_dir() {
-            Ok(
-                FileTable {
-                    path: match canonical.to_str() {
-                        Some(p) => p.to_string(),
-                        None => { return Err(HolochainError::IoError("could not convert path to string".to_string())); },
+            Ok(FileTable {
+                path: match canonical.to_str() {
+                    Some(p) => p.to_string(),
+                    None => {
+                        return Err(HolochainError::IoError(
+                            "could not convert path to string".to_string(),
+                        ));
                     }
-                }
-            )
-        }
-        else {
-            Err(HolochainError::IoError("path is not a directory or permissions don't allow access".to_string()))
+                },
+            })
+        } else {
+            Err(HolochainError::IoError(
+                "path is not a directory or permissions don't allow access".to_string(),
+            ))
         }
     }
 

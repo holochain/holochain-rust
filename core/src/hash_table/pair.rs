@@ -79,13 +79,7 @@ impl Key for Pair {
 /// @see https://github.com/holochain/holochain-rust/issues/75
 impl ToJson for Pair {
     fn to_json(&self) -> Result<String, HolochainError> {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        let result = serde_json::to_string(&self);
-        match result {
-            Ok(r) => Ok(r),
-            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-        }
+        Ok(serde_json::to_string(&self)?)
     }
 }
 
@@ -93,11 +87,7 @@ impl FromJson for Pair {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     fn from_json(s: &str) -> Result<Self, HolochainError> {
-        let result: Result<Self, serde_json::Error> = serde_json::from_str(s);
-        match result {
-            Ok(r) => Ok(r),
-            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-        }
+        Ok(serde_json::from_str(s)?)
     }
 }
 

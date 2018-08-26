@@ -73,7 +73,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::Get(result) => match result {
-                Some(pair) => Ok(pair.to_json().unwrap()),
+                Some(pair) => Ok(pair.to_json()?),
                 None => Ok("".to_string()),
             },
         }

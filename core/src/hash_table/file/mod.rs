@@ -165,6 +165,31 @@ pub mod tests {
     }
 
     #[test]
+    /// a missing directory gives an error result
+    fn new_error_missing_dir() {
+        let result = FileTable::new("foo bar missing dir");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    /// dir returns a sensible string for every Table enum variant
+    fn test_dir() {
+        // @TODO
+    }
+
+    #[test]
+    /// row_path returns a sensible string for a Table enum and key
+    fn test_row_path() {
+        // @TODO
+    }
+
+    #[test]
+    /// rows can round trip through upsert/lookup
+    fn test_row_round_trip() {
+        // @TODO
+    }
+
+    #[test]
     /// tests for ht.setup()
     fn setup() {
         let (mut table, _dir) = test_table();

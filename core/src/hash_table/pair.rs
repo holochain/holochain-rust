@@ -81,6 +81,15 @@ impl ToJson for Pair {
     }
 }
 
+impl ToJson for Option<Pair> {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        match self {
+            Some(pair) => pair.to_json(),
+            None => Ok(String::new()),
+        }
+    }
+}
+
 impl FromJson for Pair {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75

@@ -7,10 +7,19 @@ use wasm::DnaWasm;
 // Reserved Capabilities and functions names
 //--------------------------------------------------------------------------------------------------
 
+#[derive(Debug, PartialEq)]
 /// Enumeration of all Capabilities known and used by HC Core
 /// Enumeration converts to str
 pub enum ReservedCapabilityNames {
+    /// Development placeholder, no production fn should use MissingNo
+    MissingNo,
+
+    /// @TODO document what LifeCycle is
+    /// @see https://github.com/holochain/holochain-rust/issues/204
     LifeCycle,
+
+    /// @TODO document what Communication is
+    /// @see https://github.com/holochain/holochain-rust/issues/204
     Communication,
 }
 
@@ -30,37 +39,7 @@ impl ReservedCapabilityNames {
         match *self {
             ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
             ReservedCapabilityNames::Communication => "hc_web_gateway",
-        }
-    }
-}
-
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
-pub enum ReservedFunctionNames {
-    /// genesis() -> bool
-    /// Must be in LifeCycle Capability
-    Genesis,
-    /// receive(from : String, message : String) -> String
-    /// Must be in Communication Capability
-    Receive,
-}
-
-impl FromStr for ReservedFunctionNames {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "genesis" => Ok(ReservedFunctionNames::Genesis),
-            "receive" => Ok(ReservedFunctionNames::Receive),
-            _ => Err("Cannot convert string to ReservedFunctionNames"),
-        }
-    }
-}
-
-impl ReservedFunctionNames {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            ReservedFunctionNames::Genesis => "genesis",
-            ReservedFunctionNames::Receive => "receive",
+            ReservedCapabilityNames::MissingNo => "",
         }
     }
 }
@@ -70,7 +49,7 @@ impl ReservedFunctionNames {
 //--------------------------------------------------------------------------------------------------
 
 /// Enum for Zome Capability "membrane" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum Membrane {
     #[serde(rename = "public")]
     Public,
@@ -90,7 +69,7 @@ impl Default for Membrane {
 }
 
 /// Represents the "capability" sub-object on a "zome" "capabilities" object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct CapabilityType {
     /// How visibility should be handled for this capability.
     #[serde(default)]
@@ -113,7 +92,7 @@ impl CapabilityType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnParameter {
     #[serde(rename = "type")]
     pub parameter_type: String,
@@ -131,7 +110,7 @@ impl FnParameter {
 }
 
 /// Represents a zome "fn_declarations" object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct FnDeclaration {
     /// The name of this fn declaration.
     #[serde(default)]
@@ -159,7 +138,7 @@ impl FnDeclaration {
 }
 
 /// Represents an individual object in the "zome" "capabilities" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
     /// The name of this capability.
     #[serde(default)]
@@ -201,6 +180,33 @@ impl Capability {
 mod tests {
     use super::*;
     use serde_json;
+
+    #[test]
+    /// test that ReservedCapabilityNames can be created from a canonical string
+    fn test_capabilities_from_str() {
+        assert_eq!(
+            Ok(ReservedCapabilityNames::LifeCycle),
+            ReservedCapabilityNames::from_str("hc_lifecycle"),
+        );
+        assert_eq!(
+            Ok(ReservedCapabilityNames::Communication),
+            ReservedCapabilityNames::from_str("hc_web_gateway"),
+        );
+        assert_eq!(
+            Err("Cannot convert string to ReservedCapabilityNames"),
+            ReservedCapabilityNames::from_str("foo"),
+        );
+    }
+
+    #[test]
+    /// test that a canonical string can be created from ReservedCapabilityNames
+    fn test_capabilities_as_str() {
+        assert_eq!(ReservedCapabilityNames::LifeCycle.as_str(), "hc_lifecycle");
+        assert_eq!(
+            ReservedCapabilityNames::Communication.as_str(),
+            "hc_web_gateway",
+        );
+    }
 
     #[test]
     fn build_and_compare() {

@@ -20,14 +20,21 @@ pub fn serializable_to_b58_hash<S: Serialize>(s: S, hash_type: Hash) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use super::*;
+    use hash_table::entry::tests::test_entry;
     use multihash::Hash;
+
+    /// dummy hash based on the key of test_entry()
+    pub fn test_hash() -> String {
+        test_entry().key()
+    }
 
     #[test]
     /// mimics tests from legacy golang holochain core hashing bytes
     fn bytes_to_b58_known_golang() {
         assert_eq!(
-            super::bytes_to_b58_hash(b"test data", Hash::SHA2256),
+            bytes_to_b58_hash(b"test data", Hash::SHA2256),
             "QmY8Mzg9F69e5P9AoQPYat655HEhc1TVGs11tmfNSzkqh2"
         )
     }
@@ -36,14 +43,14 @@ mod tests {
     /// mimics tests from legacy golang holochain core hashing strings
     fn str_to_b58_hash_known_golang() {
         assert_eq!(
-            super::str_to_b58_hash("test data", Hash::SHA2256),
+            str_to_b58_hash("test data", Hash::SHA2256),
             "QmY8Mzg9F69e5P9AoQPYat655HEhc1TVGs11tmfNSzkqh2"
         );
     }
 
     #[test]
     /// known hash for a serializable something
-    fn serializable_to_b58_hash() {
+    fn can_serialize_to_b58_hash() {
         #[derive(Serialize)]
         struct Foo {
             foo: u8,
@@ -51,7 +58,7 @@ mod tests {
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            super::serializable_to_b58_hash(Foo { foo: 5 }, Hash::SHA2256),
+            serializable_to_b58_hash(Foo { foo: 5 }, Hash::SHA2256),
         );
     }
 }

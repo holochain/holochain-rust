@@ -58,10 +58,7 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
             &*ptr
         };
 
-        let json = match dna.to_json() {
-            Ok(s) => s,
-            Err(_) => return std::ptr::null_mut(),
-        };
+        let json = dna.to_json();
 
         let json = match CString::new(json) {
             Ok(s) => s,
@@ -181,7 +178,7 @@ fn zome_names_as_vec(dna: &Dna) -> Option<Vec<*const c_char>> {
         dna.zomes
             .iter()
             .map(|zome| {
-                let raw = match CString::new(zome.name.clone()) {
+                let raw = match CString::new(zome.name()) {
                     Ok(s) => s.into_raw(),
                     Err(_) => std::ptr::null(),
                 };
@@ -215,7 +212,7 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
     let result = dna
         .zomes
         .iter()
-        .find(|&z| z.name == zome_name)?
+        .find(|&z| z.name() == zome_name)?
         .capabilities
         .iter()
         .map(|cap| {
@@ -249,7 +246,7 @@ fn fn_names_as_vec(
     let result = dna
         .zomes
         .iter()
-        .find(|&z| z.name == zome_name)?
+        .find(|&z| z.name() == zome_name)?
         .capabilities
         .iter()
         .find(|&c| c.name == capability_name)?
@@ -291,7 +288,7 @@ fn fn_parameters_as_vec(
     let result = dna
         .zomes
         .iter()
-        .find(|&z| z.name == zome_name)?
+        .find(|&z| z.name() == zome_name)?
         .capabilities
         .iter()
         .find(|&c| c.name == capability_name)?

@@ -5,14 +5,19 @@ extern crate wabt;
 
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use std::sync::{Arc, Mutex};
-
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Zome},
+    zome::{capabilities::Capability, Config, Zome},
     Dna,
 };
-use std::{fmt, fs::File, io::prelude::*};
+use std::{
+    collections::hash_map::DefaultHasher,
+    fmt,
+    fs::File,
+    hash::{Hash, Hasher},
+    io::prelude::*,
+    sync::{Arc, Mutex},
+};
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
@@ -24,7 +29,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 }
 
 /// Create DNA from WAT
-pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option<&str>) -> Dna {
+pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
     let default_wat = r#"
             (module
@@ -51,14 +56,24 @@ pub fn create_test_dna_with_wat(zome_name: String, cap_name: String, wat: Option
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: String, cap_name: String, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut zome = Zome::new();
     let mut capability = Capability::new();
-    capability.name = cap_name;
+    capability.name = cap_name.to_string();
     capability.code = DnaWasm { code: wasm };
-    zome.name = zome_name;
-    zome.capabilities.push(capability);
+
+    let mut capabilities = Vec::new();
+    capabilities.push(capability);
+
+    let zome = Zome::new(
+        &zome_name,
+        "some zome description",
+        &Config::new(),
+        &Vec::new(),
+        &capabilities,
+    );
+
+    // zome.capabilities.push(capability);
     dna.zomes.push(zome);
     dna.name = "TestApp".into();
     dna
@@ -88,7 +103,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 }
 
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from_string(agent_name);
+    let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
         Arc::new(Context {
@@ -103,4 +118,13 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
 pub fn test_context(agent_name: &str) -> Arc<Context> {
     let (context, _) = test_context_and_logger(agent_name);
     context
+}
+
+/// calculates the native Rust hash
+/// has nothing to do with our hashing e.g. multihash
+/// @see https://doc.rust-lang.org/std/hash/index.html
+pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }

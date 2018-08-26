@@ -2,14 +2,14 @@
 
 ## Overview
 
-A zome API function is any Holochain core functionality that is exposed as a
+A Zome API Function is any Holochain core functionality that is exposed as a
 callable function within zome code.
 
-Compare this to a zome function, which is a function implemented in the zome
-language and called by Holochain.
+Compare this to a Zome Callback Function, which is implemented by the zome code 
+and called by Holochain.
 
-So, zome functions are called by Holochain, which execute logic in the zome
-language and can optionally call zome API functions, which finally return a
+So, zome functions (functions in the zome code) are called by Holochain, 
+which can optionally call Zome API Functions, and then finally return a
 value back to Holochain.
 
 ```
@@ -23,7 +23,7 @@ Holochain blocks
   -> Holochain receives final value of zome function
 ```
 
-Each zome API function has a canonical name used internally by Holochain.
+Each Zome API Function has a canonical name used internally by Holochain.
 
 Zome code can be written in any language that compiles to WASM. This means the
 canonical function name and the function name in the zome language might be
@@ -42,36 +42,118 @@ of the zome API function.
 
 ## Reference
 
+Note: Full reference is available in language-specific API Reference documentation.
+(TODO add links)
+
+### Property
+
+Canonical name: `property`
+
+Returns an application property, which are defined by the app developer in the DNA.
+It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).
+
+### Make Hash
+
+Canonical name: `make_hash`
+
+TODO
+
 ### Debug
 
 Canonical name: `debug`
 
-Debug sends the passed arguments to current log that was given to the instance and returns `None`.
+Debug sends the passed arguments to the log that was given to the Holochain instance and returns `None`.
 
-### Commit
 
-Canonical name: `commit`
+### Call
 
-Given an entry type and content, commits to the local source chain and returns
-the entry hash if successful. The hash is the hash of the entry associated with
-this commit in the source chain.
+Canonical name: `call`
 
-### Get
+TODO
 
-Canonical name: `get`
+### Sign
 
-Given an entry hash, gets some pair from the DHT if that entry content exists.
+Canonical name: `sign`
 
-Performs lookups from (in order):
+TODO
 
+### Verify Signature
+
+Canonical name: `verify_signature`
+
+TODO
+
+### Commit Entry
+
+Canonical name: `commit_entry`
+
+Given an entry type and content, commits an entry to the local source chain.
+On success, returns the hash of the entry.
+
+### Update Entry
+
+Canonical name: `update_entry`
+
+TODO
+
+### Update Agent
+
+Canonical name: `update_agent`
+
+TODO
+
+### Remove Entry
+
+Canonical name: `remove_entry`
+
+TODO
+
+### Get Entry
+
+Canonical name: `get_entry`
+
+Given an entry hash, returns the entry from the DHT if that entry exists.
+
+Entry lookup is done in the following order:
 - The local source chain
 - The local hash table
 - The distributed hash table
 
-Note that multiple pairs can have the same entry hash, both locally and on the
-DHT across the network.
+Caller can request additional metadata on the entry such as type or sources
+(hashes of the agents that committed the entry).
 
-Note also that two entries with the same content but different types resolve to
-the same entry hash. The entry hash is _only_ unique to the entry content.
+### Get Links
 
-Use the header hash to lookup a specific pair.
+Canonical name: `get_links`
+
+TODO
+
+### Remove Entry
+
+Canonical name: `remove_entry`
+
+TODO
+
+### Query
+
+Canonical name: `query`
+
+TODO
+
+### Send
+
+Canonical name: `send`
+
+TODO
+
+### Start Bundle
+
+Canonical name: `start_bundle`
+
+TODO
+
+### Close Bundle
+
+Canonical name: `close_bundle`
+
+TODO

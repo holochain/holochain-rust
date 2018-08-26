@@ -60,7 +60,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
                 Ok(json) => runtime_allocate_encode_str(runtime, &json),
-                Err(e) => Ok(Some(RuntimeValue::I32(
+                Err(_) => Ok(Some(RuntimeValue::I32(
                     HcApiReturnCode::ErrorJson as i32,
                 ))),
             }

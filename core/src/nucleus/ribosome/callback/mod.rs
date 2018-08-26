@@ -137,8 +137,7 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => "".to_string(),
-            // @TODO avoid unwrap here
-            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap(),
+            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
             CallbackParams::Receive => "".to_string(),
         }
     }

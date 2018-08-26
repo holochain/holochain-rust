@@ -169,7 +169,9 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
+    extern crate timebomb;
     extern crate holochain_agent;
+    use self::timebomb::timeout_ms;
     use super::*;
     use holochain_core::{
         context::Context,
@@ -248,33 +250,34 @@ mod tests {
 
     #[test]
     fn fails_instantiate_if_genesis_times_out() {
-        let dna = create_test_dna_with_wat(
-            "test_zome",
-            Callback::Genesis.capability().as_str(),
-            Some(
-                r#"
-            (module
-                (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
-                    (loop (br 0))
-                    i32.const 0
+        timeout_ms(|| {
+            let dna = create_test_dna_with_wat(
+                "test_zome",
+                Callback::Genesis.capability().as_str(),
+                Some(
+                    r#"
+                (module
+                    (memory (;0;) 17)
+                    (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                        (loop (br 0))
+                        i32.const 0
+                    )
+                    (export "memory" (memory 0))
                 )
-                (export "memory" (memory 0))
-            )
-        "#,
-            ),
-        );
+            "#,
+                ),
+            );
 
-        let (context, _test_logger) = test_context("bob");
-        let result = Holochain::new(dna.clone(), context.clone());
-
-        match result {
-            Ok(_) => assert!(false),
-            Err(err) => assert_eq!(
-                err,
-                HolochainError::ErrorGeneric("timed out waiting on channel".to_string())
-            ),
-        };
+            let (context, _test_logger) = test_context("bob");
+            let result = Holochain::new(dna.clone(), context.clone());
+            match result {
+                Ok(_) => assert!(false),
+                Err(err) => assert_eq!(
+                    err,
+                    HolochainError::ErrorGeneric("timed out waiting on channel".to_string())
+                ),
+            };
+        }, 1000);
     }
 
     #[test]

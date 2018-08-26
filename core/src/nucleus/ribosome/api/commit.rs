@@ -107,7 +107,6 @@ mod tests {
     use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
     use key::Key;
-    use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
         Defn,

@@ -3,6 +3,8 @@ use hash_table::{entry::Entry, header::Header, HashTable};
 use json::ToJson;
 use json::FromJson;
 use json::RoundTripJson;
+use serde_json;
+use error::HolochainError;
 
 /// Pairs are entries with their headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -73,11 +75,29 @@ impl Pair {
 
 /// @TODO return canonical JSON
 /// @see https://github.com/holochain/holochain-rust/issues/75
-impl ToJson for Pair {}
+impl ToJson for Pair {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
+        let result = serde_json::to_string(&self);
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+        }
+    }
+}
 
-/// @TODO accept canonical JSON
-/// @see https://github.com/holochain/holochain-rust/issues/75
-impl FromJson for Pair {}
+impl FromJson for Pair {
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        let result: Result<Self, serde_json::Error> = serde_json::from_str(s);
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+        }
+    }
+}
 
 impl RoundTripJson for Pair {}
 
@@ -92,6 +112,8 @@ pub mod tests {
         },
         header::Header,
     };
+    use json::ToJson;
+    use json::FromJson;
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -167,10 +189,10 @@ pub mod tests {
     fn json_roundtrip() {
         let json = r#"{"header":{"entry_type":"testEntryType","time":"","next":null,"entry":"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT","type_next":null,"signature":""},"entry":{"content":"test entry content","entry_type":"testEntryType"}}"#;
 
-        assert_eq!(json, test_pair().to_json());
+        assert_eq!(json, test_pair().to_json().unwrap());
 
-        assert_eq!(test_pair(), Pair::from_json(&json));
+        assert_eq!(test_pair(), Pair::from_json(&json).unwrap());
 
-        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()));
+        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json().unwrap()).unwrap());
     }
 }

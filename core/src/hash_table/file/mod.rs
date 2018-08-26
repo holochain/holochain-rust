@@ -56,12 +56,13 @@ impl FileTable {
 impl HashTable for FileTable {
 
     fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        fs::write(
+        match fs::write(
             self.pair_key_path(&pair.key()),
             pair.to_json().unwrap(),
-        );
-        // @TODO real result
-        Ok(())
+        ) {
+            Err(e) => Err(HolochainError::from(e)),
+            _ => Ok(()),
+        }
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
@@ -77,12 +78,13 @@ impl HashTable for FileTable {
     }
 
     fn assert_pair_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {
-        fs::write(
+        match fs::write(
             self.meta_key_path(&meta.key()),
             meta.to_json().unwrap(),
-        );
-        // TODO real result
-        Ok(())
+        ) {
+            Err(e) => Err(HolochainError::from(e)),
+            _ => Ok(()),
+        }
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
@@ -102,7 +104,8 @@ impl HashTable for FileTable {
         // this is a brute force approach that involves reading and parsing every file
         // big meta data should be backed by something indexable like sqlite
         for meta in WalkDir::new(self.metas_dir()) {
-            let path = meta?.path();
+            let meta = meta.unwrap();
+            let path = meta.path();
             let meta_parsed = PairMeta::from_json(
                 &fs::read_to_string(
                     &path.to_string_lossy().to_string()
@@ -123,31 +126,28 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
 
-    use agent::keys::tests::test_keys;
+    use tempfile::tempdir;
+    use tempfile::TempDir;
+
     use hash_table::{
         file::FileTable,
-        pair::tests::{test_pair, test_pair_a, test_pair_b},
-        pair_meta::{
-            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
-            PairMeta,
-        },
-        status::{CRUDStatus, LINK_NAME, STATUS_NAME},
-        HashTable,
     };
 
-    // @TODO use a temp dir
-    pub fn test_table_path() -> String {
-        "/tmp/hc_test".to_string()
-    }
-
-    pub fn test_table() -> MemTable {
-        FileTable::new(&test_table_path())
+    /// returns a new FileTable for testing and the TempDir created for it
+    /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
+    /// @see https://docs.rs/tempfile/3.0.3/tempfile/struct.TempDir.html
+    pub fn test_table() -> (FileTable, TempDir) {
+        let dir = tempdir().unwrap();
+        (
+            FileTable::new(dir.path().to_str().unwrap()),
+            dir,
+        )
     }
 
     #[test]
     /// smoke test
     fn new() {
-        test_table();
+        let (table, dir) = test_table();
     }
     //
     // #[test]

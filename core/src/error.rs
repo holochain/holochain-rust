@@ -60,6 +60,7 @@ impl Error for HolochainError {
             CapabilityNotFound(err_msg) => &err_msg,
             ZomeFunctionNotFound(err_msg) => &err_msg,
             IoError(err_msg) => &err_msg,
+            SerializationError(err_msg) => &err_msg,
         }
     }
 }
@@ -115,7 +116,7 @@ mod tests {
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!(r#"{"error":"foo"}"#, err.to_json());
+        assert_eq!(r#"{"error":"foo"}"#, err.to_json().unwrap());
     }
 
     #[test]

@@ -17,6 +17,7 @@ extern crate unwrap_to;
 extern crate num_derive;
 extern crate num_traits;
 extern crate walkdir;
+extern crate tempfile;
 
 extern crate holochain_agent;
 extern crate holochain_dna;

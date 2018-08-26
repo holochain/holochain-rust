@@ -6,8 +6,10 @@ use std::cmp::Ordering;
 use json::ToJson;
 use json::FromJson;
 use json::RoundTripJson;
+use serde_json;
+use error::HolochainError;
 
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
 /// E = the pair key for hash table lookups
 /// A = the name of the meta attribute
@@ -90,9 +92,29 @@ impl PairMeta {
     }
 }
 
-impl ToJson for PairMeta {}
+impl ToJson for PairMeta {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        // @TODO error handling
+        // @see https://github.com/holochain/holochain-rust/issues/168
+        let result = serde_json::to_string(&self);
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+        }
+    }
+}
 
-impl FromJson for PairMeta {}
+impl FromJson for PairMeta {
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        let result: Result<Self, serde_json::Error> = serde_json::from_str(s);
+        match result {
+            Ok(r) => Ok(r),
+            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+        }
+    }
+}
 
 impl RoundTripJson for PairMeta {}
 

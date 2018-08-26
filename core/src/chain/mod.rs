@@ -207,9 +207,9 @@ pub mod tests {
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         memory::{tests::test_table, MemTable},
         pair::Pair,
-        HashTable,
     };
     use std::rc::Rc;
+    use hash_table::HashTable;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {
@@ -278,11 +278,11 @@ pub mod tests {
         let tr = Rc::new(c.table());
         let chain_entry = c
             .table()
-            .get(&p.key())
+            .pair(&p.key())
             .expect("getting an entry from a chain shouldn't fail");
         assert_eq!(Some(&p), chain_entry.as_ref());
         let tr_entry = tr
-            .get(&p.key())
+            .pair(&p.key())
             .expect("getting an entry from a chain shouldn't fail");
         assert_eq!(Some(&p), tr_entry.as_ref());
         assert_eq!(chain_entry, tr_entry);

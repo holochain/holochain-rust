@@ -1,6 +1,7 @@
 pub mod commit;
 pub mod debug;
 pub mod get;
+pub mod init_globals;
 
 use action::ActionWrapper;
 use context::Context;
@@ -10,7 +11,10 @@ use instance::Observer;
 use nucleus::{
     memory::SinglePageManager,
     ribosome::{
-        api::{commit::invoke_commit, debug::invoke_debug, get::invoke_get},
+        api::{
+            commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry,
+            init_globals::invoke_init_globals,
+        },
         Defn,
     },
     FunctionCall,
@@ -47,21 +51,26 @@ pub enum ZomeAPIFunction {
     Debug,
 
     /// Commit an entry to source chain
-    /// commit(entry_type: String, entry_content: String) -> Hash
-    Commit,
+    /// commit_entry(entry_type: String, entry_content: String) -> Hash
+    CommitEntry,
 
     /// Get an entry from source chain by key (header hash)
-    /// get(key: String) -> Pair
-    Get,
+    /// get_entry(key: String) -> Pair
+    GetEntry,
+
+    /// Init App Globals
+    /// hc_init_globals() -> InitGlobalsOutput
+    InitGlobals,
 }
 
 impl Defn for ZomeAPIFunction {
     fn as_str(&self) -> &'static str {
         match *self {
             ZomeAPIFunction::MissingNo => "",
-            ZomeAPIFunction::Debug => "debug",
-            ZomeAPIFunction::Commit => "commit",
-            ZomeAPIFunction::Get => "get",
+            ZomeAPIFunction::Debug => "hc_debug",
+            ZomeAPIFunction::CommitEntry => "hc_commit_entry",
+            ZomeAPIFunction::GetEntry => "hc_get_entry",
+            ZomeAPIFunction::InitGlobals => "hc_init_globals",
         }
     }
 
@@ -87,10 +96,13 @@ impl Defn for ZomeAPIFunction {
             ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Commit => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Get => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::GetEntry => ReservedCapabilityNames::MissingNo,
+            // @TODO what should this be?
+            // @see https://github.com/holochain/holochain-rust/issues/133
+            ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
         }
     }
 }
@@ -99,9 +111,10 @@ impl FromStr for ZomeAPIFunction {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "debug" => Ok(ZomeAPIFunction::Debug),
-            "commit" => Ok(ZomeAPIFunction::Commit),
-            "get" => Ok(ZomeAPIFunction::Get),
+            "hc_debug" => Ok(ZomeAPIFunction::Debug),
+            "hc_commit_entry" => Ok(ZomeAPIFunction::CommitEntry),
+            "hc_get_entry" => Ok(ZomeAPIFunction::GetEntry),
+            "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }
     }
@@ -117,8 +130,9 @@ impl ZomeAPIFunction {
         match *self {
             ZomeAPIFunction::MissingNo => noop,
             ZomeAPIFunction::Debug => invoke_debug,
-            ZomeAPIFunction::Commit => invoke_commit,
-            ZomeAPIFunction::Get => invoke_get,
+            ZomeAPIFunction::CommitEntry => invoke_commit_entry,
+            ZomeAPIFunction::GetEntry => invoke_get_entry,
+            ZomeAPIFunction::InitGlobals => invoke_init_globals,
         }
     }
 }
@@ -130,12 +144,13 @@ impl ZomeAPIFunction {
 /// Object holding data to pass around to invoked API functions
 #[derive(Clone)]
 pub struct Runtime {
-    context: Arc<Context>,
+    pub context: Arc<Context>,
     pub result: String,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
     function_call: FunctionCall,
+    pub app_name: String,
 }
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
@@ -189,6 +204,7 @@ pub fn runtime_allocate_encode_str(
 ///
 /// panics if wasm isn't valid
 pub fn call(
+    app_name: &str,
     context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
@@ -258,6 +274,7 @@ pub fn call(
         observer_channel: observer_channel.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
         function_call: function_call.clone(),
+        app_name: app_name.to_string(),
     };
 
     // scope for mutable borrow of runtime
@@ -420,6 +437,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna =
             test_utils::create_test_dna_with_wasm(zome_name.into(), &capability, wasm.clone());
+        let app_name = dna.name.to_string();
         let instance = test_instance(dna);
         let (context, logger) = test_context_and_logger("joan");
 
@@ -427,6 +445,7 @@ pub mod tests {
 
         (
             call(
+                &app_name,
                 context,
                 &instance.action_channel(),
                 &instance.observer_channel(),
@@ -443,15 +462,15 @@ pub mod tests {
     fn test_from_str() {
         assert_eq!(
             ZomeAPIFunction::Debug,
-            ZomeAPIFunction::from_str("debug").unwrap(),
+            ZomeAPIFunction::from_str("hc_debug").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::Commit,
-            ZomeAPIFunction::from_str("commit").unwrap(),
+            ZomeAPIFunction::CommitEntry,
+            ZomeAPIFunction::from_str("hc_commit_entry").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::Get,
-            ZomeAPIFunction::from_str("get").unwrap(),
+            ZomeAPIFunction::GetEntry,
+            ZomeAPIFunction::from_str("hc_get_entry").unwrap(),
         );
 
         assert_eq!(

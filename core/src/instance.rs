@@ -4,7 +4,7 @@ use context::Context;
 use state::State;
 use std::{
     sync::{
-        mpsc::{channel, Sender},
+        mpsc::{channel, Receiver, Sender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -14,7 +14,7 @@ pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
 
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
-//#[derive(Clone)]
+#[derive(Clone)]
 pub struct Instance {
     state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
@@ -76,54 +76,77 @@ impl Instance {
         )
     }
 
-    /// Start the Event Loop on a seperate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>) {
+    /// Returns recievers for actions and observers that get added to this instance
+    fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
         let (tx_action, rx_action) = channel::<ActionWrapper>();
         let (tx_observer, rx_observer) = channel::<Observer>();
         self.action_channel = tx_action.clone();
         self.observer_channel = tx_observer.clone();
 
-        let state_mutex = Arc::clone(&self.state);
+        (rx_action, rx_observer)
+    }
+
+    /// Start the Event Loop on a seperate thread
+    pub fn start_action_loop(&mut self, context: Arc<Context>) {
+        let (rx_action, rx_observer) = self.initialize_channels();
+
+        let sync_self = self.clone();
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
-
-            // @TODO this should all be callable outside the loop so that deterministic tests that
-            // don't rely on time can be written
-            // @see https://github.com/holochain/holochain-rust/issues/169
             for action_wrapper in rx_action {
-                // Mutate state
-                {
-                    let mut state = state_mutex
-                        .write()
-                        .expect("owners of the state RwLock shouldn't panic");
-                    *state = state.reduce(
-                        Arc::clone(&context),
-                        action_wrapper,
-                        &tx_action,
-                        &tx_observer,
-                    );
-                }
-
-                // Add new observers
-                state_observers.extend(rx_observer.try_iter());
-
-                // Run all observer closures
-                {
-                    let state = state_mutex
-                        .read()
-                        .expect("owners of the state RwLock shouldn't panic");
-                    let mut i = 0;
-                    while i != state_observers.len() {
-                        if (&mut state_observers[i].sensor)(&state) {
-                            state_observers.remove(i);
-                        } else {
-                            i += 1;
-                        }
-                    }
-                }
+                state_observers = sync_self.process_action(
+                    action_wrapper,
+                    state_observers,
+                    &rx_observer,
+                    &context,
+                );
             }
         });
+    }
+
+    /// Calls the reducers for an action and calls the observers with the new state
+    /// returns the new vector of observers
+    fn process_action(
+        &self,
+        action_wrapper: ActionWrapper,
+        mut state_observers: Vec<Observer>,
+        rx_observer: &Receiver<Observer>,
+        context: &Arc<Context>,
+    ) -> Vec<Observer> {
+        // Mutate state
+        {
+            let mut state = self
+                .state
+                .write()
+                .expect("owners of the state RwLock shouldn't panic");
+            *state = state.reduce(
+                context.clone(),
+                action_wrapper,
+                &self.action_channel,
+                &self.observer_channel,
+            );
+        }
+
+        // Add new observers
+        state_observers.extend(rx_observer.try_iter());
+
+        // Run all observer closures
+        {
+            let state = self
+                .state
+                .read()
+                .expect("owners of the state RwLock shouldn't panic");
+            let mut i = 0;
+            while i != state_observers.len() {
+                if (&mut state_observers[i].sensor)(&state) {
+                    state_observers.remove(i);
+                } else {
+                    i += 1;
+                }
+            }
+        }
+        state_observers
     }
 
     /// Creates a new Instance with disconnected channels.
@@ -222,7 +245,8 @@ pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: A
 pub mod tests {
     extern crate test_utils;
     use super::Instance;
-    use action::{Action, ActionWrapper};
+    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
+    use agent::state::tests::test_action_response_get;
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
@@ -348,6 +372,52 @@ pub mod tests {
         }
 
         instance
+    }
+
+    #[test]
+    /// This tests calling `process_action`
+    /// with an action that dispatches no new ones.
+    /// It tests that the desired effects do happen
+    /// to the state and that no observers or actions
+    /// are sent on the passed channels.
+    pub fn can_process_action() {
+        let mut instance = Instance::new();
+
+        let context = test_context("jane");
+        let (rx_action, rx_observer) = instance.initialize_channels();
+
+        let aw = test_action_wrapper_get();
+        let new_observers = instance.process_action(
+            aw.clone(),
+            Vec::new(), // start with no observers
+            &rx_observer,
+            &context,
+        );
+
+        // test that the get action added no observers or actions
+        assert!(new_observers.is_empty());
+
+        let rx_action_is_empty = match rx_action.try_recv() {
+            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            _ => false,
+        };
+        assert!(rx_action_is_empty);
+
+        let rx_observer_is_empty = match rx_observer.try_recv() {
+            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            _ => false,
+        };
+        assert!(rx_observer_is_empty);
+
+        // Borrow the state lock
+        let state = instance.state();
+        // Clone the agent Arc
+        let actions = state.agent().actions();
+        let response = actions
+            .get(&aw)
+            .expect("action and reponse should be added after Get action dispatch");
+
+        assert_eq!(response, &test_action_response_get());
     }
 
     /// create a test instance with a blank DNA

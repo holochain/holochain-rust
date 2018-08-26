@@ -1,10 +1,10 @@
 // pub mod memory;
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
+use json::ToJson;
+use key::Key;
 use serde_json;
 use std::{fmt, rc::Rc};
-use key::Key;
-use json::ToJson;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -208,11 +208,11 @@ pub mod tests {
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         memory::{tests::test_table, MemTable},
         pair::Pair,
+        HashTable,
     };
-    use std::rc::Rc;
-    use hash_table::HashTable;
-    use key::Key;
     use json::ToJson;
+    use key::Key;
+    use std::rc::Rc;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain<MemTable> {

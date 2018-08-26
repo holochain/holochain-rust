@@ -2,11 +2,7 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
-use hash_table::{
-    pair::Pair,
-    pair_meta::PairMeta,
-    HashTable,
-};
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use key::Key;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -25,7 +21,6 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
-
     fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.pairs.insert(pair.key(), pair.clone());
         Ok(())
@@ -63,13 +58,12 @@ pub mod tests {
 
     use hash_table::{
         memory::MemTable,
+        test_util::{
+            test_all_metas_for_pair, test_meta_round_trip, test_modify_pair, test_pair_round_trip,
+            test_retract_pair,
+        },
         HashTable,
     };
-    use hash_table::test_util::test_pair_round_trip;
-    use hash_table::test_util::test_modify_pair;
-    use hash_table::test_util::test_retract_pair;
-    use hash_table::test_util::test_meta_round_trip;
-    use hash_table::test_util::test_all_metas_for_pair;
 
     pub fn test_table() -> MemTable {
         MemTable::new()

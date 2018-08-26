@@ -1,6 +1,7 @@
 use chain::Chain;
 use hash;
 use hash_table::{entry::Entry, HashTable};
+use key::Key;
 use multihash::Hash;
 
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
@@ -113,9 +114,10 @@ impl Header {
         // always valid iff immutable and new() enforces validity
         true
     }
+}
 
-    /// returns the key for use in hash table lookups, e.g. chain.get()
-    pub fn key(&self) -> String {
+impl Key for Header {
+    fn key(&self) -> String {
         self.hash()
     }
 }
@@ -124,6 +126,7 @@ impl Header {
 mod tests {
     use chain::tests::test_chain;
     use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
+    use key::Key;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {

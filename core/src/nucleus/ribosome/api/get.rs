@@ -1,12 +1,12 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use json::ToJson;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use json::ToJson;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -20,9 +20,7 @@ pub fn invoke_get(runtime: &mut Runtime, args: &RuntimeArgs) -> Result<Option<Ru
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorJson as i32,
-        )));
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
     }
 
     let input = res_entry.unwrap();

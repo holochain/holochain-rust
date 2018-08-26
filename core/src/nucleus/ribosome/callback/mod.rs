@@ -7,6 +7,7 @@ use error::HolochainError;
 use hash_table::entry::Entry;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use instance::Observer;
+use json::ToJson;
 use nucleus::{
     call_zome_and_wait_for_result,
     ribosome::{
@@ -17,7 +18,6 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
-use json::ToJson;
 
 // Callback functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?

@@ -5,12 +5,13 @@ use context::Context;
 use error::HolochainError;
 use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
 use instance::Observer;
+use json::ToJson;
+use key::Key;
 use std::{
     collections::HashMap,
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
-use json::ToJson;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -186,8 +187,8 @@ pub mod tests {
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
-    use std::collections::HashMap;
     use json::ToJson;
+    use std::collections::HashMap;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -281,7 +282,9 @@ pub mod tests {
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
-            ActionResponse::Commit(Err(HolochainError::new("some error"))).to_json().unwrap(),
+            ActionResponse::Commit(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
         );
 
         assert_eq!(

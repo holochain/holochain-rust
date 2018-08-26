@@ -1,11 +1,9 @@
 use chain::Chain;
-use hash_table::{entry::Entry, header::Header, HashTable};
-use json::ToJson;
-use json::FromJson;
-use json::RoundTripJson;
-use serde_json;
 use error::HolochainError;
+use hash_table::{entry::Entry, header::Header, HashTable};
+use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
+use serde_json;
 
 /// Pairs are entries with their headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -104,8 +102,7 @@ pub mod tests {
         },
         header::Header,
     };
-    use json::ToJson;
-    use json::FromJson;
+    use json::{FromJson, ToJson};
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -185,6 +182,9 @@ pub mod tests {
 
         assert_eq!(test_pair(), Pair::from_json(&json).unwrap());
 
-        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json().unwrap()).unwrap());
+        assert_eq!(
+            test_pair(),
+            Pair::from_json(&test_pair().to_json().unwrap()).unwrap()
+        );
     }
 }

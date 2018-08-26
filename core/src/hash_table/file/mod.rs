@@ -3,16 +3,11 @@ use std::path::Path;
 use error::HolochainError;
 use std::fs;
 
-use hash_table::{
-    pair::Pair,
-    pair_meta::PairMeta,
-    HashTable,
-};
-use json::ToJson;
-use walkdir::WalkDir;
-use json::FromJson;
-use std::fs::create_dir_all;
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use json::{FromJson, ToJson};
 use key::Key;
+use std::fs::create_dir_all;
+use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
 enum Table {
@@ -49,7 +44,7 @@ impl FileTable {
         }
     }
 
-    fn dir (&self, table: Table) -> String {
+    fn dir(&self, table: Table) -> String {
         let dir_string = format!("{}/{}", self.path, table.to_string());
         // @TODO be more efficient here
         // @TODO avoid unwrap
@@ -59,18 +54,11 @@ impl FileTable {
 
     fn row_path(&self, table: Table, key: &str) -> String {
         let dir = self.dir(table);
-        format!(
-            "{}/{}.json",
-            dir,
-            key,
-        )
+        format!("{}/{}.json", dir, key,)
     }
 
     fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
-        match fs::write(
-            self.row_path(table, &row.key()),
-            row.to_json().unwrap(),
-        ) {
+        match fs::write(self.row_path(table, &row.key()), row.to_json().unwrap()) {
             Err(e) => Err(HolochainError::from(e)),
             _ => Ok(()),
         }
@@ -84,27 +72,22 @@ impl FileTable {
                 Ok(v) => Ok(Some(v)),
                 Err(e) => Err(HolochainError::from(e)),
             }
-        }
-        else {
+        } else {
             Ok(None)
         }
     }
-
 }
 
 impl HashTable for FileTable {
-
     fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.upsert(Table::Pairs, pair)
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(
-            self
+        Ok(self
                 .lookup(Table::Pairs, key)?
                 // @TODO don't unwrap here
-                .and_then(|s| Some(Pair::from_json(&s).unwrap()))
-        )
+                .and_then(|s| Some(Pair::from_json(&s).unwrap())))
     }
 
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
@@ -112,11 +95,9 @@ impl HashTable for FileTable {
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        Ok(
-            self
-                .lookup(Table::Metas, key)?
-                .and_then(|s| Some(PairMeta::from_json(&s).unwrap()))
-        )
+        Ok(self
+            .lookup(Table::Metas, key)?
+            .and_then(|s| Some(PairMeta::from_json(&s).unwrap())))
     }
 
     fn all_metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
@@ -129,17 +110,15 @@ impl HashTable for FileTable {
             let path = meta.path();
             let key = path.file_stem();
             match key {
-                Some(k) => {
-                    match self.pair_meta(&k.to_string_lossy())? {
-                        Some(pair_meta) => {
-                            if pair_meta.pair() == pair.key() {
-                                metas.push(pair_meta);
-                            }
+                Some(k) => match self.pair_meta(&k.to_string_lossy())? {
+                    Some(pair_meta) => {
+                        if pair_meta.pair() == pair.key() {
+                            metas.push(pair_meta);
                         }
-                        None => {},
                     }
+                    None => {}
                 },
-                None => {},
+                None => {}
             }
         }
 
@@ -153,28 +132,23 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
 
-    use tempfile::tempdir;
-    use tempfile::TempDir;
-    use hash_table::HashTable;
-    use hash_table::test_util::test_pair_round_trip;
-    use hash_table::test_util::test_modify_pair;
-    use hash_table::test_util::test_retract_pair;
-    use hash_table::test_util::test_meta_round_trip;
-    use hash_table::test_util::test_all_metas_for_pair;
-
     use hash_table::{
-        file::FileTable,
+        test_util::{
+            test_all_metas_for_pair, test_meta_round_trip, test_modify_pair, test_pair_round_trip,
+            test_retract_pair,
+        },
+        HashTable,
     };
+    use tempfile::{tempdir, TempDir};
+
+    use hash_table::file::FileTable;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
     /// @see https://docs.rs/tempfile/3.0.3/tempfile/struct.TempDir.html
     pub fn test_table() -> (FileTable, TempDir) {
         let dir = tempdir().unwrap();
-        (
-            FileTable::new(dir.path().to_str().unwrap()),
-            dir,
-        )
+        (FileTable::new(dir.path().to_str().unwrap()), dir)
     }
 
     #[test]

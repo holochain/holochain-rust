@@ -1,11 +1,10 @@
+use error::HolochainError;
 use hash;
+use json::{FromJson, ToJson};
+use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
-use json::ToJson;
-use error::HolochainError;
-use json::FromJson;
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
@@ -74,10 +73,10 @@ impl Entry {
         // always valid if immutable and new() enforces validity
         true
     }
+}
 
-    /// returns the key used for lookups in chain, HT, etc.
-    /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
-    pub fn key(&self) -> String {
+impl Key for Entry {
+    fn key(&self) -> String {
         self.hash()
     }
 }
@@ -100,9 +99,9 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use super::Entry;
-    use json::ToJson;
-    use json::FromJson;
+    use hash_table::entry::Entry;
+    use json::{FromJson, ToJson};
+    use key::Key;
 
     /// dummy entry type
     pub fn test_type() -> String {

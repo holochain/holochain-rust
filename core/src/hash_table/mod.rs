@@ -1,7 +1,7 @@
 pub mod entry;
+pub mod file;
 pub mod header;
 pub mod memory;
-pub mod file;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
@@ -10,10 +10,11 @@ pub mod test_util;
 
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
-use hash_table::status::CRUDStatus;
-use hash_table::status::STATUS_NAME;
-use hash_table::status::LINK_NAME;
+use hash_table::{
+    pair::Pair,
+    pair_meta::PairMeta,
+    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+};
 use key::Key;
 
 pub trait HashTable {

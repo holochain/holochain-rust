@@ -1,14 +1,12 @@
 use agent::keys::Keys;
+use error::HolochainError;
 use hash::serializable_to_b58_hash;
 use hash_table::pair::Pair;
-use multihash::Hash;
-use std::cmp::Ordering;
-use json::ToJson;
-use json::FromJson;
-use json::RoundTripJson;
-use serde_json;
-use error::HolochainError;
+use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
+use multihash::Hash;
+use serde_json;
+use std::cmp::Ordering;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
@@ -116,10 +114,9 @@ pub mod tests {
     use super::PairMeta;
     use agent::keys::tests::test_keys;
     use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
-    use std::cmp::Ordering;
+    use json::{FromJson, ToJson};
     use key::Key;
-    use json::ToJson;
-    use json::FromJson;
+    use std::cmp::Ordering;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {
@@ -249,6 +246,9 @@ pub mod tests {
 
         assert_eq!(expected.to_string(), pair_meta.to_json().unwrap());
         assert_eq!(pair_meta, PairMeta::from_json(&expected).unwrap());
-        assert_eq!(pair_meta, PairMeta::from_json(&pair_meta.to_json().unwrap()).unwrap());
+        assert_eq!(
+            pair_meta,
+            PairMeta::from_json(&pair_meta.to_json().unwrap()).unwrap()
+        );
     }
 }

@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use json::ToJson;
 use nucleus::ribosome::{
     api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
     callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
@@ -7,7 +8,6 @@ use nucleus::ribosome::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use json::ToJson;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -31,9 +31,7 @@ pub fn invoke_commit(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ErrorJson as i32,
-            )));
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
         }
     };
 
@@ -91,12 +89,8 @@ pub fn invoke_commit(
             // serialize, allocate and encode result
             let json = action_result.to_json();
             match json {
-                Ok(j) => {
-                    runtime_allocate_encode_str(runtime, &j)
-                },
-                Err(_) => Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ErrorJson as i32,
-                ))),
+                Ok(j) => runtime_allocate_encode_str(runtime, &j),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
@@ -112,6 +106,7 @@ mod tests {
 
     use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
+    use key::Key;
     use nucleus::ribosome::api::tests::test_zome_api_function_runtime;
     use serde_json;
 

@@ -1,11 +1,13 @@
 use self::HolochainError::*;
-use std::{error::Error, fmt};
-use walkdir::Error as WalkdirError;
-use std::path::Path;
-use std::io;
-use std::io::Error as IoError;
 use json::ToJson;
 use serde_json::Error as SerdeError;
+use std::{
+    error::Error,
+    fmt,
+    io::{self, Error as IoError},
+    path::Path,
+};
+use walkdir::Error as WalkdirError;
 
 /// module for holding Holochain specific errors
 
@@ -80,9 +82,7 @@ impl From<WalkdirError> for HolochainError {
             Some(inner) => reason_for_io_error(inner),
             None => String::new(),
         };
-        HolochainError::IoError(
-            format!("error at path: {}, reason: {}", path, reason)
-        )
+        HolochainError::IoError(format!("error at path: {}, reason: {}", path, reason))
     }
 }
 

@@ -6,7 +6,9 @@ pub trait ToJson {
 }
 
 pub trait FromJson
-    where Self: Sized {
+where
+    Self: Sized,
+{
     /// deserialize a Pair from a canonical JSON string
     fn from_json(s: &str) -> Result<Self, HolochainError>;
 }

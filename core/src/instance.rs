@@ -94,10 +94,6 @@ impl Instance {
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
-
-            // @TODO this should all be callable outside the loop so that deterministic tests that
-            // don't rely on time can be written
-            // @see https://github.com/holochain/holochain-rust/issues/169
             for action_wrapper in rx_action {
                 state_observers = sync_self.process_action(
                     action_wrapper,

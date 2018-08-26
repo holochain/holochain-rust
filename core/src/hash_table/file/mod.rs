@@ -11,6 +11,7 @@ use hash_table::{
 use json::ToJson;
 use walkdir::WalkDir;
 use json::FromJson;
+use std::fs::create_dir_all;
 
 #[derive(Serialize, Debug, PartialEq)]
 pub struct FileTable {
@@ -27,8 +28,17 @@ impl FileTable {
         }
     }
 
+    fn dir (&self, name: &str) -> String {
+        let dir_string = format!("{}/{}", self.path, name);
+        // let path = Path::from(&dir_string);
+        // @TODO be more efficient here
+        // @TODO avoid unwrap
+        create_dir_all(&dir_string).unwrap();
+        dir_string
+    }
+
     fn pairs_dir(&self) -> String {
-        format!("{}/pairs", self.path)
+        self.dir("pairs")
     }
 
     fn key_path(&self, dir: &str, key: &str) -> String {
@@ -128,6 +138,8 @@ pub mod tests {
 
     use tempfile::tempdir;
     use tempfile::TempDir;
+    use hash_table::HashTable;
+    use hash_table::pair::tests::test_pair;
 
     use hash_table::{
         file::FileTable,
@@ -147,31 +159,31 @@ pub mod tests {
     #[test]
     /// smoke test
     fn new() {
-        let (table, dir) = test_table();
+        let (_table, _dir) = test_table();
     }
-    //
-    // #[test]
-    // /// tests for ht.setup()
-    // fn setup() {
-    //     let mut ht = test_table();
-    //     assert_eq!(Ok(()), ht.setup());
-    // }
-    //
-    // #[test]
-    // /// tests for ht.teardown()
-    // fn teardown() {
-    //     let mut ht = test_table();
-    //     assert_eq!(Ok(()), ht.teardown());
-    // }
-    //
-    // #[test]
-    // /// Pairs can round trip through table.commit() and table.get()
-    // fn pair_round_trip() {
-    //     let mut ht = test_table();
-    //     let p = test_pair();
-    //     ht.commit(&p).expect("should be able to commit valid pair");
-    //     assert_eq!(ht.get(&p.key()), Ok(Some(p)));
-    // }
+
+    #[test]
+    /// tests for ht.setup()
+    fn setup() {
+        let (mut table, _dir) = test_table();
+        assert_eq!(Ok(()), table.setup());
+    }
+
+    #[test]
+    /// tests for ht.teardown()
+    fn teardown() {
+        let (mut table, _dir) = test_table();
+        assert_eq!(Ok(()), table.teardown());
+    }
+
+    #[test]
+    /// Pairs can round trip through table.commit() and table.get()
+    fn pair_round_trip() {
+        let (mut table, _dir) = test_table();
+        let pair = test_pair();
+        table.commit_pair(&pair).expect("should be able to commit valid pair");
+        assert_eq!(table.pair(&pair.key()), Ok(Some(pair)));
+    }
     //
     // #[test]
     // /// Pairs can be modified through table.modify()

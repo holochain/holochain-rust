@@ -61,7 +61,6 @@ impl HashTable for MemTable {
 #[cfg(test)]
 pub mod tests {
 
-    use agent::keys::tests::test_keys;
     use hash_table::{
         memory::MemTable,
         pair::tests::{test_pair},
@@ -69,11 +68,11 @@ pub mod tests {
             tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
             PairMeta,
         },
-        status::{CRUDStatus, STATUS_NAME},
         HashTable,
     };
     use hash_table::test_util::test_round_trip;
     use hash_table::test_util::test_modify_pair;
+    use hash_table::test_util::test_retract_pair;
     use key::Key;
 
     pub fn test_table() -> MemTable {
@@ -117,28 +116,7 @@ pub mod tests {
     /// Pairs can be retracted through table.retract()
     fn retract_pair() {
         let mut table = test_table();
-        let pair = test_pair();
-        let empty_vec: Vec<PairMeta> = Vec::new();
-
-        table.commit_pair(&pair).expect("should be able to commit valid pair");
-        assert_eq!(
-            empty_vec,
-            table.all_metas_for_pair(&pair)
-                .expect("getting the metadata on a pair shouldn't fail")
-        );
-
-        table.retract_pair(&test_keys(), &pair)
-            .expect("should be able to retract");
-        assert_eq!(
-            vec![PairMeta::new(
-                &test_keys(),
-                &pair,
-                STATUS_NAME,
-                &CRUDStatus::DELETED.bits().to_string(),
-            )],
-            table.all_metas_for_pair(&pair)
-                .expect("getting the metadata on a pair shouldn't fail"),
-        );
+        test_retract_pair(&mut table);
     }
 
     #[test]

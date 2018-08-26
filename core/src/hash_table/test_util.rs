@@ -46,3 +46,28 @@ pub fn test_modify_pair<HT: HashTable> (table: &mut HT) {
             .expect("getting the metadata on a pair shouldn't fail")
     );
 }
+
+pub fn test_retract_pair<HT: HashTable> (table: &mut HT) {
+    let pair = test_pair();
+    let empty_vec: Vec<PairMeta> = Vec::new();
+
+    table.commit_pair(&pair).expect("should be able to commit valid pair");
+    assert_eq!(
+        empty_vec,
+        table.all_metas_for_pair(&pair)
+            .expect("getting the metadata on a pair shouldn't fail")
+    );
+
+    table.retract_pair(&test_keys(), &pair)
+        .expect("should be able to retract");
+    assert_eq!(
+        vec![PairMeta::new(
+            &test_keys(),
+            &pair,
+            STATUS_NAME,
+            &CRUDStatus::DELETED.bits().to_string(),
+        )],
+        table.all_metas_for_pair(&pair)
+            .expect("getting the metadata on a pair shouldn't fail"),
+    );
+}

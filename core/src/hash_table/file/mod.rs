@@ -123,7 +123,7 @@ impl HashTable for FileTable {
         let mut metas = Vec::new();
 
         // this is a brute force approach that involves reading and parsing every file
-        // big meta data should be backed by something indexable like sqlite
+        // big meta data should be backed by something indexed like sqlite
         for meta in WalkDir::new(self.dir(Table::Metas)) {
             let meta = meta.unwrap();
             let path = meta.path();
@@ -158,6 +158,7 @@ pub mod tests {
     use hash_table::HashTable;
     use hash_table::test_util::test_round_trip;
     use hash_table::test_util::test_modify_pair;
+    use hash_table::test_util::test_retract_pair;
 
     use hash_table::{
         file::FileTable,
@@ -207,34 +208,13 @@ pub mod tests {
         let (mut table, _dir) = test_table();
         test_modify_pair(&mut table);
     }
-    //
-    // #[test]
-    // /// Pairs can be retracted through table.retract()
-    // fn retract() {
-    //     let mut ht = test_table();
-    //     let p = test_pair();
-    //     let empty_vec: Vec<PairMeta> = Vec::new();
-    //
-    //     ht.commit(&p).expect("should be able to commit valid pair");
-    //     assert_eq!(
-    //         empty_vec,
-    //         ht.get_pair_meta(&p)
-    //             .expect("getting the metadata on a pair shouldn't fail")
-    //     );
-    //
-    //     ht.retract(&test_keys(), &p)
-    //         .expect("should be able to retract");
-    //     assert_eq!(
-    //         vec![PairMeta::new(
-    //             &test_keys(),
-    //             &p,
-    //             STATUS_NAME,
-    //             &CRUDStatus::DELETED.bits().to_string(),
-    //         )],
-    //         ht.get_pair_meta(&p)
-    //             .expect("getting the metadata on a pair shouldn't fail"),
-    //     );
-    // }
+
+    #[test]
+    /// Pairs can be retracted through table.retract()
+    fn retract_pair() {
+        let (mut table, _dir) = test_table();
+        test_retract_pair(&mut table);
+    }
     //
     // #[test]
     // /// PairMeta can round trip through table.assert_meta() and table.get_meta()

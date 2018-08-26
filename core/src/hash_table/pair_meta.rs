@@ -96,13 +96,7 @@ impl Key for PairMeta {
 
 impl ToJson for PairMeta {
     fn to_json(&self) -> Result<String, HolochainError> {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        let result = serde_json::to_string(&self);
-        match result {
-            Ok(r) => Ok(r),
-            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-        }
+        Ok(serde_json::to_string(&self)?)
     }
 }
 
@@ -110,11 +104,7 @@ impl FromJson for PairMeta {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     fn from_json(s: &str) -> Result<Self, HolochainError> {
-        let result: Result<Self, serde_json::Error> = serde_json::from_str(s);
-        match result {
-            Ok(r) => Ok(r),
-            Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-        }
+        Ok(serde_json::from_str(s)?)
     }
 }
 
@@ -128,6 +118,8 @@ pub mod tests {
     use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
     use std::cmp::Ordering;
     use key::Key;
+    use json::ToJson;
+    use json::FromJson;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {
@@ -247,5 +239,16 @@ pub mod tests {
         // attribute value with operators
         assert!(m_1ax < m_1ay);
         assert!(m_1ay > m_1ax);
+    }
+
+    #[test]
+    /// test the RoundTripJson implementation
+    fn test_json_round_trip() {
+        let pair_meta = test_pair_meta();
+        let expected = "{\"pair\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+
+        assert_eq!(expected.to_string(), pair_meta.to_json().unwrap());
+        assert_eq!(pair_meta, PairMeta::from_json(&expected).unwrap());
+        assert_eq!(pair_meta, PairMeta::from_json(&pair_meta.to_json().unwrap()).unwrap());
     }
 }

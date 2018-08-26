@@ -174,8 +174,6 @@ impl<T: HashTable> Chain<T> {
     /// @TODO implement as FromJson trait once actors land
     /// @see https://github.com/holochain/holochain-rust/issues/247
     pub fn from_json(table: Rc<T>, s: &str) -> Self {
-        // @TODO inappropriate expect?
-        // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).expect("argument should be valid json");
         as_seq.reverse();
 

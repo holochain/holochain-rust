@@ -66,6 +66,7 @@ impl Error for HolochainError {
     }
 }
 
+/// standard strings for std io errors
 fn reason_for_io_error(error: &IoError) -> String {
     match error.kind() {
         io::ErrorKind::InvalidData => format!("contains invalid data: {}", error),

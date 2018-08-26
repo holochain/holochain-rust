@@ -71,6 +71,7 @@ pub mod tests {
         status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
     };
+    use hash_table::test_util::test_round_trip;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -99,10 +100,7 @@ pub mod tests {
     #[test]
     /// Pairs can round trip through table.commit() and table.get()
     fn pair_round_trip() {
-        let mut ht = test_table();
-        let p = test_pair();
-        ht.commit_pair(&p).expect("should be able to commit valid pair");
-        assert_eq!(ht.pair(&p.key()), Ok(Some(p)));
+        test_round_trip(&mut test_table());
     }
 
     #[test]

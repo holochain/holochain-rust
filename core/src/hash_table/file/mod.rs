@@ -139,7 +139,7 @@ pub mod tests {
     use tempfile::tempdir;
     use tempfile::TempDir;
     use hash_table::HashTable;
-    use hash_table::pair::tests::test_pair;
+    use hash_table::test_util::test_round_trip;
 
     use hash_table::{
         file::FileTable,
@@ -180,9 +180,7 @@ pub mod tests {
     /// Pairs can round trip through table.commit() and table.get()
     fn pair_round_trip() {
         let (mut table, _dir) = test_table();
-        let pair = test_pair();
-        table.commit_pair(&pair).expect("should be able to commit valid pair");
-        assert_eq!(table.pair(&pair.key()), Ok(Some(pair)));
+        test_round_trip(&mut table);
     }
     //
     // #[test]

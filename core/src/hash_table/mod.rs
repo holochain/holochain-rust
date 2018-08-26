@@ -5,6 +5,8 @@ pub mod file;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
+#[cfg(test)]
+pub mod test_util;
 
 use agent::keys::Keys;
 use error::HolochainError;

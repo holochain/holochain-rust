@@ -35,6 +35,9 @@ pub struct FileTable {
 }
 
 impl FileTable {
+    /// attempts to build a new FileTable
+    /// can fail if the given path can't be resolved to a directory on the filesystem
+    /// can fail if permissions don't allow access to the directory on the filesystem
     pub fn new(path: &str) -> Result<FileTable, HolochainError> {
         let canonical = Path::new(path).canonicalize()?;
         if canonical.is_dir() {
@@ -48,25 +51,26 @@ impl FileTable {
             )
         }
         else {
-            Err(HolochainError::IoError("path is not a directory".to_string()))
+            Err(HolochainError::IoError("path is not a directory or permissions don't allow access".to_string()))
         }
     }
 
-    fn dir(&self, table: Table) -> String {
+    /// given a Table enum, ensure that the correct sub-directory exists and return the string path
+    fn dir(&self, table: Table) -> Result<String, HolochainError> {
         let dir_string = format!("{}/{}", self.path, table.to_string());
         // @TODO be more efficient here
-        // @TODO avoid unwrap
-        create_dir_all(&dir_string).unwrap();
-        dir_string
+        // @see https://github.com/holochain/holochain-rust/issues/248
+        create_dir_all(&dir_string)?;
+        Ok(dir_string)
     }
 
-    fn row_path(&self, table: Table, key: &str) -> String {
-        let dir = self.dir(table);
-        format!("{}/{}.json", dir, key,)
+    fn row_path(&self, table: Table, key: &str) -> Result<String, HolochainError> {
+        let dir = self.dir(table)?;
+        Ok(format!("{}/{}.json", dir, key))
     }
 
     fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
-        match fs::write(self.row_path(table, &row.key()), row.to_json().unwrap()) {
+        match fs::write(self.row_path(table, &row.key())?, row.to_json()?) {
             Err(e) => Err(HolochainError::from(e)),
             _ => Ok(()),
         }
@@ -74,12 +78,9 @@ impl FileTable {
 
     /// Returns a JSON string option for the given key in the given table
     fn lookup(&self, table: Table, key: &str) -> Result<Option<String>, HolochainError> {
-        let path_string = self.row_path(table, key);
+        let path_string = self.row_path(table, key)?;
         if Path::new(&path_string).is_file() {
-            match fs::read_to_string(path_string) {
-                Ok(v) => Ok(Some(v)),
-                Err(e) => Err(HolochainError::from(e)),
-            }
+            Ok(Some(fs::read_to_string(path_string)?))
         } else {
             Ok(None)
         }
@@ -92,10 +93,10 @@ impl HashTable for FileTable {
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        Ok(self
-                .lookup(Table::Pairs, key)?
-                // @TODO don't unwrap here
-                .and_then(|s| Some(Pair::from_json(&s).unwrap())))
+        match self.lookup(Table::Pairs, key)? {
+            Some(json) => Ok(Some(Pair::from_json(&json)?)),
+            None => Ok(None),
+        }
     }
 
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
@@ -103,9 +104,10 @@ impl HashTable for FileTable {
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        Ok(self
-            .lookup(Table::Metas, key)?
-            .and_then(|s| Some(PairMeta::from_json(&s).unwrap())))
+        match self.lookup(Table::Metas, key)? {
+            Some(json) => Ok(Some(PairMeta::from_json(&json)?)),
+            None => Ok(None),
+        }
     }
 
     fn all_metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
@@ -113,20 +115,17 @@ impl HashTable for FileTable {
 
         // this is a brute force approach that involves reading and parsing every file
         // big meta data should be backed by something indexed like sqlite
-        for meta in WalkDir::new(self.dir(Table::Metas)) {
-            let meta = meta.unwrap();
+        for meta in WalkDir::new(self.dir(Table::Metas)?) {
+            let meta = meta?;
             let path = meta.path();
-            let key = path.file_stem();
-            match key {
-                Some(k) => match self.pair_meta(&k.to_string_lossy())? {
-                    Some(pair_meta) => {
+            if let Some(stem) = path.file_stem() {
+                if let Some(key) = stem.to_str() {
+                    if let Some(pair_meta) = self.pair_meta(&key)? {
                         if pair_meta.pair() == pair.key() {
                             metas.push(pair_meta);
                         }
                     }
-                    None => {}
-                },
-                None => {}
+                }
             }
         }
 

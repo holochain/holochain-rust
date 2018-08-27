@@ -48,10 +48,10 @@ void TestHcDna::canSetName() {
 
 void TestHcDna::canGetZomeNames() {
   Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
-                                            "\"zomes\":["
-                                            "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":[]},"
-                                            "{\"name\":\"zome2\",\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":[]}"
-                                            "]}");
+                                            "\"zomes\":{"
+                                            "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":{}},"
+                                            "\"zome2\":{\"description\":\"lorem\",\"config\":{},\"entry_types\":[],\"capabilities\":{}}"
+                                            "}}");
   QVERIFY(dna != 0);
 
   CStringVec names;
@@ -61,8 +61,9 @@ void TestHcDna::canGetZomeNames() {
   QString name1 = QString("%1").arg(names.ptr[0]);
   QString name2 = QString("%1").arg(names.ptr[1]);
 
-  QCOMPARE(name1, QString("zome1"));
-  QCOMPARE(name2, QString("zome2"));
+  QVERIFY(name1 != name2);
+  QVERIFY(name1 == QString("zome1") || name1 == QString("zome2"));
+  QVERIFY(name2 == QString("zome1") || name2 == QString("zome2"));
 
   holochain_dna_free_zome_names(&names);
   holochain_dna_free(dna);
@@ -70,46 +71,40 @@ void TestHcDna::canGetZomeNames() {
 
 void TestHcDna::canGetCapabilityNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
-                                              "\"zomes\":["
-                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
-                                              "{"
-                                              "    \"name\": \"test_cap\","
-                                              "            \"capability\": {"
+                                              "\"zomes\":{"
+                                              "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
+                                              "\"test_cap\":{"
+                                              "    \"capability\": {"
                                               "        \"membrane\": \"public\""
                                               "    },"
-                                              "    \"fn_declarations\": ["
+                                              "    \"functions\": ["
                                               "    {"
                                               "        \"name\": \"main\","
-                                              "        \"signature\": {"
-                                              "            \"inputs\": [],"
-                                              "            \"outputs\": []"
-                                              "        }"
+                                              "        \"inputs\": [],"
+                                              "        \"outputs\": []"
                                               "    }"
                                               "    ],"
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
                                               "},"
-                                              "{"
-                                              "    \"name\": \"test_cap2\","
-                                              "            \"capability\": {"
+                                              "\"test_cap2\": {"
+                                              "    \"capability\": {"
                                               "        \"membrane\": \"public\""
                                               "    },"
-                                              "    \"fn_declarations\": ["
+                                              "    \"functions\": ["
                                               "    {"
                                               "        \"name\": \"main\","
-                                              "        \"signature\": {"
-                                              "            \"inputs\": [],"
-                                              "            \"outputs\": []"
-                                              "        }"
+                                              "        \"inputs\": [],"
+                                              "        \"outputs\": []"
                                               "    }"
                                               "    ],"
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
                                               "}"
-                                              "]}"
-                                              "]}");
+                                              "}}"
+                                              "}}");
     QVERIFY(dna != 0);
 
     CStringVec names;
@@ -119,8 +114,9 @@ void TestHcDna::canGetCapabilityNames() {
     QString name1 = QString("%1").arg(names.ptr[0]);
     QString name2 = QString("%1").arg(names.ptr[1]);
 
-    QCOMPARE(name1, QString("test_cap"));
-    QCOMPARE(name2, QString("test_cap2"));
+    QVERIFY(name1 != name2);
+    QVERIFY(name1 == QString("test_cap") || name1 == QString("test_cap2"));
+    QVERIFY(name2 == QString("test_cap") || name2 == QString("test_cap2"));
 
     holochain_dna_free_zome_names(&names);
     holochain_dna_free(dna);
@@ -130,40 +126,35 @@ void TestHcDna::canGetCapabilityNames() {
 
 void TestHcDna::canGetFunctionNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
-                                              "\"zomes\":["
-                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
-                                              "{"
-                                              "    \"name\": \"test_cap\","
-                                              "            \"capability\": {"
+                                              "\"zomes\":{"
+                                              "\"zome1\": {\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
+                                              "\"test_cap\": {"
+                                              "    \"capability\": {"
                                               "        \"membrane\": \"public\""
                                               "    },"
-                                              "    \"fn_declarations\": ["
+                                              "    \"functions\": ["
                                               "    {"
                                               "        \"name\": \"main\","
-                                              "        \"signature\": {"
-                                              "            \"inputs\": ["
+                                              "        \"inputs\": ["
                                               "                {"
                                               "                    \"name\": \"param1\","
                                               "                    \"type\": \"string\""
                                               "                }"
-                                              "            ],"
-                                              "            \"outputs\": []"
-                                              "        }"
+                                              "        ],"
+                                              "        \"outputs\": []"
                                               "    },"
                                               "    {"
                                               "        \"name\": \"test\","
-                                              "        \"signature\": {"
-                                              "            \"inputs\": [],"
-                                              "            \"outputs\": []"
-                                              "        }"
+                                              "        \"inputs\": [],"
+                                              "        \"outputs\": []"
                                               "    }"
                                               "    ],"
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
                                               "}"
-                                              "]}"
-                                              "]}");
+                                              "}}"
+                                              "}}");
     QVERIFY(dna != 0);
 
     CStringVec names;
@@ -182,17 +173,18 @@ void TestHcDna::canGetFunctionNames() {
 
 void TestHcDna::canGetFunctionParameters() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
-                                              "\"zomes\":["
-                                              "{\"name\":\"zome1\",\"description\":\"lorem\",\"config\":{},\"capabilities\":["
-                                              "{"
-                                              "    \"name\": \"test_cap\","
-                                              "            \"capability\": {"
-                                              "        \"membrane\": \"public\""
-                                              "    },"
-                                              "    \"fn_declarations\": ["
-                                              "    {"
-                                              "        \"name\": \"main\","
-                                              "        \"signature\": {"
+                                              "\"zomes\":{"
+                                              "  \"zome1\":{"
+                                              "    \"description\":\"lorem\","
+                                              "    \"config\":{},"
+                                              "    \"capabilities\":{"
+                                              "      \"test_cap\": {"
+                                              "        \"capability\": {"
+                                              "          \"membrane\": \"public\""
+                                              "        },"
+                                              "        \"functions\": ["
+                                              "          {"
+                                              "            \"name\": \"main\","
                                               "            \"inputs\": ["
                                               "                {"
                                               "                    \"name\": \"param1\","
@@ -200,22 +192,22 @@ void TestHcDna::canGetFunctionParameters() {
                                               "                }"
                                               "            ],"
                                               "            \"outputs\": []"
-                                              "        }"
-                                              "    },"
-                                              "    {"
-                                              "        \"name\": \"test\","
-                                              "        \"signature\": {"
+                                              "          },"
+                                              "          {"
+                                              "            \"name\": \"test\","
                                               "            \"inputs\": [],"
                                               "            \"outputs\": []"
+                                              "          }"
+                                              "        ],"
+                                              "        \"code\": {"
+                                              "          \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "        }"
-                                              "    }"
-                                              "    ],"
-                                              "    \"code\": {"
-                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
-                                              "    }"
-                                              "}"
-                                              "]}"
-                                              "]}");
+                                              "      }"  //test cap
+                                              "    }"  //capabilities
+                                              "  }"  //zome1
+                                              "}"  //zomes
+                                              "}"  //root
+                                              );
     QVERIFY(dna != 0);
 
     CStringVec names;

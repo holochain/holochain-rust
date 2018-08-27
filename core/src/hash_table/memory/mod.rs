@@ -10,7 +10,7 @@ use hash_table::{
     HashTable,
 };
 
-/// Struct Implemenating the HashTable Trait which stores the HashTable in memory
+/// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,

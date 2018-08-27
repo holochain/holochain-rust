@@ -17,13 +17,13 @@ pub struct Header {
     /// ISO8601 time stamp
     timestamp: String,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
-    prev: Option<HashString>,
+    link: Option<HashString>,
     /// Key to the entry of this header
     entry_hash: HashString,
     /// agent's cryptographic signature of the entry
     entry_signature: String,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
-    prev_same: Option<HashString>,
+    link_same_type: Option<HashString>,
 }
 
 impl PartialEq for Header {
@@ -48,9 +48,9 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
-            prev: chain.top().as_ref().map(|p| p.header().hash()),
+            link: chain.top().as_ref().map(|p| p.header().hash()),
             entry_hash: entry.hash().to_string(),
-            prev_same: chain
+            link_same_type: chain
                 .top_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
@@ -70,17 +70,17 @@ impl Header {
     pub fn timestamp(&self) -> &str {
         &self.timestamp
     }
-    /// prev getter
-    pub fn prev(&self) -> Option<String> {
-        self.prev.clone()
+    /// link getter
+    pub fn link(&self) -> Option<String> {
+        self.link.clone()
     }
     /// entry_hash getter
     pub fn entry_hash(&self) -> &str {
         &self.entry_hash
     }
-    /// prev_same getter
-    pub fn prev_same(&self) -> Option<String> {
-        self.prev_same.clone()
+    /// link_same_type getter
+    pub fn link_same_type(&self) -> Option<String> {
+        self.link_same_type.clone()
     }
     /// entry_signature getter
     pub fn entry_signature(&self) -> &str {
@@ -94,9 +94,9 @@ impl Header {
         let pieces: [&str; 6] = [
             &self.entry_type,
             &self.timestamp,
-            &self.prev.clone().unwrap_or_default(),
+            &self.link.clone().unwrap_or_default(),
             &self.entry_hash,
-            &self.prev_same.clone().unwrap_or_default(),
+            &self.link_same_type.clone().unwrap_or_default(),
             &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();
@@ -174,7 +174,7 @@ mod tests {
         let h = Header::new(&chain, &e);
 
         assert_eq!(h.entry_hash(), e.hash());
-        assert_eq!(h.prev(), None);
+        assert_eq!(h.link(), None);
         assert_ne!(h.hash(), "");
         assert!(h.validate());
     }
@@ -214,7 +214,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
-        assert_eq!(h1.prev(), None);
+        assert_eq!(h1.link(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
@@ -223,7 +223,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        assert_eq!(h2.prev(), Some(h1.hash()));
+        assert_eq!(h2.link(), Some(h1.hash()));
     }
 
     #[test]
@@ -253,7 +253,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
-        assert_eq!(h1.prev_same(), None);
+        assert_eq!(h1.link_same_type(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
@@ -262,7 +262,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        assert_eq!(h2.prev_same(), None);
+        assert_eq!(h2.link_same_type(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
@@ -271,7 +271,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
-        assert_eq!(h3.prev_same(), Some(h1.hash()));
+        assert_eq!(h3.link_same_type(), Some(h1.hash()));
     }
 
     #[test]

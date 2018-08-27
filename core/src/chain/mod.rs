@@ -34,7 +34,7 @@ impl<T: HashTable> Iterator for ChainIterator<T> {
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
         self.current = previous.as_ref()
-                        .and_then(|p| p.header().prev())
+                        .and_then(|p| p.header().link())
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| self.table.get(&h).expect("getting from a table shouldn't fail"));
@@ -112,7 +112,7 @@ impl<T: HashTable> Chain<T> {
         }
 
         let top_pair = self.top().as_ref().map(|p| p.key());
-        let next_pair = pair.header().prev();
+        let next_pair = pair.header().link();
 
         if top_pair != next_pair {
             return Err(HolochainError::new(&format!(
@@ -151,12 +151,12 @@ impl<T: HashTable> Chain<T> {
     }
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    pub fn get_pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
+    pub fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         self.table.get(k)
     }
 
     /// get an Entry by Entry key from the HashTable if it exists
-    pub fn get_entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    pub fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
@@ -349,7 +349,7 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(
             Some(&p),
-            c.get_pair(&p.key())
+            c.pair(&p.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -422,27 +422,27 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .get_pair("")
+                .pair("")
                 .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
             Some(&p1),
             chain
-                .get_pair(&p1.key())
+                .pair(&p1.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .get_pair(&p2.key())
+                .pair(&p2.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p3),
             chain
-                .get_pair(&p3.key())
+                .pair(&p3.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -450,21 +450,21 @@ pub mod tests {
         assert_eq!(
             Some(&p1),
             chain
-                .get_pair(&p1.header().key())
+                .pair(&p1.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .get_pair(&p2.header().key())
+                .pair(&p2.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p3),
             chain
-                .get_pair(&p3.header().key())
+                .pair(&p3.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -492,28 +492,28 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .get_entry("")
+                .entry("")
                 .expect("getting an entry from a chain shouldn't fail")
         );
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
             Some(&p3),
             chain
-                .get_entry(&p1.entry().key())
+                .entry(&p1.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .get_entry(&p2.entry().key())
+                .entry(&p2.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p3),
             chain
-                .get_entry(&p3.entry().key())
+                .entry(&p3.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -644,7 +644,7 @@ pub mod tests {
             .push_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"prev\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
+        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"link\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
         ;
         assert_eq!(
             expected_json,

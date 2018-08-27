@@ -107,7 +107,7 @@ impl Instance {
 
     /// Calls the reducers for an action and calls the observers with the new state
     /// returns the new vector of observers
-    fn process_action(
+    pub(crate) fn process_action(
         &self,
         action_wrapper: ActionWrapper,
         mut state_observers: Vec<Observer>,
@@ -528,9 +528,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -558,9 +555,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -588,9 +582,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 5);
         assert!(instance.state().nucleus().has_initialized() == false);
     }
 }

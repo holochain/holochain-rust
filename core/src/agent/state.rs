@@ -140,7 +140,7 @@ fn reduce_get(
     // @see https://github.com/holochain/holochain-rust/issues/167
 
     let result = chain
-        .get_entry(&key)
+        .entry(&key)
         .expect("should be able to get entry that we just added");
     state
         .actions
@@ -286,7 +286,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
             ActionResponse::Get(Some(test_pair())).to_json(),
         );
         assert_eq!("", ActionResponse::Get(None).to_json());

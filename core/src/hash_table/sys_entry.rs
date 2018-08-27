@@ -111,7 +111,8 @@ pub mod tests {
     use hash_table::sys_entry::{EntryType, ToEntry};
     use std::str::FromStr;
 
-    use instance::{tests::test_context, Instance};
+    use instance::{tests::test_context, Instance, Observer};
+    use std::sync::mpsc::channel;
 
     /// Committing a DnaEntry to source chain should work
     #[test]
@@ -122,10 +123,17 @@ pub mod tests {
         let dna_entry = dna.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(dna_entry));
 
-        // Set up instance and dispatch action
-        let mut instance = Instance::new();
-        instance.start_action_loop(context);
-        instance.dispatch_and_wait(commit_action);
+        // Set up instance and process the action
+        let instance = Instance::new();
+        let state_observers: Vec<Observer> = Vec::new();
+        let (_, rx_observer) = channel::<Observer>();
+        instance.process_action(
+            commit_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
+
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -153,10 +161,16 @@ pub mod tests {
         let agent_entry = context.agent.to_entry();
         let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry));
 
-        // Set up instance and dispatch action
-        let mut instance = Instance::new();
-        instance.start_action_loop(context);
-        instance.dispatch_and_wait(commit_agent_action);
+        // Set up instance and process the action
+        let instance = Instance::new();
+        let state_observers: Vec<Observer> = Vec::new();
+        let (_, rx_observer) = channel::<Observer>();
+        instance.process_action(
+            commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());

@@ -100,9 +100,9 @@ mod tests {
             test_zome_api_function_runtime(ZomeAPIFunction::GetEntry.as_str(), test_args_bytes());
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"prev\":null,\"entry_hash\":\"");
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"");
         expected.push_str(&test_entry_hash());
-        expected.push_str("\",\"entry_signature\":\"\",\"prev_same\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
+        expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
         assert_eq!(runtime.result, expected);
     }

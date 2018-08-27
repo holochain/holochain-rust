@@ -7,7 +7,7 @@ pub trait Persister: Send {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: &State);
+    fn save(&mut self, state: State);
     fn load(&self) -> Result<Option<State>, HolochainError>;
 }
 
@@ -17,8 +17,8 @@ pub struct SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: &State) {
-        self.state = Some(state.clone());
+    fn save(&mut self, state: State) {
+        self.state = Some(state);
     }
     fn load(&self) -> Result<Option<State>, HolochainError> {
         Ok(self.state.clone())
@@ -41,13 +41,8 @@ mod tests {
     #[test]
     fn can_instantiate() {
         let store = SimplePersister::new();
-        match store.load() {
-            Err(_) => assert!(false),
-            Ok(state) => match state {
-                None => assert!(true),
-                _ => assert!(false),
-            },
-        }
+
+        assert_eq!(store.load(), Ok(None));
     }
 
     #[test]
@@ -67,8 +62,8 @@ mod tests {
             &tx_observer,
         );
 
-        store.save(&new_state);
+        store.save(new_state.clone());
 
-        assert_eq!(store.load().unwrap().unwrap(), new_state);
+        assert_eq!(store.load(), Ok(Some(new_state)));
     }
 }

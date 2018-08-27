@@ -275,7 +275,8 @@ pub mod tests {
                                             "code": "AAECAw=="
                                         }
                                     }
-                                ]
+                                ],
+                                "linked_from": []
                             }
                         },
                         "capabilities": {

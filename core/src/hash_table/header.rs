@@ -1,8 +1,11 @@
 use chain::Chain;
 use hash;
-use hash_table::{entry::Entry, HashTable};
+use hash_table::{entry::Entry, HashString, HashTable};
 use multihash::Hash;
 
+/// Header of a source chain "Item"
+/// The hash of the Header is used as the Item's key in the source chain hash table
+/// Headers are linked to next header in chain and next header of same type in chain
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
@@ -12,15 +15,15 @@ pub struct Header {
     /// system types may have associated "subconscious" behavior
     entry_type: String,
     /// ISO8601 time stamp
-    time: String,
-    /// link to the immediately preceding header, None is valid only for genesis
-    next: Option<String>,
-    /// mandatory link to the entry for this header
-    entry: String,
-    /// link to the most recent header of the same type, None is valid only for the first of type
-    type_next: Option<String>,
-    /// agent's cryptographic signature
-    signature: String,
+    timestamp: String,
+    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
+    link: Option<HashString>,
+    /// Key to the entry of this header
+    entry_hash: HashString,
+    /// agent's cryptographic signature of the entry
+    entry_signature: String,
+    /// Key to the most recent header of the same type, None is valid only for the first of that type
+    link_same_type: Option<HashString>,
 }
 
 impl PartialEq for Header {
@@ -44,10 +47,10 @@ impl Header {
             entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
-            time: String::new(),
-            next: chain.top().as_ref().map(|p| p.header().hash()),
-            entry: entry.hash().to_string(),
-            type_next: chain
+            timestamp: String::new(),
+            link: chain.top().as_ref().map(|p| p.header().hash()),
+            entry_hash: entry.hash().to_string(),
+            link_same_type: chain
                 .top_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
@@ -55,38 +58,33 @@ impl Header {
                 .map(|p| p.header().hash()),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
-            signature: String::new(),
+            entry_signature: String::new(),
         }
     }
 
     /// entry_type getter
-    pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
+    pub fn entry_type(&self) -> &str {
+        &self.entry_type
     }
-
-    /// time getter
-    pub fn time(&self) -> String {
-        self.time.clone()
+    /// timestamp getter
+    pub fn timestamp(&self) -> &str {
+        &self.timestamp
     }
-
-    /// next getter
-    pub fn next(&self) -> Option<String> {
-        self.next.clone()
+    /// link getter
+    pub fn link(&self) -> Option<String> {
+        self.link.clone()
     }
-
-    /// entry getter
-    pub fn entry(&self) -> String {
-        self.entry.clone()
+    /// entry_hash getter
+    pub fn entry_hash(&self) -> &str {
+        &self.entry_hash
     }
-
-    /// type_next getter
-    pub fn type_next(&self) -> Option<String> {
-        self.type_next.clone()
+    /// link_same_type getter
+    pub fn link_same_type(&self) -> Option<String> {
+        self.link_same_type.clone()
     }
-
-    /// signature getter
-    pub fn signature(&self) -> String {
-        self.signature.clone()
+    /// entry_signature getter
+    pub fn entry_signature(&self) -> &str {
+        &self.entry_signature
     }
 
     /// hashes the header
@@ -95,11 +93,11 @@ impl Header {
         // @see https://github.com/holochain/holochain-rust/issues/103
         let pieces: [&str; 6] = [
             &self.entry_type,
-            &self.time,
-            &self.next.clone().unwrap_or_default(),
-            &self.entry,
-            &self.type_next.clone().unwrap_or_default(),
-            &self.signature,
+            &self.timestamp,
+            &self.link.clone().unwrap_or_default(),
+            &self.entry_hash,
+            &self.link_same_type.clone().unwrap_or_default(),
+            &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();
 
@@ -161,7 +159,7 @@ mod tests {
         let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
         chain2
-            .push(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_ne!(Header::new(&chain1, &e), Header::new(&chain2, &e));
@@ -175,8 +173,8 @@ mod tests {
         let e = Entry::new(t, "foo");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry(), e.hash());
-        assert_eq!(h.next(), None);
+        assert_eq!(h.entry_hash(), e.hash());
+        assert_eq!(h.link(), None);
         assert_ne!(h.hash(), "");
         assert!(h.validate());
     }
@@ -200,7 +198,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.time(), "");
+        assert_eq!(h.timestamp(), "");
     }
 
     #[test]
@@ -212,20 +210,20 @@ mod tests {
         // first header is genesis so next should be None
         let e1 = Entry::new(t, "");
         let p1 = chain
-            .push(&e1)
+            .push_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
-        assert_eq!(h1.next(), None);
+        assert_eq!(h1.link(), None);
 
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
         let p2 = chain
-            .push(&e2)
+            .push_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        assert_eq!(h2.next(), Some(h1.hash()));
+        assert_eq!(h2.link(), Some(h1.hash()));
     }
 
     #[test]
@@ -238,7 +236,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry(), e.hash());
+        assert_eq!(h.entry_hash(), e.hash());
     }
 
     #[test]
@@ -251,29 +249,29 @@ mod tests {
         // first header is genesis so next should be None
         let e1 = Entry::new(t1, "");
         let p1 = chain
-            .push(&e1)
+            .push_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
-        assert_eq!(h1.type_next(), None);
+        assert_eq!(h1.link_same_type(), None);
 
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
         let p2 = chain
-            .push(&e2)
+            .push_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        assert_eq!(h2.type_next(), None);
+        assert_eq!(h2.link_same_type(), None);
 
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
         let p3 = chain
-            .push(&e3)
+            .push_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
-        assert_eq!(h3.type_next(), Some(h1.hash()));
+        assert_eq!(h3.link_same_type(), Some(h1.hash()));
     }
 
     #[test]
@@ -285,7 +283,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!("", h.signature());
+        assert_eq!("", h.entry_signature());
     }
 
     #[test]
@@ -352,11 +350,11 @@ mod tests {
         let h = Header::new(&chain, &e);
 
         let p1 = chain
-            .push(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         // p2 will have a different hash to p1 with the same entry as the chain state is different
         let p2 = chain
-            .push(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(h.hash(), p1.header().hash());

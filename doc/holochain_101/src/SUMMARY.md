@@ -2,7 +2,7 @@
 
 - [Welcome](./welcome.md)
   - [Overview](./overview.md)
-  - [How to contribute]
+  - [How to contribute](./how_to_contribute.md)
 - [Planning a dApp](./planning_a_dapp.md)
 - [Building Holochain Apps](./building_apps.md)
   - [using zome API global variables](./zome/api_globals.md)

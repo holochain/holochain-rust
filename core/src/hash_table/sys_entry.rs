@@ -127,13 +127,7 @@ pub mod tests {
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(
-            commit_action,
-            state_observers,
-            &rx_observer,
-            &context,
-        );
-
+        instance.process_action(commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -165,12 +159,7 @@ pub mod tests {
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(
-            commit_agent_action,
-            state_observers,
-            &rx_observer,
-            &context,
-        );
+        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());

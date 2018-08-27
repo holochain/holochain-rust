@@ -219,9 +219,7 @@ fn reduce_ia(
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
-            ::instance::dispatch_action(
-                &genesis_action_channel,
-                commit_genesis_action);
+            ::instance::dispatch_action(&genesis_action_channel, commit_genesis_action);
         }
 
         // map genesis across every zome

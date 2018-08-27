@@ -166,11 +166,8 @@ impl Dna {
         zome: &'a zome::Zome,
         capability_name: &str,
     ) -> Option<&'a wasm::DnaWasm> {
-        let capability = zome
-            .capabilities
-            .iter()
-            .find(|c| c.name == capability_name)?;
-        Some(&capability.code)
+        let capability = zome.capabilities.get(capability_name);
+        Some(&capability?.code)
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
@@ -285,9 +282,8 @@ pub mod tests {
                                 ]
                             }
                         ],
-                        "capabilities": [
-                            {
-                                "name": "test",
+                        "capabilities": {
+                            "test": {
                                 "capability": {
                                     "membrane": "public"
                                 },
@@ -302,7 +298,7 @@ pub mod tests {
                                     "code": "AAECAw=="
                                 }
                             }
-                        ]
+                        }
                     }
                 }
             }"#,
@@ -527,9 +523,8 @@ pub mod tests {
                         "description": "test",
                         "config": {},
                         "entry_types": [],
-                        "capabilities": [
-                            {
-                                "name": "test capability",
+                        "capabilities": {
+                            "test capability": {
                                 "capability": {
                                     "membrane": "public"
                                 },
@@ -546,7 +541,7 @@ pub mod tests {
                                     "code": "AAECAw=="
                                 }
                             }
-                        ]
+                        }
                     }
                 }
             }"#,

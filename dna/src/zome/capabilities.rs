@@ -140,10 +140,6 @@ impl FnDeclaration {
 /// Represents an individual object in the "zome" "capabilities" array.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
-    /// The name of this capability.
-    #[serde(default)]
-    pub name: String,
-
     /// "capability" sub-object
     #[serde(default)]
     pub capability: CapabilityType,
@@ -161,7 +157,6 @@ impl Default for Capability {
     /// Provide defaults for a "zome"s "capabilities" object.
     fn default() -> Self {
         Capability {
-            name: String::from(""),
             capability: CapabilityType::new(),
             functions: Vec::new(),
             code: DnaWasm::new(),
@@ -212,7 +207,6 @@ mod tests {
     fn build_and_compare() {
         let fixture: Capability = serde_json::from_str(
             r#"{
-                "name": "test",
                 "capability": {
                     "membrane": "agent"
                 },
@@ -240,7 +234,6 @@ mod tests {
         ).unwrap();
 
         let mut cap = Capability::new();
-        cap.name = String::from("test");
         let mut fn_dec = FnDeclaration::new();
         fn_dec.name = String::from("test");
         let input = FnParameter::new("post", "string");

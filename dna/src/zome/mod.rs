@@ -3,6 +3,8 @@
 pub mod capabilities;
 pub mod entry_types;
 
+use std::collections::HashMap;
+
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum ErrorHandling {
@@ -42,7 +44,7 @@ impl Config {
 }
 
 /// Represents an individual "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Zome {
     /// A description of this zome.
     #[serde(default)]
@@ -60,7 +62,7 @@ pub struct Zome {
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: Vec<capabilities::Capability>,
+    pub capabilities: HashMap<String, capabilities::Capability>,
 }
 
 impl Eq for Zome {}
@@ -72,7 +74,7 @@ impl Default for Zome {
             description: String::from(""),
             config: Config::new(),
             entry_types: Vec::new(),
-            capabilities: Vec::new(),
+            capabilities: HashMap::new(),
         }
     }
 }
@@ -83,7 +85,7 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &[entry_types::EntryType],
-        capabilities: &[capabilities::Capability],
+        capabilities: &HashMap<String, capabilities::Capability>,
     ) -> Zome {
         Zome {
             description: description.into(),
@@ -112,7 +114,7 @@ pub mod tests {
                     "error_handling": "throw-errors"
                 },
                 "entry_types": [],
-                "capabilities": []
+                "capabilities": {}
             }"#,
         ).unwrap();
 

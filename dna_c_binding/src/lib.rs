@@ -213,9 +213,9 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
         .zomes
         .get(zome_name)?
         .capabilities
-        .iter()
-        .map(|cap| {
-            let raw = match CString::new(cap.name.clone()) {
+        .keys()
+        .map(|cap_name| {
+            let raw = match CString::new(cap_name.clone()) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null(),
             };
@@ -246,8 +246,7 @@ fn fn_names_as_vec(
         .zomes
         .get(zome_name)?
         .capabilities
-        .iter()
-        .find(|&c| c.name == capability_name)?
+        .get(capability_name)?
         .functions
         .iter()
         .map(|fn_declaration| {
@@ -287,8 +286,7 @@ fn fn_parameters_as_vec(
         .zomes
         .get(zome_name)?
         .capabilities
-        .iter()
-        .find(|&c| c.name == capability_name)?
+        .get(capability_name)?
         .functions
         .iter()
         .find(|&function| function.name == function_name)?

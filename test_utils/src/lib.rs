@@ -11,7 +11,7 @@ use holochain_dna::{
     Dna,
 };
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::{hash_map::DefaultHasher, HashMap},
     fmt,
     fs::File,
     hash::{Hash, Hasher},
@@ -59,11 +59,10 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let mut capability = Capability::new();
-    capability.name = cap_name.to_string();
     capability.code = DnaWasm { code: wasm };
 
-    let mut capabilities = Vec::new();
-    capabilities.push(capability);
+    let mut capabilities = HashMap::new();
+    capabilities.insert(cap_name.to_string(), capability);
 
     let zome = Zome::new(
         "some zome description",

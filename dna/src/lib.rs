@@ -190,10 +190,7 @@ impl Dna {
         entry_type_name: &str,
     ) -> Option<&wasm::DnaWasm> {
         let zome = self.get_zome(zome_name)?;
-        let entry_type = zome
-            .entry_types
-            .iter()
-            .find(|et| et.name == entry_type_name)?;
+        let entry_type = zome.entry_types.get(entry_type_name)?;
         Some(&entry_type.validation)
     }
 }
@@ -263,9 +260,8 @@ pub mod tests {
                         "config": {
                             "error_handling": "throw-errors"
                         },
-                        "entry_types": [
-                            {
-                                "name": "test",
+                        "entry_types": {
+                            "test": {
                                 "description": "test",
                                 "sharing": "public",
                                 "validation": {
@@ -281,7 +277,7 @@ pub mod tests {
                                     }
                                 ]
                             }
-                        ],
+                        },
                         "capabilities": {
                             "test": {
                                 "capability": {
@@ -320,7 +316,8 @@ pub mod tests {
             ..Default::default()
         };
         let mut zome = zome::Zome::default();
-        zome.entry_types.push(zome::entry_types::EntryType::new());
+        zome.entry_types
+            .insert("".to_string(), zome::entry_types::EntryType::new());
         dna.zomes.insert("".to_string(), zome);
 
         let fixture = Dna::new_from_json(
@@ -337,13 +334,12 @@ pub mod tests {
                         "config": {
                             "error_handling": "throw-errors"
                         },
-                        "entry_types": [
-                            {
-                                "name": "",
+                        "entry_types": {
+                            "": {
                                 "description": "",
                                 "sharing": "public"
                             }
-                        ]
+                        }
                     }
                 }
             }"#,
@@ -383,17 +379,23 @@ pub mod tests {
         let dna = Dna::new_from_json(
             r#"{
                 "zomes": {
-                    "0": {
-                        "entry_types": [
-                            {}
-                        ]
+                    "zome1": {
+                        "entry_types": {
+                            "type1": {}
+                        }
                     }
                 }
             }"#,
         ).unwrap();
 
         assert_eq!(
-            dna.zomes.get("0").unwrap().entry_types[0].sharing,
+            dna.zomes
+                .get("zome1")
+                .unwrap()
+                .entry_types
+                .get("type1")
+                .unwrap()
+                .sharing,
             zome::entry_types::Sharing::Public
         );
     }
@@ -403,14 +405,14 @@ pub mod tests {
         let dna = Dna::new_from_json(
             r#"{
                 "zomes": {
-                    "0": {
-                        "entry_types": [
-                            {
+                    "zome1": {
+                        "entry_types": {
+                            "type1": {
                                 "validation": {
                                     "code": "AAECAw=="
                                 }
                             }
-                        ]
+                        }
                     }
                 }
             }"#,
@@ -418,7 +420,14 @@ pub mod tests {
 
         assert_eq!(
             vec![0, 1, 2, 3],
-            dna.zomes.get("0").unwrap().entry_types[0].validation.code
+            dna.zomes
+                .get("zome1")
+                .unwrap()
+                .entry_types
+                .get("type1")
+                .unwrap()
+                .validation
+                .code
         );
     }
 
@@ -453,11 +462,11 @@ pub mod tests {
             r#"{
                 "zomes": {
                     "0": {
-                        "entry_types": [
-                            {
-                                "name": 42
+                        "entry_types": {
+                            "test": {
+                                "description": 42
                             }
-                        ]
+                        }
                     }
                 }
             }"#,
@@ -522,7 +531,7 @@ pub mod tests {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
-                        "entry_types": [],
+                        "entry_types": {},
                         "capabilities": {
                             "test capability": {
                                 "capability": {

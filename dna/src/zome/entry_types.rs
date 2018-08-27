@@ -57,10 +57,6 @@ impl LinksTo {
 /// Represents an individual object in the "zome" "entry_types" array.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct EntryType {
-    /// The name of this entry type.
-    #[serde(default)]
-    pub name: String,
-
     /// A description of this entry type.
     #[serde(default)]
     pub description: String,
@@ -82,7 +78,6 @@ impl Default for EntryType {
     /// Provide defaults for a "zome"s "entry_types" object.
     fn default() -> Self {
         EntryType {
-            name: String::from(""),
             description: String::from(""),
             sharing: Sharing::Public,
             validation: DnaWasm::new(),
@@ -107,7 +102,6 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryType = serde_json::from_str(
             r#"{
-                "name": "test",
                 "description": "test",
                 "validation": {
                     "code": "AAECAw=="
@@ -126,7 +120,6 @@ mod tests {
         ).unwrap();
 
         let mut entry = EntryType::new();
-        entry.name = String::from("test");
         entry.description = String::from("test");
         entry.validation.code = vec![0, 1, 2, 3];
         entry.sharing = Sharing::Public;

@@ -67,7 +67,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &Vec::new(),
+        &HashMap::new(),
         &capabilities,
     );
 

@@ -58,7 +58,7 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: Vec<entry_types::EntryType>,
+    pub entry_types: HashMap<String, entry_types::EntryType>,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
@@ -73,7 +73,7 @@ impl Default for Zome {
         Zome {
             description: String::from(""),
             config: Config::new(),
-            entry_types: Vec::new(),
+            entry_types: HashMap::new(),
             capabilities: HashMap::new(),
         }
     }
@@ -84,7 +84,7 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &[entry_types::EntryType],
+        entry_types: &HashMap<String, entry_types::EntryType>,
         capabilities: &HashMap<String, capabilities::Capability>,
     ) -> Zome {
         Zome {
@@ -113,7 +113,7 @@ pub mod tests {
                 "config": {
                     "error_handling": "throw-errors"
                 },
-                "entry_types": [],
+                "entry_types": {},
                 "capabilities": {}
             }"#,
         ).unwrap();

@@ -107,7 +107,7 @@ impl Instance {
 
     /// Calls the reducers for an action and calls the observers with the new state
     /// returns the new vector of observers
-    fn process_action(
+    pub(crate) fn process_action(
         &self,
         action_wrapper: ActionWrapper,
         mut state_observers: Vec<Observer>,
@@ -248,6 +248,7 @@ pub mod tests {
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::tests::test_action_response_get;
     use context::Context;
+    use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -255,6 +256,7 @@ pub mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::{
+        str::FromStr,
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
@@ -326,6 +328,26 @@ pub mod tests {
             .is_none()
         {
             println!("Waiting for InitApplication");
+            sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::Commit(entry) => {
+                    assert_eq!(
+                        EntryType::from_str(&entry.entry_type()).unwrap(),
+                        EntryType::Dna
+                    );
+                    true
+                }
+                _ => false,
+            })
+            .is_none()
+        {
+            println!("Waiting for Commit for genesis");
             sleep(Duration::from_millis(10))
         }
 
@@ -506,9 +528,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -536,9 +555,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -566,9 +582,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }
 }

@@ -75,7 +75,7 @@ If you don't have write access to the repository you need to create a fork to co
 
 ### Merging a Pull Request
 
-3) Under "Conversation" you can merge the pull request, which integrates it into the `develop` branch. Changes are automatically deployed to [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust) and usually appear there within 30 minutes. Merging a pull request should only be performed after it has received two "Approval" reviews.
+3) Under "Conversation" you can merge the pull request, which integrates it into the `develop` branch. Changes automatically deploy to [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust) within ~30 minutes. Merge the pull request once it has received two approved reviews.
 
 ## Contributing by Cloning and Running Mdbook (advanced)
 

@@ -195,17 +195,20 @@ pub unsafe extern "C" fn holochain_dna_get_zome_names(ptr: *mut Dna, string_vec:
     vec_char_to_cstringvec(zome_names, string_vec);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
+unsafe fn cstring_vec_to_rustvec(string_vec: *mut CStringVec) -> Vec<CString> {
     let vec = Vec::from_raw_parts(
         (*string_vec).ptr as *mut *const c_char,
         (*string_vec).len,
         (*string_vec).len,
     );
-    let _vec = vec
-        .into_iter()
+    vec.into_iter()
         .map(|s| CString::from_raw(s as *mut c_char))
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
+    let _vec = cstring_vec_to_rustvec(string_vec);
 }
 
 fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
@@ -360,5 +363,73 @@ mod tests {
 
         holochain_dna_string_free(res_raw);
         holochain_dna_free(dna);
+    }
+
+    #[test]
+    fn test_holochain_dna_get_zome_names() {
+        let mut dna = Dna::new_from_json(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test zome": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [],
+                                "code": {
+                                    "code": ""
+                                }
+                            }
+                        },
+                        "entry_types": {}
+                    },
+                    "test zome2": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [],
+                                "code": {
+                                    "code": ""
+                                }
+                            }
+                        },
+                        "entry_types": {}
+                    }
+                }
+            }"#,
+        ).unwrap();
+
+        let mut cnames = CStringVec{len:0, ptr:0 as *const *const c_char};
+        unsafe { holochain_dna_get_zome_names(&mut dna, &mut cnames) };
+
+        assert_eq!(cnames.len, 2);
+
+        let names = unsafe {cstring_vec_to_rustvec(&mut cnames)};
+        let names = names
+            .into_iter()
+            .map(|s| s.into_string().unwrap())
+            .collect::<Vec<_>>();
+
+
+        assert!(names[0] == "test zome" || names[1] == "test zome");
+        assert!(names[0] == "test zome2" || names[1] == "test zome2");
+        assert!(names[0] != names[1]);
     }
 }

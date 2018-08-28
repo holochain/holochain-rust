@@ -87,9 +87,7 @@ mod tests {
                 call,
                 commit::tests::test_commit_args_bytes,
                 tests::{test_capability, test_parameters, test_zome_name},
-                ZomeAPIFunction,
             },
-            Defn,
         },
         FunctionCall,
     };

@@ -215,7 +215,12 @@ pub fn call(
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).expect("wasm should be valid");
 
-    // Describe invokable functions from within Zome
+    // invoke_index and resolve_func work together to enable callable host functions
+    // within WASM modules, which is how the core API functions
+    // read about the Externals trait for more detail
+    
+    // Correlate the indexes of core API functions with a call to the actual function
+    // by implementing the Externals wasmi trait for Runtime
     impl Externals for Runtime {
         fn invoke_index(
             &mut self,
@@ -225,12 +230,14 @@ pub fn call(
             let zf = ZomeAPIFunction::from_index(index);
             match zf {
                 ZomeAPIFunction::MissingNo => panic!("unknown function index"),
+                // convert the function to its callable form and call it with the given arguments
                 _ => zf.as_fn()(self, &args),
             }
         }
     }
 
-    // Define invokable functions from within Zome
+    // Correlate the names of the core ZomeAPIFunction's with their indexes
+    // and declare its function signature (which is always the same)
     struct RuntimeModuleImportResolver;
     impl ModuleImportResolver for RuntimeModuleImportResolver {
         fn resolve_func(
@@ -238,6 +245,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
+            // Take the canonical name and find the corresponding ZomeAPIFunction index
             let index = ZomeAPIFunction::str_to_index(&field_name);
             match index {
                 index if index == ZomeAPIFunction::MissingNo as usize => {

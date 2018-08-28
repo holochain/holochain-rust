@@ -92,6 +92,7 @@ mod tests {
         FunctionCall,
     };
     use serde_json;
+    use chain::SourceChain;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
@@ -168,6 +169,9 @@ mod tests {
         let instance = test_instance(dna.clone());
         let (context, _) = test_context_and_logger("joan");
 
+        println!("{:?}", instance.state().agent().chain().top_pair());
+        println!("{:?}", instance.state().agent().chain().top_pair().unwrap().key());
+
         let commit_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
@@ -206,7 +210,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"");
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmSzPqpDCo5fEJpKo9qyPK8G8hByvkBG2qx8VaXr9MHhDc\",\"entry_hash\":\"");
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 

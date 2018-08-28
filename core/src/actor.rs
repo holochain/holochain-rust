@@ -8,10 +8,15 @@ use riker_patterns::ask::ask;
 use futures::executor::block_on;
 
 #[derive(Clone, Debug)]
+/// riker protocol for all our actors
+/// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
+/// @see https://github.com/riker-rs/riker/issues/17
 pub enum Protocol {
+    /// Chain::set_top_pair()
     SetTopPair(Option<Pair>),
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
 
+    /// Chain::get_top_pair()
     GetTopPair,
     GetTopPairResult(Option<Pair>),
 
@@ -59,6 +64,10 @@ pub enum Protocol {
     CommitResult(Result<(), HolochainError>),
 }
 
+/// this is the global state that manages every actor
+/// to be thread/concurrency safe there must only ever be one actor system
+/// @see https://github.com/riker-rs/riker/issues/17
+/// @see http://riker.rs/actors/#creating-actors
 lazy_static! {
     pub static ref SYS: ActorSystem<Protocol> = {
         let model: DefaultModel<Protocol> = DefaultModel::new();
@@ -66,18 +75,23 @@ lazy_static! {
     };
 }
 
+/// required by riker
 impl Into<ActorMsg<Protocol>> for Protocol {
     fn into(self) -> ActorMsg<Protocol> {
         ActorMsg::User(self)
     }
 }
 
+/// convenience trait to build fake synchronous facades for actors
 pub trait AskSelf {
-    fn ask(&self, message: Protocol) -> Protocol;
+    /// adapter for synchronous code to interact with an actor
+    /// uses the ask() fn from riker patterns under the hood to create a future then block on it
+    /// @see http://riker.rs/patterns/#ask
+    fn block_on_ask(&self, message: Protocol) -> Protocol;
 }
 
 impl AskSelf for ActorRef<Protocol> {
-    fn ask(&self, message: Protocol) -> Protocol {
+    fn block_on_ask(&self, message: Protocol) -> Protocol {
         let a = ask(&(*SYS), self, message);
         block_on(a).unwrap()
     }

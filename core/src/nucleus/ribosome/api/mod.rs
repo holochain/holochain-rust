@@ -424,22 +424,28 @@ pub mod tests {
             .to_vec()
     }
 
+    /// dummy zome name
     pub fn test_zome_name() -> String {
         "test_zome".to_string()
     }
 
+    /// dummy capability
     pub fn test_capability() -> String {
         ReservedCapabilityNames::MissingNo.as_str().to_string()
     }
 
+    /// dummy zome API function name
     pub fn test_function_name() -> String {
         "test".to_string()
     }
 
+    /// dummy parameters for a zome API function call
     pub fn test_parameters() -> String {
         String::new()
     }
 
+    /// calls the zome API function with passed bytes argument using the instance runtime
+    /// returns the runtime after the call completes
     pub fn test_zome_api_function_call(
         app_name: &str,
         context: Arc<Context>,

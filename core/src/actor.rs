@@ -86,6 +86,7 @@ impl Into<ActorMsg<Protocol>> for Protocol {
 pub trait AskSelf {
     /// adapter for synchronous code to interact with an actor
     /// uses the ask() fn from riker patterns under the hood to create a future then block on it
+    /// handles passing the actor system through to ask() to hide that implementation detail
     /// @see http://riker.rs/patterns/#ask
     fn block_on_ask(&self, message: Protocol) -> Protocol;
 }

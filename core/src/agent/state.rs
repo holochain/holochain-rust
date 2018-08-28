@@ -37,8 +37,8 @@ impl AgentState {
     }
 
     /// getter for the chain
-    pub fn chain(&self) -> Chain {
-        self.chain.clone()
+    pub fn chain(&self) -> &Chain {
+        &self.chain
     }
 
     /// getter for a copy of self.actions

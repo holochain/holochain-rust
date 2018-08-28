@@ -57,6 +57,7 @@ pub struct Chain {
 
 impl PartialEq for Chain {
     // @TODO can we just check the actors are equal? is actor equality a thing?
+    // @see https://github.com/holochain/holochain-rust/issues/257
     fn eq(&self, other: &Chain) -> bool {
         // an invalid chain is like NaN... not even equal to itself
         self.validate() &&
@@ -128,8 +129,31 @@ impl Chain {
     }
 }
 
+// @TODO should SourceChain have a bound on HashTable for consistency?
+// @see https://github.com/holochain/holochain-rust/issues/261
+pub trait SourceChain {
+    /// sets an option for the top Pair
+    fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
+    /// returns an option for the top Pair
+    fn top_pair(&self) -> Option<Pair>;
+    /// get the top Pair by Entry type
+    fn top_pair_type(&self, t: &str) -> Option<Pair>;
+
+    /// push a new Entry on to the top of the Chain
+    /// the Pair for the new Entry is automatically generated and validated against the current top
+    /// Pair to ensure the chain links up correctly across the underlying table data
+    /// the newly created and pushed Pair is returned in the fn Result
+    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
+    /// get an Entry by Entry key from the HashTable if it exists
+    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
+
+    /// pair-oriented version of push_entry()
+    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
+    /// get a Pair by Pair/Header key from the HashTable if it exists
+    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
+}
+
 impl SourceChain for Chain {
-    /// returns a reference to the top Pair
     fn top_pair(&self) -> Option<Pair> {
         self.actor.top_pair()
     }
@@ -138,12 +162,10 @@ impl SourceChain for Chain {
         self.actor.set_top_pair(&pair)
     }
 
-    /// get the top Pair by Entry type
     fn top_pair_type(&self, t: &str) -> Option<Pair> {
         self.iter().find(|p| p.header().entry_type() == t)
     }
 
-    /// private pair-oriented version of push() (which expects Entries)
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
         if !(pair.validate()) {
             return Err(HolochainError::new(
@@ -165,28 +187,24 @@ impl SourceChain for Chain {
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
+        // @see https://github.com/holochain/holochain-rust/issues/258
         // @TODO if top pair set fails but commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
 
         Ok(pair.clone())
     }
 
-    /// push a new Entry on to the top of the Chain
-    /// the Pair for the new Entry is automatically generated and validated against the current top
-    /// Pair to ensure the chain links up correctly across the underlying table data
-    /// the newly created and pushed Pair is returned in the fn Result
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new(self, entry);
         self.push_pair(&pair)
     }
 
-    /// get a Pair by Pair/Header key from the HashTable if it exists
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
         let response = self.table.block_on_ask(Protocol::Pair(k.to_string()));
         unwrap_to!(response => Protocol::PairResult).clone()
     }
 
-    /// get an Entry by Entry key from the HashTable if it exists
     fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
@@ -196,19 +214,6 @@ impl SourceChain for Chain {
                 // @see https://github.com/holochain/holochain-rust/issues/145
                 .find(|p| p.entry().hash() == entry_hash))
     }
-}
-
-// @TODO should SourceChain have a bound on HashTable for consistency?
-pub trait SourceChain {
-    fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
-    fn top_pair(&self) -> Option<Pair>;
-    fn top_pair_type(&self, t: &str) -> Option<Pair>;
-
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
-
-    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
-    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
 }
 
 #[cfg(test)]

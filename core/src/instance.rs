@@ -246,7 +246,6 @@ pub mod tests {
     extern crate test_utils;
     use super::Instance;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::state::tests::test_action_response_get;
     use context::Context;
     use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
@@ -261,6 +260,7 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
+    use agent::state::ActionResponse;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -439,7 +439,7 @@ pub mod tests {
             .get(&aw)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &test_action_response_get());
+        assert_eq!(response, &ActionResponse::Get(None));
     }
 
     /// create a test instance with a blank DNA

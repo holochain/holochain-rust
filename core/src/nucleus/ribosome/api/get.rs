@@ -91,6 +91,8 @@ mod tests {
     };
     use serde_json;
     use std::sync::Arc;
+    use nucleus::ribosome::api::ZomeAPIFunction;
+    use nucleus::ribosome::Defn;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -107,14 +109,14 @@ mod tests {
             .convert(
                 r#"
 (module
-    (import "env" "get"
+    (import "env" "hc_get_entry"
         (func $get
             (param i32)
             (result i32)
         )
     )
 
-    (import "env" "commit"
+    (import "env" "hc_commit_entry"
         (func $commit
             (param i32)
             (result i32)
@@ -168,7 +170,7 @@ mod tests {
         let commit_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            &"commit",
+            "commit",
             &test_parameters(),
         );
         let commit_runtime = call(
@@ -189,7 +191,7 @@ mod tests {
         let get_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            &"get",
+            "get",
             &test_parameters(),
         );
         let get_runtime = call(

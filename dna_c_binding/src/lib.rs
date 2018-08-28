@@ -416,17 +416,19 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let mut cnames = CStringVec{len:0, ptr:0 as *const *const c_char};
+        let mut cnames = CStringVec {
+            len: 0,
+            ptr: 0 as *const *const c_char,
+        };
         unsafe { holochain_dna_get_zome_names(&mut dna, &mut cnames) };
 
         assert_eq!(cnames.len, 2);
 
-        let names = unsafe {cstring_vec_to_rustvec(&mut cnames)};
+        let names = unsafe { cstring_vec_to_rustvec(&mut cnames) };
         let names = names
             .into_iter()
             .map(|s| s.into_string().unwrap())
             .collect::<Vec<_>>();
-
 
         assert!(names[0] == "test zome" || names[1] == "test zome");
         assert!(names[0] == "test zome2" || names[1] == "test zome2");

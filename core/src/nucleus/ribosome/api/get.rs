@@ -79,20 +79,18 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetArgs;
+    use chain::SourceChain;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::{
-            api::{
-                call,
-                commit::tests::test_commit_args_bytes,
-                tests::{test_capability, test_parameters, test_zome_name},
-            },
+        ribosome::api::{
+            call,
+            commit::tests::test_commit_args_bytes,
+            tests::{test_capability, test_parameters, test_zome_name},
         },
         FunctionCall,
     };
     use serde_json;
-    use chain::SourceChain;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
@@ -170,7 +168,10 @@ mod tests {
         let (context, _) = test_context_and_logger("joan");
 
         println!("{:?}", instance.state().agent().chain().top_pair());
-        println!("{:?}", instance.state().agent().chain().top_pair().unwrap().key());
+        println!(
+            "{:?}",
+            instance.state().agent().chain().top_pair().unwrap().key()
+        );
 
         let commit_call = FunctionCall::new(
             &test_zome_name(),

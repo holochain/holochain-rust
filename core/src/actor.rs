@@ -17,8 +17,8 @@ pub enum Protocol {
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
 
     /// Chain::top_pair()
-    GetTopPair,
-    GetTopPairResult(Option<Pair>),
+    TopPair,
+    TopPairResult(Option<Pair>),
 
     /// HashTable::setup()
     Setup,
@@ -48,16 +48,16 @@ pub enum Protocol {
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::get_meta()
-    GetMeta(String),
-    GetMetaResult(Result<Option<PairMeta>, HolochainError>),
+    Meta(String),
+    MetaResult(Result<Option<PairMeta>, HolochainError>),
 
     /// HashTable::get_pair_meta()
-    GetPairMeta(Pair),
-    GetPairMetaResult(Result<Vec<PairMeta>, HolochainError>),
+    PairMeta(Pair),
+    PairMetaResult(Result<Vec<PairMeta>, HolochainError>),
 
     /// HashTable::pair()
-    GetPair(String),
-    GetPairResult(Result<Option<Pair>, HolochainError>),
+    Pair(String),
+    PairResult(Result<Option<Pair>, HolochainError>),
 
     /// HashTable::commit()
     Commit(Pair),

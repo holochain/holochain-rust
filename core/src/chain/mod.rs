@@ -2,10 +2,8 @@ pub mod actor;
 
 use error::HolochainError;
 use hash_table::{
-    // actor::{AskHashTable},
     entry::Entry,
     pair::Pair,
-    // HashTable,
 };
 use riker::actors::*;
 use serde_json;
@@ -184,8 +182,8 @@ impl SourceChain for Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.block_on_ask(Protocol::GetPair(k.to_string()));
-        unwrap_to!(response => Protocol::GetPairResult).clone()
+        let response = self.table.block_on_ask(Protocol::Pair(k.to_string()));
+        unwrap_to!(response => Protocol::PairResult).clone()
     }
 
     /// get an Entry by Entry key from the HashTable if it exists

@@ -1,12 +1,8 @@
 use agent::keys::Keys;
 use error::HolochainError;
-// use futures::executor::block_on;
 use hash_table::{pair::Pair, pair_meta::PairMeta,};
 use riker::actors::*;
-// use riker_default::DefaultModel;
-// use riker_patterns::ask::ask;
 use snowflake;
-// use actor::Protocol;
 use actor::SYS;
 use actor::AskSelf;
 use actor::Protocol;
@@ -35,8 +31,8 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPair(key.to_string()));
-        unwrap_to!(response => Protocol::GetPairResult).clone()
+        let response = self.block_on_ask(Protocol::Pair(key.to_string()));
+        unwrap_to!(response => Protocol::PairResult).clone()
     }
 
     fn modify(
@@ -67,13 +63,13 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetMeta(key.to_string()));
-        unwrap_to!(response => Protocol::GetMetaResult).clone()
+        let response = self.block_on_ask(Protocol::Meta(key.to_string()));
+        unwrap_to!(response => Protocol::MetaResult).clone()
     }
 
     fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPairMeta(pair.clone()));
-        unwrap_to!(response => Protocol::GetPairMetaResult).clone()
+        let response = self.block_on_ask(Protocol::PairMeta(pair.clone()));
+        unwrap_to!(response => Protocol::PairMetaResult).clone()
     }
 }
 
@@ -131,10 +127,10 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     }
                     Protocol::CommitResult(_) => unreachable!(),
 
-                    Protocol::GetPair(hash) => {
-                        Protocol::GetPairResult(self.table.pair(&hash))
+                    Protocol::Pair(hash) => {
+                        Protocol::PairResult(self.table.pair(&hash))
                     }
-                    Protocol::GetPairResult(_) => unreachable!(),
+                    Protocol::PairResult(_) => unreachable!(),
 
                     Protocol::Modify {
                         keys,
@@ -155,21 +151,21 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     }
                     Protocol::AssertMetaResult(_) => unreachable!(),
 
-                    Protocol::GetMeta(key) => {
-                        Protocol::GetMetaResult(self.table.get_meta(&key))
+                    Protocol::Meta(key) => {
+                        Protocol::MetaResult(self.table.get_meta(&key))
                     }
-                    Protocol::GetMetaResult(_) => unreachable!(),
+                    Protocol::MetaResult(_) => unreachable!(),
 
-                    Protocol::GetPairMeta(pair) => {
-                        Protocol::GetPairMetaResult(self.table.get_pair_meta(&pair))
+                    Protocol::PairMeta(pair) => {
+                        Protocol::PairMetaResult(self.table.get_pair_meta(&pair))
                     }
-                    Protocol::GetPairMetaResult(_) => unreachable!(),
+                    Protocol::PairMetaResult(_) => unreachable!(),
 
                     _ => unreachable!(),
                 },
                 Some(context.myself()),
             )
-            .unwrap();
+            .expect("could not tell to HashTableActor sender");
     }
 }
 

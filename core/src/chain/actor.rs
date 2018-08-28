@@ -9,7 +9,9 @@ use actor::AskSelf;
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 pub trait AskChain {
+    /// Protocol::SetTopPair -> Protocol::SetTopPairResult
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
+    /// Protocol::TopPair -> Protocol::TopPairResult
     fn top_pair(&self) -> Option<Pair>;
 }
 
@@ -20,8 +22,8 @@ impl AskChain for ActorRef<Protocol> {
     }
 
     fn top_pair(&self) -> Option<Pair> {
-        let response = self.block_on_ask(Protocol::GetTopPair);
-        unwrap_to!(response => Protocol::GetTopPairResult).clone()
+        let response = self.block_on_ask(Protocol::TopPair);
+        unwrap_to!(response => Protocol::TopPairResult).clone()
     }
 }
 
@@ -71,17 +73,19 @@ impl Actor for ChainActor {
         sender.try_tell(
             // deliberately exhaustively matching here, don't give into _ temptation
             match message {
+                // set the top pair to the value passed
                 Protocol::SetTopPair(p) => {
                     self.top_pair = p;
                     Protocol::SetTopPairResult(Ok(self.top_pair.clone()))
                 },
                 Protocol::SetTopPairResult(_) => unreachable!(),
 
-                Protocol::GetTopPair => {
+                // evaluates to the current top pair
+                Protocol::TopPair => {
                     let ret = self.top_pair.clone();
-                    Protocol::GetTopPairResult(ret)
+                    Protocol::TopPairResult(ret)
                 },
-                Protocol::GetTopPairResult(_) => unreachable!(),
+                Protocol::TopPairResult(_) => unreachable!(),
 
                 _ => unreachable!(),
             },

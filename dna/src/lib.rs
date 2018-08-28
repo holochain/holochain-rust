@@ -563,4 +563,53 @@ pub mod tests {
         let fail = dna.get_wasm_for_capability("non existant zome", "test capability");
         assert_eq!(None, fail);
     }
+
+    #[test]
+    fn get_wasm_for_entry_type() {
+        let dna = Dna::new_from_json(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test zome": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [],
+                                "code": {
+                                    "code": ""
+                                }
+                            }
+                        },
+                        "entry_types": {
+                            "test type": {
+                                "description": "",
+                                "sharing": "public",
+                                "validation": {
+                                    "code": "AAECAw=="
+                                }
+                            }
+                        }
+                    }
+                }
+            }"#,
+        ).unwrap();
+
+        let wasm = dna.get_validation_bytecode_for_entry_type("test zome", "test type");
+        assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
+
+        let fail = dna.get_validation_bytecode_for_entry_type("tets zome", "non existing type");
+        assert_eq!(None, fail);
+    }
 }

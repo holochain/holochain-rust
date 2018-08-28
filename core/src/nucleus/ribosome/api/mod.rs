@@ -441,6 +441,7 @@ pub mod tests {
     }
 
     pub fn test_zome_api_function_call(
+        app_name: &str,
         context: Arc<Context>,
         logger: Arc<Mutex<TestLogger>>,
         instance: &Instance,
@@ -482,10 +483,10 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna);
+        let instance = test_instance(dna.clone());
         let (context, logger) = test_context_and_logger("joan");
 
-        test_zome_api_function_call(context, logger, &instance, &wasm, args_bytes)
+        test_zome_api_function_call(&dna.name.to_string(), context, logger, &instance, &wasm, args_bytes)
     }
 
     #[test]

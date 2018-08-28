@@ -162,7 +162,7 @@ mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna);
+        let instance = test_instance(dna.clone());
         let (context, _) = test_context_and_logger("joan");
 
         let commit_call = FunctionCall::new(
@@ -172,6 +172,7 @@ mod tests {
             &test_parameters(),
         );
         let commit_runtime = call(
+            &dna.name.to_string(),
             Arc::clone(&context),
             &instance.action_channel(),
             &instance.observer_channel(),
@@ -192,6 +193,7 @@ mod tests {
             &test_parameters(),
         );
         let get_runtime = call(
+            &dna.name.to_string(),
             Arc::clone(&context),
             &instance.action_channel(),
             &instance.observer_channel(),

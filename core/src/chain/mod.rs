@@ -590,9 +590,10 @@ pub mod tests {
             .push_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(
-            Some(pair1),
+            Some(&pair1),
             chain
                 .top_pair_type(&test_type_a())
+                .as_ref()
         );
         assert_eq!(
             None,
@@ -606,14 +607,16 @@ pub mod tests {
             .push_entry(&entry2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(
-            Some(pair1),
+            Some(&pair1),
             chain
                 .top_pair_type(&test_type_a())
+                .as_ref()
         );
         assert_eq!(
-            Some(pair2),
+            Some(&pair2),
             chain
                 .top_pair_type(&test_type_b())
+                .as_ref()
         );
 
         // type a should be pair3
@@ -623,14 +626,16 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
-            Some(pair3),
+            Some(&pair3),
             chain
                 .top_pair_type(&test_type_a())
+                .as_ref()
         );
         assert_eq!(
-            Some(pair2),
+            Some(&pair2),
             chain
                 .top_pair_type(&test_type_b())
+                .as_ref()
         );
     }
 

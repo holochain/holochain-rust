@@ -16,7 +16,7 @@ pub enum Protocol {
     SetTopPair(Option<Pair>),
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
 
-    /// Chain::get_top_pair()
+    /// Chain::top_pair()
     GetTopPair,
     GetTopPairResult(Option<Pair>),
 
@@ -55,7 +55,7 @@ pub enum Protocol {
     GetPairMeta(Pair),
     GetPairMetaResult(Result<Vec<PairMeta>, HolochainError>),
 
-    /// HashTable::get()
+    /// HashTable::pair()
     GetPair(String),
     GetPairResult(Result<Option<Pair>, HolochainError>),
 

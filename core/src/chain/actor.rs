@@ -19,12 +19,12 @@ pub trait AskChain {
 
 impl AskChain for ActorRef<Protocol> {
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask(Protocol::SetTopPair(pair.clone()));
+        let response = self.block_on_ask(Protocol::SetTopPair(pair.clone()));
         unwrap_to!(response => Protocol::SetTopPairResult).clone()
     }
 
     fn top_pair(&self) -> Option<Pair> {
-        let response = self.ask(Protocol::GetTopPair);
+        let response = self.block_on_ask(Protocol::GetTopPair);
         unwrap_to!(response => Protocol::GetTopPairResult).clone()
     }
 }

@@ -184,7 +184,7 @@ impl SourceChain for Chain {
 
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.ask(Protocol::GetPair(k.to_string()));
+        let response = self.table.block_on_ask(Protocol::GetPair(k.to_string()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 

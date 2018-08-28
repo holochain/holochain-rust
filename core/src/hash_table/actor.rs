@@ -20,22 +20,22 @@ impl AskHashTable for ActorRef<Protocol> {}
 
 impl HashTable for ActorRef<Protocol> {
     fn setup(&mut self) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::Setup);
+        let response = self.block_on_ask(Protocol::Setup);
         unwrap_to!(response => Protocol::SetupResult).clone()
     }
 
     fn teardown(&mut self) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::Teardown);
+        let response = self.block_on_ask(Protocol::Teardown);
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
     fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::Commit(pair.clone()));
+        let response = self.block_on_ask(Protocol::Commit(pair.clone()));
         unwrap_to!(response => Protocol::CommitResult).clone()
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.ask(Protocol::GetPair(key.to_string()));
+        let response = self.block_on_ask(Protocol::GetPair(key.to_string()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
@@ -45,7 +45,7 @@ impl HashTable for ActorRef<Protocol> {
         old_pair: &Pair,
         new_pair: &Pair,
     ) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::Modify {
+        let response = self.block_on_ask(Protocol::Modify {
             keys: keys.clone(),
             old_pair: old_pair.clone(),
             new_pair: new_pair.clone(),
@@ -54,7 +54,7 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::Retract {
+        let response = self.block_on_ask(Protocol::Retract {
             keys: keys.clone(),
             pair: pair.clone(),
         });
@@ -62,17 +62,17 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
-        let response = self.ask(Protocol::AssertMeta(meta.clone()));
+        let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.ask(Protocol::GetMeta(key.to_string()));
+        let response = self.block_on_ask(Protocol::GetMeta(key.to_string()));
         unwrap_to!(response => Protocol::GetMetaResult).clone()
     }
 
     fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let response = self.ask(Protocol::GetPairMeta(pair.clone()));
+        let response = self.block_on_ask(Protocol::GetPairMeta(pair.clone()));
         unwrap_to!(response => Protocol::GetPairMetaResult).clone()
     }
 }

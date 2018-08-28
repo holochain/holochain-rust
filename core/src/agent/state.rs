@@ -93,8 +93,8 @@ fn reduce_commit(
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
 
-    // @TODO successfully validate before pushing a commit
-    // @see https://github.com/holochain/holochain-rust/issues/97
+    // @TODO validation dispatch should go here rather than upstream in invoke_commit
+    // @see https://github.com/holochain/holochain-rust/issues/256
 
     state.actions.insert(
         action_wrapper.clone(),

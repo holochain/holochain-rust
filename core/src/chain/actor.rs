@@ -46,7 +46,7 @@ impl ChainActor {
         Props::new(Box::new(ChainActor::actor))
     }
 
-    /// returns a new actor ref for a new actor in the main actor system
+    /// returns a new actor ref for a new ChainActor in the main actor system
     pub fn new_ref() -> ActorRef<Protocol> {
         SYS.actor_of(
             ChainActor::props(),

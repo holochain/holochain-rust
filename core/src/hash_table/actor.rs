@@ -76,18 +76,23 @@ pub struct HashTableActor<HT: HashTable> {
 }
 
 impl<HT: HashTable> HashTableActor<HT> {
-    pub fn new(table: HT) -> HashTableActor<HT> {
+    /// returns a new HastTablActor struct
+    /// internal use for riker, use new_ref instead
+    fn new(table: HT) -> HashTableActor<HT> {
         HashTableActor { table }
     }
 
-    pub fn actor(table: HT) -> BoxActor<Protocol> {
+    /// actor() for riker
+    fn actor(table: HT) -> BoxActor<Protocol> {
         Box::new(HashTableActor::new(table))
     }
 
-    pub fn props(table: HT) -> BoxActorProd<Protocol> {
+    /// props() for riker
+    fn props(table: HT) -> BoxActorProd<Protocol> {
         Props::new_args(Box::new(HashTableActor::actor), table)
     }
 
+    /// returns a new actor ref for a new HashTableActor in the main actor system
     pub fn new_ref(table: HT) -> ActorRef<Protocol> {
         SYS.actor_of(
             HashTableActor::props(table),
@@ -209,6 +214,12 @@ pub mod tests {
         });
 
         handle.join().unwrap();
+    }
+
+    #[test]
+    fn hash_table_suite() {
+        // @TODO there is a suite of standard HashTable tests coming
+        // @see https://github.com/holochain/holochain-rust/pull/246
     }
 
 }

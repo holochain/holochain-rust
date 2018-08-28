@@ -19,6 +19,7 @@ pub type HashString = String;
 pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     // @TODO does this make sense at the trait level?
+    // @see https://github.com/holochain/holochain-rust/issues/262
     fn setup(&mut self) -> Result<(), HolochainError>;
     fn teardown(&mut self) -> Result<(), HolochainError>;
 

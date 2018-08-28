@@ -27,7 +27,7 @@ The HTML files used in the Book get automatically built from the markdown files.
 
 ### Access Rights
 
-Please note that while those with direct write access to the repository will be able to submit change requests without creating a fork, those without will have to create a fork. However, this actually adds very little complexity in practice, just meaning that those with write access to the repository will have to review and merge your pull request.
+If you don't have write access to the repository you need to create a fork to contribute. Forking is easy. Click the "Fork" button in the top right hand corner of the Github UI.
 
 ### Making a new article
 

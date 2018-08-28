@@ -1,10 +1,7 @@
-// use riker_default::DefaultModel;
 use riker::actors::*;
 use snowflake;
 use hash_table::pair::Pair;
 use error::HolochainError;
-// use riker_patterns::ask::ask;
-// use futures::executor::block_on;
 use actor::SYS;
 use actor::Protocol;
 use actor::AskSelf;
@@ -12,7 +9,6 @@ use actor::AskSelf;
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 pub trait AskChain {
-    // fn ask(&self, message: Protocol) -> Protocol;
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
     fn top_pair(&self) -> Option<Pair>;
 }
@@ -34,27 +30,32 @@ pub struct ChainActor {
 }
 
 impl ChainActor {
-    pub fn new() -> ChainActor {
+    /// returns a new ChainActor struct
+    /// internal use for riker, use new_ref instead
+    fn new() -> ChainActor {
         ChainActor {
             top_pair: None,
         }
     }
 
-    pub fn actor() -> BoxActor<Protocol> {
+    /// actor() for riker
+    fn actor() -> BoxActor<Protocol> {
         Box::new(ChainActor::new())
     }
 
-    pub fn props() -> BoxActorProd<Protocol> {
+    /// props() for riker
+    fn props() -> BoxActorProd<Protocol> {
         Props::new(Box::new(ChainActor::actor))
     }
 
+    /// returns a new actor ref for a new actor in the main actor system
     pub fn new_ref() -> ActorRef<Protocol> {
         SYS
             .actor_of(
                 ChainActor::props(),
                 &snowflake::ProcessUniqueId::new().to_string(),
             )
-            .unwrap()
+            .expect("could not create ChainActor in actor system")
     }
 }
 
@@ -86,7 +87,45 @@ impl Actor for ChainActor {
             },
             Some(context.myself()),
         )
-        .unwrap();
+        .expect("failed to tell ChainActor sender");
+    }
+
+}
+
+#[cfg(test)]
+pub mod tests {
+    use riker::actors::*;
+    use chain::actor::ChainActor;
+    use actor::Protocol;
+    use hash_table::pair::tests::test_pair_a;
+    use hash_table::pair::tests::test_pair_b;
+    use chain::actor::AskChain;
+
+    pub fn test_chain_actor() -> ActorRef<Protocol> {
+        ChainActor::new_ref()
+    }
+
+    #[test]
+    /// smoke test new refs
+    fn test_new_ref() {
+        test_chain_actor();
+    }
+
+    #[test]
+    fn test_round_trip() {
+        let chain_actor = test_chain_actor();
+
+        assert_eq!(None, chain_actor.top_pair());
+
+        let pair_a = test_pair_a();
+        chain_actor.set_top_pair(&Some(pair_a.clone()));
+
+        assert_eq!(Some(pair_a.clone()), chain_actor.top_pair());
+
+        let pair_b = test_pair_b();
+        chain_actor.set_top_pair(&Some(pair_b.clone()));
+
+        assert_eq!(Some(pair_b.clone()), chain_actor.top_pair());
     }
 
 }

@@ -6,7 +6,7 @@ There are two main pathways to contribute. One is by editing files directly in G
 
 ## Writing Guidelines
 
-Please do not edit the SUMMARY.md file, which stores the raw chapter structure, without advanced signoff from the documentation team.
+Please do not edit the SUMMARY.md file, which stores the raw chapter structure, without advanced signoff from the documentation team in https://chat.holochain.net/holo/channels/hc-documentation. 
 
 More forthcoming!
 

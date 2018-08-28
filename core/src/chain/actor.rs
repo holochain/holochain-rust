@@ -94,6 +94,7 @@ pub mod tests {
     use hash_table::pair::tests::{test_pair_a, test_pair_b};
     use riker::actors::*;
 
+    /// dummy chain actor reference
     pub fn test_chain_actor() -> ActorRef<Protocol> {
         ChainActor::new_ref()
     }
@@ -105,6 +106,7 @@ pub mod tests {
     }
 
     #[test]
+    /// can set and get top pairs through the chain actor
     fn test_round_trip() {
         let chain_actor = test_chain_actor();
 

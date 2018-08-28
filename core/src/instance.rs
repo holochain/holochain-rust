@@ -396,6 +396,14 @@ pub mod tests {
         instance
     }
 
+    /// create a test instance with a blank DNA
+    pub fn test_instance_blank() -> Instance {
+        let mut dna = Dna::new();
+        dna.zomes.push(Zome::default());
+        dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
+        test_instance(dna)
+    }
+
     #[test]
     /// This tests calling `process_action`
     /// with an action that dispatches no new ones.
@@ -440,13 +448,6 @@ pub mod tests {
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(response, &ActionResponse::Get(None));
-    }
-
-    /// create a test instance with a blank DNA
-    pub fn test_instance_blank() -> Instance {
-        let mut dna = Dna::new();
-        dna.zomes.push(Zome::default());
-        test_instance(dna)
     }
 
     #[test]

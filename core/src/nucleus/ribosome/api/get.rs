@@ -102,6 +102,7 @@ mod tests {
         serde_json::to_string(&args).unwrap().into_bytes()
     }
 
+    /// wat string that exports both get and a commit dispatches so we can test a round trip
     pub fn test_get_round_trip_wat() -> Vec<u8> {
         Wat2Wasm::new()
             .canonicalize_lebs(false)

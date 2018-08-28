@@ -6,7 +6,6 @@ use agent::keys::Keys;
 use hash_table::pair_meta::PairMeta;
 use riker_patterns::ask::ask;
 use futures::executor::block_on;
-use futures::Async;
 
 #[derive(Clone, Debug)]
 pub enum Protocol {
@@ -79,18 +78,7 @@ pub trait AskSelf {
 
 impl AskSelf for ActorRef<Protocol> {
     fn ask(&self, message: Protocol) -> Protocol {
-        println!("ask: {:?}", message);
         let a = ask(&(*SYS), self, message);
-        println!("block");
-        loop {
-            match ::futures::Future::poll(a) {
-                Ok(Async::Ready(e)) => {
-                    break Ok(e)
-                },
-                Ok(Async::NotReady(e)) => {},
-                Err(e) => { break Err(e) },
-            }
-        }
-        // block_on(a).unwrap()
+        block_on(a).unwrap()
     }
 }

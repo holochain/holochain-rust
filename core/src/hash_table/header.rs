@@ -1,7 +1,6 @@
 use chain::{Chain, SourceChain};
 use hash;
-use hash_table::entry::Entry;
-use hash_table::{entry::Entry, HashString, HashTable};
+use hash_table::{entry::Entry, HashString};
 use multihash::Hash;
 
 /// Header of a source chain "Item"
@@ -55,7 +54,6 @@ impl Header {
                 .top_pair_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
-                .expect("top type should never error")
                 .map(|p| p.header().hash()),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71

@@ -114,7 +114,7 @@ fn reduce_get(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
-    let result = state.chain.get_entry(&key.clone());
+    let result = state.chain.entry(&key.clone());
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

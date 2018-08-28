@@ -12,77 +12,11 @@ use actor::AskSelf;
 use actor::Protocol;
 use hash_table::HashTable;
 
-#[derive(Clone, Debug)]
-pub enum HashTableProtocol {
-    /// HashTable::setup()
-    Setup,
-    SetupResult(Result<(), HolochainError>),
-
-    /// HashTable::teardown()
-    Teardown,
-    TeardownResult(Result<(), HolochainError>),
-
-    /// HashTable::modify()
-    Modify {
-        keys: Keys,
-        old_pair: Pair,
-        new_pair: Pair,
-    },
-    ModifyResult(Result<(), HolochainError>),
-
-    /// HashTable::retract()
-    Retract {
-        keys: Keys,
-        pair: Pair,
-    },
-    RetractResult(Result<(), HolochainError>),
-
-    /// HashTable::assert_meta()
-    AssertMeta(PairMeta),
-    AssertMetaResult(Result<(), HolochainError>),
-
-    /// HashTable::get_meta()
-    GetMeta(String),
-    GetMetaResult(Result<Option<PairMeta>, HolochainError>),
-
-    /// HashTable::get_pair_meta()
-    GetPairMeta(Pair),
-    GetPairMetaResult(Result<Vec<PairMeta>, HolochainError>),
-
-    /// HashTable::get()
-    GetPair(String),
-    GetPairResult(Result<Option<Pair>, HolochainError>),
-
-    /// HashTable::commit()
-    Commit(Pair),
-    CommitResult(Result<(), HolochainError>),
-}
-
-// lazy_static! {
-//     pub static ref HASH_TABLE_SYS: ActorSystem<HashTableProtocol> = {
-//         let model: DefaultModel<HashTableProtocol> = DefaultModel::new();
-//         ActorSystem::new(&model).unwrap()
-//     };
-// }
-
-// impl Into<ActorMsg<HashTableProtocol>> for HashTableProtocol {
-//     fn into(self) -> ActorMsg<HashTableProtocol> {
-//         ActorMsg::User(self)
-//     }
-// }
-
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
-pub trait AskHashTable: HashTable {
-    // fn ask(&self, message: Protocol) -> Protocol;
-}
+pub trait AskHashTable: HashTable {}
 
-impl AskHashTable for ActorRef<Protocol> {
-    // fn ask(&self, message: Protocol) -> Protocol {
-    //     let a = ask(&(*SYS), self, message);
-    //     block_on(a).unwrap()
-    // }
-}
+impl AskHashTable for ActorRef<Protocol> {}
 
 impl HashTable for ActorRef<Protocol> {
     fn setup(&mut self) -> Result<(), HolochainError> {
@@ -100,7 +34,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::CommitResult).clone()
     }
 
-    fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
         let response = self.ask(Protocol::GetPair(key.to_string()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
@@ -198,7 +132,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     Protocol::CommitResult(_) => unreachable!(),
 
                     Protocol::GetPair(hash) => {
-                        Protocol::GetPairResult(self.table.get(&hash))
+                        Protocol::GetPairResult(self.table.pair(&hash))
                     }
                     Protocol::GetPairResult(_) => unreachable!(),
 
@@ -264,14 +198,14 @@ pub mod tests {
         let mut table_actor = test_table_actor();
 
         assert_eq!(
-            table_actor.get(&test_hash()).unwrap(),
+            table_actor.pair(&test_hash()).unwrap(),
             None,
         );
 
         table_actor.commit(&test_pair()).unwrap();
 
         assert_eq!(
-            table_actor.get(&test_pair().key()).unwrap(),
+            table_actor.pair(&test_pair().key()).unwrap(),
             Some(test_pair()),
         );
     }
@@ -289,7 +223,7 @@ pub mod tests {
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
             assert_eq!(
-                table_actor_thread.get(&test_hash()).unwrap(),
+                table_actor_thread.pair(&test_hash()).unwrap(),
                 None,
             );
             // kick off the next thread
@@ -311,7 +245,7 @@ pub mod tests {
         let handle = thread::spawn(move || {
             let pair = rx2.recv().unwrap();
             assert_eq!(
-                table_actor_thread.get(&pair.key()).unwrap(),
+                table_actor_thread.pair(&pair.key()).unwrap(),
                 Some(pair),
             );
         });

@@ -88,9 +88,6 @@ mod tests {
             tests::{test_capability, test_parameters, test_zome_name},
         },
         FunctionCall,
-    use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
-        Defn,
     };
     use serde_json;
     use std::sync::Arc;

@@ -34,7 +34,7 @@ impl Pair {
 
         let p = Pair {
             header: header,
-            entry: entry,
+            entry: entry.clone(),
         };
 
         // we panic as no code path should attempt to create invalid pairs
@@ -107,7 +107,7 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        Pair::new(&test_chain(), test_entry())
+        Pair::new(&test_chain(), &test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -117,7 +117,7 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        Pair::new(&test_chain(), test_entry_b())
+        Pair::new(&test_chain(), &test_entry_b())
     }
 
     #[test]
@@ -131,7 +131,7 @@ pub mod tests {
         assert_eq!(h1.entry_hash(), e1.hash());
         assert_eq!(h1.link(), None);
 
-        let p1 = Pair::new(&chain, e1.clone());
+        let p1 = Pair::new(&chain, &e1.clone());
         assert_eq!(&e1, p1.entry());
         assert_eq!(&h1, p1.header());
     }
@@ -144,7 +144,7 @@ pub mod tests {
         let c = "bar";
         let e = Entry::new(t, c);
         let h = Header::new(&chain, &e);
-        let p = Pair::new(&chain, e);
+        let p = Pair::new(&chain, &e);
 
         assert_eq!(&h, p.header());
     }
@@ -169,7 +169,7 @@ pub mod tests {
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");
-        let p1 = Pair::new(&chain, e1);
+        let p1 = Pair::new(&chain, &e1);
 
         assert!(p1.validate());
     }

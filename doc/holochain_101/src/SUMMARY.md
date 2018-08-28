@@ -1,8 +1,10 @@
 # Summary
 
 - [Welcome](./welcome.md)
+  - [Overview](./overview.md)
 - [Planning a dApp](./planning_a_dapp.md)
 - [Building Holochain Apps](./building_apps.md)
+  - [using zome API global variables](./zome/api_globals.md)
   - [using zome API functions](./zome/api_functions.md)
     - [implementing zome API functions](./zome/implementation.md)
   - [using callback functions](./zome/callback_functions.md)
@@ -19,6 +21,6 @@
   - [Command Line Tools](./command_line_tools.md)
   - [Holochain Across Platforms](./holochain_across_platforms.md)
 - [Going Live with Holochain Apps](./live_hc_apps.md)
-- [Extending the HC Platform](./extending_hc_platform.md)
+- [Extending the Holochain Platform](./extending_hc_platform.md)
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)

@@ -5,11 +5,17 @@ pub mod memory;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
+pub mod sys_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 
+pub type HashString = String;
+
+/// Trait of the data structure storing the source chain
+/// source chain is stored as a hash table of Pairs.
+/// Pair is a pair holding an Entry and its Header
 pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     // @TODO does this make sense at the trait level?
@@ -33,7 +39,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
     // meta
     /// assert a given PairMeta in the HashTable
-    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+    fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError>;
     /// lookup a PairMeta from the HashTable by key
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair

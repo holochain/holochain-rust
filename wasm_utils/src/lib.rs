@@ -22,7 +22,7 @@ pub enum HcApiReturnCode {
     ErrorCallbackResult = 5 << 16,
 }
 
-//pub fn decode_error(encoded_allocation : u32) -> HcApiReturnCode {
+//pub fn decode_error(encoded_allocation: u32) -> HcApiReturnCode {
 //
 //}
 
@@ -223,15 +223,15 @@ pub mod tests {
     #[test]
     /// tests that encoding integers for errors returns the correct return code
     fn encode_error() {
-        assert_eq!(super::encode_error(0), HcApiReturnCode::Success,);
+        assert_eq!(super::encode_error(0), HcApiReturnCode::Success);
 
-        assert_eq!(super::encode_error(1), HcApiReturnCode::Error,);
+        assert_eq!(super::encode_error(1), HcApiReturnCode::Error);
 
-        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorSerdeJson,);
+        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorSerdeJson);
 
-        assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow,);
+        assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow);
 
-        assert_eq!(super::encode_error(4), HcApiReturnCode::ErrorActionResult,);
+        assert_eq!(super::encode_error(4), HcApiReturnCode::ErrorActionResult);
     }
 
     #[test]
@@ -240,9 +240,9 @@ pub mod tests {
         let i = 0b1010101010101010_0101010101010101;
         let spa = SinglePageAllocation::new(i).unwrap();
 
-        assert_eq!(0b1010101010101010, spa.offset,);
+        assert_eq!(0b1010101010101010, spa.offset);
 
-        assert_eq!(0b0101010101010101, spa.length,);
+        assert_eq!(0b0101010101010101, spa.length);
     }
 
     #[test]
@@ -292,7 +292,7 @@ pub mod tests {
         let i = 0b1010101010101010_0101010101010101;
         let spa = SinglePageAllocation::new(i).unwrap();
 
-        assert_eq!(i, spa.encode(),);
+        assert_eq!(i, spa.encode());
     }
 
     #[test]

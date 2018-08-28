@@ -41,15 +41,21 @@ If you don't have write access to the repository you need to create a fork to co
 
 5) Scroll to the bottom of the page and select the option "create a new branch for this commit and start a pull request". You can name a branch, though GitHub will set one automatically. If you know it, mention the issue that the request addresses.
 
-6) Click "Propose New File". Proceed to the Opening a Pull Request section.
+6) Click "Propose New File". Proceed to the Making Multiple Edits or Opening a Pull Request section.
 
-### Editing an article you created
+### Editing an article
 
-1) Navigate to the article you want to edit, making sure you are on the branch where it was first created. Check which branch you are on by looking for the "Branch: ?" dropdown. Use the dropdown to switch to your branch if you're on the wrong one.
+1) Navigate to the article you want to edit.
 
-2) Edit. Editing happens directly in GitHub. The pencil is an edit feature when viewing the file, and there's a built-in text editor in GitHub, where you can write a change and also why you changed it (so that a reviewer can understand the rationale for the change).
+2) Click the 'pencil' icon to edit the article. There's a built-in text editor in GitHub, where you can write a change and also why you changed it (so that a reviewer can understand the rationale for the change).
 
-2) Click "Propose File Change". Proceed to the Opening a Pull Request section.
+3) Select the branching method for making your change. (See Making Multiple Edits for clarification)
+
+4) Click "Propose File Change". Proceed to the Making Multiple Edits or Opening a Pull Request section.
+
+### Making Multiple Edits On One Branch & Pull Request
+
+A "branch" is a series of divergent changes from the main version. If you want to make multiple edits at once, you will need to make each of those changes on the same branch as you named your original edit. Check which branch you are on by looking for the "Branch: ?" dropdown. Use the dropdown to switch to your branch if you're on the wrong one.
 
 ### Opening a Pull Request
 

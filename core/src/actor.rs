@@ -1,11 +1,10 @@
-use riker_default::DefaultModel;
-use riker::actors::*;
-use hash_table::pair::Pair;
-use error::HolochainError;
 use agent::keys::Keys;
-use hash_table::pair_meta::PairMeta;
-use riker_patterns::ask::ask;
+use error::HolochainError;
 use futures::executor::block_on;
+use hash_table::{pair::Pair, pair_meta::PairMeta};
+use riker::actors::*;
+use riker_default::DefaultModel;
+use riker_patterns::ask::ask;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors

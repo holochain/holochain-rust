@@ -492,7 +492,14 @@ pub mod tests {
         let instance = test_instance(dna.clone());
         let (context, logger) = test_context_and_logger("joan");
 
-        test_zome_api_function_call(&dna.name.to_string(), context, logger, &instance, &wasm, args_bytes)
+        test_zome_api_function_call(
+            &dna.name.to_string(),
+            context,
+            logger,
+            &instance,
+            &wasm,
+            args_bytes,
+        )
     }
 
     #[test]

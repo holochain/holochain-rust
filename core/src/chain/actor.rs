@@ -1,10 +1,8 @@
+use actor::{AskSelf, Protocol, SYS};
+use error::HolochainError;
+use hash_table::pair::Pair;
 use riker::actors::*;
 use snowflake;
-use hash_table::pair::Pair;
-use error::HolochainError;
-use actor::SYS;
-use actor::Protocol;
-use actor::AskSelf;
 
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
@@ -35,9 +33,7 @@ impl ChainActor {
     /// returns a new ChainActor struct
     /// internal use for riker, use new_ref instead
     fn new() -> ChainActor {
-        ChainActor {
-            top_pair: None,
-        }
+        ChainActor { top_pair: None }
     }
 
     /// actor() for riker
@@ -52,12 +48,10 @@ impl ChainActor {
 
     /// returns a new actor ref for a new actor in the main actor system
     pub fn new_ref() -> ActorRef<Protocol> {
-        SYS
-            .actor_of(
-                ChainActor::props(),
-                &snowflake::ProcessUniqueId::new().to_string(),
-            )
-            .expect("could not create ChainActor in actor system")
+        SYS.actor_of(
+            ChainActor::props(),
+            &snowflake::ProcessUniqueId::new().to_string(),
+        ).expect("could not create ChainActor in actor system")
     }
 }
 
@@ -70,40 +64,35 @@ impl Actor for ChainActor {
         message: Self::Msg,
         sender: Option<ActorRef<Self::Msg>>,
     ) {
-        sender.try_tell(
-            // deliberately exhaustively matching here, don't give into _ temptation
-            match message {
-                // set the top pair to the value passed
-                Protocol::SetTopPair(p) => {
-                    self.top_pair = p;
-                    Protocol::SetTopPairResult(Ok(self.top_pair.clone()))
-                },
-                Protocol::SetTopPairResult(_) => unreachable!(),
+        sender
+            .try_tell(
+                match message {
+                    // set the top pair to the value passed
+                    Protocol::SetTopPair(p) => {
+                        self.top_pair = p;
+                        Protocol::SetTopPairResult(Ok(self.top_pair.clone()))
+                    }
 
-                // evaluates to the current top pair
-                Protocol::TopPair => {
-                    let ret = self.top_pair.clone();
-                    Protocol::TopPairResult(ret)
-                },
-                Protocol::TopPairResult(_) => unreachable!(),
+                    // evaluates to the current top pair
+                    Protocol::TopPair => {
+                        let ret = self.top_pair.clone();
+                        Protocol::TopPairResult(ret)
+                    }
 
-                _ => unreachable!(),
-            },
-            Some(context.myself()),
-        )
-        .expect("failed to tell ChainActor sender");
+                    _ => unreachable!(),
+                },
+                Some(context.myself()),
+            )
+            .expect("failed to tell ChainActor sender");
     }
-
 }
 
 #[cfg(test)]
 pub mod tests {
-    use riker::actors::*;
-    use chain::actor::ChainActor;
     use actor::Protocol;
-    use hash_table::pair::tests::test_pair_a;
-    use hash_table::pair::tests::test_pair_b;
-    use chain::actor::AskChain;
+    use chain::actor::{AskChain, ChainActor};
+    use hash_table::pair::tests::{test_pair_a, test_pair_b};
+    use riker::actors::*;
 
     pub fn test_chain_actor() -> ActorRef<Protocol> {
         ChainActor::new_ref()
@@ -122,12 +111,16 @@ pub mod tests {
         assert_eq!(None, chain_actor.top_pair());
 
         let pair_a = test_pair_a();
-        chain_actor.set_top_pair(&Some(pair_a.clone())).expect("could not set top pair a");
+        chain_actor
+            .set_top_pair(&Some(pair_a.clone()))
+            .expect("could not set top pair a");
 
         assert_eq!(Some(pair_a.clone()), chain_actor.top_pair());
 
         let pair_b = test_pair_b();
-        chain_actor.set_top_pair(&Some(pair_b.clone())).expect("could not set top pair b");
+        chain_actor
+            .set_top_pair(&Some(pair_b.clone()))
+            .expect("could not set top pair b");
 
         assert_eq!(Some(pair_b.clone()), chain_actor.top_pair());
     }

@@ -246,6 +246,7 @@ pub mod tests {
     extern crate test_utils;
     use super::Instance;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
+    use agent::state::ActionResponse;
     use context::Context;
     use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
@@ -260,7 +261,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use agent::state::ActionResponse;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {

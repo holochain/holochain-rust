@@ -142,7 +142,9 @@ pub mod tests {
     fn pair_round_trip() {
         let mut table = test_table();
         let pair = test_pair();
-        table.commit(&pair).expect("should be able to commit valid pair");
+        table
+            .commit(&pair)
+            .expect("should be able to commit valid pair");
         assert_eq!(table.pair(&pair.key()), Ok(Some(pair)));
     }
 
@@ -215,15 +217,18 @@ pub mod tests {
 
         assert_eq!(
             None,
-            table.get_meta(&pair_meta.key())
+            table
+                .get_meta(&pair_meta.key())
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        table.assert_meta(&pair_meta)
+        table
+            .assert_meta(&pair_meta)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
             Some(&pair_meta),
-            table.get_meta(&pair_meta.key())
+            table
+                .get_meta(&pair_meta.key())
                 .expect("getting the metadata on a pair shouldn't fail")
                 .as_ref()
         );
@@ -240,23 +245,28 @@ pub mod tests {
 
         assert_eq!(
             empty_vec,
-            table.get_pair_meta(&pair)
+            table
+                .get_pair_meta(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        table.assert_meta(&pair_meta_a)
+        table
+            .assert_meta(&pair_meta_a)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
             vec![pair_meta_a.clone()],
-            table.get_pair_meta(&pair)
+            table
+                .get_pair_meta(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
 
-        table.assert_meta(&pair_meta_b.clone())
+        table
+            .assert_meta(&pair_meta_b.clone())
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
             vec![pair_meta_b, pair_meta_a],
-            table.get_pair_meta(&pair)
+            table
+                .get_pair_meta(&pair)
                 .expect("getting the metadata on a pair shouldn't fail")
         );
     }

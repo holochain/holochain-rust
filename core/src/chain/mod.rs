@@ -1,17 +1,11 @@
 pub mod actor;
 
+use actor::{AskSelf, Protocol};
+use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
-use hash_table::{
-    entry::Entry,
-    pair::Pair,
-};
+use hash_table::{entry::Entry, pair::Pair, HashTable};
 use riker::actors::*;
 use serde_json;
-use chain::actor::ChainActor;
-use chain::actor::AskChain;
-use actor::Protocol;
-use actor::AskSelf;
-use hash_table::HashTable;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -225,8 +219,8 @@ pub mod tests {
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         pair::Pair,
+        HashTable,
     };
-    use hash_table::HashTable;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -249,11 +243,14 @@ pub mod tests {
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
 
-        chain1.push_entry(&entry_a)
+        chain1
+            .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        chain2.push_entry(&entry_a)
+        chain2
+            .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        chain3.push_entry(&entry_b)
+        chain3
+            .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(chain1.top_pair(), chain2.top_pair());
@@ -311,8 +308,12 @@ pub mod tests {
             .push_entry(&test_entry())
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let table_pair = table_actor.pair(&pair.key()).expect("getting an entry from a table in a chain shouldn't fail");
-        let chain_pair = chain.pair(&pair.key()).expect("getting an entry from a chain shouldn't fail");
+        let table_pair = table_actor
+            .pair(&pair.key())
+            .expect("getting an entry from a table in a chain shouldn't fail");
+        let chain_pair = chain
+            .pair(&pair.key())
+            .expect("getting an entry from a chain shouldn't fail");
 
         assert_eq!(Some(&pair), table_pair.as_ref());
         assert_eq!(Some(&pair), chain_pair.as_ref());
@@ -379,7 +380,8 @@ pub mod tests {
 
         assert_eq!(
             Some(&pair),
-            chain.pair(&pair.key())
+            chain
+                .pair(&pair.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -574,16 +576,8 @@ pub mod tests {
     fn top_type() {
         let mut chain = test_chain();
 
-        assert_eq!(
-            None,
-            chain
-                .top_pair_type(&test_type_a())
-        );
-        assert_eq!(
-            None,
-            chain
-                .top_pair_type(&test_type_b())
-        );
+        assert_eq!(None, chain.top_pair_type(&test_type_a()));
+        assert_eq!(None, chain.top_pair_type(&test_type_b()));
 
         let entry1 = test_entry_a();
         let entry2 = test_entry_b();
@@ -594,35 +588,16 @@ pub mod tests {
         let pair1 = chain
             .push_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(
-            Some(&pair1),
-            chain
-                .top_pair_type(&test_type_a())
-                .as_ref()
-        );
-        assert_eq!(
-            None,
-            chain
-                .top_pair_type(&test_type_b())
-        );
+        assert_eq!(Some(&pair1), chain.top_pair_type(&test_type_a()).as_ref());
+        assert_eq!(None, chain.top_pair_type(&test_type_b()));
 
         // type a should still be pair1
         // type b should be p2
         let pair2 = chain
             .push_entry(&entry2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(
-            Some(&pair1),
-            chain
-                .top_pair_type(&test_type_a())
-                .as_ref()
-        );
-        assert_eq!(
-            Some(&pair2),
-            chain
-                .top_pair_type(&test_type_b())
-                .as_ref()
-        );
+        assert_eq!(Some(&pair1), chain.top_pair_type(&test_type_a()).as_ref());
+        assert_eq!(Some(&pair2), chain.top_pair_type(&test_type_b()).as_ref());
 
         // type a should be pair3
         // type b should still be pair2
@@ -630,18 +605,8 @@ pub mod tests {
             .push_entry(&entry3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(
-            Some(&pair3),
-            chain
-                .top_pair_type(&test_type_a())
-                .as_ref()
-        );
-        assert_eq!(
-            Some(&pair2),
-            chain
-                .top_pair_type(&test_type_b())
-                .as_ref()
-        );
+        assert_eq!(Some(&pair3), chain.top_pair_type(&test_type_a()).as_ref());
+        assert_eq!(Some(&pair2), chain.top_pair_type(&test_type_b()).as_ref());
     }
 
     #[test]

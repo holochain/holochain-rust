@@ -82,17 +82,19 @@ mod tests {
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{
-            call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name},
+        ribosome::{
+            api::{
+                call,
+                commit::tests::test_commit_args_bytes,
+                tests::{test_capability, test_parameters, test_zome_name},
+                ZomeAPIFunction,
+            },
+            Defn,
         },
         FunctionCall,
     };
     use serde_json;
     use std::sync::Arc;
-    use nucleus::ribosome::api::ZomeAPIFunction;
-    use nucleus::ribosome::Defn;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {

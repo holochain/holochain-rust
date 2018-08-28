@@ -1,12 +1,9 @@
+use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta,};
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use riker::actors::*;
 use snowflake;
-use actor::SYS;
-use actor::AskSelf;
-use actor::Protocol;
-use hash_table::HashTable;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
@@ -92,12 +89,10 @@ impl<HT: HashTable> HashTableActor<HT> {
     }
 
     pub fn new_ref(table: HT) -> ActorRef<Protocol> {
-        SYS
-            .actor_of(
-                HashTableActor::props(table),
-                &snowflake::ProcessUniqueId::new().to_string(),
-            )
-            .unwrap()
+        SYS.actor_of(
+            HashTableActor::props(table),
+            &snowflake::ProcessUniqueId::new().to_string(),
+        ).unwrap()
     }
 }
 
@@ -112,54 +107,34 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
     ) {
         sender
             .try_tell(
-                // deliberately exhaustively matching here, don't give into _ temptation
+                // every Protocol for HashTable maps directly to a method of the same name
                 match message {
                     Protocol::Setup => Protocol::SetupResult(self.table.setup()),
-                    Protocol::SetupResult(_) => unreachable!(),
 
-                    Protocol::Teardown => {
-                        Protocol::TeardownResult(self.table.teardown())
-                    }
-                    Protocol::TeardownResult(_) => unreachable!(),
+                    Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                    Protocol::Commit(pair) => {
-                        Protocol::CommitResult(self.table.commit(&pair))
-                    }
-                    Protocol::CommitResult(_) => unreachable!(),
+                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
 
-                    Protocol::Pair(hash) => {
-                        Protocol::PairResult(self.table.pair(&hash))
-                    }
-                    Protocol::PairResult(_) => unreachable!(),
+                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
 
                     Protocol::Modify {
                         keys,
                         old_pair,
                         new_pair,
-                    } => Protocol::ModifyResult(
-                        self.table.modify(&keys, &old_pair, &new_pair),
-                    ),
-                    Protocol::ModifyResult(_) => unreachable!(),
-
+                    } => Protocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
                     Protocol::Retract { keys, pair } => {
                         Protocol::RetractResult(self.table.retract(&keys, &pair))
                     }
-                    Protocol::RetractResult(_) => unreachable!(),
 
                     Protocol::AssertMeta(pair_meta) => {
                         Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
                     }
-                    Protocol::AssertMetaResult(_) => unreachable!(),
 
-                    Protocol::Meta(key) => {
-                        Protocol::MetaResult(self.table.get_meta(&key))
-                    }
-                    Protocol::MetaResult(_) => unreachable!(),
+                    Protocol::Meta(key) => Protocol::MetaResult(self.table.get_meta(&key)),
 
                     Protocol::PairMeta(pair) => {
                         Protocol::PairMetaResult(self.table.get_pair_meta(&pair))
                     }
-                    Protocol::PairMetaResult(_) => unreachable!(),
 
                     _ => unreachable!(),
                 },
@@ -173,15 +148,11 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 pub mod tests {
 
     use super::HashTableActor;
-    use hash_table::{memory::tests::test_table};
-    use riker::actors::*;
-    use hash::tests::test_hash;
-    // use hash_table::HashTable;
-    use hash_table::pair::tests::test_pair;
-    use std::thread;
-    use std::sync::mpsc;
     use actor::Protocol;
-    use hash_table::HashTable;
+    use hash::tests::test_hash;
+    use hash_table::{memory::tests::test_table, pair::tests::test_pair, HashTable};
+    use riker::actors::*;
+    use std::{sync::mpsc, thread};
 
     /// dummy table actor ref
     /// every call produces a new actor, not just a new ref to the same actor
@@ -193,10 +164,7 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(
-            table_actor.pair(&test_hash()).unwrap(),
-            None,
-        );
+        assert_eq!(table_actor.pair(&test_hash()).unwrap(), None,);
 
         table_actor.commit(&test_pair()).unwrap();
 
@@ -218,10 +186,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(
-                table_actor_thread.pair(&test_hash()).unwrap(),
-                None,
-            );
+            assert_eq!(table_actor_thread.pair(&test_hash()).unwrap(), None,);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -240,10 +205,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let handle = thread::spawn(move || {
             let pair = rx2.recv().unwrap();
-            assert_eq!(
-                table_actor_thread.pair(&pair.key()).unwrap(),
-                Some(pair),
-            );
+            assert_eq!(table_actor_thread.pair(&pair.key()).unwrap(), Some(pair),);
         });
 
         handle.join().unwrap();

@@ -121,7 +121,11 @@ fn reduce_get(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Get(result.clone().expect("should be able to get entry that we just added")),
+        ActionResponse::Get(
+            result
+                .clone()
+                .expect("should be able to get entry that we just added"),
+        ),
     );
 }
 

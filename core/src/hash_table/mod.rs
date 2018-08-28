@@ -4,11 +4,17 @@ pub mod memory;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
+pub mod sys_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 
+pub type HashString = String;
+
+/// Trait of the data structure storing the source chain
+/// source chain is stored as a hash table of Pairs.
+/// Pair is a pair holding an Entry and its Header
 pub trait HashTable {
     // internal state management
     fn setup(&mut self) -> Result<(), HolochainError>;

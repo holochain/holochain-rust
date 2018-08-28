@@ -218,7 +218,7 @@ pub fn call(
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions
     // read about the Externals trait for more detail
-    
+
     // Correlate the indexes of core API functions with a call to the actual function
     // by implementing the Externals wasmi trait for Runtime
     impl Externals for Runtime {

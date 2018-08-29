@@ -12,7 +12,7 @@ use socket::{IpcSocket, ZmqIpcSocket};
 use util::*;
 
 /// A closure callback type def for getting acknowledgment when performing a `call`.
-pub type CallResult = Box<FnMut(Result<MsgCallOkRecv>) -> Result<()> + Send>;
+pub type CallResult = Box<FnMut(Result<Vec<u8>>) -> Result<()> + Send>;
 
 /// IPC communication client structure. Allows connection to an external process that manages p2p communications.
 ///
@@ -147,7 +147,7 @@ impl<S: IpcSocket> IpcClient<S> {
             MSG_CALL_OK => {
                 let resp: MsgCallOkRecv = rmp_serde::from_slice(msg)?;
                 if let Entry::Occupied(mut e) = self.call_callbacks.entry(resp.0.clone()) {
-                    e.get_mut().1(Ok(resp.clone()))?;
+                    e.get_mut().1(Ok(resp.1.clone()))?;
                     e.remove();
                 }
                 return Ok(Some(Message::CallOk(resp)));

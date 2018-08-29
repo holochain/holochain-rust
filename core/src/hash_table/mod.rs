@@ -5,6 +5,8 @@ pub mod pair;
 pub mod pair_meta;
 pub mod status;
 pub mod sys_entry;
+pub mod link_entry;
+pub mod deletion_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;

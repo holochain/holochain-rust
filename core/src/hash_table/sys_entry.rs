@@ -121,7 +121,7 @@ pub mod tests {
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry));
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -139,8 +139,9 @@ pub mod tests {
                 Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna
+                        EntryType::Dna,
                     );
+                    assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
                 _ => false,
@@ -153,7 +154,7 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry));
+        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -171,8 +172,9 @@ pub mod tests {
                 Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::AgentId
+                        EntryType::AgentId,
                     );
+                    assert_eq!(entry.content(), agent_entry.content());
                     true
                 }
                 _ => false,

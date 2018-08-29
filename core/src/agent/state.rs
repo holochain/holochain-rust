@@ -3,13 +3,20 @@ use agent::keys::Keys;
 use chain::Chain;
 use context::Context;
 use error::HolochainError;
-use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
+use hash_table::{
+    HashString, HashTable, pair_meta::PairMeta,
+    entry::Entry, memory::MemTable, pair::Pair,
+    links_entry::LinkEntry, links_entry::LinkActionKind,
+    sys_entry::ToEntry,
+};
 use instance::Observer;
 use std::{
     collections::HashMap,
     rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
+use std::str::FromStr;
+use serde_json;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -23,6 +30,10 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
+
+    /// Hold the agent's source chain as a hash table store in memory
+    /// FIXME stateful stuff should be in instance??
+    chain: Chain<MemTable>,
 }
 
 impl AgentState {
@@ -32,6 +43,7 @@ impl AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
+            chain: Chain::new(Rc::new(MemTable::new())),
         }
     }
 
@@ -51,6 +63,9 @@ impl AgentState {
     pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
         self.actions.clone()
     }
+
+    /// chain getter
+    pub fn chain(&self) -> Chain<MemTable> { self.chain.clone() }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -58,8 +73,10 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 pub enum ActionResponse {
-    Commit(Result<Pair, HolochainError>),
-    Get(Option<Pair>),
+    CommitEntry(Result<Pair, HolochainError>),
+    GetEntry(Option<Pair>),
+    GetLinks(Result<Vec<HashString>, HolochainError>),
+    LinkAppEntries(Result<Pair, HolochainError>),
 }
 
 // @TODO abstract this to a standard trait
@@ -70,25 +87,32 @@ impl ActionResponse {
     // @see https://github.com/holochain/holochain-rust/issues/193
     pub fn to_json(&self) -> String {
         match self {
-            ActionResponse::Commit(result) => match result {
+            ActionResponse::CommitEntry(result) => match result {
                 Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
                 Err(err) => (*err).to_json(),
             },
-            ActionResponse::Get(result) => match result {
+            ActionResponse::GetEntry(result) => match result {
                 Some(pair) => pair.to_json(),
                 None => "".to_string(),
+            },
+            ActionResponse::GetLinks(result) => match result {
+                Some(hash_list) => hash_list.to_json(),
+                None => "".to_string(),
+            },
+            // FIXME copy of ActionResponse::CommitEntry(result) , should merge with match
+            ActionResponse::LinkAppEntries(result) => match result {
+                Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
+                Err(err) => (*err).to_json(),
             },
         }
     }
 }
 
-/// do a commit action against an agent state
-/// intended for use inside the reducer, isolated for unit testing
-/// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
-/// action reduction to hang
-/// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
-/// @see https://github.com/holochain/holochain-rust/issues/222
-fn reduce_commit(
+/// Do the LinkAppEntries Action against an agent state:
+/// 1. Validate Link
+/// 2. Commit LinkEntry
+/// 3. TODO do something on the DHT?
+fn reduce_link_app_entries(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -96,7 +120,89 @@ fn reduce_commit(
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
+    let link = unwrap_to!(action => Action::LinkAppEntries);
+
+    // Validate Link
+    // FIXME
+
+    // Create and Commit a LinkEntry on source chain
+    let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
+    let response = state.chain().push_entry(&link_entry.to_entry());
+
+    // Add LinkListEntry to HashTable
+    // FIXME: Create&Commit or Update in HashTable a LinkListEntry with key = base-entry-hash + tag
+    // FIXME: Create/Update metadata for base entry
+
+    // Insert reponse in state
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::LinkAppEntries(response),
+    );
+}
+
+
+/// Do the GetLinks Action against an agent state
+fn reduce_get_links(
+    _context: Arc<Context>,
+    state: &mut AgentState,
+    action_wrapper: &ActionWrapper,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
+    let action = action_wrapper.action();
+    let links_request = unwrap_to!(action => Action::GetLinks);
+
+    // Look for entry's metadata
+    let result :Result<Option<PairMeta>, HolochainError> = state.chain().table().get_meta(links_request.key());
+    if result.is_err() || result.unwrap().is_none() {
+        state
+            .actions
+            .insert(action_wrapper.clone(),
+                    ActionResponse::GetLinks(Err(HolochainError::ErrorGeneric("base entry not found".to_string()))));
+        return;
+    }
+    let result = result.unwrap().unwrap();
+
+    // Get LinkListEntry in HashTable
+    let links_pair = state.chain().table().get(&result.value());
+    if links_pair.is_err() || links_pair.unwrap().is_none() {
+        state
+            .actions
+            .insert(action_wrapper.clone(),
+                    ActionResponse::GetLinks(Err(HolochainError::ErrorGeneric("links entry not found".to_string()))));
+        return;
+    }
+    let links_pair = links_pair.unwrap().unwrap();
+
+    // Extract list of target hashes
+    let links_entry = serde_json::from_str(&links_pair.entry().content()).expect("entry is not a valid LinkListEntry");
+    let mut link_hashes = Vec::new();
+    for link in links_entry.links {
+        link_hashes.push(link.target);
+    }
+
+    // Insert reponse in state
+    state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::GetLinks(Ok(link_hashes.clone())));
+}
+
+
+/// do a commit action against an agent state
+/// intended for use inside the reducer, isolated for unit testing
+/// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
+/// action reduction to hang
+/// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
+/// @see https://github.com/holochain/holochain-rust/issues/222
+fn reduce_commit_entry(
+    _context: Arc<Context>,
+    state: &mut AgentState,
+    action_wrapper: &ActionWrapper,
+    _action_channel: &Sender<ActionWrapper>,
+    _observer_channel: &Sender<Observer>,
+) {
+    let action = action_wrapper.action();
+    let entry = unwrap_to!(action => Action::CommitEntry);
 
     // add entry to source chain
     // @TODO this does nothing!
@@ -106,15 +212,16 @@ fn reduce_commit(
     // @see https://github.com/holochain/holochain-rust/issues/148
     let mut chain = Chain::new(Rc::new(MemTable::new()));
 
+    let response = chain.push_entry(&entry);
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Commit(chain.push_entry(&entry)),
+        ActionResponse::CommitEntry(response),
     );
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn reduce_get(
+fn reduce_get_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -122,7 +229,7 @@ fn reduce_get(
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => Action::Get);
+    let key = unwrap_to!(action => Action::GetEntry);
 
     // get pair from source chain
     // @TODO this does nothing!
@@ -144,14 +251,14 @@ fn reduce_get(
         .expect("should be able to get entry that we just added");
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Get(result.clone()));
+        .insert(action_wrapper.clone(), ActionResponse::GetEntry(result.clone()));
 }
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit),
-        Action::Get(_) => Some(reduce_get),
+        Action::CommitEntry(_) => Some(reduce_commit_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
 }
@@ -183,7 +290,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
+    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
@@ -197,12 +304,12 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_pair()))
+        ActionResponse::CommitEntry(Ok(test_pair()))
     }
 
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::Get(Some(test_pair()))
+        ActionResponse::GetEntry(Some(test_pair()))
     }
 
     #[test]
@@ -237,7 +344,7 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        reduce_commit(
+        reduce_commit_entry(
             test_context("bob"),
             &mut state,
             &action_wrapper,
@@ -259,7 +366,7 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        reduce_get(
+        reduce_get_entry(
             test_context("foo"),
             &mut state,
             &action_wrapper,
@@ -278,17 +385,17 @@ pub mod tests {
     fn test_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::Commit(Ok(test_pair())).to_json(),
+            ActionResponse::CommitEntry(Ok(test_pair())).to_json(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
-            ActionResponse::Commit(Err(HolochainError::new("some error"))).to_json(),
+            ActionResponse::CommitEntry(Err(HolochainError::new("some error"))).to_json(),
         );
 
         assert_eq!(
             "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            ActionResponse::Get(Some(test_pair())).to_json(),
+            ActionResponse::GetEntry(Some(test_pair())).to_json(),
         );
-        assert_eq!("", ActionResponse::Get(None).to_json());
+        assert_eq!("", ActionResponse::GetEntry(None).to_json());
     }
 }

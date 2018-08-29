@@ -6,6 +6,10 @@ use hash_table::entry::Entry;
 use hash_table::HashString;
 use std::str::FromStr;
 
+//-------------------------------------------------------------------------------------------------
+// Link
+//-------------------------------------------------------------------------------------------------
+
 //
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Link {
@@ -24,10 +28,14 @@ impl Link {
     }
   }
 
-  pub fn key() -> String {
-    "link:" + base + ":" + link + ":" + tag
+  pub fn key(&self) -> String {
+    "link:" + self.base + ":" + self.link + ":" + self.tag
   }
 }
+
+//-------------------------------------------------------------------------------------------------
+// LinkEntry
+//-------------------------------------------------------------------------------------------------
 
 // HC.LinkAction sync with hdk-rust
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -54,10 +62,32 @@ impl LinkEntry {
       link: Link::new(base, target, tag),
     }
   }
+
+  pub fn new_from_link(action_kind: LinkActionKind, link: &Link
+  ) -> Self {
+    LinkEntry {
+      action_kind: action_kind,
+      link: link.clone(),
+    }
+  }
 }
 
+impl ToEntry for LinkEntry {
+  // Convert a LinkEntry into a JSON array of Links
+  fn to_entry(&self) -> Entry {
+    let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
+    Entry::new(EntryType::Link.as_str(), &json_array)
+  }
 
+  fn new_from_entry(entry: &Entry) -> Self {
+    assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
+    serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
+  }
+}
 
+//-------------------------------------------------------------------------------------------------
+// LinkListEntry
+//-------------------------------------------------------------------------------------------------
 
 //
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -75,14 +105,14 @@ impl LinkListEntry {
 impl ToEntry for LinkListEntry {
   // Convert a LinkEntry into a JSON array of Links
   fn to_entry(&self) -> Entry {
-    let json_array = serde_json::to_string(self).expect("Link should serialize");
-    Entry::new(EntryType::Link.as_str(), &json_array)
+    let json_array = serde_json::to_string(self).expect("LinkListEntry should serialize");
+    Entry::new(EntryType::LinkList.as_str(), &json_array)
   }
 
   fn new_from_entry(entry: &Entry) -> Self {
-    assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
+    assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
     let content: Vec<Link> =
-      serde_json::from_str(&entry.content()).expect("entry is not a valid Link Entry");
+      serde_json::from_str(&entry.content()).expect("entry is not a valid LinkListEntry");
     LinkListEntry::new(&content)
   }
 }

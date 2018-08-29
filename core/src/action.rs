@@ -1,6 +1,6 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::entry::Entry;
+use hash_table::{HashString, entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
@@ -61,19 +61,31 @@ impl Hash for ActionWrapper {
     }
 }
 
+pub struct GetLinksRequest {
+    pub entry_hash: HashString,
+    pub tag: String,
+}
+
+impl GetLinksRequest {
+    pub fn key(&self) -> String { "link:" + self.entry_hash + ":" + self.tag}
+}
+
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(Entry),
-    /// hash to Get
-    Get(String),
-
+    CommitEntry(Entry),
+    /// hash of Entry to get
+    GetEntry(String),
+    /// entry to Commit
+    /// MUST already have passed all callback checks
+    LinkAppEntries(Link),
+    /// hash to Entry to get links from
+    GetLinks(GetLinksRequest),
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(FunctionResult),
-
     /// initialize an application from a Dna
     /// not the same as genesis
     /// may call genesis internally
@@ -83,7 +95,7 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateAppEntry(EntrySubmission),
 
     /// add a network peer
     AddPeer(String),
@@ -108,7 +120,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::Get(test_entry_hash())
+        Action::GetEntry(test_entry_hash())
     }
 
     /// dummy action wrapper with test_action()
@@ -118,12 +130,12 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::CommitEntry(test_entry()))
     }
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Get(test_hash()))
+        ActionWrapper::new(Action::GetEntry(test_hash()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

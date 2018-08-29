@@ -19,8 +19,15 @@ use std::{
     },
     thread,
 };
+use hash_table::{HashString, sys_entry::ToEntry};
 
-use hash_table::sys_entry::ToEntry;
+//#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+//pub struct LinkCall {
+//    pub entry_type: String,
+//    pub links: Vec<LinkEntry>,
+//    pub validation_base: HashString,
+//}
+
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -215,7 +222,7 @@ fn reduce_ia(
         {
             // Create Commit Action for Genesis Entry
             let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
+            let commit_genesis_action = ActionWrapper::new(Action::CommitEntry(genesis_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
@@ -407,7 +414,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_ia),
         Action::ExecuteZomeFunction(_) => Some(reduce_ezf),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_rzfr),
-        Action::ValidateEntry(_) => Some(reduce_ve),
+        Action::ValidateAppEntry(_) => Some(reduce_ve),
         _ => None,
     }
 }

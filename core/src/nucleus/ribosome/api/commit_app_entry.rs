@@ -86,7 +86,7 @@ pub fn invoke_commit_app_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::Commit(_) => {
+        ActionResponse::CommitEntry(_) => {
             // serialize, allocate and encode result
             runtime_allocate_encode_str(runtime, &action_result.to_json())
         }

@@ -100,7 +100,11 @@ impl Holochain {
             }
         });
 
-        match receiver.recv_timeout(Duration::from_millis(1000)) {
+        // TODO: what is the right timeout?
+        // had to increase this number when merging develop into feature branch 221-dna-improvements
+        // https://github.com/holochain/holochain-rust/pull/253
+        // solving ticket https://github.com/holochain/holochain-rust/issues/221
+        match receiver.recv_timeout(Duration::from_millis(10000)) {
             Ok(status) => match status {
                 NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
                 _ => {

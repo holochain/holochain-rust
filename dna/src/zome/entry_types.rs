@@ -54,13 +54,39 @@ impl LinksTo {
     }
 }
 
+/// An a definition of a link from another type (including anchors and system hashes)
+/// to the entry type it is part of.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+pub struct LinkedFrom {
+    /// The target_type of this links_to entry
+    #[serde(default)]
+    pub base_type: String,
+
+    /// The tag of this links_to entry
+    #[serde(default)]
+    pub tag: String,
+}
+
+impl Default for LinkedFrom {
+    /// Provide defaults for a "links_to" object.
+    fn default() -> Self {
+        LinkedFrom {
+            base_type: String::from(""),
+            tag: String::from(""),
+        }
+    }
+}
+
+impl LinkedFrom {
+    /// Allow sane defaults for `LinkedFrom::new()`.
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
 /// Represents an individual object in the "zome" "entry_types" array.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct EntryType {
-    /// The name of this entry type.
-    #[serde(default)]
-    pub name: String,
-
     /// A description of this entry type.
     #[serde(default)]
     pub description: String,
@@ -73,20 +99,24 @@ pub struct EntryType {
     #[serde(default)]
     pub validation: DnaWasm,
 
-    /// An array of entry_types associated with this zome.
+    /// An array of link definitions associated with this entry type
     #[serde(default)]
     pub links_to: Vec<LinksTo>,
+
+    /// An array of link definitions for links pointing to entries of this type
+    #[serde(default)]
+    pub linked_from: Vec<LinkedFrom>,
 }
 
 impl Default for EntryType {
     /// Provide defaults for a "zome"s "entry_types" object.
     fn default() -> Self {
         EntryType {
-            name: String::from(""),
             description: String::from(""),
             sharing: Sharing::Public,
             validation: DnaWasm::new(),
             links_to: Vec::new(),
+            linked_from: Vec::new(),
         }
     }
 }
@@ -107,7 +137,6 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryType = serde_json::from_str(
             r#"{
-                "name": "test",
                 "description": "test",
                 "validation": {
                     "code": "AAECAw=="
@@ -121,12 +150,17 @@ mod tests {
                             "code": "AAECAw=="
                         }
                     }
+                ],
+                "linked_from": [
+                    {
+                        "base_type": "HcSysAgentKeyHash",
+                        "tag": "authored_posts"
+                    }
                 ]
             }"#,
         ).unwrap();
 
         let mut entry = EntryType::new();
-        entry.name = String::from("test");
         entry.description = String::from("test");
         entry.validation.code = vec![0, 1, 2, 3];
         entry.sharing = Sharing::Public;
@@ -135,8 +169,12 @@ mod tests {
         link.target_type = String::from("test");
         link.tag = String::from("test");
         link.validation.code = vec![0, 1, 2, 3];
-
         entry.links_to.push(link);
+
+        let mut linked = LinkedFrom::new();
+        linked.base_type = String::from("HcSysAgentKeyHash");
+        linked.tag = String::from("authored_posts");
+        entry.linked_from.push(linked);
 
         assert_eq!(fixture, entry);
     }

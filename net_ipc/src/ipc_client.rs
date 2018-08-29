@@ -102,24 +102,21 @@ impl<S: IpcSocket> IpcClient<S> {
         Ok(())
     }
 
-    /*
-    /// Transmit a response to an RPC-style `call` message some other node sent us.
-    pub fn call_resp(
-        &mut self,
-        message_id: &[u8],
-        to_address: &[u8],
-        data: &[u8],
-        cb: Option<LocalResult>,
-    ) -> Result<()> {
-        let id = self.priv_get_id()?;
-        if let Some(cb) = cb {
-            self.local_callbacks.insert(id.clone(), (get_millis(), cb));
+    /// respond to a remote `call`
+    pub fn respond(&mut self, message_id: &[u8], data: Result<&[u8]>) -> Result<()> {
+        match data {
+            Err(e) => {
+                let e = format!("{}", e);
+                let snd = MsgCallFailSend(message_id, e.as_bytes());
+                self.priv_send(MSG_CALL_FAIL, &snd)?;
+            }
+            Ok(d) => {
+                let snd = MsgCallOkSend(message_id, d);
+                self.priv_send(MSG_CALL_OK, &snd)?;
+            }
         }
-        let snd = MsgCliCallResp(&id, message_id, to_address, data);
-        self.priv_send(MSG_CLI_CALL_RESP, &snd)?;
         Ok(())
     }
-    */
 
     /// Allow IPC client to do any needed processing.
     /// This should be called regularly to make sure any maintenance tasks are executed properly, and to avoid incoming data backing up in memory.

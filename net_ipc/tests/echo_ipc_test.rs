@@ -44,9 +44,15 @@ fn it_can_send_call_and_call_resp() {
 
     {
         let cli_clone = cli.clone();
-        let fu = |mut done: Box<FnMut(Result<Option<net_ipc::message::Message>>) -> bool>| loop {
-            let msg = cli_clone.lock().unwrap().process(10);
-            if done(msg) {
+        let fu = |mut done: Box<FnMut(Result<net_ipc::message::Message>) -> bool>| loop {
+            let msg = cli_clone.lock().unwrap().process(1000);
+            if match msg {
+                Err(e) => done(Err(e)),
+                Ok(m) => match m {
+                    Some(_m) => done(Ok(_m)),
+                    None => panic!("Timeout awaiting data!")
+                }
+            } {
                 break;
             }
         };
@@ -75,7 +81,7 @@ fn it_can_send_call_and_call_resp() {
 
         let state_clone = state.clone();
         fu(Box::new(move |msg| {
-            let m = &msg.unwrap().unwrap();
+            let m = &msg.unwrap();
             match m {
                 net_ipc::message::Message::Pong(_p) => {
                     return false;
@@ -152,6 +158,133 @@ fn it_can_send_call_and_call_resp() {
         state.lock().unwrap().clear();
 
         println!("# try send `error` - success");
+
+        println!("# try send `call-hello`");
+
+        let state_clone = state.clone();
+        cli.lock()
+            .unwrap()
+            .call(
+                b"call-hello",
+                Some(Box::new(move |r| {
+                    if let Err(_r) = r {
+                        panic!("failed to call call-hello");
+                    }
+                    state_clone
+                        .lock()
+                        .unwrap()
+                        .insert(String::from_utf8_lossy(&r.unwrap().1).to_string());
+                    Ok(())
+                })),
+            )
+            .unwrap();
+
+        let state_clone = state.clone();
+        let cli_clone = cli.clone();
+        fu(Box::new(move |msg| {
+            let m = &msg.unwrap();
+            match m {
+                net_ipc::message::Message::Pong(_p) => {
+                    return false;
+                }
+                net_ipc::message::Message::Call(_m) => {
+                    let mut s = String::from_utf8_lossy(&_m.1).to_string();
+                    s.insert_str(0, "echo: ");
+                    println!("got call, about to respond: ({:?})", s);
+                    cli_clone.lock().unwrap().respond(&_m.0, Ok(s.as_bytes()))
+                        .unwrap();
+                    return false;
+                }
+                net_ipc::message::Message::CallOk(_m) => {
+                    let s = String::from_utf8_lossy(&_m.1);
+                    if s != String::from("server successfully received `echo: srv-hello`") {
+                        panic!("bad server message: {:?}", s);
+                    }
+                }
+                _ => panic!("unexpected msg type: {:?}", m),
+            }
+
+            let count = state_clone.lock().unwrap().len();
+            if count != 1 {
+                panic!("bad state entry count: {:?}", count);
+            }
+
+            let r = state_clone.lock().unwrap().clone();
+            if !r.contains(&String::from("server successfully received `echo: srv-hello`")) {
+                panic!("bad server message: {:?}", r);
+            }
+
+            true
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# try send `call-hello` - success");
+
+        println!("# try send `call-error`");
+
+        let state_clone = state.clone();
+        cli.lock()
+            .unwrap()
+            .call(
+                b"call-error",
+                Some(Box::new(move |r| {
+                    if let Err(_r) = r {
+                        panic!("failed to call call-error {:?}", _r);
+                    }
+                    state_clone
+                        .lock()
+                        .unwrap()
+                        .insert(String::from_utf8_lossy(&r.unwrap().1).to_string());
+                    Ok(())
+                })),
+            )
+            .unwrap();
+
+        let state_clone = state.clone();
+        let cli_clone = cli.clone();
+        fu(Box::new(move |msg| {
+            let m = &msg.unwrap();
+            match m {
+                net_ipc::message::Message::Pong(_p) => {
+                    return false;
+                }
+                net_ipc::message::Message::Call(_m) => {
+                    let mut s = String::from_utf8_lossy(&_m.1).to_string();
+                    s.insert_str(0, "echo: ");
+                    println!("got call, about to respond: ({:?})", s);
+                    cli_clone.lock().unwrap().respond(&_m.0, Err(
+                        IpcError::GenericError {
+                            error: s
+                        }.into()
+                    )).unwrap();
+                    return false;
+                }
+                net_ipc::message::Message::CallOk(_m) => {
+                    let s = String::from_utf8_lossy(&_m.1);
+                    if s != String::from("server successfully got error `Error: IpcError: echo: srv-error`") {
+                        panic!("bad server message: {:?}", s);
+                    }
+                }
+                _ => panic!("unexpected msg type: {:?}", m),
+            }
+
+            let count = state_clone.lock().unwrap().len();
+            if count != 1 {
+                panic!("bad state entry count: {:?}", count);
+            }
+
+            let r = state_clone.lock().unwrap().clone();
+            if !r.contains(&String::from("server successfully got error `Error: IpcError: echo: srv-error`")) {
+                panic!("bad server message: {:?}", r);
+            }
+
+            true
+        }));
+
+        state.lock().unwrap().clear();
+
+        println!("# try send `call-error` - success");
     }
 
     println!("attempting to kill echo server");

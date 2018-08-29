@@ -364,13 +364,13 @@ pub mod tests {
         let dna = Dna::new_from_json(
             r#"{
                 "zomes": {
-                    "0": {}
+                    "zome1": {}
                 }
             }"#,
         ).unwrap();
 
         assert_eq!(
-            dna.zomes.get("0").unwrap().config.error_handling,
+            dna.zomes.get("zome1").unwrap().config.error_handling,
             zome::ErrorHandling::ThrowErrors
         )
     }
@@ -448,7 +448,7 @@ pub mod tests {
         Dna::new_from_json(
             r#"{
                 "zomes": {
-                    "0": {
+                    "zome1": {
                         "description": 42
                     }
                 }
@@ -462,7 +462,7 @@ pub mod tests {
         Dna::new_from_json(
             r#"{
                 "zomes": {
-                    "0": {
+                    "zome1": {
                         "entry_types": {
                             "test": {
                                 "description": 42

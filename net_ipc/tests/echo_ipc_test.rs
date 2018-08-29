@@ -28,7 +28,7 @@ fn prep() -> std::process::Child {
     std::process::Command::new("node")
         .args(&["./tests/node-p2p-ipc/examples/echo-server.js"])
         .spawn()
-        .expect("failed running npm install")
+        .expect("failed running the echo server")
 }
 
 #[test]
@@ -36,14 +36,11 @@ fn it_can_send_call_and_call_resp() {
     let mut node_ipc_server = prep();
     println!("node_ipc_server pid: {}", node_ipc_server.id());
 
-    let message_id: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
-
     let cli = Arc::new(Mutex::new(ZmqIpcClient::new().unwrap()));
     cli.lock()
         .unwrap()
         .connect("ipc://echo-server.sock")
         .unwrap();
-    //cli.lock().unwrap().connect("ipc:///home/neonphog/projects/n3h/echo-server.sock").unwrap();
 
     {
         let cli_clone = cli.clone();
@@ -56,96 +53,21 @@ fn it_can_send_call_and_call_resp() {
 
         let state: Arc<Mutex<HashSet<String>>> = Arc::new(Mutex::new(HashSet::new()));
 
-        println!("# TRY SET FAIL");
+        println!("# try send `hello`");
 
         let state_clone = state.clone();
-        cli.lock()
-            .unwrap()
-            .send(
-                b"",
-                b"$$ctrl$$:FAIL",
-                Some(Box::new(move |r| {
-                    if let Err(_r) = r {
-                        panic!("failed to set echo server MODE");
-                    }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("send_result".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |_msg| state_clone.lock().unwrap().len() >= 1));
-
-        state.lock().unwrap().clear();
-
-        println!("# SET FAIL - success");
-
-        println!("# - sending a `send`... it should fail - #");
-
-        let state_clone = state.clone();
-        cli.lock()
-            .unwrap()
-            .send(
-                b"",
-                b"test",
-                Some(Box::new(move |r| {
-                    if let Ok(r) = r {
-                        panic!("expected error, but got success: {:?}", r);
-                    }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("send_result".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |msg| {
-            if let Ok(msg) = msg {
-                panic!("expected error, but got success: {:?}", msg);
-            }
-            state_clone
-                .lock()
-                .unwrap()
-                .insert("send_result_msg".to_string());
-            state_clone.lock().unwrap().len() >= 2
-        }));
-
-        state.lock().unwrap().clear();
-
-        println!("# - sending a `call`... it should fail - #");
-
-        let state_clone = state.clone();
-        let state_clone2 = state.clone();
         cli.lock()
             .unwrap()
             .call(
-                b"",
-                b"test",
+                b"hello",
                 Some(Box::new(move |r| {
-                    if let Ok(r) = r {
-                        panic!("expected error, but got success: {:?}", r);
+                    if let Err(_r) = r {
+                        panic!("failed to call hello");
                     }
                     state_clone
                         .lock()
                         .unwrap()
-                        .insert("call_result".to_string());
-                    Ok(())
-                })),
-                Some(Box::new(move |r| {
-                    if let Ok(r) = r {
-                        panic!("expected error, but got success: {:?}", r);
-                    }
-                    state_clone2
-                        .lock()
-                        .unwrap()
-                        .insert("call_resp_result".to_string());
+                        .insert(String::from_utf8_lossy(&r.unwrap().1).to_string());
                     Ok(())
                 })),
             )
@@ -153,247 +75,83 @@ fn it_can_send_call_and_call_resp() {
 
         let state_clone = state.clone();
         fu(Box::new(move |msg| {
-            if let Ok(msg) = msg {
-                if let None = msg {
+            let m = &msg.unwrap().unwrap();
+            match m {
+                net_ipc::message::Message::Pong(_p) => {
                     return false;
                 }
-                panic!("expected error, but got success: {:?}", msg);
-            }
-            state_clone
-                .lock()
-                .unwrap()
-                .insert("call_result_msg".to_string());
-            state_clone.lock().unwrap().len() >= 3
-        }));
-
-        state.lock().unwrap().clear();
-
-        println!("# - sending a `call_resp`... it should fail - #");
-
-        let state_clone = state.clone();
-        cli.lock()
-            .unwrap()
-            .call_resp(
-                b"",
-                b"",
-                b"test",
-                Some(Box::new(move |r| {
-                    if let Ok(r) = r {
-                        panic!("expected error, but got success: {:?}", r);
+                net_ipc::message::Message::CallOk(_m) => {
+                    let s = String::from_utf8_lossy(&_m.1);
+                    if s != String::from("echo: hello") {
+                        panic!("bad server message: {:?}", s);
                     }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("call_resp_result".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |msg| {
-            if let Ok(msg) = msg {
-                panic!("expected error, but got success: {:?}", msg);
+                }
+                _ => panic!("unexpected msg type: {:?}", m),
             }
-            state_clone
-                .lock()
-                .unwrap()
-                .insert("call_resp_result_msg".to_string());
-            state_clone.lock().unwrap().len() >= 2
+
+            let count = state_clone.lock().unwrap().len();
+            if count != 1 {
+                panic!("bad state entry count: {:?}", count);
+            }
+
+            let r = state_clone.lock().unwrap().clone();
+            if !r.contains(&String::from("echo: hello")) {
+                panic!("bad server message: {:?}", r);
+            }
+
+            true
         }));
 
         state.lock().unwrap().clear();
 
-        println!("# TRY SET ECHO");
+        println!("# try send `hello` - success");
+
+        println!("# try send `error`");
 
         let state_clone = state.clone();
         cli.lock()
             .unwrap()
-            .send(
-                b"",
-                b"$$ctrl$$:ECHO",
+            .call(
+                b"error",
                 Some(Box::new(move |r| {
                     if let Err(_r) = r {
-                        panic!("failed to set echo server MODE");
+                        let _r = format!("{}", _r);
+                        if !_r.contains("Error: echo: error") {
+                            panic!("bad error response: {:?}", _r);
+                        }
+                        state_clone.lock().unwrap().insert(_r);
+                        return Ok(());
                     }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("send_result".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |_msg| state_clone.lock().unwrap().len() >= 1));
-
-        state.lock().unwrap().clear();
-
-        println!("# SET ECHO - success");
-
-        println!("# - sending a `send`... it should succeed - #");
-
-        let state_clone = state.clone();
-        cli.lock()
-            .unwrap()
-            .send(
-                b"",
-                b"test",
-                Some(Box::new(move |r| {
-                    if let Err(r) = r {
-                        panic!("erroneous error: {:?}", r);
-                    }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("send_result".to_string());
-                    Ok(())
+                    panic!("expected error, got: {:?}", r);
                 })),
             )
             .unwrap();
 
         let state_clone = state.clone();
         fu(Box::new(move |msg| {
-            let msg = match msg {
-                Err(e) => panic!("erroneous error: {:?}", e),
-                Ok(v) => v,
-            };
-            match msg {
-                Some(v) => match v {
-                    net_ipc::message::Message::SrvRespOk(_s) => {
-                        state_clone
-                            .lock()
-                            .unwrap()
-                            .insert("send_result_msg".to_string());
-                        state_clone.lock().unwrap().len() >= 3
-                    }
-                    net_ipc::message::Message::SrvRecvSend(_s) => {
-                        state_clone.lock().unwrap().insert("send_echo".to_string());
-                        state_clone.lock().unwrap().len() >= 3
-                    }
-                    _ => false,
-                },
-                None => false,
+            let msg = msg.expect_err("expected Err");
+            let msg = format!("{}", msg);
+            if !msg.contains("Error: echo: error") {
+                panic!("bad error response: {:?}", msg);
             }
+
+            let count = state_clone.lock().unwrap().len();
+            if count != 1 {
+                panic!("bad state entry count: {:?}", count);
+            }
+
+            let r = state_clone.lock().unwrap().clone();
+            let r = format!("{:?}", r);
+            if !r.contains("Error: echo: error") {
+                panic!("bad server message: {:?}", r);
+            }
+
+            true
         }));
 
         state.lock().unwrap().clear();
 
-        println!("# - sending a `call`... it should succeed - #");
-
-        let state_clone = state.clone();
-        let state_clone2 = state.clone();
-        let message_id_clone = message_id.clone();
-        cli.lock()
-            .unwrap()
-            .call(
-                b"",
-                b"test",
-                Some(Box::new(move |r| {
-                    if let Err(r) = r {
-                        panic!("erroneous error: {:?}", r);
-                    } else if let Ok(mut r) = r {
-                        message_id_clone.lock().unwrap().clear();
-                        message_id_clone.lock().unwrap().append(&mut r.0);
-                    }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("call_result".to_string());
-                    Ok(())
-                })),
-                Some(Box::new(move |r| {
-                    if let Err(r) = r {
-                        panic!("erroneous error: {:?}", r);
-                    }
-                    state_clone2
-                        .lock()
-                        .unwrap()
-                        .insert("HANDLED-LATER".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |msg| {
-            let msg = match msg {
-                Err(e) => panic!("erroneous error: {:?}", e),
-                Ok(v) => v,
-            };
-            match msg {
-                Some(v) => match v {
-                    net_ipc::message::Message::SrvRespOk(_s) => {
-                        state_clone
-                            .lock()
-                            .unwrap()
-                            .insert("call_result_msg".to_string());
-                        state_clone.lock().unwrap().len() >= 3
-                    }
-                    net_ipc::message::Message::SrvRecvCall(_s) => {
-                        state_clone.lock().unwrap().insert("call_echo".to_string());
-                        state_clone.lock().unwrap().len() >= 3
-                    }
-                    _ => false,
-                },
-                None => false,
-            }
-        }));
-
-        println!("got id: {:?}", &message_id.lock().unwrap().as_slice());
-
-        state.lock().unwrap().clear();
-
-        println!("# - sending a `call_resp`... it should succeed - #");
-
-        let state_clone = state.clone();
-        cli.lock()
-            .unwrap()
-            .call_resp(
-                message_id.lock().unwrap().as_slice(),
-                b"",
-                b"test",
-                Some(Box::new(move |r| {
-                    if let Err(r) = r {
-                        panic!("erroneous error: {:?}", r);
-                    }
-                    state_clone
-                        .lock()
-                        .unwrap()
-                        .insert("call_resp_result".to_string());
-                    Ok(())
-                })),
-            )
-            .unwrap();
-
-        let state_clone = state.clone();
-        fu(Box::new(move |msg| {
-            let msg = match msg {
-                Err(e) => panic!("erroneous error: {:?}", e),
-                Ok(v) => v,
-            };
-            match msg {
-                Some(v) => match v {
-                    net_ipc::message::Message::SrvRespOk(_s) => {
-                        state_clone
-                            .lock()
-                            .unwrap()
-                            .insert("call_resp_result_msg".to_string());
-                        state_clone.lock().unwrap().len() >= 4
-                    }
-                    net_ipc::message::Message::SrvRecvCallResp(_s) => {
-                        state_clone
-                            .lock()
-                            .unwrap()
-                            .insert("call_resp_echo_echo".to_string());
-                        state_clone.lock().unwrap().len() >= 4
-                    }
-                    _ => false,
-                },
-                None => false,
-            }
-        }));
+        println!("# try send `error` - success");
     }
 
     println!("attempting to kill echo server");

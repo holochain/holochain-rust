@@ -541,7 +541,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 0
                 )
                 (data (i32.const 0)
@@ -568,7 +568,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 4
                 )
                 (data (i32.const 0)

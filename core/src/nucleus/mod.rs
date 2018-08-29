@@ -706,7 +706,7 @@ pub mod tests {
 
         match result {
             Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
+                assert_eq!(err, "Function: Module doesn\'t have export xxx")
             }
             _ => assert!(false),
         }

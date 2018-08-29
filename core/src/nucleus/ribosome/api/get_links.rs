@@ -6,19 +6,25 @@ use nucleus::ribosome::api::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use hash_table::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
-struct GetArgs {
-    key: String,
+struct GetLinksArgs {
+    entry_hash: HashString,
+    tag: String,
 }
 
-pub fn invoke_get_entry(
+/// ZomeApiFunction::GetLinks function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Expected complex argument: GetLinksArgs
+/// Returns an HcApiReturnCode as I32
+pub fn invoke_get_links(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
-    let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);
+    let res_entry: Result<GetLinksArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
@@ -29,7 +35,7 @@ pub fn invoke_get_entry(
 
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::Get(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetLinks(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -60,11 +66,11 @@ pub fn invoke_get_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::Get(maybe_pair) => {
+        ActionResponse::GetLinks(maybe_links) => {
             // serialize, allocate and encode result
-            let pair_str = maybe_pair.map(|p| p.to_json()).unwrap_or_default();
+            let links_str = maybe_links.map(|p| p.to_json()).unwrap_or_default();
 
-            runtime_allocate_encode_str(runtime, &pair_str)
+            runtime_allocate_encode_str(runtime, &links_str)
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -72,23 +78,26 @@ pub fn invoke_get_entry(
     }
 }
 
+//
+
 #[cfg(test)]
 mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use super::GetArgs;
+    use super::GetLinksArgs;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
 
     /// dummy get args from standard test entry
     pub fn test_args_bytes() -> Vec<u8> {
-        let args = GetArgs {
-            key: test_entry().hash().into(),
+        let args = GetLinksArgs {
+            entry_hash: test_entry().hash().into(),
+            tag: "toto".to_string(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -97,7 +106,7 @@ mod tests {
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
         let (runtime, _) =
-            test_zome_api_function_runtime(ZomeAPIFunction::GetEntry.as_str(), test_args_bytes());
+            test_zome_api_function_runtime(ZomeApiFunction::GetAppEntry.as_str(), test_args_bytes());
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"");

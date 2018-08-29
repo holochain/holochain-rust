@@ -6,6 +6,29 @@ use hash_table::entry::Entry;
 use hash_table::HashString;
 use std::str::FromStr;
 
+//
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Link {
+  pub base: HashString,
+  pub target: HashString,
+  pub tag: HashString,
+}
+
+impl Link {
+  pub fn new(base: &str, target: &str, tag: &str,
+  ) -> Self {
+    Link {
+      base: base.to_string(),
+      target: target.to_string(),
+      tag: tag.to_string(),
+    }
+  }
+
+  pub fn key() -> String {
+    "link:" + base + ":" + link + ":" + tag
+  }
+}
+
 // HC.LinkAction sync with hdk-rust
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum LinkActionKind {
@@ -13,45 +36,43 @@ pub enum LinkActionKind {
   DELETE,
 }
 
-
+//
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LinkEntry {
-  links: Vec<Link>,
+  action_kind: LinkActionKind,
+  link: Link,
 }
 
 impl LinkEntry {
-  pub fn new(links: &[Link]) -> Self {
-    LinkEntry { links: links.to_vec() }
-  }
-}
-
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Link {
-  action_kind: LinkActionKind,
-  base: HashString,
-  target: HashString,
-  tag: HashString,
-}
-
-impl Link {
-  pub fn new(  action_kind: LinkActionKind,
-               base: &str,
-               target: &str,
-               tag: &str,
+  pub fn new(action_kind: LinkActionKind,
+             base: &str,
+             target: &str,
+             tag: &str,
   ) -> Self {
-    Link {
+    LinkEntry {
       action_kind: action_kind,
-      base: base.to_string(),
-      target: target.to_string(),
-      tag: tag.to_string(),
+      link: Link::new(base, target, tag),
     }
   }
 }
 
 
 
-impl ToEntry for LinkEntry {
+
+//
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LinkListEntry {
+  links: Vec<Link>,
+}
+
+impl LinkListEntry {
+  pub fn new(links: &[Link]) -> Self {
+    LinkListEntry { links: links.to_vec() }
+  }
+}
+
+
+impl ToEntry for LinkListEntry {
   // Convert a LinkEntry into a JSON array of Links
   fn to_entry(&self) -> Entry {
     let json_array = serde_json::to_string(self).expect("Link should serialize");
@@ -62,7 +83,7 @@ impl ToEntry for LinkEntry {
     assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
     let content: Vec<Link> =
       serde_json::from_str(&entry.content()).expect("entry is not a valid Link Entry");
-    LinkEntry::new(&content)
+    LinkListEntry::new(&content)
   }
 }
 
@@ -86,8 +107,8 @@ pub mod tests {
     // Create Context, Agent, Dna, and Commit AgentIdEntry Action
     let context = test_context("alex");
     let link = Link::new(LinkActionKind::ADD, "12", "34", "fake");
-    let link_entry = LinkEntry::new(&[link]);
-    let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
+    let link_entry = LinkListEntry::new(&[link]);
+    let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
 
     // Set up instance and process the action
     let instance = Instance::new();
@@ -102,7 +123,7 @@ pub mod tests {
       .history
       .iter()
       .find(|aw| match aw.action() {
-        Action::Commit(entry) => {
+        Action::CommitEntry(entry) => {
           assert_eq!(
             EntryType::from_str(&entry.entry_type()).unwrap(),
             EntryType::Link,
@@ -122,8 +143,8 @@ pub mod tests {
     let link1 = Link::new(LinkActionKind::ADD, "12", "34", "fake");
     let link2 = Link::new(LinkActionKind::ADD, "56", "78", "faux");
     let link3 = Link::new(LinkActionKind::DELETE, "90", "ab", "fake");
-    let link_entry = LinkEntry::new(&[link1, link2, link3]);
-    let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
+    let link_entry = LinkListEntry::new(&[link1, link2, link3]);
+    let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
 
     println!("commit_multilink: {:?}", commit_action);
 
@@ -140,7 +161,7 @@ pub mod tests {
       .history
       .iter()
       .find(|aw| match aw.action() {
-        Action::Commit(entry) => {
+        Action::CommitEntry(entry) => {
           assert_eq!(
             EntryType::from_str(&entry.entry_type()).unwrap(),
             EntryType::Link,

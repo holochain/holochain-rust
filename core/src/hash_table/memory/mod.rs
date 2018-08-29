@@ -2,12 +2,15 @@ use std::collections::HashMap;
 
 use error::HolochainError;
 
+use agent::keys::Key;
 use agent::keys::Keys;
 use hash_table::{
     pair::Pair,
     pair_meta::PairMeta,
     status::{CRUDStatus, LINK_NAME, STATUS_NAME},
     HashTable,
+    links_entry::Link,
+    HashString,
 };
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
@@ -73,6 +76,21 @@ impl HashTable for MemTable {
             STATUS_NAME,
             &CRUDStatus::DELETED.bits().to_string(),
         ))
+    }
+
+    //
+    fn link(&mut self, link: &Link) -> Result<(), HolochainError> {
+        let pair = self.get(&link.base)?;
+        if pair.is_none() {
+            return Err(HolochainError::ErrorGeneric("Pair from base not found".to_string()));
+        }
+        let pair = pair.unwrap();
+        // FIXME Correct keys
+        let key_fixme = Key::new();
+        let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
+        let meta = PairMeta::new(&keys_fixme, &pair, link.key(), "FIXME hash of LinkEntry?");
+        self.assert_meta(meta);
+        Ok(())
     }
 
     fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError> {

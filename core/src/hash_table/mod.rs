@@ -5,12 +5,12 @@ pub mod pair;
 pub mod pair_meta;
 pub mod status;
 pub mod sys_entry;
-pub mod link_entry;
+pub mod links_entry;
 pub mod deletion_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
+use hash_table::{pair::Pair, pair_meta::PairMeta, links_entry::Link};
 
 pub type HashString = String;
 
@@ -36,6 +36,9 @@ pub trait HashTable {
     ) -> Result<(), HolochainError>;
     /// set the status of a Pair to DELETED
     fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError>;
+
+    /// Add? link to a Pair?
+    fn link(&mut self, link: &Link) -> Result<(), HolochainError>;
 
     // meta
     /// assert a given PairMeta in the HashTable

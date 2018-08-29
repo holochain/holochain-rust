@@ -63,7 +63,7 @@ pub mod tests {
     // Create Context, Agent, Dna, and Commit AgentIdEntry Action
     let context = test_context("alex");
     let del_entry = DeletionEntry::new("0x42", "test-entry");
-    let commit_action = ActionWrapper::new(Action::Commit(del_entry.to_entry()));
+    let commit_action = ActionWrapper::new(Action::CommitEntry(del_entry.to_entry()));
 
     // Set up instance and process the action
     let instance = Instance::new();
@@ -78,7 +78,7 @@ pub mod tests {
       .history
       .iter()
       .find(|aw| match aw.action() {
-        Action::Commit(entry) => {
+        Action::CommitEntry(entry) => {
           assert_eq!(
             EntryType::from_str(&entry.entry_type()).unwrap(),
             EntryType::Deletion,

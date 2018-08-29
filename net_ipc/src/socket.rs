@@ -1,19 +1,38 @@
+//! This module is a thin wrapper around a ZMQ socket
+//! It allows us to easily mock it out for unit tests
+//! as well as manage context with lazy_static!
+
 use context;
 use errors::*;
 use zmq;
 
+/// trait that allows zmq socket abstraction
 pub trait IpcSocket {
+    /// clean up the context
     fn destroy_context() -> Result<()>;
+
+    /// create a new socket
     fn new() -> Result<Box<Self>>
     where
         Self: Sized;
+
+    /// close an existing socket
     fn close(self: Box<Self>) -> Result<()>;
+
+    /// connect the socket to a remote end
     fn connect(&mut self, endpoint: &str) -> Result<()>;
+
+    /// see if we have any messages waiting
     fn poll(&mut self, millis: i64) -> Result<bool>;
+
+    /// if we DO have messages, fetch them
     fn recv(&mut self) -> Result<Vec<Vec<u8>>>;
+
+    /// send data to the remote end of the socket
     fn send(&mut self, data: &[&[u8]]) -> Result<()>;
 }
 
+/// this is the concrete ZMQ implementation of the IpcSocket trait
 pub struct ZmqIpcSocket {
     socket: zmq::Socket,
 }
@@ -57,6 +76,7 @@ impl IpcSocket for ZmqIpcSocket {
 }
 
 #[cfg(test)]
+/// This is a concrete implementation of the IpcSocket trait for use in testing
 pub struct MockIpcSocket {
     resp_queue: Vec<Vec<Vec<u8>>>,
 }

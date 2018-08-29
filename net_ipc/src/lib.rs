@@ -24,4 +24,6 @@ mod socket;
 mod util;
 
 pub mod ipc_client;
+
+// re-export the struct people will actually use
 pub use ipc_client::ZmqIpcClient;

@@ -1,12 +1,17 @@
+//! This module uses lazy_static! to make the zmq::Context easier to work with
+//! Just make sure to call IpcClient::destroy_context() when ready
+
 use errors::*;
 use std;
 use zmq;
 
 lazy_static! {
+    /// pseudo global for zmq::Context
     pub static ref ZMQ_CTX: std::sync::Mutex<zmq::Context> =
         std::sync::Mutex::new(zmq::Context::new());
 }
 
+/// Create a new zmq socket using the lazy_static! global
 pub fn socket(socket_type: zmq::SocketType) -> Result<zmq::Socket> {
     match ZMQ_CTX.lock() {
         Ok(s) => Ok(s.socket(socket_type)?),
@@ -14,6 +19,7 @@ pub fn socket(socket_type: zmq::SocketType) -> Result<zmq::Socket> {
     }
 }
 
+/// Destroy the lazy_static! global
 pub fn destroy() -> Result<()> {
     match ZMQ_CTX.lock() {
         Ok(mut s) => s.destroy()?,

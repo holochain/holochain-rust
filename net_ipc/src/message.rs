@@ -35,7 +35,7 @@ pub struct MsgCallRecv(
     #[serde(with = "serde_bytes")] pub Vec<u8>,
 );
 
-/// Client wishes to send a `call` message to another node.
+/// Client wishes to respond with success to a `call` message.
 /// This message is an array of 2 `&[u8]` slices.
 /// - index 0 : message identifier
 /// - index 1 : message data
@@ -45,7 +45,7 @@ pub struct MsgCallOkSend<'a>(
     #[serde(with = "serde_bytes")] pub &'a [u8],
 );
 
-/// This message represents this client receiving a `call` message.
+/// This message represents this client receiving a success response message.
 /// This message is an array of 2 `Vec<u8>` values.
 /// - index 0 : message identifier
 /// - index 1 : message data
@@ -55,7 +55,7 @@ pub struct MsgCallOkRecv(
     #[serde(with = "serde_bytes")] pub Vec<u8>,
 );
 
-/// Client wishes to send a `call` message to another node.
+/// Client wishes to respond with an error to a `call` message.
 /// This message is an array of 2 `&[u8]` slices.
 /// - index 0 : message identifier
 /// - index 1 : message data
@@ -65,7 +65,7 @@ pub struct MsgCallFailSend<'a>(
     #[serde(with = "serde_bytes")] pub &'a [u8],
 );
 
-/// This message represents this client receiving a `call` message.
+/// This message represents this client receiving an error response message.
 /// This message is an array of 2 `Vec<u8>` values.
 /// - index 0 : message identifier
 /// - index 1 : message data

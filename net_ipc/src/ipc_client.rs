@@ -169,17 +169,21 @@ impl<S: IpcSocket> IpcClient<S> {
 
     // -- private -- //
 
+    /// message ids in this module are just sequential u64-s
     fn priv_get_id(&mut self) -> Result<Vec<u8>> {
         self.next_id += 1;
         return Ok(rmp_serde::to_vec(&(self.next_id - 1))?);
     }
 
+    /// send a raw message to the ipc server
     fn priv_send<T>(&mut self, t: u8, data: &T) -> Result<()>
     where
         T: serde::Serialize,
     {
         let mut data = rmp_serde::to_vec(data)?;
         data.insert(0, t);
+        // with two zmq "ROUTER" sockets, one side must have a well-known id
+        // for the holochain ipc protocol, the server is always 4 0x24 bytes
         self.socket.send(&[&[0x24, 0x24, 0x24, 0x24], &[], &data])?;
         Ok(())
     }

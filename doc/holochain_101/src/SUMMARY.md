@@ -24,6 +24,7 @@
   - [Upgrading to Alpha 2](./alpha_migrate.md)
 - [Going Live with Holochain Apps](./live_hc_apps.md)
 - [Extending the Holochain Platform](./extending_hc_platform.md)
+  - [Writing a Development Kit (HDK)](./writing_development_kit.md)
   - [Implementing Zome API functions](./zome/implementation.md)
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)

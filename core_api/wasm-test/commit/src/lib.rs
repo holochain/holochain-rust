@@ -58,7 +58,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
 }
 
 /// Actual test function code
-fn test(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
+fn test_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 {
   // Call Commit API function
   let hash = hdk_commit(mem_stack, "post", "hello");
@@ -114,7 +114,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 
 
 /// Actual test function code
-fn test_fail(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
+fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 {
   // Call Commit API function
   let hash = hdk_commit_fail(mem_stack);
@@ -146,7 +146,7 @@ fn test_fail(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::new_from_encoded(encoded_allocation_of_input as u32);
-  let output = test(&mut mem_stack);
+  let output = test_inner(&mut mem_stack);
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }
 
@@ -157,6 +157,6 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::new_from_encoded(encoded_allocation_of_input as u32);
-  let output = test_fail(&mut mem_stack);
+  let output = test_fail_inner(&mut mem_stack);
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }

@@ -34,27 +34,11 @@ Run:
 . docker/run-fmt
 ```
 
-### holochain_101 mdbook
+### The Book on Holochain
 
-There is an [mdbook](https://github.com/rust-lang-nursery/mdBook) book on learning holochain at `doc/holochain_101`.
+There is a work-in-progress book being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [./doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
-There is also a docker build that allows local build, serve, watch and live reload for the book.
 
-From the root of the repo, run:
-
-```shell
-. docker/build-mdbook-image && . docker/run-mdbook
-```
-
-Once the book has built and is serving, visit `http://localhost:3000` in the browser.
-
-You can edit the markdown files in `doc/holochain_101` and the book will live reload.
-
-To do a one-time build of the files to HTML, run:
-
-```shell
-. docker/build-mdbook
-```
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)

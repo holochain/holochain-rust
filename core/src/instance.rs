@@ -450,6 +450,13 @@ pub mod tests {
         assert_eq!(response, &ActionResponse::Get(None));
     }
 
+    /// create a test instance with a blank DNA
+    pub fn test_instance_blank() -> Instance {
+        let mut dna = Dna::new();
+        dna.zomes.insert("".to_string(), Zome::default());
+        test_instance(dna)
+    }
+
     #[test]
     /// This test shows how to call dispatch with a closure that should run
     /// when the action results in a state change.  Note that the observer closure
@@ -524,8 +531,11 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.zomes[0].capabilities[0].name = Callback::Genesis.capability().as_str().to_string();
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome",
+            Callback::Genesis.capability().as_str(),
+            None,
+        );
 
         let instance = test_instance(dna);
 

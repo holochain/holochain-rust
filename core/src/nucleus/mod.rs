@@ -227,12 +227,12 @@ fn reduce_ia(
         // map genesis across every zome
         let mut results: Vec<_> = dna_clone
             .zomes
-            .iter()
-            .map(|zome| {
+            .keys()
+            .map(|zome_name| {
                 genesis(
                     &genesis_action_channel,
                     &genesis_observer_channel,
-                    &zome.name(),
+                    zome_name,
                     &CallbackParams::Genesis,
                 )
             })

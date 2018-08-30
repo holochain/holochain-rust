@@ -176,7 +176,7 @@ mod tests {
         let commit_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "commit",
+            "commit_dispatch",
             &test_parameters(),
         );
         let commit_runtime = call(
@@ -197,7 +197,7 @@ mod tests {
         let get_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "get",
+            "get_dispatch",
             &test_parameters(),
         );
         let get_runtime = call(

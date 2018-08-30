@@ -29,3 +29,4 @@
   - [Implementing Zome API functions](./zome/implementation.md)
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)
+  - [State actors](./state/actors.md)

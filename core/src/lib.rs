@@ -11,17 +11,25 @@ extern crate test_utils;
 extern crate wasmi;
 #[macro_use]
 extern crate bitflags;
+extern crate futures;
+extern crate riker;
+extern crate riker_default;
+extern crate riker_patterns;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
 
+extern crate config;
 extern crate holochain_agent;
 extern crate holochain_dna;
 extern crate holochain_wasm_utils;
 
 pub mod action;
+pub mod actor;
 pub mod agent;
 pub mod chain;
 pub mod context;

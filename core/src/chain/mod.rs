@@ -221,6 +221,7 @@ pub mod tests {
         pair::Pair,
         HashTable,
     };
+    use std::thread;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -389,22 +390,20 @@ pub mod tests {
 
     #[test]
     /// show that we can push the chain a bit without issues e.g. async
-    /// @TODO this fails upstream
-    /// @see https://github.com/riker-rs/riker-patterns/issues/2
     fn round_trip_stress_test() {
-        // let h = thread::spawn( || {
-        //     let mut chain = test_chain();
-        //     let entry = test_entry();
-        //
-        //     for _ in 1..100 {
-        //         chain.push_entry(&entry).unwrap();
-        //         assert_eq!(
-        //             Some(pair.clone()),
-        //             chain.get_pair(&pair.key()).unwrap(),
-        //         );
-        //     }
-        // });
-        // h.join().unwrap();
+        let h = thread::spawn( || {
+            let mut chain = test_chain();
+            let entry = test_entry();
+
+            for _ in 1..100 {
+                let pair = chain.push_entry(&entry).unwrap();
+                assert_eq!(
+                    Some(pair.clone()),
+                    chain.pair(&pair.key()).unwrap(),
+                );
+            }
+        });
+        h.join().unwrap();
     }
 
     #[test]

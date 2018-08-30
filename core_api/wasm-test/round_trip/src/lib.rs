@@ -32,7 +32,7 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 
 
 //--------------------------------------------------------------------------------------------------
-// Generatable Dispatch function
+//  Exported functions with required signature (=pointer to serialized complex parameter)
 //--------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance

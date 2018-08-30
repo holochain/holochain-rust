@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod entry;
 pub mod header;
 pub mod memory;
@@ -15,8 +16,10 @@ pub type HashString = String;
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Pairs.
 /// Pair is a pair holding an Entry and its Header
-pub trait HashTable {
+pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
+    // @TODO does this make sense at the trait level?
+    // @see https://github.com/holochain/holochain-rust/issues/262
     fn setup(&mut self) -> Result<(), HolochainError>;
     fn teardown(&mut self) -> Result<(), HolochainError>;
 
@@ -24,7 +27,7 @@ pub trait HashTable {
     /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
     fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError>;
     /// lookup a Pair from the HashTable by Pair/Header key
-    fn get(&self, key: &str) -> Result<Option<Pair>, HolochainError>;
+    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError>;
     /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
     fn modify(
         &mut self,
@@ -37,7 +40,7 @@ pub trait HashTable {
 
     // meta
     /// assert a given PairMeta in the HashTable
-    fn assert_meta(&mut self, meta: PairMeta) -> Result<(), HolochainError>;
+    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
     /// lookup a PairMeta from the HashTable by key
     fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair

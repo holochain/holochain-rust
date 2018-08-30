@@ -127,7 +127,7 @@ mod tests {
     (export "memory" (memory 0))
 
     (func
-        (export "get_dispatch")
+        (export "get_test")
             (param $allocation i32)
             (result i32)
 
@@ -138,7 +138,7 @@ mod tests {
     )
 
     (func
-        (export "commit_dispatch")
+        (export "commit_test")
             (param $allocation i32)
             (result i32)
 
@@ -176,7 +176,7 @@ mod tests {
         let commit_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "commit",
+            "commit_test",
             &test_parameters(),
         );
         let commit_runtime = call(
@@ -197,7 +197,7 @@ mod tests {
         let get_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "get",
+            "get_test",
             &test_parameters(),
         );
         let get_runtime = call(

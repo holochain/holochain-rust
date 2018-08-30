@@ -1,6 +1,8 @@
 use action::ActionWrapper;
 use agent::state::AgentState;
+use chain::Chain;
 use context::Context;
+use hash_table::{actor::HashTableActor, memory::MemTable};
 use instance::Observer;
 use nucleus::state::NucleusState;
 use std::{
@@ -8,7 +10,7 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
@@ -19,9 +21,13 @@ pub struct State {
 
 impl State {
     pub fn new() -> Self {
+        // @TODO file table
+        // @see https://github.com/holochain/holochain-rust/pull/246
+        let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
+
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new()),
+            agent: Arc::new(AgentState::new(&chain)),
             history: HashSet::new(),
         }
     }

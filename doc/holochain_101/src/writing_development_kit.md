@@ -39,7 +39,7 @@ Using its WASM interpreter, Holochain exposes its callable Zome API functions by
 
 There is a special additional one called `hc_init_globals` which we will discuss further.
 
-The Development Kit should implement and export one function per each in the above list. The function should be called the same as its native form, but without the prefix. E.g. `hc_update_agent` should be called `update_agent` or `updateAgent`. That function should internally call the native function and handle the additional complexity around that.
+The Development Kit should implement and export one function per each native function from the list. The function should be called the same as its native form, but without the prefix. E.g. `hc_update_agent` should be called `update_agent` or `updateAgent`. That function should internally call the native function and handle the additional complexity around that.
 
 In order to call these "external" functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:
 ```rust
@@ -54,7 +54,7 @@ TODO: define or link to meaningful function signatures
 
 The goal of the Development Kit is to expose a meaningful and easy to use version of the API functions, with meaningful arguments and return values. There is a bit of flexibility around how this is done, as coding languages differ. However, the internal process will be similar in nature. Here it is, generalized:
 1. declare, or use a passed, single page 64 KiB memory stack
-2. join whatever inputs are given into a single serializable struct
+2. join whatever inputs are given into a single serializable structure
 3. serialize the given data structure as an array of bytes
 4. determine byte array length
 5. ensure it is not oversized for the stack
@@ -83,7 +83,7 @@ TODO
 
 ### App Globals
 
-When writing Zome code, it is common to need to reference aspects of the context it runs in, such as the active user/agent, or the DNA hash of the app. Holochain exposes certain values through to the Zome, though it does so natively by way of the `hc_init_globals` function mentioned. Again, to simplify the developer experience, it is valuable to expose these values as constants through to the developer.
+When writing Zome code, it is common to need to reference aspects of the context it runs in, such as the active user/agent, or the DNA hash of the app. Holochain exposes certain values through to the Zome, though it does so natively by way of the `hc_init_globals` function mentioned. Taking care to expose these values as constants will simplify the developer experience.
 
 This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using `hdk::APP_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
 - app_name
@@ -97,4 +97,4 @@ See the [API global variables](/zome/api_globals.html) page for details on what 
 
 ### Publish It and Get In Touch
 
-If you've made it through the process so far, good work. The community is an important part of the success of any project, and Holochain is no different. If you're really proud of your work, get in touch with the team in their [chat server](https://chat.holochain.net/appsup/channels/hc-core), and let them know you're working on it. Even ask for help. This book could be updated to include links to other HDKs. Whether you would like to, or you'd like the team to, the HDK should be published to the primary package manager in use for the language. For example, RubyGems for Ruby or npm for nodejs.
+If you've made it through the process so far, good work. The community is an important part of the success of any project, and Holochain is no different. If you're really proud of your work, get in touch with the development team on the [chat server](https://chat.holochain.net/appsup/channels/hc-core), mention you're working on it, and request help if necessary. This book could be updated to include links to other HDKs. Whether you would like to, or you'd like the team to, the HDK could be published to the primary package manager in use for the language, to be used by developers around the world. For example, RubyGems for Ruby or npm for nodejs.

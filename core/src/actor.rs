@@ -1,10 +1,12 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{pair::Pair, pair_meta::PairMeta, links_entry::Link};
+use hash_table::{HashString, pair::Pair, pair_meta::Meta, links_entry::Link, entry::Entry,
+links_entry::LinkListEntry};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
@@ -28,44 +30,52 @@ pub enum Protocol {
     TeardownResult(Result<(), HolochainError>),
 
     /// HashTable::modify()
-    Modify {
-        keys: Keys,
-        old_pair: Pair,
-        new_pair: Pair,
-    },
-    ModifyResult(Result<(), HolochainError>),
+//    Modify {
+//        keys: Keys,
+//        old_pair: Pair,
+//        new_pair: Pair,
+//    },
+//    ModifyResult(Result<(), HolochainError>),
+//
+//    /// HashTable::retract()
+//    Retract {
+//        keys: Keys,
+//        pair: Pair,
+//    },
+//    RetractResult(Result<(), HolochainError>),
 
-    /// HashTable::retract()
-    Retract {
-        keys: Keys,
-        pair: Pair,
-    },
-    RetractResult(Result<(), HolochainError>),
-
-    AddLink {
-        link: Link,
-    },
+    AddLink(Link),
     AddLinkResult(Result<(), HolochainError>),
 
+    Links(GetLinksArgs),
+    LinksResult(Result<Option<LinkListEntry>, HolochainError>),
+
     /// HashTable::assert_meta()
-    AssertMeta(PairMeta),
+    AssertMeta(Meta),
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::get_meta()
     Meta(String),
-    MetaResult(Result<Option<PairMeta>, HolochainError>),
+    MetaResult(Result<Option<Meta>, HolochainError>),
+
+    MetaFor{entry: HashString, attribute_name: String},
+    MetaForResult(Result<Option<Meta>, HolochainError>),
 
     /// HashTable::get_pair_meta()
-    PairMeta(Pair),
-    PairMetaResult(Result<Vec<PairMeta>, HolochainError>),
+//    PairMeta(Pair),
+//    PairMetaResult(Result<Vec<Meta>, HolochainError>),
+
+    EntryMeta(Entry),
+    EntryMetaResult(Result<Vec<Meta>, HolochainError>),
 
     /// HashTable::pair()
-    Pair(String),
-    PairResult(Result<Option<Pair>, HolochainError>),
+    Entry(String),
+    EntryResult(Result<Option<Entry>, HolochainError>),
+
 
     /// HashTable::commit()
-    Commit(Pair),
-    CommitResult(Result<(), HolochainError>),
+    Put(Entry),
+    PutResult(Result<(), HolochainError>),
 }
 
 /// this is the global state that manages every actor

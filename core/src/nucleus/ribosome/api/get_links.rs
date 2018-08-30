@@ -10,11 +10,11 @@ use hash_table::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksArgs {
-    entry_hash: HashString,
-    tag: String,
+    pub entry_hash: HashString,
+    pub tag: String,
 }
 impl GetLinksArgs {
-    pub fn key(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
+    pub fn to_attribute_name(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
 }
 
 /// ZomeApiFunction::GetLinks function code

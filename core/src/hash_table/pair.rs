@@ -1,6 +1,8 @@
 use chain::Chain;
-use hash_table::{entry::Entry, header::Header};
+use hash_table::{entry::Entry, header::Header, HashTable};
 use serde_json;
+use riker::actors::*;
+use actor::Protocol;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
@@ -29,10 +31,10 @@ impl Pair {
     ///
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn new(chain: &Chain, entry: &Entry) -> Pair {
-        let header = Header::new(chain, entry);
+    pub fn new_from_chain(chain: &Chain, entry: &Entry) -> Pair {
+        let header = Header::new_from_chain(chain, entry);
 
-        let p = Pair {
+        let new_pair = Pair {
             header: header,
             entry: entry.clone(),
         };
@@ -40,9 +42,21 @@ impl Pair {
         // we panic as no code path should attempt to create invalid pairs
         // creating a Pair is an internal process of chain.push() and is deterministic based on
         // an immutable Entry (that itself cannot be invalid), so this should never happen.
-        assert!(p.validate(), "attempted to create an invalid pair");
+        assert!(new_pair.validate(), "attempted to create an invalid pair");
 
-        p
+        new_pair
+    }
+
+    pub fn new_from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Pair> {
+        let entry = table.entry(&header.entry_hash()).expect("should not attempt to create invalid pair");
+        if entry.is_none() {
+            return None;
+        }
+
+        Some(Pair {
+            header: header.clone(),
+            entry: entry.expect("should not attempt to create invalid pair"),
+        })
     }
 
     /// header getter
@@ -107,7 +121,7 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        Pair::new(&test_chain(), &test_entry())
+        Pair::new_from_chain(&test_chain(), &test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -117,7 +131,7 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        Pair::new(&test_chain(), &test_entry_b())
+        Pair::new_from_chain(&test_chain(), &test_entry_b())
     }
 
     #[test]
@@ -126,12 +140,12 @@ pub mod tests {
         let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
-        let h1 = Header::new(&chain, &e1);
+        let h1 = Header::new_from_chain(&chain, &e1);
 
         assert_eq!(h1.entry_hash(), e1.hash());
         assert_eq!(h1.link(), None);
 
-        let p1 = Pair::new(&chain, &e1.clone());
+        let p1 = Pair::new_from_chain(&chain, &e1.clone());
         assert_eq!(&e1, p1.entry());
         assert_eq!(&h1, p1.header());
     }
@@ -143,8 +157,8 @@ pub mod tests {
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
-        let h = Header::new(&chain, &e);
-        let p = Pair::new(&chain, &e);
+        let h = Header::new_from_chain(&chain, &e);
+        let p = Pair::new_from_chain(&chain, &e);
 
         assert_eq!(&h, p.header());
     }
@@ -156,7 +170,7 @@ pub mod tests {
         let t = "foo";
         let e = Entry::new(t, "");
         let p = chain
-            .push_entry(&e)
+            .commit_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(&e, p.entry());
@@ -169,7 +183,7 @@ pub mod tests {
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");
-        let p1 = Pair::new(&chain, &e1);
+        let p1 = Pair::new_from_chain(&chain, &e1);
 
         assert!(p1.validate());
     }

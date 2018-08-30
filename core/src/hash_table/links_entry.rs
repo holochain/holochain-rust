@@ -13,9 +13,9 @@ use std::str::FromStr;
 //
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Link {
-  pub base: HashString,
-  pub target: HashString,
-  pub tag: HashString,
+  base: HashString,
+  target: HashString,
+  tag: HashString,
 }
 
 impl Link {
@@ -28,9 +28,19 @@ impl Link {
     }
   }
 
+  // Key for HashTable
   pub fn key(&self) -> String {
     format!("link:{}:{}:{}", self.base, self.target, self.tag)
   }
+
+  pub fn to_attribute_name(&self) -> String {
+    format!("link:{}:{}", self.base, self.tag)
+  }
+
+  // Getters
+  pub fn base(&self) -> &str { &self.base }
+  pub fn target(&self) -> &str  { &self.base }
+  pub fn tag(&self) -> &str  { &self.base }
 }
 
 //-------------------------------------------------------------------------------------------------

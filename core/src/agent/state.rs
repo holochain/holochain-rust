@@ -4,7 +4,7 @@ use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
 use hash_table::{
-    HashString, HashTable, pair_meta::PairMeta,
+    HashString, HashTable, pair_meta::Meta,
     entry::Entry, memory::MemTable, pair::Pair,
     links_entry::LinkEntry, links_entry::LinkActionKind, links_entry::LinkListEntry,
     sys_entry::ToEntry,
@@ -104,8 +104,8 @@ impl ActionResponse {
 /// Do the LinkAppEntries Action against an agent state:
 /// 1. Validate Link
 /// 2. Commit LinkEntry
-/// 3. TODO do something on the DHT?
-fn reduce_link_app_entries(
+/// 3. Add Link metadata in HashTable
+fn reduce_lap(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -120,11 +120,13 @@ fn reduce_link_app_entries(
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
-    let response = Err(HolochainError::LoggingError); // state.chain().push_entry(&link_entry.to_entry());
+    let mut response =  state.chain.commit_entry(&link_entry.to_entry());
 
-    // Add LinkListEntry to HashTable
-    // FIXME: Create&Commit or Update in HashTable a LinkListEntry with key = base-entry-hash + tag
-    // FIXME: Create/Update metadata for base entry
+    // Add Link to HashTable (adds to LinkListEntry PairMeta)
+    let res = state.chain.table().add_link(link);
+    if res.is_err() {
+        response = Err(res.err().unwrap());
+    }
 
     // Insert reponse in state
     state.actions.insert(
@@ -135,7 +137,7 @@ fn reduce_link_app_entries(
 
 
 /// Do the GetLinks Action against an agent state
-fn reduce_get_links(
+fn reduce_gl(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -145,35 +147,31 @@ fn reduce_get_links(
     let action = action_wrapper.action();
     let links_request = unwrap_to!(action => Action::GetLinks);
 
-    // Look for entry's metadata
-    let result : Result<Option<PairMeta>, HolochainError> = Err(HolochainError::LoggingError);
-    // let result = state.chain().table().get_meta(links_request.key());
-    if result.is_err() || result.clone().unwrap().is_none() {
+//    // Look for entry's link metadata
+    let res = state.chain.table().links(links_request);
+    if res.is_err() {
         state
-            .actions
-            .insert(action_wrapper.clone(),
-                    ActionResponse::GetLinks(Err(HolochainError::ErrorGeneric("base entry not found".to_string()))));
+        .actions
+        .insert(
+            action_wrapper.clone(),
+        ActionResponse::GetLinks(Err(res.err().unwrap())));
         return;
     }
-    let result = result.unwrap().unwrap();
-
-    // Get LinkListEntry in HashTable
-    let links_pair: Result<Option<Pair>, HolochainError> = Err(HolochainError::LoggingError);
-    // let links_pair = state.chain().table().get(&result.value());
-    if links_pair.is_err() || links_pair.clone().unwrap().is_none() {
+    let maybe_lle = res.unwrap();
+    if maybe_lle.is_none() {
         state
             .actions
-            .insert(action_wrapper.clone(),
-                    ActionResponse::GetLinks(Err(HolochainError::ErrorGeneric("links entry not found".to_string()))));
+            .insert(
+                action_wrapper.clone(),
+                ActionResponse::GetLinks(Ok(Vec::new())));
         return;
-        }
-    let links_pair = links_pair.unwrap().unwrap();
+    }
+    let links_entry = maybe_lle.unwrap();
 
     // Extract list of target hashes
-    let links_entry : LinkListEntry = serde_json::from_str(&links_pair.entry().content()).expect("entry is not a valid LinkListEntry");
     let mut link_hashes = Vec::new();
     for link in links_entry.links {
-        link_hashes.push(link.target);
+        link_hashes.push(link.target().to_string());
     }
 
     // Insert reponse in state
@@ -202,7 +200,7 @@ fn reduce_commit_entry(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let response = state.chain.push_entry(&entry);
+    let response = state.chain.commit_entry(&entry);
     state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::CommitEntry(response),
@@ -241,8 +239,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::CommitEntry(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
-        Action::GetLinks(_) => Some(reduce_get_links),
-        Action::LinkAppEntries(_) => Some(reduce_link_app_entries),
+        Action::GetLinks(_) => Some(reduce_gl),
+        Action::LinkAppEntries(_) => Some(reduce_lap),
         _ => None,
     }
 }

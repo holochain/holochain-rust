@@ -14,6 +14,7 @@ pub enum HolochainError {
     ZomeNotFound(String),
     CapabilityNotFound(String),
     ZomeFunctionNotFound(String),
+    InvalidOperationOnSysEntry,
 }
 
 impl HolochainError {
@@ -51,6 +52,7 @@ impl Error for HolochainError {
             ZomeNotFound(err_msg) => &err_msg,
             CapabilityNotFound(err_msg) => &err_msg,
             ZomeFunctionNotFound(err_msg) => &err_msg,
+            InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
         }
     }
 }

@@ -25,7 +25,7 @@ fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
 
 
 //-------------------------------------------------------------------------------------------------
-//  Generatable Dispatch function
+//  Exported functions with required signature (=pointer to serialized complex parameter)
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance

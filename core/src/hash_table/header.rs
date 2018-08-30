@@ -1,6 +1,6 @@
-use chain::Chain;
+use chain::{Chain, SourceChain};
 use hash;
-use hash_table::{entry::Entry, HashString, HashTable};
+use hash_table::{entry::Entry, HashString};
 use multihash::Hash;
 
 /// Header of a source chain "Item"
@@ -42,19 +42,18 @@ impl Header {
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn new<T: HashTable>(chain: &Chain<T>, entry: &Entry) -> Header {
+    pub fn new(chain: &Chain, entry: &Entry) -> Header {
         Header {
             entry_type: entry.entry_type().clone(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
-            link: chain.top().as_ref().map(|p| p.header().hash()),
+            link: chain.top_pair().as_ref().map(|p| p.header().hash()),
             entry_hash: entry.hash().to_string(),
             link_same_type: chain
-                .top_type(&entry.entry_type())
+                .top_pair_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
-                .expect("top type should never error")
                 .map(|p| p.header().hash()),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
@@ -120,7 +119,7 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::tests::test_chain;
+    use chain::{tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
 
     /// returns a dummy header for use in tests

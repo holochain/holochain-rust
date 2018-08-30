@@ -97,7 +97,7 @@ pub fn invoke_commit_entry(
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
@@ -110,7 +110,7 @@ mod tests {
     use serde_json;
 
     /// dummy commit args from standard test entry
-    pub fn test_args_bytes() -> Vec<u8> {
+    pub fn test_commit_args_bytes() -> Vec<u8> {
         let e = test_entry();
         let args = CommitArgs {
             entry_type_name: e.entry_type().into(),
@@ -126,7 +126,7 @@ mod tests {
     fn test_commit_round_trip() {
         let (runtime, _) = test_zome_api_function_runtime(
             ZomeAPIFunction::CommitEntry.as_str(),
-            test_args_bytes(),
+            test_commit_args_bytes(),
         );
 
         assert_eq!(

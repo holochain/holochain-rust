@@ -166,7 +166,7 @@ pub fn call(
     let call_result =
         call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
 
-    // translate the call result to a lifecycle result
+    // translate the call result to a callback result
     match call_result {
         // empty string OK = Success
         Ok(ref s) if s.is_empty() => CallbackResult::Pass,

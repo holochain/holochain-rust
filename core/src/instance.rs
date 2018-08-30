@@ -246,7 +246,7 @@ pub mod tests {
     extern crate test_utils;
     use super::Instance;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::state::tests::test_action_response_get;
+    use agent::state::ActionResponse;
     use context::Context;
     use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
@@ -396,6 +396,14 @@ pub mod tests {
         instance
     }
 
+    /// create a test instance with a blank DNA
+    pub fn test_instance_blank() -> Instance {
+        let mut dna = Dna::new();
+        dna.zomes.insert("".to_string(), Zome::default());
+        dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
+        test_instance(dna)
+    }
+
     #[test]
     /// This tests calling `process_action`
     /// with an action that dispatches no new ones.
@@ -439,14 +447,7 @@ pub mod tests {
             .get(&aw)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &test_action_response_get());
-    }
-
-    /// create a test instance with a blank DNA
-    pub fn test_instance_blank() -> Instance {
-        let mut dna = Dna::new();
-        dna.zomes.insert("".to_string(), Zome::default());
-        test_instance(dna)
+        assert_eq!(response, &ActionResponse::Get(None));
     }
 
     #[test]
@@ -509,7 +510,7 @@ pub mod tests {
         // Wait for Init to finish
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance.state().history.len() < 2 {
+        while instance.state().history.len() < 3 {
             // @TODO don't use history length in tests
             // @see https://github.com/holochain/holochain-rust/issues/195
             println!("Waiting... {}", instance.state().history.len());

@@ -391,16 +391,13 @@ pub mod tests {
     #[test]
     /// show that we can push the chain a bit without issues e.g. async
     fn round_trip_stress_test() {
-        let h = thread::spawn( || {
+        let h = thread::spawn(|| {
             let mut chain = test_chain();
             let entry = test_entry();
 
             for _ in 1..100 {
                 let pair = chain.push_entry(&entry).unwrap();
-                assert_eq!(
-                    Some(pair.clone()),
-                    chain.pair(&pair.key()).unwrap(),
-                );
+                assert_eq!(Some(pair.clone()), chain.pair(&pair.key()).unwrap(),);
             }
         });
         h.join().unwrap();

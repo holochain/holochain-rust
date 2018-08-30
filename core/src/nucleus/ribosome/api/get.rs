@@ -211,7 +211,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmSzPqpDCo5fEJpKo9qyPK8G8hByvkBG2qx8VaXr9MHhDc\",\"entry_hash\":\"");
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmT1NRaxbwMqpxXU1Adt1pVqtgnDXYxH1qH5rRbWPGxrkW\",\"entry_hash\":\"");
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 

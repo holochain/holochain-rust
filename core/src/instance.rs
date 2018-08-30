@@ -399,7 +399,7 @@ pub mod tests {
     /// create a test instance with a blank DNA
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
-        dna.zomes.push(Zome::default());
+        dna.zomes.insert("".to_string(), Zome::default());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
         test_instance(dna)
     }
@@ -448,13 +448,6 @@ pub mod tests {
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(response, &ActionResponse::Get(None));
-    }
-
-    /// create a test instance with a blank DNA
-    pub fn test_instance_blank() -> Instance {
-        let mut dna = Dna::new();
-        dna.zomes.insert("".to_string(), Zome::default());
-        test_instance(dna)
     }
 
     #[test]
@@ -517,7 +510,7 @@ pub mod tests {
         // Wait for Init to finish
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance.state().history.len() < 2 {
+        while instance.state().history.len() < 3 {
             // @TODO don't use history length in tests
             // @see https://github.com/holochain/holochain-rust/issues/195
             println!("Waiting... {}", instance.state().history.len());

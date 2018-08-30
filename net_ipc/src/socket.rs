@@ -79,12 +79,21 @@ impl IpcSocket for ZmqIpcSocket {
 /// This is a concrete implementation of the IpcSocket trait for use in testing
 pub struct MockIpcSocket {
     resp_queue: Vec<Vec<Vec<u8>>>,
+    sent_queue: Vec<Vec<Vec<u8>>>,
 }
 
 #[cfg(test)]
 impl MockIpcSocket {
     pub fn inject_response(&mut self, data: Vec<Vec<u8>>) {
         self.resp_queue.push(data);
+    }
+
+    pub fn sent_count(&self) -> usize {
+        self.sent_queue.len()
+    }
+
+    pub fn next_sent(&mut self) -> Vec<Vec<u8>> {
+        self.sent_queue.remove(0)
     }
 }
 
@@ -97,6 +106,7 @@ impl IpcSocket for MockIpcSocket {
     fn new() -> Result<Box<Self>> {
         Ok(Box::new(Self {
             resp_queue: Vec::new(),
+            sent_queue: Vec::new(),
         }))
     }
 
@@ -116,7 +126,12 @@ impl IpcSocket for MockIpcSocket {
         Ok(self.resp_queue.remove(0))
     }
 
-    fn send(&mut self, _data: &[&[u8]]) -> Result<()> {
+    fn send(&mut self, data: &[&[u8]]) -> Result<()> {
+        let mut tmp: Vec<Vec<u8>> = Vec::new();
+        for item in data {
+            tmp.push(item.to_vec());
+        }
+        self.sent_queue.push(tmp);
         Ok(())
     }
 }

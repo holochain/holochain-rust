@@ -51,10 +51,7 @@ impl TestFrame {
         let mut cli = ZmqIpcClient::new().unwrap();
         cli.connect("ipc://echo-server.sock").unwrap();
 
-        TestFrame {
-            srv,
-            cli,
-        }
+        TestFrame { srv, cli }
     }
 
     /// the ipc client has multiple methods for processing requests
@@ -63,19 +60,23 @@ impl TestFrame {
     /// this executor makes sure those paths are equivalent
     /// and translates all data (both successses and failures) to utf8 strings
     fn execute(&mut self, data: &[u8]) -> std::result::Result<String, String> {
-        let cb_result: Arc<Mutex<Option<Result<Vec<u8>>>>> =
-            Arc::new(Mutex::new(None));
+        let cb_result: Arc<Mutex<Option<Result<Vec<u8>>>>> = Arc::new(Mutex::new(None));
 
         let cli_ref = &mut self.cli;
 
         let cb_result_clone = cb_result.clone();
 
         // make the actual `call`
-        cli_ref.call(data, Some(Box::new(move |r| {
-            // store the cb result in our Arc variable
-            *cb_result_clone.lock().unwrap() = Some(r);
-            Ok(())
-        }))).unwrap();
+        cli_ref
+            .call(
+                data,
+                Some(Box::new(move |r| {
+                    // store the cb result in our Arc variable
+                    *cb_result_clone.lock().unwrap() = Some(r);
+                    Ok(())
+                })),
+            )
+            .unwrap();
 
         // loop until we get a result
         let msg = loop {
@@ -98,22 +99,18 @@ impl TestFrame {
                             } else if s == "srv-error" {
                                 println!("got srv-error");
                                 s.insert_str(0, "echo: ");
-                                cli_ref.respond(&_m.0, Err(
-                                    IpcError::GenericError {
-                                        error: s
-                                    }.into()
-                                )).unwrap();
+                                cli_ref
+                                    .respond(&_m.0, Err(IpcError::GenericError { error: s }.into()))
+                                    .unwrap();
                             } else {
                                 panic!("unexpected server call: {:?}", s);
                             }
                             continue;
                         }
-                        _ => {
-                            panic!("not handled")
-                        }
+                        _ => panic!("not handled"),
                     },
-                    None => panic!("timeout wating for data")
-                }
+                    None => panic!("timeout wating for data"),
+                },
             }
         };
 
@@ -146,8 +143,10 @@ impl TestFrame {
         }
 
         // if they do not match, we need to panic!
-        panic!("callback and event did not match {:?} / {:?}",
-               cb_result, msg);
+        panic!(
+            "callback and event did not match {:?} / {:?}",
+            cb_result, msg
+        );
     }
 
     /// cleanup both the nodejs echo-server and the ipc client connection
@@ -176,13 +175,22 @@ fn it_can_send_call_and_call_resp() {
     assert_eq!(Ok("echo: hello".to_string()), frame.execute(b"hello"));
 
     println!("--- making `error` call ---");
-    assert_eq!(Err("IpcError: Error: echo: error".to_string()), frame.execute(b"error"));
+    assert_eq!(
+        Err("IpcError: Error: echo: error".to_string()),
+        frame.execute(b"error")
+    );
 
     println!("--- making `call-hello` call ---");
-    assert_eq!(Ok("server successfully received `echo: srv-hello`".to_string()), frame.execute(b"call-hello"));
+    assert_eq!(
+        Ok("srv-got: `echo: srv-hello`".to_string()),
+        frame.execute(b"call-hello")
+    );
 
     println!("--- making `call-error` call ---");
-    assert_eq!(Ok("server successfully got error `Error: IpcError: echo: srv-error`".to_string()), frame.execute(b"call-error"));
+    assert_eq!(
+        Ok("srv-got: `Error: IpcError: echo: srv-error`".to_string()),
+        frame.execute(b"call-error")
+    );
 
     println!("### TEST SUITE FINISHED - CLEANUP ###");
 

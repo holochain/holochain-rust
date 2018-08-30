@@ -83,3 +83,62 @@ pub enum Message {
     CallOk(MsgCallOkRecv),
     CallFail(MsgCallFailRecv),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rmp_serde;
+
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
+    pub struct MsgPingRecv(pub f64);
+
+    #[test]
+    fn it_msg_ping_round_trip() {
+        let snd = MsgPingSend(42.0);
+        let wire = rmp_serde::to_vec(&snd).unwrap();
+        let res: MsgPingRecv = rmp_serde::from_slice(&wire).unwrap();
+        assert!(42.0 == res.0);
+    }
+
+    #[derive(Serialize, Debug, Clone, PartialEq)]
+    pub struct MsgPongSend(pub f64, pub f64);
+
+    #[test]
+    fn it_msg_pong_round_trip() {
+        let snd = MsgPongSend(42.0, 42.0);
+        let wire = rmp_serde::to_vec(&snd).unwrap();
+        let res: MsgPongRecv = rmp_serde::from_slice(&wire).unwrap();
+        assert!(42.0 == res.0);
+        assert!(42.0 == res.1);
+    }
+
+    #[test]
+    fn it_msg_call_round_trip() {
+        let data = vec![42];
+        let snd = MsgCallSend(&data, &data);
+        let wire = rmp_serde::to_vec(&snd).unwrap();
+        let res: MsgCallRecv = rmp_serde::from_slice(&wire).unwrap();
+        assert_eq!(vec![42], res.0);
+        assert_eq!(vec![42], res.1);
+    }
+
+    #[test]
+    fn it_msg_call_ok_round_trip() {
+        let data = vec![42];
+        let snd = MsgCallOkSend(&data, &data);
+        let wire = rmp_serde::to_vec(&snd).unwrap();
+        let res: MsgCallOkRecv = rmp_serde::from_slice(&wire).unwrap();
+        assert_eq!(vec![42], res.0);
+        assert_eq!(vec![42], res.1);
+    }
+
+    #[test]
+    fn it_msg_call_fail_round_trip() {
+        let data = vec![42];
+        let snd = MsgCallFailSend(&data, &data);
+        let wire = rmp_serde::to_vec(&snd).unwrap();
+        let res: MsgCallFailRecv = rmp_serde::from_slice(&wire).unwrap();
+        assert_eq!(vec![42], res.0);
+        assert_eq!(vec![42], res.1);
+    }
+}

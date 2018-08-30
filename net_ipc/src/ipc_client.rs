@@ -86,8 +86,8 @@ impl<S: IpcSocket> IpcClient<S> {
 
     /// Send a heartbeat message to the ipc server.
     pub fn ping(&mut self) -> Result<()> {
-        let ping = get_millis();
-        self.priv_send(MSG_PING, &ping)?;
+        let snd = MsgPingSend(get_millis());
+        self.priv_send(MSG_PING, &snd)?;
         Ok(())
     }
 
@@ -197,15 +197,40 @@ mod tests {
     use super::*;
     use socket::MockIpcSocket;
 
+    #[derive(Serialize, Debug, Clone, PartialEq)]
+    pub struct MsgPongSend(pub f64, pub f64);
+
     impl IpcClient<MockIpcSocket> {
         fn priv_test_inject(&mut self, data: Vec<Vec<u8>>) {
             self.socket.inject_response(data);
+        }
+
+        fn priv_test_sent_count(&mut self) -> usize {
+            self.socket.sent_count()
+        }
+
+        fn priv_test_next_sent(&mut self) -> Vec<Vec<u8>> {
+            self.socket.next_sent()
         }
     }
 
     #[test]
     fn it_can_construct_and_destroy_sockets() {
         let ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+        ipc.close().unwrap();
+    }
+
+    #[test]
+    fn it_can_connect() {
+        let mut ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+
+        let pong = MsgPongSend(get_millis() - 4.0, get_millis() - 2.0);
+        let mut data = rmp_serde::to_vec(&pong).unwrap();
+        data.insert(0, MSG_PONG);
+
+        ipc.priv_test_inject(vec![vec![], vec![], data]);
+
+        ipc.connect("test-garbage").unwrap();
         ipc.close().unwrap();
     }
 
@@ -223,8 +248,75 @@ mod tests {
             _ => panic!("bad message type"),
         };
 
-        assert_eq!(0x42, result.1[0]);
+        assert_eq!(vec![0x42], result.1);
 
+        ipc.close().unwrap();
+    }
+
+    #[test]
+    fn it_can_receive_call_oks() {
+        let mut ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+        let data = MsgCallOkSend(b"", &[0x42]);
+        let mut data = rmp_serde::to_vec(&data).unwrap();
+        data.insert(0, MSG_CALL_OK);
+        ipc.priv_test_inject(vec![vec![], vec![], data]);
+        let result = ipc.process(0);
+        let result = result.unwrap().unwrap();
+        let result = match result {
+            Message::CallOk(s) => s,
+            _ => panic!("bad message type"),
+        };
+
+        assert_eq!(vec![0x42], result.1);
+
+        ipc.close().unwrap();
+    }
+
+    #[test]
+    fn it_can_receive_call_fails() {
+        let mut ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+        let data = MsgCallFailSend(b"", &[0x42]);
+        let mut data = rmp_serde::to_vec(&data).unwrap();
+        data.insert(0, MSG_CALL_FAIL);
+        ipc.priv_test_inject(vec![vec![], vec![], data]);
+        let result = ipc.process(0);
+        let result = result.expect_err("should have been an Err result");
+        let result = format!("{}", result);
+        assert_eq!("IpcError: B".to_string(), result);
+
+        ipc.close().unwrap();
+    }
+
+    #[test]
+    fn it_can_publish_ok_responses() {
+        let mut ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+        ipc.respond(&[0x42], Ok(&[0x99])).unwrap();
+        assert_eq!(1, ipc.priv_test_sent_count());
+        let mut sent = ipc.priv_test_next_sent();
+        assert_eq!(3, sent.len());
+        let sent = sent.remove(2);
+        let sent: MsgCallOkRecv = rmp_serde::from_slice(&sent[1..]).unwrap();
+        assert_eq!(vec![0x42], sent.0);
+        assert_eq!(vec![0x99], sent.1);
+        ipc.close().unwrap();
+    }
+
+    #[test]
+    fn it_can_publish_fail_responses() {
+        let mut ipc: IpcClient<MockIpcSocket> = IpcClient::new().unwrap();
+        ipc.respond(
+            &[0x42],
+            Err(IpcError::GenericError {
+                error: "test".to_string(),
+            }.into()),
+        ).unwrap();
+        assert_eq!(1, ipc.priv_test_sent_count());
+        let mut sent = ipc.priv_test_next_sent();
+        assert_eq!(3, sent.len());
+        let sent = sent.remove(2);
+        let sent: MsgCallFailRecv = rmp_serde::from_slice(&sent[1..]).unwrap();
+        assert_eq!(vec![0x42], sent.0);
+        assert_eq!(b"IpcError: test".to_vec(), sent.1);
         ipc.close().unwrap();
     }
 }

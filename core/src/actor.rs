@@ -1,4 +1,3 @@
-use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash_table::{HashString, pair::Pair, pair_meta::Meta, links_entry::Link, entry::Entry,

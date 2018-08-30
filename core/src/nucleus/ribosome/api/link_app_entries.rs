@@ -2,12 +2,14 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use nucleus::ribosome::{
     api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
-    callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
+    // callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
 };
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::{HashString, entry::Entry, sys_entry::ToEntry, links_entry::*};
+use hash_table::{
+    // HashString, entry::Entry, sys_entry::ToEntry,
+                 links_entry::*};
 
 /// Struct for input data received when Commit API function is invoked
 //#[derive(Deserialize, Default, Debug, Serialize)]
@@ -96,12 +98,9 @@ mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_args_bytes() -> Vec<u8> {
-        let e = test_entry();
-        let args = LinkEntriesArgs {
-            base: "0x42".to_string(),
-            target: "0x13".to_string(),
-            tag: "toto".to_string(),
-        };
+        // let e = test_entry();
+        let args = Link::new("0x42","0x13","toto");
+
         serde_json::to_string(&args)
             .expect("args should serialize")
             .into_bytes()

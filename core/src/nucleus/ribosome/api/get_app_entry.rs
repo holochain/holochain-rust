@@ -90,9 +90,11 @@ mod tests {
     use nucleus::{
         ribosome::api::{
             call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name,
-test_zome_api_function_runtime, ZomeApiFunction},
+            commit_app_entry::tests::test_commit_args_bytes,
+            tests::{
+                    test_capability, test_parameters, test_zome_name,
+            // test_zome_api_function_runtime,
+            },
         },
         FunctionCall,
     };

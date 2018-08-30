@@ -1,6 +1,9 @@
 pub mod actor;
 
-use actor::{AskSelf, Protocol};
+use actor::{
+    // AskSelf,
+    Protocol
+};
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable, sys_entry::ToEntry, header::Header};
@@ -50,8 +53,8 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone, Debug)]
 pub struct Chain {
-    actor: ActorRef<Protocol>,
-    table: ActorRef<Protocol>,
+    chain_actor: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
 }
 
 impl PartialEq for Chain {
@@ -82,15 +85,15 @@ impl IntoIterator for Chain {
 impl Chain {
     pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
-            actor: ChainActor::new_ref(),
-            table: table.clone(),
+            chain_actor: ChainActor::new_ref(),
+            table_actor: table.clone(),
         }
     }
 
     /// table getter
     /// returns a reference to the underlying HashTable
     pub fn table(&self) -> ActorRef<Protocol> {
-        self.table.clone()
+        self.table_actor.clone()
     }
 
     /// returns true if all pairs in the chain pass validation
@@ -123,7 +126,7 @@ impl Chain {
         let mut chain = Chain::new(table);
 
         for p in as_seq {
-            chain.commit(&p).expect("pair should be valid");
+            chain.commit_pair(&p).expect("pair should be valid");
         }
         chain
     }
@@ -148,7 +151,7 @@ pub trait SourceChain {
     fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
 
     /// pair-oriented version of push_entry()
-    fn commit(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
+    fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
 
     // /// get a Pair by Pair/Header key from the HashTable if it exists
 //    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
@@ -156,11 +159,11 @@ pub trait SourceChain {
 
 impl SourceChain for Chain {
     fn top_pair(&self) -> Option<Pair> {
-        self.actor.top_pair()
+        self.chain_actor.top_pair()
     }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        self.actor.set_top_pair(&pair)
+        self.chain_actor.set_top_pair(&pair)
     }
 
     fn top_pair_of_type(&self, t: &str) -> Option<Pair> {
@@ -171,7 +174,7 @@ impl SourceChain for Chain {
     /// 1. `validation` of the new entry using the ribosome and validation WASM code
     /// 2. `pushing` the new entry onto the source chain, if vaild
     /// 3. `putting` the entry into the (distributed) hash table, if defined as public
-    fn commit(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+    fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
 
         // 1. validation
         if !(pair.validate()) {
@@ -192,8 +195,8 @@ impl SourceChain for Chain {
         }
 
         // 3. putting
-        self.table.put(&pair.clone().header().to_entry())?;
-        self.table.put(&pair.clone().entry())?;
+        self.table_actor.put(&pair.clone().header().to_entry())?;
+        self.table_actor.put(&pair.clone().entry())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
@@ -207,7 +210,7 @@ impl SourceChain for Chain {
 
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new_from_chain(self, entry);
-        self.commit(&pair)
+        self.commit_pair(&pair)
     }
 
 //    fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
@@ -244,15 +247,15 @@ pub mod tests {
         Chain::new(test_table_actor())
     }
 
-    #[test]
     /// smoke test for new chains
-    fn new() {
+    #[test]
+    fn can_new() {
         test_chain();
     }
 
-    #[test]
     /// test chain equality
-    fn eq() {
+    #[test]
+    fn can_eq() {
         let mut chain1 = test_chain();
         let mut chain2 = test_chain();
         let mut chain3 = test_chain();
@@ -277,9 +280,9 @@ pub mod tests {
         assert_ne!(chain2, chain3);
     }
 
-    #[test]
     /// tests for chain.top_pair()
-    fn top_pair() {
+    #[test]
+    fn can_top_pair() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_pair());
@@ -298,9 +301,9 @@ pub mod tests {
         assert_eq!(Some(pair_b), chain.top_pair());
     }
 
-    #[test]
     /// tests that the chain state is consistent across clones
-    fn clone_safe() {
+    #[test]
+    fn can_clone_safe() {
         let c1 = test_chain();
         let mut c2 = c1.clone();
         let e = test_entry();
@@ -314,9 +317,9 @@ pub mod tests {
         assert_eq!(c1.top_pair(), c2.top_pair());
     }
 
-    #[test]
     /// tests for chain.table()
-    fn table_push() {
+    #[test]
+    fn can_table_push() {
         let table_actor = test_table_actor();
         let mut chain = Chain::new(table_actor.clone());
 
@@ -325,21 +328,21 @@ pub mod tests {
             .commit_entry(&test_entry())
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let table_pair = table_actor
-            .header(&pair.key())
+        let table_entry = table_actor
+            .entry(&pair.key())
             .expect("getting an entry from a table in a chain shouldn't fail");
         let chain_pair = chain
-            .pair(&pair.key())
+            .entry(&pair.key())
             .expect("getting an entry from a chain shouldn't fail");
 
-        assert_eq!(Some(&pair), table_pair.as_ref());
+        assert_eq!(Some(pair.entry()), table_entry.as_ref());
         assert_eq!(Some(&pair), chain_pair.as_ref());
-        assert_eq!(table_pair, chain_pair);
+        assert_eq!(&table_entry.unwrap(), chain_pair.unwrap().entry());
     }
 
-    #[test]
     /// tests for chain.push()
-    fn push() {
+    #[test]
+    fn can_push() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_pair());
@@ -365,9 +368,9 @@ pub mod tests {
         assert_eq!(e2.hash(), p2.header().entry_hash());
     }
 
-    #[test]
     /// test chain.validate()
-    fn validate() {
+    #[test]
+    fn can_validate() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -386,8 +389,8 @@ pub mod tests {
         assert!(chain.validate());
     }
 
-    #[test]
     /// test chain.push() and chain.get() together
+    #[test]
     fn round_trip() {
         let mut chain = test_chain();
         let entry = test_entry();
@@ -398,14 +401,14 @@ pub mod tests {
         assert_eq!(
             Some(&pair),
             chain
-                .pair(&pair.key())
+                .entry(&pair.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
     }
 
-    #[test]
     /// show that we can push the chain a bit without issues e.g. async
+    #[test]
     fn round_trip_stress_test() {
         let h = thread::spawn(|| {
             let mut chain = test_chain();
@@ -413,7 +416,7 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.commit_entry(&entry).unwrap();
-                assert_eq!(Some(pair.clone()), chain.pair(&pair.key()).unwrap(),);
+                assert_eq!(Some(pair.clone()), chain.entry(&pair.key()).unwrap(),);
             }
         });
         h.join().unwrap();
@@ -421,7 +424,7 @@ pub mod tests {
 
     #[test]
     /// test chain.iter()
-    fn iter() {
+    fn chain_iter() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -439,7 +442,7 @@ pub mod tests {
 
     #[test]
     /// test chain.iter() functional interface
-    fn iter_functional() {
+    fn chain_iter_functional() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -466,7 +469,7 @@ pub mod tests {
 
     #[test]
     /// test chain.get()
-    fn get() {
+    fn chain_get_entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -486,27 +489,27 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .pair("")
+                .entry("")
                 .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
             Some(&p1),
             chain
-                .pair(&p1.key())
+                .entry(&p1.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .pair(&p2.key())
+                .entry(&p2.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p3),
             chain
-                .pair(&p3.key())
+                .entry(&p3.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -514,29 +517,29 @@ pub mod tests {
         assert_eq!(
             Some(&p1),
             chain
-                .pair(&p1.header().key())
+                .entry(&p1.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .pair(&p2.header().key())
+                .entry(&p2.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p3),
             chain
-                .pair(&p3.header().key())
+                .entry(&p3.header().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
     }
 
     #[test]
-    /// test chain.get_entry()
-    fn get_entry() {
+    /// test chain.entry()
+    fn chain_entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -583,13 +586,13 @@ pub mod tests {
         );
     }
 
-    #[test]
     /// test chain.top_type()
-    fn top_type() {
+    #[test]
+    fn chain_top_pair_of_type() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair_type(&test_type_a()));
-        assert_eq!(None, chain.top_pair_type(&test_type_b()));
+        assert_eq!(None, chain.top_pair_of_type(&test_type_a()));
+        assert_eq!(None, chain.top_pair_of_type(&test_type_b()));
 
         let entry1 = test_entry_a();
         let entry2 = test_entry_b();
@@ -600,16 +603,16 @@ pub mod tests {
         let pair1 = chain
             .commit_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(&pair1), chain.top_pair_type(&test_type_a()).as_ref());
-        assert_eq!(None, chain.top_pair_type(&test_type_b()));
+        assert_eq!(Some(&pair1), chain.top_pair_of_type(&test_type_a()).as_ref());
+        assert_eq!(None, chain.top_pair_of_type(&test_type_b()));
 
         // type a should still be pair1
         // type b should be p2
         let pair2 = chain
             .commit_entry(&entry2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(&pair1), chain.top_pair_type(&test_type_a()).as_ref());
-        assert_eq!(Some(&pair2), chain.top_pair_type(&test_type_b()).as_ref());
+        assert_eq!(Some(&pair1), chain.top_pair_of_type(&test_type_a()).as_ref());
+        assert_eq!(Some(&pair2), chain.top_pair_of_type(&test_type_b()).as_ref());
 
         // type a should be pair3
         // type b should still be pair2
@@ -617,8 +620,8 @@ pub mod tests {
             .commit_entry(&entry3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&pair3), chain.top_pair_type(&test_type_a()).as_ref());
-        assert_eq!(Some(&pair2), chain.top_pair_type(&test_type_b()).as_ref());
+        assert_eq!(Some(&pair3), chain.top_pair_of_type(&test_type_a()).as_ref());
+        assert_eq!(Some(&pair2), chain.top_pair_of_type(&test_type_b()).as_ref());
     }
 
     #[test]

@@ -19,15 +19,7 @@ use std::{
     },
     thread,
 };
-use hash_table::{HashString, sys_entry::ToEntry};
-
-//#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-//pub struct LinkCall {
-//    pub entry_type: String,
-//    pub links: Vec<LinkEntry>,
-//    pub validation_base: HashString,
-//}
-
+use hash_table::sys_entry::ToEntry;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

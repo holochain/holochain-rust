@@ -5,9 +5,8 @@ use serde_json;
 use agent::keys::Key;
 use agent::keys::Keys;
 use hash_table::{
-    pair::Pair,
     pair_meta::Meta,
-    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+    // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
     HashTable,
     links_entry::Link,
     HashString,
@@ -16,7 +15,6 @@ use hash_table::{
     entry::Entry,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
-use chain::Chain;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -145,14 +143,14 @@ impl HashTable for MemTable {
         }
 
         // Insert new/changed PairMeta
-        self.assert_meta(&maybe_meta.unwrap());
+        self.assert_meta(&maybe_meta.unwrap()).expect("meta should be valid");
 
         // Done
         Ok(())
     }
 
     // Remove Link from a LinkMeta
-    fn remove_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+    fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
         // TODO
         Err(HolochainError::NotImplemented)
     }
@@ -227,15 +225,20 @@ impl HashTable for MemTable {
 #[cfg(test)]
 pub mod tests {
 
-    use agent::keys::tests::test_keys;
+    // use agent::keys::tests::test_keys;
     use hash_table::{
+        sys_entry::ToEntry,
         memory::MemTable,
-        pair::tests::{test_pair, test_pair_a, test_pair_b},
-        pair_meta::{
-            tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
-            Meta,
+        pair::tests::{test_pair,
+        //               test_pair_a, test_pair_b,
         },
-        status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+        pair_meta::{
+            tests::{test_pair_meta,
+            //         test_pair_meta_a, test_pair_meta_b,
+            },
+            // Meta,
+        },
+        // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
     };
 
@@ -269,9 +272,9 @@ pub mod tests {
         let mut table = test_table();
         let pair = test_pair();
         table
-            .commit(&pair)
+            .put(&pair.header().to_entry())
             .expect("should be able to commit valid pair");
-        assert_eq!(table.header(&pair.key()), Ok(Some(pair)));
+        assert_eq!(table.entry(&pair.key()).unwrap().unwrap(), pair.header().to_entry());
     }
 
 //    #[test]

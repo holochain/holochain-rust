@@ -1,7 +1,7 @@
-use agent::keys::Keys;
+// use agent::keys::Keys;
 use hash::serializable_to_b58_hash;
 use hash_table::{
-    pair::Pair, HashString,
+    HashString,
 };
 use multihash::Hash;
 use std::cmp::Ordering;
@@ -129,7 +129,7 @@ pub mod tests {
 
     /// returns dummy pair meta for testing
     pub fn test_pair_meta() -> Meta {
-        Meta::new(&test_keys(), &test_pair().key(), &test_attribute(), &test_value())
+        Meta::new(&test_keys().node_id(), &test_pair().key(), &test_attribute(), &test_value())
     }
 
     /// dummy pair meta, same as test_pair_meta()
@@ -140,7 +140,7 @@ pub mod tests {
     /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
     pub fn test_pair_meta_b() -> Meta {
         Meta::new(
-            &test_keys(),
+            &test_keys().node_id(),
             &test_pair().key(),
             &test_attribute_b(),
             &test_value_b(),
@@ -153,14 +153,14 @@ pub mod tests {
         test_pair_meta();
     }
 
-    #[test]
+    // #[test]
     /// test meta.pair()
 //    fn pair() {
 //        assert_eq!(test_pair_meta().pair_hash(), test_pair().key());
 //    }
 
-    #[test]
     /// test meta.attribute()
+    #[test]
     fn attribute() {
         assert_eq!(test_pair_meta().attribute(), test_attribute());
     }
@@ -184,10 +184,10 @@ pub mod tests {
         let p2 = test_pair_b();
 
         // basic ordering
-        let m_1ax = Meta::new(&test_keys(), &p1.key(), "a", "x");
-        let m_1ay = Meta::new(&test_keys(), &p1.key(), "a", "y");
-        let m_1bx = Meta::new(&test_keys(), &p1.key(), "b", "x");
-        let m_2ax = Meta::new(&test_keys(), &p2.key(), "a", "x");
+        let m_1ax = Meta::new(&test_keys().node_id(), &p1.key(), "a", "x");
+        let m_1ay = Meta::new(&test_keys().node_id(), &p1.key(), "a", "y");
+        let m_1bx = Meta::new(&test_keys().node_id(), &p1.key(), "b", "x");
+        let m_2ax = Meta::new(&test_keys().node_id(), &p2.key(), "a", "x");
 
         // sort by pair key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));

@@ -447,7 +447,7 @@ pub mod tests {
             .get(&aw)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &ActionResponse::Get(None));
+        assert_eq!(response, &ActionResponse::GetEntry(None));
     }
 
     #[test]

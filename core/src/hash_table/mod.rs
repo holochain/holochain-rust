@@ -9,11 +9,12 @@ pub mod sys_entry;
 pub mod links_entry;
 pub mod deletion_entry;
 
-use agent::keys::Keys;
+// use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::Meta,
+use hash_table::{pair_meta::Meta,
                  links_entry::Link, links_entry::LinkListEntry,
-    entry::Entry, header::Header,
+    entry::Entry,
+                 //header::Header,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 

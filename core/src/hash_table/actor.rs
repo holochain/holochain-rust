@@ -1,7 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
-use agent::keys::Keys;
+// use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{HashString, pair::Pair, pair_meta::Meta, HashTable,
+use hash_table::{HashString, pair_meta::Meta, HashTable,
                  links_entry::Link, entry::Entry, links_entry::LinkListEntry};
 use riker::actors::*;
 use snowflake;
@@ -24,16 +24,6 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
-//    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//        let response = self.block_on_ask(Protocol::Commit(pair.clone()));
-//        unwrap_to!(response => Protocol::CommitResult).clone()
-//    }
-//
-//    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-//        let response = self.block_on_ask(Protocol::Pair(key.to_string()));
-//        unwrap_to!(response => Protocol::PairResult).clone()
-//    }
-
     fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Put(entry.clone()));
         unwrap_to!(response => Protocol::PutResult).clone()
@@ -55,21 +45,25 @@ impl HashTable for ActorRef<Protocol> {
 //        unwrap_to!(response => Protocol::ModifyResult).clone()
 //    }
 
+    // Add Link Meta
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AddLink(link.clone()));
         unwrap_to!(response => Protocol::AddLinkResult).clone()
     }
 
     // Remove Link from a LinkMeta
-    fn remove_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+    fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
         // TODO
         Err(HolochainError::NotImplemented)
     }
 
+    // Get all Link Meta
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         let response = self.block_on_ask(Protocol::Links(request.clone()));
         unwrap_to!(response => Protocol::LinksResult).clone()
     }
+
+
 //    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
 //        let response = self.block_on_ask(Protocol::Retract {
 //            keys: keys.clone(),
@@ -218,13 +212,13 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(table_actor.header(&test_hash()).unwrap(), None,);
+        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None,);
 
-        table_actor.commit(&test_pair()).unwrap();
+        table_actor.put(&test_pair().entry()).unwrap();
 
         assert_eq!(
-            table_actor.header(&test_pair().key()).unwrap(),
-            Some(test_pair()),
+            &table_actor.entry(&test_pair().key()).unwrap().unwrap(),
+            test_pair().entry(),
         );
     }
 
@@ -240,7 +234,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.header(&test_hash()).unwrap(), None,);
+            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None,);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -251,7 +245,7 @@ pub mod tests {
         thread::spawn(move || {
             rx1.recv().unwrap();
             let pair = test_pair();
-            table_actor_thread.commit(&pair).unwrap();
+            table_actor_thread.put(&pair.entry()).unwrap();
             // push the committed pair through to the next thread
             tx2.send(pair).unwrap();
         });
@@ -259,7 +253,10 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let handle = thread::spawn(move || {
             let pair = rx2.recv().unwrap();
-            assert_eq!(table_actor_thread.header(&pair.key()).unwrap(), Some(pair),);
+            assert_eq!(
+                &table_actor_thread.entry(&pair.key()).unwrap().unwrap(),
+                pair.entry(),
+            );
         });
 
         handle.join().unwrap();

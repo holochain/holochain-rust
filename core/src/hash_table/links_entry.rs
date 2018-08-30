@@ -148,7 +148,7 @@ pub mod tests {
   fn can_commit_link() {
     // Create Context, Agent, Dna, and Commit AgentIdEntry Action
     let context = test_context("alex");
-    let link = Link::new(LinkActionKind::ADD, "12", "34", "fake");
+    let link = Link::new( "12", "34", "fake");
     let link_entry = LinkListEntry::new(&[link]);
     let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
 
@@ -182,9 +182,9 @@ pub mod tests {
   fn can_commit_multilink() {
     // Create Context, Agent, Dna, and Commit AgentIdEntry Action
     let context = test_context("alex");
-    let link1 = Link::new(LinkActionKind::ADD, "12", "34", "fake");
-    let link2 = Link::new(LinkActionKind::ADD, "56", "78", "faux");
-    let link3 = Link::new(LinkActionKind::DELETE, "90", "ab", "fake");
+    let link1 = Link::new("12", "34", "fake");
+    let link2 = Link::new( "56", "78", "faux");
+    let link3 = Link::new( "90", "ab", "fake");
     let link_entry = LinkListEntry::new(&[link1, link2, link3]);
     let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
 

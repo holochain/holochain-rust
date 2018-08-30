@@ -4,9 +4,12 @@ use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
 use hash_table::{
-    HashString, HashTable, pair_meta::Meta,
-    entry::Entry, memory::MemTable, pair::Pair,
-    links_entry::LinkEntry, links_entry::LinkActionKind, links_entry::LinkListEntry,
+    HashString, HashTable,
+    // pair_meta::Meta,
+    // entry::Entry, memory::MemTable,
+    pair::Pair,
+    links_entry::LinkEntry, links_entry::LinkActionKind,
+    // links_entry::LinkListEntry,
     sys_entry::ToEntry,
 };
 use instance::Observer;
@@ -14,9 +17,9 @@ use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use std::str::FromStr;
+//use std::str::FromStr;
 // #[macro_use]
-use serde_json;
+//use serde_json;
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -314,8 +317,8 @@ pub mod tests {
     }
 
     #[test]
-    /// test for reducing commit
-    fn test_reduce_commit() {
+    /// test for reducing commit entry
+    fn test_reduce_commit_entry() {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_commit();
 
@@ -336,8 +339,8 @@ pub mod tests {
     }
 
     #[test]
-    /// test for reducing get
-    fn test_reduce_get() {
+    /// test for reducing get entry
+    fn test_reduce_get_entry() {
         let mut state = test_agent_state();
         let context = test_context("foo");
 
@@ -353,10 +356,10 @@ pub mod tests {
         );
 
         // nothing has been committed so the get must be None
-        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::Get(None)),);
+        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::GetEntry(None)),);
 
         // do a round trip
-        reduce_commit(
+        reduce_commit_entry(
             Arc::clone(&context),
             &mut state,
             &test_action_wrapper_commit(),
@@ -365,7 +368,7 @@ pub mod tests {
         );
 
         let aw2 = test_action_wrapper_get();
-        reduce_get(
+        reduce_get_entry(
             Arc::clone(&context),
             &mut state,
             &aw2,

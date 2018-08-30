@@ -78,7 +78,7 @@ pub enum Action {
     /// MUST already have passed all callback checks
     CommitEntry(Entry),
     /// hash of Entry to get
-    GetEntry(String),
+    GetEntry(HashString),
     /// entry to Commit
     /// MUST already have passed all callback checks
     LinkAppEntries(Link),

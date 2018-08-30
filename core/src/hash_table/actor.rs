@@ -1,7 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::Meta, HashTable,
+use hash_table::{HashString, pair::Pair, pair_meta::Meta, HashTable,
                  links_entry::Link, entry::Entry, links_entry::LinkListEntry};
 use riker::actors::*;
 use snowflake;
@@ -94,12 +94,12 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     // ;)
-    fn get_meta_for(&mut self, entry: &Entry, attribute_name: &str)
+    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str)
         -> Result<Option<Meta>, HolochainError>
     {
         let response = self.block_on_ask(
             Protocol::MetaFor {
-                entry: entry.clone(),
+                entry_hash: entry_hash,
             attribute_name: attribute_name.to_string(),
         });
         unwrap_to!(response => Protocol::MetaForResult).clone()
@@ -186,8 +186,8 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         Protocol::EntryMetaResult(self.table.get_entry_meta(&entry))
                     }
 
-                    Protocol::MetaFor{entry, attribute_name} => {
-                        Protocol::MetaForResult(self.table.get_meta_for(&entry, &attribute_name))
+                    Protocol::MetaFor{entry_hash, attribute_name} => {
+                        Protocol::MetaForResult(self.table.get_meta_for(entry_hash, &attribute_name))
                     }
 
                     _ => unreachable!(),

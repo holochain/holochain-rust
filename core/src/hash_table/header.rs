@@ -6,6 +6,7 @@ use hash_table::{entry::Entry, HashString, sys_entry::{
 };
 use multihash::Hash;
 use serde_json;
+use std::str::FromStr;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table

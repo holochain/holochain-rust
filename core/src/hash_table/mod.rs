@@ -67,7 +67,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError>;
 
     // ;)
-    fn get_meta_for(&mut self, entry: &Entry, attribute_name: &str) -> Result<Option<Meta>, HolochainError>;
+    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>;
 
     // query
     // @TODO how should we handle queries?

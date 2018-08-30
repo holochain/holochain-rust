@@ -17,7 +17,7 @@ use std::cmp::Ordering;
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
 pub struct Meta {
-    entity_hash: String,
+    entry_hash: String,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -32,7 +32,7 @@ pub struct Meta {
 impl Ord for Meta {
     fn cmp(&self, other: &Meta) -> Ordering {
         // we want to sort by pair hash, then attribute name, then attribute value
-        match self.entity_hash.cmp(&other.entity_hash) {
+        match self.entry_hash.cmp(&other.entry_hash) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
                 Ordering::Greater => Ordering::Greater,
@@ -54,18 +54,18 @@ impl Meta {
     /// Builds a new PairMeta from EAV and agent keys, where E is an existing Pair
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
-    pub fn new(keys: &Keys, hash: &HashString, attribute: &str, value: &str) -> Meta {
+    pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> Meta {
         Meta {
-            entity_hash: hash.to_string(),
+            entry_hash: hash.to_string(),
             attribute: attribute.into(),
             value: value.into(),
-            source: keys.node_id(),
+            source: node_id.to_string(),
         }
     }
 
     /// getter for pair clone
     pub fn entity_hash(&self) -> String {
-        self.entity_hash.clone()
+        self.entry_hash.clone()
     }
 
     /// getter for attribute clone

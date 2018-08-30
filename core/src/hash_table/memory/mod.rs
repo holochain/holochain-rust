@@ -21,17 +21,15 @@ use chain::Chain;
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    // pairs: HashMap<String, Pair>,
-    metas: HashMap<String, Meta>,
     entries: HashMap<String, Entry>,
+    metas: HashMap<String, Meta>,
 }
 
 impl MemTable {
     pub fn new() -> MemTable {
         MemTable {
-            // pairs: HashMap::new(),
-            metas: HashMap::new(),
             entries: HashMap::new(),
+            metas: HashMap::new(),
         }
     }
 }
@@ -45,19 +43,10 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-//    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-//        self.pairs.insert(pair.key(), pair.clone());
-//        Ok(())
-//    }
-
     fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
         self.entries.insert(entry.key(), entry.clone());
         Ok(())
     }
-
-//    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-//        Ok(self.pairs.get(key).cloned())
-//    }
 
     fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
         Ok(self.entries.get(key).cloned())
@@ -109,13 +98,13 @@ impl HashTable for MemTable {
         }
 
         // Retrieve LinkListEntry
-        let mut maybe_meta = self.get_meta_for(&base_entry, &link.to_attribute_name())?;
+        let mut maybe_meta = self.get_meta_for(base_entry.key(), &link.to_attribute_name())?;
         // Update or Create LinkListEntry
         match maybe_meta {
             // None found so create one
             None => {
                 // Create new LinkListEntry & Pair
-                let lle = LinkListEntry::new(&[*link]);
+                let lle = LinkListEntry::new(&[link.clone()]);
                 let new_entry = lle.to_entry();
                 // Add it to HashTable
                 self.put(&new_entry)?;
@@ -126,7 +115,7 @@ impl HashTable for MemTable {
 
                 // Create PairMeta
                 maybe_meta = Some(Meta::new(
-                    &keys_fixme,
+                    &keys_fixme.node_id(),
                     &base_entry.key(),
                     &link.to_attribute_name(),
                     &new_entry.key()));
@@ -134,10 +123,12 @@ impl HashTable for MemTable {
             // Update existing LinkListEntry and Meta
             Some(meta) => {
                 // Get LinkListEntry in HashTable
-                let entry = self.entry(&meta.value())?.expect("should have entry if meta points to it");
-                let mut lle : LinkListEntry = serde_json::from_str(&entry.entry().content()).expect("entry is not a valid LinkListEntry");
+                let entry = self.entry(&meta.value())?
+                    .expect("should have entry if meta points to it");
+                let mut lle : LinkListEntry = serde_json::from_str(&entry.content())
+                    .expect("entry is not a valid LinkListEntry");
                 // Add Link
-                lle.links.push(*link);
+                lle.links.push(link.clone());
                 // Make new Entry and commit it since it has changed
                 let entry = lle.to_entry();
                 // TODO maybe remove previous LinkListEntry ?
@@ -146,7 +137,7 @@ impl HashTable for MemTable {
                 // Push new PairMeta
                 assert!(meta.attribute() == link.to_attribute_name());
                 maybe_meta = Some(Meta::new(
-                    meta.keys(),
+                    &meta.source(),
                     &base_entry.key(),
                     &meta.attribute(),
                     &entry.key()));
@@ -170,7 +161,7 @@ impl HashTable for MemTable {
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         // TODO - Check that is not a system entry?
         // Look for entry's metadata
-        let result = self.get_meta_for(&request.entry_hash(), &request.to_attribute_name())?;
+        let result = self.get_meta_for(request.clone().entry_hash, &request.to_attribute_name())?;
         if result.clone().is_none() {
             return Ok(None);
         }
@@ -181,16 +172,6 @@ impl HashTable for MemTable {
         Ok(Some(LinkListEntry::new_from_entry(&entry)))
     }
 
-
-    // Get LinkListEntry from its hash
-//    fn link_list_entry(&mut self, key: &str) -> Result<Option<LinkListEntry>, HolochainError> {
-//        let res = self.get_meta(key)?;
-//        if let Some(pm) = res {
-//            let lle = serde_json::from_str(pm.value());
-//            Ok(lle)
-//        }
-//        Ok(None)
-//    }
 
     fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError> {
         self.metas.insert(meta.hash(), meta.clone());
@@ -229,16 +210,16 @@ impl HashTable for MemTable {
     }
 
     // ;)
-    fn get_meta_for(&mut self, entry: &Entry, attribute_name: &str) -> Result<Option<Meta>, HolochainError>
+    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>
     {
         let vec_meta = self
             .metas
             .values()
-            .filter(|&m| m.entity_hash() == entry.key() && m.attribute() == attribute_name)
+            .filter(|&m| m.entity_hash() == entry_hash && m.attribute() == attribute_name)
             .cloned()
             .collect::<Vec<Meta>>();
         assert!(vec_meta.len() <= 1);
-        Ok(if vec_meta.len() == 0 { None } else { Some(vec_meta[0]) })
+        Ok(if vec_meta.len() == 0 { None } else { Some(vec_meta[0].clone()) })
     }
 
 }

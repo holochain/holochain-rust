@@ -58,7 +58,7 @@ pub enum Protocol {
     Meta(String),
     MetaResult(Result<Option<Meta>, HolochainError>),
 
-    MetaFor{entry: HashString, attribute_name: String},
+    MetaFor{entry_hash: HashString, attribute_name: String},
     MetaForResult(Result<Option<Meta>, HolochainError>),
 
     /// HashTable::get_pair_meta()

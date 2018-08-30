@@ -45,3 +45,10 @@ The actor implementation in Riker has a few key concepts:
 - actor ref(erence): an ActorRef<MyProtocol> that can tell messages to the actor instance it references via. the actor system
 
 The actor reference is a "killer feature" of Riker for us.
+
+- known size at compile, safe as properties of structs/enums
+- small size, almost free to clone
+- safe to share across threads and copy, no Arc reference counting, no locks, etc.
+- safe to drop (the actor system maintains a URI style lookup)
+- known type, no onerous generic trait handling
+- no onerous lifetimes

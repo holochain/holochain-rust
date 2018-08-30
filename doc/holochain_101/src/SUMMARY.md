@@ -25,3 +25,4 @@
 - [Extending the Holochain Platform](./extending_hc_platform.md)
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)
+  - [State actors](./state/actors.md)

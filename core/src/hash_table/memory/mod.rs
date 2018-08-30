@@ -78,9 +78,9 @@ impl HashTable for MemTable {
         ))
     }
 
-    //
-    fn link(&mut self, link: &Link) -> Result<(), HolochainError> {
-        let pair = self.get(&link.base)?;
+    // Add Link Meta to a Pair
+    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+        let pair = self.pair(&link.base)?;
         if pair.is_none() {
             return Err(HolochainError::ErrorGeneric("Pair from base not found".to_string()));
         }
@@ -89,7 +89,7 @@ impl HashTable for MemTable {
         let key_fixme = Key::new();
         let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
         let meta = PairMeta::new(&keys_fixme, &pair, &link.key(), "FIXME hash of LinkEntry?");
-        self.assert_meta(meta);
+        self.assert_meta(&meta);
         Ok(())
     }
 

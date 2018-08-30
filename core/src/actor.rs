@@ -1,7 +1,7 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
+use hash_table::{pair::Pair, pair_meta::PairMeta, links_entry::Link};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
@@ -41,6 +41,11 @@ pub enum Protocol {
         pair: Pair,
     },
     RetractResult(Result<(), HolochainError>),
+
+    AddLink {
+        link: Link,
+    },
+    AddLinkResult(Result<(), HolochainError>),
 
     /// HashTable::assert_meta()
     AssertMeta(PairMeta),

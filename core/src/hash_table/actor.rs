@@ -1,7 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable, links_entry::Link};
 use riker::actors::*;
 use snowflake;
 
@@ -32,18 +32,19 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PairResult).clone()
     }
 
-    fn modify(
-        &mut self,
-        keys: &Keys,
-        old_pair: &Pair,
-        new_pair: &Pair,
-    ) -> Result<(), HolochainError> {
+    fn modify(&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair)
+    -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Modify {
             keys: keys.clone(),
             old_pair: old_pair.clone(),
             new_pair: new_pair.clone(),
         });
         unwrap_to!(response => Protocol::ModifyResult).clone()
+    }
+
+    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::AddLink{ link: link.clone() });
+        unwrap_to!(response => Protocol::AddLinkResult).clone()
     }
 
     fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {

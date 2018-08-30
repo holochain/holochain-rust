@@ -41,7 +41,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError>;
 
     /// Add? link to a Pair?
-    fn link(&mut self, link: &Link) -> Result<(), HolochainError>;
+    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError>;
 
     // meta
     /// assert a given PairMeta in the HashTable

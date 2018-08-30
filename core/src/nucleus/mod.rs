@@ -379,7 +379,7 @@ fn reduce_ve(
     // must have entry_type
     if let Some(ref dna) = state.dna {
         let action = action_wrapper.action();
-        let es = unwrap_to!(action => Action::ValidateEntry);
+        let es = unwrap_to!(action => Action::ValidateAppEntry);
         if let Some(ref _wasm) =
             dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
         {

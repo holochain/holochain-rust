@@ -88,7 +88,7 @@ impl HashTable for MemTable {
         // FIXME Correct keys
         let key_fixme = Key::new();
         let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
-        let meta = PairMeta::new(&keys_fixme, &pair, link.key(), "FIXME hash of LinkEntry?");
+        let meta = PairMeta::new(&keys_fixme, &pair, &link.key(), "FIXME hash of LinkEntry?");
         self.assert_meta(meta);
         Ok(())
     }

@@ -10,12 +10,12 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use hash_table::{HashString, entry::Entry, sys_entry::ToEntry, links_entry::*};
 
 /// Struct for input data received when Commit API function is invoked
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct LinkEntriesArgs {
-    base: HashString,
-    target: HashString,
-    tag: String,
-}
+//#[derive(Deserialize, Default, Debug, Serialize)]
+//pub struct LinkEntriesArgs {
+//    base: HashString,
+//    target: HashString,
+//    tag: String,
+//}
 
 /// ZomeApiFunction::LinkAppEntries function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -27,7 +27,7 @@ pub fn invoke_link_app_entries(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
-    let input: LinkEntriesArgs = match serde_json::from_str(&args_str) {
+    let input: Link = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
@@ -38,18 +38,9 @@ pub fn invoke_link_app_entries(
         }
     };
 
-    // Create Link
-    let link = Link::new(
-        LinkActionKind::ADD,
-        &input.base,
-        &input.target,
-        &input.tag,
-    );
-    // let entry = LinkEntry::new(&[link]).to_entry();
-
     // Create Commit Action
     // FIXME should be a LinkAppEntries Action
-    let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(link));
+    let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(input));
     // Send Action and block for result
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(

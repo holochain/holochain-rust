@@ -11,7 +11,7 @@ use std::str::FromStr;
 //-------------------------------------------------------------------------------------------------
 
 //
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Link {
   pub base: HashString,
   pub target: HashString,
@@ -29,7 +29,7 @@ impl Link {
   }
 
   pub fn key(&self) -> String {
-    "link:" + self.base + ":" + self.link + ":" + self.tag
+    format!("link:{}:{}:{}", self.base, self.target, self.tag)
   }
 }
 
@@ -92,7 +92,7 @@ impl ToEntry for LinkEntry {
 //
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LinkListEntry {
-  links: Vec<Link>,
+  pub links: Vec<Link>,
 }
 
 impl LinkListEntry {
@@ -117,7 +117,9 @@ impl ToEntry for LinkListEntry {
   }
 }
 
-
+//-------------------------------------------------------------------------------------------------
+// Tests
+//-------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 pub mod tests {

@@ -6,7 +6,7 @@ use error::HolochainError;
 use hash_table::{
     HashString, HashTable, pair_meta::PairMeta,
     entry::Entry, memory::MemTable, pair::Pair,
-    links_entry::LinkEntry, links_entry::LinkActionKind,
+    links_entry::LinkEntry, links_entry::LinkActionKind, links_entry::LinkListEntry,
     sys_entry::ToEntry,
 };
 use instance::Observer;
@@ -16,6 +16,7 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 use std::str::FromStr;
+// #[macro_use]
 use serde_json;
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -31,9 +32,9 @@ pub struct AgentState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
 
-    /// Hold the agent's source chain as a hash table store in memory
-    /// FIXME stateful stuff should be in instance??
-    chain: Chain<MemTable>,
+    // /// Hold the agent's source chain as a hash table store in memory
+    // /// FIXME stateful stuff should be in instance??
+    // chain: Option<Chain<MemTable>>,
 }
 
 impl AgentState {
@@ -43,7 +44,7 @@ impl AgentState {
             keys: None,
             top_pair: None,
             actions: HashMap::new(),
-            chain: Chain::new(Rc::new(MemTable::new())),
+            // chain: Some(Chain::new(Rc::new(MemTable::new()))),
         }
     }
 
@@ -64,8 +65,8 @@ impl AgentState {
         self.actions.clone()
     }
 
-    /// chain getter
-    pub fn chain(&self) -> Chain<MemTable> { self.chain.clone() }
+    // /// chain getter
+    // pub fn chain(&self) -> Option<Chain<MemTable>> { self.chain.clone() }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -96,8 +97,10 @@ impl ActionResponse {
                 None => "".to_string(),
             },
             ActionResponse::GetLinks(result) => match result {
-                Some(hash_list) => hash_list.to_json(),
-                None => "".to_string(),
+                Ok(hash_list) =>  {
+                    json!(hash_list).as_str().expect("should jsonify").to_string()
+                },
+                Err(err) => (*err).to_json(),
             },
             // FIXME copy of ActionResponse::CommitEntry(result) , should merge with match
             ActionResponse::LinkAppEntries(result) => match result {
@@ -127,7 +130,7 @@ fn reduce_link_app_entries(
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
-    let response = state.chain().push_entry(&link_entry.to_entry());
+    let response = Err(HolochainError::LoggingError); // state.chain().push_entry(&link_entry.to_entry());
 
     // Add LinkListEntry to HashTable
     // FIXME: Create&Commit or Update in HashTable a LinkListEntry with key = base-entry-hash + tag
@@ -153,8 +156,9 @@ fn reduce_get_links(
     let links_request = unwrap_to!(action => Action::GetLinks);
 
     // Look for entry's metadata
-    let result :Result<Option<PairMeta>, HolochainError> = state.chain().table().get_meta(links_request.key());
-    if result.is_err() || result.unwrap().is_none() {
+    let result : Result<Option<PairMeta>, HolochainError> = Err(HolochainError::LoggingError);
+    // let result = state.chain().table().get_meta(links_request.key());
+    if result.is_err() || result.clone().unwrap().is_none() {
         state
             .actions
             .insert(action_wrapper.clone(),
@@ -164,8 +168,9 @@ fn reduce_get_links(
     let result = result.unwrap().unwrap();
 
     // Get LinkListEntry in HashTable
-    let links_pair = state.chain().table().get(&result.value());
-    if links_pair.is_err() || links_pair.unwrap().is_none() {
+    let links_pair: Result<Option<Pair>, HolochainError> = Err(HolochainError::LoggingError);
+    // let links_pair = state.chain().table().get(&result.value());
+    if links_pair.is_err() || links_pair.clone().unwrap().is_none() {
         state
             .actions
             .insert(action_wrapper.clone(),
@@ -175,7 +180,7 @@ fn reduce_get_links(
     let links_pair = links_pair.unwrap().unwrap();
 
     // Extract list of target hashes
-    let links_entry = serde_json::from_str(&links_pair.entry().content()).expect("entry is not a valid LinkListEntry");
+    let links_entry : LinkListEntry = serde_json::from_str(&links_pair.entry().content()).expect("entry is not a valid LinkListEntry");
     let mut link_hashes = Vec::new();
     for link in links_entry.links {
         link_hashes.push(link.target);
@@ -259,6 +264,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::CommitEntry(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::GetLinks(_) => Some(reduce_get_links),
+        Action::LinkAppEntries(_) => Some(reduce_link_app_entries),
         _ => None,
     }
 }

@@ -8,10 +8,13 @@ use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use hash_table::HashString;
 
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct GetLinksArgs {
+#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
+pub struct GetLinksArgs {
     entry_hash: HashString,
     tag: String,
+}
+impl GetLinksArgs {
+    pub fn key(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
 }
 
 /// ZomeApiFunction::GetLinks function code
@@ -35,7 +38,7 @@ pub fn invoke_get_links(
 
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::GetLinks(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetLinks(input));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -65,17 +68,17 @@ pub fn invoke_get_links(
 
     let action_result = receiver.recv().expect("observer dropped before done");
 
-    match action_result {
-        ActionResponse::GetLinks(maybe_links) => {
-            // serialize, allocate and encode result
-            let links_str = maybe_links.map(|p| p.to_json()).unwrap_or_default();
-
-            runtime_allocate_encode_str(runtime, &links_str)
+    if let ActionResponse::GetLinks(maybe_links) = action_result {
+        if let Ok(link_list) = maybe_links {
+            return runtime_allocate_encode_str(
+                runtime,
+                json!(link_list).as_str().expect("should jsonify"),
+            );
         }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
-        ))),
     }
+
+    // Fail
+    Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorActionResult as i32)))
 }
 
 //

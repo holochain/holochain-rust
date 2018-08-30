@@ -3,7 +3,8 @@ use context::Context;
 use hash_table::{HashString, entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
+use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult,
+ribosome::api::get_links::GetLinksArgs};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -61,14 +62,15 @@ impl Hash for ActionWrapper {
     }
 }
 
-pub struct GetLinksRequest {
-    pub entry_hash: HashString,
-    pub tag: String,
-}
+//#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+//pub struct GetLinksRequest {
+//    pub entry_hash: HashString,
+//    pub tag: String,
+//}
 
-impl GetLinksRequest {
-    pub fn key(&self) -> String { "link:" + self.entry_hash + ":" + self.tag}
-}
+//impl GetLinksRequest {
+//    pub fn key(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
+//}
 
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
@@ -81,7 +83,7 @@ pub enum Action {
     /// MUST already have passed all callback checks
     LinkAppEntries(Link),
     /// hash to Entry to get links from
-    GetLinks(GetLinksRequest),
+    GetLinks(GetLinksArgs),
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
     /// return the result of a zome WASM function call

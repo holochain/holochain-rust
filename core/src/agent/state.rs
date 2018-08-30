@@ -31,10 +31,6 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-
-    // /// Hold the agent's source chain as a hash table store in memory
-    // /// FIXME stateful stuff should be in instance??
-    // chain: Option<Chain<MemTable>>,
 }
 
 impl AgentState {

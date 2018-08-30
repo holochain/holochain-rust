@@ -219,7 +219,12 @@ pub fn call(
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).expect("wasm should be valid");
 
-    // Describe invokable functions from within Zome
+    // invoke_index and resolve_func work together to enable callable host functions
+    // within WASM modules, which is how the core API functions
+    // read about the Externals trait for more detail
+
+    // Correlate the indexes of core API functions with a call to the actual function
+    // by implementing the Externals wasmi trait for Runtime
     impl Externals for Runtime {
         fn invoke_index(
             &mut self,
@@ -229,12 +234,14 @@ pub fn call(
             let zf = ZomeApiFunction::from_index(index);
             match zf {
                 ZomeApiFunction::MissingNo => panic!("unknown function index"),
+                // convert the function to its callable form and call it with the given arguments
                 _ => zf.as_fn()(self, &args),
             }
         }
     }
 
-    // Define invokable functions from within Zome
+    // Correlate the names of the core ZomeAPIFunction's with their indexes
+    // and declare its function signature (which is always the same)
     struct RuntimeModuleImportResolver;
     impl ModuleImportResolver for RuntimeModuleImportResolver {
         fn resolve_func(
@@ -242,6 +249,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
+            // Take the canonical name and find the corresponding ZomeAPIFunction index
             let index = ZomeApiFunction::str_to_index(&field_name);
             match index {
                 index if index == ZomeApiFunction::MissingNo as usize => {
@@ -326,7 +334,11 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
     use super::ZomeApiFunction;
-    use instance::tests::{test_context_and_logger, test_instance, TestLogger};
+    use context::Context;
+    use instance::{
+        tests::{test_context_and_logger, test_instance, TestLogger},
+        Instance,
+    };
     use nucleus::{
         ribosome::api::{call, Runtime},
         FunctionCall,
@@ -424,29 +436,42 @@ pub mod tests {
             .to_vec()
     }
 
-    /// given a canonical zome API function name and args as bytes:
-    /// - builds wasm with test_zome_api_function_wasm
-    /// - builds dna and test instance
-    /// - calls the zome API function with passed bytes argument using the instance runtime
-    /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(
-        canonical_name: &str,
+    /// dummy zome name
+    pub fn test_zome_name() -> String {
+        "test_zome".to_string()
+    }
+
+    /// dummy capability
+    pub fn test_capability() -> String {
+        ReservedCapabilityNames::MissingNo.as_str().to_string()
+    }
+
+    /// dummy zome API function name
+    pub fn test_function_name() -> String {
+        "test".to_string()
+    }
+
+    /// dummy parameters for a zome API function call
+    pub fn test_parameters() -> String {
+        String::new()
+    }
+
+    /// calls the zome API function with passed bytes argument using the instance runtime
+    /// returns the runtime after the call completes
+    pub fn test_zome_api_function_call(
+        app_name: &str,
+        context: Arc<Context>,
+        logger: Arc<Mutex<TestLogger>>,
+        instance: &Instance,
+        wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
-        let zome_name = "test_zome";
-        let capability = ReservedCapabilityNames::MissingNo.as_str().to_string();
-        let function_name = "test";
-        let parameters = "";
-
-        let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna =
-            test_utils::create_test_dna_with_wasm(zome_name.into(), &capability, wasm.clone());
-        let app_name = dna.name.to_string();
-        let instance = test_instance(dna);
-        let (context, logger) = test_context_and_logger("joan");
-
-        let fc = FunctionCall::new(&zome_name, &capability, &function_name, &parameters);
-
+        let fc = FunctionCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            &test_function_name(),
+            &test_parameters(),
+        );
         (
             call(
                 &app_name,
@@ -458,6 +483,34 @@ pub mod tests {
                 Some(args_bytes),
             ).expect("test should be callable"),
             logger,
+        )
+    }
+
+    /// given a canonical zome API function name and args as bytes:
+    /// - builds wasm with test_zome_api_function_wasm
+    /// - builds dna and test instance
+    /// - calls the zome API function with passed bytes argument using the instance runtime
+    /// - returns the runtime after the call completes
+    pub fn test_zome_api_function_runtime(
+        canonical_name: &str,
+        args_bytes: Vec<u8>,
+    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+        let wasm = test_zome_api_function_wasm(canonical_name);
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
+        let instance = test_instance(dna.clone());
+        let (context, logger) = test_context_and_logger("joan");
+
+        test_zome_api_function_call(
+            &dna.name.to_string(),
+                context,
+            logger,
+            &instance,
+            &wasm,
+            args_bytes,
         )
     }
 

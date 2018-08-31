@@ -429,7 +429,6 @@ pub mod tests {
             Some(&ActionResponse::GetLinks(Ok(res))),
             state.actions().get(&action_gl),
         );
-
     }
 
     #[test]

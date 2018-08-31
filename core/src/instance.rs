@@ -244,15 +244,15 @@ pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: A
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use super::Instance;
+    use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
-    use hash_table::sys_entry::EntryType;
+
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
-    use nucleus::ribosome::{callback::Callback, Defn};
+    use nucleus::ribosome::{callback::Callback, Defn, api::get_links::GetLinksArgs};
     use persister::SimplePersister;
     use state::State;
     use std::{
@@ -261,6 +261,13 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
+    use hash_table::{
+actor::HashTableActor,
+memory::MemTable,
+entry::Entry,
+links_entry::*,
+sys_entry::{ToEntry, EntryType},
+};
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -588,4 +595,56 @@ pub mod tests {
 
         assert!(instance.state().nucleus().has_initialized() == false);
     }
+
+
+    /// test linking
+    #[test]
+    fn test_linking() {
+        // Init instance
+        let context = test_context("camille");
+        let instance = test_instance_blank();
+        assert!(instance.state().nucleus().has_initialized());
+
+        // Setup data
+        let link = Link::new( "12", "34", "fake");
+        let link_entry = LinkListEntry::new(&[link]);
+        let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
+
+        let e1 = Entry::new("app1", "alex");
+        let e2 = Entry::new("app1", "billy");
+
+        let t1 = "child".to_string();
+
+        let req1 = GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+
+        let link = Link::new(&e1.key(), &e2.key(), &t1);
+
+        let action_commit_e1 =  ActionWrapper::new(Action::CommitEntry(e1.clone()));
+        let action_commit_e2 =  ActionWrapper::new(Action::CommitEntry(e2.clone()));
+        let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
+        let action_gl = ActionWrapper::new(Action::GetLinks(req1));
+
+        // Setup Process actions
+        let state_observers1: Vec<Observer> = Vec::new();
+        let state_observers2: Vec<Observer> = Vec::new();
+        let state_observers3: Vec<Observer> = Vec::new();
+        let state_observers4: Vec<Observer> = Vec::new();
+        let (_, rx_observer) = channel::<Observer>();
+
+        // Process actions
+        instance.process_action(action_commit_e1, state_observers1, &rx_observer, &context);
+        instance.process_action(action_commit_e2, state_observers2, &rx_observer, &context);
+        instance.process_action(action_lap, state_observers3, &rx_observer, &context);
+        instance.process_action(action_gl.clone(), state_observers4, &rx_observer, &context);
+        
+        let mut res = Vec::new();
+        res.push(e2.key());
+
+        assert_eq!(
+            Some(&ActionResponse::GetLinks(Ok(res))),
+            instance.state().agent().actions().get(&action_gl),
+        );
+    }
+
+
 }

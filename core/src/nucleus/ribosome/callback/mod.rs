@@ -178,7 +178,7 @@ pub fn call(
         // without it we get stack overflows, but with it we rely on a specific string
         Err(HolochainError::ErrorGeneric(ref msg))
             if msg == &format!(
-                "Function: Module doesn\'t have export {}_dispatch",
+                "Function: Module doesn\'t have export {}",
                 function.as_str()
             ) =>
         {
@@ -220,8 +220,6 @@ pub mod tests {
                 // imports the fn from the rust environment using its canonical zome API function
                 // name as the function named `$zome_api_function` in WAT
                 // define the signature as 1 input, 1 output
-                // the signature is the same as the exported "test_dispatch" function below as
-                // we want the latter to be a thin wrapper for the former
                 // (import "env" "<canonical name>"
                 //      (func $zome_api_function
                 //          (param i32)
@@ -235,11 +233,11 @@ pub mod tests {
                 // all modules compiled with rustc must have an export named "memory" (or fatal)
                 // (export "memory" (memory 0))
                 //
-                // define and export the test_dispatch function that will be called from the
+                // define and export the test function that will be called from the
                 // ribosome rust implementation, where "test" is the fourth arg to `call`
                 // @see `test_zome_api_function_runtime`
                 // @see nucleus::ribosome::call
-                // (func (export "test_dispatch") ...)
+                // (func (export "test") ...)
                 //
                 // define the memory allocation for the memory manager that the serialized input
                 // struct can be found across as an i32 to the exported function, also the function
@@ -262,7 +260,7 @@ pub mod tests {
     (export "memory" (memory 0))
 
     (func
-        (export "{}_dispatch")
+        (export "{}")
         (param $allocation i32)
         (result i32)
 

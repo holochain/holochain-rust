@@ -47,7 +47,7 @@ impl Iterator for ChainIterator {
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 let header = Header::new_from_entry(header_entry);
-                println!("ChainIterator.next(): header = {:?}", header);
+                // println!("ChainIterator.next(): header = {:?}", header);
                 let pair = Pair::new_from_header(&self.table_actor, &header);
                 // println!("ChainIterator.next(): pair   = {:?}", pair.clone().unwrap().header());
                 pair
@@ -220,7 +220,7 @@ impl SourceChain for Chain {
 
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new_from_chain(self, entry);
-        println!("chain.commit_entry(): pair = {:?}", pair.header().link());
+        // println!("chain.commit_entry(): pair = {:?}", pair.header().link());
         self.commit_pair(&pair)
     }
 
@@ -246,11 +246,11 @@ impl SourceChain for Chain {
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-                if p.entry().hash() == entry_hash {
-                    println!("\t entry() = {:?}?", p.header());
-                }
-                // p.entry().hash() == entry_hash
-                false
+//                if p.entry().hash() == entry_hash {
+//                    println!("\t entry() = {:?}?", p.header());
+//                }
+                p.entry().hash() == entry_hash
+                // false
             }))
     }
 }
@@ -430,7 +430,7 @@ pub mod tests {
         assert_eq!(
             Some(&pair),
             chain
-                .entry(&pair.key())
+                .entry(&pair.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
@@ -445,7 +445,7 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.commit_entry(&entry).unwrap();
-                assert_eq!(Some(pair.clone()), chain.entry(&pair.key()).unwrap(),);
+                assert_eq!(Some(pair.clone()), chain.entry(&pair.entry().key()).unwrap(),);
             }
         });
         h.join().unwrap();
@@ -503,7 +503,6 @@ pub mod tests {
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
-        let e3 = test_entry_a();
 
         let p1 = chain
             .commit_entry(&e1)
@@ -511,8 +510,17 @@ pub mod tests {
         let p2 = chain
             .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+
+        assert_eq!(
+            Some(&p1),
+            chain
+                .entry(&p1.entry().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
+
         let p3 = chain
-            .commit_entry(&e3)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         println!("  p1 = {:?}", p1);
@@ -525,7 +533,7 @@ pub mod tests {
                 .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
-            Some(&p1),
+            Some(&p3),
             chain
                 .entry(&p1.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
@@ -538,13 +546,13 @@ pub mod tests {
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
-//        assert_eq!(
-//            Some(&p3),
-//            chain
-//                .entry(&p3.entry().key())
-//                .expect("getting an entry from a chain shouldn't fail")
-//                .as_ref()
-//        );
+        assert_eq!(
+            Some(&p3),
+            chain
+                .entry(&p3.entry().key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
 
         assert_eq!(
             Some(&p1),
@@ -560,13 +568,13 @@ pub mod tests {
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
-//        assert_eq!(
-//            Some(&p3),
-//            chain
-//                .pair(&p3.key())
-//                .expect("getting an entry from a chain shouldn't fail")
-//                .as_ref()
-//        );
+        assert_eq!(
+            Some(&p3),
+            chain
+                .pair(&p3.key())
+                .expect("getting an entry from a chain shouldn't fail")
+                .as_ref()
+        );
     }
 
     /// test chain.entry()
@@ -576,7 +584,6 @@ pub mod tests {
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
-        let e3 = test_entry_a();
 
         let p1 = chain
             .commit_entry(&e1)
@@ -585,7 +592,7 @@ pub mod tests {
             .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p3 = chain
-            .commit_entry(&e3)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -628,7 +635,6 @@ pub mod tests {
 
         let entry1 = test_entry_a();
         let entry2 = test_entry_b();
-        let entry3 = test_entry_a();
 
         // type a should be p1
         // type b should be None
@@ -649,21 +655,20 @@ pub mod tests {
         // type a should be pair3
         // type b should still be pair2
         let pair3 = chain
-            .commit_entry(&entry3)
+            .commit_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(Some(&pair3), chain.top_pair_of_type(&test_type_a()).as_ref());
         assert_eq!(Some(&pair2), chain.top_pair_of_type(&test_type_b()).as_ref());
     }
 
-    #[test]
     /// test IntoIterator implementation
+    #[test]
     fn into_iter() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
-        let e3 = test_entry_a();
 
         let p1 = chain
             .commit_entry(&e1)
@@ -672,21 +677,20 @@ pub mod tests {
             .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p3 = chain
-            .commit_entry(&e3)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         // into_iter() returns clones of pairs
         assert_eq!(vec![p3, p2, p1], chain.into_iter().collect::<Vec<Pair>>());
     }
 
-    #[test]
     /// test to_json() and from_json() implementation
+    #[test]
     fn json_round_trip() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
         let e2 = test_entry_b();
-        let e3 = test_entry_a();
 
         chain
             .commit_entry(&e1)
@@ -695,10 +699,10 @@ pub mod tests {
             .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         chain
-            .commit_entry(&e3)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmPT5HXvyv54Dg36YSK1A2rYvoPCNWoqpLzzZnHnQBcU6x\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"link\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
+        let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmdEVL9whBj1Tr9VoR6BzmVjrgyPdN5vJ2bbdQdwwfQ9Uq\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"link\":\"QmU8vuUfCQGBb8SUdWjKqmSmsWwXBn4AJPb3HLb8cqWtYn\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"
         ;
         assert_eq!(
             expected_json,

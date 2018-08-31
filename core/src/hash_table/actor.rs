@@ -212,12 +212,12 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None,);
+        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None);
 
         table_actor.put(&test_pair().entry()).unwrap();
 
         assert_eq!(
-            &table_actor.entry(&test_pair().key()).unwrap().unwrap(),
+            &table_actor.entry(&test_pair().entry().key()).unwrap().unwrap(),
             test_pair().entry(),
         );
     }
@@ -234,7 +234,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None,);
+            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -254,7 +254,7 @@ pub mod tests {
         let handle = thread::spawn(move || {
             let pair = rx2.recv().unwrap();
             assert_eq!(
-                &table_actor_thread.entry(&pair.key()).unwrap().unwrap(),
+                &table_actor_thread.entry(&pair.entry().key()).unwrap().unwrap(),
                 pair.entry(),
             );
         });

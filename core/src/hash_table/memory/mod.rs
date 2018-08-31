@@ -43,7 +43,7 @@ impl HashTable for MemTable {
 
     fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
         // println!("MemTable.put = {}", entry.key());
-        println!("\t\tMemTable.put = {:?}", entry);
+        // println!("\t\tMemTable.put = {:?}", entry);
         self.entries.insert(entry.key(), entry.clone());
         Ok(())
     }

@@ -34,7 +34,7 @@ impl Pair {
     pub fn new_from_chain(chain: &Chain, entry: &Entry) -> Pair {
         let header = Header::new_from_chain(chain, entry);
 
-        println!("Pair.new_from_chain(): header.link = {:?}", header.link());
+        //println!("Pair.new_from_chain(): header.link = {:?}", header.link());
 
         let new_pair = Pair {
             header: header,

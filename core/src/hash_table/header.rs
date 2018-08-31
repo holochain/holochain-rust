@@ -167,7 +167,7 @@ impl ToEntry for Header {
 #[cfg(test)]
 mod tests {
     use chain::{tests::test_chain, SourceChain};
-    use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
+    use hash_table::{entry::Entry, header::Header, pair::tests::test_pair, sys_entry::ToEntry};
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -269,7 +269,8 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        assert_eq!(h2.link(), Some(h1.hash()));
+        // assert_eq!(h2.link(), Some(h1.hash()));
+        assert_eq!(h2.link(), Some(h1.to_entry().key()));
     }
 
     #[test]

@@ -97,17 +97,16 @@ impl Chain {
         }
     }
 
-    /// build a new Header from a chain, entry type and entry.
-    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+    /// Create the next commitable Header for the chain.
+    /// a Header is immutable, but the chain is mutable if chain.commit_*() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
-    /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
+    /// the only valid usage of a header is to immediately commit it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
     /// chain::SourceChain trait and should not need to be handled manually
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn create_next_header(&self, entry: &Entry) -> Header {
-        // println!("Pair.new_from_chain(): header.link = {:?}", self.top_pair().as_ref().map(|p| p.header().to_entry().key()));
         Header::new(
             &entry.entry_type().clone(),
             // @TODO implement timestamps
@@ -128,11 +127,11 @@ impl Chain {
         )
     }
 
-    /// build a new Pair from a chain and entry
+    /// Create the next commitable Pair for this chain
     ///
-    /// Header is generated automatically
+    /// Header is generated
     ///
-    /// a Pair is immutable, but the chain is mutable if chain.push() is used.
+    /// a Pair is immutable, but the chain is mutable if chain.commit_*() is used.
     ///
     /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
     /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
@@ -146,12 +145,7 @@ impl Chain {
     /// @see chain::entry::Entry
     /// @see chain::header::Header
     pub fn create_next_pair(&self, entry: &Entry) -> Pair {
-        let header = self.create_next_header(entry);
-
-        // println!("Pair.new_from_chain(): header = {:?}", header);
-
         let new_pair = Pair::new(
-            //&header,
             &self.create_next_header(entry),
             &entry.clone(),
         );
@@ -163,7 +157,6 @@ impl Chain {
 
         new_pair
     }
-
 
     /// returns true if all pairs in the chain pass validation
     fn validate(&self) -> bool {

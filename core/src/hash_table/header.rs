@@ -1,4 +1,3 @@
-use chain::{Chain, SourceChain};
 use hash;
 use hash_table::{entry::Entry, HashString, sys_entry::{
     EntryType, ToEntry,
@@ -414,7 +413,7 @@ mod tests {
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_round_trip_header_entry() {
-        let mut chain = test_chain();
+        let chain = test_chain();
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);

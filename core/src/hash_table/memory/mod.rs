@@ -105,7 +105,6 @@ impl HashTable for MemTable {
         match maybe_meta {
             // None found so create one
             None => {
-                println!("!! NO META FOUND !!");
                 // Create new LinkListEntry & Pair
                 let lle = LinkListEntry::new(&[link.clone()]);
                 let new_entry = lle.to_entry();
@@ -125,7 +124,6 @@ impl HashTable for MemTable {
             }
             // Update existing LinkListEntry and Meta
             Some(meta) => {
-                println!("!! META !!");
                 // Get LinkListEntry in HashTable
                 let entry = self.entry(&meta.value())?
                     .expect("should have entry if meta points to it");
@@ -239,7 +237,6 @@ impl HashTable for MemTable {
 
 #[cfg(test)]
 pub mod tests {
-
     // use agent::keys::tests::test_keys;
     use hash_table::{
         links_entry::Link, links_entry::LinkListEntry,
@@ -259,11 +256,11 @@ pub mod tests {
         actor::HashTableActor,
         entry::Entry,
     };
-
-use ::chain::{
-    Chain, SourceChain,
-};
-use nucleus::ribosome::api::get_links::GetLinksArgs;
+//use ::chain::{
+//     Chain,
+//     SourceChain,
+//};
+    use nucleus::ribosome::api::get_links::GetLinksArgs;
 
     pub fn test_table() -> MemTable {
         MemTable::new()

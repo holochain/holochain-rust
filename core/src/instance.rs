@@ -606,10 +606,6 @@ sys_entry::{ToEntry, EntryType},
         assert!(instance.state().nucleus().has_initialized());
 
         // Setup data
-        let link = Link::new( "12", "34", "fake");
-        let link_entry = LinkListEntry::new(&[link]);
-        let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
-
         let e1 = Entry::new("app1", "alex");
         let e2 = Entry::new("app1", "billy");
 
@@ -625,18 +621,14 @@ sys_entry::{ToEntry, EntryType},
         let action_gl = ActionWrapper::new(Action::GetLinks(req1));
 
         // Setup Process actions
-        let state_observers1: Vec<Observer> = Vec::new();
-        let state_observers2: Vec<Observer> = Vec::new();
-        let state_observers3: Vec<Observer> = Vec::new();
-        let state_observers4: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
 
         // Process actions
-        instance.process_action(action_commit_e1, state_observers1, &rx_observer, &context);
-        instance.process_action(action_commit_e2, state_observers2, &rx_observer, &context);
-        instance.process_action(action_lap, state_observers3, &rx_observer, &context);
-        instance.process_action(action_gl.clone(), state_observers4, &rx_observer, &context);
-        
+        instance.process_action(action_commit_e1, Vec::new(), &rx_observer, &context);
+        instance.process_action(action_commit_e2, Vec::new(), &rx_observer, &context);
+        instance.process_action(action_lap, Vec::new(), &rx_observer, &context);
+        instance.process_action(action_gl.clone(), Vec::new(), &rx_observer, &context);
+
         let mut res = Vec::new();
         res.push(e2.key());
 

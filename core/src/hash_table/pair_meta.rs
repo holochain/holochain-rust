@@ -1,5 +1,5 @@
 // use agent::keys::Keys;
-use hash::serializable_to_b58_hash;
+//use hash::serializable_to_b58_hash;
 use hash_table::{
     HashString,
 };
@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use hash;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
-/// PairMeta represents an extended form of EAV (entity-attribute-value) data
+/// Meta represents an extended form of EAV (entity-attribute-value) data
 /// E = the pair key for hash table lookups
 /// A = the name of the meta attribute
 /// V = the value of the meta attribute

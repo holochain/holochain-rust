@@ -38,34 +38,6 @@ impl PartialEq for Header {
 }
 
 impl Header {
-    /// build a new Header from a chain, entry type and entry.
-    /// a Header is immutable, but the chain is mutable if chain.push() is used.
-    /// this means that a header becomes invalid and useless as soon as the chain is mutated
-    /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
-    /// normally (outside unit tests) the generation of valid headers is internal to the
-    /// chain::SourceChain trait and should not need to be handled manually
-    ///
-    /// @see chain::pair::Pair
-    /// @see chain::entry::Entry
-    pub fn new_from_chain(chain: &Chain, entry: &Entry) -> Header {
-        Header {
-            entry_type: entry.entry_type().clone(),
-            // @TODO implement timestamps
-            // https://github.com/holochain/holochain-rust/issues/70
-            timestamp: String::new(),
-            // link: chain.top_pair().as_ref().map(|p| p.header().hash()),
-            link: chain.top_pair().as_ref().map(|p| p.header().to_entry().key()),
-            entry_hash: entry.hash().to_string(),
-            link_same_type: chain
-                .top_pair_of_type(&entry.entry_type())
-                // @TODO inappropriate expect()?
-                // @see https://github.com/holochain/holochain-rust/issues/147
-                .map(|p| p.header().hash()),
-            // @TODO implement signatures
-            // https://github.com/holochain/holochain-rust/issues/71
-            entry_signature: String::new(),
-        }
-    }
 
     //
     pub fn new(
@@ -185,20 +157,20 @@ mod tests {
 
         // same content + type + state is equal
         assert_eq!(
-            Header::new_from_chain(&chain1, &Entry::new(t1, c1)),
-            Header::new_from_chain(&chain1, &Entry::new(t1, c1))
+            chain1.create_next_header( &Entry::new(t1, c1)),
+            chain1.create_next_header(&Entry::new(t1, c1))
         );
 
         // different content is different
         assert_ne!(
-            Header::new_from_chain(&chain1, &Entry::new(t1, c1)),
-            Header::new_from_chain(&chain1, &Entry::new(t1, c2))
+            chain1.create_next_header(&Entry::new(t1, c1)),
+            chain1.create_next_header(&Entry::new(t1, c2))
         );
 
         // different type is different
         assert_ne!(
-            Header::new_from_chain(&chain1, &Entry::new(t1, c1)),
-            Header::new_from_chain(&chain1, &Entry::new(t2, c1)),
+            chain1.create_next_header(&Entry::new(t1, c1)),
+            chain1.create_next_header(&Entry::new(t2, c1)),
         );
 
         // different state is different
@@ -208,7 +180,7 @@ mod tests {
             .commit_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_ne!(Header::new_from_chain(&chain1, &e), Header::new_from_chain(&chain2, &e));
+        assert_ne!(chain1.create_next_header(&e), chain2.create_next_header(&e));
     }
 
     #[test]
@@ -217,7 +189,7 @@ mod tests {
         let chain = test_chain();
         let t = "type";
         let e = Entry::new(t, "foo");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!(h.entry_hash(), e.hash());
         assert_eq!(h.link(), None);
@@ -231,7 +203,7 @@ mod tests {
         let chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!(h.entry_type(), "foo");
     }
@@ -242,7 +214,7 @@ mod tests {
         let chain = test_chain();
         let t = "foo";
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!(h.timestamp(), "");
     }
@@ -281,7 +253,7 @@ mod tests {
 
         // header for an entry should contain the entry hash under entry()
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!(h.entry_hash(), e.hash());
     }
@@ -294,6 +266,7 @@ mod tests {
         let t2 = "bar";
 
         // first header is genesis so next should be None
+        println!("\nFirst Header:");
         let e1 = Entry::new(t1, "");
         let p1 = chain
             .commit_entry(&e1)
@@ -303,6 +276,7 @@ mod tests {
         assert_eq!(h1.link_same_type(), None);
 
         // second header is a different type so next should be None
+        println!("\nSecond Header:");
         let e2 = Entry::new(t2, "");
         let p2 = chain
             .commit_entry(&e2)
@@ -312,13 +286,17 @@ mod tests {
         assert_eq!(h2.link_same_type(), None);
 
         // third header is same type as first header so next should be first header hash
+        println!("\nThird Header:");
         let e3 = Entry::new(t1, "");
         let p3 = chain
             .commit_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
+        println!("\n\th3 = {:?}", h3);
+
         assert_eq!(h3.link_same_type(), Some(h1.hash()));
+        //assert_eq!(h3.link_same_type(), Some(h1.to_entry().key()));
     }
 
     #[test]
@@ -328,7 +306,7 @@ mod tests {
         let t = "foo";
 
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!("", h.entry_signature());
     }
@@ -341,7 +319,7 @@ mod tests {
 
         // check a known hash
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert_eq!("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9", h.hash());
     }
@@ -354,16 +332,16 @@ mod tests {
 
         // different entries must return different hashes
         let e1 = Entry::new(t, "");
-        let h1 = Header::new_from_chain(&chain, &e1);
+        let h1 = chain.create_next_header(&e1);
 
         let e2 = Entry::new(t, "a");
-        let h2 = Header::new_from_chain(&chain, &e2);
+        let h2 = chain.create_next_header(&e2);
 
         assert_ne!(h1.hash(), h2.hash());
 
         // same entry must return same hash
         let e3 = Entry::new(t, "");
-        let h3 = Header::new_from_chain(&chain, &e3);
+        let h3 = chain.create_next_header(&e3);
 
         assert_eq!(h1.hash(), h3.hash());
     }
@@ -379,8 +357,8 @@ mod tests {
         let e1 = Entry::new(t1, c);
         let e2 = Entry::new(t2, c);
 
-        let h1 = Header::new_from_chain(&chain, &e1);
-        let h2 = Header::new_from_chain(&chain, &e2);
+        let h1 = chain.create_next_header(&e1);
+        let h2 = chain.create_next_header(&e2);
 
         // different types must give different hashes
         assert_ne!(h1.hash(), h2.hash());
@@ -394,7 +372,7 @@ mod tests {
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         let p1 = chain
             .commit_entry(&e)
@@ -422,7 +400,7 @@ mod tests {
         let t = "foo";
 
         let e = Entry::new(t, "");
-        let h = Header::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
 
         assert!(h.validate());
     }

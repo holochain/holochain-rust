@@ -177,43 +177,43 @@ pub mod tests {
         assert_eq!(test_pair_meta().source(), test_keys().node_id());
     }
 
-    #[test]
-    /// test that we can sort pair metas with cmp
-    fn cmp() {
-        let p1 = test_pair_a();
-        let p2 = test_pair_b();
-
-        // basic ordering
-        let m_1ax = Meta::new(&test_keys().node_id(), &p1.key(), "a", "x");
-        let m_1ay = Meta::new(&test_keys().node_id(), &p1.key(), "a", "y");
-        let m_1bx = Meta::new(&test_keys().node_id(), &p1.key(), "b", "x");
-        let m_2ax = Meta::new(&test_keys().node_id(), &p2.key(), "a", "x");
-
-        // sort by pair key
-        assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
-        assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
-        assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
-        assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
-
-        // pair key with operators
-        assert!(m_1ax < m_2ax);
-        assert!(m_2ax > m_1ax);
-        assert!(m_1ay < m_2ax);
-
-        // sort by attribute key
-        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
-        assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
-
-        // attribute key with operators
-        assert!(m_1ax < m_1bx);
-        assert!(m_1bx > m_1ax);
-
-        // sort by attribute value
-        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
-        assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
-
-        // attribute value with operators
-        assert!(m_1ax < m_1ay);
-        assert!(m_1ay > m_1ax);
-    }
+//    #[test]
+//    /// test that we can sort pair metas with cmp
+//    fn cmp() {
+//        let p1 = test_pair_a();
+//        let p2 = test_pair_b();
+//
+//        // basic ordering
+//        let m_1ax = Meta::new(&test_keys().node_id(), &p1.key(), "a", "x");
+//        let m_1ay = Meta::new(&test_keys().node_id(), &p1.key(), "a", "y");
+//        let m_1bx = Meta::new(&test_keys().node_id(), &p1.key(), "b", "x");
+//        let m_2ax = Meta::new(&test_keys().node_id(), &p2.key(), "a", "x");
+//
+//        // sort by pair key
+//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
+//        assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
+//        assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
+//        assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
+//
+//        // pair key with operators
+//        assert!(m_1ax < m_2ax);
+//        assert!(m_2ax > m_1ax);
+//        assert!(m_1ay < m_2ax);
+//
+//        // sort by attribute key
+//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
+//        assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
+//
+//        // attribute key with operators
+//        assert!(m_1ax < m_1bx);
+//        assert!(m_1bx > m_1ax);
+//
+//        // sort by attribute value
+//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
+//        assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
+//
+//        // attribute value with operators
+//        assert!(m_1ax < m_1ay);
+//        assert!(m_1ay > m_1ax);
+//    }
 }

@@ -106,7 +106,7 @@ mod tests {
             .into_bytes()
     }
 
-    // FIXME
+
 //    #[test]
 //    fn test_link_entries_round_trip() {
 //        let (runtime, _) = test_zome_api_function_runtime(

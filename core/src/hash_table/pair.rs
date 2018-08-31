@@ -14,42 +14,8 @@ pub struct Pair {
 }
 
 impl Pair {
-    /// build a new Pair from a chain and entry
-    ///
-    /// Header is generated automatically
-    ///
-    /// a Pair is immutable, but the chain is mutable if chain.push() is used.
-    ///
-    /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
-    /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
-    /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
-    /// now be valid, the new Y' will include correct headers pointing to X.
-    ///
-    /// # Panics
-    ///
-    /// Panics if entry is somehow invalid
-    ///
-    /// @see chain::entry::Entry
-    /// @see chain::header::Header
-    pub fn new_from_chain(chain: &Chain, entry: &Entry) -> Pair {
-        let header = Header::new_from_chain(chain, entry);
-
-        //println!("Pair.new_from_chain(): header.link = {:?}", header.link());
-
-        let new_pair = Pair {
-            header: header,
-            entry: entry.clone(),
-        };
-
-        // we panic as no code path should attempt to create invalid pairs
-        // creating a Pair is an internal process of chain.push() and is deterministic based on
-        // an immutable Entry (that itself cannot be invalid), so this should never happen.
-        assert!(new_pair.validate(), "attempted to create an invalid pair");
-
-        new_pair
-    }
-
-    pub fn new_from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Pair> {
+    // Reconstruct Pair from Header stored in a HashTable
+    pub fn new_from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
         let entry = table.entry(&header.entry_hash()).expect("should not attempt to create invalid pair");
         if entry.is_none() {
             return None;
@@ -59,6 +25,10 @@ impl Pair {
             header: header.clone(),
             entry: entry.expect("should not attempt to create invalid pair"),
         })
+    }
+
+    pub fn new(header: &Header, entry: &Entry) -> Self {
+        Pair {header: header.clone(), entry: entry.clone()}
     }
 
     /// header getter
@@ -124,7 +94,7 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        Pair::new_from_chain(&test_chain(), &test_entry())
+        test_chain().create_next_pair(&test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -134,7 +104,7 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        Pair::new_from_chain(&test_chain(), &test_entry_b())
+        test_chain().create_next_pair(&test_entry_b())
     }
 
     #[test]
@@ -143,12 +113,12 @@ pub mod tests {
         let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
-        let h1 = Header::new_from_chain(&chain, &e1);
+        let h1 = chain.create_next_header( &e1);
 
         assert_eq!(h1.entry_hash(), e1.hash());
         assert_eq!(h1.link(), None);
 
-        let p1 = Pair::new_from_chain(&chain, &e1.clone());
+        let p1 = chain.create_next_pair(&e1.clone());
         assert_eq!(&e1, p1.entry());
         assert_eq!(&h1, p1.header());
     }
@@ -160,8 +130,8 @@ pub mod tests {
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
-        let h = Header::new_from_chain(&chain, &e);
-        let p = Pair::new_from_chain(&chain, &e);
+        let h = chain.create_next_header(&e);
+        let p = chain.create_next_pair(&e);
 
         assert_eq!(&h, p.header());
     }
@@ -186,7 +156,7 @@ pub mod tests {
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");
-        let p1 = Pair::new_from_chain(&chain, &e1);
+        let p1 = chain.create_next_pair(&e1);
 
         assert!(p1.validate());
     }

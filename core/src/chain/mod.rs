@@ -97,11 +97,73 @@ impl Chain {
         }
     }
 
-    /// table getter
-    /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> ActorRef<Protocol> {
-        self.table_actor.clone()
+    /// build a new Header from a chain, entry type and entry.
+    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+    /// this means that a header becomes invalid and useless as soon as the chain is mutated
+    /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
+    /// normally (outside unit tests) the generation of valid headers is internal to the
+    /// chain::SourceChain trait and should not need to be handled manually
+    ///
+    /// @see chain::pair::Pair
+    /// @see chain::entry::Entry
+    pub fn create_next_header(&self, entry: &Entry) -> Header {
+        // println!("Pair.new_from_chain(): header.link = {:?}", self.top_pair().as_ref().map(|p| p.header().to_entry().key()));
+        Header::new(
+            &entry.entry_type().clone(),
+            // @TODO implement timestamps
+            // https://github.com/holochain/holochain-rust/issues/70
+            &String::new(),
+            // link: chain.top_pair().as_ref().map(|p| p.header().hash()),
+            self.top_pair().as_ref().map(|p| p.header().to_entry().key()),
+            &entry.hash().to_string(),
+            // @TODO implement signatures
+            // https://github.com/holochain/holochain-rust/issues/71
+            &String::new(),
+            self
+                .top_pair_of_type(&entry.entry_type())
+                // @TODO inappropriate expect()?
+                // @see https://github.com/holochain/holochain-rust/issues/147
+                .map(|p| p.header().hash()),
+
+        )
     }
+
+    /// build a new Pair from a chain and entry
+    ///
+    /// Header is generated automatically
+    ///
+    /// a Pair is immutable, but the chain is mutable if chain.push() is used.
+    ///
+    /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
+    /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
+    /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
+    /// now be valid, the new Y' will include correct headers pointing to X.
+    ///
+    /// # Panics
+    ///
+    /// Panics if entry is somehow invalid
+    ///
+    /// @see chain::entry::Entry
+    /// @see chain::header::Header
+    pub fn create_next_pair(&self, entry: &Entry) -> Pair {
+        let header = self.create_next_header(entry);
+
+        // println!("Pair.new_from_chain(): header = {:?}", header);
+
+        let new_pair = Pair::new(
+            //&header,
+            &self.create_next_header(entry),
+            &entry.clone(),
+        );
+
+        // we panic as no code path should attempt to create invalid pairs
+        // creating a Pair is an internal process of chain.push() and is deterministic based on
+        // an immutable Entry (that itself cannot be invalid), so this should never happen.
+        assert!(new_pair.validate(), "attempted to create an invalid pair");
+
+        new_pair
+    }
+
 
     /// returns true if all pairs in the chain pass validation
     fn validate(&self) -> bool {
@@ -136,6 +198,12 @@ impl Chain {
             chain.commit_pair(&p).expect("pair should be valid");
         }
         chain
+    }
+
+    /// table getter
+    /// returns a reference to the underlying HashTable
+    pub fn table(&self) -> ActorRef<Protocol> {
+        self.table_actor.clone()
     }
 }
 
@@ -219,8 +287,8 @@ impl SourceChain for Chain {
     }
 
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = Pair::new_from_chain(self, entry);
-        // println!("chain.commit_entry(): pair = {:?}", pair.header().link());
+        let pair = self.create_next_pair(entry);
+        // println!("chain.commit_entry(): pair.header = {:?}", pair.header());
         self.commit_pair(&pair)
     }
 

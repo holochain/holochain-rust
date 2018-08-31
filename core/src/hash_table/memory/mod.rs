@@ -179,9 +179,12 @@ impl HashTable for MemTable {
         Ok(())
     }
 
+
+    // Return a Meta from a Meta key
     fn get_meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
         Ok(self.metas.get(key).cloned())
     }
+
 
 //    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<Meta>, HolochainError> {
 //        let mut vec_meta = self
@@ -197,6 +200,7 @@ impl HashTable for MemTable {
 //    }
 
 
+    // Return all the Meta for an entry
     fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
         let mut vec_meta = self
             .metas
@@ -233,13 +237,13 @@ pub mod tests {
         sys_entry::ToEntry,
         memory::MemTable,
         pair::tests::{test_pair,
-        //               test_pair_a, test_pair_b,
+                       test_pair_a, test_pair_b,
         },
         pair_meta::{
             tests::{test_pair_meta,
-            //         test_pair_meta_a, test_pair_meta_b,
+                     test_pair_meta_a, test_pair_meta_b,
             },
-            // Meta,
+             Meta,
         },
         // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
@@ -366,40 +370,68 @@ pub mod tests {
         );
     }
 
+    #[test]
+    /// all Meta for an Entry can be retrieved with get_entry_meta
+    fn can_get_entry_meta() {
+        let mut table = test_table();
+        let pair = test_pair();
+        let pair_meta_a = test_pair_meta_a();
+        let pair_meta_b = test_pair_meta_b();
+        let empty_vec: Vec<Meta> = Vec::new();
+
+        let pair_entry = pair.header().to_entry();
+
+        assert_eq!(
+            empty_vec,
+            table
+                .get_entry_meta(&pair_entry)
+                .expect("getting the metadata on a pair shouldn't fail")
+        );
+
+        table
+            .assert_meta(&pair_meta_a)
+            .expect("asserting metadata shouldn't fail");
+        assert_eq!(
+            vec![pair_meta_a.clone()],
+            table
+                .get_entry_meta(&pair_entry)
+                .expect("getting the metadata on a pair shouldn't fail")
+        );
+
+        table
+            .assert_meta(&pair_meta_b.clone())
+            .expect("asserting metadata shouldn't fail");
+        assert_eq!(
+            vec![pair_meta_b.clone(), pair_meta_a.clone()],
+            table
+                .get_entry_meta(&pair_entry)
+                .expect("getting the metadata on a pair shouldn't fail")
+        );
+
+
+        // test meta_for
+        assert_eq!(
+            Some(pair_meta_a.clone()),
+            table
+                .get_meta_for(pair_entry.key(), &pair_meta_a.attribute())
+                .expect("getting the metadata on a pair shouldn't fail")
+        );
+        assert_eq!(
+            Some(pair_meta_b.clone()),
+            table
+                .get_meta_for(pair_entry.key(), &pair_meta_b.attribute())
+                .expect("getting the metadata on a pair shouldn't fail")
+        );
+    }
+
+
 //    #[test]
-//    /// all PairMeta for a Pair can be retrieved with pair_meta
-//    fn get_pair_meta() {
-//        let mut table = test_table();
-//        let pair = test_pair();
-//        let pair_meta_a = test_pair_meta_a();
-//        let pair_meta_b = test_pair_meta_b();
-//        let empty_vec: Vec<Meta> = Vec::new();
+//    fn can_add_link() {
+//        let mut table = MemTable::new();
+//        let pair = Pair::new_from_chain(Chain::new(HashTableActor::new_ref(table)), &test_entry())
+//        let pair_entry = pair.header().to_entry();
 //
-//        assert_eq!(
-//            empty_vec,
-//            table
-//                .get_pair_meta(&pair)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
-//
-//        table
-//            .assert_meta(&pair_meta_a)
-//            .expect("asserting metadata shouldn't fail");
-//        assert_eq!(
-//            vec![pair_meta_a.clone()],
-//            table
-//                .get_pair_meta(&pair)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
-//
-//        table
-//            .assert_meta(&pair_meta_b.clone())
-//            .expect("asserting metadata shouldn't fail");
-//        assert_eq!(
-//            vec![pair_meta_b, pair_meta_a],
-//            table
-//                .get_pair_meta(&pair)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
+//        let link = Link::new();
+//        table.add_link();
 //    }
 }

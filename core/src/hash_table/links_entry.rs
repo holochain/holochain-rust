@@ -168,7 +168,7 @@ pub mod tests {
         Action::CommitEntry(entry) => {
           assert_eq!(
             EntryType::from_str(&entry.entry_type()).unwrap(),
-            EntryType::Link,
+            EntryType::LinkList,
           );
           assert_eq!(entry.content(), link_entry.to_entry().content());
           true
@@ -206,7 +206,7 @@ pub mod tests {
         Action::CommitEntry(entry) => {
           assert_eq!(
             EntryType::from_str(&entry.entry_type()).unwrap(),
-            EntryType::Link,
+            EntryType::LinkList,
           );
           assert_eq!(entry.content(), link_entry.to_entry().content());
           true

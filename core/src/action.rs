@@ -62,16 +62,6 @@ impl Hash for ActionWrapper {
     }
 }
 
-//#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-//pub struct GetLinksRequest {
-//    pub entry_hash: HashString,
-//    pub tag: String,
-//}
-
-//impl GetLinksRequest {
-//    pub fn key(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
-//}
-
 #[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
     /// entry to Commit

@@ -41,19 +41,15 @@ impl Iterator for ChainIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|h| {
-                //println!("h = {}", h);
-                // println!("table = {:?}", &self.table);
                 let header_entry = &self.table_actor.entry(&h.to_string())
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
+                // Recreate the Pair from the HeaderEntry
                 let header = Header::new_from_entry(header_entry);
-                // println!("ChainIterator.next(): header = {:?}", header);
                 let pair = Pair::new_from_header(&self.table_actor, &header);
-                // println!("ChainIterator.next(): pair   = {:?}", pair.clone().unwrap().header());
                 pair
             })
         ;
-        //println!("ChainIterator.next of {:?} is {:?}", previous, self.current);
         previous
     }
 }
@@ -256,24 +252,25 @@ impl SourceChain for Chain {
 
         if top_pair != prev_pair {
             return Err(HolochainError::new(&format!(
-                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                "top pair did not match previous hash pair from commited pair: {:?} vs. {:?}",
                 top_pair, prev_pair,
             )));
         }
 
         // 2. pushing
+        // 3. putting
+        let header_entry = &pair.clone().header().to_entry();
+        // println!("Chain.commit_pair() header_entry = {:?}", header_entry);
+        self.table_actor.put(header_entry)?;
+        self.table_actor.put(&pair.clone().entry())?;
+
+        // 4. Mutate Chain accordingly
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
         // @see https://github.com/holochain/holochain-rust/issues/258
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
-
-        // 3. putting
-        let header_entry = &pair.clone().header().to_entry();
-        // println!("Chain.commit_pair() header_entry = {:?}", header_entry);
-        self.table_actor.put(header_entry)?;
-        self.table_actor.put(&pair.clone().entry())?;
 
         // Done
         Ok(pair.clone())
@@ -285,6 +282,7 @@ impl SourceChain for Chain {
         self.commit_pair(&pair)
     }
 
+    /// Browse Chain until Pair is found
     fn pair(&self, pair_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
@@ -293,11 +291,11 @@ impl SourceChain for Chain {
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-                //println!("\t = {}?", p.entry().hash());
                 p.key() == pair_hash
             }))
     }
 
+    /// Browse Chain until Pair with entry_hash is found
     fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         //println!("chain.entry() = {}", entry_hash);
         // @TODO - this is a slow way to do a lookup
@@ -307,11 +305,7 @@ impl SourceChain for Chain {
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-//                if p.entry().hash() == entry_hash {
-//                    println!("\t entry() = {:?}?", p.header());
-//                }
                 p.entry().hash() == entry_hash
-                // false
             }))
     }
 }
@@ -404,9 +398,9 @@ pub mod tests {
         assert_eq!(c1.top_pair(), c2.top_pair());
     }
 
-    /// tests for chain.table()
+
     #[test]
-    fn can_table_push() {
+    fn can_table_put() {
         let table_actor = test_table_actor();
         let mut chain = Chain::new(table_actor.clone());
 
@@ -418,20 +412,20 @@ pub mod tests {
         let table_entry = table_actor
             .entry(&pair.entry().key())
             .expect("getting an entry from a table in a chain shouldn't fail")
-            .expect("table_entry should have entry");
+            .expect("table should have entry");
         let chain_pair = chain
             .entry(&pair.entry().key())
             .expect("getting an entry from a chain shouldn't fail")
-            .expect("chain_pair should have pair");
+            .expect("chain should have pair");
 
         assert_eq!(pair.entry(), &table_entry);
         assert_eq!(pair, chain_pair);
         assert_eq!(&table_entry, chain_pair.entry());
     }
 
-    /// tests for chain.push()
+
     #[test]
-    fn can_push() {
+    fn can_commit_entry() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_pair());
@@ -457,7 +451,7 @@ pub mod tests {
         assert_eq!(e2.hash(), p2.header().entry_hash());
     }
 
-    /// test chain.validate()
+
     #[test]
     fn can_validate() {
         println!("can_validate: Empty Chain");
@@ -479,8 +473,8 @@ pub mod tests {
         assert!(chain.validate());
     }
 
-    /// test chain.push() and chain.get() together
     #[test]
+    /// test chain.push() and chain.get() together
     fn round_trip() {
         let mut chain = test_chain();
         let entry = test_entry();
@@ -497,8 +491,8 @@ pub mod tests {
         );
     }
 
-    /// show that we can push the chain a bit without issues e.g. async
     #[test]
+    /// show that we can push the chain a bit without issues e.g. async
     fn round_trip_stress_test() {
         let h = thread::spawn(|| {
             let mut chain = test_chain();
@@ -514,7 +508,7 @@ pub mod tests {
 
     #[test]
     /// test chain.iter()
-    fn chain_iter() {
+    fn iter() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -532,7 +526,7 @@ pub mod tests {
 
     #[test]
     /// test chain.iter() functional interface
-    fn chain_iter_functional() {
+    fn iter_functional() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -557,9 +551,9 @@ pub mod tests {
         );
     }
 
-    /// test chain.get()
     #[test]
-    fn can_get_entry() {
+    /// test chain.get()
+    fn get_entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -686,9 +680,8 @@ pub mod tests {
         );
     }
 
-    /// test chain.top_type()
     #[test]
-    fn chain_top_pair_of_type() {
+    fn top_pair_of_type() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_pair_of_type(&test_type_a()));
@@ -723,8 +716,8 @@ pub mod tests {
         assert_eq!(Some(&pair2), chain.top_pair_of_type(&test_type_b()).as_ref());
     }
 
-    /// test IntoIterator implementation
     #[test]
+    /// test IntoIterator implementation
     fn into_iter() {
         let mut chain = test_chain();
 
@@ -745,8 +738,8 @@ pub mod tests {
         assert_eq!(vec![p3, p2, p1], chain.into_iter().collect::<Vec<Pair>>());
     }
 
-    /// test to_json() and from_json() implementation
     #[test]
+    /// test to_json() and from_json() implementation
     fn json_round_trip() {
         let mut chain = test_chain();
 

@@ -45,6 +45,15 @@ impl HashTable for ActorRef<Protocol> {
 //        unwrap_to!(response => Protocol::ModifyResult).clone()
 //    }
 
+
+    //    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
+//        let response = self.block_on_ask(Protocol::Retract {
+//            keys: keys.clone(),
+//            pair: pair.clone(),
+//        });
+//        unwrap_to!(response => Protocol::RetractResult).clone()
+//    }
+
     // Add Link Meta
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AddLink(link.clone()));
@@ -53,7 +62,7 @@ impl HashTable for ActorRef<Protocol> {
 
     // Remove Link from a LinkMeta
     fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        // TODO
+        // TODO #278 - Removable links features
         Err(HolochainError::NotImplemented)
     }
 
@@ -62,15 +71,6 @@ impl HashTable for ActorRef<Protocol> {
         let response = self.block_on_ask(Protocol::Links(request.clone()));
         unwrap_to!(response => Protocol::LinksResult).clone()
     }
-
-
-//    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-//        let response = self.block_on_ask(Protocol::Retract {
-//            keys: keys.clone(),
-//            pair: pair.clone(),
-//        });
-//        unwrap_to!(response => Protocol::RetractResult).clone()
-//    }
 
     fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
@@ -87,7 +87,6 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::EntryMetaResult).clone()
     }
 
-    // ;)
     fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str)
         -> Result<Option<Meta>, HolochainError>
     {
@@ -152,7 +151,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Entry(hash) => Protocol::EntryResult(self.table.entry(&hash)),
 
-//
+// FIXME
 //                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
 //
 //                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),

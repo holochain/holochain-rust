@@ -95,7 +95,6 @@ impl ActionResponse {
                 },
                 Err(err) => (*err).to_json(),
             },
-            // FIXME copy of ActionResponse::CommitEntry(result) , should merge with match
             ActionResponse::LinkAppEntries(result) => match result {
                 Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
                 Err(err) => (*err).to_json(),
@@ -118,14 +117,14 @@ fn reduce_lap(
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::LinkAppEntries);
 
-    // Validate Link
-    // FIXME
+    // TODO #277
+    // Validate Link Here
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
     let mut response =  state.chain.commit_entry(&link_entry.to_entry());
 
-    // Add Link to HashTable (adds to LinkListEntry PairMeta)
+    // Add Link to HashTable (adds to the LinkListEntry Meta)
     let res = state.chain.table().add_link(link);
     if res.is_err() {
         response = Err(res.err().unwrap());

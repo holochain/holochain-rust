@@ -169,11 +169,11 @@ fn reduce_gl(
                 ActionResponse::GetLinks(Ok(Vec::new())));
         return;
     }
-    let links_entry = maybe_lle.unwrap();
+    let lle = maybe_lle.unwrap();
 
     // Extract list of target hashes
     let mut link_hashes = Vec::new();
-    for link in links_entry.links {
+    for link in lle.links {
         link_hashes.push(link.target().to_string());
     }
 
@@ -275,13 +275,19 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
+    use super::*;
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use chain::tests::test_chain;
     use error::HolochainError;
-    use hash_table::pair::tests::test_pair;
+    use hash_table::{
+        pair::tests::test_pair,
+        entry::Entry,
+        links_entry::Link,
+    };
     use instance::tests::{test_context, test_instance_blank};
     use std::{collections::HashMap, sync::Arc};
+    use action::ActionWrapper;
+    use nucleus::ribosome::api::get_links::GetLinksArgs;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -314,6 +320,116 @@ pub mod tests {
     /// test for the agent state actions getter
     fn agent_state_actions() {
         assert_eq!(HashMap::new(), test_agent_state().actions());
+    }
+
+    /// test for reducing GetLinks
+    #[test]
+    fn test_reduce_get_links_empty() {
+        let mut state = test_agent_state();
+
+        let req1 = GetLinksArgs{entry_hash: "0x42".to_string(), tag: "child".to_string()};
+        let action_wrapper = ActionWrapper::new(Action::GetLinks(req1));
+
+        let instance = test_instance_blank();
+
+        reduce_gl(
+            test_context("camille"),
+            &mut state,
+            &action_wrapper,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+
+        assert_eq!(
+            Some(&ActionResponse::GetLinks(Ok(Vec::new()))),
+            state.actions().get(&action_wrapper),
+        );
+    }
+
+    /// test for reducing LinkAppEntries
+    #[test]
+    fn test_reduce_link_app_entries_empty() {
+        let mut state = test_agent_state();
+
+        let link = Link::new("0x12", "0x34", "child");
+        let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(link));
+
+        let instance = test_instance_blank();
+
+        reduce_lap(
+            test_context("camille"),
+            &mut state,
+            &action_wrapper,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+
+        assert_eq!(
+            Some(&ActionResponse::LinkAppEntries(Err(HolochainError::ErrorGeneric("Pair from base not found".to_string())))),
+            state.actions().get(&action_wrapper),
+        );
+    }
+
+    /// test for reducing LinkAppEntries
+    #[test]
+    fn test_reduce_link_app_entries() {
+        let context = test_context("camille");
+
+        let e1 = Entry::new("app1", "alex");
+        let e2 = Entry::new("app1", "billy");
+
+        let t1 = "child".to_string();
+
+        let req1 = GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+
+        let link = Link::new(&e1.key(), &e2.key(), &t1);
+
+        let action_commit_e1 =  ActionWrapper::new(Action::CommitEntry(e1.clone()));
+        let action_commit_e2 =  ActionWrapper::new(Action::CommitEntry(e2.clone()));
+        let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
+        let action_gl = ActionWrapper::new(Action::GetLinks(req1));
+
+        let mut state = test_agent_state();
+
+        let instance = test_instance_blank();
+
+        reduce_commit_entry(
+            context.clone(),
+            &mut state,
+            &action_commit_e1,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+        reduce_commit_entry(
+            context.clone(),
+            &mut state,
+            &action_commit_e2,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+        reduce_lap(
+            context.clone(),
+            &mut state,
+            &action_lap,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+        reduce_gl(
+            context.clone(),
+            &mut state,
+            &action_gl,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+
+        let mut res = Vec::new();
+        res.push(e2.key());
+
+        assert_eq!(
+            Some(&ActionResponse::GetLinks(Ok(res))),
+            state.actions().get(&action_gl),
+        );
+
     }
 
     #[test]

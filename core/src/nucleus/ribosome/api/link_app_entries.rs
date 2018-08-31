@@ -40,8 +40,7 @@ pub fn invoke_link_app_entries(
         }
     };
 
-    // Create Commit Action
-    // FIXME should be a LinkAppEntries Action
+    // Create LinkAppEntries Action
     let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(input));
     // Send Action and block for result
     let (sender, receiver) = channel();

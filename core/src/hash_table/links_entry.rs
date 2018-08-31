@@ -39,8 +39,8 @@ impl Link {
 
   // Getters
   pub fn base(&self) -> &str { &self.base }
-  pub fn target(&self) -> &str  { &self.base }
-  pub fn tag(&self) -> &str  { &self.base }
+  pub fn target(&self) -> &str  { &self.target }
+  pub fn tag(&self) -> &str  { &self.tag }
 }
 
 //-------------------------------------------------------------------------------------------------

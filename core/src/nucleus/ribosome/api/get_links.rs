@@ -35,11 +35,11 @@ pub fn invoke_get_links(
             HcApiReturnCode::ErrorSerdeJson as i32,
         )));
     }
-
     let input = res_entry.unwrap();
 
+    // Create GetLinks Action
     let action_wrapper = ActionWrapper::new(Action::GetLinks(input));
-
+    // Send Action and block for result
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,

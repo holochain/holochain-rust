@@ -166,15 +166,19 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 //                        Protocol::RetractResult(self.table.retract(&keys, &pair))
 //                    }
 
+                    Protocol::Links(req) => {
+                        Protocol::LinksResult(self.table.links(&req))
+                    }
+
+                    Protocol::AddLink(link) => {
+                        Protocol::AddLinkResult(self.table.add_link(&link))
+                    }
+
                     Protocol::AssertMeta(pair_meta) => {
                         Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
                     }
 
                     Protocol::Meta(key) => Protocol::MetaResult(self.table.get_meta(&key)),
-
-//                    Protocol::PairMeta(pair) => {
-//                        Protocol::PairMetaResult(self.table.get_pair_meta(&pair))
-//                    }
 
                     Protocol::EntryMeta(entry) => {
                         Protocol::EntryMetaResult(self.table.get_entry_meta(&entry))

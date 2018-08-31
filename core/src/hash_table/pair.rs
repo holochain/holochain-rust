@@ -1,5 +1,5 @@
 use chain::Chain;
-use hash_table::{entry::Entry, header::Header, HashTable};
+use hash_table::{entry::Entry, header::Header, HashTable, sys_entry::ToEntry};
 use serde_json;
 use riker::actors::*;
 use actor::Protocol;
@@ -33,6 +33,8 @@ impl Pair {
     /// @see chain::header::Header
     pub fn new_from_chain(chain: &Chain, entry: &Entry) -> Pair {
         let header = Header::new_from_chain(chain, entry);
+
+        println!("Pair.new_from_chain(): header.link = {:?}", header.link());
 
         let new_pair = Pair {
             header: header,
@@ -71,7 +73,8 @@ impl Pair {
 
     /// key used in hash table lookups and other references
     pub fn key(&self) -> String {
-        self.header.hash()
+        // self.header.hash()
+        self.header.to_entry().key()
     }
 
     /// true if the pair is valid

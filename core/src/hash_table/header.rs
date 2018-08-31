@@ -53,7 +53,8 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
-            link: chain.top_pair().as_ref().map(|p| p.header().hash()),
+            // link: chain.top_pair().as_ref().map(|p| p.header().hash()),
+            link: chain.top_pair().as_ref().map(|p| p.header().to_entry().key()),
             entry_hash: entry.hash().to_string(),
             link_same_type: chain
                 .top_pair_of_type(&entry.entry_type())
@@ -153,7 +154,6 @@ impl Header {
 //
 impl ToEntry for Header {
     fn to_entry(&self) -> Entry {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
         Entry::new(EntryType::Header.as_str(), &self.to_json())
     }
 

@@ -14,7 +14,7 @@ use serde_json;
 /// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
     current: Option<Pair>,
 }
 
@@ -24,7 +24,7 @@ impl ChainIterator {
     pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
-            table: table.clone(),
+            table_actor: table.clone(),
         }
     }
 }
@@ -35,18 +35,25 @@ impl Iterator for ChainIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
+
         self.current = previous.as_ref()
             .and_then(|p| p.header().link())
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|h| {
-                let header = Header::new_from_entry(&self.table.entry(&h.to_string())
-                    .expect("getting from a table shouldn't fail")
-                    .expect("getting from a table shouldn't fail")
-                );
-                Pair::new_from_header(&self.table, &header)
+                //println!("h = {}", h);
+                // println!("table = {:?}", &self.table);
+                let header_entry = &self.table_actor.entry(&h.to_string())
+                                    .expect("getting from a table shouldn't fail")
+                                    .expect("getting from a table shouldn't fail");
+                let header = Header::new_from_entry(header_entry);
+                println!("ChainIterator.next(): header = {:?}", header);
+                let pair = Pair::new_from_header(&self.table_actor, &header);
+                // println!("ChainIterator.next(): pair   = {:?}", pair.clone().unwrap().header());
+                pair
             })
         ;
+        //println!("ChainIterator.next of {:?} is {:?}", previous, self.current);
         previous
     }
 }
@@ -154,7 +161,7 @@ pub trait SourceChain {
     fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
 
     // /// get a Pair by Pair/Header key from the HashTable if it exists
-//    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
+    fn pair(&self, pair_hast: &str) -> Result<Option<Pair>, HolochainError>;
 }
 
 impl SourceChain for Chain {
@@ -172,7 +179,7 @@ impl SourceChain for Chain {
 
     /// Whole process of authoring an entry.
     /// 1. `validation` of the new entry using the ribosome and validation WASM code
-    /// 2. `pushing` the new entry onto the source chain, if vaild
+    /// 2. `pushing` the new entry onto the source chain, if valid
     /// 3. `putting` the entry into the (distributed) hash table, if defined as public
     fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
 
@@ -183,21 +190,17 @@ impl SourceChain for Chain {
             ));
         }
 
-        // 2. pushing
         let top_pair = self.top_pair().as_ref().map(|p| p.key());
-        let next_pair = pair.header().link();
+        let prev_pair = pair.header().link();
 
-        if top_pair != next_pair {
+        if top_pair != prev_pair {
             return Err(HolochainError::new(&format!(
                 "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                top_pair, next_pair,
+                top_pair, prev_pair,
             )));
         }
 
-        // 3. putting
-        self.table_actor.put(&pair.clone().header().to_entry())?;
-        self.table_actor.put(&pair.clone().entry())?;
-
+        // 2. pushing
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
         // @see https://github.com/holochain/holochain-rust/issues/258
@@ -205,27 +208,50 @@ impl SourceChain for Chain {
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
 
+        // 3. putting
+        let header_entry = &pair.clone().header().to_entry();
+        // println!("Chain.commit_pair() header_entry = {:?}", header_entry);
+        self.table_actor.put(header_entry)?;
+        self.table_actor.put(&pair.clone().entry())?;
+
+        // Done
         Ok(pair.clone())
     }
 
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = Pair::new_from_chain(self, entry);
+        println!("chain.commit_entry(): pair = {:?}", pair.header().link());
         self.commit_pair(&pair)
     }
 
-//    fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-//        let response = self.table.block_on_ask(Protocol::Pair(k.to_string()));
-//        unwrap_to!(response => Protocol::PairResult).clone()
-//    }
-
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, pair_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| {
+                //println!("\t = {}?", p.entry().hash());
+                p.key() == pair_hash
+            }))
+    }
+
+    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+        //println!("chain.entry() = {}", entry_hash);
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        Ok(self
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| {
+                if p.entry().hash() == entry_hash {
+                    println!("\t entry() = {:?}?", p.header());
+                }
+                // p.entry().hash() == entry_hash
+                false
+            }))
     }
 }
 
@@ -329,15 +355,17 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
-            .entry(&pair.key())
-            .expect("getting an entry from a table in a chain shouldn't fail");
+            .entry(&pair.entry().key())
+            .expect("getting an entry from a table in a chain shouldn't fail")
+            .expect("table_entry should have entry");
         let chain_pair = chain
-            .entry(&pair.key())
-            .expect("getting an entry from a chain shouldn't fail");
+            .entry(&pair.entry().key())
+            .expect("getting an entry from a chain shouldn't fail")
+            .expect("chain_pair should have pair");
 
-        assert_eq!(Some(pair.entry()), table_entry.as_ref());
-        assert_eq!(Some(&pair), chain_pair.as_ref());
-        assert_eq!(&table_entry.unwrap(), chain_pair.unwrap().entry());
+        assert_eq!(pair.entry(), &table_entry);
+        assert_eq!(pair, chain_pair);
+        assert_eq!(&table_entry, chain_pair.entry());
     }
 
     /// tests for chain.push()
@@ -371,21 +399,22 @@ pub mod tests {
     /// test chain.validate()
     #[test]
     fn can_validate() {
+        println!("can_validate: Empty Chain");
         let mut chain = test_chain();
-
-        let e1 = test_entry_a();
-        let e2 = test_entry_b();
-
         assert!(chain.validate());
 
+        println!("can_validate: Chain One");
+        let e1 = test_entry_a();
         chain
             .commit_entry(&e1)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         assert!(chain.validate());
 
+        println!("can_validate: Chain with Two");
+        let e2 = test_entry_b();
         chain
             .commit_entry(&e2)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         assert!(chain.validate());
     }
 
@@ -396,7 +425,7 @@ pub mod tests {
         let entry = test_entry();
         let pair = chain
             .commit_entry(&entry)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
             Some(&pair),
@@ -467,9 +496,9 @@ pub mod tests {
         );
     }
 
-    #[test]
     /// test chain.get()
-    fn chain_get_entry() {
+    #[test]
+    fn can_get_entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -486,6 +515,9 @@ pub mod tests {
             .commit_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
+        println!("  p1 = {:?}", p1);
+        // println!("  p2 = {:?}", p2);
+
         assert_eq!(
             None,
             chain
@@ -495,51 +527,51 @@ pub mod tests {
         assert_eq!(
             Some(&p1),
             chain
-                .entry(&p1.key())
+                .entry(&p1.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .entry(&p2.key())
+                .entry(&p2.entry().key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
-        assert_eq!(
-            Some(&p3),
-            chain
-                .entry(&p3.key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
-        );
+//        assert_eq!(
+//            Some(&p3),
+//            chain
+//                .entry(&p3.entry().key())
+//                .expect("getting an entry from a chain shouldn't fail")
+//                .as_ref()
+//        );
 
         assert_eq!(
             Some(&p1),
             chain
-                .entry(&p1.header().key())
+                .pair(&p1.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
         assert_eq!(
             Some(&p2),
             chain
-                .entry(&p2.header().key())
+                .pair(&p2.key())
                 .expect("getting an entry from a chain shouldn't fail")
                 .as_ref()
         );
-        assert_eq!(
-            Some(&p3),
-            chain
-                .entry(&p3.header().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
-        );
+//        assert_eq!(
+//            Some(&p3),
+//            chain
+//                .pair(&p3.key())
+//                .expect("getting an entry from a chain shouldn't fail")
+//                .as_ref()
+//        );
     }
 
-    #[test]
     /// test chain.entry()
-    fn chain_entry() {
+    #[test]
+    fn can_entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();

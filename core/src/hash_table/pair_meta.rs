@@ -65,7 +65,7 @@ impl Meta {
     }
 
     /// getter for pair clone
-    pub fn entity_hash(&self) -> String {
+    pub fn entry_hash(&self) -> String {
         self.entry_hash.clone()
     }
 
@@ -171,11 +171,11 @@ pub mod tests {
         test_pair_meta();
     }
 
-    // #[test]
-    /// test meta.pair()
-//    fn pair() {
-//        assert_eq!(test_pair_meta().pair_hash(), test_pair().key());
-//    }
+    #[test]
+    // test meta.pair()
+    fn pair() {
+        assert_eq!(test_pair_meta().entry_hash(), test_pair().key());
+    }
 
     /// test meta.attribute()
     #[test]

@@ -42,14 +42,11 @@ impl HashTable for MemTable {
     }
 
     fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        // println!("MemTable.put = {}", entry.key());
-        // println!("\t\tMemTable.put = {:?}", entry);
         self.entries.insert(entry.key(), entry.clone());
         Ok(())
     }
 
     fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
-        //println!("MemTable.GetEntry = {}", key);
         Ok(self.entries.get(key).cloned())
     }
 
@@ -84,9 +81,9 @@ impl HashTable for MemTable {
 //        ))
 //    }
 
-    // Add Link Meta to a Pair
+    // Add Link Meta to an entry
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
-        // Retrieve Pair from HashTable
+        // Retrieve entry from HashTable
         let base_entry = self.entry(&link.base())?;
         if base_entry.is_none() {
             return Err(HolochainError::ErrorGeneric("Pair from base not found".to_string()));
@@ -137,7 +134,7 @@ impl HashTable for MemTable {
                 // TODO maybe remove previous LinkListEntry ?
                 self.put(&entry)?;
 
-                // Push new PairMeta
+                // Updated PairMeta to Assert
                 assert!(meta.attribute() == link.to_attribute_name());
                 new_meta = Meta::new(
                     &meta.source(),
@@ -154,7 +151,7 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-    // Remove Link from a LinkMeta
+    // Remove link from a LinkListEntry entry from Meta
     fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
         // TODO
         Err(HolochainError::NotImplemented)
@@ -162,7 +159,6 @@ impl HashTable for MemTable {
 
     // Get all links from an AppEntry by using metadata
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
-        // TODO - Check that is not a system entry?
         // Look for entry's metadata
         let vec_meta = self.get_meta_for(request.clone().entry_hash, &request.to_attribute_name())?;
         if vec_meta.is_none() {
@@ -181,33 +177,17 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-
-    // Return a Meta from a Meta key
+    /// Return a Meta from a Meta.key
     fn get_meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
         Ok(self.metas.get(key).cloned())
     }
 
-
-//    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<Meta>, HolochainError> {
-//        let mut vec_meta = self
-//            .metas
-//            .values()
-//            .filter(|&m| m.entity_hash() == pair.key())
-//            .cloned()
-//            .collect::<Vec<Meta>>();
-//        // @TODO should this be sorted at all at this point?
-//        // @see https://github.com/holochain/holochain-rust/issues/144
-//        vec_meta.sort();
-//        Ok(vec_meta)
-//    }
-
-
-    // Return all the Meta for an entry
+    /// Return all the Metas for an entry
     fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
         let mut vec_meta = self
             .metas
             .values()
-            .filter(|&m| m.entity_hash() == entry.key())
+            .filter(|&m| m.entry_hash() == entry.key())
             .cloned()
             .collect::<Vec<Meta>>();
         // @TODO should this be sorted at all at this point?
@@ -216,23 +196,12 @@ impl HashTable for MemTable {
         Ok(vec_meta)
     }
 
-    // ;)
+    /// Return a Meta from an entry_hash and attribute_name
     fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>
     {
         let key = Meta::make_hash(&entry_hash, attribute_name);
-
         self.get_meta(&key)
-
-//        let vec_meta = self
-//            .metas
-//            .values()
-//            .filter(|&m| m.entity_hash() == entry_hash && m.attribute() == attribute_name)
-//            .cloned()
-//            .collect::<Vec<Meta>>();
-//        // assert!(vec_meta.len() <= 1);
-//        Ok(if vec_meta.len() == 0 { Vec::new() } else { vec_meta })
     }
-
 }
 
 #[cfg(test)]

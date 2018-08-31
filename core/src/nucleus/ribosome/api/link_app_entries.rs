@@ -7,17 +7,7 @@ use nucleus::ribosome::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::{
-    // HashString, entry::Entry, sys_entry::ToEntry,
-                 links_entry::*};
-
-/// Struct for input data received when Commit API function is invoked
-//#[derive(Deserialize, Default, Debug, Serialize)]
-//pub struct LinkEntriesArgs {
-//    base: HashString,
-//    target: HashString,
-//    tag: String,
-//}
+use hash_table::links_entry::*;
 
 /// ZomeApiFunction::LinkAppEntries function code
 /// args: [0] encoded MemoryAllocation as u32

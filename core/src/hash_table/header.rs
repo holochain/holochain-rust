@@ -240,7 +240,6 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
-        // assert_eq!(h2.link(), Some(h1.hash()));
         assert_eq!(h2.link(), Some(h1.to_entry().key()));
     }
 

@@ -99,11 +99,13 @@ impl HashTable for MemTable {
         }
 
         // Retrieve LinkListEntry
-        let mut maybe_meta = self.get_meta_for(base_entry.key(), &link.to_attribute_name())?;
+        let maybe_meta = self.get_meta_for(base_entry.key(), &link.to_attribute_name())?;
         // Update or Create LinkListEntry
+        let mut new_meta: Meta;
         match maybe_meta {
             // None found so create one
             None => {
+                println!("!! NO META FOUND !!");
                 // Create new LinkListEntry & Pair
                 let lle = LinkListEntry::new(&[link.clone()]);
                 let new_entry = lle.to_entry();
@@ -115,18 +117,20 @@ impl HashTable for MemTable {
                 let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
 
                 // Create PairMeta
-                maybe_meta = Some(Meta::new(
+                new_meta = Meta::new(
                     &keys_fixme.node_id(),
                     &base_entry.key(),
                     &link.to_attribute_name(),
-                    &new_entry.key()));
+                    &new_entry.key());
             }
             // Update existing LinkListEntry and Meta
             Some(meta) => {
+                println!("!! META !!");
                 // Get LinkListEntry in HashTable
                 let entry = self.entry(&meta.value())?
                     .expect("should have entry if meta points to it");
-                let mut lle : LinkListEntry = serde_json::from_str(&entry.content())
+                // assert!(entry.entry_type())
+                let mut lle: LinkListEntry = serde_json::from_str(&entry.content())
                     .expect("entry is not a valid LinkListEntry");
                 // Add Link
                 lle.links.push(link.clone());
@@ -137,16 +141,16 @@ impl HashTable for MemTable {
 
                 // Push new PairMeta
                 assert!(meta.attribute() == link.to_attribute_name());
-                maybe_meta = Some(Meta::new(
+                new_meta = Meta::new(
                     &meta.source(),
                     &base_entry.key(),
                     &meta.attribute(),
-                    &entry.key()));
+                    &entry.key());
             }
         }
 
         // Insert new/changed PairMeta
-        self.assert_meta(&maybe_meta.unwrap()).expect("meta should be valid");
+        self.assert_meta(&new_meta).expect("meta should be valid");
 
         // Done
         Ok(())
@@ -162,11 +166,11 @@ impl HashTable for MemTable {
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         // TODO - Check that is not a system entry?
         // Look for entry's metadata
-        let result = self.get_meta_for(request.clone().entry_hash, &request.to_attribute_name())?;
-        if result.clone().is_none() {
+        let vec_meta = self.get_meta_for(request.clone().entry_hash, &request.to_attribute_name())?;
+        if vec_meta.is_none() {
             return Ok(None);
         }
-        let meta = result.unwrap();
+        let meta = vec_meta.unwrap();
 
         // Get LinkListEntry in HashTable
         let entry = self.entry(&meta.value())?.expect("should have entry listed in meta");
@@ -217,14 +221,18 @@ impl HashTable for MemTable {
     // ;)
     fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>
     {
-        let vec_meta = self
-            .metas
-            .values()
-            .filter(|&m| m.entity_hash() == entry_hash && m.attribute() == attribute_name)
-            .cloned()
-            .collect::<Vec<Meta>>();
-        assert!(vec_meta.len() <= 1);
-        Ok(if vec_meta.len() == 0 { None } else { Some(vec_meta[0].clone()) })
+        let key = Meta::make_hash(&entry_hash, attribute_name);
+
+        self.get_meta(&key)
+
+//        let vec_meta = self
+//            .metas
+//            .values()
+//            .filter(|&m| m.entity_hash() == entry_hash && m.attribute() == attribute_name)
+//            .cloned()
+//            .collect::<Vec<Meta>>();
+//        // assert!(vec_meta.len() <= 1);
+//        Ok(if vec_meta.len() == 0 { Vec::new() } else { vec_meta })
     }
 
 }
@@ -234,6 +242,7 @@ pub mod tests {
 
     // use agent::keys::tests::test_keys;
     use hash_table::{
+        links_entry::Link, links_entry::LinkListEntry,
         sys_entry::ToEntry,
         memory::MemTable,
         pair::tests::{test_pair,
@@ -247,7 +256,14 @@ pub mod tests {
         },
         // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
+        actor::HashTableActor,
+        entry::Entry,
     };
+
+use ::chain::{
+    Chain, SourceChain,
+};
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -425,13 +441,134 @@ pub mod tests {
     }
 
 
-//    #[test]
-//    fn can_add_link() {
-//        let mut table = MemTable::new();
-//        let pair = Pair::new_from_chain(Chain::new(HashTableActor::new_ref(table)), &test_entry())
-//        let pair_entry = pair.header().to_entry();
-//
-//        let link = Link::new();
-//        table.add_link();
-//    }
+    #[test]
+    fn can_link_entries() {
+        let mut table = MemTable::new();
+
+        let e1 = Entry::new("app1", "abcdef");
+        let e2 = Entry::new("app1", "qwerty");
+
+        let t1 = "child".to_string();
+        let t2 = "parent".to_string();
+
+        let req1 = &GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+        let req2 = &GetLinksArgs{entry_hash:e1.key(), tag: t2.clone()};
+
+        let link = Link::new(&e1.key(), &e2.key(), &t1);
+
+        table.put(&e1).unwrap();
+        table.put(&e2).unwrap();
+
+        assert_eq!(
+            None,
+            table.links(req1)
+                 .expect("links() should not fail"));
+
+
+        table.add_link(&link).unwrap();
+
+        let lle = LinkListEntry::new(&[link]);
+
+        assert_eq!(
+            Some(lle),
+            table.links(req1)
+                .expect("links() should not fail"));
+        assert_eq!(
+            None,
+            table.links(req2)
+                 .expect("links() should not fail"));
+    }
+
+    #[test]
+    fn can_double_link_entries() {
+        let mut table = MemTable::new();
+
+        let e1 = Entry::new("app1", "abcdef");
+        let e2 = Entry::new("app1", "qwerty");
+        let e3 = Entry::new("app1", "fdfdsfds");
+
+        let t1 = "child".to_string();
+
+        let l1 = Link::new(&e1.key(), &e2.key(), &t1);
+        let l2 = Link::new(&e1.key(), &e3.key(), &t1);
+
+        let req1 = &GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+
+        table.put(&e1).unwrap();
+        table.put(&e2).unwrap();
+        table.put(&e3).unwrap();
+
+
+        table.add_link(&l1).unwrap();
+        table.add_link(&l2).unwrap();
+
+        let lle = LinkListEntry::new(&[l1, l2]);
+
+        assert_eq!(
+            Some(lle),
+            table.links(req1)
+                 .expect("links() should not fail"));
+
+//        can_double_same_link_entries() {
+//            // TODO
+//        }
+    }
+
+
+    #[test]
+    fn can_link_entries_adv() {
+        let mut table = MemTable::new();
+
+        let mom = Entry::new("app1", "abcdef");
+        let son = Entry::new("app1", "qwerty");
+        let daughter = Entry::new("app1", "fdfdsfds");
+
+        let t1 = "child".to_string();
+        let t2 = "parent".to_string();
+
+        let mom_children = &GetLinksArgs{entry_hash:mom.key(), tag: t1.clone()};
+        let mom_parent = &GetLinksArgs{entry_hash:mom.key(), tag: t2.clone()};
+        let son_parent = &GetLinksArgs{entry_hash:son.key(), tag: t2.clone()};
+        let daughter_parent = &GetLinksArgs{entry_hash:daughter.key(), tag: t2.clone()};
+        let daughter_children = &GetLinksArgs{entry_hash:daughter.key(), tag: t1.clone()};
+
+        table.put(&mom).unwrap();
+        table.put(&son).unwrap();
+        table.put(&daughter).unwrap();
+
+        let mom_son = Link::new(&mom.key(), &son.key(), &t1);
+        let son_mom = Link::new(&son.key(), &mom.key(), &t2);
+        let mom_daughter = Link::new(&mom.key(), &daughter.key(), &t1);
+        let daughter_mom = Link::new(&daughter.key(), &mom.key(), &t2);
+
+        table.add_link(&mom_son).unwrap();
+        table.add_link(&son_mom).unwrap();
+        table.add_link(&mom_daughter).unwrap();
+        table.add_link(&daughter_mom).unwrap();
+
+        let res_children = LinkListEntry::new(&[mom_son, mom_daughter]);
+        let res_son_parent = LinkListEntry::new(&[son_mom]);
+        let res_daughter_parent = LinkListEntry::new(&[daughter_mom]);
+
+        assert_eq!(
+            None,
+            table.links(daughter_children)
+                 .expect("links() should not fail"));
+        assert_eq!(
+            None,
+            table.links(mom_parent)
+                 .expect("links() should not fail"));
+        assert_eq!(
+            Some(res_children),
+            table.links(mom_children)
+                 .expect("links() should not fail"));
+        assert_eq!(
+            Some(res_son_parent),
+            table.links(son_parent)
+                 .expect("links() should not fail"));
+        assert_eq!(
+            Some(res_daughter_parent),
+            table.links(daughter_parent)
+                 .expect("links() should not fail"));
+    }
 }

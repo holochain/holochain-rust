@@ -28,7 +28,10 @@ impl Pair {
     }
 
     pub fn new(header: &Header, entry: &Entry) -> Self {
-        Pair {header: header.clone(), entry: entry.clone()}
+        Pair {
+            header: header.clone(),
+            entry: entry.clone()
+        }
     }
 
     /// header getter

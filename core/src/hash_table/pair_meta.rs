@@ -5,6 +5,7 @@ use hash_table::{
 };
 use multihash::Hash;
 use std::cmp::Ordering;
+use hash;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
@@ -84,9 +85,26 @@ impl Meta {
     }
 
     /// the key for hash table lookups, e.g. table.get_meta()
+//    pub fn hash(&self) -> String {
+//        serializable_to_b58_hash(&self, Hash::SHA2256)
+//    }
+
     pub fn hash(&self) -> String {
-        serializable_to_b58_hash(&self, Hash::SHA2256)
+        Meta::make_hash(&self.entry_hash, &self.attribute)
     }
+
+    pub fn make_hash(entry_hash: &str, attribute_name: &str) -> String {
+        let pieces: [&str; 2] = [
+            entry_hash,
+            attribute_name,
+        ];
+        let string_to_hash = pieces.concat();
+
+        // @TODO the hashing algo should not be hardcoded
+        // @see https://github.com/holochain/holochain-rust/issues/104
+        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
+    }
+
 }
 
 #[cfg(test)]

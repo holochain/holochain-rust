@@ -410,4 +410,19 @@ mod tests {
     fn key() {
         assert_eq!(test_header().hash(), test_header().key());
     }
+
+    /// Committing a LinkEntry to source chain should work
+    #[test]
+    fn can_round_trip_header_entry() {
+        let mut chain = test_chain();
+        let t = "foo";
+        let c = "bar";
+        let e = Entry::new(t, c);
+        let h = chain.create_next_header(&e);
+
+        let h_entry = h.to_entry();
+        let h_trip = Header::new_from_entry(&h_entry);
+
+        assert_eq!(h, h_trip);
+    }
 }

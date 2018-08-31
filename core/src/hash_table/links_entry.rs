@@ -100,7 +100,7 @@ impl ToEntry for LinkEntry {
 //-------------------------------------------------------------------------------------------------
 
 //
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct LinkListEntry {
   pub links: Vec<Link>,
 }
@@ -121,9 +121,7 @@ impl ToEntry for LinkListEntry {
 
   fn new_from_entry(entry: &Entry) -> Self {
     assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
-    let content: Vec<Link> =
-      serde_json::from_str(&entry.content()).expect("entry is not a valid LinkListEntry");
-    LinkListEntry::new(&content)
+    serde_json::from_str(&entry.content()).expect("entry is not a valid LinkListEntry")
   }
 }
 
@@ -213,5 +211,17 @@ pub mod tests {
         }
         _ => false,
       });
+  }
+
+  /// Committing a LinkEntry to source chain should work
+  #[test]
+  fn can_round_trip_lle() {
+    let link = Link::new( "12", "34", "fake");
+    let lle = LinkListEntry::new(&[link]);
+
+    let lle_entry = lle.to_entry();
+    let lle_trip = LinkListEntry::new_from_entry(&lle_entry);
+
+    assert_eq!(lle, lle_trip);
   }
 }

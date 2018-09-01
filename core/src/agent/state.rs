@@ -52,9 +52,6 @@ impl AgentState {
     pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
         self.actions.clone()
     }
-
-    // /// chain getter
-    // pub fn chain(&self) -> Option<Chain<MemTable>> { self.chain.clone() }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -178,8 +175,8 @@ fn reduce_get_links(
 }
 
 
-/// do a commit action against an agent state
-/// intended for use inside the reducer, isolated for unit testing
+/// Do a Commit Action against an agent state.
+/// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?

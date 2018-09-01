@@ -13,7 +13,7 @@ ENV WASM_NIGHTLY nightly-2018-06-01
 ENV TOOLS_NIGHTLY nightly-2018-07-17
 
 # The Rust version that is used everywhere else
-ENV CORE_RUST_VERSION stable
+ENV CORE_RUST_VERSION nightly-2018-06-01
 
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
@@ -23,7 +23,11 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7 \
-  gosu
+  gosu \
+  libzmq3-dev \
+  git \
+  nodejs \
+  npm
 
 RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
 USER ${DOCKER_BUILD_USER}

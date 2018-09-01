@@ -1,39 +1,35 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
-use chain::Chain;
+use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash_table::{entry::Entry, memory::MemTable, pair::Pair};
+use hash_table::pair::Pair;
 use instance::Observer;
 use json::ToJson;
 use key::Key;
 use std::{
     collections::HashMap,
-    rc::Rc,
     sync::{mpsc::Sender, Arc},
 };
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
-    // @TODO how should this work with chains/HTs?
-    // @see https://github.com/holochain/holochain-rust/issues/137
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    top_pair: Option<Pair>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
+    chain: Chain,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new() -> AgentState {
+    pub fn new(chain: &Chain) -> AgentState {
         AgentState {
             keys: None,
-            top_pair: None,
             actions: HashMap::new(),
+            chain: chain.clone(),
         }
     }
 
@@ -42,10 +38,9 @@ impl AgentState {
         self.keys.clone()
     }
 
-    /// getter for a copy of self.top_pair
-    /// should be used with a source chain for validation/safety
-    pub fn top_pair(&self) -> Option<Pair> {
-        self.top_pair.clone()
+    /// getter for the chain
+    pub fn chain(&self) -> &Chain {
+        &self.chain
     }
 
     /// getter for a copy of self.actions
@@ -97,17 +92,12 @@ fn reduce_commit(
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
 
-    // add entry to source chain
-    // @TODO this does nothing!
-    // it needs to get something stateless from the agent state that points to
-    // something stateful that can handle an entire hash table (e.g. actor)
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    // @see https://github.com/holochain/holochain-rust/issues/148
-    let mut chain = Chain::new(Rc::new(MemTable::new()));
+    // @TODO validation dispatch should go here rather than upstream in invoke_commit
+    // @see https://github.com/holochain/holochain-rust/issues/256
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Commit(chain.push(&entry)),
+        ActionResponse::Commit(state.chain.push_entry(&entry)),
     );
 }
 
@@ -123,27 +113,19 @@ fn reduce_get(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::Get);
 
-    // get pair from source chain
-    // @TODO this does nothing!
-    // it needs to get something stateless from the agent state that points to
-    // something stateful that can handle an entire hash table (e.g. actor)
-    // @see https://github.com/holochain/holochain-rust/issues/135
-    // @see https://github.com/holochain/holochain-rust/issues/148
-
-    // drop in a dummy entry for testing
-    let mut chain = Chain::new(Rc::new(MemTable::new()));
-    let e = Entry::new("testEntryType", "test entry content");
-    chain.push(&e).expect("test entry should be valid");
+    let result = state.chain.entry(&key.clone());
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
-    let result = chain
-        .get_entry(&key)
-        .expect("should be able to get entry that we just added");
-    state
-        .actions
-        .insert(action_wrapper.clone(), ActionResponse::Get(result.clone()));
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::Get(
+            result
+                .clone()
+                .expect("should be able to get entry that we just added"),
+        ),
+    );
 }
 
 /// maps incoming action to the correct handler
@@ -184,15 +166,16 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use chain::tests::test_chain;
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
     use json::ToJson;
-    use std::collections::HashMap;
+    use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new()
+        AgentState::new(&test_chain())
     }
 
     /// dummy action response for a successful commit as test_pair()
@@ -215,12 +198,6 @@ pub mod tests {
     /// test for the agent state keys getter
     fn agent_state_keys() {
         assert_eq!(None, test_agent_state().keys());
-    }
-
-    #[test]
-    /// test for the agent state top pair getter
-    fn agent_state_top_pair() {
-        assert_eq!(None, test_agent_state().top_pair());
     }
 
     #[test]
@@ -255,22 +232,41 @@ pub mod tests {
     /// test for reducing get
     fn test_reduce_get() {
         let mut state = test_agent_state();
-        let action_wrapper = test_action_wrapper_get();
+        let context = test_context("foo");
 
         let instance = test_instance_blank();
 
+        let aw1 = test_action_wrapper_get();
         reduce_get(
-            test_context("foo"),
+            Arc::clone(&context),
             &mut state,
-            &action_wrapper,
+            &aw1,
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
 
-        assert_eq!(
-            state.actions().get(&action_wrapper),
-            Some(&test_action_response_get()),
+        // nothing has been committed so the get must be None
+        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::Get(None)),);
+
+        // do a round trip
+        reduce_commit(
+            Arc::clone(&context),
+            &mut state,
+            &test_action_wrapper_commit(),
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
         );
+
+        let aw2 = test_action_wrapper_get();
+        reduce_get(
+            Arc::clone(&context),
+            &mut state,
+            &aw2,
+            &instance.action_channel().clone(),
+            &instance.observer_channel().clone(),
+        );
+
+        assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
     }
 
     #[test]
@@ -288,8 +284,8 @@ pub mod tests {
         );
 
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"time\":\"\",\"next\":null,\"entry\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"type_next\":null,\"signature\":\"\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            ActionResponse::Get(Some(test_pair())).to_json().unwrap(),
+            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
+            ActionResponse::Get(Some(test_pair())).to_json(),
         );
         assert_eq!("", ActionResponse::Get(None).to_json().unwrap());
     }

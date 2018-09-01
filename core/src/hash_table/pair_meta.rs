@@ -19,7 +19,7 @@ use std::cmp::Ordering;
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
 pub struct PairMeta {
-    pair: String,
+    pair_hash: String,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -34,7 +34,7 @@ pub struct PairMeta {
 impl Ord for PairMeta {
     fn cmp(&self, other: &PairMeta) -> Ordering {
         // we want to sort by pair hash, then attribute name, then attribute value
-        match self.pair.cmp(&other.pair) {
+        match self.pair_hash.cmp(&other.pair_hash) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
                 Ordering::Greater => Ordering::Greater,
@@ -58,7 +58,7 @@ impl PairMeta {
     /// @see https://github.com/holochain/holochain-rust/issues/140
     pub fn new(keys: &Keys, pair: &Pair, attribute: &str, value: &str) -> PairMeta {
         PairMeta {
-            pair: pair.key(),
+            pair_hash: pair.key(),
             attribute: attribute.into(),
             value: value.into(),
             source: keys.node_id(),
@@ -66,8 +66,8 @@ impl PairMeta {
     }
 
     /// getter for pair clone
-    pub fn pair(&self) -> String {
-        self.pair.clone()
+    pub fn pair_hash(&self) -> String {
+        self.pair_hash.clone()
     }
 
     /// getter for attribute clone
@@ -177,7 +177,7 @@ pub mod tests {
     #[test]
     /// test meta.pair()
     fn pair() {
-        assert_eq!(test_pair_meta().pair(), test_pair().key());
+        assert_eq!(test_pair_meta().pair_hash(), test_pair().key());
     }
 
     #[test]

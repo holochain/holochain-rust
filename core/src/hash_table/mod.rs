@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod entry;
 pub mod file;
 pub mod header;
@@ -7,6 +8,7 @@ pub mod pair_meta;
 pub mod status;
 #[cfg(test)]
 pub mod test_util;
+pub mod sys_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
@@ -17,15 +19,17 @@ use hash_table::{
 };
 use key::Key;
 
-pub trait HashTable {
-    // internal state management
-    fn setup(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
+pub type HashString = String;
 
-    fn teardown(&mut self) -> Result<(), HolochainError> {
-        Ok(())
-    }
+/// Trait of the data structure storing the source chain
+/// source chain is stored as a hash table of Pairs.
+/// Pair is a pair holding an Entry and its Header
+pub trait HashTable: Send + Sync + Clone + 'static {
+    // internal state management
+    // @TODO does this make sense at the trait level?
+    // @see https://github.com/holochain/holochain-rust/issues/262
+    fn setup(&mut self) -> Result<(), HolochainError>;
+    fn teardown(&mut self) -> Result<(), HolochainError>;
 
     // crud
     /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
@@ -70,6 +74,7 @@ pub trait HashTable {
     // meta
     /// assert a given PairMeta in the HashTable
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
+
     /// lookup a PairMeta from the HashTable by key
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair

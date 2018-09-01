@@ -34,27 +34,43 @@ Run:
 . docker/run-fmt
 ```
 
-### holochain_101 mdbook
+#### Updating the CI Environment
 
-There is an [mdbook](https://github.com/rust-lang-nursery/mdBook) book on learning holochain at `doc/holochain_101`.
+The continuous integration (CI) suite executes the same `. docker/run-test` command that developers are encouraged to run.
 
-There is also a docker build that allows local build, serve, watch and live reload for the book.
+What happens if I need to change that environment? E.g. what if I need a new system library dependency installed?
 
-From the root of the repo, run:
+- Step 1 - Add the dependency to `docker/Dockerfile.ubuntu`
 
-```shell
-. docker/build-mdbook-image && . docker/run-mdbook
+```dockerfile
+RUN apt-get update && apt-get install --yes\
+  # ... snip ...
+  my-new-lib-here
 ```
 
-Once the book has built and is serving, visit `http://localhost:3000` in the browser.
-
-You can edit the markdown files in `doc/holochain_101` and the book will live reload.
-
-To do a one-time build of the files to HTML, run:
+- Step 2 - Build it
 
 ```shell
-. docker/build-mdbook
+. docker/build-ubuntu
 ```
+
+- Step 3 - Test it out
+
+```shell
+. docker/run-test
+```
+
+- Step 4 - Wait a minute! The CI environment is still using the old Dockerfile!
+
+If your changes do not break the current environment, you can submit a separate Pull Request first, and once it is merged, the CI environment should be up-to-date for your code change Pull Request.
+
+Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
+
+### The Book on Holochain
+
+There is a work-in-progress book being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [./doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
+
+
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)

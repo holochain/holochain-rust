@@ -4,6 +4,13 @@
 pub struct Identity {
     content: String,
 }
+
+impl Identity {
+    pub fn new(content: String) -> Self {
+        Identity { content }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Agent {
     identity: Identity,

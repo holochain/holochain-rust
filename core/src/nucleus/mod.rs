@@ -6,7 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
-use instance::Observer;
+use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::{NucleusState, NucleusStatus},
@@ -19,6 +19,8 @@ use std::{
     },
     thread,
 };
+
+use hash_table::sys_entry::ToEntry;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -33,6 +35,8 @@ pub struct FunctionCall {
 impl FunctionCall {
     pub fn new(zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
         FunctionCall {
+            // @TODO can we defer to the ActionWrapper id?
+            // @see https://github.com/holochain/holochain-rust/issues/198
             id: snowflake::ProcessUniqueId::new(),
             zome: zome.to_string(),
             capability: capability.to_string(),
@@ -70,7 +74,7 @@ pub fn call_zome_and_wait_for_result(
 
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
+    dispatch_action_with_observer(
         action_channel,
         observer_channel,
         call_action_wrapper,
@@ -172,8 +176,9 @@ fn return_initialization_result(result: Option<String>, action_channel: &Sender<
 }
 
 /// Reduce InitApplication Action
-/// Initialize Nucleus by setting the DNA
-/// and sending ExecuteFunction Action of genesis of each zome
+/// Initialize the Holochain's Nucleus by doing the following:
+/// Send Commit Action for Genesis Entry
+/// Send ExecuteZomeFunction Action of the genesis callback of every zome
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_ia(
@@ -183,72 +188,81 @@ fn reduce_ia(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    match state.status() {
-        NucleusStatus::New => {
-            let action = action_wrapper.action();
-            let dna = unwrap_to!(action => Action::InitApplication);
-
-            // Update status
-            state.status = NucleusStatus::Initializing;
-
-            // Set DNA
-            state.dna = Some(dna.clone());
-
-            // Create & launch thread
-            let genesis_action_channel = action_channel.clone();
-            let genesis_observer_channel = observer_channel.clone();
-            let dna_clone = dna.clone();
-
-            thread::spawn(move || {
-                // map genesis across every zome
-                let mut results: Vec<_> = dna_clone
-                    .zomes
-                    .iter()
-                    .map(|zome| {
-                        genesis(
-                            &genesis_action_channel,
-                            &genesis_observer_channel,
-                            &zome.name(),
-                            &CallbackParams::Genesis,
-                        )
-                    })
-                    .collect();
-
-                // pad out a single pass if there are no zome results
-                // @TODO is this really OK?
-                // should we be steamrolling ahead with an instance that has no zomes and no
-                // genesis?
-                // actually this can cause some really nasty edge case bugs for code that assumes
-                // there is a genesis (real example: wait for length 4 in history) in a loop before
-                // moving forward. it will seem to work OK, but then hang if ever hit with an empty
-                // Dna.
-                // on the flip side, code cannot simply wait for 2 items in history, or even the
-                // initialization result on its own, because then it will miss the genesis
-                // sometimes where a genesis does happen.
-                if results.is_empty() {
-                    results.push(CallbackResult::Pass);
-                }
-
-                // map the genesis results to initialization result responses
-                for result in results {
-                    match result {
-                        CallbackResult::Fail(s) => return_initialization_result(
-                            Some(s.to_string()),
-                            &genesis_action_channel,
-                        ),
-                        _ => return_initialization_result(None, &genesis_action_channel),
-                    }
-                }
-            });
-        }
-        _ => {
-            // Send bad start state ReturnInitializationResult Action
-            return_initialization_result(
-                Some("Nucleus already initialized or initializing".to_string()),
-                &action_channel,
-            );
-        }
+    // check pre-condition
+    if state.status() != NucleusStatus::New {
+        // Send bad start state ReturnInitializationResult Action
+        return_initialization_result(
+            Some("Nucleus already initialized or initializing".to_string()),
+            &action_channel,
+        );
+        return;
     }
+
+    let ia_action = action_wrapper.action();
+    let dna = unwrap_to!(ia_action => Action::InitApplication);
+
+    // Update status
+    state.status = NucleusStatus::Initializing;
+
+    // Set DNA
+    state.dna = Some(dna.clone());
+
+    // Create & launch thread
+    let genesis_action_channel = action_channel.clone();
+    let genesis_observer_channel = observer_channel.clone();
+    let dna_clone = dna.clone();
+
+    thread::spawn(move || {
+        // Send Commit Action for Genesis Entry
+        {
+            // Create Commit Action for Genesis Entry
+            let genesis_entry = dna_clone.to_entry();
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
+
+            // Send Action and wait for it
+            // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
+            ::instance::dispatch_action(&genesis_action_channel, commit_genesis_action);
+        }
+
+        // map genesis across every zome
+        let mut results: Vec<_> = dna_clone
+            .zomes
+            .keys()
+            .map(|zome_name| {
+                genesis(
+                    &genesis_action_channel,
+                    &genesis_observer_channel,
+                    zome_name,
+                    &CallbackParams::Genesis,
+                )
+            })
+            .collect();
+
+        // pad out a single pass if there are no zome results
+        // @TODO #78 - is this really OK?
+        // should we be steamrolling ahead with an instance that has no zomes and no
+        // genesis?
+        // actually this can cause some really nasty edge case bugs for code that assumes
+        // there is a genesis (real example: wait for length 4 in history) in a loop before
+        // moving forward. it will seem to work OK, but then hang if ever hit with an empty
+        // Dna.
+        // on the flip side, code cannot simply wait for 2 items in history, or even the
+        // initialization result on its own, because then it will miss the genesis
+        // sometimes where a genesis does happen.
+        if results.is_empty() {
+            results.push(CallbackResult::Pass);
+        }
+
+        // map the genesis results to initialization result responses
+        for result in results {
+            match result {
+                CallbackResult::Fail(s) => {
+                    return_initialization_result(Some(s.to_string()), &genesis_action_channel)
+                }
+                _ => return_initialization_result(None, &genesis_action_channel),
+            }
+        }
+    });
 }
 
 /// Reduce ExecuteZomeFunction Action
@@ -694,7 +708,7 @@ pub mod tests {
 
         match result {
             Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx_dispatch")
+                assert_eq!(err, "Function: Module doesn\'t have export xxx")
             }
             _ => assert!(false),
         }

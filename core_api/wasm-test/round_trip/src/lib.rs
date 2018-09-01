@@ -23,7 +23,7 @@ struct OutputStruct {
 
 
 /// Create output out of some modification of input
-fn test(input: InputStruct) -> OutputStruct {
+fn test_inner(input: InputStruct) -> OutputStruct {
     OutputStruct {
         input_int_val_plus2: input.input_int_val + 2,
         input_str_val_plus_dog: format!("{}.puppy", input.input_str_val),
@@ -32,7 +32,7 @@ fn test(input: InputStruct) -> OutputStruct {
 
 
 //--------------------------------------------------------------------------------------------------
-// Generatable Dispatch function
+//  Exported functions with required signature (=pointer to serialized complex parameter)
 //--------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance
@@ -40,9 +40,9 @@ fn test(input: InputStruct) -> OutputStruct {
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
-pub extern "C" fn test_dispatch(encoded_allocation_of_input: usize) -> i32 {
+pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack = SinglePageStack::new_from_encoded(encoded_allocation_of_input as u32);
     let input = deserialize_allocation(encoded_allocation_of_input as u32);
-    let output = test(input);
+    let output = test_inner(input);
     return serialize_into_encoded_allocation(&mut mem_stack, output);
 }

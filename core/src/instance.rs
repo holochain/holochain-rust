@@ -107,7 +107,7 @@ impl Instance {
 
     /// Calls the reducers for an action and calls the observers with the new state
     /// returns the new vector of observers
-    fn process_action(
+    pub(crate) fn process_action(
         &self,
         action_wrapper: ActionWrapper,
         mut state_observers: Vec<Observer>,
@@ -246,8 +246,9 @@ pub mod tests {
     extern crate test_utils;
     use super::Instance;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::state::tests::test_action_response_get;
+    use agent::state::ActionResponse;
     use context::Context;
+    use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -255,6 +256,7 @@ pub mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::{
+        str::FromStr,
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
@@ -334,6 +336,26 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
+                Action::Commit(entry) => {
+                    assert_eq!(
+                        EntryType::from_str(&entry.entry_type()).unwrap(),
+                        EntryType::Dna
+                    );
+                    true
+                }
+                _ => false,
+            })
+            .is_none()
+        {
+            println!("Waiting for Commit for genesis");
+            sleep(Duration::from_millis(10))
+        }
+
+        while instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
                 Action::ExecuteZomeFunction(_) => true,
                 _ => false,
             })
@@ -372,6 +394,14 @@ pub mod tests {
         }
 
         instance
+    }
+
+    /// create a test instance with a blank DNA
+    pub fn test_instance_blank() -> Instance {
+        let mut dna = Dna::new();
+        dna.zomes.insert("".to_string(), Zome::default());
+        dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
+        test_instance(dna)
     }
 
     #[test]
@@ -417,14 +447,7 @@ pub mod tests {
             .get(&aw)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &test_action_response_get());
-    }
-
-    /// create a test instance with a blank DNA
-    pub fn test_instance_blank() -> Instance {
-        let mut dna = Dna::new();
-        dna.zomes.push(Zome::default());
-        test_instance(dna)
+        assert_eq!(response, &ActionResponse::Get(None));
     }
 
     #[test]
@@ -487,7 +510,7 @@ pub mod tests {
         // Wait for Init to finish
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance.state().history.len() < 2 {
+        while instance.state().history.len() < 3 {
             // @TODO don't use history length in tests
             // @see https://github.com/holochain/holochain-rust/issues/195
             println!("Waiting... {}", instance.state().history.len());
@@ -501,14 +524,14 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.zomes[0].capabilities[0].name = Callback::Genesis.capability().as_str().to_string();
+        let dna = test_utils::create_test_dna_with_wat(
+            "test_zome",
+            Callback::Genesis.capability().as_str(),
+            None,
+        );
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -522,7 +545,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 0
                 )
                 (data (i32.const 0)
@@ -536,9 +559,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -552,7 +572,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 4
                 )
                 (data (i32.const 0)
@@ -566,9 +586,6 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(instance.state().history.len(), 4);
         assert!(instance.state().nucleus().has_initialized() == false);
     }
 }

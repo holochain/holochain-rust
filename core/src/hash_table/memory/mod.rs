@@ -5,6 +5,7 @@ use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use key::Key;
 
+/// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
     pairs: HashMap<String, Pair>,
@@ -30,6 +31,37 @@ impl HashTable for MemTable {
         Ok(self.pairs.get(key).cloned())
     }
 
+    fn modify(
+        &mut self,
+        keys: &Keys,
+        old_pair: &Pair,
+        new_pair: &Pair,
+    ) -> Result<(), HolochainError> {
+        self.commit(new_pair)?;
+
+        // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
+        self.assert_meta(&PairMeta::new(
+            keys,
+            &old_pair,
+            STATUS_NAME,
+            &CRUDStatus::MODIFIED.bits().to_string(),
+        ))?;
+
+        // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
+        self.assert_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
+    }
+
+    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
+        self.assert_meta(&PairMeta::new(
+            keys,
+            &pair,
+            STATUS_NAME,
+            &CRUDStatus::DELETED.bits().to_string(),
+        ))
+    }
+
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
         self.meta.insert(meta.key(), meta.clone());
         Ok(())
@@ -43,7 +75,7 @@ impl HashTable for MemTable {
         let mut metas = self
             .meta
             .values()
-            .filter(|&m| m.pair() == pair.key())
+            .filter(|&m| m.pair_hash() == pair.key())
             .cloned()
             .collect::<Vec<PairMeta>>();
         // @TODO should this be sorted at all at this point?

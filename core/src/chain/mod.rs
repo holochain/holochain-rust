@@ -330,15 +330,15 @@ pub mod tests {
         Chain::new(test_table_actor())
     }
 
-    /// smoke test for new chains
     #[test]
-    fn can_new() {
+    /// smoke test for new chains
+    fn new() {
         test_chain();
     }
 
-    /// test chain equality
     #[test]
-    fn can_eq() {
+    /// test chain equality
+    fn eq() {
         let mut chain1 = test_chain();
         let mut chain2 = test_chain();
         let mut chain3 = test_chain();
@@ -363,9 +363,9 @@ pub mod tests {
         assert_ne!(chain2, chain3);
     }
 
-    /// tests for chain.top_pair()
     #[test]
-    fn can_top_pair() {
+    /// tests for chain.top_pair()
+    fn top_pair() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_pair());
@@ -388,9 +388,9 @@ pub mod tests {
         assert_eq!(p2, top_pair);
     }
 
-    /// tests that the chain state is consistent across clones
     #[test]
-    fn can_clone_safe() {
+    /// tests that the chain state is consistent across clones
+    fn clone_safe() {
         let c1 = test_chain();
         let mut c2 = c1.clone();
         let test_pair = test_pair();
@@ -404,9 +404,9 @@ pub mod tests {
         assert_eq!(c1.top_pair(), c2.top_pair());
     }
 
-    // test that adding something to the chain adds to the table
     #[test]
-    fn can_table_put() {
+    // test that adding something to the chain adds to the table
+    fn table_put() {
         let table_actor = test_table_actor();
         let mut chain = Chain::new(table_actor.clone());
 
@@ -454,7 +454,7 @@ pub mod tests {
     }
 
     #[test]
-    fn can_validate() {
+    fn validate() {
         println!("can_validate: Empty Chain");
         let mut chain = test_chain();
         assert!(chain.validate());
@@ -552,8 +552,7 @@ pub mod tests {
     }
 
     #[test]
-    /// test chain.get()
-    fn get_entry() {
+    fn entry_advance() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();
@@ -617,9 +616,8 @@ pub mod tests {
         );
     }
 
-    /// test chain.entry()
     #[test]
-    fn can_entry() {
+    fn entry() {
         let mut chain = test_chain();
 
         let e1 = test_entry_a();

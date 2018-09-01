@@ -280,7 +280,7 @@ pub mod tests {
 
     #[test]
     /// tests for entry.key()
-    fn key() {
+    fn test_key() {
         assert_eq!(test_entry().hash(), test_entry().key());
     }
 

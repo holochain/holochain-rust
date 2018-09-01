@@ -85,7 +85,7 @@ pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
     );
 }
 
-pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
+pub fn test_pair_meta_round_trip<HT: HashTable>(table: &mut HT) {
     let meta = test_pair_meta();
 
     assert_eq!(
@@ -107,7 +107,7 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     );
 }
 
-pub fn test_all_metas_for_pair<HT: HashTable>(table: &mut HT) {
+pub fn test_metas_for_pair<HT: HashTable>(table: &mut HT) {
     let pair = test_pair();
     let meta_a = test_pair_meta_a();
     let meta_b = test_pair_meta_b();
@@ -139,4 +139,28 @@ pub fn test_all_metas_for_pair<HT: HashTable>(table: &mut HT) {
             .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail")
     );
+}
+
+pub fn standard_suite<HT: HashTable>(table: &mut HT) {
+
+    assert_eq!(
+        Ok(()),
+        table.setup()
+    );
+
+    test_pair_round_trip(table);
+
+    test_modify_pair(table);
+
+    test_retract_pair(table);
+
+    test_pair_meta_round_trip(table);
+
+    test_metas_for_pair(table);
+
+    assert_eq!(
+        Ok(()),
+        table.teardown()
+    );
+
 }

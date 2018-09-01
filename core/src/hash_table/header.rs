@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     /// tests for header.key()
-    fn key() {
+    fn test_key() {
         assert_eq!(test_header().hash(), test_header().key());
     }
 }

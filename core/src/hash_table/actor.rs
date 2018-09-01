@@ -159,6 +159,7 @@ pub mod tests {
     use riker::actors::*;
     use std::{sync::mpsc, thread};
     use key::Key;
+    use hash_table::test_util::standard_suite;
 
     /// dummy table actor ref
     /// every call produces a new actor, not just a new ref to the same actor
@@ -218,9 +219,8 @@ pub mod tests {
     }
 
     #[test]
-    fn hash_table_suite() {
-        // @TODO there is a suite of standard HashTable tests coming
-        // @see https://github.com/holochain/holochain-rust/pull/246
+    fn test_standard_suite() {
+        standard_suite(&mut test_table_actor());
     }
 
 }

@@ -59,11 +59,7 @@ pub mod tests {
 
     use hash_table::{
         memory::MemTable,
-        test_util::{
-            test_all_metas_for_pair, test_meta_round_trip, test_modify_pair, test_pair_round_trip,
-            test_retract_pair,
-        },
-        HashTable,
+        test_util::standard_suite,
     };
 
     pub fn test_table() -> MemTable {
@@ -77,50 +73,8 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for ht.setup()
-    fn setup() {
-        let mut ht = test_table();
-        assert_eq!(Ok(()), ht.setup());
+    fn test_standard_suite() {
+        standard_suite(&mut test_table());
     }
 
-    #[test]
-    /// tests for ht.teardown()
-    fn teardown() {
-        let mut ht = test_table();
-        assert_eq!(Ok(()), ht.teardown());
-    }
-
-    #[test]
-    /// Pairs can round trip through table.commit() and table.get()
-    fn pair_round_trip() {
-        test_pair_round_trip(&mut test_table());
-    }
-
-    #[test]
-    /// Pairs can be modified through table.modify()
-    fn modify_pair() {
-        let mut table = test_table();
-        test_modify_pair(&mut table);
-    }
-
-    #[test]
-    /// Pairs can be retracted through table.retract()
-    fn retract_pair() {
-        let mut table = test_table();
-        test_retract_pair(&mut table);
-    }
-
-    #[test]
-    /// PairMeta can round trip through table.assert_meta() and table.get_meta()
-    fn meta_round_trip() {
-        let mut table = test_table();
-        test_meta_round_trip(&mut table);
-    }
-
-    #[test]
-    /// all PairMeta for a Pair can be retrieved with all_metas_for_pair
-    fn all_metas_for_pair() {
-        let mut table = test_table();
-        test_all_metas_for_pair(&mut table);
-    }
 }

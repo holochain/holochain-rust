@@ -99,14 +99,6 @@ impl Chain {
         ChainIterator::new(self.table(), &self.top_pair())
     }
 
-    /// get the entire chain, top to bottom as a JSON array or canonical pairs
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        let as_seq = self.iter().collect::<Vec<Pair>>();
-        serde_json::to_string(&as_seq)
-    }
-
     /// restore canonical JSON chain
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75

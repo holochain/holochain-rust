@@ -7,8 +7,8 @@ use hash_table::{
     HashString, HashTable,
     links_entry::LinkEntry, links_entry::LinkActionKind,
     sys_entry::ToEntry,
+    entry::Entry,
 };
-use chain::pair::Pair;
 use instance::Observer;
 use std::{
     collections::HashMap,
@@ -59,10 +59,10 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 pub enum ActionResponse {
-    CommitEntry(Result<Pair, HolochainError>),
-    GetEntry(Option<Pair>),
+    CommitEntry(Result<Entry, HolochainError>),
+    GetEntry(Option<Entry>),
     GetLinks(Result<Vec<HashString>, HolochainError>),
-    LinkAppEntries(Result<Pair, HolochainError>),
+    LinkAppEntries(Result<Entry, HolochainError>),
 }
 
 // @TODO abstract this to a standard trait
@@ -74,11 +74,11 @@ impl ActionResponse {
     pub fn to_json(&self) -> String {
         match self {
             ActionResponse::CommitEntry(result) => match result {
-                Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
+                Ok(entry) => format!("{{\"hash\":\"{}\"}}", entry.key()),
                 Err(err) => (*err).to_json(),
             },
             ActionResponse::GetEntry(result) => match result {
-                Some(pair) => pair.to_json(),
+                Some(entry) => entry.to_json(),
                 None => "".to_string(),
             },
             ActionResponse::GetLinks(result) => match result {
@@ -88,7 +88,7 @@ impl ActionResponse {
                 Err(err) => (*err).to_json(),
             },
             ActionResponse::LinkAppEntries(result) => match result {
-                Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
+                Ok(entry) => format!("{{\"hash\":\"{}\"}}", entry.key()),
                 Err(err) => (*err).to_json(),
             },
         }
@@ -114,7 +114,9 @@ fn reduce_link_app_entries(
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
-    let mut response =  state.chain.commit_entry(&link_entry.to_entry());
+    let res =  state.chain.commit_entry(&link_entry.to_entry());
+    let mut response =
+        if res.is_ok() { Ok(res.unwrap().entry().clone()) } else { Err(res.err().unwrap()) };
 
     // Add Link to HashTable (adds to the LinkListEntry Meta)
     let res = state.chain.table().add_link(link);
@@ -194,7 +196,10 @@ fn reduce_commit_entry(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let response = state.chain.commit_entry(&entry);
+    let res = state.chain.commit_entry(&entry);
+    let response =
+        if res.is_ok() { Ok(res.unwrap().entry().clone()) } else { Err(res.err().unwrap()) };
+
     state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::CommitEntry(response),
@@ -220,11 +225,7 @@ fn reduce_get_entry(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::GetEntry(
-            result
-                .clone()
-                .expect("should be able to get entry that we just added"),
-        ),
+        ActionResponse::GetEntry(result.clone()),
     );
 }
 
@@ -287,12 +288,12 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::CommitEntry(Ok(test_pair()))
+        ActionResponse::CommitEntry(Ok(test_pair().entry().clone()))
     }
 
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_pair()))
+        ActionResponse::GetEntry(Some(test_pair().entry().clone()))
     }
 
     #[test]
@@ -445,7 +446,6 @@ pub mod tests {
     }
 
     #[test]
-    /// test for reducing get entry
     fn test_reduce_get_entry() {
         let mut state = test_agent_state();
         let context = test_context("foo");
@@ -486,11 +486,10 @@ pub mod tests {
     }
 
     #[test]
-    /// test response to json
     fn test_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::CommitEntry(Ok(test_pair())).to_json(),
+            ActionResponse::CommitEntry(Ok(test_pair().entry().clone())).to_json(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
@@ -498,8 +497,8 @@ pub mod tests {
         );
 
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            ActionResponse::GetEntry(Some(test_pair())).to_json(),
+            "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}",
+            ActionResponse::GetEntry(Some(test_pair().entry().clone())).to_json(),
         );
         assert_eq!("", ActionResponse::GetEntry(None).to_json());
     }

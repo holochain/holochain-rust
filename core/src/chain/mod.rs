@@ -207,19 +207,18 @@ pub trait SourceChain {
     /// get the top Pair by Entry type
     fn top_pair_of_type(&self, t: &str) -> Option<Pair>;
 
-    /// push a new Entry on to the top of the Chain
-    /// the Pair for the new Entry is automatically generated and validated against the current top
+    /// push a new Entry on to the top of the Chain.
+    /// The Pair for the new Entry is generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
-    /// the newly created and pushed Pair is returned in the fn Result
+    /// the newly created and pushed Pair is returned.
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
+    fn entry(&self, entry_hash: &str) -> Option<Entry>;
 
     /// pair-oriented version of push_entry()
     fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
-
-    // /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, pair_hast: &str) -> Result<Option<Pair>, HolochainError>;
+    /// get a Pair by Pair/Header key from the HashTable if it exists
+    fn pair(&self, pair_hash: &str) -> Option<Pair>;
 }
 
 impl SourceChain for Chain {
@@ -279,35 +278,37 @@ impl SourceChain for Chain {
 
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = self.create_next_pair(entry);
-        // println!("chain.commit_entry(): pair.header = {:?}", pair.header());
         self.commit_pair(&pair)
     }
 
     /// Browse Chain until Pair is found
-    fn pair(&self, pair_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, pair_hash: &str) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        Ok(self
+        self
             .iter()
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
                 p.key() == pair_hash
-            }))
+            })
     }
 
     /// Browse Chain until Pair with entry_hash is found
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
-        //println!("chain.entry() = {}", entry_hash);
+    fn entry(&self, entry_hash: &str) -> Option<Entry> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        Ok(self
+        let pair = self
             .iter()
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
                 p.entry().hash() == entry_hash
-            }))
+            });
+        if pair.is_none() {
+            return None;
+        };
+        Some(pair.unwrap().entry().clone())
     }
 }
 
@@ -316,7 +317,10 @@ pub mod tests {
 
     use super::Chain;
     use chain::SourceChain;
-    use chain::pair::Pair;
+    use chain::pair::{
+        Pair,
+        tests::test_pair,
+    };
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
@@ -372,15 +376,23 @@ pub mod tests {
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
 
-        let pair_a = chain
+        let p1 = chain
             .commit_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_a), chain.top_pair());
+        assert_eq!(&entry_a, p1.entry());
+        let top_pair = chain
+            .top_pair()
+            .expect("should have commited entry");
+        assert_eq!(p1, top_pair);
 
-        let pair_b = chain
+        let p2 = chain
             .commit_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_b), chain.top_pair());
+        assert_eq!(&entry_b, p2.entry());
+        let top_pair = chain
+            .top_pair()
+            .expect("should have commited entry");
+        assert_eq!(p2, top_pair);
     }
 
     /// tests that the chain state is consistent across clones
@@ -388,40 +400,38 @@ pub mod tests {
     fn can_clone_safe() {
         let c1 = test_chain();
         let mut c2 = c1.clone();
-        let e = test_entry();
+        let test_pair = test_pair();
 
         assert_eq!(None, c1.top_pair());
         assert_eq!(None, c2.top_pair());
 
-        let pair = c2.commit_entry(&e).unwrap();
+        let pair = c2.commit_pair(&test_pair).unwrap();
 
         assert_eq!(Some(pair.clone()), c2.top_pair());
         assert_eq!(c1.top_pair(), c2.top_pair());
     }
 
 
+    // test that adding something to the chain adds to the table
     #[test]
     fn can_table_put() {
         let table_actor = test_table_actor();
         let mut chain = Chain::new(table_actor.clone());
 
-        // test that adding something to the chain adds to the table
         let pair = chain
-            .commit_entry(&test_entry())
+            .commit_pair(&test_pair())
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
             .entry(&pair.entry().key())
             .expect("getting an entry from a table in a chain shouldn't fail")
             .expect("table should have entry");
-        let chain_pair = chain
+        let chain_entry = chain
             .entry(&pair.entry().key())
-            .expect("getting an entry from a chain shouldn't fail")
-            .expect("chain should have pair");
+            .expect("getting an entry from a chain shouldn't fail");
 
         assert_eq!(pair.entry(), &table_entry);
-        assert_eq!(pair, chain_pair);
-        assert_eq!(&table_entry, chain_pair.entry());
+        assert_eq!(table_entry, chain_entry);
     }
 
 
@@ -435,21 +445,21 @@ pub mod tests {
         let e1 = test_entry_a();
         let p1 = chain
             .commit_entry(&e1)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&p1), chain.top_pair().as_ref());
         assert_eq!(&e1, p1.entry());
-        assert_eq!(e1.hash(), p1.header().entry_hash());
+        assert_eq!(Some(&p1), chain.top_pair().as_ref());
+        assert_eq!(e1.key(), p1.entry().key());
 
         // we should be able to do it again
         let e2 = test_entry_b();
         let p2 = chain
             .commit_entry(&e2)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&p2), chain.top_pair().as_ref());
         assert_eq!(&e2, p2.entry());
-        assert_eq!(e2.hash(), p2.header().entry_hash());
+        assert_eq!(Some(&p2), chain.top_pair().as_ref());
+        assert_eq!(e2.key(), p2.entry().key());
     }
 
 
@@ -484,11 +494,10 @@ pub mod tests {
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
-            Some(&pair),
+            entry,
             chain
                 .entry(&pair.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
     }
 
@@ -501,7 +510,10 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.commit_entry(&entry).unwrap();
-                assert_eq!(Some(pair.clone()), chain.entry(&pair.entry().key()).unwrap(),);
+                assert_eq!(
+                    Some(pair.entry().clone()),
+                    chain.entry(&pair.entry().key()),
+                );
             }
         });
         h.join().unwrap();
@@ -568,68 +580,56 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
-            Some(&p1),
+            p1.entry().clone(),
             chain
                 .entry(&p1.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
 
         let p3 = chain
             .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        println!("  p1 = {:?}", p1);
-        // println!("  p2 = {:?}", p2);
-
         assert_eq!(
             None,
-            chain
-                .entry("")
-                .expect("getting an entry from a chain shouldn't fail")
+            chain.entry("")
         );
         assert_eq!(
-            Some(&p3),
+            p3.entry().clone(),
             chain
                 .entry(&p1.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p2),
+            p2.entry().clone(),
             chain
                 .entry(&p2.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p3),
+            p3.entry().clone(),
             chain
                 .entry(&p3.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
 
         assert_eq!(
-            Some(&p1),
+            p1,
             chain
                 .pair(&p1.key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p2),
+            p2,
             chain
                 .pair(&p2.key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p3),
+            p3,
             chain
                 .pair(&p3.key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
     }
 
@@ -643,41 +643,36 @@ pub mod tests {
 
         let p1 = chain
             .commit_entry(&e1)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         let p2 = chain
             .commit_entry(&e2)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         let p3 = chain
             .commit_entry(&e1)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
             None,
-            chain
-                .entry("")
-                .expect("getting an entry from a chain shouldn't fail")
+            chain.entry("")
         );
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
-            Some(&p3),
+            p3.entry().clone(),
             chain
                 .entry(&p1.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p2),
+            p2.entry().clone(),
             chain
                 .entry(&p2.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
-            Some(&p3),
+            p3.entry().clone(),
             chain
                 .entry(&p3.entry().key())
-                .expect("getting an entry from a chain shouldn't fail")
-                .as_ref()
+                .expect("getting an entry from a chain shouldn't fail"),
         );
     }
 

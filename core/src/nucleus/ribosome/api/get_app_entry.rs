@@ -85,7 +85,7 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
     use chain::SourceChain;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::api::{
@@ -219,11 +219,9 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"Qmdvsr9ifqBomQZXmcrTYQpK7dUEYXe6qQGpdogq913pLC\",\"entry_hash\":\"");
-        expected.push_str(&test_entry_hash());
-        expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
+        expected.push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
 
-        assert_eq!(get_runtime.result, expected,);
+        assert_eq!(expected, get_runtime.result);
     }
 
 }

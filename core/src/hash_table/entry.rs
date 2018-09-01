@@ -104,6 +104,7 @@ pub mod tests {
     use hash_table::entry::Entry;
     use json::{FromJson, ToJson};
     use key::Key;
+    use snowflake;
 
     /// dummy entry type
     pub fn test_type() -> String {
@@ -153,6 +154,11 @@ pub mod tests {
     /// dummy entry, differs from test_entry()
     pub fn test_entry_b() -> Entry {
         Entry::new(&test_type_b(), &test_content_b())
+    }
+
+    /// dummy entry with unique string content
+    pub fn test_entry_unique() -> Entry {
+        Entry::new(&test_type(), &snowflake::ProcessUniqueId::new().to_string())
     }
 
     #[test]

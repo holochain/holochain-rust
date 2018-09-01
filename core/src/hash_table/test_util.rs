@@ -1,8 +1,8 @@
 use agent::keys::tests::test_keys;
 use hash_table::{
-    pair::tests::{test_pair, test_pair_a, test_pair_b},
+    pair::tests::{test_pair_unique},
     pair_meta::{
-        tests::{test_pair_meta, test_pair_meta_a, test_pair_meta_b},
+        tests::{test_pair_meta, test_pair_meta_for, test_attribute, test_value, test_attribute_b, test_value_b},
         PairMeta,
     },
     status::{CRUDStatus, LINK_NAME, STATUS_NAME},
@@ -13,7 +13,7 @@ use key::Key;
 // standard tests that should pass for every hash table implementation
 
 pub fn test_pair_round_trip<HT: HashTable>(table: &mut HT) {
-    let pair = test_pair();
+    let pair = test_pair_unique();
     table
         .commit_pair(&pair)
         .expect("should be able to commit valid pair");
@@ -21,28 +21,28 @@ pub fn test_pair_round_trip<HT: HashTable>(table: &mut HT) {
 }
 
 pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
-    let pair_a = test_pair_a();
-    let pair_b = test_pair_b();
+    let pair_1 = test_pair_unique();
+    let pair_2 = test_pair_unique();
 
     table
-        .commit_pair(&pair_a)
+        .commit_pair(&pair_1)
         .expect("should be able to commit valid pair");
     table
-        .modify_pair(&test_keys(), &pair_a, &pair_b)
+        .modify_pair(&test_keys(), &pair_1, &pair_2)
         .expect("should be able to edit with valid pair");
 
     assert_eq!(
         vec![
-            PairMeta::new(&test_keys(), &pair_a, LINK_NAME, &pair_b.key()),
+            PairMeta::new(&test_keys(), &pair_1, LINK_NAME, &pair_2.key()),
             PairMeta::new(
                 &test_keys(),
-                &pair_a,
+                &pair_1,
                 STATUS_NAME,
                 &CRUDStatus::MODIFIED.bits().to_string(),
             ),
         ],
         table
-            .metas_for_pair(&pair_a)
+            .metas_for_pair(&pair_1)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 
@@ -50,13 +50,13 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         empty_vec,
         table
-            .metas_for_pair(&pair_b)
+            .metas_for_pair(&pair_2)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 }
 
 pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
-    let pair = test_pair();
+    let pair = test_pair_unique();
     let empty_vec: Vec<PairMeta> = Vec::new();
 
     table
@@ -108,9 +108,9 @@ pub fn test_pair_meta_round_trip<HT: HashTable>(table: &mut HT) {
 }
 
 pub fn test_metas_for_pair<HT: HashTable>(table: &mut HT) {
-    let pair = test_pair();
-    let meta_a = test_pair_meta_a();
-    let meta_b = test_pair_meta_b();
+    let pair = test_pair_unique();
+    let meta_a = test_pair_meta_for(&pair, &test_attribute(), &test_value());
+    let meta_b = test_pair_meta_for(&pair, &test_attribute_b(), &test_value_b());
     let empty_vec: Vec<PairMeta> = Vec::new();
 
     assert_eq!(

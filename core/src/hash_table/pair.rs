@@ -108,7 +108,7 @@ pub mod tests {
     use chain::{tests::test_chain, SourceChain};
     use hash_table::{
         entry::{
-            tests::{test_entry, test_entry_b},
+            tests::{test_entry, test_entry_b, test_entry_unique},
             Entry,
         },
         header::Header,
@@ -128,6 +128,11 @@ pub mod tests {
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
         Pair::new(&test_chain(), &test_entry_b())
+    }
+
+    /// dummy pair, uses test_entry_unique()
+    pub fn test_pair_unique() -> Pair {
+        Pair::new(&test_chain(), &test_entry_unique())
     }
 
     #[test]

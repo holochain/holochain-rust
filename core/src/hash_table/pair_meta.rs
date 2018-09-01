@@ -111,7 +111,8 @@ impl RoundTripJson for PairMeta {}
 #[cfg(test)]
 pub mod tests {
 
-    use super::PairMeta;
+    use hash_table::pair::Pair;
+    use hash_table::pair_meta::PairMeta;
     use agent::keys::tests::test_keys;
     use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
     use json::{FromJson, ToJson};
@@ -148,9 +149,18 @@ pub mod tests {
         "another value".into()
     }
 
+    pub fn test_pair_meta_for(pair: &Pair, attribute: &str, value: &str) -> PairMeta {
+        PairMeta::new(
+            &test_keys(),
+            pair,
+            attribute,
+            value,
+        )
+    }
+
     /// returns dummy pair meta for testing
     pub fn test_pair_meta() -> PairMeta {
-        PairMeta::new(&test_keys(), &test_pair(), &test_attribute(), &test_value())
+        test_pair_meta_for(&test_pair(), &test_attribute(), &test_value())
     }
 
     /// dummy pair meta, same as test_pair_meta()
@@ -160,12 +170,7 @@ pub mod tests {
 
     /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
     pub fn test_pair_meta_b() -> PairMeta {
-        PairMeta::new(
-            &test_keys(),
-            &test_pair(),
-            &test_attribute_b(),
-            &test_value_b(),
-        )
+        test_pair_meta_for(&test_pair(), &test_attribute_b(), &test_value_b())
     }
 
     #[test]

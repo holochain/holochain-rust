@@ -1,8 +1,11 @@
 use agent::keys::tests::test_keys;
 use hash_table::{
-    pair::tests::{test_pair_unique},
+    pair::tests::test_pair_unique,
     pair_meta::{
-        tests::{test_pair_meta, test_pair_meta_for, test_attribute, test_value, test_attribute_b, test_value_b},
+        tests::{
+            test_attribute, test_attribute_b, test_pair_meta, test_pair_meta_for, test_value,
+            test_value_b,
+        },
         PairMeta,
     },
     status::{CRUDStatus, LINK_NAME, STATUS_NAME},
@@ -142,11 +145,7 @@ pub fn test_metas_for_pair<HT: HashTable>(table: &mut HT) {
 }
 
 pub fn standard_suite<HT: HashTable>(table: &mut HT) {
-
-    assert_eq!(
-        Ok(()),
-        table.setup()
-    );
+    assert_eq!(Ok(()), table.setup());
 
     test_pair_round_trip(table);
 
@@ -158,9 +157,5 @@ pub fn standard_suite<HT: HashTable>(table: &mut HT) {
 
     test_metas_for_pair(table);
 
-    assert_eq!(
-        Ok(()),
-        table.teardown()
-    );
-
+    assert_eq!(Ok(()), table.teardown());
 }

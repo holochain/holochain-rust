@@ -1,13 +1,13 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use json::ToJson;
+use key::Key;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use key::Key;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -83,6 +83,7 @@ mod tests {
     use chain::SourceChain;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use instance::tests::{test_context_and_logger, test_instance};
+    use key::Key;
     use nucleus::{
         ribosome::api::{
             call,
@@ -92,7 +93,6 @@ mod tests {
         FunctionCall,
     };
     use serde_json;
-    use key::Key;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry

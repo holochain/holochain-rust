@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use error::HolochainError;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
-use hash_table::HashTable;
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use key::Key;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
@@ -57,10 +56,7 @@ impl HashTable for MemTable {
 #[cfg(test)]
 pub mod tests {
 
-    use hash_table::{
-        memory::MemTable,
-        test_util::standard_suite,
-    };
+    use hash_table::{memory::MemTable, test_util::standard_suite};
 
     pub fn test_table() -> MemTable {
         MemTable::new()

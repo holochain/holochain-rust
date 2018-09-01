@@ -226,9 +226,9 @@ pub mod tests {
         pair::Pair,
         HashTable,
     };
+    use json::ToJson;
     use key::Key;
     use std::thread;
-    use json::ToJson;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {

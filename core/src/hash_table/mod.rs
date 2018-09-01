@@ -6,9 +6,9 @@ pub mod memory;
 pub mod pair;
 pub mod pair_meta;
 pub mod status;
+pub mod sys_entry;
 #[cfg(test)]
 pub mod test_util;
-pub mod sys_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
@@ -31,7 +31,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn setup(&mut self) -> Result<(), HolochainError> {
         Ok(())
     }
-     fn teardown(&mut self) -> Result<(), HolochainError> {
+    fn teardown(&mut self) -> Result<(), HolochainError> {
         Ok(())
     }
 

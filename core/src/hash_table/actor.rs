@@ -126,7 +126,9 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         keys,
                         old_pair,
                         new_pair,
-                    } => Protocol::ModifyResult(self.table.modify_pair(&keys, &old_pair, &new_pair)),
+                    } => {
+                        Protocol::ModifyResult(self.table.modify_pair(&keys, &old_pair, &new_pair))
+                    }
                     Protocol::Retract { keys, pair } => {
                         Protocol::RetractResult(self.table.retract_pair(&keys, &pair))
                     }
@@ -155,11 +157,12 @@ pub mod tests {
     use super::HashTableActor;
     use actor::Protocol;
     use hash::tests::test_hash;
-    use hash_table::{memory::tests::test_table, pair::tests::test_pair, HashTable};
+    use hash_table::{
+        memory::tests::test_table, pair::tests::test_pair, test_util::standard_suite, HashTable,
+    };
+    use key::Key;
     use riker::actors::*;
     use std::{sync::mpsc, thread};
-    use key::Key;
-    use hash_table::test_util::standard_suite;
 
     /// dummy table actor ref
     /// every call produces a new actor, not just a new ref to the same actor

@@ -141,9 +141,8 @@ impl HashTable for FileTable {
 
 #[cfg(test)]
 pub mod tests {
+    use hash_table::{file::FileTable, test_util::standard_suite};
     use tempfile::{tempdir, TempDir};
-    use hash_table::file::FileTable;
-    use hash_table::test_util::standard_suite;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope

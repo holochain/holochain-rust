@@ -1,8 +1,8 @@
 use chain::{Chain, SourceChain};
 use hash;
 use hash_table::{entry::Entry, HashString};
-use multihash::Hash;
 use key::Key;
+use multihash::Hash;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table

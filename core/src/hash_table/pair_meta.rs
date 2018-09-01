@@ -111,10 +111,14 @@ impl RoundTripJson for PairMeta {}
 #[cfg(test)]
 pub mod tests {
 
-    use hash_table::pair::Pair;
-    use hash_table::pair_meta::PairMeta;
     use agent::keys::tests::test_keys;
-    use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
+    use hash_table::{
+        pair::{
+            tests::{test_pair, test_pair_a, test_pair_b},
+            Pair,
+        },
+        pair_meta::PairMeta,
+    };
     use json::{FromJson, ToJson};
     use key::Key;
     use std::cmp::Ordering;
@@ -150,12 +154,7 @@ pub mod tests {
     }
 
     pub fn test_pair_meta_for(pair: &Pair, attribute: &str, value: &str) -> PairMeta {
-        PairMeta::new(
-            &test_keys(),
-            pair,
-            attribute,
-            value,
-        )
+        PairMeta::new(&test_keys(), pair, attribute, value)
     }
 
     /// returns dummy pair meta for testing

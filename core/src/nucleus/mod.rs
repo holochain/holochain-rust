@@ -6,6 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
+use hash_table::sys_entry::ToEntry;
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
@@ -19,7 +20,6 @@ use std::{
     },
     thread,
 };
-use hash_table::sys_entry::ToEntry;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

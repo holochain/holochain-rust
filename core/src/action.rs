@@ -1,10 +1,12 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::{HashString, entry::Entry, links_entry::Link};
+use hash_table::{entry::Entry, links_entry::Link, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult,
-ribosome::api::get_links::GetLinksArgs};
+use nucleus::{
+    ribosome::api::get_links::GetLinksArgs, state::NucleusState, EntrySubmission, FunctionCall,
+    FunctionResult,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

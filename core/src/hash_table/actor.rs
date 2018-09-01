@@ -1,11 +1,15 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{HashString, meta::Meta, HashTable,
-                 links_entry::Link, entry::Entry, links_entry::LinkListEntry};
+use hash_table::{
+    entry::Entry,
+    links_entry::{Link, LinkListEntry},
+    meta::Meta,
+    HashString, HashTable,
+};
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use snowflake;
-use nucleus::ribosome::api::get_links::GetLinksArgs;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
@@ -34,8 +38,12 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::EntryResult).clone()
     }
 
-    fn modify(&mut self, keys: &Keys, old_entry: &Entry, new_entry: &Entry)
-    -> Result<(), HolochainError> {
+    fn modify(
+        &mut self,
+        keys: &Keys,
+        old_entry: &Entry,
+        new_entry: &Entry,
+    ) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Modify {
             keys: keys.clone(),
             old_entry: old_entry.clone(),
@@ -82,12 +90,13 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::EntryMetaResult).clone()
     }
 
-    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str)
-        -> Result<Option<Meta>, HolochainError>
-    {
-        let response = self.block_on_ask(
-            Protocol::MetaFor {
-                entry_hash: entry_hash,
+    fn meta_from_request(
+        &mut self,
+        entry_hash: HashString,
+        attribute_name: &str,
+    ) -> Result<Option<Meta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::MetaFor {
+            entry_hash: entry_hash,
             attribute_name: attribute_name.to_string(),
         });
         unwrap_to!(response => Protocol::MetaForResult).clone()
@@ -142,31 +151,26 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                                        Protocol::Put(entry) => Protocol::PutResult(self.table.put(&entry)),
+                    Protocol::Put(entry) => Protocol::PutResult(self.table.put(&entry)),
 
                     Protocol::Entry(hash) => Protocol::EntryResult(self.table.entry(&hash)),
 
-// FIXME
-//                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
-//
-//                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
-//
-//                    Protocol::Modify {
-//                        keys,
-//                        old_pair,
-//                        new_pair,
-//                    } => Protocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
-//                    Protocol::Retract { keys, pair } => {
-//                        Protocol::RetractResult(self.table.retract(&keys, &pair))
-//                    }
+                    // FIXME
+                    //                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
+                    //
+                    //                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
+                    //
+                    //                    Protocol::Modify {
+                    //                        keys,
+                    //                        old_pair,
+                    //                        new_pair,
+                    //                    } => Protocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
+                    //                    Protocol::Retract { keys, pair } => {
+                    //                        Protocol::RetractResult(self.table.retract(&keys, &pair))
+                    //                    }
+                    Protocol::Links(req) => Protocol::LinksResult(self.table.links(&req)),
 
-                    Protocol::Links(req) => {
-                        Protocol::LinksResult(self.table.links(&req))
-                    }
-
-                    Protocol::AddLink(link) => {
-                        Protocol::AddLinkResult(self.table.add_link(&link))
-                    }
+                    Protocol::AddLink(link) => Protocol::AddLinkResult(self.table.add_link(&link)),
 
                     Protocol::AssertMeta(pair_meta) => {
                         Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
@@ -178,9 +182,12 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         Protocol::EntryMetaResult(self.table.meta_from_entry(&entry))
                     }
 
-                    Protocol::MetaFor{entry_hash, attribute_name} => {
-                        Protocol::MetaForResult(self.table.meta_from_request(entry_hash, &attribute_name))
-                    }
+                    Protocol::MetaFor {
+                        entry_hash,
+                        attribute_name,
+                    } => Protocol::MetaForResult(
+                        self.table.meta_from_request(entry_hash, &attribute_name),
+                    ),
 
                     _ => unreachable!(),
                 },
@@ -195,9 +202,9 @@ pub mod tests {
 
     use super::HashTableActor;
     use actor::Protocol;
+    use chain::pair::tests::test_pair;
     use hash::tests::test_hash;
     use hash_table::{memory::tests::test_table, HashTable};
-    use chain::pair::tests::test_pair;
     use riker::actors::*;
     use std::{sync::mpsc, thread};
 
@@ -216,7 +223,10 @@ pub mod tests {
         table_actor.put(&test_pair().entry()).unwrap();
 
         assert_eq!(
-            &table_actor.entry(&test_pair().entry().key()).unwrap().unwrap(),
+            &table_actor
+                .entry(&test_pair().entry().key())
+                .unwrap()
+                .unwrap(),
             test_pair().entry(),
         );
     }
@@ -253,7 +263,10 @@ pub mod tests {
         let handle = thread::spawn(move || {
             let pair = rx2.recv().unwrap();
             assert_eq!(
-                &table_actor_thread.entry(&pair.entry().key()).unwrap().unwrap(),
+                &table_actor_thread
+                    .entry(&pair.entry().key())
+                    .unwrap()
+                    .unwrap(),
                 pair.entry(),
             );
         });

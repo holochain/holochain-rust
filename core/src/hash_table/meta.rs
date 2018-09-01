@@ -1,11 +1,9 @@
 // use agent::keys::Keys;
 //use hash::serializable_to_b58_hash;
-use hash_table::{
-    HashString,
-};
+use hash;
+use hash_table::HashString;
 use multihash::Hash;
 use std::cmp::Ordering;
-use hash;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
@@ -90,17 +88,13 @@ impl Meta {
     }
 
     pub fn make_hash(entry_hash: &str, attribute_name: &str) -> String {
-        let pieces: [&str; 2] = [
-            entry_hash,
-            attribute_name,
-        ];
+        let pieces: [&str; 2] = [entry_hash, attribute_name];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
-
 }
 
 #[cfg(test)]
@@ -143,7 +137,12 @@ pub mod tests {
 
     /// returns dummy meta for testing
     pub fn test_meta() -> Meta {
-        Meta::new(&test_keys().node_id(), &test_entry().key(), &test_attribute(), &test_value())
+        Meta::new(
+            &test_keys().node_id(),
+            &test_entry().key(),
+            &test_attribute(),
+            &test_value(),
+        )
     }
 
     /// dummy meta, same as test_meta()
@@ -194,7 +193,7 @@ pub mod tests {
     #[test]
     /// test that we can sort metas with cmp
     fn cmp() {
-         // basic ordering
+        // basic ordering
         let m_1ax = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "x");
         let m_1ay = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "y");
         let m_1bx = Meta::new(&test_keys().node_id(), &"1".to_string(), "b", "x");

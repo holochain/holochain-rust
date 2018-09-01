@@ -1,18 +1,18 @@
 pub mod actor;
+pub mod deletion_entry;
 pub mod entry;
+pub mod links_entry;
 pub mod memory;
 pub mod meta;
 pub mod status;
 pub mod sys_entry;
-pub mod links_entry;
-pub mod deletion_entry;
 
 use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{meta::Meta,
-                 links_entry::Link, links_entry::LinkListEntry,
-                 entry::Entry,
-                 //header::Header,
+use hash_table::{
+    entry::Entry,
+    links_entry::{Link, LinkListEntry},
+    meta::Meta,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 
@@ -40,8 +40,8 @@ pub trait HashTable: Send + Sync + Clone + 'static {
         old_entry: &Entry,
         new_entry: &Entry,
     ) -> Result<(), HolochainError>;
-     /// 'Remove' an Entry by setting the status metadata of an Entry to DELETED
-     fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError>;
+    /// 'Remove' an Entry by setting the status metadata of an Entry to DELETED
+    fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError>;
 
     // Link
     /// Add link metadata to an Entry
@@ -49,7 +49,10 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Remove link metadata to an Entry
     fn remove_link(&mut self, link: &Link) -> Result<(), HolochainError>;
     /// Get all link metadata of an Entry
-    fn links(&mut self, links_request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError>;
+    fn links(
+        &mut self,
+        links_request: &GetLinksArgs,
+    ) -> Result<Option<LinkListEntry>, HolochainError>;
 
     // Meta
     /// Assert a given Meta in the HashTable.
@@ -59,7 +62,11 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Lookup all Meta for a given Entry.
     fn meta_from_entry(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError>;
     /// Lookup a Meta from a request.
-    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>;
+    fn meta_from_request(
+        &mut self,
+        entry_hash: HashString,
+        attribute_name: &str,
+    ) -> Result<Option<Meta>, HolochainError>;
 
     // query
     // @TODO how should we handle queries?

@@ -4,17 +4,16 @@ use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
 use hash_table::{
-    HashString, HashTable,
-    links_entry::LinkEntry, links_entry::LinkActionKind,
-    sys_entry::ToEntry,
     entry::Entry,
+    links_entry::{LinkActionKind, LinkEntry},
+    sys_entry::ToEntry,
+    HashString, HashTable,
 };
 use instance::Observer;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -82,9 +81,10 @@ impl ActionResponse {
                 None => "".to_string(),
             },
             ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) =>  {
-                    json!(hash_list).as_str().expect("should jsonify").to_string()
-                },
+                Ok(hash_list) => json!(hash_list)
+                    .as_str()
+                    .expect("should jsonify")
+                    .to_string(),
                 Err(err) => (*err).to_json(),
             },
             ActionResponse::LinkAppEntries(result) => match result {
@@ -114,9 +114,12 @@ fn reduce_link_app_entries(
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
-    let res =  state.chain.commit_entry(&link_entry.to_entry());
-    let mut response =
-        if res.is_ok() { Ok(res.unwrap().entry().clone()) } else { Err(res.err().unwrap()) };
+    let res = state.chain.commit_entry(&link_entry.to_entry());
+    let mut response = if res.is_ok() {
+        Ok(res.unwrap().entry().clone())
+    } else {
+        Err(res.err().unwrap())
+    };
 
     // Add Link to HashTable (adds to the LinkListEntry Meta)
     let res = state.chain.table().add_link(link);
@@ -131,7 +134,6 @@ fn reduce_link_app_entries(
     );
 }
 
-
 /// Do the GetLinks Action against an agent state
 fn reduce_get_links(
     _context: Arc<Context>,
@@ -143,23 +145,21 @@ fn reduce_get_links(
     let action = action_wrapper.action();
     let links_request = unwrap_to!(action => Action::GetLinks);
 
-//    // Look for entry's link metadata
+    //    // Look for entry's link metadata
     let res = state.chain.table().links(links_request);
     if res.is_err() {
-        state
-        .actions
-        .insert(
+        state.actions.insert(
             action_wrapper.clone(),
-        ActionResponse::GetLinks(Err(res.err().unwrap())));
+            ActionResponse::GetLinks(Err(res.err().unwrap())),
+        );
         return;
     }
     let maybe_lle = res.unwrap();
     if maybe_lle.is_none() {
-        state
-            .actions
-            .insert(
-                action_wrapper.clone(),
-                ActionResponse::GetLinks(Ok(Vec::new())));
+        state.actions.insert(
+            action_wrapper.clone(),
+            ActionResponse::GetLinks(Ok(Vec::new())),
+        );
         return;
     }
     let lle = maybe_lle.unwrap();
@@ -171,11 +171,11 @@ fn reduce_get_links(
     }
 
     // Insert reponse in state
-    state
-        .actions
-        .insert(action_wrapper.clone(), ActionResponse::GetLinks(Ok(link_hashes.clone())));
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::GetLinks(Ok(link_hashes.clone())),
+    );
 }
-
 
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
@@ -197,8 +197,11 @@ fn reduce_commit_entry(
     // @see https://github.com/holochain/holochain-rust/issues/256
 
     let res = state.chain.commit_entry(&entry);
-    let response =
-        if res.is_ok() { Ok(res.unwrap().entry().clone()) } else { Err(res.err().unwrap()) };
+    let response = if res.is_ok() {
+        Ok(res.unwrap().entry().clone())
+    } else {
+        Err(res.err().unwrap())
+    };
 
     state.actions.insert(
         action_wrapper.clone(),
@@ -268,18 +271,16 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use chain::tests::test_chain;
-    use error::HolochainError;
-    use hash_table::{
-        entry::Entry,
-        links_entry::Link,
+    use action::{
+        tests::{test_action_wrapper_commit, test_action_wrapper_get},
+        ActionWrapper,
     };
+    use chain::{pair::tests::test_pair, tests::test_chain};
+    use error::HolochainError;
+    use hash_table::{entry::Entry, links_entry::Link};
     use instance::tests::{test_context, test_instance_blank};
-    use std::{collections::HashMap, sync::Arc};
-    use action::ActionWrapper;
     use nucleus::ribosome::api::get_links::GetLinksArgs;
-    use chain::pair::tests::test_pair;
+    use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -319,7 +320,10 @@ pub mod tests {
     fn test_reduce_get_links_empty() {
         let mut state = test_agent_state();
 
-        let req1 = GetLinksArgs{entry_hash: "0x42".to_string(), tag: "child".to_string()};
+        let req1 = GetLinksArgs {
+            entry_hash: "0x42".to_string(),
+            tag: "child".to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(req1));
 
         let instance = test_instance_blank();
@@ -357,7 +361,9 @@ pub mod tests {
         );
 
         assert_eq!(
-            Some(&ActionResponse::LinkAppEntries(Err(HolochainError::ErrorGeneric("Entry from base not found".to_string())))),
+            Some(&ActionResponse::LinkAppEntries(Err(
+                HolochainError::ErrorGeneric("Entry from base not found".to_string())
+            ))),
             state.actions().get(&action_wrapper),
         );
     }
@@ -372,12 +378,15 @@ pub mod tests {
 
         let t1 = "child".to_string();
 
-        let req1 = GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+        let req1 = GetLinksArgs {
+            entry_hash: e1.key(),
+            tag: t1.clone(),
+        };
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
-        let action_commit_e1 =  ActionWrapper::new(Action::CommitEntry(e1.clone()));
-        let action_commit_e2 =  ActionWrapper::new(Action::CommitEntry(e2.clone()));
+        let action_commit_e1 = ActionWrapper::new(Action::CommitEntry(e1.clone()));
+        let action_commit_e2 = ActionWrapper::new(Action::CommitEntry(e2.clone()));
         let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
         let action_gl = ActionWrapper::new(Action::GetLinks(req1));
 
@@ -462,7 +471,10 @@ pub mod tests {
         );
 
         // nothing has been committed so the get must be None
-        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::GetEntry(None)),);
+        assert_eq!(
+            state.actions().get(&aw1),
+            Some(&ActionResponse::GetEntry(None)),
+        );
 
         // do a round trip
         reduce_commit_entry(

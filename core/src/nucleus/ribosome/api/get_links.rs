@@ -1,12 +1,12 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash_table::HashString;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksArgs {
@@ -14,7 +14,9 @@ pub struct GetLinksArgs {
     pub tag: String,
 }
 impl GetLinksArgs {
-    pub fn to_attribute_name(&self) -> String { format!("link:{}:{}", &self.entry_hash, &self.tag) }
+    pub fn to_attribute_name(&self) -> String {
+        format!("link:{}:{}", &self.entry_hash, &self.tag)
+    }
 }
 
 /// ZomeApiFunction::GetLinks function code
@@ -78,5 +80,7 @@ pub fn invoke_get_links(
     }
 
     // Fail
-    Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorActionResult as i32)))
+    Ok(Some(RuntimeValue::I32(
+        HcApiReturnCode::ErrorActionResult as i32,
+    )))
 }

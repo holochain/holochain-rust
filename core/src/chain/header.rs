@@ -1,7 +1,8 @@
 use hash;
-use hash_table::{entry::Entry, HashString, sys_entry::{
-    EntryType, ToEntry,
-}
+use hash_table::{
+    entry::Entry,
+    sys_entry::{EntryType, ToEntry},
+    HashString,
 };
 use multihash::Hash;
 use serde_json;
@@ -37,14 +38,13 @@ impl PartialEq for Header {
 }
 
 impl Header {
-
     //
     pub fn new(
         entry_type: &str,
         timestamp: &str,
-         link: Option<HashString>,
+        link: Option<HashString>,
         entry_hash: &str,
-         entry_signature: &str,
+        entry_signature: &str,
         link_same_type: Option<HashString>,
     ) -> Self {
         Header {
@@ -119,7 +119,6 @@ impl Header {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).expect("Header should serialize")
     }
-
 }
 
 //
@@ -134,10 +133,9 @@ impl ToEntry for Header {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use chain::{tests::test_chain, SourceChain, header::Header, pair::tests::test_pair};
+    use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, sys_entry::ToEntry};
 
     /// returns a dummy header for use in tests
@@ -156,7 +154,7 @@ mod tests {
 
         // same content + type + state is equal
         assert_eq!(
-            chain1.create_next_header( &Entry::new(t1, c1)),
+            chain1.create_next_header(&Entry::new(t1, c1)),
             chain1.create_next_header(&Entry::new(t1, c1))
         );
 

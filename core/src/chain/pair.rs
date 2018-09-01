@@ -1,8 +1,8 @@
-use hash_table::{entry::Entry, HashTable, sys_entry::ToEntry};
-use chain::header::Header;
-use serde_json;
-use riker::actors::*;
 use actor::Protocol;
+use chain::header::Header;
+use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
+use riker::actors::*;
+use serde_json;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
@@ -16,7 +16,9 @@ pub struct Pair {
 impl Pair {
     /// Reconstruct Pair from Header stored in a HashTable
     pub fn new_from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
-        let entry = table.entry(&header.entry_hash()).expect("should not attempt to create invalid pair");
+        let entry = table
+            .entry(&header.entry_hash())
+            .expect("should not attempt to create invalid pair");
         if entry.is_none() {
             return None;
         }
@@ -31,7 +33,7 @@ impl Pair {
     pub fn new(header: &Header, entry: &Entry) -> Self {
         Pair {
             header: header.clone(),
-            entry: entry.clone()
+            entry: entry.clone(),
         }
     }
 
@@ -87,11 +89,9 @@ impl Pair {
 pub mod tests {
     use super::Pair;
     use chain::{tests::test_chain, SourceChain};
-    use hash_table::{
-        entry::{
-            tests::{test_entry, test_entry_b},
-            Entry,
-        },
+    use hash_table::entry::{
+        tests::{test_entry, test_entry_b},
+        Entry,
     };
 
     /// dummy pair
@@ -115,7 +115,7 @@ pub mod tests {
         let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
-        let h1 = chain.create_next_header( &e1);
+        let h1 = chain.create_next_header(&e1);
 
         assert_eq!(h1.entry_hash(), e1.hash());
         assert_eq!(h1.link(), None);

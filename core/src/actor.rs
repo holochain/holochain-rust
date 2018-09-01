@@ -1,13 +1,17 @@
+use agent::keys::Keys;
+use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{HashString, meta::Meta, links_entry::Link, entry::Entry,
-                 links_entry::LinkListEntry};
+use hash_table::{
+    entry::Entry,
+    links_entry::{Link, LinkListEntry},
+    meta::Meta,
+    HashString,
+};
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
-use nucleus::ribosome::api::get_links::GetLinksArgs;
-use agent::keys::Keys;
-use chain::pair::Pair;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
@@ -59,20 +63,21 @@ pub enum Protocol {
     Meta(String),
     MetaResult(Result<Option<Meta>, HolochainError>),
 
-    MetaFor{entry_hash: HashString, attribute_name: String},
+    MetaFor {
+        entry_hash: HashString,
+        attribute_name: String,
+    },
     MetaForResult(Result<Option<Meta>, HolochainError>),
 
     /// HashTable::get_pair_meta()
-//    PairMeta(Pair),
-//    PairMetaResult(Result<Vec<Meta>, HolochainError>),
-
+    //    PairMeta(Pair),
+    //    PairMetaResult(Result<Vec<Meta>, HolochainError>),
     EntryMeta(Entry),
     EntryMetaResult(Result<Vec<Meta>, HolochainError>),
 
     /// HashTable::entry()
     Entry(String),
     EntryResult(Result<Option<Entry>, HolochainError>),
-
 
     /// HashTable::put()
     Put(Entry),

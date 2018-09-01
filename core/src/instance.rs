@@ -248,10 +248,11 @@ pub mod tests {
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
+    use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
-    use nucleus::ribosome::{callback::Callback, Defn, api::get_links::GetLinksArgs};
+    use nucleus::ribosome::{api::get_links::GetLinksArgs, callback::Callback, Defn};
     use persister::SimplePersister;
     use state::State;
     use std::{
@@ -259,11 +260,6 @@ pub mod tests {
         sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
-    };
-    use hash_table::{
-        entry::Entry,
-        links_entry::Link,
-        sys_entry::EntryType,
     };
 
     #[derive(Clone, Debug)]
@@ -593,7 +589,6 @@ pub mod tests {
         assert!(instance.state().nucleus().has_initialized() == false);
     }
 
-
     /// test linking
     #[test]
     fn test_linking() {
@@ -608,12 +603,15 @@ pub mod tests {
 
         let t1 = "child".to_string();
 
-        let req1 = GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+        let req1 = GetLinksArgs {
+            entry_hash: e1.key(),
+            tag: t1.clone(),
+        };
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
-        let action_commit_e1 =  ActionWrapper::new(Action::CommitEntry(e1.clone()));
-        let action_commit_e2 =  ActionWrapper::new(Action::CommitEntry(e2.clone()));
+        let action_commit_e1 = ActionWrapper::new(Action::CommitEntry(e1.clone()));
+        let action_commit_e2 = ActionWrapper::new(Action::CommitEntry(e2.clone()));
         let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
         let action_gl = ActionWrapper::new(Action::GetLinks(req1));
 
@@ -634,6 +632,5 @@ pub mod tests {
             instance.state().agent().actions().get(&action_gl),
         );
     }
-
 
 }

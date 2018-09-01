@@ -1,19 +1,16 @@
-use std::collections::HashMap;
+use agent::keys::{Key, Keys};
 use error::HolochainError;
-use serde_json;
-use agent::keys::Key;
-use agent::keys::Keys;
 use hash_table::{
+    entry::Entry,
+    links_entry::{Link, LinkListEntry},
     meta::Meta,
     status::{CRUDStatus, LINK_NAME, STATUS_NAME},
-    HashTable,
-    links_entry::Link,
-    HashString,
-    links_entry::LinkListEntry,
     sys_entry::ToEntry,
-    entry::Entry,
+    HashString, HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
+use serde_json;
+use std::collections::HashMap;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -68,7 +65,12 @@ impl HashTable for MemTable {
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_meta(&Meta::new(&keys.node_id(), &old_entry.key(), LINK_NAME, &new_entry.key()))
+        self.assert_meta(&Meta::new(
+            &keys.node_id(),
+            &old_entry.key(),
+            LINK_NAME,
+            &new_entry.key(),
+        ))
     }
 
     fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
@@ -84,7 +86,9 @@ impl HashTable for MemTable {
         // Retrieve entry from HashTable
         let base_entry = self.entry(&link.base())?;
         if base_entry.is_none() {
-            return Err(HolochainError::ErrorGeneric("Entry from base not found".to_string()));
+            return Err(HolochainError::ErrorGeneric(
+                "Entry from base not found".to_string(),
+            ));
         }
         let base_entry = base_entry.unwrap();
 
@@ -115,12 +119,14 @@ impl HashTable for MemTable {
                     &keys_fixme.node_id(),
                     &base_entry.key(),
                     &link.to_attribute_name(),
-                    &new_entry.key());
+                    &new_entry.key(),
+                );
             }
             // Update existing LinkListEntry and Meta
             Some(meta) => {
                 // Get LinkListEntry in HashTable
-                let entry = self.entry(&meta.value())?
+                let entry = self
+                    .entry(&meta.value())?
                     .expect("should have entry if meta points to it");
                 let mut lle: LinkListEntry = serde_json::from_str(&entry.content())
                     .expect("entry is not a valid LinkListEntry");
@@ -137,7 +143,8 @@ impl HashTable for MemTable {
                     &meta.source(),
                     &base_entry.key(),
                     &meta.attribute(),
-                    &entry.key());
+                    &entry.key(),
+                );
             }
         }
 
@@ -157,17 +164,19 @@ impl HashTable for MemTable {
     // Get all links from an AppEntry by using metadata
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         // Look for entry's metadata
-        let vec_meta = self.meta_from_request(request.clone().entry_hash, &request.to_attribute_name())?;
+        let vec_meta =
+            self.meta_from_request(request.clone().entry_hash, &request.to_attribute_name())?;
         if vec_meta.is_none() {
             return Ok(None);
         }
         let meta = vec_meta.unwrap();
 
         // Get LinkListEntry in HashTable
-        let entry = self.entry(&meta.value())?.expect("should have entry listed in meta");
+        let entry = self
+            .entry(&meta.value())?
+            .expect("should have entry listed in meta");
         Ok(Some(LinkListEntry::new_from_entry(&entry)))
     }
-
 
     fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError> {
         self.metas.insert(meta.hash(), meta.clone());
@@ -194,9 +203,11 @@ impl HashTable for MemTable {
     }
 
     /// Return a Meta from an entry_hash and attribute_name
-    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str)
-        -> Result<Option<Meta>, HolochainError>
-    {
+    fn meta_from_request(
+        &mut self,
+        entry_hash: HashString,
+        attribute_name: &str,
+    ) -> Result<Option<Meta>, HolochainError> {
         let key = Meta::make_hash(&entry_hash, attribute_name);
         self.meta(&key)
     }
@@ -206,17 +217,15 @@ impl HashTable for MemTable {
 pub mod tests {
     use agent::keys::tests::test_keys;
     use hash_table::{
-        links_entry::Link, links_entry::LinkListEntry,
+        entry::{tests::test_entry, Entry},
+        links_entry::{Link, LinkListEntry},
         memory::MemTable,
-        entry::tests::test_entry,
         meta::{
-            tests::{test_meta_a, test_meta_b,
-            },
-             Meta,
+            tests::{test_meta_a, test_meta_b},
+            Meta,
         },
         status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
-        entry::Entry,
     };
     use nucleus::ribosome::api::get_links::GetLinksArgs;
 
@@ -392,7 +401,6 @@ pub mod tests {
         );
     }
 
-
     #[test]
     fn can_link_entries() {
         let mut table = MemTable::new();
@@ -403,19 +411,21 @@ pub mod tests {
         let t1 = "child".to_string();
         let t2 = "parent".to_string();
 
-        let req1 = &GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
-        let req2 = &GetLinksArgs{entry_hash:e1.key(), tag: t2.clone()};
+        let req1 = &GetLinksArgs {
+            entry_hash: e1.key(),
+            tag: t1.clone(),
+        };
+        let req2 = &GetLinksArgs {
+            entry_hash: e1.key(),
+            tag: t2.clone(),
+        };
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
         table.put(&e1).unwrap();
         table.put(&e2).unwrap();
 
-        assert_eq!(
-            None,
-            table.links(req1)
-                 .expect("links() should not fail"));
-
+        assert_eq!(None, table.links(req1).expect("links() should not fail"));
 
         table.add_link(&link).unwrap();
 
@@ -423,12 +433,9 @@ pub mod tests {
 
         assert_eq!(
             Some(lle),
-            table.links(req1)
-                .expect("links() should not fail"));
-        assert_eq!(
-            None,
-            table.links(req2)
-                 .expect("links() should not fail"));
+            table.links(req1).expect("links() should not fail")
+        );
+        assert_eq!(None, table.links(req2).expect("links() should not fail"));
     }
 
     #[test]
@@ -444,12 +451,14 @@ pub mod tests {
         let l1 = Link::new(&e1.key(), &e2.key(), &t1);
         let l2 = Link::new(&e1.key(), &e3.key(), &t1);
 
-        let req1 = &GetLinksArgs{entry_hash:e1.key(), tag: t1.clone()};
+        let req1 = &GetLinksArgs {
+            entry_hash: e1.key(),
+            tag: t1.clone(),
+        };
 
         table.put(&e1).unwrap();
         table.put(&e2).unwrap();
         table.put(&e3).unwrap();
-
 
         table.add_link(&l1).unwrap();
         table.add_link(&l2).unwrap();
@@ -458,10 +467,9 @@ pub mod tests {
 
         assert_eq!(
             Some(lle),
-            table.links(req1)
-                 .expect("links() should not fail"));
+            table.links(req1).expect("links() should not fail")
+        );
     }
-
 
     #[test]
     fn can_link_entries_adv() {
@@ -474,11 +482,26 @@ pub mod tests {
         let t1 = "child".to_string();
         let t2 = "parent".to_string();
 
-        let mom_children = &GetLinksArgs{entry_hash:mom.key(), tag: t1.clone()};
-        let mom_parent = &GetLinksArgs{entry_hash:mom.key(), tag: t2.clone()};
-        let son_parent = &GetLinksArgs{entry_hash:son.key(), tag: t2.clone()};
-        let daughter_parent = &GetLinksArgs{entry_hash:daughter.key(), tag: t2.clone()};
-        let daughter_children = &GetLinksArgs{entry_hash:daughter.key(), tag: t1.clone()};
+        let mom_children = &GetLinksArgs {
+            entry_hash: mom.key(),
+            tag: t1.clone(),
+        };
+        let mom_parent = &GetLinksArgs {
+            entry_hash: mom.key(),
+            tag: t2.clone(),
+        };
+        let son_parent = &GetLinksArgs {
+            entry_hash: son.key(),
+            tag: t2.clone(),
+        };
+        let daughter_parent = &GetLinksArgs {
+            entry_hash: daughter.key(),
+            tag: t2.clone(),
+        };
+        let daughter_children = &GetLinksArgs {
+            entry_hash: daughter.key(),
+            tag: t1.clone(),
+        };
 
         table.put(&mom).unwrap();
         table.put(&son).unwrap();
@@ -500,23 +523,27 @@ pub mod tests {
 
         assert_eq!(
             None,
-            table.links(daughter_children)
-                 .expect("links() should not fail"));
+            table
+                .links(daughter_children)
+                .expect("links() should not fail")
+        );
         assert_eq!(
             None,
-            table.links(mom_parent)
-                 .expect("links() should not fail"));
+            table.links(mom_parent).expect("links() should not fail")
+        );
         assert_eq!(
             Some(res_children),
-            table.links(mom_children)
-                 .expect("links() should not fail"));
+            table.links(mom_children).expect("links() should not fail")
+        );
         assert_eq!(
             Some(res_son_parent),
-            table.links(son_parent)
-                 .expect("links() should not fail"));
+            table.links(son_parent).expect("links() should not fail")
+        );
         assert_eq!(
             Some(res_daughter_parent),
-            table.links(daughter_parent)
-                 .expect("links() should not fail"));
+            table
+                .links(daughter_parent)
+                .expect("links() should not fail")
+        );
     }
 }

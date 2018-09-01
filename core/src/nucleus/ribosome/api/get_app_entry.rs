@@ -1,12 +1,12 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash_table::HashString;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
@@ -91,10 +91,7 @@ mod tests {
         ribosome::api::{
             call,
             commit_app_entry::tests::test_commit_args_bytes,
-            tests::{
-                    test_capability, test_parameters, test_zome_name,
-            // test_zome_api_function_runtime,
-            },
+            tests::{test_capability, test_parameters, test_zome_name},
         },
         FunctionCall,
     };
@@ -219,7 +216,8 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
+        expected
+            .push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash_table::{entry::Entry, HashString};
 use nucleus::ribosome::{
     api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
     callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
@@ -7,7 +8,6 @@ use nucleus::ribosome::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::{HashString, entry::Entry};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]

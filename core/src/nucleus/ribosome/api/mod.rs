@@ -1,8 +1,8 @@
 pub mod commit_app_entry;
 pub mod debug;
 pub mod get_app_entry;
-pub mod init_globals;
 pub mod get_links;
+pub mod init_globals;
 pub mod link_app_entries;
 
 use action::ActionWrapper;
@@ -14,9 +14,9 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            commit_app_entry::invoke_commit_app_entry, debug::invoke_debug, get_app_entry::invoke_get_app_entry,
-            init_globals::invoke_init_globals,
-            get_links::invoke_get_links, link_app_entries::invoke_link_app_entries,
+            commit_app_entry::invoke_commit_app_entry, debug::invoke_debug,
+            get_app_entry::invoke_get_app_entry, get_links::invoke_get_links,
+            init_globals::invoke_init_globals, link_app_entries::invoke_link_app_entries,
         },
         Defn,
     },
@@ -506,7 +506,7 @@ pub mod tests {
 
         test_zome_api_function_call(
             &dna.name.to_string(),
-                context,
+            context,
             logger,
             &instance,
             &wasm,

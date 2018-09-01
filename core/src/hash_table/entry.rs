@@ -1,9 +1,11 @@
 use hash;
+use hash_table::sys_entry::EntryType;
 use multihash::Hash;
 use serde_json;
-use std::hash::{Hash as StdHash, Hasher};
-use hash_table::sys_entry::EntryType;
-use std::str::FromStr;
+use std::{
+    hash::{Hash as StdHash, Hasher},
+    str::FromStr,
+};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -75,8 +77,12 @@ impl Entry {
         true
     }
 
-    pub fn is_sys(&self) -> bool { EntryType::from_str(&self.entry_type).unwrap() != EntryType::App }
-    pub fn is_app(&self) -> bool { EntryType::from_str(&self.entry_type).unwrap() == EntryType::App }
+    pub fn is_sys(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
+    }
+    pub fn is_app(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
+    }
 
     /// returns the key used for lookups in chain, HT, etc.
     /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()

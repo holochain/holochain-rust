@@ -100,6 +100,7 @@ impl Chain {
     }
 
     /// restore canonical JSON chain
+    /// can't implement json::FromJson due to Chain's need for a table actor
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Self {

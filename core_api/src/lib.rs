@@ -173,9 +173,7 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate timebomb;
     extern crate holochain_agent;
-    use self::timebomb::timeout_ms;
     use super::*;
     use holochain_core::{
         context::Context,
@@ -261,7 +259,7 @@ mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     (loop (br 0))
                     i32.const 0
                 )
@@ -273,6 +271,7 @@ mod tests {
 
         let (context, _test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
+
         match result {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(

@@ -9,7 +9,7 @@ use hash;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
-/// E = the pair key for hash table lookups
+/// E = the entry key for hash table lookups
 /// A = the name of the meta attribute
 /// V = the value of the meta attribute
 /// txn = a unique (local to the source) monotonically increasing number that can be used for
@@ -32,7 +32,7 @@ pub struct Meta {
 
 impl Ord for Meta {
     fn cmp(&self, other: &Meta) -> Ordering {
-        // we want to sort by pair hash, then attribute name, then attribute value
+        // we want to sort by entry hash, then attribute name, then attribute value
         match self.entry_hash.cmp(&other.entry_hash) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
@@ -52,7 +52,7 @@ impl PartialOrd for Meta {
 }
 
 impl Meta {
-    /// Builds a new PairMeta from EAV and agent keys, where E is an existing Pair
+    /// Builds a new Meta from EAV and agent keys, where E is an existing Entry
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
     pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> Meta {
@@ -64,9 +64,9 @@ impl Meta {
         }
     }
 
-    /// getter for pair clone
-    pub fn entry_hash(&self) -> String {
-        self.entry_hash.clone()
+    /// getter for entry
+    pub fn entry_hash(&self) -> &str {
+        &self.entry_hash
     }
 
     /// getter for attribute clone
@@ -79,16 +79,12 @@ impl Meta {
         self.value.clone()
     }
 
-    // getter for source clone
+    /// getter for source clone
     pub fn source(&self) -> String {
         self.source.clone()
     }
 
-    /// the key for hash table lookups, e.g. table.get_meta()
-//    pub fn hash(&self) -> String {
-//        serializable_to_b58_hash(&self, Hash::SHA2256)
-//    }
-
+    /// the key for HashTable lookups, e.g. table.meta()
     pub fn hash(&self) -> String {
         Meta::make_hash(&self.entry_hash, &self.attribute)
     }
@@ -112,7 +108,7 @@ pub mod tests {
 
     use super::Meta;
     use agent::keys::tests::test_keys;
-    use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
+    use hash_table::entry::tests::test_entry;
     use std::cmp::Ordering;
 
     /// dummy test attribute name
@@ -145,93 +141,90 @@ pub mod tests {
         "another value".into()
     }
 
-    /// returns dummy pair meta for testing
-    pub fn test_pair_meta() -> Meta {
-        Meta::new(&test_keys().node_id(), &test_pair().key(), &test_attribute(), &test_value())
+    /// returns dummy meta for testing
+    pub fn test_meta() -> Meta {
+        Meta::new(&test_keys().node_id(), &test_entry().key(), &test_attribute(), &test_value())
     }
 
-    /// dummy pair meta, same as test_pair_meta()
-    pub fn test_pair_meta_a() -> Meta {
-        test_pair_meta()
+    /// dummy meta, same as test_meta()
+    pub fn test_meta_a() -> Meta {
+        test_meta()
     }
 
-    /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
-    pub fn test_pair_meta_b() -> Meta {
+    /// returns dummy meta for testing against the same entry as test_meta_a
+    pub fn test_meta_b() -> Meta {
         Meta::new(
             &test_keys().node_id(),
-            &test_pair().key(),
+            &test_entry().key(),
             &test_attribute_b(),
             &test_value_b(),
         )
     }
 
     #[test]
-    /// smoke test PairMeta::new()
+    /// smoke test Meta::new()
     fn new() {
-        test_pair_meta();
+        test_meta();
     }
 
     #[test]
-    // test meta.pair()
-    fn pair() {
-        assert_eq!(test_pair_meta().entry_hash(), test_pair().key());
+    // test meta.entry_hash()
+    fn entry_hash() {
+        assert_eq!(test_meta().entry_hash(), test_entry().key());
     }
 
     /// test meta.attribute()
     #[test]
     fn attribute() {
-        assert_eq!(test_pair_meta().attribute(), test_attribute());
+        assert_eq!(test_meta().attribute(), test_attribute());
     }
 
     #[test]
     /// test meta.value()
     fn value() {
-        assert_eq!(test_pair_meta().value(), test_value());
+        assert_eq!(test_meta().value(), test_value());
     }
 
     #[test]
     /// test meta.source()
     fn source() {
-        assert_eq!(test_pair_meta().source(), test_keys().node_id());
+        assert_eq!(test_meta().source(), test_keys().node_id());
     }
 
-//    #[test]
-//    /// test that we can sort pair metas with cmp
-//    fn cmp() {
-//        let p1 = test_pair_a();
-//        let p2 = test_pair_b();
-//
-//        // basic ordering
-//        let m_1ax = Meta::new(&test_keys().node_id(), &p1.key(), "a", "x");
-//        let m_1ay = Meta::new(&test_keys().node_id(), &p1.key(), "a", "y");
-//        let m_1bx = Meta::new(&test_keys().node_id(), &p1.key(), "b", "x");
-//        let m_2ax = Meta::new(&test_keys().node_id(), &p2.key(), "a", "x");
-//
-//        // sort by pair key
-//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
-//        assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
-//        assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
-//        assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
-//
-//        // pair key with operators
-//        assert!(m_1ax < m_2ax);
-//        assert!(m_2ax > m_1ax);
-//        assert!(m_1ay < m_2ax);
-//
-//        // sort by attribute key
-//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
-//        assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
-//
-//        // attribute key with operators
-//        assert!(m_1ax < m_1bx);
-//        assert!(m_1bx > m_1ax);
-//
-//        // sort by attribute value
-//        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
-//        assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
-//
-//        // attribute value with operators
-//        assert!(m_1ax < m_1ay);
-//        assert!(m_1ay > m_1ax);
-//    }
+    #[test]
+    /// test that we can sort metas with cmp
+    fn cmp() {
+         // basic ordering
+        let m_1ax = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "x");
+        let m_1ay = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "y");
+        let m_1bx = Meta::new(&test_keys().node_id(), &"1".to_string(), "b", "x");
+        let m_2ax = Meta::new(&test_keys().node_id(), &"2".to_string(), "a", "x");
+
+        // sort by entry key
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
+        assert_eq!(Ordering::Equal, m_1ax.cmp(&m_1ax));
+        assert_eq!(Ordering::Greater, m_2ax.cmp(&m_1ax));
+        assert_eq!(Ordering::Less, m_1ay.cmp(&m_2ax));
+
+        // entry key with operators
+        assert!(m_1ax < m_2ax);
+        assert!(m_2ax > m_1ax);
+        assert!(m_1ay < m_2ax);
+
+        // sort by attribute key
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1bx));
+        assert_eq!(Ordering::Greater, m_1bx.cmp(&m_1ax));
+
+        // attribute key with operators
+        assert!(m_1ax < m_1bx);
+        assert!(m_1bx > m_1ax);
+
+        // sort by attribute value
+        assert_eq!(Ordering::Less, m_1ax.cmp(&m_1ay));
+        assert_eq!(Ordering::Greater, m_1ay.cmp(&m_1ax));
+
+        // attribute value with operators
+        assert!(m_1ax < m_1ay);
+        assert!(m_1ay > m_1ax);
+    }
 }

@@ -3,17 +3,17 @@ pub mod entry;
 pub mod header;
 pub mod memory;
 pub mod pair;
-pub mod pair_meta;
+pub mod meta;
 pub mod status;
 pub mod sys_entry;
 pub mod links_entry;
 pub mod deletion_entry;
 
-// use agent::keys::Keys;
+use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{pair_meta::Meta,
+use hash_table::{meta::Meta,
                  links_entry::Link, links_entry::LinkListEntry,
-    entry::Entry,
+                 entry::Entry,
                  //header::Header,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
@@ -30,45 +30,38 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn setup(&mut self) -> Result<(), HolochainError>;
     fn teardown(&mut self) -> Result<(), HolochainError>;
 
-    // crud
-    /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
-//    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError>;
-
+    // CRUD
+    /// Add an Entry to the HashTable, analogous to chain.push() but ordering is not enforced.
     fn put(&mut self, entry: &Entry) -> Result<(), HolochainError>;
-
-    /// lookup an Entry from the HashTable
+    /// Lookup an Entry in the HashTable
     fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError>;
+    /// Add a new Entry to the HashTable as put() and set status metadata on old Entry to MODIFIED.
+    fn modify(
+        &mut self,
+        keys: &Keys,
+        old_entry: &Entry,
+        new_entry: &Entry,
+    ) -> Result<(), HolochainError>;
+     /// 'Remove' an Entry by setting the status metadata of an Entry to DELETED
+     fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError>;
 
-//    /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
-//    fn modify(
-//        &mut self,
-//        keys: &Keys,
-//        old_pair: &Pair,
-//        new_pair: &Pair,
-//    ) -> Result<(), HolochainError>;
-
-    // /// set the status of a Pair to DELETED
-    // fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError>;
-
-    /// Add a link to an Entry has Metadata
+    // Link
+    /// Add link metadata to an Entry
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError>;
+    /// Remove link metadata to an Entry
     fn remove_link(&mut self, link: &Link) -> Result<(), HolochainError>;
+    /// Get all link metadata of an Entry
     fn links(&mut self, links_request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError>;
 
     // Meta
-    /// assert a given PairMeta in the HashTable
+    /// Assert a given Meta in the HashTable.
     fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError>;
-    /// lookup a PairMeta from the HashTable by key
-    fn get_meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError>;
-
-    /// lookup all PairMeta for a given Pair
-    // fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<Meta>, HolochainError>;
-
-    /// lookup all PairMeta for a given Entry
-    fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError>;
-
-    // ;)
-    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>;
+    /// Lookup a Meta from the HashTable by key.
+    fn meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError>;
+    /// Lookup all Meta for a given Entry.
+    fn meta_from_entry(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError>;
+    /// Lookup a Meta from a request.
+    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>;
 
     // query
     // @TODO how should we handle queries?

@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-
 use error::HolochainError;
 use serde_json;
 use agent::keys::Key;
 use agent::keys::Keys;
 use hash_table::{
-    pair_meta::Meta,
-    // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+    meta::Meta,
+    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
     HashTable,
     links_entry::Link,
     HashString,
@@ -50,43 +49,42 @@ impl HashTable for MemTable {
         Ok(self.entries.get(key).cloned())
     }
 
-//    fn modify(
-//        &mut self,
-//        keys: &Keys,
-//        old_pair: &Pair,
-//        new_pair: &Pair,
-//    ) -> Result<(), HolochainError> {
-//        self.commit(new_pair)?;
-//
-//        // @TODO what if meta fails when commit succeeds?
-//        // @see https://github.com/holochain/holochain-rust/issues/142
-//        self.assert_meta(&Meta::new(
-//            keys,
-//            &old_pair.key(),
-//            STATUS_NAME,
-//            &CRUDStatus::MODIFIED.bits().to_string(),
-//        ))?;
-//
-//        // @TODO what if meta fails when commit succeeds?
-//        // @see https://github.com/holochain/holochain-rust/issues/142
-//        self.assert_meta(&Meta::new(keys, &old_pair.key(), LINK_NAME, &new_pair.key()))
-//    }
+    fn modify(
+        &mut self,
+        keys: &Keys,
+        old_entry: &Entry,
+        new_entry: &Entry,
+    ) -> Result<(), HolochainError> {
+        self.put(new_entry)?;
 
-//    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-//        self.assert_meta(&Meta::new(
-//            keys,
-//            &pair.key(),
-//            STATUS_NAME,
-//            &CRUDStatus::DELETED.bits().to_string(),
-//        ))
-//    }
+        // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
+        self.assert_meta(&Meta::new(
+            &keys.node_id(),
+            &old_entry.key(),
+            STATUS_NAME,
+            &CRUDStatus::MODIFIED.bits().to_string(),
+        ))?;
 
-    // Add Link Meta to an entry
+        // @TODO what if meta fails when commit succeeds?
+        // @see https://github.com/holochain/holochain-rust/issues/142
+        self.assert_meta(&Meta::new(&keys.node_id(), &old_entry.key(), LINK_NAME, &new_entry.key()))
+    }
+
+    fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+        self.assert_meta(&Meta::new(
+            &keys.node_id(),
+            &entry.key(),
+            STATUS_NAME,
+            &CRUDStatus::DELETED.bits().to_string(),
+        ))
+    }
+
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         // Retrieve entry from HashTable
         let base_entry = self.entry(&link.base())?;
         if base_entry.is_none() {
-            return Err(HolochainError::ErrorGeneric("Pair from base not found".to_string()));
+            return Err(HolochainError::ErrorGeneric("Entry from base not found".to_string()));
         }
         let base_entry = base_entry.unwrap();
 
@@ -96,13 +94,13 @@ impl HashTable for MemTable {
         }
 
         // Retrieve LinkListEntry
-        let maybe_meta = self.get_meta_for(base_entry.key(), &link.to_attribute_name())?;
+        let maybe_meta = self.meta_from_request(base_entry.key(), &link.to_attribute_name())?;
         // Update or Create LinkListEntry
-        let mut new_meta: Meta;
+        let new_meta: Meta;
         match maybe_meta {
             // None found so create one
             None => {
-                // Create new LinkListEntry & Pair
+                // Create new LinkListEntry & Entry
                 let lle = LinkListEntry::new(&[link.clone()]);
                 let new_entry = lle.to_entry();
                 // Add it to HashTable
@@ -112,7 +110,7 @@ impl HashTable for MemTable {
                 let key_fixme = Key::new();
                 let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
 
-                // Create PairMeta
+                // Create Meta
                 new_meta = Meta::new(
                     &keys_fixme.node_id(),
                     &base_entry.key(),
@@ -124,7 +122,6 @@ impl HashTable for MemTable {
                 // Get LinkListEntry in HashTable
                 let entry = self.entry(&meta.value())?
                     .expect("should have entry if meta points to it");
-                // assert!(entry.entry_type())
                 let mut lle: LinkListEntry = serde_json::from_str(&entry.content())
                     .expect("entry is not a valid LinkListEntry");
                 // Add Link
@@ -134,7 +131,7 @@ impl HashTable for MemTable {
                 // TODO maybe remove previous LinkListEntry ?
                 self.put(&entry)?;
 
-                // Updated PairMeta to Assert
+                // Updated Meta to Assert
                 assert!(meta.attribute() == link.to_attribute_name());
                 new_meta = Meta::new(
                     &meta.source(),
@@ -144,7 +141,7 @@ impl HashTable for MemTable {
             }
         }
 
-        // Insert new/changed PairMeta
+        // Insert new/changed Meta
         self.assert_meta(&new_meta).expect("meta should be valid");
 
         // Done
@@ -153,14 +150,14 @@ impl HashTable for MemTable {
 
     // Remove link from a LinkListEntry entry from Meta
     fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        // TODO
+        // TODO #278 - Removable links features
         Err(HolochainError::NotImplemented)
     }
 
     // Get all links from an AppEntry by using metadata
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         // Look for entry's metadata
-        let vec_meta = self.get_meta_for(request.clone().entry_hash, &request.to_attribute_name())?;
+        let vec_meta = self.meta_from_request(request.clone().entry_hash, &request.to_attribute_name())?;
         if vec_meta.is_none() {
             return Ok(None);
         }
@@ -178,12 +175,12 @@ impl HashTable for MemTable {
     }
 
     /// Return a Meta from a Meta.key
-    fn get_meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
+    fn meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
         Ok(self.metas.get(key).cloned())
     }
 
     /// Return all the Metas for an entry
-    fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
+    fn meta_from_entry(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
         let mut vec_meta = self
             .metas
             .values()
@@ -197,38 +194,30 @@ impl HashTable for MemTable {
     }
 
     /// Return a Meta from an entry_hash and attribute_name
-    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str) -> Result<Option<Meta>, HolochainError>
+    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str)
+        -> Result<Option<Meta>, HolochainError>
     {
         let key = Meta::make_hash(&entry_hash, attribute_name);
-        self.get_meta(&key)
+        self.meta(&key)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    // use agent::keys::tests::test_keys;
+    use agent::keys::tests::test_keys;
     use hash_table::{
         links_entry::Link, links_entry::LinkListEntry,
-        sys_entry::ToEntry,
         memory::MemTable,
-        pair::tests::{test_pair,
-                       test_pair_a, test_pair_b,
-        },
-        pair_meta::{
-            tests::{test_pair_meta,
-                     test_pair_meta_a, test_pair_meta_b,
+        entry::tests::test_entry,
+        meta::{
+            tests::{test_meta_a, test_meta_b,
             },
              Meta,
         },
-        // status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+        status::{CRUDStatus, LINK_NAME, STATUS_NAME},
         HashTable,
-        actor::HashTableActor,
         entry::Entry,
     };
-//use ::chain::{
-//     Chain,
-//     SourceChain,
-//};
     use nucleus::ribosome::api::get_links::GetLinksArgs;
 
     pub fn test_table() -> MemTable {
@@ -256,153 +245,150 @@ pub mod tests {
     }
 
     #[test]
-    /// Pairs can round trip through table.commit() and table.get()
-    fn pair_round_trip() {
+    /// An Entry can round trip through table.put() and table.entry()
+    fn entry_round_trip() {
         let mut table = test_table();
-        let pair = test_pair();
+        let e1 = Entry::new("t1", "e1");
         table
-            .put(&pair.header().to_entry())
-            .expect("should be able to commit valid pair");
-        assert_eq!(table.entry(&pair.key()).unwrap().unwrap(), pair.header().to_entry());
+            .put(&e1)
+            .expect("should be able to commit valid entry");
+        assert_eq!(e1, table.entry(&e1.key()).unwrap().unwrap());
     }
 
-//    #[test]
-//    /// Pairs can be modified through table.modify()
-//    fn modify() {
-//        let mut ht = test_table();
-//        let p1 = test_pair_a();
-//        let p2 = test_pair_b();
-//
-//        ht.commit(&p1).expect("should be able to commit valid pair");
-//        ht.modify(&test_keys(), &p1, &p2)
-//            .expect("should be able to edit with valid pair");
-//
-//        assert_eq!(
-//            vec![
-//                Meta::new(&test_keys(), &p1, LINK_NAME, &p2.key()),
-//                Meta::new(
-//                    &test_keys(),
-//                    &p1,
-//                    STATUS_NAME,
-//                    &CRUDStatus::MODIFIED.bits().to_string(),
-//                ),
-//            ],
-//            ht.get_pair_meta(&p1)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
-//
-//        let empty_vec: Vec<Meta> = Vec::new();
-//        assert_eq!(
-//            empty_vec,
-//            ht.get_pair_meta(&p2)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
-//    }
+    #[test]
+    /// Entries can be modified through table.modify()
+    fn modify() {
+        let mut ht = test_table();
+        let e1 = Entry::new("t1", "c1");
+        let e2 = Entry::new("t2", "c2");
 
-//    #[test]
-//    /// Pairs can be retracted through table.retract()
-//    fn retract() {
-//        let mut ht = test_table();
-//        let p = test_pair();
-//        let empty_vec: Vec<Meta> = Vec::new();
-//
-//        ht.commit(&p).expect("should be able to commit valid pair");
-//        assert_eq!(
-//            empty_vec,
-//            ht.get_pair_meta(&p)
-//                .expect("getting the metadata on a pair shouldn't fail")
-//        );
-//
-//        ht.retract(&test_keys(), &p)
-//            .expect("should be able to retract");
-//        assert_eq!(
-//            vec![Meta::new(
-//                &test_keys(),
-//                &p,
-//                STATUS_NAME,
-//                &CRUDStatus::DELETED.bits().to_string(),
-//            )],
-//            ht.get_pair_meta(&p)
-//                .expect("getting the metadata on a pair shouldn't fail"),
-//        );
-//    }
+        ht.put(&e1).expect("should be able to commit valid entry");
+        ht.modify(&test_keys(), &e1, &e2)
+            .expect("should be able to edit with valid entry");
+
+        assert_eq!(
+            vec![
+                Meta::new(&test_keys().node_id(), &e1.key(), LINK_NAME, &e2.key()),
+                Meta::new(
+                    &test_keys().node_id(),
+                    &e1.key(),
+                    STATUS_NAME,
+                    &CRUDStatus::MODIFIED.bits().to_string(),
+                ),
+            ],
+            ht.meta_from_entry(&e1)
+                .expect("getting the metadata on a entry shouldn't fail")
+        );
+
+        let empty_vec: Vec<Meta> = Vec::new();
+        assert_eq!(
+            empty_vec,
+            ht.meta_from_entry(&e2)
+                .expect("getting the metadata on a entry shouldn't fail")
+        );
+    }
 
     #[test]
-    /// PairMeta can round trip through table.assert_meta() and table.get_meta()
+    /// an Entry can be retracted through table.retract()
+    fn retract() {
+        let mut ht = test_table();
+        let e1 = Entry::new("t1", "c1");
+        let empty_vec: Vec<Meta> = Vec::new();
+
+        ht.put(&e1).expect("should be able to commit valid entry");
+        assert_eq!(
+            empty_vec,
+            ht.meta_from_entry(&e1)
+                .expect("getting the metadata on a entry shouldn't fail")
+        );
+
+        ht.retract(&test_keys(), &e1)
+            .expect("should be able to retract");
+        assert_eq!(
+            vec![Meta::new(
+                &test_keys().node_id(),
+                &e1.key(),
+                STATUS_NAME,
+                &CRUDStatus::DELETED.bits().to_string(),
+            )],
+            ht.meta_from_entry(&e1)
+                .expect("getting the metadata on a entry shouldn't fail"),
+        );
+    }
+
+    #[test]
+    /// Meta can round trip through table.assert_meta() and table.meta()
     fn meta_round_trip() {
         let mut table = test_table();
-        let pair_meta = test_pair_meta();
+        let meta = Meta::new("42", &"0x42".to_string(), "name", "toto");
 
         assert_eq!(
             None,
             table
-                .get_meta(&pair_meta.hash())
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta(&meta.hash())
+                .expect("getting the metadata on a entry shouldn't fail")
         );
 
         table
-            .assert_meta(&pair_meta)
+            .assert_meta(&meta)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            Some(&pair_meta),
+            Some(&meta),
             table
-                .get_meta(&pair_meta.hash())
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta(&meta.hash())
+                .expect("getting the metadata on a entry shouldn't fail")
                 .as_ref()
         );
     }
 
     #[test]
-    /// all Meta for an Entry can be retrieved with get_entry_meta
-    fn can_get_entry_meta() {
+    /// all Meta for an Entry can be retrieved with meta_from_entry() and meta_from_request()
+    fn meta_from() {
         let mut table = test_table();
-        let pair = test_pair();
-        let pair_meta_a = test_pair_meta_a();
-        let pair_meta_b = test_pair_meta_b();
+        let entry = test_entry();
+        let meta_a = test_meta_a();
+        let meta_b = test_meta_b();
         let empty_vec: Vec<Meta> = Vec::new();
-
-        let pair_entry = pair.header().to_entry();
 
         assert_eq!(
             empty_vec,
             table
-                .get_entry_meta(&pair_entry)
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta_from_entry(&entry)
+                .expect("getting the metadata on a entry shouldn't fail")
         );
 
         table
-            .assert_meta(&pair_meta_a)
+            .assert_meta(&meta_a)
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            vec![pair_meta_a.clone()],
+            vec![meta_a.clone()],
             table
-                .get_entry_meta(&pair_entry)
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta_from_entry(&entry)
+                .expect("getting the metadata on a entry shouldn't fail")
         );
 
         table
-            .assert_meta(&pair_meta_b.clone())
+            .assert_meta(&meta_b.clone())
             .expect("asserting metadata shouldn't fail");
         assert_eq!(
-            vec![pair_meta_b.clone(), pair_meta_a.clone()],
+            vec![meta_b.clone(), meta_a.clone()],
             table
-                .get_entry_meta(&pair_entry)
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta_from_entry(&entry)
+                .expect("getting the metadata on a entry shouldn't fail")
         );
 
-
-        // test meta_for
+        // test meta_from_request()
         assert_eq!(
-            Some(pair_meta_a.clone()),
+            Some(meta_a.clone()),
             table
-                .get_meta_for(pair_entry.key(), &pair_meta_a.attribute())
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta_from_request(entry.key(), &meta_a.attribute())
+                .expect("getting the metadata on a entry shouldn't fail")
         );
         assert_eq!(
-            Some(pair_meta_b.clone()),
+            Some(meta_b.clone()),
             table
-                .get_meta_for(pair_entry.key(), &pair_meta_b.attribute())
-                .expect("getting the metadata on a pair shouldn't fail")
+                .meta_from_request(entry.key(), &meta_b.attribute())
+                .expect("getting the metadata on a entry shouldn't fail")
         );
     }
 
@@ -474,10 +460,6 @@ pub mod tests {
             Some(lle),
             table.links(req1)
                  .expect("links() should not fail"));
-
-//        can_double_same_link_entries() {
-//            // TODO
-//        }
     }
 
 

@@ -1,7 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
-// use agent::keys::Keys;
+use agent::keys::Keys;
 use error::HolochainError;
-use hash_table::{HashString, pair_meta::Meta, HashTable,
+use hash_table::{HashString, meta::Meta, HashTable,
                  links_entry::Link, entry::Entry, links_entry::LinkListEntry};
 use riker::actors::*;
 use snowflake;
@@ -34,39 +34,34 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::EntryResult).clone()
     }
 
+    fn modify(&mut self, keys: &Keys, old_entry: &Entry, new_entry: &Entry)
+    -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::Modify {
+            keys: keys.clone(),
+            old_entry: old_entry.clone(),
+            new_entry: new_entry.clone(),
+        });
+        unwrap_to!(response => Protocol::ModifyResult).clone()
+    }
 
-//    fn modify(&mut self, keys: &Keys, old_pair: &Pair, new_pair: &Pair)
-//    -> Result<(), HolochainError> {
-//        let response = self.block_on_ask(Protocol::Modify {
-//            keys: keys.clone(),
-//            old_pair: old_pair.clone(),
-//            new_pair: new_pair.clone(),
-//        });
-//        unwrap_to!(response => Protocol::ModifyResult).clone()
-//    }
+    fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::Retract {
+            keys: keys.clone(),
+            entry: entry.clone(),
+        });
+        unwrap_to!(response => Protocol::RetractResult).clone()
+    }
 
-
-    //    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-//        let response = self.block_on_ask(Protocol::Retract {
-//            keys: keys.clone(),
-//            pair: pair.clone(),
-//        });
-//        unwrap_to!(response => Protocol::RetractResult).clone()
-//    }
-
-    // Add Link Meta
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AddLink(link.clone()));
         unwrap_to!(response => Protocol::AddLinkResult).clone()
     }
 
-    // Remove Link from a LinkMeta
     fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
         // TODO #278 - Removable links features
         Err(HolochainError::NotImplemented)
     }
 
-    // Get all Link Meta
     fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
         let response = self.block_on_ask(Protocol::Links(request.clone()));
         unwrap_to!(response => Protocol::LinksResult).clone()
@@ -77,17 +72,17 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
+    fn meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
         let response = self.block_on_ask(Protocol::Meta(key.to_string()));
         unwrap_to!(response => Protocol::MetaResult).clone()
     }
 
-    fn get_entry_meta(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
+    fn meta_from_entry(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
         let response = self.block_on_ask(Protocol::EntryMeta(entry.clone()));
         unwrap_to!(response => Protocol::EntryMetaResult).clone()
     }
 
-    fn get_meta_for(&mut self, entry_hash: HashString, attribute_name: &str)
+    fn meta_from_request(&mut self, entry_hash: HashString, attribute_name: &str)
         -> Result<Option<Meta>, HolochainError>
     {
         let response = self.block_on_ask(
@@ -177,14 +172,14 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
                     }
 
-                    Protocol::Meta(key) => Protocol::MetaResult(self.table.get_meta(&key)),
+                    Protocol::Meta(key) => Protocol::MetaResult(self.table.meta(&key)),
 
                     Protocol::EntryMeta(entry) => {
-                        Protocol::EntryMetaResult(self.table.get_entry_meta(&entry))
+                        Protocol::EntryMetaResult(self.table.meta_from_entry(&entry))
                     }
 
                     Protocol::MetaFor{entry_hash, attribute_name} => {
-                        Protocol::MetaForResult(self.table.get_meta_for(entry_hash, &attribute_name))
+                        Protocol::MetaForResult(self.table.meta_from_request(entry_hash, &attribute_name))
                     }
 
                     _ => unreachable!(),

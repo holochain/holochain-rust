@@ -248,7 +248,6 @@ pub mod tests {
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
-
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -262,12 +261,10 @@ pub mod tests {
         time::Duration,
     };
     use hash_table::{
-actor::HashTableActor,
-memory::MemTable,
-entry::Entry,
-links_entry::*,
-sys_entry::{ToEntry, EntryType},
-};
+        entry::Entry,
+        links_entry::Link,
+        sys_entry::EntryType,
+    };
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {

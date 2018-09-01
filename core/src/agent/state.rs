@@ -107,7 +107,7 @@ impl ActionResponse {
 /// 1. Validate Link
 /// 2. Commit LinkEntry
 /// 3. Add Link metadata in HashTable
-fn reduce_lap(
+fn reduce_link_app_entries(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -139,7 +139,7 @@ fn reduce_lap(
 
 
 /// Do the GetLinks Action against an agent state
-fn reduce_gl(
+fn reduce_get_links(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -241,8 +241,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::CommitEntry(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
-        Action::GetLinks(_) => Some(reduce_gl),
-        Action::LinkAppEntries(_) => Some(reduce_lap),
+        Action::GetLinks(_) => Some(reduce_get_links),
+        Action::LinkAppEntries(_) => Some(reduce_link_app_entries),
         _ => None,
     }
 }
@@ -331,7 +331,7 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        reduce_gl(
+        reduce_get_links(
             test_context("camille"),
             &mut state,
             &action_wrapper,
@@ -355,7 +355,7 @@ pub mod tests {
 
         let instance = test_instance_blank();
 
-        reduce_lap(
+        reduce_link_app_entries(
             test_context("camille"),
             &mut state,
             &action_wrapper,
@@ -364,7 +364,7 @@ pub mod tests {
         );
 
         assert_eq!(
-            Some(&ActionResponse::LinkAppEntries(Err(HolochainError::ErrorGeneric("Pair from base not found".to_string())))),
+            Some(&ActionResponse::LinkAppEntries(Err(HolochainError::ErrorGeneric("Entry from base not found".to_string())))),
             state.actions().get(&action_wrapper),
         );
     }
@@ -406,14 +406,14 @@ pub mod tests {
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
-        reduce_lap(
+        reduce_link_app_entries(
             context.clone(),
             &mut state,
             &action_lap,
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
-        reduce_gl(
+        reduce_get_links(
             context.clone(),
             &mut state,
             &action_gl,

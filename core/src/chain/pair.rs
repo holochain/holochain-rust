@@ -1,4 +1,5 @@
-use hash_table::{entry::Entry, header::Header, HashTable, sys_entry::ToEntry};
+use hash_table::{entry::Entry, HashTable, sys_entry::ToEntry};
+use chain::header::Header;
 use serde_json;
 use riker::actors::*;
 use actor::Protocol;
@@ -91,7 +92,6 @@ pub mod tests {
             tests::{test_entry, test_entry_b},
             Entry,
         },
-        // header::Header,
     };
 
     /// dummy pair

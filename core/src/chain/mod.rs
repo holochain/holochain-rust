@@ -1,12 +1,13 @@
 pub mod actor;
+pub mod pair;
+pub mod header;
 
-use actor::{
-    // AskSelf,
-    Protocol
-};
+use chain::pair::Pair;
+use chain::header::Header;
+use actor::Protocol;
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
-use hash_table::{entry::Entry, pair::Pair, HashTable, sys_entry::ToEntry, header::Header};
+use hash_table::{entry::Entry, HashTable, sys_entry::ToEntry};
 use riker::actors::*;
 use serde_json;
 
@@ -315,10 +316,10 @@ pub mod tests {
 
     use super::Chain;
     use chain::SourceChain;
+    use chain::pair::Pair;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
-        pair::Pair,
         HashTable,
     };
     use std::thread;

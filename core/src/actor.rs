@@ -1,12 +1,13 @@
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{HashString, pair::Pair, meta::Meta, links_entry::Link, entry::Entry,
+use hash_table::{HashString, meta::Meta, links_entry::Link, entry::Entry,
                  links_entry::LinkListEntry};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use agent::keys::Keys;
+use chain::pair::Pair;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors

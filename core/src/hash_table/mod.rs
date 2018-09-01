@@ -1,8 +1,6 @@
 pub mod actor;
 pub mod entry;
-pub mod header;
 pub mod memory;
-pub mod pair;
 pub mod meta;
 pub mod status;
 pub mod sys_entry;

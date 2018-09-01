@@ -137,8 +137,8 @@ impl ToEntry for Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::{tests::test_chain, SourceChain};
-    use hash_table::{entry::Entry, header::Header, pair::tests::test_pair, sys_entry::ToEntry};
+    use chain::{tests::test_chain, SourceChain, header::Header, pair::tests::test_pair};
+    use hash_table::{entry::Entry, sys_entry::ToEntry};
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -264,7 +264,6 @@ mod tests {
         let t2 = "bar";
 
         // first header is genesis so next should be None
-        println!("\nFirst Header:");
         let e1 = Entry::new(t1, "");
         let p1 = chain
             .commit_entry(&e1)
@@ -274,7 +273,6 @@ mod tests {
         assert_eq!(h1.link_same_type(), None);
 
         // second header is a different type so next should be None
-        println!("\nSecond Header:");
         let e2 = Entry::new(t2, "");
         let p2 = chain
             .commit_entry(&e2)
@@ -284,17 +282,13 @@ mod tests {
         assert_eq!(h2.link_same_type(), None);
 
         // third header is same type as first header so next should be first header hash
-        println!("\nThird Header:");
         let e3 = Entry::new(t1, "");
         let p3 = chain
             .commit_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
-        println!("\n\th3 = {:?}", h3);
-
         assert_eq!(h3.link_same_type(), Some(h1.hash()));
-        //assert_eq!(h3.link_same_type(), Some(h1.to_entry().key()));
     }
 
     #[test]

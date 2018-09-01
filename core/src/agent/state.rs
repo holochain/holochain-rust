@@ -5,21 +5,16 @@ use context::Context;
 use error::HolochainError;
 use hash_table::{
     HashString, HashTable,
-    // pair_meta::Meta,
-    // entry::Entry, memory::MemTable,
-    pair::Pair,
     links_entry::LinkEntry, links_entry::LinkActionKind,
-    // links_entry::LinkListEntry,
     sys_entry::ToEntry,
 };
+use chain::pair::Pair;
 use instance::Observer;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-//use std::str::FromStr;
-// #[macro_use]
-//use serde_json;
+
 
 #[derive(Clone, Debug, PartialEq)]
 /// struct to track the internal state of an agent exposed to reducers/observers
@@ -279,7 +274,6 @@ pub mod tests {
     use chain::tests::test_chain;
     use error::HolochainError;
     use hash_table::{
-        pair::tests::test_pair,
         entry::Entry,
         links_entry::Link,
     };
@@ -287,6 +281,7 @@ pub mod tests {
     use std::{collections::HashMap, sync::Arc};
     use action::ActionWrapper;
     use nucleus::ribosome::api::get_links::GetLinksArgs;
+    use chain::pair::tests::test_pair;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {

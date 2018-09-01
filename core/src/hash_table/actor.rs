@@ -196,7 +196,8 @@ pub mod tests {
     use super::HashTableActor;
     use actor::Protocol;
     use hash::tests::test_hash;
-    use hash_table::{memory::tests::test_table, pair::tests::test_pair, HashTable};
+    use hash_table::{memory::tests::test_table, HashTable};
+    use chain::pair::tests::test_pair;
     use riker::actors::*;
     use std::{sync::mpsc, thread};
 

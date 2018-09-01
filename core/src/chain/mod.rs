@@ -179,7 +179,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table.commit(&pair.clone())?;
+        self.table.commit_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
@@ -212,7 +212,7 @@ impl SourceChain for Chain {
     }
 }
 
-impl<T: HashTable> ToJson for Chain<T> {
+impl ToJson for Chain {
     /// get the entire chain, top to bottom as a JSON array or canonical pairs
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
@@ -233,6 +233,7 @@ pub mod tests {
         pair::Pair,
         HashTable,
     };
+    use key::Key;
     use std::thread;
 
     /// builds a dummy chain for testing

@@ -7,6 +7,7 @@ use nucleus::ribosome::api::{
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use key::Key;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
@@ -91,6 +92,7 @@ mod tests {
         FunctionCall,
     };
     use serde_json;
+    use key::Key;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry

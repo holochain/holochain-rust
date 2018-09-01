@@ -1,6 +1,6 @@
 use chain::Chain;
 use error::HolochainError;
-use hash_table::{entry::Entry, header::Header, HashTable};
+use hash_table::{entry::Entry, header::Header};
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use serde_json;

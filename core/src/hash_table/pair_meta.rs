@@ -242,7 +242,7 @@ pub mod tests {
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
         let pair_meta = test_pair_meta();
-        let expected = "{\"pair\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+        let expected = "{\"pair_hash\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
 
         assert_eq!(expected.to_string(), pair_meta.to_json().unwrap());
         assert_eq!(pair_meta, PairMeta::from_json(&expected).unwrap());

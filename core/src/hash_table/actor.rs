@@ -22,7 +22,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
-    fn commit(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Commit(pair.clone()));
         unwrap_to!(response => Protocol::CommitResult).clone()
     }
@@ -32,7 +32,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PairResult).clone()
     }
 
-    fn modify(
+    fn modify_pair(
         &mut self,
         keys: &Keys,
         old_pair: &Pair,
@@ -46,7 +46,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::ModifyResult).clone()
     }
 
-    fn retract(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
+    fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Retract {
             keys: keys.clone(),
             pair: pair.clone(),
@@ -54,19 +54,19 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::RetractResult).clone()
     }
 
-    fn assert_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Meta(key.to_string()));
-        unwrap_to!(response => Protocol::MetaResult).clone()
+    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::PairMeta(key.to_string()));
+        unwrap_to!(response => Protocol::PairMetaResult).clone()
     }
 
-    fn get_pair_meta(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::PairMeta(pair.clone()));
-        unwrap_to!(response => Protocol::PairMetaResult).clone()
+    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::MetasForPair(pair.clone()));
+        unwrap_to!(response => Protocol::MetasForPairResult).clone()
     }
 }
 
@@ -118,7 +118,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
+                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit_pair(&pair)),
 
                     Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
 
@@ -126,19 +126,19 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                         keys,
                         old_pair,
                         new_pair,
-                    } => Protocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
+                    } => Protocol::ModifyResult(self.table.modify_pair(&keys, &old_pair, &new_pair)),
                     Protocol::Retract { keys, pair } => {
-                        Protocol::RetractResult(self.table.retract(&keys, &pair))
+                        Protocol::RetractResult(self.table.retract_pair(&keys, &pair))
                     }
 
                     Protocol::AssertMeta(pair_meta) => {
-                        Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
+                        Protocol::AssertMetaResult(self.table.assert_pair_meta(&pair_meta))
                     }
 
-                    Protocol::Meta(key) => Protocol::MetaResult(self.table.get_meta(&key)),
+                    Protocol::PairMeta(key) => Protocol::PairMetaResult(self.table.pair_meta(&key)),
 
-                    Protocol::PairMeta(pair) => {
-                        Protocol::PairMetaResult(self.table.get_pair_meta(&pair))
+                    Protocol::MetasForPair(pair) => {
+                        Protocol::MetasForPairResult(self.table.metas_for_pair(&pair))
                     }
 
                     _ => unreachable!(),
@@ -158,6 +158,7 @@ pub mod tests {
     use hash_table::{memory::tests::test_table, pair::tests::test_pair, HashTable};
     use riker::actors::*;
     use std::{sync::mpsc, thread};
+    use key::Key;
 
     /// dummy table actor ref
     /// every call produces a new actor, not just a new ref to the same actor
@@ -171,7 +172,7 @@ pub mod tests {
 
         assert_eq!(table_actor.pair(&test_hash()).unwrap(), None,);
 
-        table_actor.commit(&test_pair()).unwrap();
+        table_actor.commit_pair(&test_pair()).unwrap();
 
         assert_eq!(
             table_actor.pair(&test_pair().key()).unwrap(),
@@ -202,7 +203,7 @@ pub mod tests {
         thread::spawn(move || {
             rx1.recv().unwrap();
             let pair = test_pair();
-            table_actor_thread.commit(&pair).unwrap();
+            table_actor_thread.commit_pair(&pair).unwrap();
             // push the committed pair through to the next thread
             tx2.send(pair).unwrap();
         });

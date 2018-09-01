@@ -29,7 +29,7 @@ impl ToString for Table {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct FileTable {
     path: String,
 }
@@ -113,7 +113,7 @@ impl HashTable for FileTable {
         }
     }
 
-    fn all_metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
         let mut metas = Vec::new();
 
         // this is a brute force approach that involves reading and parsing every file
@@ -124,7 +124,7 @@ impl HashTable for FileTable {
             if let Some(stem) = path.file_stem() {
                 if let Some(key) = stem.to_str() {
                     if let Some(pair_meta) = self.pair_meta(&key)? {
-                        if pair_meta.pair() == pair.key() {
+                        if pair_meta.pair_hash() == pair.key() {
                             metas.push(pair_meta);
                         }
                     }

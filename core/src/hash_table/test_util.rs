@@ -42,7 +42,7 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
             ),
         ],
         table
-            .all_metas_for_pair(&pair_a)
+            .metas_for_pair(&pair_a)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 
@@ -50,7 +50,7 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         empty_vec,
         table
-            .all_metas_for_pair(&pair_b)
+            .metas_for_pair(&pair_b)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 }
@@ -65,7 +65,7 @@ pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         empty_vec,
         table
-            .all_metas_for_pair(&pair)
+            .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 
@@ -80,7 +80,7 @@ pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
             &CRUDStatus::DELETED.bits().to_string(),
         )],
         table
-            .all_metas_for_pair(&pair)
+            .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail"),
     );
 }
@@ -116,7 +116,7 @@ pub fn test_all_metas_for_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         empty_vec,
         table
-            .all_metas_for_pair(&pair)
+            .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 
@@ -126,7 +126,7 @@ pub fn test_all_metas_for_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         vec![meta_a.clone()],
         table
-            .all_metas_for_pair(&pair)
+            .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 
@@ -136,7 +136,7 @@ pub fn test_all_metas_for_pair<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         vec![meta_b, meta_a],
         table
-            .all_metas_for_pair(&pair)
+            .metas_for_pair(&pair)
             .expect("getting the metadata on a pair shouldn't fail")
     );
 }

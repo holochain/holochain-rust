@@ -113,7 +113,7 @@ fn reduce_link_app_entries(
     // Validate Link Here
 
     // Create and Commit a LinkEntry on source chain
-    let link_entry = LinkEntry::new_from_link(LinkActionKind::ADD, link);
+    let link_entry = LinkEntry::from_link(LinkActionKind::ADD, link);
     let res = state.chain.commit_entry(&link_entry.to_entry());
     let mut response = if res.is_ok() {
         Ok(res.unwrap().entry().clone())

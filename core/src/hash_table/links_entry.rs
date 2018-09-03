@@ -74,7 +74,7 @@ impl LinkEntry {
         }
     }
 
-    pub fn new_from_link(action_kind: LinkActionKind, link: &Link) -> Self {
+    pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
         LinkEntry {
             action_kind: action_kind,
             link: link.clone(),
@@ -89,7 +89,7 @@ impl ToEntry for LinkEntry {
         Entry::new(EntryType::Link.as_str(), &json_array)
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
         serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
     }
@@ -120,7 +120,7 @@ impl ToEntry for LinkListEntry {
         Entry::new(EntryType::LinkList.as_str(), &json_array)
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
         serde_json::from_str(&entry.content()).expect("entry is not a valid LinkListEntry")
     }
@@ -220,7 +220,7 @@ pub mod tests {
         let lle = LinkListEntry::new(&[link]);
 
         let lle_entry = lle.to_entry();
-        let lle_trip = LinkListEntry::new_from_entry(&lle_entry);
+        let lle_trip = LinkListEntry::from_entry(&lle_entry);
 
         assert_eq!(lle, lle_trip);
     }

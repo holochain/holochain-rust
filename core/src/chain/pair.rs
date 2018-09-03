@@ -15,7 +15,7 @@ pub struct Pair {
 
 impl Pair {
     /// Reconstruct Pair from Header stored in a HashTable
-    pub fn new_from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
+    pub fn from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
         let entry = table
             .entry(&header.entry_hash())
             .expect("should not attempt to create invalid pair");

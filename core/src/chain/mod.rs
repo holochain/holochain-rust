@@ -48,8 +48,8 @@ impl Iterator for ChainIterator {
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
-                let header = Header::new_from_entry(header_entry);
-                let pair = Pair::new_from_header(&self.table_actor, &header);
+                let header = Header::from_entry(header_entry);
+                let pair = Pair::from_header(&self.table_actor, &header);
                 pair
             });
         previous

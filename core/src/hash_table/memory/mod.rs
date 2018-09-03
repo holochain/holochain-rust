@@ -175,7 +175,7 @@ impl HashTable for MemTable {
         let entry = self
             .entry(&meta.value())?
             .expect("should have entry listed in meta");
-        Ok(Some(LinkListEntry::new_from_entry(&entry)))
+        Ok(Some(LinkListEntry::from_entry(&entry)))
     }
 
     fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError> {

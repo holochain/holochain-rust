@@ -57,7 +57,7 @@ impl Header {
         }
     }
 
-    pub fn new_from_json(header_str: &str) -> serde_json::Result<Self> {
+    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
     }
 
@@ -127,9 +127,9 @@ impl ToEntry for Header {
         Entry::new(EntryType::Header.as_str(), &self.to_json())
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Header);
-        return Header::new_from_json(&entry.content()).expect("entry is not a valid Header Entry");
+        return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
     }
 }
 
@@ -411,7 +411,7 @@ mod tests {
         let h = chain.create_next_header(&e);
 
         let h_entry = h.to_entry();
-        let h_trip = Header::new_from_entry(&h_entry);
+        let h_trip = Header::from_entry(&h_entry);
 
         assert_eq!(h, h_trip);
     }

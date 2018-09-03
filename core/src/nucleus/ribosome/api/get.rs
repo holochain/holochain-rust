@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use json::ToJson;
-use key::Key;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };

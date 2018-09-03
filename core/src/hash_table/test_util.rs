@@ -110,7 +110,8 @@ pub fn test_pair_meta_round_trip<HT: HashTable>(table: &mut HT) {
     );
 }
 
-pub fn test_metas_for_pair<HT: HashTable>(table: &mut HT) {
+/// assert a couple of unique metas against a single pair
+fn test_metas_for_pair<HT: HashTable>(table: &mut HT) {
     let pair = test_pair_unique();
     let meta_a = test_pair_meta_for(&pair, &test_attribute(), &test_value());
     let meta_b = test_pair_meta_for(&pair, &test_attribute_b(), &test_value_b());

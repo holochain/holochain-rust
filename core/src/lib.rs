@@ -22,9 +22,9 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
+extern crate regex;
 extern crate tempfile;
 extern crate walkdir;
-extern crate regex;
 
 extern crate config;
 extern crate holochain_agent;

@@ -143,14 +143,16 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
     use super::Table;
-    use hash_table::{file::FileTable, test_util::standard_suite};
-    use tempfile::{tempdir, TempDir};
-    use regex::Regex;
-    use serde_json;
     use error::HolochainError;
+    use hash_table::{
+        file::{FileTable, Row},
+        test_util::standard_suite,
+    };
     use json::ToJson;
     use key::Key;
-    use hash_table::file::Row;
+    use regex::Regex;
+    use serde_json;
+    use tempfile::{tempdir, TempDir};
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
@@ -184,18 +186,15 @@ pub mod tests {
     fn test_dir() {
         let (table, _dir) = test_table();
 
-        let re = |s| {
-            Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex")
-        };
+        let re = |s| Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex");
 
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
             assert!(
-                re(s)
-                    .is_match(
-                        &table
-                            .dir(t.clone())
-                            .expect(&format!("could not get dir for {:?}", t))
-                    )
+                re(s).is_match(
+                    &table
+                        .dir(t.clone())
+                        .expect(&format!("could not get dir for {:?}", t)),
+                )
             );
         }
     }
@@ -212,12 +211,11 @@ pub mod tests {
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
             for k in vec!["foo", "bar"] {
                 assert!(
-                    re(s, k)
-                        .is_match(
-                            &table
-                                .row_path(t.clone(), k.clone())
-                                .expect(&format!("could not get row path for {:?} in {:?}", k, t))
-                        )
+                    re(s, k).is_match(
+                        &table
+                            .row_path(t.clone(), k.clone())
+                            .expect(&format!("could not get row path for {:?} in {:?}", k, t)),
+                    )
                 );
             }
         }
@@ -227,7 +225,9 @@ pub mod tests {
     /// data can round trip through upsert/lookup
     fn test_data_round_trip() {
         #[derive(Serialize)]
-        struct SomeData {data: String}
+        struct SomeData {
+            data: String,
+        }
 
         impl ToJson for SomeData {
             fn to_json(&self) -> Result<String, HolochainError> {
@@ -243,16 +243,22 @@ pub mod tests {
 
         impl Row for SomeData {}
 
-        let data = SomeData {data: "foo".to_string()};
+        let data = SomeData {
+            data: "foo".to_string(),
+        };
         let s = data.to_json().expect("could not serialize data");
 
         let (table, _dir) = test_table();
 
-        table.upsert(Table::Pairs, &data).expect("could not upsert data");
+        table
+            .upsert(Table::Pairs, &data)
+            .expect("could not upsert data");
 
         assert_eq!(
             Some(s),
-            table.lookup(Table::Pairs, &data.key()).expect("could not lookup data"),
+            table
+                .lookup(Table::Pairs, &data.key())
+                .expect("could not lookup data"),
         );
     }
 

@@ -146,6 +146,11 @@ pub mod tests {
     use hash_table::{file::FileTable, test_util::standard_suite};
     use tempfile::{tempdir, TempDir};
     use regex::Regex;
+    use serde_json;
+    use error::HolochainError;
+    use json::ToJson;
+    use key::Key;
+    use hash_table::file::Row;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
@@ -198,13 +203,57 @@ pub mod tests {
     #[test]
     /// row_path returns a sensible string for a Table enum and key
     fn test_row_path() {
-        // @TODO
+        let (table, _dir) = test_table();
+
+        let re = |s, k| {
+            Regex::new(&format!(r".*\.tmp.*/{}/{}\.json", s, k)).expect("failed to build regex")
+        };
+
+        for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
+            for k in vec!["foo", "bar"] {
+                assert!(
+                    re(s, k)
+                        .is_match(
+                            &table
+                                .row_path(t.clone(), k.clone())
+                                .expect(&format!("could not get row path for {:?} in {:?}", k, t))
+                        )
+                );
+            }
+        }
     }
 
     #[test]
-    /// rows can round trip through upsert/lookup
-    fn test_row_round_trip() {
-        // @TODO
+    /// data can round trip through upsert/lookup
+    fn test_data_round_trip() {
+        #[derive(Serialize)]
+        struct SomeData {data: String}
+
+        impl ToJson for SomeData {
+            fn to_json(&self) -> Result<String, HolochainError> {
+                Ok(serde_json::to_string(&self)?)
+            }
+        }
+
+        impl Key for SomeData {
+            fn key(&self) -> String {
+                "bar".to_string()
+            }
+        }
+
+        impl Row for SomeData {}
+
+        let data = SomeData {data: "foo".to_string()};
+        let s = data.to_json().expect("could not serialize data");
+
+        let (table, _dir) = test_table();
+
+        table.upsert(Table::Pairs, &data).expect("could not upsert data");
+
+        assert_eq!(
+            Some(s),
+            table.lookup(Table::Pairs, &data.key()).expect("could not lookup data"),
+        );
     }
 
 }

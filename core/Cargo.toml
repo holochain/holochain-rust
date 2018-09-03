@@ -28,6 +28,7 @@ num-derive = "0.2"
 walkdir = "2"
 tempfile = "3"
 config = "0.8"
+regex = "1"
 
 [dev-dependencies]
 wabt = "0.4"

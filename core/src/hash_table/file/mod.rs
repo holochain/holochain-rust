@@ -10,6 +10,7 @@ use std::fs::create_dir_all;
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
+#[derive(Debug, Clone)]
 enum Table {
     Pairs,
     Metas,
@@ -141,8 +142,10 @@ impl HashTable for FileTable {
 
 #[cfg(test)]
 pub mod tests {
+    use super::Table;
     use hash_table::{file::FileTable, test_util::standard_suite};
     use tempfile::{tempdir, TempDir};
+    use regex::Regex;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
@@ -174,7 +177,22 @@ pub mod tests {
     #[test]
     /// dir returns a sensible string for every Table enum variant
     fn test_dir() {
-        // @TODO
+        let (table, _dir) = test_table();
+
+        let re = |s| {
+            Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex")
+        };
+
+        for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
+            assert!(
+                re(s)
+                    .is_match(
+                        &table
+                            .dir(t.clone())
+                            .expect(&format!("could not get dir for {:?}", t))
+                    )
+            );
+        }
     }
 
     #[test]

@@ -8,6 +8,7 @@ use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
+pub mod header;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -172,7 +173,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table.commit_pair(&pair.clone())?;
+        self.table.put_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()

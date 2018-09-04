@@ -22,7 +22,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
-    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Commit(pair.clone()));
         unwrap_to!(response => Protocol::CommitResult).clone()
     }
@@ -118,7 +118,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit_pair(&pair)),
+                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.put_pair(&pair)),
 
                     Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
 
@@ -176,7 +176,7 @@ pub mod tests {
 
         assert_eq!(table_actor.pair(&test_hash()).unwrap(), None,);
 
-        table_actor.commit_pair(&test_pair()).unwrap();
+        table_actor.put_pair(&test_pair()).unwrap();
 
         assert_eq!(
             table_actor.pair(&test_pair().key()).unwrap(),
@@ -207,7 +207,7 @@ pub mod tests {
         thread::spawn(move || {
             rx1.recv().unwrap();
             let pair = test_pair();
-            table_actor_thread.commit_pair(&pair).unwrap();
+            table_actor_thread.put_pair(&pair).unwrap();
             // push the committed pair through to the next thread
             tx2.send(pair).unwrap();
         });

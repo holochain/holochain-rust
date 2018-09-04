@@ -121,7 +121,7 @@ impl Key for Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::{tests::test_chain, SourceChain, header::Header};
+    use chain::{header::Header, tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, pair::tests::test_pair};
     use key::Key;
 

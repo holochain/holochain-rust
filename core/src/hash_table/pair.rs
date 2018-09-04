@@ -1,6 +1,5 @@
-use chain::Chain;
+use chain::{header::Header, Chain};
 use error::HolochainError;
-use chain::header::Header;
 use hash_table::entry::Entry;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
@@ -106,12 +105,10 @@ impl RoundTripJson for Pair {}
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use chain::{tests::test_chain, SourceChain, header::Header};
-    use hash_table::{
-        entry::{
-            tests::{test_entry, test_entry_b, test_entry_unique},
-            Entry,
-        },
+    use chain::{header::Header, tests::test_chain, SourceChain};
+    use hash_table::entry::{
+        tests::{test_entry, test_entry_b, test_entry_unique},
+        Entry,
     };
     use json::{FromJson, ToJson};
 

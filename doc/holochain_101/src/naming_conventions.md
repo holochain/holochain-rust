@@ -15,14 +15,14 @@ would make things too ambiguous.
 
 ### Actions & reducers
 
-- `Action` is `VerbNoun` or `Verb` e.g. `GetEntry` or `Setup`
+- `Action` is `VerbNoun` e.g. `GetEntry`
 - `ActionResponse` is `ActionName` e.g. `Action::GetEntry` results in `ActionResponse::GetEntry`
 - reducer name is `reduce_action_name` e.g. `reduce_get_entry`
 
-### Actors
+### Actors & protocols
 
-- Actor `Protocol` is `VerbNoun` e.g. `PutEntry`
-- Result of a `Protocol` is `VerbNounResult` e.g. `PutEntryResult`
+- Actor `Protocol` is `VerbNoun` e.g. `PutEntry` or `Setup`
+- Result of a `Protocol` is `VerbNounResult` or `VerbResult` e.g. `PutEntryResult` or `SetupResult`
 
 ### Method names
 

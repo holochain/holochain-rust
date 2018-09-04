@@ -1,6 +1,6 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};

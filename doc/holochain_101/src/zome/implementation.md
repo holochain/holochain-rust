@@ -111,7 +111,7 @@ error enum variant.
 
 For an example implementation returning a complex struct see:
 
-- `agent::state::ActionResult::Get` defining a result containing a `Pair` struct
+- `agent::state::ActionResult::GetEntry` defining a result containing a `Pair` struct
 - `nucleus::ribosome::get::invoke_get`
   - match the action result against the correct enum variant
   - serialize the pair using serde

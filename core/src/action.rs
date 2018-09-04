@@ -69,12 +69,14 @@ pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(Entry),
-    /// hash of Entry to get
+    /// GetEntry by hash
     GetEntry(HashString),
+
     /// link to add
     AddLink(Link),
     /// get links from entry hash and attribute-name
     GetLinks(GetLinksArgs),
+
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
     /// return the result of a zome WASM function call

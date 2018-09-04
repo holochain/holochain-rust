@@ -18,7 +18,7 @@ struct GetAppEntryArgs {
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_app_entry(
+pub fn invoke_get_entry(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
@@ -92,7 +92,7 @@ mod tests {
     use nucleus::{
         ribosome::api::{
             call,
-            commit_app_entry::tests::test_commit_args_bytes,
+            commit::tests::test_commit_args_bytes,
             tests::{test_capability, test_parameters, test_zome_name},
         },
         FunctionCall,

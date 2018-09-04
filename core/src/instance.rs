@@ -336,7 +336,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::CommitEntry(entry) => {
+                Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::Dna
@@ -610,9 +610,9 @@ pub mod tests {
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
-        let action_commit_e1 = ActionWrapper::new(Action::CommitEntry(e1.clone()));
-        let action_commit_e2 = ActionWrapper::new(Action::CommitEntry(e2.clone()));
-        let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
+        let action_commit_e1 = ActionWrapper::new(Action::Commit(e1.clone()));
+        let action_commit_e2 = ActionWrapper::new(Action::Commit(e2.clone()));
+        let action_lap = ActionWrapper::new(Action::AddLink(link));
         let action_gl = ActionWrapper::new(Action::GetLinks(req1));
 
         // Setup Process actions

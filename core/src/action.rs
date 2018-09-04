@@ -68,13 +68,12 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    CommitEntry(Entry),
+    Commit(Entry),
     /// hash of Entry to get
     GetEntry(HashString),
-    /// entry to Commit
-    /// MUST already have passed all callback checks
-    LinkAppEntries(Link),
-    /// hash to Entry to get links from
+    /// link to add
+    AddLink(Link),
+    /// get links from entry hash and attribute-name
     GetLinks(GetLinksArgs),
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
@@ -89,7 +88,7 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateAppEntry(EntrySubmission),
+    ValidateEntry(EntrySubmission),
 
     /// add a network peer
     AddPeer(String),
@@ -124,7 +123,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::CommitEntry(test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry()))
     }
 
     /// dummy action for a get of test_hash()

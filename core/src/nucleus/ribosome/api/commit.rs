@@ -54,7 +54,7 @@ pub fn invoke_commit_app_entry(
     // anything other than a fail means we should commit the entry
 
     // Create Commit Action
-    let action_wrapper = ActionWrapper::new(Action::CommitEntry(entry));
+    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
     // Send Action and block for result
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -85,7 +85,7 @@ pub fn invoke_commit_app_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::CommitEntry(_) => {
+        ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
             let json = action_result.to_json();
             match json {

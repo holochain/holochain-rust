@@ -33,9 +33,7 @@ pub fn invoke_get_links(
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorSerdeJson as i32,
-        )));
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
     }
     let input = res_entry.unwrap();
 

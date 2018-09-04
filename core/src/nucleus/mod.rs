@@ -216,7 +216,7 @@ fn reduce_init_application(
         {
             // Create Commit Action for Genesis Entry
             let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::CommitEntry(genesis_entry));
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
@@ -373,7 +373,7 @@ fn reduce_validate_entry(
     // must have entry_type
     if let Some(ref dna) = state.dna {
         let action = action_wrapper.action();
-        let es = unwrap_to!(action => Action::ValidateAppEntry);
+        let es = unwrap_to!(action => Action::ValidateEntry);
         if let Some(ref _wasm) =
             dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
         {
@@ -408,7 +408,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::ValidateAppEntry(_) => Some(reduce_validate_entry),
+        Action::ValidateEntry(_) => Some(reduce_validate_entry),
         _ => None,
     }
 }

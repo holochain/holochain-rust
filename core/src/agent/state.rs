@@ -10,6 +10,8 @@ use hash_table::{
     HashString, HashTable,
 };
 use instance::Observer;
+use json::ToJson;
+use key::Key;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
@@ -58,48 +60,48 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 pub enum ActionResponse {
-    CommitEntry(Result<Entry, HolochainError>),
+    Commit(Result<Entry, HolochainError>),
     GetEntry(Option<Entry>),
     GetLinks(Result<Vec<HashString>, HolochainError>),
-    LinkAppEntries(Result<Entry, HolochainError>),
+    LinkEntries(Result<Entry, HolochainError>),
 }
 
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
-impl ActionResponse {
+impl ToJson for ActionResponse {
     /// serialize data or error to JSON
     // @TODO implement this as a round tripping trait
     // @see https://github.com/holochain/holochain-rust/issues/193
-    pub fn to_json(&self) -> String {
+    fn to_json(&self) -> Result<String, HolochainError> {
         match self {
-            ActionResponse::CommitEntry(result) => match result {
-                Ok(entry) => format!("{{\"hash\":\"{}\"}}", entry.key()),
-                Err(err) => (*err).to_json(),
+            ActionResponse::Commit(result) => match result {
+                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
-                Some(entry) => entry.to_json(),
-                None => "".to_string(),
+                Some(entry) => Ok(entry.to_json()?),
+                None => Ok("".to_string()),
             },
             ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => json!(hash_list)
+                Ok(hash_list) => Ok(json!(hash_list)
                     .as_str()
                     .expect("should jsonify")
-                    .to_string(),
-                Err(err) => (*err).to_json(),
+                    .to_string()),
+                Err(err) => Ok((*err).to_json()?),
             },
-            ActionResponse::LinkAppEntries(result) => match result {
-                Ok(entry) => format!("{{\"hash\":\"{}\"}}", entry.key()),
-                Err(err) => (*err).to_json(),
+            ActionResponse::LinkEntries(result) => match result {
+                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Err(err) => Ok((*err).to_json()?),
             },
         }
     }
 }
 
-/// Do the LinkAppEntries Action against an agent state:
+/// Do the AddLink Action against an agent state:
 /// 1. Validate Link
 /// 2. Commit LinkEntry
 /// 3. Add Link metadata in HashTable
-fn reduce_link_app_entries(
+fn reduce_add_link(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -107,7 +109,7 @@ fn reduce_link_app_entries(
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::LinkAppEntries);
+    let link = unwrap_to!(action => Action::AddLink);
 
     // TODO #277
     // Validate Link Here
@@ -130,7 +132,7 @@ fn reduce_link_app_entries(
     // Insert reponse in state
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::LinkAppEntries(response),
+        ActionResponse::LinkEntries(response),
     );
 }
 
@@ -146,7 +148,7 @@ fn reduce_get_links(
     let links_request = unwrap_to!(action => Action::GetLinks);
 
     //    // Look for entry's link metadata
-    let res = state.chain.table().links(links_request);
+    let res = state.chain.table().get_links(links_request);
     if res.is_err() {
         state.actions.insert(
             action_wrapper.clone(),
@@ -191,7 +193,7 @@ fn reduce_commit_entry(
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::CommitEntry);
+    let entry = unwrap_to!(action => Action::Commit);
 
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
@@ -205,7 +207,7 @@ fn reduce_commit_entry(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::CommitEntry(response),
+        ActionResponse::Commit(response),
     );
 }
 
@@ -235,10 +237,10 @@ fn reduce_get_entry(
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::CommitEntry(_) => Some(reduce_commit_entry),
+        Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
         Action::GetLinks(_) => Some(reduce_get_links),
-        Action::LinkAppEntries(_) => Some(reduce_link_app_entries),
+        Action::AddLink(_) => Some(reduce_add_link),
         _ => None,
     }
 }
@@ -289,7 +291,7 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::CommitEntry(Ok(test_pair().entry().clone()))
+        ActionResponse::Commit(Ok(test_pair().entry().clone()))
     }
 
     /// dummy action response for a successful get as test_pair()
@@ -342,17 +344,17 @@ pub mod tests {
         );
     }
 
-    /// test for reducing LinkAppEntries
+    /// test for reducing AddLink
     #[test]
-    fn test_reduce_link_app_entries_empty() {
+    fn test_reduce_add_link_empty() {
         let mut state = test_agent_state();
 
         let link = Link::new("0x12", "0x34", "child");
-        let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(link));
+        let action_wrapper = ActionWrapper::new(Action::AddLink(link));
 
         let instance = test_instance_blank();
 
-        reduce_link_app_entries(
+        reduce_add_link(
             test_context("camille"),
             &mut state,
             &action_wrapper,
@@ -361,16 +363,16 @@ pub mod tests {
         );
 
         assert_eq!(
-            Some(&ActionResponse::LinkAppEntries(Err(
+            Some(&ActionResponse::LinkEntries(Err(
                 HolochainError::ErrorGeneric("Entry from base not found".to_string())
             ))),
             state.actions().get(&action_wrapper),
         );
     }
 
-    /// test for reducing LinkAppEntries
+    /// test for reducing AddLink
     #[test]
-    fn test_reduce_link_app_entries() {
+    fn test_reduce_add_link() {
         let context = test_context("camille");
 
         let e1 = Entry::new("app1", "alex");
@@ -385,9 +387,9 @@ pub mod tests {
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
-        let action_commit_e1 = ActionWrapper::new(Action::CommitEntry(e1.clone()));
-        let action_commit_e2 = ActionWrapper::new(Action::CommitEntry(e2.clone()));
-        let action_lap = ActionWrapper::new(Action::LinkAppEntries(link));
+        let action_commit_e1 = ActionWrapper::new(Action::Commit(e1.clone()));
+        let action_commit_e2 = ActionWrapper::new(Action::Commit(e2.clone()));
+        let action_lap = ActionWrapper::new(Action::AddLink(link));
         let action_gl = ActionWrapper::new(Action::GetLinks(req1));
 
         let mut state = test_agent_state();
@@ -408,7 +410,7 @@ pub mod tests {
             &instance.action_channel().clone(),
             &instance.observer_channel().clone(),
         );
-        reduce_link_app_entries(
+        reduce_add_link(
             context.clone(),
             &mut state,
             &action_lap,
@@ -501,17 +503,23 @@ pub mod tests {
     fn test_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::CommitEntry(Ok(test_pair().entry().clone())).to_json(),
+            ActionResponse::Commit(Ok(test_pair().entry().clone()))
+                .to_json()
+                .unwrap(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
-            ActionResponse::CommitEntry(Err(HolochainError::new("some error"))).to_json(),
+            ActionResponse::Commit(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
         );
 
         assert_eq!(
             "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}",
-            ActionResponse::GetEntry(Some(test_pair().entry().clone())).to_json(),
+            ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+                .to_json()
+                .unwrap(),
         );
-        assert_eq!("", ActionResponse::GetEntry(None).to_json());
+        assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
     }
 }

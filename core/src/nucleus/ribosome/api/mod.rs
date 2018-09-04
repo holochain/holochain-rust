@@ -1,9 +1,9 @@
-pub mod commit_app_entry;
+pub mod commit;
 pub mod debug;
-pub mod get_app_entry;
+pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
-pub mod link_app_entries;
+pub mod link_entries;
 
 use action::ActionWrapper;
 use context::Context;
@@ -14,9 +14,9 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            commit_app_entry::invoke_commit_app_entry, debug::invoke_debug,
-            get_app_entry::invoke_get_app_entry, get_links::invoke_get_links,
-            init_globals::invoke_init_globals, link_app_entries::invoke_link_app_entries,
+            commit::invoke_commit_app_entry, debug::invoke_debug,
+            get_entry::invoke_get_entry, get_links::invoke_get_links,
+            init_globals::invoke_init_globals, link_entries::invoke_link_entries,
         },
         Defn,
     },
@@ -67,7 +67,7 @@ pub enum ZomeApiFunction {
 
     /// Link two Entries
     /// link_entries(base: HashString, target: HashString, tag: &str)
-    LinkAppEntries,
+    LinkEntries,
 
     /// Get an Entry's links for a specific tag
     /// get_links(entry_hash: HashString, tag: &str) -> Vec<HashString>
@@ -82,7 +82,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
             ZomeApiFunction::InitGlobals => "hc_init_globals",
-            ZomeApiFunction::LinkAppEntries => "hc_link_entries",
+            ZomeApiFunction::LinkEntries => "hc_link_entries",
             ZomeApiFunction::GetLinks => "hc_get_links",
         }
     }
@@ -115,7 +115,7 @@ impl FromStr for ZomeApiFunction {
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
-            "hc_link_entries" => Ok(ZomeApiFunction::LinkAppEntries),
+            "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
@@ -133,9 +133,9 @@ impl ZomeApiFunction {
             ZomeApiFunction::MissingNo => noop,
             ZomeApiFunction::Debug => invoke_debug,
             ZomeApiFunction::CommitAppEntry => invoke_commit_app_entry,
-            ZomeApiFunction::GetAppEntry => invoke_get_app_entry,
+            ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
-            ZomeApiFunction::LinkAppEntries => invoke_link_app_entries,
+            ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
         }
     }

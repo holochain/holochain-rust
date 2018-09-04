@@ -148,7 +148,7 @@ pub mod tests {
         let context = test_context("alex");
         let link = Link::new("12", "34", "fake");
         let link_entry = LinkListEntry::new(&[link]);
-        let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
+        let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -163,7 +163,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::CommitEntry(entry) => {
+                Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::LinkList,
@@ -184,7 +184,7 @@ pub mod tests {
         let link2 = Link::new("56", "78", "faux");
         let link3 = Link::new("90", "ab", "fake");
         let link_entry = LinkListEntry::new(&[link1, link2, link3]);
-        let commit_action = ActionWrapper::new(Action::CommitEntry(link_entry.to_entry()));
+        let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
 
         println!("commit_multilink: {:?}", commit_action);
 
@@ -201,7 +201,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::CommitEntry(entry) => {
+                Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::LinkList,

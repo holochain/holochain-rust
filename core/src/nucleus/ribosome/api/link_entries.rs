@@ -1,6 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash_table::links_entry::*;
+use json::ToJson;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
@@ -8,11 +9,11 @@ use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-/// ZomeApiFunction::LinkAppEntries function code
+/// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_link_app_entries(
+pub fn invoke_link_entries(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
@@ -23,14 +24,12 @@ pub fn invoke_link_app_entries(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ErrorSerdeJson as i32,
-            )));
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
         }
     };
 
-    // Create LinkAppEntries Action
-    let action_wrapper = ActionWrapper::new(Action::LinkAppEntries(input));
+    // Create AddLink Action
+    let action_wrapper = ActionWrapper::new(Action::AddLink(input));
     // Send Action and block for result
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -61,9 +60,13 @@ pub fn invoke_link_app_entries(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::CommitEntry(_) => {
+        ActionResponse::LinkEntries(_) => {
             // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &action_result.to_json())
+            let json = action_result.to_json();
+            match json {
+                Ok(j) => runtime_allocate_encode_str(runtime, &j),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            }
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,

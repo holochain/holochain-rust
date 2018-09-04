@@ -47,9 +47,9 @@ pub fn invoke_commit_entry(
         &runtime.function_call.zome,
         &CallbackParams::ValidateCommit(entry.clone()),
     ) {
-        Ok(Some(RuntimeValue::I32(
+        return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorCallbackResult as i32,
-        )))
+        )));
     }
     // anything other than a fail means we should commit the entry
 

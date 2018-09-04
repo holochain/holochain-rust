@@ -1,5 +1,8 @@
 use chain::Chain;
+use error::HolochainError;
 use hash_table::{entry::Entry, header::Header};
+use json::{FromJson, RoundTripJson, ToJson};
+use key::Key;
 use serde_json;
 
 /// Struct for holding a source chain "Item"
@@ -55,11 +58,6 @@ impl Pair {
         &self.entry
     }
 
-    /// key used in hash table lookups and other references
-    pub fn key(&self) -> String {
-        self.header.hash()
-    }
-
     /// true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header and entry must validate independently
@@ -69,29 +67,40 @@ impl Pair {
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
     }
+}
 
-    /// serialize the Pair to a canonical JSON string
-    ///
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> String {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).expect("should serialize without error")
-    }
-
-    /// deserialize a Pair from a canonical JSON string
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string given isn't valid JSON.
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(s: &str) -> Pair {
-        let pair: Pair = serde_json::from_str(s).expect("json should be valid");
-        pair
+impl Key for Pair {
+    fn key(&self) -> String {
+        self.header.hash()
     }
 }
+
+/// @TODO return canonical JSON
+/// @see https://github.com/holochain/holochain-rust/issues/75
+impl ToJson for Pair {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(&self)?)
+    }
+}
+
+impl ToJson for Option<Pair> {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        match self {
+            Some(pair) => pair.to_json(),
+            None => Ok(String::new()),
+        }
+    }
+}
+
+impl FromJson for Pair {
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        Ok(serde_json::from_str(s)?)
+    }
+}
+
+impl RoundTripJson for Pair {}
 
 #[cfg(test)]
 pub mod tests {
@@ -99,11 +108,12 @@ pub mod tests {
     use chain::{tests::test_chain, SourceChain};
     use hash_table::{
         entry::{
-            tests::{test_entry, test_entry_b},
+            tests::{test_entry, test_entry_b, test_entry_unique},
             Entry,
         },
         header::Header,
     };
+    use json::{FromJson, ToJson};
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -118,6 +128,11 @@ pub mod tests {
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
         Pair::new(&test_chain(), &test_entry_b())
+    }
+
+    /// dummy pair, uses test_entry_unique()
+    pub fn test_pair_unique() -> Pair {
+        Pair::new(&test_chain(), &test_entry_unique())
     }
 
     #[test]
@@ -180,10 +195,13 @@ pub mod tests {
         let json = "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}"
         ;
 
-        assert_eq!(json, test_pair().to_json());
+        assert_eq!(json, test_pair().to_json().unwrap());
 
-        assert_eq!(test_pair(), Pair::from_json(&json));
+        assert_eq!(test_pair(), Pair::from_json(&json).unwrap());
 
-        assert_eq!(test_pair(), Pair::from_json(&test_pair().to_json()));
+        assert_eq!(
+            test_pair(),
+            Pair::from_json(&test_pair().to_json().unwrap()).unwrap()
+        );
     }
 }

@@ -4,6 +4,8 @@ use actor::{AskSelf, Protocol};
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
+use json::ToJson;
+use key::Key;
 use riker::actors::*;
 use serde_json;
 
@@ -97,15 +99,8 @@ impl Chain {
         ChainIterator::new(self.table(), &self.top_pair())
     }
 
-    /// get the entire chain, top to bottom as a JSON array or canonical pairs
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        let as_seq = self.iter().collect::<Vec<Pair>>();
-        serde_json::to_string(&as_seq)
-    }
-
     /// restore canonical JSON chain
+    /// can't implement json::FromJson due to Chain's need for a table actor
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Self {
@@ -177,7 +172,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table.commit(&pair.clone())?;
+        self.table.commit_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
@@ -210,6 +205,16 @@ impl SourceChain for Chain {
     }
 }
 
+impl ToJson for Chain {
+    /// get the entire chain, top to bottom as a JSON array or canonical pairs
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn to_json(&self) -> Result<String, HolochainError> {
+        let as_seq = self.iter().collect::<Vec<Pair>>();
+        Ok(serde_json::to_string(&as_seq)?)
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -221,6 +226,8 @@ pub mod tests {
         pair::Pair,
         HashTable,
     };
+    use json::ToJson;
+    use key::Key;
     use std::thread;
 
     /// builds a dummy chain for testing

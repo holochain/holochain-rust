@@ -1,6 +1,7 @@
 use chain::{Chain, SourceChain};
 use hash;
 use hash_table::{entry::Entry, HashString};
+use key::Key;
 use multihash::Hash;
 
 /// Header of a source chain "Item"
@@ -110,9 +111,10 @@ impl Header {
         // always valid iff immutable and new() enforces validity
         true
     }
+}
 
-    /// returns the key for use in hash table lookups, e.g. chain.get()
-    pub fn key(&self) -> String {
+impl Key for Header {
+    fn key(&self) -> String {
         self.hash()
     }
 }
@@ -121,6 +123,7 @@ impl Header {
 mod tests {
     use chain::{tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
+    use key::Key;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -381,7 +384,7 @@ mod tests {
 
     #[test]
     /// tests for header.key()
-    fn key() {
+    fn test_key() {
         assert_eq!(test_header().hash(), test_header().key());
     }
 }

@@ -46,13 +46,13 @@ pub enum Protocol {
     AssertMeta(PairMeta),
     AssertMetaResult(Result<(), HolochainError>),
 
-    /// HashTable::get_meta()
-    Meta(String),
-    MetaResult(Result<Option<PairMeta>, HolochainError>),
+    /// HashTable::pair_meta()
+    PairMeta(String),
+    PairMetaResult(Result<Option<PairMeta>, HolochainError>),
 
-    /// HashTable::get_pair_meta()
-    PairMeta(Pair),
-    PairMetaResult(Result<Vec<PairMeta>, HolochainError>),
+    /// HashTable::all_metas_for_pair()
+    MetasForPair(Pair),
+    MetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
 
     /// HashTable::pair()
     Pair(String),

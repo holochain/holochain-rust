@@ -15,7 +15,7 @@ The actor ref methods implementing `HashTable` sends messages to itself.
 
 Calling `table_actor_ref.commit(entry)` looks like this:
 
-0. the actor ref constructs a `HashTableProtocol::Commit` message including the entry
+0. the actor ref constructs a `Protocol::PutPair` message including the entry
 0. the actor ref calls its own `ask` method, which builds a future using riker's `ask`
 0. the actor ref blocks on its internal future
 0. the referenced actor receives the `Commit` message and matches/destructures this into the entry

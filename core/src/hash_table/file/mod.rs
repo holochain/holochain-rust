@@ -213,7 +213,7 @@ pub mod tests {
                 assert!(
                     re(s, k).is_match(
                         &table
-                            .row_path(t.clone(), k.clone())
+                            .row_path(t.clone(), &(*k).to_owned())
                             .expect(&format!("could not get row path for {:?} in {:?}", k, t)),
                     )
                 );

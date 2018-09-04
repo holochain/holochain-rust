@@ -30,3 +30,4 @@
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)
   - [State actors](./state/actors.md)
+  - [Naming conventions](./naming_conventions.md)

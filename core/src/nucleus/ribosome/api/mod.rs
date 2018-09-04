@@ -14,9 +14,9 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            commit::invoke_commit_app_entry, debug::invoke_debug,
-            get_entry::invoke_get_entry, get_links::invoke_get_links,
-            init_globals::invoke_init_globals, link_entries::invoke_link_entries,
+            commit::invoke_commit_app_entry, debug::invoke_debug, get_entry::invoke_get_entry,
+            get_links::invoke_get_links, init_globals::invoke_init_globals,
+            link_entries::invoke_link_entries,
         },
         Defn,
     },

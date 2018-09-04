@@ -17,9 +17,9 @@ use key::Key;
 pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     table
-        .put(&entry)
+        .put_entry(&entry)
         .expect("should be able to commit valid pair");
-    assert_eq!(table.get(&entry.key()), Ok(Some(entry)));
+    assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
 }
 
 pub fn test_modify<HT: HashTable>(table: &mut HT) {
@@ -27,10 +27,10 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
     let entry_2 = test_entry_unique();
 
     table
-        .put(&entry_1)
+        .put_entry(&entry_1)
         .expect("should be able to commit valid pair");
     table
-        .modify(&test_keys(), &entry_1, &entry_2)
+        .modify_entry(&test_keys(), &entry_1, &entry_2)
         .expect("should be able to edit with valid pair");
 
     assert_eq!(
@@ -67,7 +67,7 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
     let empty_vec: Vec<EntryMeta> = Vec::new();
 
     table
-        .put(&entry)
+        .put_entry(&entry)
         .expect("should be able to commit valid pair");
     assert_eq!(
         empty_vec,
@@ -77,7 +77,7 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
     );
 
     table
-        .retract(&test_keys(), &entry)
+        .retract_entry(&test_keys(), &entry)
         .expect("should be able to retract");
     assert_eq!(
         vec![EntryMeta::new(

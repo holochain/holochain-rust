@@ -1,7 +1,7 @@
 pub mod actor;
 pub mod entry;
-pub mod links_entry;
 pub mod file;
+pub mod links_entry;
 pub mod memory;
 pub mod meta;
 pub mod status;
@@ -40,14 +40,19 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
     // CRUD
     /// Add an Entry to the HashTable, analogous to chain.push() but ordering is not enforced.
-    fn put(&mut self, entry: &Entry) -> Result<(), HolochainError>;
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError>;
     /// Lookup an Entry from the HashTable by key.
-    fn get(&self, key: &str) -> Result<Option<Entry>, HolochainError>;
+    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError>;
 
     /// Modify an existing Entry (by adding a new one and flagging the old one as MODIFIED)
-    fn modify(&mut self, keys: &Keys, old: &Entry, new: &Entry) -> Result<(), HolochainError> {
+    fn modify_entry(
+        &mut self,
+        keys: &Keys,
+        old: &Entry,
+        new: &Entry,
+    ) -> Result<(), HolochainError> {
         // 1. Add a new Entry to the HashTable as per commit.
-        self.put(new)?;
+        self.put_entry(new)?;
 
         // 2. Set the crud-status EntryMeta of the old Entry to MODIFIED
         // @TODO what if meta fails when commit succeeds?
@@ -71,7 +76,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     }
 
     /// Remove an Entry from the HashTable by flagging it DELETED
-    fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+    fn retract_entry(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
         // Set the crud-status EntryMeta to DELETED
         self.assert_meta(&EntryMeta::new(
             &keys.node_id(),
@@ -84,7 +89,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Add link metadata to an Entry
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         // Retrieve entry from HashTable
-        let base_entry = self.get(&link.base())?;
+        let base_entry = self.entry(&link.base())?;
         if base_entry.is_none() {
             return Err(HolochainError::ErrorGeneric(
                 "Entry from base not found".to_string(),
@@ -108,7 +113,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
                 let lle = LinkListEntry::new(&[link.clone()]);
                 let new_entry = lle.to_entry();
                 // Add it to HashTable
-                self.put(&new_entry)?;
+                self.put_entry(&new_entry)?;
 
                 // TODO #281 - should not have to create Keys
                 let key_fixme = ::agent::keys::Key::new();
@@ -126,7 +131,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             Some(meta) => {
                 // Get LinkListEntry in HashTable
                 let entry = self
-                    .get(&meta.value())?
+                    .entry(&meta.value())?
                     .expect("should have entry if meta points to it");
                 let mut lle: LinkListEntry = serde_json::from_str(&entry.content())
                     .expect("entry is not a valid LinkListEntry");
@@ -135,7 +140,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
                 // Make new Entry and commit it since it has changed
                 let entry = lle.to_entry();
                 // TODO maybe remove previous LinkListEntry ?
-                self.put(&entry)?;
+                self.put_entry(&entry)?;
 
                 // Updated Meta to Assert
                 assert!(meta.attribute() == link.to_attribute_name());
@@ -176,7 +181,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
         // Get LinkListEntry in HashTable
         let entry = self
-            .get(&meta.value())?
+            .entry(&meta.value())?
             .expect("should have entry listed in meta");
         Ok(Some(LinkListEntry::from_entry(&entry)))
     }

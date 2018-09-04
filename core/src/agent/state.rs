@@ -205,10 +205,9 @@ fn reduce_commit_entry(
         Err(res.err().unwrap())
     };
 
-    state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::Commit(response),
-    );
+    state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::Commit(response));
 }
 
 /// do a get action against an agent state

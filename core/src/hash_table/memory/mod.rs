@@ -21,12 +21,12 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
-    fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
         self.entries.insert(entry.key(), entry.clone());
         Ok(())
     }
 
-    fn get(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
         Ok(self.entries.get(key).cloned())
     }
 
@@ -89,9 +89,9 @@ pub mod tests {
         let mut table = test_table();
         let e1 = Entry::new("t1", "e1");
         table
-            .put(&e1)
+            .put_entry(&e1)
             .expect("should be able to commit valid entry");
-        assert_eq!(e1, table.get(&e1.key()).unwrap().unwrap());
+        assert_eq!(e1, table.entry(&e1.key()).unwrap().unwrap());
     }
 
     #[test]
@@ -101,8 +101,9 @@ pub mod tests {
         let e1 = Entry::new("t1", "c1");
         let e2 = Entry::new("t2", "c2");
 
-        ht.put(&e1).expect("should be able to commit valid entry");
-        ht.modify(&test_keys(), &e1, &e2)
+        ht.put_entry(&e1)
+            .expect("should be able to commit valid entry");
+        ht.modify_entry(&test_keys(), &e1, &e2)
             .expect("should be able to edit with valid entry");
 
         assert_eq!(
@@ -134,14 +135,15 @@ pub mod tests {
         let e1 = Entry::new("t1", "c1");
         let empty_vec: Vec<EntryMeta> = Vec::new();
 
-        ht.put(&e1).expect("should be able to commit valid entry");
+        ht.put_entry(&e1)
+            .expect("should be able to commit valid entry");
         assert_eq!(
             empty_vec,
             ht.metas_from_entry(&e1)
                 .expect("getting the metadata on a entry shouldn't fail")
         );
 
-        ht.retract(&test_keys(), &e1)
+        ht.retract_entry(&test_keys(), &e1)
             .expect("should be able to retract");
         assert_eq!(
             vec![EntryMeta::new(
@@ -252,8 +254,8 @@ pub mod tests {
 
         let link = Link::new(&e1.key(), &e2.key(), &t1);
 
-        table.put(&e1).unwrap();
-        table.put(&e2).unwrap();
+        table.put_entry(&e1).unwrap();
+        table.put_entry(&e2).unwrap();
 
         assert_eq!(
             None,
@@ -292,9 +294,9 @@ pub mod tests {
             tag: t1.clone(),
         };
 
-        table.put(&e1).unwrap();
-        table.put(&e2).unwrap();
-        table.put(&e3).unwrap();
+        table.put_entry(&e1).unwrap();
+        table.put_entry(&e2).unwrap();
+        table.put_entry(&e3).unwrap();
 
         table.add_link(&l1).unwrap();
         table.add_link(&l2).unwrap();
@@ -339,9 +341,9 @@ pub mod tests {
             tag: t1.clone(),
         };
 
-        table.put(&mom).unwrap();
-        table.put(&son).unwrap();
-        table.put(&daughter).unwrap();
+        table.put_entry(&mom).unwrap();
+        table.put_entry(&son).unwrap();
+        table.put_entry(&daughter).unwrap();
 
         let mom_son = Link::new(&mom.key(), &son.key(), &t1);
         let son_mom = Link::new(&son.key(), &mom.key(), &t2);

@@ -1,10 +1,11 @@
-use std::path::Path;
 use error::HolochainError;
-use std::fs;
 use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
-use std::fs::create_dir_all;
+use std::{
+    fs::{self, create_dir_all},
+    path::Path,
+};
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
@@ -90,11 +91,11 @@ impl FileTable {
 }
 
 impl HashTable for FileTable {
-    fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
         self.upsert(Table::Entries, entry)
     }
 
-    fn get(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
         match self.lookup(Table::Entries, key)? {
             Some(json) => Ok(Some(Entry::from_json(&json)?)),
             None => Ok(None),

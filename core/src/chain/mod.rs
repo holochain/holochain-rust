@@ -46,7 +46,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                let header_entry = &self.table_actor.get(&h.to_string())
+                let header_entry = &self.table_actor.entry(&h.to_string())
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
@@ -253,8 +253,8 @@ impl SourceChain for Chain {
         // 3. putting
         let header_entry = &pair.clone().header().to_entry();
         // println!("Chain.commit_pair() header_entry = {:?}", header_entry);
-        self.table_actor.put(header_entry)?;
-        self.table_actor.put(&pair.clone().entry())?;
+        self.table_actor.put_entry(header_entry)?;
+        self.table_actor.put_entry(&pair.clone().entry())?;
 
         // 4. Mutate Chain accordingly
         // @TODO instead of unwrapping this, move all the above validation logic inside of
@@ -421,7 +421,7 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
-            .get(&pair.entry().key())
+            .entry(&pair.entry().key())
             .expect("getting an entry from a table in a chain shouldn't fail")
             .expect("table should have entry");
         let chain_entry = chain

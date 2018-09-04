@@ -23,8 +23,8 @@ pub enum Protocol {
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
 
     /// Chain::top_pair()
-    TopPair,
-    TopPairResult(Option<Pair>),
+    GetTopPair,
+    GetTopPairResult(Option<Pair>),
 
     /// HashTable::setup()
     Setup,
@@ -35,27 +35,27 @@ pub enum Protocol {
     TeardownResult(Result<(), HolochainError>),
 
     /// HashTable::get()
-    Get(String),
-    GetResult(Result<Option<Entry>, HolochainError>),
+    GetEntry(String),
+    GetEntryResult(Result<Option<Entry>, HolochainError>),
 
     /// HashTable::put()
-    Put(Entry),
-    PutResult(Result<(), HolochainError>),
+    PutEntry(Entry),
+    PutEntryResult(Result<(), HolochainError>),
 
     /// HashTable::modify()
-    Modify {
+    ModifyEntry {
         keys: Keys,
         old: Entry,
         new: Entry,
     },
-    ModifyResult(Result<(), HolochainError>),
+    ModifyEntryResult(Result<(), HolochainError>),
 
     /// HashTable::retract()
-    Retract {
+    RetractEntry {
         keys: Keys,
         entry: Entry,
     },
-    RetractResult(Result<(), HolochainError>),
+    RetractEntryResult(Result<(), HolochainError>),
 
     /// HashTable::add_link()
     AddLink(Link),

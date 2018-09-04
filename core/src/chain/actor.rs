@@ -20,8 +20,8 @@ impl AskChain for ActorRef<Protocol> {
     }
 
     fn top_pair(&self) -> Option<Pair> {
-        let response = self.block_on_ask(Protocol::TopPair);
-        unwrap_to!(response => Protocol::TopPairResult).clone()
+        let response = self.block_on_ask(Protocol::GetTopPair);
+        unwrap_to!(response => Protocol::GetTopPairResult).clone()
     }
 }
 
@@ -74,9 +74,9 @@ impl Actor for ChainActor {
                     }
 
                     // evaluates to the current top pair
-                    Protocol::TopPair => {
+                    Protocol::GetTopPair => {
                         let ret = self.top_pair.clone();
-                        Protocol::TopPairResult(ret)
+                        Protocol::GetTopPairResult(ret)
                     }
 
                     _ => unreachable!(),

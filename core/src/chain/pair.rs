@@ -20,7 +20,7 @@ impl Pair {
     /// Reconstruct Pair from Header stored in a HashTable
     pub fn from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
         let entry = table
-            .get(&header.entry_hash())
+            .entry(&header.entry_hash())
             .expect("should not attempt to create invalid pair");
         if entry.is_none() {
             return None;

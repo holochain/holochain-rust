@@ -84,14 +84,12 @@ pub enum Action {
     /// may call genesis internally
     InitApplication(Dna),
     /// return the result of an InitApplication action
+    /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(EntrySubmission),
-
-    /// add a network peer
-    AddPeer(String),
 }
 
 /// function signature for action handler functions

@@ -28,36 +28,36 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
-    fn put(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Put(entry.clone()));
-        unwrap_to!(response => Protocol::PutResult).clone()
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::PutEntry(entry.clone()));
+        unwrap_to!(response => Protocol::PutEntryResult).clone()
     }
 
-    fn get(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Get(key.to_string()));
-        unwrap_to!(response => Protocol::GetResult).clone()
+    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetEntry(key.to_string()));
+        unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
 
-    fn modify(
+    fn modify_entry(
         &mut self,
         keys: &Keys,
         old_entry: &Entry,
         new_entry: &Entry,
     ) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Modify {
+        let response = self.block_on_ask(Protocol::ModifyEntry {
             keys: keys.clone(),
             old: old_entry.clone(),
             new: new_entry.clone(),
         });
-        unwrap_to!(response => Protocol::ModifyResult).clone()
+        unwrap_to!(response => Protocol::ModifyEntryResult).clone()
     }
 
-    fn retract(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Retract {
+    fn retract_entry(&mut self, keys: &Keys, entry: &Entry) -> Result<(), HolochainError> {
+        let response = self.block_on_ask(Protocol::RetractEntry {
             keys: keys.clone(),
             entry: entry.clone(),
         });
-        unwrap_to!(response => Protocol::RetractResult).clone()
+        unwrap_to!(response => Protocol::RetractEntryResult).clone()
     }
 
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
@@ -154,16 +154,18 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                    Protocol::Put(entry) => Protocol::PutResult(self.table.put(&entry)),
-
-                    Protocol::Get(hash) => Protocol::GetResult(self.table.get(&hash)),
-
-                    Protocol::Modify { keys, old, new } => {
-                        Protocol::ModifyResult(self.table.modify(&keys, &old, &new))
+                    Protocol::PutEntry(entry) => {
+                        Protocol::PutEntryResult(self.table.put_entry(&entry))
                     }
 
-                    Protocol::Retract { keys, entry } => {
-                        Protocol::RetractResult(self.table.retract(&keys, &entry))
+                    Protocol::GetEntry(hash) => Protocol::GetEntryResult(self.table.entry(&hash)),
+
+                    Protocol::ModifyEntry { keys, old, new } => {
+                        Protocol::ModifyEntryResult(self.table.modify_entry(&keys, &old, &new))
+                    }
+
+                    Protocol::RetractEntry { keys, entry } => {
+                        Protocol::RetractEntryResult(self.table.retract_entry(&keys, &entry))
                     }
                     Protocol::GetLinks(req) => Protocol::GetLinksResult(self.table.get_links(&req)),
 
@@ -217,12 +219,12 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(table_actor.get(&test_hash()).unwrap(), None);
+        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None);
 
-        table_actor.put(&test_entry()).unwrap();
+        table_actor.put_entry(&test_entry()).unwrap();
 
         assert_eq!(
-            table_actor.get(&test_entry().key()).unwrap().unwrap(),
+            table_actor.entry(&test_entry().key()).unwrap().unwrap(),
             test_entry(),
         );
     }
@@ -239,7 +241,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.get(&test_hash()).unwrap(), None);
+            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -249,8 +251,10 @@ pub mod tests {
         let (tx2, rx2) = mpsc::channel();
         thread::spawn(move || {
             rx1.recv().unwrap();
+
             let entry = test_entry();
-            table_actor_thread.put(&entry).unwrap();
+            table_actor_thread.put_entry(&entry).unwrap();
+
             // push the committed pair through to the next thread
             tx2.send(entry).unwrap();
         });
@@ -259,7 +263,7 @@ pub mod tests {
         let handle = thread::spawn(move || {
             let entry = rx2.recv().unwrap();
             assert_eq!(
-                table_actor_thread.get(&entry.key()).unwrap().unwrap(),
+                table_actor_thread.entry(&entry.key()).unwrap().unwrap(),
                 test_entry(),
             );
         });

@@ -1,9 +1,12 @@
+use error::HolochainError;
 use hash;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
     HashString,
 };
+use json::ToJson;
+use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::str::FromStr;
@@ -110,21 +113,27 @@ impl Header {
         // always valid iff immutable and new() enforces validity
         true
     }
+}
 
-    /// returns the key for use in hash table lookups, e.g. chain.get()
-    pub fn key(&self) -> String {
+impl Key for Header {
+    fn key(&self) -> String {
         self.hash()
     }
+}
 
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).expect("Header should serialize")
+impl ToJson for Header {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(self)?)
     }
 }
 
 //
 impl ToEntry for Header {
     fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::Header.as_str(), &self.to_json())
+        Entry::new(
+            EntryType::Header.as_str(),
+            &self.to_json().expect("entry should be valid"),
+        )
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -137,6 +146,7 @@ impl ToEntry for Header {
 mod tests {
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, sys_entry::ToEntry};
+    use key::Key;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -397,7 +407,7 @@ mod tests {
 
     #[test]
     /// tests for header.key()
-    fn key() {
+    fn test_key() {
         assert_eq!(test_header().hash(), test_header().key());
     }
 

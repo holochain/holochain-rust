@@ -1,11 +1,13 @@
-// use agent::keys::Keys;
-//use hash::serializable_to_b58_hash;
+use error::HolochainError;
 use hash;
 use hash_table::HashString;
+use json::{FromJson, RoundTripJson, ToJson};
+use key::Key;
 use multihash::Hash;
+use serde_json;
 use std::cmp::Ordering;
 
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
 /// E = the entry key for hash table lookups
 /// A = the name of the meta attribute
@@ -15,7 +17,7 @@ use std::cmp::Ordering;
 ///       @see https://papers.radixdlt.com/tempo/#logical-clocks
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
-pub struct Meta {
+pub struct EntryMeta {
     entry_hash: String,
     attribute: String,
     value: String,
@@ -28,8 +30,8 @@ pub struct Meta {
     // signature: String,
 }
 
-impl Ord for Meta {
-    fn cmp(&self, other: &Meta) -> Ordering {
+impl Ord for EntryMeta {
+    fn cmp(&self, other: &EntryMeta) -> Ordering {
         // we want to sort by entry hash, then attribute name, then attribute value
         match self.entry_hash.cmp(&other.entry_hash) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
@@ -43,18 +45,18 @@ impl Ord for Meta {
     }
 }
 
-impl PartialOrd for Meta {
-    fn partial_cmp(&self, other: &Meta) -> Option<Ordering> {
+impl PartialOrd for EntryMeta {
+    fn partial_cmp(&self, other: &EntryMeta) -> Option<Ordering> {
         Some(self.cmp(&other))
     }
 }
 
-impl Meta {
+impl EntryMeta {
     /// Builds a new Meta from EAV and agent keys, where E is an existing Entry
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
-    pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> Meta {
-        Meta {
+    pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> EntryMeta {
+        EntryMeta {
             entry_hash: hash.to_string(),
             attribute: attribute.into(),
             value: value.into(),
@@ -82,11 +84,6 @@ impl Meta {
         self.source.clone()
     }
 
-    /// the key for HashTable lookups, e.g. table.meta()
-    pub fn hash(&self) -> String {
-        Meta::make_hash(&self.entry_hash, &self.attribute)
-    }
-
     pub fn make_hash(entry_hash: &str, attribute_name: &str) -> String {
         let pieces: [&str; 2] = [entry_hash, attribute_name];
         let string_to_hash = pieces.concat();
@@ -96,13 +93,39 @@ impl Meta {
         hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
     }
 }
+impl Key for EntryMeta {
+    /// the key for HashTable lookups, e.g. table.meta()
+    fn key(&self) -> String {
+        EntryMeta::make_hash(&self.entry_hash, &self.attribute)
+    }
+}
+
+impl ToJson for EntryMeta {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(&self)?)
+    }
+}
+
+impl FromJson for EntryMeta {
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        Ok(serde_json::from_str(s)?)
+    }
+}
+
+impl RoundTripJson for EntryMeta {}
 
 #[cfg(test)]
 pub mod tests {
 
-    use super::Meta;
     use agent::keys::tests::test_keys;
-    use hash_table::entry::tests::test_entry;
+    use hash_table::{
+        entry::{tests::test_entry, Entry},
+        meta::EntryMeta,
+    };
+    use json::{FromJson, ToJson};
+    use key::Key;
     use std::cmp::Ordering;
 
     /// dummy test attribute name
@@ -135,9 +158,13 @@ pub mod tests {
         "another value".into()
     }
 
+    pub fn test_meta_for(entry: &Entry, attribute: &str, value: &str) -> EntryMeta {
+        EntryMeta::new(&test_keys().node_id(), &entry.key(), attribute, value)
+    }
+
     /// returns dummy meta for testing
-    pub fn test_meta() -> Meta {
-        Meta::new(
+    pub fn test_meta() -> EntryMeta {
+        EntryMeta::new(
             &test_keys().node_id(),
             &test_entry().key(),
             &test_attribute(),
@@ -146,13 +173,13 @@ pub mod tests {
     }
 
     /// dummy meta, same as test_meta()
-    pub fn test_meta_a() -> Meta {
+    pub fn test_meta_a() -> EntryMeta {
         test_meta()
     }
 
     /// returns dummy meta for testing against the same entry as test_meta_a
-    pub fn test_meta_b() -> Meta {
-        Meta::new(
+    pub fn test_meta_b() -> EntryMeta {
+        EntryMeta::new(
             &test_keys().node_id(),
             &test_entry().key(),
             &test_attribute_b(),
@@ -161,7 +188,7 @@ pub mod tests {
     }
 
     #[test]
-    /// smoke test Meta::new()
+    /// smoke test EntryMeta::new()
     fn new() {
         test_meta();
     }
@@ -194,10 +221,10 @@ pub mod tests {
     /// test that we can sort metas with cmp
     fn cmp() {
         // basic ordering
-        let m_1ax = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "x");
-        let m_1ay = Meta::new(&test_keys().node_id(), &"1".to_string(), "a", "y");
-        let m_1bx = Meta::new(&test_keys().node_id(), &"1".to_string(), "b", "x");
-        let m_2ax = Meta::new(&test_keys().node_id(), &"2".to_string(), "a", "x");
+        let m_1ax = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "a", "x");
+        let m_1ay = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "a", "y");
+        let m_1bx = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "b", "x");
+        let m_2ax = EntryMeta::new(&test_keys().node_id(), &"2".to_string(), "a", "x");
 
         // sort by entry key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));
@@ -225,5 +252,19 @@ pub mod tests {
         // attribute value with operators
         assert!(m_1ax < m_1ay);
         assert!(m_1ay > m_1ax);
+    }
+
+    #[test]
+    /// test the RoundTripJson implementation
+    fn test_json_round_trip() {
+        let meta = test_meta();
+        let expected = "{\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+
+        assert_eq!(expected.to_string(), meta.to_json().unwrap());
+        assert_eq!(meta, EntryMeta::from_json(&expected).unwrap());
+        assert_eq!(
+            meta,
+            EntryMeta::from_json(&meta.to_json().unwrap()).unwrap()
+        );
     }
 }

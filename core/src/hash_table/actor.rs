@@ -4,7 +4,7 @@ use error::HolochainError;
 use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
-    meta::Meta,
+    meta::EntryMeta,
     HashString, HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
@@ -33,9 +33,9 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PutResult).clone()
     }
 
-    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Entry(key.to_string()));
-        unwrap_to!(response => Protocol::EntryResult).clone()
+    fn get(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+        let response = self.block_on_ask(Protocol::Get(key.to_string()));
+        unwrap_to!(response => Protocol::GetResult).clone()
     }
 
     fn modify(
@@ -46,8 +46,8 @@ impl HashTable for ActorRef<Protocol> {
     ) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Modify {
             keys: keys.clone(),
-            old_entry: old_entry.clone(),
-            new_entry: new_entry.clone(),
+            old: old_entry.clone(),
+            new: new_entry.clone(),
         });
         unwrap_to!(response => Protocol::ModifyResult).clone()
     }
@@ -70,36 +70,39 @@ impl HashTable for ActorRef<Protocol> {
         Err(HolochainError::NotImplemented)
     }
 
-    fn links(&mut self, request: &GetLinksArgs) -> Result<Option<LinkListEntry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Links(request.clone()));
-        unwrap_to!(response => Protocol::LinksResult).clone()
+    fn get_links(
+        &mut self,
+        request: &GetLinksArgs,
+    ) -> Result<Option<LinkListEntry>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetLinks(request.clone()));
+        unwrap_to!(response => Protocol::GetLinksResult).clone()
     }
 
-    fn assert_meta(&mut self, meta: &Meta) -> Result<(), HolochainError> {
+    fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn meta(&mut self, key: &str) -> Result<Option<Meta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Meta(key.to_string()));
-        unwrap_to!(response => Protocol::MetaResult).clone()
+    fn get_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetMeta(key.to_string()));
+        unwrap_to!(response => Protocol::GetMetaResult).clone()
     }
 
-    fn meta_from_entry(&mut self, entry: &Entry) -> Result<Vec<Meta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::EntryMeta(entry.clone()));
-        unwrap_to!(response => Protocol::EntryMetaResult).clone()
+    fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::MetasFromEntry(entry.clone()));
+        unwrap_to!(response => Protocol::MetasFromEntryResult).clone()
     }
 
     fn meta_from_request(
         &mut self,
         entry_hash: HashString,
         attribute_name: &str,
-    ) -> Result<Option<Meta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::MetaFor {
+    ) -> Result<Option<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::MetaFromRequest {
             entry_hash: entry_hash,
             attribute_name: attribute_name.to_string(),
         });
-        unwrap_to!(response => Protocol::MetaForResult).clone()
+        unwrap_to!(response => Protocol::MetaFromRequestResult).clone()
     }
 }
 
@@ -153,39 +156,33 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Put(entry) => Protocol::PutResult(self.table.put(&entry)),
 
-                    Protocol::Entry(hash) => Protocol::EntryResult(self.table.entry(&hash)),
+                    Protocol::Get(hash) => Protocol::GetResult(self.table.get(&hash)),
 
-                    // FIXME
-                    //                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.commit(&pair)),
-                    //
-                    //                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
-                    //
-                    //                    Protocol::Modify {
-                    //                        keys,
-                    //                        old_pair,
-                    //                        new_pair,
-                    //                    } => Protocol::ModifyResult(self.table.modify(&keys, &old_pair, &new_pair)),
-                    //                    Protocol::Retract { keys, pair } => {
-                    //                        Protocol::RetractResult(self.table.retract(&keys, &pair))
-                    //                    }
-                    Protocol::Links(req) => Protocol::LinksResult(self.table.links(&req)),
+                    Protocol::Modify { keys, old, new } => {
+                        Protocol::ModifyResult(self.table.modify(&keys, &old, &new))
+                    }
+
+                    Protocol::Retract { keys, entry } => {
+                        Protocol::RetractResult(self.table.retract(&keys, &entry))
+                    }
+                    Protocol::GetLinks(req) => Protocol::GetLinksResult(self.table.get_links(&req)),
 
                     Protocol::AddLink(link) => Protocol::AddLinkResult(self.table.add_link(&link)),
 
-                    Protocol::AssertMeta(pair_meta) => {
-                        Protocol::AssertMetaResult(self.table.assert_meta(&pair_meta))
+                    Protocol::AssertMeta(meta) => {
+                        Protocol::AssertMetaResult(self.table.assert_meta(&meta))
                     }
 
-                    Protocol::Meta(key) => Protocol::MetaResult(self.table.meta(&key)),
+                    Protocol::GetMeta(key) => Protocol::GetMetaResult(self.table.get_meta(&key)),
 
-                    Protocol::EntryMeta(entry) => {
-                        Protocol::EntryMetaResult(self.table.meta_from_entry(&entry))
+                    Protocol::MetasFromEntry(entry) => {
+                        Protocol::MetasFromEntryResult(self.table.metas_from_entry(&entry))
                     }
 
-                    Protocol::MetaFor {
+                    Protocol::MetaFromRequest {
                         entry_hash,
                         attribute_name,
-                    } => Protocol::MetaForResult(
+                    } => Protocol::MetaFromRequestResult(
                         self.table.meta_from_request(entry_hash, &attribute_name),
                     ),
 
@@ -202,9 +199,11 @@ pub mod tests {
 
     use super::HashTableActor;
     use actor::Protocol;
-    use chain::pair::tests::test_pair;
     use hash::tests::test_hash;
-    use hash_table::{memory::tests::test_table, HashTable};
+    use hash_table::{
+        entry::tests::test_entry, memory::tests::test_table, test_util::standard_suite, HashTable,
+    };
+    use key::Key;
     use riker::actors::*;
     use std::{sync::mpsc, thread};
 
@@ -218,16 +217,13 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None);
+        assert_eq!(table_actor.get(&test_hash()).unwrap(), None);
 
-        table_actor.put(&test_pair().entry()).unwrap();
+        table_actor.put(&test_entry()).unwrap();
 
         assert_eq!(
-            &table_actor
-                .entry(&test_pair().entry().key())
-                .unwrap()
-                .unwrap(),
-            test_pair().entry(),
+            table_actor.get(&test_entry().key()).unwrap().unwrap(),
+            test_entry(),
         );
     }
 
@@ -243,7 +239,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None);
+            assert_eq!(table_actor_thread.get(&test_hash()).unwrap(), None);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -253,21 +249,18 @@ pub mod tests {
         let (tx2, rx2) = mpsc::channel();
         thread::spawn(move || {
             rx1.recv().unwrap();
-            let pair = test_pair();
-            table_actor_thread.put(&pair.entry()).unwrap();
+            let entry = test_entry();
+            table_actor_thread.put(&entry).unwrap();
             // push the committed pair through to the next thread
-            tx2.send(pair).unwrap();
+            tx2.send(entry).unwrap();
         });
 
         let table_actor_thread = table_actor.clone();
         let handle = thread::spawn(move || {
-            let pair = rx2.recv().unwrap();
+            let entry = rx2.recv().unwrap();
             assert_eq!(
-                &table_actor_thread
-                    .entry(&pair.entry().key())
-                    .unwrap()
-                    .unwrap(),
-                pair.entry(),
+                table_actor_thread.get(&entry.key()).unwrap().unwrap(),
+                test_entry(),
             );
         });
 
@@ -275,9 +268,8 @@ pub mod tests {
     }
 
     #[test]
-    fn hash_table_suite() {
-        // @TODO there is a suite of standard HashTable tests coming
-        // @see https://github.com/holochain/holochain-rust/pull/246
+    fn test_standard_suite() {
+        standard_suite(&mut test_table_actor());
     }
 
 }

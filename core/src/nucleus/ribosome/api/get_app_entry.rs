@@ -1,6 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash_table::HashString;
+use json::ToJson;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
@@ -27,9 +28,7 @@ pub fn invoke_get_app_entry(
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorSerdeJson as i32,
-        )));
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
     }
 
     let input = res_entry.unwrap();
@@ -65,11 +64,13 @@ pub fn invoke_get_app_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::GetEntry(maybe_pair) => {
+        ActionResponse::GetEntry(maybe_entry) => {
             // serialize, allocate and encode result
-            let pair_str = maybe_pair.map(|p| p.to_json()).unwrap_or_default();
-
-            runtime_allocate_encode_str(runtime, &pair_str)
+            let json_str = maybe_entry.expect("should be valid json entry").to_json();
+            match json_str {
+                Ok(json) => runtime_allocate_encode_str(runtime, &json),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            }
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -87,6 +88,7 @@ mod tests {
     use chain::SourceChain;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
+    use key::Key;
     use nucleus::{
         ribosome::api::{
             call,
@@ -181,7 +183,7 @@ mod tests {
         let commit_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "commit",
+            "commit_dispatch",
             &test_parameters(),
         );
         let commit_runtime = call(
@@ -202,7 +204,7 @@ mod tests {
         let get_call = FunctionCall::new(
             &test_zome_name(),
             &test_capability(),
-            "get",
+            "get_dispatch",
             &test_parameters(),
         );
         let get_runtime = call(

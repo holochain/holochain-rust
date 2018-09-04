@@ -10,6 +10,8 @@ use chain::{
 };
 use error::HolochainError;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
+use json::ToJson;
+use key::Key;
 use riker::actors::*;
 use serde_json;
 
@@ -40,18 +42,18 @@ impl Iterator for ChainIterator {
         let previous = self.current.take();
 
         self.current = previous.as_ref()
-            .and_then(|p| p.header().link())
-            // @TODO should this panic?
-            // @see https://github.com/holochain/holochain-rust/issues/146
-            .and_then(|h| {
-                let header_entry = &self.table_actor.entry(&h.to_string())
+                        .and_then(|p| p.header().link())
+                        // @TODO should this panic?
+                        // @see https://github.com/holochain/holochain-rust/issues/146
+                        .and_then(|h| {
+                let header_entry = &self.table_actor.get(&h.to_string())
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
                 let header = Header::from_entry(header_entry);
                 let pair = Pair::from_header(&self.table_actor, &header);
                 pair
-            });
+                        });
         previous
     }
 }
@@ -110,7 +112,6 @@ impl Chain {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
-            // link: chain.top_pair().as_ref().map(|p| p.header().hash()),
             self.top_pair()
                 .as_ref()
                 .map(|p| p.header().to_entry().key()),
@@ -164,15 +165,8 @@ impl Chain {
         ChainIterator::new(self.table(), &self.top_pair())
     }
 
-    /// get the entire chain, top to bottom as a JSON array or canonical pairs
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        let as_seq = self.iter().collect::<Vec<Pair>>();
-        serde_json::to_string(&as_seq)
-    }
-
     /// restore canonical JSON chain
+    /// can't implement json::FromJson due to Chain's need for a table actor
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Self {
@@ -297,9 +291,9 @@ impl SourceChain for Chain {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self
-            .iter()
-            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-            // @see https://github.com/holochain/holochain-rust/issues/145
+                .iter()
+                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
                 p.entry().hash() == entry_hash
             });
@@ -307,6 +301,16 @@ impl SourceChain for Chain {
             return None;
         };
         Some(pair.unwrap().entry().clone())
+    }
+}
+
+impl ToJson for Chain {
+    /// get the entire chain, top to bottom as a JSON array or canonical pairs
+    /// @TODO return canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn to_json(&self) -> Result<String, HolochainError> {
+        let as_seq = self.iter().collect::<Vec<Pair>>();
+        Ok(serde_json::to_string(&as_seq)?)
     }
 }
 
@@ -323,6 +327,8 @@ pub mod tests {
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
         HashTable,
     };
+    use json::ToJson;
+    use key::Key;
     use std::thread;
 
     /// builds a dummy chain for testing
@@ -415,7 +421,7 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
-            .entry(&pair.entry().key())
+            .get(&pair.entry().key())
             .expect("getting an entry from a table in a chain shouldn't fail")
             .expect("table should have entry");
         let chain_entry = chain

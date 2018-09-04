@@ -23,7 +23,11 @@ RUN apt-get update && apt-get install --yes\
   curl \
   qt5-default \
   python2.7 \
-  gosu
+  gosu \
+  libzmq3-dev \
+  git \
+  nodejs \
+  npm
 
 RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
 USER ${DOCKER_BUILD_USER}

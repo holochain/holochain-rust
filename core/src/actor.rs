@@ -5,7 +5,7 @@ use futures::executor::block_on;
 use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
-    meta::Meta,
+    meta::EntryMeta,
     HashString,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
@@ -34,11 +34,19 @@ pub enum Protocol {
     Teardown,
     TeardownResult(Result<(), HolochainError>),
 
+    /// HashTable::get()
+    Get(String),
+    GetResult(Result<Option<Entry>, HolochainError>),
+
+    /// HashTable::put()
+    Put(Entry),
+    PutResult(Result<(), HolochainError>),
+
     /// HashTable::modify()
     Modify {
         keys: Keys,
-        old_entry: Entry,
-        new_entry: Entry,
+        old: Entry,
+        new: Entry,
     },
     ModifyResult(Result<(), HolochainError>),
 
@@ -49,39 +57,32 @@ pub enum Protocol {
     },
     RetractResult(Result<(), HolochainError>),
 
+    /// HashTable::add_link()
     AddLink(Link),
     AddLinkResult(Result<(), HolochainError>),
 
-    Links(GetLinksArgs),
-    LinksResult(Result<Option<LinkListEntry>, HolochainError>),
+    /// HashTable::get_links()
+    GetLinks(GetLinksArgs),
+    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
 
     /// HashTable::assert_meta()
-    AssertMeta(Meta),
+    AssertMeta(EntryMeta),
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::get_meta()
-    Meta(String),
-    MetaResult(Result<Option<Meta>, HolochainError>),
+    GetMeta(String),
+    GetMetaResult(Result<Option<EntryMeta>, HolochainError>),
 
-    MetaFor {
+    /// HashTable::metas_from_entry()
+    MetasFromEntry(Entry),
+    MetasFromEntryResult(Result<Vec<EntryMeta>, HolochainError>),
+
+    /// HashTable::meta_from_request()
+    MetaFromRequest {
         entry_hash: HashString,
         attribute_name: String,
     },
-    MetaForResult(Result<Option<Meta>, HolochainError>),
-
-    /// HashTable::get_pair_meta()
-    //    PairMeta(Pair),
-    //    PairMetaResult(Result<Vec<Meta>, HolochainError>),
-    EntryMeta(Entry),
-    EntryMetaResult(Result<Vec<Meta>, HolochainError>),
-
-    /// HashTable::entry()
-    Entry(String),
-    EntryResult(Result<Option<Entry>, HolochainError>),
-
-    /// HashTable::put()
-    Put(Entry),
-    PutResult(Result<(), HolochainError>),
+    MetaFromRequestResult(Result<Option<EntryMeta>, HolochainError>),
 }
 
 /// this is the global state that manages every actor

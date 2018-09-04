@@ -36,7 +36,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
     // crud
     /// add a Pair to the HashTable, analogous to chain.push() but ordering is not enforced
-    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError>;
+    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError>;
 
     /// lookup a Pair from the HashTable by Pair/Header key
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError>;
@@ -48,7 +48,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
         old_pair: &Pair,
         new_pair: &Pair,
     ) -> Result<(), HolochainError> {
-        self.commit_pair(new_pair)?;
+        self.put_pair(new_pair)?;
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142

@@ -18,7 +18,7 @@ use key::Key;
 pub fn test_pair_round_trip<HT: HashTable>(table: &mut HT) {
     let pair = test_pair_unique();
     table
-        .commit_pair(&pair)
+        .put_pair(&pair)
         .expect("should be able to commit valid pair");
     assert_eq!(table.pair(&pair.key()), Ok(Some(pair)));
 }
@@ -28,7 +28,7 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
     let pair_2 = test_pair_unique();
 
     table
-        .commit_pair(&pair_1)
+        .put_pair(&pair_1)
         .expect("should be able to commit valid pair");
     table
         .modify_pair(&test_keys(), &pair_1, &pair_2)
@@ -63,7 +63,7 @@ pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
     let empty_vec: Vec<PairMeta> = Vec::new();
 
     table
-        .commit_pair(&pair)
+        .put_pair(&pair)
         .expect("should be able to commit valid pair");
     assert_eq!(
         empty_vec,

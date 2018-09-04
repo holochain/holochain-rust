@@ -173,7 +173,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table.commit_pair(&pair.clone())?;
+        self.table.put_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()

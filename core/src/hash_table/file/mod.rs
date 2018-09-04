@@ -92,7 +92,7 @@ impl FileTable {
 }
 
 impl HashTable for FileTable {
-    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.upsert(Table::Pairs, pair)
     }
 

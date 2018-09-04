@@ -21,7 +21,7 @@ impl MemTable {
 }
 
 impl HashTable for MemTable {
-    fn commit_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
+    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
         self.pairs.insert(pair.key(), pair.clone());
         Ok(())
     }

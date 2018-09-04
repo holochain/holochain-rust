@@ -15,7 +15,7 @@ would make things too ambiguous.
 
 ### Actions & reducers
 
-- `Action` is `VerbNoun` e.g. `GetEntry`
+- `Action` is `VerbNoun` or `Verb` e.g. `GetEntry` or `Setup`
 - `ActionResponse` is `ActionName` e.g. `Action::GetEntry` results in `ActionResponse::GetEntry`
 - reducer name is `reduce_action_name` e.g. `reduce_get_entry`
 

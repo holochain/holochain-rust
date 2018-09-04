@@ -66,8 +66,8 @@ pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(Entry),
-    /// hash to Get
-    Get(HashString),
+    /// GetEntry by hash
+    GetEntry(HashString),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
@@ -106,7 +106,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::Get(test_entry_hash())
+        Action::GetEntry(test_entry_hash())
     }
 
     /// dummy action wrapper with test_action()
@@ -121,7 +121,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Get(test_hash()))
+        ActionWrapper::new(Action::GetEntry(test_hash()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

@@ -28,7 +28,7 @@ pub fn invoke_get_entry(
 
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::Get(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -59,7 +59,7 @@ pub fn invoke_get_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::Get(maybe_pair) => {
+        ActionResponse::GetEntry(maybe_pair) => {
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
                 Ok(json) => runtime_allocate_encode_str(runtime, &json),

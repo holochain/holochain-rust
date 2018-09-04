@@ -1,6 +1,8 @@
-use std::path::{Path, MAIN_SEPARATOR};
 use error::HolochainError;
-use std::fs;
+use std::{
+    fs,
+    path::{Path, MAIN_SEPARATOR},
+};
 
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use json::{FromJson, ToJson};
@@ -151,8 +153,8 @@ pub mod tests {
     use key::Key;
     use regex::Regex;
     use serde_json;
-    use tempfile::{tempdir, TempDir};
     use std::path::MAIN_SEPARATOR;
+    use tempfile::{tempdir, TempDir};
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
@@ -207,7 +209,10 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         let re = |s, k| {
-            let regex_str = format!(r".*\.tmp.*{}{}{}{}{}{}\.json", MAIN_SEPARATOR, MAIN_SEPARATOR, s, MAIN_SEPARATOR, MAIN_SEPARATOR, k);
+            let regex_str = format!(
+                r".*\.tmp.*{}{}{}{}{}{}\.json",
+                MAIN_SEPARATOR, MAIN_SEPARATOR, s, MAIN_SEPARATOR, MAIN_SEPARATOR, k
+            );
             Regex::new(&regex_str).expect("failed to build regex")
         };
 

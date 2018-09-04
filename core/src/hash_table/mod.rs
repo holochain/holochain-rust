@@ -1,7 +1,7 @@
 pub mod actor;
-pub mod deletion_entry;
 pub mod entry;
 pub mod links_entry;
+pub mod file;
 pub mod memory;
 pub mod meta;
 pub mod status;
@@ -110,7 +110,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
                 // Add it to HashTable
                 self.put(&new_entry)?;
 
-                // TODO FIXME - should not have to create Keys
+                // TODO #281 - should not have to create Keys
                 let key_fixme = ::agent::keys::Key::new();
                 let keys_fixme = Keys::new(&key_fixme, &key_fixme, "FIXME");
 

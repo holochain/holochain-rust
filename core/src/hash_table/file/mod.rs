@@ -1,5 +1,4 @@
-use std::path::Path;
-
+use std::path::{Path, MAIN_SEPARATOR};
 use error::HolochainError;
 use std::fs;
 
@@ -61,7 +60,7 @@ impl FileTable {
 
     /// given a Table enum, ensure that the correct sub-directory exists and return the string path
     fn dir(&self, table: Table) -> Result<String, HolochainError> {
-        let dir_string = format!("{}/{}", self.path, table.to_string());
+        let dir_string = format!("{}{}{}", self.path, MAIN_SEPARATOR, table.to_string());
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&dir_string)?;
@@ -70,7 +69,7 @@ impl FileTable {
 
     fn row_path(&self, table: Table, key: &str) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
-        Ok(format!("{}/{}.json", dir, key))
+        Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, key))
     }
 
     fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
@@ -153,6 +152,7 @@ pub mod tests {
     use regex::Regex;
     use serde_json;
     use tempfile::{tempdir, TempDir};
+    use std::path::MAIN_SEPARATOR;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope
@@ -184,9 +184,11 @@ pub mod tests {
     #[test]
     /// dir returns a sensible string for every Table enum variant
     fn test_dir() {
-        let (table, _dir) = test_table();
-
-        let re = |s| Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex");
+        let (table, dir) = test_table();
+        let re = |s| {
+            let regex_str = format!(r".*\.tmp.*{}{}{}", MAIN_SEPARATOR, MAIN_SEPARATOR, s);
+            Regex::new(&regex_str).expect("failed to build regex")
+        };
 
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
             assert!(
@@ -205,7 +207,8 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         let re = |s, k| {
-            Regex::new(&format!(r".*\.tmp.*/{}/{}\.json", s, k)).expect("failed to build regex")
+            let regex_str = format!(r".*\.tmp.*{}{}{}{}{}{}\.json", MAIN_SEPARATOR, MAIN_SEPARATOR, s, MAIN_SEPARATOR, MAIN_SEPARATOR, k);
+            Regex::new(&regex_str).expect("failed to build regex")
         };
 
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {

@@ -121,8 +121,8 @@ impl Key for Header {
 
 #[cfg(test)]
 mod tests {
-    use chain::{tests::test_chain, SourceChain};
-    use hash_table::{entry::Entry, header::Header, pair::tests::test_pair};
+    use chain::{tests::test_chain, SourceChain, header::Header};
+    use hash_table::{entry::Entry, pair::tests::test_pair};
     use key::Key;
 
     /// returns a dummy header for use in tests

@@ -1,7 +1,6 @@
 pub mod actor;
 pub mod entry;
 pub mod file;
-pub mod header;
 pub mod memory;
 pub mod pair;
 pub mod pair_meta;

@@ -8,6 +8,7 @@ use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
+pub mod header;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table

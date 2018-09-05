@@ -16,8 +16,8 @@ pub enum Protocol {
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
 
     /// Chain::top_pair()
-    TopPair,
-    TopPairResult(Option<Pair>),
+    GetTopPair,
+    GetTopPairResult(Option<Pair>),
 
     /// HashTable::setup()
     Setup,
@@ -27,40 +27,40 @@ pub enum Protocol {
     Teardown,
     TeardownResult(Result<(), HolochainError>),
 
-    /// HashTable::modify()
-    Modify {
+    /// HashTable::modify_entry()
+    ModifyPair {
         keys: Keys,
         old_pair: Pair,
         new_pair: Pair,
     },
-    ModifyResult(Result<(), HolochainError>),
+    ModifyPairResult(Result<(), HolochainError>),
 
-    /// HashTable::retract()
-    Retract {
+    /// HashTable::retract_pair()
+    RetractPair {
         keys: Keys,
         pair: Pair,
     },
-    RetractResult(Result<(), HolochainError>),
+    RetractPairResult(Result<(), HolochainError>),
 
     /// HashTable::assert_meta()
     AssertMeta(PairMeta),
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::pair_meta()
-    PairMeta(String),
-    PairMetaResult(Result<Option<PairMeta>, HolochainError>),
+    GetPairMeta(String),
+    GetPairMetaResult(Result<Option<PairMeta>, HolochainError>),
 
     /// HashTable::all_metas_for_pair()
-    MetasForPair(Pair),
-    MetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
+    GetMetasForPair(Pair),
+    GetMetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
 
     /// HashTable::pair()
-    Pair(String),
-    PairResult(Result<Option<Pair>, HolochainError>),
+    GetPair(String),
+    GetPairResult(Result<Option<Pair>, HolochainError>),
 
-    /// HashTable::commit()
-    Commit(Pair),
-    CommitResult(Result<(), HolochainError>),
+    /// HashTable::put_pair()
+    PutPair(Pair),
+    PutPairResult(Result<(), HolochainError>),
 }
 
 /// this is the global state that manages every actor

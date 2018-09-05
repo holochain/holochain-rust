@@ -50,13 +50,13 @@ pub enum ZomeAPIFunction {
     /// debug(s: String)
     Debug,
 
-    /// Commit an entry to source chain
+    /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_content: String) -> Hash
-    CommitEntry,
+    CommitAppEntry,
 
-    /// Get an entry from source chain by key (header hash)
+    /// Get an app entry from source chain by key (header hash)
     /// get_entry(key: String) -> Pair
-    GetEntry,
+    GetAppEntry,
 
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
@@ -68,8 +68,8 @@ impl Defn for ZomeAPIFunction {
         match *self {
             ZomeAPIFunction::MissingNo => "",
             ZomeAPIFunction::Debug => "hc_debug",
-            ZomeAPIFunction::CommitEntry => "hc_commit_entry",
-            ZomeAPIFunction::GetEntry => "hc_get_entry",
+            ZomeAPIFunction::CommitAppEntry => "hc_commit_entry",
+            ZomeAPIFunction::GetAppEntry => "hc_get_entry",
             ZomeAPIFunction::InitGlobals => "hc_init_globals",
         }
     }
@@ -96,10 +96,10 @@ impl Defn for ZomeAPIFunction {
             ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::CommitAppEntry => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::GetEntry => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::GetAppEntry => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
             ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
@@ -112,8 +112,8 @@ impl FromStr for ZomeAPIFunction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "hc_debug" => Ok(ZomeAPIFunction::Debug),
-            "hc_commit_entry" => Ok(ZomeAPIFunction::CommitEntry),
-            "hc_get_entry" => Ok(ZomeAPIFunction::GetEntry),
+            "hc_commit_entry" => Ok(ZomeAPIFunction::CommitAppEntry),
+            "hc_get_entry" => Ok(ZomeAPIFunction::GetAppEntry),
             "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }
@@ -130,8 +130,8 @@ impl ZomeAPIFunction {
         match *self {
             ZomeAPIFunction::MissingNo => noop,
             ZomeAPIFunction::Debug => invoke_debug,
-            ZomeAPIFunction::CommitEntry => invoke_commit_entry,
-            ZomeAPIFunction::GetEntry => invoke_get_entry,
+            ZomeAPIFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeAPIFunction::GetAppEntry => invoke_get_entry,
             ZomeAPIFunction::InitGlobals => invoke_init_globals,
         }
     }
@@ -516,11 +516,11 @@ pub mod tests {
             ZomeAPIFunction::from_str("hc_debug").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::CommitEntry,
+            ZomeAPIFunction::CommitAppEntry,
             ZomeAPIFunction::from_str("hc_commit_entry").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::GetEntry,
+            ZomeAPIFunction::GetAppEntry,
             ZomeAPIFunction::from_str("hc_get_entry").unwrap(),
         );
 

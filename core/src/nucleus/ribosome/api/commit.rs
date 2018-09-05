@@ -41,7 +41,7 @@ pub fn invoke_commit_entry(
 
     // @TODO test that failing validation prevents commits happening
     // @see https://github.com/holochain/holochain-rust/issues/206
-    if let CallbackResult::Fail(_) = validate_commit(
+    if let CallbackResult::Fail(..) = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
         &runtime.function_call.zome,

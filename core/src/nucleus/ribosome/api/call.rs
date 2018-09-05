@@ -89,7 +89,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use super::CommitArgs;
+    // use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use nucleus::ribosome::{

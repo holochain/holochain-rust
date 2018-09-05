@@ -142,7 +142,7 @@ impl FnDeclaration {
 pub struct Capability {
     /// "capability" sub-object
     #[serde(default)]
-    pub capability: CapabilityType,
+    pub cap_type: CapabilityType,
 
     /// "fn_declarations" array
     #[serde(default)]
@@ -157,7 +157,7 @@ impl Default for Capability {
     /// Provide defaults for a "zome"s "capabilities" object.
     fn default() -> Self {
         Capability {
-            capability: CapabilityType::new(),
+            cap_type: CapabilityType::new(),
             functions: Vec::new(),
             code: DnaWasm::new(),
         }

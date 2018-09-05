@@ -34,6 +34,7 @@ pub mod zome;
 
 use std::collections::HashMap;
 use uuid::Uuid;
+use zome::capabilities::Capability;
 
 /// serde helper, provides a default empty object
 fn _def_empty_object() -> serde_json::Value {
@@ -160,8 +161,17 @@ impl Dna {
         self.zomes.get(zome_name)
     }
 
-    /// Return a Zome's WASM bytecode for a specified Capability
+    /// Return a Zome's Capability from its name
     pub fn get_capability<'a>(
+        &'a self,
+        zome: &'a zome::Zome,
+        capability_name: &str,
+    ) -> Option<&'a Capability> {
+        zome.capabilities.get(capability_name)
+    }
+
+    /// Return a Zome's WASM bytecode for a specified Capability
+    pub fn get_capability_wasm<'a>(
         &'a self,
         zome: &'a zome::Zome,
         capability_name: &str,
@@ -171,7 +181,7 @@ impl Dna {
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
-    pub fn get_wasm_for_capability<T: Into<String>>(
+    pub fn get_capability_wasm_for<T: Into<String>>(
         &self,
         zome_name: T,
         capability_name: T,
@@ -179,8 +189,8 @@ impl Dna {
         let zome_name = zome_name.into();
         let capability_name = capability_name.into();
         let zome = self.get_zome(&zome_name)?;
-        let capability = self.get_capability(&zome, &capability_name)?;
-        Some(capability)
+        let wasm = self.get_capability_wasm(&zome, &capability_name)?;
+        Some(wasm)
     }
 
     /// Return a Zome's WASM bytecode for the validation of an entry
@@ -557,10 +567,10 @@ pub mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_for_capability("test zome", "test capability");
+        let wasm = dna.get_capability_wasm_for("test zome", "test capability");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_for_capability("non existant zome", "test capability");
+        let fail = dna.get_capability_wasm_for("non existant zome", "test capability");
         assert_eq!(None, fail);
     }
 

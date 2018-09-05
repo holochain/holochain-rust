@@ -2,6 +2,7 @@ pub mod commit;
 pub mod debug;
 pub mod get;
 pub mod init_globals;
+pub mod call;
 
 use action::ActionWrapper;
 use context::Context;
@@ -13,7 +14,7 @@ use nucleus::{
     ribosome::{
         api::{
             commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry,
-            init_globals::invoke_init_globals,
+            init_globals::invoke_init_globals, call::invoke_call,
         },
         Defn,
     },
@@ -61,6 +62,10 @@ pub enum ZomeAPIFunction {
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
+
+    /// Call a zome function in a different capability or zome
+    /// hc_call(zome_name: String, cap_name: String, fn_name: String, args: String);
+    Call,
 }
 
 impl Defn for ZomeAPIFunction {
@@ -71,6 +76,7 @@ impl Defn for ZomeAPIFunction {
             ZomeAPIFunction::CommitEntry => "hc_commit_entry",
             ZomeAPIFunction::GetEntry => "hc_get_entry",
             ZomeAPIFunction::InitGlobals => "hc_init_globals",
+            ZomeAPIFunction::Call => "hc_call",
         }
     }
 
@@ -103,6 +109,7 @@ impl Defn for ZomeAPIFunction {
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
             ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
+            ZomeAPIFunction::Call => ReservedCapabilityNames::MissingNo,
         }
     }
 }
@@ -115,6 +122,7 @@ impl FromStr for ZomeAPIFunction {
             "hc_commit_entry" => Ok(ZomeAPIFunction::CommitEntry),
             "hc_get_entry" => Ok(ZomeAPIFunction::GetEntry),
             "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
+            "hc_call" => Ok(ZomeAPIFunction::Call),
             _ => Err("Cannot convert string to ZomeAPIFunction"),
         }
     }
@@ -133,6 +141,7 @@ impl ZomeAPIFunction {
             ZomeAPIFunction::CommitEntry => invoke_commit_entry,
             ZomeAPIFunction::GetEntry => invoke_get_entry,
             ZomeAPIFunction::InitGlobals => invoke_init_globals,
+            ZomeAPIFunction::Call => invoke_call,
         }
     }
 }

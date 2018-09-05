@@ -265,6 +265,105 @@ fn reduce_ia(
     });
 }
 
+
+/// Reduce Call Action
+/// Execute an exposed Zome function in a separate thread and send the result in
+/// a ReturnZomeFunctionResult Action on success or failure
+fn reduce_call(
+    context: Arc<Context>,
+    state: &mut NucleusState,
+    action_wrapper: &ActionWrapper,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+) {
+    let call_args = match action_wrapper.action().clone() {
+        Action::Call(call) => call,
+        _ => unreachable!(),
+    };
+    let fc = FunctionCall::new(
+        &call_args.zome_name,
+        &call_args.cap_name,
+    &call_args.fn_name,
+    &call_args.fn_args,
+    );
+//
+//    let mut has_error = false;
+//    let mut result = FunctionResult::new(
+//        fc.clone(),
+//        Err(HolochainError::ErrorGeneric("[]".to_string())),
+//    );
+//
+//    if let Some(ref dna) = state.dna {
+//        if let Some(ref zome) = dna.get_zome(&fc.zome) {
+//            if let Some(ref wasm) = dna.get_capability(zome, &fc.capability) {
+//                state.ribosome_calls.insert(fc.clone(), None);
+//
+//                let action_channel = action_channel.clone();
+//                let tx_observer = observer_channel.clone();
+//                let code = wasm.code.clone();
+//                let app_name = state.dna().unwrap().name;
+//                thread::spawn(move || {
+//                    let result: FunctionResult;
+//                    match ribosome::api::call(
+//                        &app_name,
+//                        context,
+//                        &action_channel,
+//                        &tx_observer,
+//                        code,
+//                        &call_args,
+//                        Some(call_args.clone().parameters.into_bytes()),
+//                    ) {
+//                        Ok(runtime) => {
+//                            result = FunctionResult::new(
+//                                call_args.clone(),
+//                                Ok(runtime.result.to_string()),
+//                            );
+//                        }
+//
+//                        Err(ref error) => {
+//                            result = FunctionResult::new(
+//                                call_args.clone(),
+//                                Err(HolochainError::ErrorGeneric(format!("{}", error))),
+//                            );
+//                        }
+//                    }
+//
+//                    // Send ReturnResult Action
+//                    action_channel
+//                        .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
+//                        .expect("action channel to be open in reducer");
+//                });
+//            } else {
+//                has_error = true;
+//                result = FunctionResult::new(
+//                    fc.clone(),
+//                    Err(HolochainError::CapabilityNotFound(format!(
+//                        "Capability '{:?}' not found in Zome '{:?}'",
+//                        &fc.capability, &fc.zome
+//                    ))),
+//                );
+//            }
+//        } else {
+//            has_error = true;
+//            result = FunctionResult::new(
+//                fc.clone(),
+//                Err(HolochainError::ZomeNotFound(format!(
+//                    "Zome '{:?}' not found",
+//                    &fc.zome
+//                ))),
+//            );
+//        }
+//    } else {
+//        has_error = true;
+//        result = FunctionResult::new(fc.clone(), Err(HolochainError::DnaMissing));
+//    }
+//    if has_error {
+//        action_channel
+//            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
+//            .expect("action channel to be open in reducer");
+//    }
+}
+
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
@@ -409,6 +508,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_ia),
         Action::ExecuteZomeFunction(_) => Some(reduce_ezf),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_rzfr),
+        Action::Call(_) => Some(reduce_call),
         Action::ValidateEntry(_) => Some(reduce_ve),
         _ => None,
     }

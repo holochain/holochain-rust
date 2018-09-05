@@ -50,15 +50,18 @@ impl AgentState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
+#[derive(Clone, Debug, PartialEq)]
 pub enum ActionResponse {
     Commit(Result<Pair, HolochainError>),
     GetEntry(Option<Pair>),
+    /// Call return is dependent on CallingType in DNA for the function called. It may be void.
+    /// FIXME Move to Nucleus state?
+    Call(Result<Option<String>, HolochainError>),
 }
 
 impl ToJson for ActionResponse {
@@ -71,6 +74,15 @@ impl ToJson for ActionResponse {
             ActionResponse::GetEntry(result) => match result {
                 Some(pair) => Ok(pair.to_json()?),
                 None => Ok("".to_string()),
+            },
+            ActionResponse::Call(result) => match result {
+                Ok(opt_str) => {
+                    match opt_str {
+                        Some(res_str) => Ok(res_str.clone()),
+                        None => Ok("".to_string()),
+                    }
+                },
+                Err(err) => Ok((*err).to_json()?),
             },
         }
     }

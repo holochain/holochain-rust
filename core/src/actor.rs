@@ -35,7 +35,7 @@ pub enum Protocol {
     TeardownResult(Result<(), HolochainError>),
 
     /// HashTable::get()
-    GetEntry(String),
+    GetEntry(HashString),
     GetEntryResult(Result<Option<Entry>, HolochainError>),
 
     /// HashTable::put()
@@ -70,7 +70,7 @@ pub enum Protocol {
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::get_meta()
-    GetMeta(String),
+    GetMeta(HashString),
     GetMetaResult(Result<Option<EntryMeta>, HolochainError>),
 
     /// HashTable::metas_from_entry()

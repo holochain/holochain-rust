@@ -11,11 +11,10 @@ jobs:
     - name: "C binding tests"
       install: docker pull holochain/holochain-rust:develop
       script: . docker/run make c_binding_tests
-    - name: "Tests"
+    - name: "Code coverage"
       install: docker pull holochain/holochain-rust:develop
-      script: . docker/run-test
+      script: . docker/run-cov
       after_success:
-        - . docker/run-cov
         - bash <(curl -s https://codecov.io/bash)
     - name: "Mdbook Build"
       language: rust

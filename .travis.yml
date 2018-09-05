@@ -5,8 +5,13 @@ dist: trusty
 
 jobs:
   include:
-    - stage: "All"
-      name: "Tests"
+    - name: "Non C binding tests"
+      install: docker pull holochain/holochain-rust:develop
+      script: . docker/run make test_non_c
+    - name: "C binding tests"
+      install: docker pull holochain/holochain-rust:develop
+      script: . docker/run make c_binding_tests
+    - name: "Tests"
       install: docker pull holochain/holochain-rust:develop
       script: . docker/run-test
       after_success:
@@ -20,4 +25,3 @@ jobs:
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"
         - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
-

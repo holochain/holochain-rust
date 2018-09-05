@@ -115,7 +115,7 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use hash_table::entry::Entry;
+    use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
@@ -312,5 +312,31 @@ pub mod tests {
         assert_eq!(expected, e.to_json().unwrap());
         assert_eq!(e, Entry::from_json(expected).unwrap());
         assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// test that we can detect system entry types
+    fn is_sys() {
+        for sys_type in vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::Dna,
+            EntryType::Headers,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+        ] {
+            let entry = Entry::new(sys_type.as_str(), "");
+            assert!(entry.is_sys());
+            assert!(!entry.is_app());
+        }
+    }
+
+    #[test]
+    /// test that we can detect app entry types
+    fn is_app() {
+        let entry = Entry::new("foo", "");
+        assert!(entry.is_app());
+        assert!(!entry.is_sys());
     }
 }

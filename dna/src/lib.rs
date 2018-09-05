@@ -15,7 +15,7 @@
 //!
 //! let json = dna.to_json();
 //!
-//! let dna2 = Dna::new_from_json(&json).unwrap();
+//! let dna2 = Dna::from_json_str(&json).unwrap();
 //! assert_eq!(name, dna2.name);
 //! ```
 
@@ -115,13 +115,13 @@ impl Dna {
     /// ```
     /// use holochain_dna::Dna;
     ///
-    /// let dna = Dna::new_from_json(r#"{
+    /// let dna = Dna::from_json_str(r#"{
     ///     "name": "MyTestApp"
     /// }"#).expect("DNA should be valid");
     ///
     /// assert_eq!("MyTestApp", dna.name);
     /// ```
-    pub fn new_from_json(dna: &str) -> serde_json::Result<Self> {
+    pub fn from_json_str(dna: &str) -> serde_json::Result<Self> {
         serde_json::from_str(dna)
     }
 
@@ -237,7 +237,7 @@ pub mod tests {
 
         let serialized = dna.to_json();
 
-        let deserialized = Dna::new_from_json(&serialized).unwrap();
+        let deserialized = Dna::from_json_str(&serialized).unwrap();
 
         assert_eq!(String::from("2.0"), deserialized.dna_spec_version);
     }
@@ -301,7 +301,7 @@ pub mod tests {
             }"#,
         ).replace(char::is_whitespace, "");
 
-        let dna = Dna::new_from_json(&fixture).unwrap();
+        let dna = Dna::from_json_str(&fixture).unwrap();
 
         println!("{}", dna.to_json_pretty().unwrap());
 
@@ -321,7 +321,7 @@ pub mod tests {
             .insert("".to_string(), zome::entry_types::EntryType::new());
         dna.zomes.insert("".to_string(), zome);
 
-        let fixture = Dna::new_from_json(
+        let fixture = Dna::from_json_str(
             r#"{
                 "name": "",
                 "description": "",
@@ -351,7 +351,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_dna() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
             }"#,
         ).unwrap();
@@ -361,7 +361,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_zome() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "zomes": {
                     "zome1": {}
@@ -377,7 +377,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_entry_type() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -403,7 +403,7 @@ pub mod tests {
 
     #[test]
     fn parse_wasm() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -435,7 +435,7 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_dna() {
-        Dna::new_from_json(
+        Dna::from_json_str(
             r#"{
                 "name": 42
             }"#,
@@ -445,7 +445,7 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_zome() {
-        Dna::new_from_json(
+        Dna::from_json_str(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -459,7 +459,7 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_entry_type() {
-        Dna::new_from_json(
+        Dna::from_json_str(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -476,7 +476,7 @@ pub mod tests {
 
     #[test]
     fn parse_accepts_arbitrary_dna_properties() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "properties": {
                     "str": "hello",
@@ -517,7 +517,7 @@ pub mod tests {
 
     #[test]
     fn get_wasm_for_capability() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -566,7 +566,7 @@ pub mod tests {
 
     #[test]
     fn get_wasm_for_entry_type() {
-        let dna = Dna::new_from_json(
+        let dna = Dna::from_json_str(
             r#"{
                 "name": "test",
                 "description": "test",

@@ -28,9 +28,9 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 
 # apply formatting / style guidelines, and build the rust project
 main:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
-	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
-	$(CARGO) build --all
+	fmt-check
+	clippy
+	build
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -43,16 +43,28 @@ ${C_BINDING_DIRS}:
 # execute all tests, both rust and "C" bindings
 test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 
-test_non_c: main wasm-build
+test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
+
+test_c_ci: build c_binding_tests ${C_BINDING_TESTS}
 
 wasm-build:
 	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 
+build:
+	$(CARGO) build --all
+	wasm-build
+
 cov:
 	$(CARGO) tarpaulin --all --out Xml
+
+fmt_check:
+	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
+
+clippy:
+	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
 
 fmt:
 	$(CARGO) +$(TOOLS_NIGHTLY) fmt

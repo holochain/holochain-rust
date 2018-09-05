@@ -78,7 +78,7 @@ impl ToEntry for Dna {
 
     fn new_from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
-        return Dna::new_from_json(&entry.content()).expect("entry is not a valid Dna Entry");
+        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
 

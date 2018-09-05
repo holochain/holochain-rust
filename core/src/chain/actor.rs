@@ -9,7 +9,7 @@ use snowflake;
 pub trait AskChain {
     /// Protocol::SetTopPair -> Protocol::SetTopPairResult
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
-    /// Protocol::TopPair -> Protocol::TopPairResult
+    /// Protocol::GetTopPair -> Protocol::GetTopPairResult
     fn top_pair(&self) -> Option<Pair>;
 }
 

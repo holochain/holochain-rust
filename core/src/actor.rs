@@ -42,7 +42,7 @@ pub enum Protocol {
     PutEntry(Entry),
     PutEntryResult(Result<(), HolochainError>),
 
-    /// HashTable::modify()
+    /// HashTable::modify_entry()
     ModifyEntry {
         keys: Keys,
         old: Entry,
@@ -50,7 +50,7 @@ pub enum Protocol {
     },
     ModifyEntryResult(Result<(), HolochainError>),
 
-    /// HashTable::retract()
+    /// HashTable::retract_entry()
     RetractEntry {
         keys: Keys,
         entry: Entry,

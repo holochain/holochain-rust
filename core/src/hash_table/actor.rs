@@ -23,13 +23,13 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Commit(pair.clone()));
-        unwrap_to!(response => Protocol::CommitResult).clone()
+        let response = self.block_on_ask(Protocol::PutPair(pair.clone()));
+        unwrap_to!(response => Protocol::PutPairResult).clone()
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::Pair(key.to_string()));
-        unwrap_to!(response => Protocol::PairResult).clone()
+        let response = self.block_on_ask(Protocol::GetPair(key.to_string()));
+        unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
     fn modify_pair(
@@ -38,20 +38,20 @@ impl HashTable for ActorRef<Protocol> {
         old_pair: &Pair,
         new_pair: &Pair,
     ) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Modify {
+        let response = self.block_on_ask(Protocol::ModifyPair {
             keys: keys.clone(),
             old_pair: old_pair.clone(),
             new_pair: new_pair.clone(),
         });
-        unwrap_to!(response => Protocol::ModifyResult).clone()
+        unwrap_to!(response => Protocol::ModifyPairResult).clone()
     }
 
     fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Retract {
+        let response = self.block_on_ask(Protocol::RetractPair {
             keys: keys.clone(),
             pair: pair.clone(),
         });
-        unwrap_to!(response => Protocol::RetractResult).clone()
+        unwrap_to!(response => Protocol::RetractPairResult).clone()
     }
 
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
@@ -60,13 +60,13 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::PairMeta(key.to_string()));
-        unwrap_to!(response => Protocol::PairMetaResult).clone()
+        let response = self.block_on_ask(Protocol::GetPairMeta(key.to_string()));
+        unwrap_to!(response => Protocol::GetPairMetaResult).clone()
     }
 
     fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::MetasForPair(pair.clone()));
-        unwrap_to!(response => Protocol::MetasForPairResult).clone()
+        let response = self.block_on_ask(Protocol::GetMetasForPair(pair.clone()));
+        unwrap_to!(response => Protocol::GetMetasForPairResult).clone()
     }
 }
 
@@ -118,29 +118,31 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::Teardown => Protocol::TeardownResult(self.table.teardown()),
 
-                    Protocol::Commit(pair) => Protocol::CommitResult(self.table.put_pair(&pair)),
+                    Protocol::PutPair(pair) => Protocol::PutPairResult(self.table.put_pair(&pair)),
 
-                    Protocol::Pair(hash) => Protocol::PairResult(self.table.pair(&hash)),
+                    Protocol::GetPair(hash) => Protocol::GetPairResult(self.table.pair(&hash)),
 
-                    Protocol::Modify {
+                    Protocol::ModifyPair {
                         keys,
                         old_pair,
                         new_pair,
-                    } => {
-                        Protocol::ModifyResult(self.table.modify_pair(&keys, &old_pair, &new_pair))
-                    }
-                    Protocol::Retract { keys, pair } => {
-                        Protocol::RetractResult(self.table.retract_pair(&keys, &pair))
+                    } => Protocol::ModifyPairResult(
+                        self.table.modify_pair(&keys, &old_pair, &new_pair),
+                    ),
+                    Protocol::RetractPair { keys, pair } => {
+                        Protocol::RetractPairResult(self.table.retract_pair(&keys, &pair))
                     }
 
                     Protocol::AssertMeta(pair_meta) => {
                         Protocol::AssertMetaResult(self.table.assert_pair_meta(&pair_meta))
                     }
 
-                    Protocol::PairMeta(key) => Protocol::PairMetaResult(self.table.pair_meta(&key)),
+                    Protocol::GetPairMeta(key) => {
+                        Protocol::GetPairMetaResult(self.table.pair_meta(&key))
+                    }
 
-                    Protocol::MetasForPair(pair) => {
-                        Protocol::MetasForPairResult(self.table.metas_for_pair(&pair))
+                    Protocol::GetMetasForPair(pair) => {
+                        Protocol::GetMetasForPairResult(self.table.metas_for_pair(&pair))
                     }
 
                     _ => unreachable!(),

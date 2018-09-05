@@ -1,10 +1,14 @@
 use error::HolochainError;
 use hash;
+use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::hash::{Hash as StdHash, Hasher};
+use std::{
+    hash::{Hash as StdHash, Hasher},
+    str::FromStr,
+};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -74,6 +78,16 @@ impl Entry {
     pub fn validate(&self) -> bool {
         // always valid if immutable and new() enforces validity
         true
+    }
+
+    /// returns true if the entry type is a system entry
+    pub fn is_sys(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
+    }
+
+    /// returns true if the entry type is an app entry
+    pub fn is_app(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
     }
 }
 

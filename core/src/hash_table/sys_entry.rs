@@ -26,7 +26,7 @@ macro_rules! sys_prefix {
 pub enum EntryType {
     AgentId,
     Deletion,
-    Data,
+    App,
     Dna,
     Headers,
     Key,
@@ -46,7 +46,7 @@ impl FromStr for EntryType {
             sys_prefix!("key") => Ok(EntryType::Key),
             sys_prefix!("link") => Ok(EntryType::Link),
             sys_prefix!("migration") => Ok(EntryType::Migration),
-            _ => Ok(EntryType::Data),
+            _ => Ok(EntryType::App),
         }
     }
 }
@@ -54,7 +54,7 @@ impl FromStr for EntryType {
 impl EntryType {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            EntryType::Data => panic!("should not try to convert a custom data entry to str"),
+            EntryType::App => panic!("should not try to convert a custom data entry to str"),
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),

@@ -186,7 +186,7 @@ pub mod tests {
     #[test]
     /// dir returns a sensible string for every Table enum variant
     fn test_dir() {
-        let (table, dir) = test_table();
+        let (table, _dir) = test_table();
         let re = |s| {
             let regex_str = format!(r".*\.tmp.*{}{}{}", MAIN_SEPARATOR, MAIN_SEPARATOR, s);
             Regex::new(&regex_str).expect("failed to build regex")

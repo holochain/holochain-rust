@@ -188,7 +188,11 @@ pub mod tests {
     fn test_dir() {
         let (table, _dir) = test_table();
         let re = |s| {
-            let regex_str = format!(r".*\.tmp.*\{}{}", MAIN_SEPARATOR, s);
+            let regex_str = if  MAIN_SEPARATOR == '\\'  {
+                format!(r".*\.tmp.*\{}{}", MAIN_SEPARATOR, s)
+            } else {
+                format!(r".*\.tmp.*{}{}", MAIN_SEPARATOR, s)
+            };
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
@@ -209,10 +213,11 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         let re = |s, k| {
-            let regex_str = format!(
-                r".*\.tmp.*\{}{}\{}{}\.json",
-                MAIN_SEPARATOR, s, MAIN_SEPARATOR, k
-            );
+            let regex_str = if  MAIN_SEPARATOR == '\\' {
+                format!(r".*\.tmp.*\{}{}\{}{}\.json", MAIN_SEPARATOR, s, MAIN_SEPARATOR, k)
+            } else {
+                format!(r".*\.tmp.*{}{}{}{}\.json", MAIN_SEPARATOR, s, MAIN_SEPARATOR, k)
+            };
             Regex::new(&regex_str).expect("failed to build regex")
         };
 

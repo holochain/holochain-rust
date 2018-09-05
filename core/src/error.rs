@@ -1,5 +1,13 @@
 use self::HolochainError::*;
-use std::{error::Error, fmt};
+use json::ToJson;
+use serde_json::Error as SerdeError;
+use std::{
+    error::Error,
+    fmt,
+    io::{self, Error as IoError},
+    path::Path,
+};
+use walkdir::Error as WalkdirError;
 
 /// module for holding Holochain specific errors
 
@@ -14,18 +22,19 @@ pub enum HolochainError {
     ZomeNotFound(String),
     CapabilityNotFound(String),
     ZomeFunctionNotFound(String),
+    IoError(String),
+    SerializationError(String),
 }
 
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
     }
+}
 
-    /// standard JSON representation for an error
-    /// @TODO round trip this
-    /// @see https://github.com/holochain/holochain-rust/issues/193
-    pub fn to_json(&self) -> String {
-        format!("{{\"error\":\"{}\"}}", self.description())
+impl ToJson for HolochainError {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(format!("{{\"error\":\"{}\"}}", self.description()))
     }
 }
 
@@ -51,7 +60,42 @@ impl Error for HolochainError {
             ZomeNotFound(err_msg) => &err_msg,
             CapabilityNotFound(err_msg) => &err_msg,
             ZomeFunctionNotFound(err_msg) => &err_msg,
+            IoError(err_msg) => &err_msg,
+            SerializationError(err_msg) => &err_msg,
         }
+    }
+}
+
+/// standard strings for std io errors
+fn reason_for_io_error(error: &IoError) -> String {
+    match error.kind() {
+        io::ErrorKind::InvalidData => format!("contains invalid data: {}", error),
+        io::ErrorKind::PermissionDenied => format!("missing permissions to read: {}", error),
+        _ => format!("unexpected error: {}", error),
+    }
+}
+
+impl From<WalkdirError> for HolochainError {
+    fn from(error: WalkdirError) -> Self {
+        // adapted from https://docs.rs/walkdir/2.2.5/walkdir/struct.Error.html#example
+        let path = error.path().unwrap_or(Path::new("")).display();
+        let reason = match error.io_error() {
+            Some(inner) => reason_for_io_error(inner),
+            None => String::new(),
+        };
+        HolochainError::IoError(format!("error at path: {}, reason: {}", path, reason))
+    }
+}
+
+impl From<IoError> for HolochainError {
+    fn from(error: IoError) -> Self {
+        HolochainError::IoError(reason_for_io_error(&error))
+    }
+}
+
+impl From<SerdeError> for HolochainError {
+    fn from(error: SerdeError) -> Self {
+        HolochainError::SerializationError(error.to_string())
     }
 }
 
@@ -78,7 +122,7 @@ mod tests {
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!(r#"{"error":"foo"}"#, err.to_json());
+        assert_eq!(r#"{"error":"foo"}"#, err.to_json().unwrap());
     }
 
     #[test]

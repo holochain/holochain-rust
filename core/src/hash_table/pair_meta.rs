@@ -1,10 +1,14 @@
 use agent::keys::Keys;
+use error::HolochainError;
 use hash::serializable_to_b58_hash;
 use hash_table::pair::Pair;
+use json::{FromJson, RoundTripJson, ToJson};
+use key::Key;
 use multihash::Hash;
+use serde_json;
 use std::cmp::Ordering;
 
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
 /// E = the pair key for hash table lookups
 /// A = the name of the meta attribute
@@ -80,19 +84,43 @@ impl PairMeta {
     pub fn source(&self) -> String {
         self.source.clone()
     }
+}
 
-    /// the key for hash table lookups, e.g. table.get_meta()
-    pub fn key(&self) -> String {
+impl Key for PairMeta {
+    fn key(&self) -> String {
         serializable_to_b58_hash(&self, Hash::SHA2256)
     }
 }
 
+impl ToJson for PairMeta {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(&self)?)
+    }
+}
+
+impl FromJson for PairMeta {
+    /// @TODO accept canonical JSON
+    /// @see https://github.com/holochain/holochain-rust/issues/75
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        Ok(serde_json::from_str(s)?)
+    }
+}
+
+impl RoundTripJson for PairMeta {}
+
 #[cfg(test)]
 pub mod tests {
 
-    use super::PairMeta;
     use agent::keys::tests::test_keys;
-    use hash_table::pair::tests::{test_pair, test_pair_a, test_pair_b};
+    use hash_table::{
+        pair::{
+            tests::{test_pair, test_pair_a, test_pair_b},
+            Pair,
+        },
+        pair_meta::PairMeta,
+    };
+    use json::{FromJson, ToJson};
+    use key::Key;
     use std::cmp::Ordering;
 
     /// dummy test attribute name
@@ -125,9 +153,13 @@ pub mod tests {
         "another value".into()
     }
 
+    pub fn test_pair_meta_for(pair: &Pair, attribute: &str, value: &str) -> PairMeta {
+        PairMeta::new(&test_keys(), pair, attribute, value)
+    }
+
     /// returns dummy pair meta for testing
     pub fn test_pair_meta() -> PairMeta {
-        PairMeta::new(&test_keys(), &test_pair(), &test_attribute(), &test_value())
+        test_pair_meta_for(&test_pair(), &test_attribute(), &test_value())
     }
 
     /// dummy pair meta, same as test_pair_meta()
@@ -137,12 +169,7 @@ pub mod tests {
 
     /// returns dummy pair meta for testing against the same pair as test_pair_meta_a
     pub fn test_pair_meta_b() -> PairMeta {
-        PairMeta::new(
-            &test_keys(),
-            &test_pair(),
-            &test_attribute_b(),
-            &test_value_b(),
-        )
+        test_pair_meta_for(&test_pair(), &test_attribute_b(), &test_value_b())
     }
 
     #[test]
@@ -213,5 +240,19 @@ pub mod tests {
         // attribute value with operators
         assert!(m_1ax < m_1ay);
         assert!(m_1ay > m_1ax);
+    }
+
+    #[test]
+    /// test the RoundTripJson implementation
+    fn test_json_round_trip() {
+        let pair_meta = test_pair_meta();
+        let expected = "{\"pair_hash\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+
+        assert_eq!(expected.to_string(), pair_meta.to_json().unwrap());
+        assert_eq!(pair_meta, PairMeta::from_json(&expected).unwrap());
+        assert_eq!(
+            pair_meta,
+            PairMeta::from_json(&pair_meta.to_json().unwrap()).unwrap()
+        );
     }
 }

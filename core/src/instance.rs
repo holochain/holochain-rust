@@ -447,7 +447,7 @@ pub mod tests {
             .get(&aw)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &ActionResponse::Get(None));
+        assert_eq!(response, &ActionResponse::GetEntry(None));
     }
 
     #[test]
@@ -545,7 +545,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 0
                 )
                 (data (i32.const 0)
@@ -572,7 +572,7 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis_dispatch") (param $p0 i32) (result i32)
+                (func (export "genesis") (param $p0 i32) (result i32)
                     i32.const 4
                 )
                 (data (i32.const 0)

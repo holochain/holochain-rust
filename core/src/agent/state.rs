@@ -5,6 +5,8 @@ use context::Context;
 use error::HolochainError;
 use hash_table::pair::Pair;
 use instance::Observer;
+use json::ToJson;
+use key::Key;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
@@ -52,26 +54,23 @@ impl AgentState {
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
-pub enum ActionResponse {
-    Commit(Result<Pair, HolochainError>),
-    Get(Option<Pair>),
-}
-
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
-impl ActionResponse {
-    /// serialize data or error to JSON
-    // @TODO implement this as a round tripping trait
-    // @see https://github.com/holochain/holochain-rust/issues/193
-    pub fn to_json(&self) -> String {
+pub enum ActionResponse {
+    Commit(Result<Pair, HolochainError>),
+    GetEntry(Option<Pair>),
+}
+
+impl ToJson for ActionResponse {
+    fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(pair) => format!("{{\"hash\":\"{}\"}}", pair.entry().key()),
-                Err(err) => (*err).to_json(),
+                Ok(pair) => Ok(format!("{{\"hash\":\"{}\"}}", pair.entry().key())),
+                Err(err) => Ok((*err).to_json()?),
             },
-            ActionResponse::Get(result) => match result {
-                Some(pair) => pair.to_json(),
-                None => "".to_string(),
+            ActionResponse::GetEntry(result) => match result {
+                Some(pair) => Ok(pair.to_json()?),
+                None => Ok("".to_string()),
             },
         }
     }
@@ -112,7 +111,7 @@ fn reduce_get(
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => Action::Get);
+    let key = unwrap_to!(action => Action::GetEntry);
 
     let result = state.chain.entry(&key.clone());
 
@@ -121,7 +120,7 @@ fn reduce_get(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Get(
+        ActionResponse::GetEntry(
             result
                 .clone()
                 .expect("should be able to get entry that we just added"),
@@ -133,7 +132,7 @@ fn reduce_get(
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit),
-        Action::Get(_) => Some(reduce_get),
+        Action::GetEntry(_) => Some(reduce_get),
         _ => None,
     }
 }
@@ -171,6 +170,7 @@ pub mod tests {
     use error::HolochainError;
     use hash_table::pair::tests::test_pair;
     use instance::tests::{test_context, test_instance_blank};
+    use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -185,7 +185,7 @@ pub mod tests {
 
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::Get(Some(test_pair()))
+        ActionResponse::GetEntry(Some(test_pair()))
     }
 
     #[test]
@@ -246,7 +246,10 @@ pub mod tests {
         );
 
         // nothing has been committed so the get must be None
-        assert_eq!(state.actions().get(&aw1), Some(&ActionResponse::Get(None)),);
+        assert_eq!(
+            state.actions().get(&aw1),
+            Some(&ActionResponse::GetEntry(None)),
+        );
 
         // do a round trip
         reduce_commit(
@@ -274,17 +277,19 @@ pub mod tests {
     fn test_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::Commit(Ok(test_pair())).to_json(),
+            ActionResponse::Commit(Ok(test_pair())).to_json().unwrap(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
-            ActionResponse::Commit(Err(HolochainError::new("some error"))).to_json(),
+            ActionResponse::Commit(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
         );
 
         assert_eq!(
             "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            ActionResponse::Get(Some(test_pair())).to_json(),
+            ActionResponse::GetEntry(Some(test_pair())).to_json().unwrap(),
         );
-        assert_eq!("", ActionResponse::Get(None).to_json());
+        assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
     }
 }

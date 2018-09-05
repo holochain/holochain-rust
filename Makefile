@@ -46,7 +46,7 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_c_ci: build c_binding_tests ${C_BINDING_TESTS}
+test-c-ci: c_binding_tests ${C_BINDING_TESTS}
 
 wasm-build:
 	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
@@ -60,7 +60,7 @@ build:
 cov:
 	$(CARGO) tarpaulin --all --out Xml
 
-fmt_check:
+fmt-check:
 	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
 
 clippy:

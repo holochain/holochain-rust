@@ -89,21 +89,8 @@ impl Defn for ZomeAPIFunction {
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
-        match *self {
-            ZomeAPIFunction::MissingNo => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::GetEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
-        }
+        // Zome API Functions are not part of any zome and capability
+        unreachable!();
     }
 }
 

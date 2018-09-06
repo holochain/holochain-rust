@@ -268,12 +268,12 @@ fn reduce_ia(
 }
 
 
-pub(crate) fn launch_call_thread(context: Arc<Context>,
-                      fc: FunctionCall,
-                      action_channel: &Sender<ActionWrapper>,
-                      observer_channel: &Sender<Observer>,
-                      wasm : &DnaWasm,
-                      app_name: String) {
+pub(crate) fn launch_zome_fn_call(context: Arc<Context>,
+                                  fc: FunctionCall,
+                                  action_channel: &Sender<ActionWrapper>,
+                                  observer_channel: &Sender<Observer>,
+                                  wasm : &DnaWasm,
+                                  app_name: String) {
     let action_channel = action_channel.clone();
     let tx_observer = observer_channel.clone();
     let code = wasm.code.clone();
@@ -339,12 +339,12 @@ fn reduce_ezf(
             // Prepare call - FIXME is this really useful?
             state.ribosome_calls.insert(fn_call.clone(), None);
             // Launch thread with function call
-            launch_call_thread(context,
-                               fn_call,
-                               action_channel,
-                               observer_channel,
-                               &wasm,
-                               state.dna.clone().unwrap().name);
+            launch_zome_fn_call(context,
+                                fn_call,
+                                action_channel,
+                                observer_channel,
+                                &wasm,
+                                state.dna.clone().unwrap().name);
         }
     }
 }

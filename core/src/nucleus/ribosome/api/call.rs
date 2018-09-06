@@ -19,7 +19,7 @@ use holochain_dna::{
     zome::capabilities::Membrane,
 };
 use error::HolochainError;
-use nucleus::launch_call_thread;
+use nucleus::launch_zome_fn_call;
 
 /// Struct for input data received when Call API function is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -185,12 +185,12 @@ pub(crate) fn reduce_call(
     state.ribosome_calls.insert(fn_call.clone(), None);
 
     // Launch thread with function call
-    launch_call_thread(context,
-                       fn_call,
-                       action_channel,
-                       observer_channel,
-                       &cap.code,
-                       state.dna.clone().unwrap().name);
+    launch_zome_fn_call(context,
+                        fn_call,
+                        action_channel,
+                        observer_channel,
+                        &cap.code,
+                        state.dna.clone().unwrap().name);
 }
 
 

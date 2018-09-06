@@ -14,7 +14,7 @@ use error::HolochainError;
 use hash_table::{
     pair::Pair,
     pair_meta::PairMeta,
-    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+    status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
 
@@ -56,7 +56,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             keys,
             &old_pair,
             STATUS_NAME,
-            &CRUDStatus::MODIFIED.bits().to_string(),
+            &CrudStatus::MODIFIED.bits().to_string(),
         ))?;
 
         // @TODO what if meta fails when commit succeeds?
@@ -70,7 +70,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             keys,
             &pair,
             STATUS_NAME,
-            &CRUDStatus::DELETED.bits().to_string(),
+            &CrudStatus::DELETED.bits().to_string(),
         ))
     }
 

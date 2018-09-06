@@ -57,7 +57,7 @@ wasm-build:
 .PHONY: build
 build:
 	$(CARGO) build --all
-	wasm-build
+	make wasm-build
 
 cov:
 	$(CARGO) tarpaulin --all --out Xml

@@ -291,7 +291,7 @@ pub mod tests {
                         },
                         "capabilities": {
                             "test": {
-                                "cap_type": {
+                                "capability": {
                                     "membrane": "public"
                                 },
                                 "functions": [

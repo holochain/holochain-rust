@@ -141,7 +141,7 @@ impl FnDeclaration {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
     /// "capability" sub-object
-    #[serde(default)]
+    #[serde(rename = "capability")]
     pub cap_type: CapabilityType,
 
     /// "fn_declarations" array

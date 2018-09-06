@@ -86,7 +86,7 @@ impl NucleusState {
         }
         let zome = zome.unwrap();
         // Capability must exist in Zome
-        let wasm = dna.get_capability_wasm(zome, &fc.capability);
+        let wasm = dna.get_wasm_from_capability(zome, &fc.capability);
         if wasm.is_none() {
             return Err(FunctionResult::new(
                 fc.clone(),

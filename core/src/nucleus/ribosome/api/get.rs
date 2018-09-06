@@ -157,8 +157,8 @@ mod tests {
     }
 
     #[test]
-    /// test that we can round trip bytes through a zome functioncall and it comes back from wasm
-    fn test_zome_round_trip() {
+    /// test that we can round trip bytes through a get action and it comes back from wasm
+    fn test_get_round_trip() {
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -216,7 +216,7 @@ mod tests {
         expected.push_str(&test_entry_hash());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(get_runtime.result, expected,);
     }
 
 }

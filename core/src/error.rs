@@ -24,7 +24,7 @@ pub enum HolochainError {
     ZomeFunctionNotFound(String),
     IoError(String),
     SerializationError(String),
-    DoesNotHaveCapability,
+    DoesNotHaveCapabilityToken,
 }
 
 impl HolochainError {
@@ -63,7 +63,7 @@ impl Error for HolochainError {
             ZomeFunctionNotFound(err_msg) => &err_msg,
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
-            DoesNotHaveCapability => "Caller does not Capability to make that call",
+            DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
         }
     }
 }

@@ -59,7 +59,7 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::Instance,
+    instance::Instance, instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{call_and_wait_for_result, state::NucleusStatus, FunctionCall},
     state::State,
 };
@@ -104,7 +104,7 @@ impl Holochain {
         // had to increase this number when merging develop into feature branch 221-dna-improvements
         // https://github.com/holochain/holochain-rust/pull/253
         // solving ticket https://github.com/holochain/holochain-rust/issues/221
-        match receiver.recv_timeout(Duration::from_millis(10000)) {
+        match receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS) {
             Ok(status) => match status {
                 NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
                 _ => {

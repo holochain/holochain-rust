@@ -3,7 +3,7 @@ use context::Context;
 use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::ribosome::api::call::CallArgs;
+use nucleus::ribosome::api::call::ZomeCallArgs;
 use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
 use snowflake;
 use std::{
@@ -83,7 +83,7 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    Call(CallArgs),
+    Call(ZomeCallArgs),
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(EntrySubmission),

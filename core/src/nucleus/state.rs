@@ -23,6 +23,8 @@ impl Default for NucleusStatus {
     }
 }
 
+pub(crate) type FnCallMap = HashMap<FunctionCall, Option<Result<String, HolochainError>>>;
+
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     pub dna: Option<Dna>,
@@ -31,7 +33,7 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
-    pub ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
+    pub ribosome_calls: FnCallMap,
 }
 
 impl NucleusState {

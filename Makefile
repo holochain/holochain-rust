@@ -48,6 +48,7 @@ test_non_c: main
 
 test-c-ci: c_binding_tests ${C_BINDING_TESTS}
 
+.PHONY: wasm-build
 wasm-build:
 	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown

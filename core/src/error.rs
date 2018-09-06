@@ -63,7 +63,9 @@ impl Error for HolochainError {
             ZomeFunctionNotFound(err_msg) => &err_msg,
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
-            HolochainError::DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
+            HolochainError::DoesNotHaveCapabilityToken => {
+                "Caller does not have Capability to make that call"
+            }
         }
     }
 }

@@ -59,14 +59,12 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::Instance, instance::RECV_DEFAULT_TIMEOUT_MS,
+    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
     nucleus::{call_and_wait_for_result, state::NucleusStatus, FunctionCall},
     state::State,
 };
 use holochain_dna::Dna;
-use std::{
-    sync::{mpsc::channel, Arc},
-};
+use std::sync::{mpsc::channel, Arc};
 
 /// contains a Holochain application instance
 pub struct Holochain {

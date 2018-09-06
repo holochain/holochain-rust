@@ -1,8 +1,8 @@
+pub mod call;
 pub mod commit;
 pub mod debug;
 pub mod get;
 pub mod init_globals;
-pub mod call;
 
 use action::ActionWrapper;
 use context::Context;
@@ -13,8 +13,8 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry,
-            init_globals::invoke_init_globals, call::invoke_call,
+            call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
+            get::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,
     },

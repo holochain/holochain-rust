@@ -6,12 +6,12 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
+use holochain_dna::wasm::DnaWasm;
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::{NucleusState, NucleusStatus},
 };
-use holochain_dna::wasm::DnaWasm;
 use snowflake;
 use std::{
     sync::{
@@ -267,13 +267,14 @@ fn reduce_ia(
     });
 }
 
-
-pub(crate) fn launch_zome_fn_call(context: Arc<Context>,
-                                  fc: FunctionCall,
-                                  action_channel: &Sender<ActionWrapper>,
-                                  observer_channel: &Sender<Observer>,
-                                  wasm : &DnaWasm,
-                                  app_name: String) {
+pub(crate) fn launch_zome_fn_call(
+    context: Arc<Context>,
+    fc: FunctionCall,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+    wasm: &DnaWasm,
+    app_name: String,
+) {
     let action_channel = action_channel.clone();
     let tx_observer = observer_channel.clone();
     let code = wasm.code.clone();
@@ -289,10 +290,7 @@ pub(crate) fn launch_zome_fn_call(context: Arc<Context>,
             Some(fc.clone().parameters.into_bytes()),
         ) {
             Ok(runtime) => {
-                result = FunctionResult::new(
-                    fc.clone(),
-                    Ok(runtime.result.to_string()),
-                );
+                result = FunctionResult::new(fc.clone(), Ok(runtime.result.to_string()));
             }
 
             Err(ref error) => {
@@ -308,7 +306,6 @@ pub(crate) fn launch_zome_fn_call(context: Arc<Context>,
             .expect("action channel to be open in reducer");
     });
 }
-
 
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
@@ -339,12 +336,14 @@ fn reduce_ezf(
             // Prepare call - FIXME is this really useful?
             state.ribosome_calls.insert(fn_call.clone(), None);
             // Launch thread with function call
-            launch_zome_fn_call(context,
-                                fn_call,
-                                action_channel,
-                                observer_channel,
-                                &wasm,
-                                state.dna.clone().unwrap().name);
+            launch_zome_fn_call(
+                context,
+                fn_call,
+                action_channel,
+                observer_channel,
+                &wasm,
+                state.dna.clone().unwrap().name,
+            );
         }
     }
 }
@@ -434,7 +433,7 @@ pub fn reduce(
         None => {
             // println!("=> old state");
             old_state
-        },
+        }
     }
 }
 

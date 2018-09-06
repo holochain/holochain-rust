@@ -3,15 +3,15 @@ use action::ActionWrapper;
 use context::Context;
 use state::State;
 use std::{
-    time::Duration,
     sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
+    time::Duration,
 };
 
-pub const RECV_DEFAULT_TIMEOUT_MS: Duration  = Duration::from_millis(10000);
+pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.

@@ -1,25 +1,20 @@
 use action::{Action, ActionWrapper};
-use nucleus::FunctionCall;
-use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
-};
-use instance::RECV_DEFAULT_TIMEOUT_MS;
-use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use std::{
-    sync::{
-        mpsc::{channel, Sender},
-        Arc,
-    },
-};
 use context::Context;
-use nucleus::state::NucleusState;
-use instance::Observer;
-use holochain_dna::{
-    zome::capabilities::Membrane,
-};
 use error::HolochainError;
-use nucleus::launch_zome_fn_call;
+use holochain_dna::zome::capabilities::Membrane;
+use instance::{Observer, RECV_DEFAULT_TIMEOUT_MS};
+use nucleus::{
+    launch_zome_fn_call,
+    ribosome::api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    state::NucleusState,
+    FunctionCall,
+};
+use serde_json;
+use std::sync::{
+    mpsc::{channel, Sender},
+    Arc,
+};
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Call API function is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -34,10 +29,10 @@ pub struct ZomeCallArgs {
 impl FunctionCall {
     fn from_args(args: ZomeCallArgs) -> Self {
         FunctionCall::new(
-        &args.zome_name,
-        &args.cap_name,
-        &args.fn_name,
-        &args.fn_args,
+            &args.zome_name,
+            &args.cap_name,
+            &args.fn_name,
+            &args.fn_args,
         )
     }
 }
@@ -54,7 +49,6 @@ impl FunctionCall {
 ///   Launch a ExecuteZomeFunction with FunctionCall
 ///
 ///
-
 
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -76,7 +70,7 @@ pub fn invoke_call(
     };
 
     // ZomeCallArgs to FunctionCall
-    let fn_call= FunctionCall::from_args(input);
+    let fn_call = FunctionCall::from_args(input);
 
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(fn_call.clone()));
@@ -111,7 +105,9 @@ pub fn invoke_call(
     // return Err(_);
 
     println!("invoke_call: waiting...");
-    let action_result = receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS).expect("observer dropped before done");
+    let action_result = receiver
+        .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
+        .expect("observer dropped before done");
     println!("invoke_call: Done: {:?}", action_result);
 
     // action_result is Action::ReturnZomeFunctionResult(result))
@@ -120,11 +116,11 @@ pub fn invoke_call(
         Ok(res) => {
             // let res = runtime.state().nucleus().ribosome_call_result(fn_call);
             // serialize, allocate and encode result
-//            let json = res.to_json();
-//            match json {
-//                Ok(j) => runtime_allocate_encode_str(runtime, &j),
-//                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
-//            }
+            //            let json = res.to_json();
+            //            match json {
+            //                Ok(j) => runtime_allocate_encode_str(runtime, &j),
+            //                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            //            }
             runtime_allocate_encode_str(runtime, &res)
         }
         Err(_) => Ok(Some(RuntimeValue::I32(
@@ -132,7 +128,6 @@ pub fn invoke_call(
         ))),
     }
 }
-
 
 /// Reduce Call Action
 /// Execute an exposed Zome function in a separate thread and send the result in
@@ -156,7 +151,9 @@ pub(crate) fn reduce_call(
     if let Err(fn_res) = maybe_cap {
         // Send Failed Result
         // println!("fn_res = {:?}", fn_res);
-        state.ribosome_calls.insert(fn_call.clone(), Some(fn_res.result()));
+        state
+            .ribosome_calls
+            .insert(fn_call.clone(), Some(fn_res.result()));
         action_channel
             .send(action_wrapper.clone())
             .expect("action channel to be open in reducer");
@@ -170,7 +167,10 @@ pub(crate) fn reduce_call(
     // FIXME is this enough?
     if cap.cap_type.membrane != Membrane::Zome {
         // Send Failed Result
-        state.ribosome_calls.insert(fn_call.clone(), Some(Err(HolochainError::DoesNotHaveCapabilityToken)));
+        state.ribosome_calls.insert(
+            fn_call.clone(),
+            Some(Err(HolochainError::DoesNotHaveCapabilityToken)),
+        );
         // println!("fn_res = {:?}", fn_res);
         action_channel
             .send(action_wrapper.clone())
@@ -185,14 +185,15 @@ pub(crate) fn reduce_call(
     state.ribosome_calls.insert(fn_call.clone(), None);
 
     // Launch thread with function call
-    launch_zome_fn_call(context,
-                        fn_call,
-                        action_channel,
-                        observer_channel,
-                        &cap.code,
-                        state.dna.clone().unwrap().name);
+    launch_zome_fn_call(
+        context,
+        fn_call,
+        action_channel,
+        observer_channel,
+        &cap.code,
+        state.dna.clone().unwrap().name,
+    );
 }
-
 
 #[cfg(test)]
 pub mod tests {
@@ -231,34 +232,23 @@ pub mod tests {
             .into_bytes()
     }
 
-
     /// test that we can round trip bytes through a commit action and get the result from WASM
     #[test]
     fn test_call_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime(
-            ZomeAPIFunction::Call.as_str(),
-            test_args_bytes(),
-        );
+        let (runtime, _) =
+            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_args_bytes());
         println!("test_call_round_trip");
 
-        assert_eq!(
-            runtime.result,
-            format!(r#""#),
-        );
+        assert_eq!(runtime.result, format!(r#""#),);
     }
 
     #[test]
     fn test_call_no_zome() {
-        let (runtime, _) = test_zome_api_function_runtime(
-            ZomeAPIFunction::Call.as_str(),
-            test_bad_args_bytes(),
-        );
+        let (runtime, _) =
+            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_bad_args_bytes());
         println!("test_call_round_trip");
 
-        assert_eq!(
-            runtime.result,
-            format!(r#""#),
-        );
+        assert_eq!(runtime.result, format!(r#""#),);
     }
 
 }

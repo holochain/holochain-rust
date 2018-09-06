@@ -8,12 +8,12 @@ jobs:
     - name: "C tests"
       install: docker pull holochain/holochain-rust:develop
       script:
-        - . docker/run make build test-c-ci
+        - . docker/run make build test_c_ci
 
     - name: "Standard tests + code coverage"
       install: docker pull holochain/holochain-rust:develop
       script:
-        - . docker/run make wasm-build
+        - . docker/run make wasm_build
         - . docker/run-cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
@@ -21,7 +21,7 @@ jobs:
     - name: "Formatting & clippy"
       install: docker pull holochain/holochain-rust:develop
       script:
-        - . docker/run make fmt-check
+        - . docker/run make fmt_check
         - . docker/run make clippy
 
     - name: "Mdbook Build"

@@ -53,6 +53,7 @@ wasm-build:
 	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
 
+.PHONY: build
 build:
 	$(CARGO) build --all
 	wasm-build

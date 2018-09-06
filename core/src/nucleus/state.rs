@@ -3,7 +3,6 @@ use holochain_dna::Dna;
 use nucleus::FunctionCall;
 use std::collections::HashMap;
 use holochain_dna::{
-    zome::Zome,
     wasm::DnaWasm,
     zome::capabilities::Capability,
 };

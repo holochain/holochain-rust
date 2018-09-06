@@ -59,9 +59,9 @@ impl AgentState {
 pub enum ActionResponse {
     Commit(Result<Pair, HolochainError>),
     GetEntry(Option<Pair>),
-    /// Call return is dependent on CallingType in DNA for the function called. It may be void.
-    /// FIXME Move to Nucleus state?
-    Call(Result<Option<String>, HolochainError>),
+    // /// Call return is dependent on CallingType in DNA for the function called. It may be void.
+    // /// FIXME Move to Nucleus state?
+    // Call(Result<Option<String>, HolochainError>),
 }
 
 impl ToJson for ActionResponse {
@@ -75,15 +75,10 @@ impl ToJson for ActionResponse {
                 Some(pair) => Ok(pair.to_json()?),
                 None => Ok("".to_string()),
             },
-            ActionResponse::Call(result) => match result {
-                Ok(opt_str) => {
-                    match opt_str {
-                        Some(res_str) => Ok(res_str.clone()),
-                        None => Ok("".to_string()),
-                    }
-                },
-                Err(err) => Ok((*err).to_json()?),
-            },
+//            ActionResponse::Call(result) => match result {
+//                Ok(opt_str) => Ok(opt_str.clone().unwrap_or_default()),
+//                Err(err) => Ok((*err).to_json()?),
+//            },
         }
     }
 }

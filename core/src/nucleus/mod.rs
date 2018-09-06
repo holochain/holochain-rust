@@ -9,14 +9,9 @@ use action::{Action, ActionWrapper, NucleusReduceFn};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
-    state::{NucleusState, NucleusStatus, FnCallMap},
+    state::{NucleusState, NucleusStatus},
 };
-use std::collections::HashMap;
-use holochain_dna::{
-    zome::Zome,
-    wasm::DnaWasm,
-    zome::capabilities::Membrane,
-};
+use holochain_dna::wasm::DnaWasm;
 use snowflake;
 use std::{
     sync::{
@@ -27,6 +22,7 @@ use std::{
 };
 
 use hash_table::sys_entry::ToEntry;
+use nucleus::ribosome::api::call::reduce_call;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -272,85 +268,15 @@ fn reduce_ia(
 }
 
 
-/// Reduce Call Action
-/// Execute an exposed Zome function in a separate thread and send the result in
-/// a ReturnZomeFunctionResult Action on success or failure
-fn reduce_call(
-    context: Arc<Context>,
-    state: &mut NucleusState,
-    action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
-) {
-    let args = match action_wrapper.action().clone() {
-        Action::Call(call) => call,
-        _ => unreachable!(),
-    };
-
-    // ZomeCallArgs to FunctionCall
-    let fn_call= FunctionCall::new(
-        &args.zome_name,
-        &args.cap_name,
-        &args.fn_name,
-        &args.fn_args,
-    );
-
-    println!("fn_call = {:?}", fn_call);
-
-    // Get Capability
-    let maybe_cap = state.get_capability(fn_call.clone());
-    if let Err(fn_res) = maybe_cap {
-        // Send Failed Result
-        println!("fn_res = {:?}", fn_res);
-        action_channel
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(fn_res)))
-            .expect("action channel to be open in reducer");
-        return;
-    }
-    let cap = maybe_cap.unwrap();
-
-    println!("cap = {:?}", cap);
-
-    // Check if we have permission to call that Zome function
-    // FIXME is this enough?
-    if cap.cap_type.membrane != Membrane::Zome {
-        // Send Failed Result
-        let fn_res = FunctionResult::new(fn_call, Err(HolochainError::DoesNotHaveCapabilityToken));
-        println!("fn_res = {:?}", fn_res);
-        action_channel
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(fn_res)))
-            .expect("action channel to be open in reducer");
-        return;
-    }
-
-    println!("cap = {:?}", cap);
-
-    // Launch thread with function call
-    launch_call_thread(context,
-                       fn_call,
-                       action_channel,
-                       observer_channel,
-                       &mut state.ribosome_calls,
-                       &cap.code,
-                       state.dna.clone().unwrap().name);
-}
-
-
-fn launch_call_thread(context: Arc<Context>,
+pub(crate) fn launch_call_thread(context: Arc<Context>,
                       fc: FunctionCall,
                       action_channel: &Sender<ActionWrapper>,
                       observer_channel: &Sender<Observer>,
-                      call_map: &mut FnCallMap,
                       wasm : &DnaWasm,
                       app_name: String) {
-    // Prepare call
-    call_map.insert(fc.clone(), None);
-
-    // Spawn thread
     let action_channel = action_channel.clone();
     let tx_observer = observer_channel.clone();
     let code = wasm.code.clone();
-    // let app_name = dna.name;
     thread::spawn(move || {
         let result: FunctionResult;
         match ribosome::api::call(
@@ -376,7 +302,6 @@ fn launch_call_thread(context: Arc<Context>,
                 );
             }
         }
-
         // Send ReturnResult Action
         action_channel
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
@@ -411,12 +336,13 @@ fn reduce_ezf(
                 .expect("action channel to be open in reducer");
         }
         Ok(wasm) => {
+            // Prepare call - FIXME is this really useful?
+            state.ribosome_calls.insert(fn_call.clone(), None);
             // Launch thread with function call
             launch_call_thread(context,
                                fn_call,
                                action_channel,
                                observer_channel,
-                               &mut state.ribosome_calls,
                                &wasm,
                                state.dna.clone().unwrap().name);
         }
@@ -468,6 +394,7 @@ fn reduce_rzfr(
     state.ribosome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+/// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::ReturnInitializationResult(_) => Some(reduce_rir),
@@ -489,11 +416,11 @@ pub fn reduce(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<NucleusState> {
-    println!("reduce: {:?}", action_wrapper);
+    // println!("reduce: {:?}", action_wrapper);
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
-            println!("=> new state");
+            // println!("=> new state");
             let mut new_state: NucleusState = (*old_state).clone();
             f(
                 context,
@@ -505,7 +432,7 @@ pub fn reduce(
             Arc::new(new_state)
         }
         None => {
-            println!("=> old state");
+            // println!("=> old state");
             old_state
         },
     }

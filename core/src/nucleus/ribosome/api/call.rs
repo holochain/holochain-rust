@@ -326,7 +326,7 @@ pub mod tests {
     #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
-        let expected = Err(HolochainError::ZomeNotFound(r#"Zome '"test_zome"' not found"#.to_string()));
+        let expected = Err(HolochainError::ZomeNotFound(r#"Zome 'test_zome' not found"#.to_string()));
         test_reduce_call(dna, expected);
     }
 

@@ -52,12 +52,13 @@ impl FunctionCall {
 
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
+/// expected complex argument: {zome_name: String, cap_name: String, fn_name: String, args: String}
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_call(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
+    println!("RuntimeArgs: {:?}", args);
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
@@ -72,9 +73,16 @@ pub fn invoke_call(
     // ZomeCallArgs to FunctionCall
     let fn_call = FunctionCall::from_args(input);
 
+    // Don't allow recursive calls
+    if fn_call.same_as(&runtime.function_call) {
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ErrorRecursiveCall as i32,
+        )));
+    }
+
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(fn_call.clone()));
-    println!(" !! Looking for: {:?}", action_wrapper);
+    println!(" !! Looking for: {:?}", fn_call);
     // Send Action and block
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -154,9 +162,6 @@ pub(crate) fn reduce_call(
         state
             .ribosome_calls
             .insert(fn_call.clone(), Some(fn_res.result()));
-        action_channel
-            .send(action_wrapper.clone())
-            .expect("action channel to be open in reducer");
         return;
     }
     let cap = maybe_cap.unwrap();
@@ -164,18 +169,13 @@ pub(crate) fn reduce_call(
     // println!("cap = {:?}", cap);
 
     // Check if we have permission to call that Zome function
-    // FIXME is this enough?
+    // TODO #301 - Do real Capability token check
     if cap.cap_type.membrane != Membrane::Zome {
         // Send Failed Result
         state.ribosome_calls.insert(
             fn_call.clone(),
             Some(Err(HolochainError::DoesNotHaveCapabilityToken)),
         );
-        // println!("fn_res = {:?}", fn_res);
-        action_channel
-            .send(action_wrapper.clone())
-            // .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(fn_res)))
-            .expect("action channel to be open in reducer");
         return;
     }
 
@@ -200,12 +200,39 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use holochain_agent::Agent;
+    use holochain_dna::Dna;
+    use context::Context;
+    use persister::SimplePersister;
     use super::*;
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{
+            ZomeAPIFunction,
+            tests::{test_zome_api_function_runtime,
+                    test_zome_name,
+                    test_capability,
+                    test_function_name,
+                    test_parameters,
+                    test_zome_api_function_wasm,
+                    test_zome_api_function_call,
+            },
+        },
         Defn,
     };
+    use instance::{
+        tests::{test_context_and_logger, test_instance, TestLogger},
+        Instance,
+    };
+    use test_utils::{
+        create_test_cap,
+        create_test_dna_with_cap,
+        test_context,
+
+    };
     use serde_json;
+    use std::{
+        sync::{Arc, Mutex},
+    };
 
     /// dummy commit args from standard test entry
     pub fn test_bad_args_bytes() -> Vec<u8> {
@@ -222,33 +249,114 @@ pub mod tests {
 
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeCallArgs {
-            zome_name: "test_zome".to_string(),
-            cap_name: "".to_string(),
-            fn_name: "test".to_string(),
-            fn_args: "".to_string(),
+            zome_name: test_zome_name(),
+            cap_name: test_capability(),
+            fn_name: test_function_name(),
+            fn_args: test_parameters(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
             .into_bytes()
     }
 
-    /// test that we can round trip bytes through a commit action and get the result from WASM
-    #[test]
-    fn test_call_round_trip() {
-        let (runtime, _) =
-            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_args_bytes());
-        println!("test_call_round_trip");
 
-        assert_eq!(runtime.result, format!(r#""#),);
+    fn create_context() -> Arc<Context> {
+         Arc::new(Context {
+                    agent: Agent::from_string("alex".to_string()),
+                    logger:  Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+                    persister: Arc::new(Mutex::new(SimplePersister::new())),
+                })
+    }
+
+    fn test_reduce_call(dna: Dna, expected: Result<String, HolochainError>) {
+        let context = create_context();
+
+        let zome_call = FunctionCall::new("test_zome", "test_cap", "main", "");
+        let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
+
+        // Set up instance and process the action
+        // let instance = Instance::new();
+        let instance = test_instance(dna);
+        let (sender, receiver) = channel();
+        let closure = move |state: &::state::State| {
+            // Observer waits for a ribosome_call_result
+            let opt_res = state.nucleus().ribosome_call_result(&zome_call);
+            println!("\t opt_res: {:?}", opt_res);
+            match opt_res {
+                Some(res) => {
+                    // @TODO never panic in wasm
+                    // @see https://github.com/holochain/holochain-rust/issues/159
+                    sender
+                        .send(res)
+                        // the channel stays connected until the first message has been sent
+                        // if this fails that means that it was called after having returned done=true
+                        .expect("observer called after done");
+
+                    true
+                }
+                None => false,
+            }
+        };
+
+        let observer = Observer {
+            sensor: Box::new(closure),
+        };
+
+        let mut state_observers: Vec<Observer> = Vec::new();
+        state_observers.push(observer);
+        let (_, rx_observer) = channel::<Observer>();
+        instance.process_action(zome_call_action, state_observers, &rx_observer, &context);
+
+        println!("waiting...");
+        let action_result = receiver
+            .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
+            .expect("observer dropped before done");
+        println!("Done: {:?}", action_result);
+
+        assert_eq!(expected, action_result);
+    }
+
+    #[test]
+    fn test_call_no_token() {
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let expected = Err(HolochainError::DoesNotHaveCapabilityToken);
+        test_reduce_call(dna, expected);
     }
 
     #[test]
     fn test_call_no_zome() {
-        let (runtime, _) =
-            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_bad_args_bytes());
-        println!("test_call_round_trip");
-
-        assert_eq!(runtime.result, format!(r#""#),);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let expected = Err(HolochainError::ZomeNotFound(r#"Zome '"test_zome"' not found"#.to_string()));
+        test_reduce_call(dna, expected);
     }
+
+    #[test]
+    fn test_call_ok() {
+        let wasm = test_zome_api_function_wasm(ZomeAPIFunction::Call.as_str());
+        let cap = create_test_cap(Membrane::Zome, &wasm);
+
+        let dna = create_test_dna_with_cap(
+            &test_zome_name(),
+            "test_cap",
+            &cap,
+        );
+
+        let expected = Err(HolochainError::DoesNotHaveCapabilityToken);
+        test_reduce_call(dna, expected);
+    }
+
+//    #[test]
+//    fn test_call_no_token() {
+//        let (runtime, _) =
+//            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_args_bytes());
+//        assert_eq!(runtime.result, format!(r#""#),);
+//    }
+//
+//    #[test]
+//    fn test_call_no_zome() {
+//        let (runtime, _) =
+//            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_bad_args_bytes());
+//        assert_eq!(runtime.result, format!(r#""#),);
+//    }
 
 }

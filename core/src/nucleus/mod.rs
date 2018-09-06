@@ -46,6 +46,12 @@ impl FunctionCall {
             parameters: parameters.to_string(),
         }
     }
+
+    pub fn same_as(&self, fn_call: &FunctionCall) -> bool {
+        self.zome == fn_call.zome &&
+        self.capability == fn_call.capability &&
+        self.function == fn_call.function
+    }
 }
 
 /// WIP - Struct for holding data when requesting an Entry Validation (ValidateEntry Action)

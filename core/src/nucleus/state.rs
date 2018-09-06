@@ -72,7 +72,7 @@ impl NucleusState {
             return Err(FunctionResult::new(
                 fc.clone(),
                 Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{:?}' not found",
+                    "Zome '{}' not found",
                     &fc.zome
                 ))),
             ));
@@ -107,7 +107,7 @@ impl NucleusState {
             return Err(FunctionResult::new(
                 fc.clone(),
                 Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{:?}' not found",
+                    "Zome '{}' not found",
                     &fc.zome
                 ))),
             ));

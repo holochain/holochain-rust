@@ -50,13 +50,13 @@ pub enum ZomeApiFunction {
     /// debug(s: String)
     Debug,
 
-    /// Commit an entry to source chain
+    /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_content: String) -> Hash
-    CommitEntry,
+    CommitAppEntry,
 
-    /// Get an entry from source chain by key (header hash)
+    /// Get an app entry from source chain by key (header hash)
     /// get_entry(key: String) -> Pair
-    GetEntry,
+    GetAppEntry,
 
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
@@ -68,8 +68,8 @@ impl Defn for ZomeApiFunction {
         match *self {
             ZomeApiFunction::MissingNo => "",
             ZomeApiFunction::Debug => "hc_debug",
-            ZomeApiFunction::CommitEntry => "hc_commit_entry",
-            ZomeApiFunction::GetEntry => "hc_get_entry",
+            ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
+            ZomeApiFunction::GetAppEntry => "hc_get_entry",
             ZomeApiFunction::InitGlobals => "hc_init_globals",
         }
     }
@@ -89,21 +89,10 @@ impl Defn for ZomeApiFunction {
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
-        match *self {
-            ZomeApiFunction::MissingNo => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeApiFunction::Debug => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeApiFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeApiFunction::GetEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeApiFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
-        }
+        // Zome API Functions are not part of any zome and capability
+        // @TODO architecture issue?
+        // @see https://github.com/holochain/holochain-rust/issues/299
+        unreachable!();
     }
 }
 
@@ -112,8 +101,8 @@ impl FromStr for ZomeApiFunction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "hc_debug" => Ok(ZomeApiFunction::Debug),
-            "hc_commit_entry" => Ok(ZomeApiFunction::CommitEntry),
-            "hc_get_entry" => Ok(ZomeApiFunction::GetEntry),
+            "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
+            "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
@@ -130,8 +119,8 @@ impl ZomeApiFunction {
         match *self {
             ZomeApiFunction::MissingNo => noop,
             ZomeApiFunction::Debug => invoke_debug,
-            ZomeApiFunction::CommitEntry => invoke_commit_entry,
-            ZomeApiFunction::GetEntry => invoke_get_entry,
+            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
         }
     }
@@ -516,11 +505,11 @@ pub mod tests {
             ZomeApiFunction::from_str("hc_debug").unwrap(),
         );
         assert_eq!(
-            ZomeApiFunction::CommitEntry,
+            ZomeApiFunction::CommitAppEntry,
             ZomeApiFunction::from_str("hc_commit_entry").unwrap(),
         );
         assert_eq!(
-            ZomeApiFunction::GetEntry,
+            ZomeApiFunction::GetAppEntry,
             ZomeApiFunction::from_str("hc_get_entry").unwrap(),
         );
 

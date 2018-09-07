@@ -53,11 +53,11 @@ pub enum ZomeApiFunction {
     /// debug(s: String)
     Debug,
 
-    /// Commit an entry to source chain
+    /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_content: String) -> Hash
     CommitAppEntry,
 
-    /// Get an entry from source chain by key (header hash)
+    /// Get an app entry from source chain by key (header hash)
     /// get_entry(key: String) -> Pair
     GetAppEntry,
 
@@ -240,7 +240,7 @@ pub fn call(
         }
     }
 
-    // Correlate the names of the core ZomeAPIFunction's with their indexes
+    // Correlate the names of the core ZomeApiFunction's with their indexes
     // and declare its function signature (which is always the same)
     struct RuntimeModuleImportResolver;
     impl ModuleImportResolver for RuntimeModuleImportResolver {
@@ -249,7 +249,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            // Take the canonical name and find the corresponding ZomeAPIFunction index
+            // Take the canonical name and find the corresponding ZomeApiFunction index
             let index = ZomeApiFunction::str_to_index(&field_name);
             match index {
                 index if index == ZomeApiFunction::MissingNo as usize => {

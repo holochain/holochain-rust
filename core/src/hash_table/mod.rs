@@ -15,8 +15,8 @@ use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
     meta::EntryMeta,
-    status::{CrudStatus, LINK_NAME, STATUS_NAME},
     sys_entry::ToEntry,
+    status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
 use nucleus::ribosome::api::get_links::GetLinksArgs;

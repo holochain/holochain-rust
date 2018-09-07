@@ -1,5 +1,10 @@
 use error::HolochainError;
 use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
+use std::{
+    fs,
+    path::{Path, MAIN_SEPARATOR},
+};
+use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 use std::{
@@ -60,7 +65,7 @@ impl FileTable {
 
     /// given a Table enum, ensure that the correct sub-directory exists and return the string path
     fn dir(&self, table: Table) -> Result<String, HolochainError> {
-        let dir_string = format!("{}/{}", self.path, table.to_string());
+        let dir_string = format!("{}{}{}", self.path, MAIN_SEPARATOR, table.to_string());
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&dir_string)?;
@@ -69,7 +74,7 @@ impl FileTable {
 
     fn row_path(&self, table: Table, key: &str) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
-        Ok(format!("{}/{}.json", dir, key))
+        Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, key))
     }
 
     fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
@@ -151,6 +156,7 @@ pub mod tests {
     use key::Key;
     use regex::Regex;
     use serde_json;
+    use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};
 
     /// returns a new FileTable for testing and the TempDir created for it
@@ -184,8 +190,14 @@ pub mod tests {
     /// dir returns a sensible string for every Table enum variant
     fn test_dir() {
         let (table, _dir) = test_table();
-
-        let re = |s| Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex");
+        let re = |s| {
+            let regex_str = if MAIN_SEPARATOR == '\\' {
+                format!(r".*\.tmp.*\{}{}", MAIN_SEPARATOR, s)
+            } else {
+                format!(r".*\.tmp.*{}{}", MAIN_SEPARATOR, s)
+            };
+            Regex::new(&regex_str).expect("failed to build regex")
+        };
 
         for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
             assert!(
@@ -204,7 +216,18 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         let re = |s, k| {
-            Regex::new(&format!(r".*\.tmp.*/{}/{}\.json", s, k)).expect("failed to build regex")
+            let regex_str = if MAIN_SEPARATOR == '\\' {
+                format!(
+                    r".*\.tmp.*\{}{}\{}{}\.json",
+                    MAIN_SEPARATOR, s, MAIN_SEPARATOR, k
+                )
+            } else {
+                format!(
+                    r".*\.tmp.*{}{}{}{}\.json",
+                    MAIN_SEPARATOR, s, MAIN_SEPARATOR, k
+                )
+            };
+            Regex::new(&regex_str).expect("failed to build regex")
         };
 
         for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {

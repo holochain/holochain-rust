@@ -145,7 +145,7 @@ impl FunctionResult {
 /// otherwise set the failed message
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-fn reduce_rir(
+fn reduce_return_initialization_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -181,7 +181,7 @@ fn return_initialization_result(result: Option<String>, action_channel: &Sender<
 /// Send ExecuteZomeFunction Action of the genesis callback of every zome
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-fn reduce_ia(
+fn reduce_init_application(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -268,7 +268,7 @@ fn reduce_ia(
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
-fn reduce_ezf(
+fn reduce_execute_zome_function(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -362,7 +362,7 @@ fn reduce_ezf(
 /// Validate an Entry by calling its validation function
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-fn reduce_ve(
+fn reduce_validate_entry(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -385,11 +385,11 @@ fn reduce_ve(
     }
 }
 
-/// reduce ReturnZomeFunctionResult
-/// simply drops function call into ribosome_calls state
+/// Reduce ReturnZomeFunctionResult Action.
+/// Simply drops function call into ribosome_calls state.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
-fn reduce_rzfr(
+fn reduce_return_zome_function_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -405,11 +405,11 @@ fn reduce_rzfr(
 
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
-        Action::ReturnInitializationResult(_) => Some(reduce_rir),
-        Action::InitApplication(_) => Some(reduce_ia),
-        Action::ExecuteZomeFunction(_) => Some(reduce_ezf),
-        Action::ReturnZomeFunctionResult(_) => Some(reduce_rzfr),
-        Action::ValidateEntry(_) => Some(reduce_ve),
+        Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
+        Action::InitApplication(_) => Some(reduce_init_application),
+        Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
+        Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
+        Action::ValidateEntry(_) => Some(reduce_validate_entry),
         _ => None,
     }
 }
@@ -525,7 +525,7 @@ pub mod tests {
 
     #[test]
     /// test for returning zome function result actions
-    fn test_reduce_rzfr() {
+    fn test_reduce_return_zome_function_result() {
         let context = test_context("jimmy");
         let instance = test_instance_blank();
         let mut state = test_nucleus_state();
@@ -536,7 +536,7 @@ pub mod tests {
         let action = action_wrapper.action();
         let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
 
-        reduce_rzfr(
+        reduce_return_zome_function_result(
             context,
             &mut state,
             &action_wrapper,

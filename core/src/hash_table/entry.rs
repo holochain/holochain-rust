@@ -321,7 +321,7 @@ pub mod tests {
             EntryType::AgentId,
             EntryType::Deletion,
             EntryType::Dna,
-            EntryType::Headers,
+            EntryType::Header,
             EntryType::Key,
             EntryType::Link,
             EntryType::Migration,

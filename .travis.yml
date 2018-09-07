@@ -14,7 +14,7 @@ jobs:
       install: docker pull holochain/holochain-rust:develop
       script:
         - . docker/run make wasm_build
-        - . docker/run-cov
+        - . docker/run-codecov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 

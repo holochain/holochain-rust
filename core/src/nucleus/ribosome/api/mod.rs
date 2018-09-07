@@ -25,7 +25,7 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 use wasmi::{
-    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    self, Error as InterpreterError, Externals, NopExternals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
     ValueType,
 };
@@ -266,10 +266,10 @@ pub fn call(
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
-    // Create module instance from wasm module, and without starting it
+    // Create module instance from wasm module, and start it if start is defined
     let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
-        .assert_no_start();
+        .run_start(&mut NopExternals)?;
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();

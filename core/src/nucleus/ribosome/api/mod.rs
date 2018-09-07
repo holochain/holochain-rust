@@ -103,7 +103,10 @@ impl Defn for ZomeApiFunction {
 
     // Zome API Functions are not part of any zome and capability
     fn capability(&self) -> ReservedCapabilityNames {
-        panic!("Zome API Functions are not part of any zome and capability");
+        // Zome API Functions are not part of any zome and capability
+        // @TODO architecture issue?
+        // @see https://github.com/holochain/holochain-rust/issues/299
+        unreachable!();
     }
 }
 

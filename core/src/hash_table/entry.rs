@@ -1,10 +1,14 @@
 use error::HolochainError;
 use hash;
+use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::hash::{Hash as StdHash, Hasher};
+use std::{
+    hash::{Hash as StdHash, Hasher},
+    str::FromStr,
+};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -75,6 +79,16 @@ impl Entry {
         // always valid if immutable and new() enforces validity
         true
     }
+
+    /// returns true if the entry type is a system entry
+    pub fn is_sys(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
+    }
+
+    /// returns true if the entry type is an app entry
+    pub fn is_app(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
+    }
 }
 
 impl Key for Entry {
@@ -101,7 +115,7 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use hash_table::entry::Entry;
+    use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
@@ -298,5 +312,31 @@ pub mod tests {
         assert_eq!(expected, e.to_json().unwrap());
         assert_eq!(e, Entry::from_json(expected).unwrap());
         assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// test that we can detect system entry types
+    fn is_sys() {
+        for sys_type in vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::Dna,
+            EntryType::Headers,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+        ] {
+            let entry = Entry::new(sys_type.as_str(), "");
+            assert!(entry.is_sys());
+            assert!(!entry.is_app());
+        }
+    }
+
+    #[test]
+    /// test that we can detect app entry types
+    fn is_app() {
+        let entry = Entry::new("foo", "");
+        assert!(entry.is_app());
+        assert!(!entry.is_sys());
     }
 }

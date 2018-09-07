@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -f docker/Dockerfile.codecov -t holochain/holochain-rust:codecov "$@" .
+docker build -f docker/Dockerfile.codecov -t holochain/holochain-rust-codecov:develop "$@" .

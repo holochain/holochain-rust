@@ -6,3 +6,5 @@ coverage:
     project:
       default:
         target: 85
+
+    patch: no

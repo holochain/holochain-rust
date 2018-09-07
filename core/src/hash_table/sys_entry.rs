@@ -191,7 +191,7 @@ pub mod tests {
             (sys_prefix!("agent_id"), EntryType::AgentId),
             (sys_prefix!("deletion"), EntryType::Deletion),
             (sys_prefix!("dna"), EntryType::Dna),
-            (sys_prefix!("headers"), EntryType::Headers),
+            (sys_prefix!("header"), EntryType::Header),
             (sys_prefix!("key"), EntryType::Key),
             (sys_prefix!("link"), EntryType::Link),
             (sys_prefix!("migration"), EntryType::Migration),

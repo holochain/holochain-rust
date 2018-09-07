@@ -524,7 +524,7 @@ pub mod tests {
 
     #[test]
     /// test for returning zome function result actions
-    fn test_reduce_rzfr() {
+    fn test_reduce_return_zome_function_result() {
         let context = test_context("jimmy");
         let instance = test_instance_blank();
         let mut state = test_nucleus_state();

@@ -13,5 +13,3 @@ RUN make wasm_build
 # we can't warm with a tarpaulin run as codecov requires runtime docker args
 RUN cargo +${WASM_NIGHTLY} test
 USER root
-
-CMD cargo +${WASM_NIGHTLY} tarpaulin --all --out Xml

@@ -22,6 +22,9 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
+extern crate regex;
+extern crate tempfile;
+extern crate walkdir;
 
 extern crate config;
 extern crate holochain_agent;
@@ -37,6 +40,8 @@ pub mod error;
 pub mod hash;
 pub mod hash_table;
 pub mod instance;
+pub mod json;
+pub mod key;
 pub mod logger;
 pub mod nucleus;
 pub mod persister;

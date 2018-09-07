@@ -7,6 +7,7 @@ use error::HolochainError;
 use hash_table::entry::Entry;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use instance::Observer;
+use json::ToJson;
 use nucleus::{
     call_zome_and_wait_for_result,
     ribosome::{
@@ -136,7 +137,7 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json(),
+            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
             CallbackParams::Receive => "".to_string(),
         }
     }

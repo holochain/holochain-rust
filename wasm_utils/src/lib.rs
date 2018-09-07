@@ -16,7 +16,7 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 pub enum HcApiReturnCode {
     Success = 0,
     Error = 1 << 16,
-    ErrorSerdeJson = 2 << 16,
+    ErrorJson = 2 << 16,
     ErrorPageOverflow = 3 << 16,
     ErrorActionResult = 4 << 16,
     ErrorCallbackResult = 5 << 16,
@@ -31,7 +31,7 @@ pub fn encode_error(offset: u16) -> HcApiReturnCode {
         // @TODO what is a success error?
         // @see https://github.com/holochain/holochain-rust/issues/181
         0 => HcApiReturnCode::Success,
-        2 => HcApiReturnCode::ErrorSerdeJson,
+        2 => HcApiReturnCode::ErrorJson,
         3 => HcApiReturnCode::ErrorPageOverflow,
         4 => HcApiReturnCode::ErrorActionResult,
         1 | _ => HcApiReturnCode::Error,
@@ -124,7 +124,7 @@ impl SinglePageStack {
         }
     }
 
-    pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
+    pub fn from_encoded(encoded_last_allocation: u32) -> Self {
         let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");
@@ -227,7 +227,7 @@ pub mod tests {
 
         assert_eq!(super::encode_error(1), HcApiReturnCode::Error);
 
-        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorSerdeJson);
+        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorJson);
 
         assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow);
 
@@ -264,7 +264,7 @@ pub mod tests {
         assert_eq!(
             // offset 2 = serde json error
             SinglePageAllocation::new(0b0000000000000010_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ErrorSerdeJson,
+            HcApiReturnCode::ErrorJson,
         );
 
         assert_eq!(

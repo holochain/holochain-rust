@@ -26,9 +26,9 @@ macro_rules! sys_prefix {
 pub enum EntryType {
     AgentId,
     Deletion,
-    Data,
+    App,
     Dna,
-    Headers,
+    Header,
     Key,
     Link,
     Migration,
@@ -42,11 +42,11 @@ impl FromStr for EntryType {
             sys_prefix!("agent_id") => Ok(EntryType::AgentId),
             sys_prefix!("deletion") => Ok(EntryType::Deletion),
             sys_prefix!("dna") => Ok(EntryType::Dna),
-            sys_prefix!("headers") => Ok(EntryType::Headers),
+            sys_prefix!("header") => Ok(EntryType::Header),
             sys_prefix!("key") => Ok(EntryType::Key),
             sys_prefix!("link") => Ok(EntryType::Link),
             sys_prefix!("migration") => Ok(EntryType::Migration),
-            _ => Ok(EntryType::Data),
+            _ => Ok(EntryType::App),
         }
     }
 }
@@ -54,11 +54,11 @@ impl FromStr for EntryType {
 impl EntryType {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            EntryType::Data => panic!("should not try to convert a custom data entry to str"),
+            EntryType::App => panic!("should not try to convert an app entry type to str"),
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
-            EntryType::Headers => sys_prefix!("headers"),
+            EntryType::Header => sys_prefix!("header"),
             EntryType::Key => sys_prefix!("key"),
             EntryType::Link => sys_prefix!("link"),
             EntryType::Migration => sys_prefix!("migration"),
@@ -78,7 +78,7 @@ impl ToEntry for Dna {
 
     fn new_from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
-        return Dna::new_from_json(&entry.content()).expect("entry is not a valid Dna Entry");
+        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
 
@@ -178,4 +178,26 @@ pub mod tests {
                 _ => false,
             });
     }
+
+    #[test]
+    /// converting a str to an EntryType and back
+    fn test_from_as_str() {
+        for (type_str, variant) in vec![
+            (sys_prefix!("agent_id"), EntryType::AgentId),
+            (sys_prefix!("deletion"), EntryType::Deletion),
+            (sys_prefix!("dna"), EntryType::Dna),
+            (sys_prefix!("header"), EntryType::Header),
+            (sys_prefix!("key"), EntryType::Key),
+            (sys_prefix!("link"), EntryType::Link),
+            (sys_prefix!("migration"), EntryType::Migration),
+        ] {
+            assert_eq!(
+                variant,
+                EntryType::from_str(type_str).expect("could not convert str to EntryType")
+            );
+
+            assert_eq!(type_str, variant.as_str(),);
+        }
+    }
+
 }

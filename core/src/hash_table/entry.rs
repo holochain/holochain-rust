@@ -1,7 +1,14 @@
+use error::HolochainError;
 use hash;
+use hash_table::sys_entry::EntryType;
+use json::{FromJson, ToJson};
+use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::hash::{Hash as StdHash, Hasher};
+use std::{
+    hash::{Hash as StdHash, Hasher},
+    str::FromStr,
+};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -73,39 +80,45 @@ impl Entry {
         true
     }
 
-    /// returns the key used for lookups in chain, HT, etc.
-    /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
-    pub fn key(&self) -> String {
+    /// returns true if the entry type is a system entry
+    pub fn is_sys(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
+    }
+
+    /// returns true if the entry type is an app entry
+    pub fn is_app(&self) -> bool {
+        EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
+    }
+}
+
+impl Key for Entry {
+    fn key(&self) -> String {
         self.hash()
     }
+}
 
-    /// serialize the Entry to a canonical JSON string
-    ///
+impl ToJson for Entry {
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn to_json(&self) -> String {
-        // @TODO error handling
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        serde_json::to_string(&self).expect("should serialize without error")
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(&self)?)
     }
+}
 
-    /// deserialize an Entry from a canonical JSON string
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string passed isn't valid JSON.
+impl FromJson for Entry {
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    /// @TODO don't return invalid entries
-    pub fn from_json(s: &str) -> Entry {
-        let entry: Entry = serde_json::from_str(s).expect("JSON should be valid");
-        entry
+    fn from_json(s: &str) -> Result<Self, HolochainError> {
+        Ok(serde_json::from_str(s)?)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use super::Entry;
+    use hash_table::{entry::Entry, sys_entry::EntryType};
+    use json::{FromJson, ToJson};
+    use key::Key;
+    use snowflake;
 
     /// dummy entry type
     pub fn test_type() -> String {
@@ -155,6 +168,11 @@ pub mod tests {
     /// dummy entry, differs from test_entry()
     pub fn test_entry_b() -> Entry {
         Entry::new(&test_type_b(), &test_content_b())
+    }
+
+    /// dummy entry with unique string content
+    pub fn test_entry_unique() -> Entry {
+        Entry::new(&test_type(), &snowflake::ProcessUniqueId::new().to_string())
     }
 
     #[test]
@@ -282,7 +300,7 @@ pub mod tests {
 
     #[test]
     /// tests for entry.key()
-    fn key() {
+    fn test_key() {
         assert_eq!(test_entry().hash(), test_entry().key());
     }
 
@@ -291,8 +309,34 @@ pub mod tests {
     fn json_round_trip() {
         let e = test_entry_a();
         let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
-        assert_eq!(expected, e.to_json());
-        assert_eq!(e, Entry::from_json(expected));
-        assert_eq!(e, Entry::from_json(&e.to_json()));
+        assert_eq!(expected, e.to_json().unwrap());
+        assert_eq!(e, Entry::from_json(expected).unwrap());
+        assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// test that we can detect system entry types
+    fn is_sys() {
+        for sys_type in vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::Dna,
+            EntryType::Header,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+        ] {
+            let entry = Entry::new(sys_type.as_str(), "");
+            assert!(entry.is_sys());
+            assert!(!entry.is_app());
+        }
+    }
+
+    #[test]
+    /// test that we can detect app entry types
+    fn is_app() {
+        let entry = Entry::new("foo", "");
+        assert!(entry.is_app());
+        assert!(!entry.is_sys());
     }
 }

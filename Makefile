@@ -48,16 +48,27 @@ test_non_c: main
 
 test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 
+.PHONY: install_rustup
+install_rustup:
+	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${WASM_NIGHTLY} -y; \
+	export PATH=$HOME/.cargo/bin:$PATH
+
 .PHONY: install_rust_wasm
 install_rust_wasm:
 	rustup toolchain install ${WASM_NIGHTLY}
 	rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 
+.PHONY: install_rust_tools
+install_rust_tools:
+	rustup toolchain install ${TOOLS_NIGHTLY}
+
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	if ! cargo +${WASM_NIGHTLY} install --list | grep 'cargo-tarpaulin'; then \
-		RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +${WASM_NIGHTLY} install cargo-tarpaulin; \
-	fi
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +${WASM_NIGHTLY} install cargo-tarpaulin || echo "Tarpaulin already installed"
+
+.PHONY: install_mdbook
+install_mdbook:
+	cargo install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: wasm_build
 wasm_build:

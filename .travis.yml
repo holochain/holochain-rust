@@ -1,6 +1,3 @@
-services:
-  - docker
-
 dist: trusty
 
 # https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
@@ -13,9 +10,17 @@ branches:
 jobs:
   include:
     - name: "C tests"
-      install: docker pull holochain/holochain-rust:develop
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - make install_rustup
+        - make install_rust_wasm
       script:
-        - . docker/run make build test_c_ci
+        - make build test_c_ci
 
     - name: "Standard tests + code coverage"
       # manually cache as we manually install rustup
@@ -24,27 +29,37 @@ jobs:
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
-      sudo: false
       install:
-        - curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
-        - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_rustup
         - make install_rust_wasm
-        - make wasm_build
         - make install_tarpaulin
-      script: make cov
+      script: make wasm_build cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 
     - name: "Formatting & clippy"
-      install: docker pull holochain/holochain-rust:develop
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - make install_rustup
+        - make install_rust_tools
       script:
-        - . docker/run make fmt_check
-        - . docker/run make clippy
+        - make fmt_check
+        - make clippy
 
     - name: "Mdbook Build"
-      language: rust
-      cache: cargo
-      install: cargo install mdbook --vers "^0.1.0" || echo "Mdbook already installed"
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - make install_mdbook
       script: ./travis-update-book.sh
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"

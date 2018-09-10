@@ -24,23 +24,23 @@ use hash_table::sys_entry::ToEntry;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct FunctionCall {
+pub struct ZomeFnCall {
     id: snowflake::ProcessUniqueId,
-    pub zome: String,
-    pub capability: String,
-    pub function: String,
+    pub zome_name: String,
+    pub cap_name: String,
+    pub fn_name: String,
     pub parameters: String,
 }
 
-impl FunctionCall {
+impl ZomeFnCall {
     pub fn new(zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
-        FunctionCall {
+        ZomeFnCall {
             // @TODO can we defer to the ActionWrapper id?
             // @see https://github.com/holochain/holochain-rust/issues/198
             id: snowflake::ProcessUniqueId::new(),
-            zome: zome.to_string(),
-            capability: capability.to_string(),
-            function: function.to_string(),
+            zome_name: zome.to_string(),
+            cap_name: capability.to_string(),
+            fn_name: function.to_string(),
             parameters: parameters.to_string(),
         }
     }
@@ -66,7 +66,7 @@ impl EntrySubmission {
 
 /// Dispatch ExecuteZoneFunction to and block until call has finished.
 pub fn call_zome_and_wait_for_result(
-    call: FunctionCall,
+    call: ZomeFnCall,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Result<String, HolochainError> {
@@ -79,7 +79,7 @@ pub fn call_zome_and_wait_for_result(
         observer_channel,
         call_action_wrapper,
         move |state: &super::state::State| {
-            if let Some(result) = state.nucleus().ribosome_call_result(&call) {
+            if let Some(result) = state.nucleus().zome_call_result(&call) {
                 sender
                     .send(result.clone())
                     .expect("local channel to be open");
@@ -96,7 +96,7 @@ pub fn call_zome_and_wait_for_result(
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 /// for test only??
 pub fn call_and_wait_for_result(
-    call: FunctionCall,
+    call: ZomeFnCall,
     instance: &mut super::instance::Instance,
 ) -> Result<String, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
@@ -104,7 +104,7 @@ pub fn call_and_wait_for_result(
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = channel();
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
-        if let Some(result) = state.nucleus().ribosome_call_result(&call) {
+        if let Some(result) = state.nucleus().zome_call_result(&call) {
             sender
                 .send(result.clone())
                 .expect("local channel to be open");
@@ -119,18 +119,18 @@ pub fn call_and_wait_for_result(
 }
 
 #[derive(Clone, Debug, PartialEq, Hash)]
-pub struct FunctionResult {
-    call: FunctionCall,
+pub struct ZomeFnResult {
+    call: ZomeFnCall,
     result: Result<String, HolochainError>,
 }
 
-impl FunctionResult {
-    fn new(call: FunctionCall, result: Result<String, HolochainError>) -> Self {
-        FunctionResult { call, result }
+impl ZomeFnResult {
+    fn new(call: ZomeFnCall, result: Result<String, HolochainError>) -> Self {
+        ZomeFnResult { call, result }
     }
 
     /// read only access to call
-    pub fn call(&self) -> FunctionCall {
+    pub fn call(&self) -> ZomeFnCall {
         self.call.clone()
     }
 
@@ -282,22 +282,22 @@ fn reduce_execute_zome_function(
     let fc = function_call.clone();
 
     let mut has_error = false;
-    let mut result = FunctionResult::new(
+    let mut result = ZomeFnResult::new(
         fc.clone(),
         Err(HolochainError::ErrorGeneric("[]".to_string())),
     );
 
     if let Some(ref dna) = state.dna {
-        if let Some(ref zome) = dna.get_zome(&fc.zome) {
-            if let Some(ref wasm) = dna.get_capability(zome, &fc.capability) {
-                state.ribosome_calls.insert(fc.clone(), None);
+        if let Some(ref zome) = dna.get_zome(&fc.zome_name) {
+            if let Some(ref wasm) = dna.get_capability(zome, &fc.cap_name) {
+                state.zome_calls.insert(fc.clone(), None);
 
                 let action_channel = action_channel.clone();
                 let tx_observer = observer_channel.clone();
                 let code = wasm.code.clone();
                 let app_name = state.dna().unwrap().name;
                 thread::spawn(move || {
-                    let result: FunctionResult;
+                    let result: ZomeFnResult;
                     match ribosome::api::call(
                         &app_name,
                         context,
@@ -308,14 +308,14 @@ fn reduce_execute_zome_function(
                         Some(function_call.clone().parameters.into_bytes()),
                     ) {
                         Ok(runtime) => {
-                            result = FunctionResult::new(
+                            result = ZomeFnResult::new(
                                 function_call.clone(),
                                 Ok(runtime.result.to_string()),
                             );
                         }
 
                         Err(ref error) => {
-                            result = FunctionResult::new(
+                            result = ZomeFnResult::new(
                                 function_call.clone(),
                                 Err(HolochainError::ErrorGeneric(format!("{}", error))),
                             );
@@ -329,27 +329,27 @@ fn reduce_execute_zome_function(
                 });
             } else {
                 has_error = true;
-                result = FunctionResult::new(
+                result = ZomeFnResult::new(
                     fc.clone(),
                     Err(HolochainError::CapabilityNotFound(format!(
                         "Capability '{:?}' not found in Zome '{:?}'",
-                        &fc.capability, &fc.zome
+                        &fc.cap_name, &fc.zome_name
                     ))),
                 );
             }
         } else {
             has_error = true;
-            result = FunctionResult::new(
+            result = ZomeFnResult::new(
                 fc.clone(),
                 Err(HolochainError::ZomeNotFound(format!(
                     "Zome '{:?}' not found",
-                    &fc.zome
+                    &fc.zome_name
                 ))),
             );
         }
     } else {
         has_error = true;
-        result = FunctionResult::new(fc.clone(), Err(HolochainError::DnaMissing));
+        result = ZomeFnResult::new(fc.clone(), Err(HolochainError::DnaMissing));
     }
     if has_error {
         action_channel
@@ -400,7 +400,7 @@ fn reduce_return_zome_function_result(
     let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
     // @TODO store the action and result directly
     // @see https://github.com/holochain/holochain-rust/issues/198
-    state.ribosome_calls.insert(fr.call(), Some(fr.result()));
+    state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
@@ -453,29 +453,29 @@ pub mod tests {
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::{mpsc::channel, Arc};
 
-    /// dummy zome name compatible with FunctionCall
+    /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
         "foo zome".to_string()
     }
 
-    /// dummy capability compatible with FunctionCall
+    /// dummy capability compatible with ZomeFnCall
     pub fn test_capability() -> String {
         "foo capability".to_string()
     }
 
-    /// dummy function name compatible with FunctionCall
+    /// dummy function name compatible with ZomeFnCall
     pub fn test_function() -> String {
         "foo_function".to_string()
     }
 
-    /// dummy parameters compatible with FunctionCall
+    /// dummy parameters compatible with ZomeFnCall
     pub fn test_parameters() -> String {
         "".to_string()
     }
 
     /// dummy function call
-    pub fn test_function_call() -> FunctionCall {
-        FunctionCall::new(
+    pub fn test_zome_call() -> ZomeFnCall {
+        ZomeFnCall::new(
             &test_zome(),
             &test_capability(),
             &test_function(),
@@ -484,33 +484,33 @@ pub mod tests {
     }
 
     /// dummy function result
-    pub fn test_function_result() -> FunctionResult {
-        FunctionResult::new(test_function_call(), Ok("foo".to_string()))
+    pub fn test_call_result() -> ZomeFnResult {
+        ZomeFnResult::new(test_zome_call(), Ok("foo".to_string()))
     }
 
     #[test]
     /// test the equality and uniqueness of function calls (based on internal snowflakes)
-    fn test_function_call_eq() {
-        let fc1 = test_function_call();
-        let fc2 = test_function_call();
+    fn test_zome_call_eq() {
+        let zc1 = test_zome_call();
+        let zc2 = test_zome_call();
 
-        assert_eq!(fc1, fc1);
-        assert_ne!(fc1, fc2);
+        assert_eq!(zc1, zc1);
+        assert_ne!(zc1, zc2);
     }
 
     #[test]
     /// test access to function result's function call
-    fn test_function_result_call() {
-        let fc = test_function_call();
-        let fr = FunctionResult::new(fc.clone(), Ok("foo".to_string()));
+    fn test_zome_call_result() {
+        let zome_call = test_zome_call();
+        let call_result = ZomeFnResult::new(zome_call.clone(), Ok("foo".to_string()));
 
-        assert_eq!(fr.call(), fc);
+        assert_eq!(call_result.call(), zome_call);
     }
 
     #[test]
     /// test access to the result of function result
-    fn test_function_result_result() {
-        assert_eq!(test_function_result().result(), Ok("foo".to_string()));
+    fn test_call_result_result() {
+        assert_eq!(test_call_result().result(), Ok("foo".to_string()));
     }
 
     #[test]
@@ -544,7 +544,7 @@ pub mod tests {
             &instance.observer_channel(),
         );
 
-        assert!(state.ribosome_calls.contains_key(&fr.call()));
+        assert!(state.zome_calls.contains_key(&fr.call()));
     }
 
     #[test]
@@ -646,7 +646,7 @@ pub mod tests {
     #[test]
     /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
-        let call = FunctionCall::new("myZome", "public", "bogusfn", "");
+        let call = ZomeFnCall::new("myZome", "public", "bogusfn", "");
 
         let action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
@@ -664,14 +664,14 @@ pub mod tests {
 
     #[test]
     /// tests that calling a valid zome function returns a valid result
-    fn call_ribosome_function() {
+    fn call_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let mut instance = test_instance(dna);
 
         // Create zome function call
-        let call = FunctionCall::new("test_zome", "test_cap", "main", "");
+        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
 
-        let result = super::call_and_wait_for_result(call, &mut instance);
+        let result = super::call_and_wait_for_result(zome_call, &mut instance);
         match result {
             // Result 1337 from WASM (as string)
             Ok(val) => assert_eq!(val, "1337"),
@@ -686,7 +686,7 @@ pub mod tests {
 
         instance.start_action_loop(test_context("jane"));
 
-        let call = FunctionCall::new("test_zome", "test_cap", "main", "{}");
+        let call = ZomeFnCall::new("test_zome", "test_cap", "main", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
@@ -702,7 +702,7 @@ pub mod tests {
         let mut instance = test_instance(dna);
 
         // Create zome function call:
-        let call = FunctionCall::new("test_zome", "test_cap", "xxx", "{}");
+        let call = ZomeFnCall::new("test_zome", "test_cap", "xxx", "{}");
 
         let result = super::call_and_wait_for_result(call, &mut instance);
 
@@ -721,7 +721,7 @@ pub mod tests {
         let mut instance = test_instance(dna);
 
         // Create bad zome function call
-        let call = FunctionCall::new("xxx", "test_cap", "main", "{}");
+        let call = ZomeFnCall::new("xxx", "test_cap", "main", "{}");
 
         let result = super::call_and_wait_for_result(call, &mut instance);
 
@@ -731,7 +731,7 @@ pub mod tests {
         }
 
         // Create bad capability function call
-        let call = FunctionCall::new("test_zome", "xxx", "main", "{}");
+        let call = ZomeFnCall::new("test_zome", "xxx", "main", "{}");
 
         let result = super::call_and_wait_for_result(call, &mut instance);
 

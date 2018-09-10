@@ -44,7 +44,7 @@ pub fn invoke_commit_entry(
     if let CallbackResult::Fail(_) = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
-        &runtime.function_call.zome,
+        &runtime.zome_call.zome_name,
         &CallbackParams::ValidateCommit(entry.clone()),
     ) {
         return Ok(Some(RuntimeValue::I32(

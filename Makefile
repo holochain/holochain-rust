@@ -59,7 +59,8 @@ build:
 	$(CARGO) build --all
 	make wasm_build
 
-cov:
+.PHONY: codecov
+codecov:
 	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check:

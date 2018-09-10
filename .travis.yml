@@ -18,10 +18,9 @@ jobs:
         - . docker/run make build test_c_ci
 
     - name: "Standard tests + code coverage"
-      install: docker pull holochain/holochain-rust:develop
+      install: docker pull holochain/holochain-rust-codecov:develop
       script:
-        - . docker/run make wasm_build
-        - . docker/run-cov
+        - . docker/run-codecov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 

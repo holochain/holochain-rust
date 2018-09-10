@@ -53,6 +53,10 @@ install_rust_wasm:
 	rustup toolchain install ${WASM_NIGHTLY}
 	rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 
+.PHONY: install_tarpaulin
+install_tarpaulin:
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+
 .PHONY: wasm_build
 wasm_build:
 	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown

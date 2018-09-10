@@ -17,6 +17,7 @@ jobs:
       install:
         - make install_rust_wasm
         - make wasm_build
+        - make install_tarpaulin
       script: make cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)

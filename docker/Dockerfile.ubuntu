@@ -42,7 +42,7 @@ RUN rustup toolchain install ${TOOLS_NIGHTLY}
 RUN rustup component add rustfmt-preview --toolchain ${TOOLS_NIGHTLY}
 RUN rustup component add clippy-preview --toolchain ${TOOLS_NIGHTLY}
 
-RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+RUN make install_tarpaulin
 
 WORKDIR /holochain
 

@@ -51,7 +51,7 @@ test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 .PHONY: install_rust_wasm
 install_rust_wasm:
 	rustup toolchain install ${WASM_NIGHTLY}
-  rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
+	rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 
 .PHONY: wasm_build
 wasm_build:

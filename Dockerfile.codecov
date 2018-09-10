@@ -4,7 +4,7 @@ RUN chown holochain:holochain /holochain
 USER ${DOCKER_BUILD_USER}
 
 # docker hub sets working directory to the directory containing the Dockerfile
-COPY --chown=holochain .. /holochain
+COPY --chown=holochain . /holochain
 
 WORKDIR /holochain
 

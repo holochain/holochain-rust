@@ -24,6 +24,7 @@ pub enum HolochainError {
     ZomeFunctionNotFound(String),
     IoError(String),
     SerializationError(String),
+    InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
 }
 
@@ -63,10 +64,11 @@ impl Error for HolochainError {
             HolochainError::ZomeFunctionNotFound(err_msg) => &err_msg,
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
-            HolochainError::DoesNotHaveCapabilityToken => {
+            InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
+                    HolochainError::DoesNotHaveCapabilityToken => {
                 "Caller does not have Capability to make that call"
             }
-        }
+}
     }
 }
 

@@ -123,7 +123,7 @@ impl Default for FnDeclaration {
     /// Defaults for a "fn_declarations" object.
     fn default() -> Self {
         FnDeclaration {
-            name: String::from(""),
+            name: String::new(),
             inputs: Vec::new(),
             outputs: Vec::new(),
         }

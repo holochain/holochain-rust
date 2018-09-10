@@ -27,6 +27,7 @@ extern crate serde_json;
 extern crate base64;
 extern crate uuid;
 
+use serde_json::Value;
 use std::hash::{Hash, Hasher};
 
 pub mod wasm;
@@ -37,12 +38,12 @@ use uuid::Uuid;
 use zome::capabilities::Capability;
 
 /// serde helper, provides a default empty object
-fn _def_empty_object() -> serde_json::Value {
+fn empty_object() -> Value {
     json!({})
 }
 
 /// serde helper, provides a default newly generated v4 uuid
-fn _def_new_uuid() -> String {
+fn new_uuid() -> String {
     Uuid::new_v4().to_string()
 }
 
@@ -62,7 +63,7 @@ pub struct Dna {
     pub version: String,
 
     /// A unique identifier to distinguish your holochain application.
-    #[serde(default = "_def_new_uuid")]
+    #[serde(default = "new_uuid")]
     pub uuid: String,
 
     /// Which version of the holochain dna spec does this represent?
@@ -70,8 +71,8 @@ pub struct Dna {
     pub dna_spec_version: String,
 
     /// Any arbitrary application properties can be included in this object.
-    #[serde(default = "_def_empty_object")]
-    pub properties: serde_json::Value,
+    #[serde(default = "empty_object")]
+    pub properties: Value,
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
@@ -82,12 +83,12 @@ impl Default for Dna {
     /// Provide defaults for a dna object.
     fn default() -> Self {
         Dna {
-            name: String::from(""),
-            description: String::from(""),
-            version: String::from(""),
-            uuid: _def_new_uuid(),
+            name: String::new(),
+            description: String::new(),
+            version: String::new(),
+            uuid: new_uuid(),
             dna_spec_version: String::from("2.0"),
-            properties: _def_empty_object(),
+            properties: empty_object(),
             zomes: HashMap::new(),
         }
     }

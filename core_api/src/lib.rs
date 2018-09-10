@@ -59,8 +59,8 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
-    nucleus::{call_and_wait_for_result, state::NucleusStatus, FunctionCall},
+        instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
+    nucleus::{call_and_wait_for_result, state::NucleusStatus, ZomeFnCall},
     state::State,
 };
 use holochain_dna::Dna;
@@ -152,9 +152,9 @@ impl Holochain {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(&zome, &cap, &fn_name, &params);
+        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, &params);
 
-        call_and_wait_for_result(call, &mut self.instance)
+        call_and_wait_for_result(zome_call, &mut self.instance)
     }
 
     /// checks to see if an instance is active

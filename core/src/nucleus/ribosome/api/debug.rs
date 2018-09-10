@@ -19,7 +19,7 @@ pub fn invoke_debug(
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
 
@@ -37,7 +37,7 @@ pub mod tests {
     /// test that bytes passed to debug end up in the log
     fn test_debug() {
         let (_runtime, logger) =
-            test_zome_api_function_runtime(ZomeAPIFunction::Debug.as_str(), test_args_bytes());
+            test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let result = logger.lock();
         match result {
             Err(_) => assert!(false),

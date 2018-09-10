@@ -11,7 +11,7 @@ define a few related items.
 
 Within `nucleus::ribosome::api`:
 
-- A variant in the `ZomeAPIFunction` enum
+- A variant in the `ZomeApiFunction` enum
 - The same canonical string in _both_ `as_str` and `from_str`
 - A mapping to the API function under `as_fn`
 

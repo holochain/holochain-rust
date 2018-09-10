@@ -127,7 +127,7 @@ impl SinglePageStack {
         }
     }
 
-    pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
+    pub fn from_encoded(encoded_last_allocation: u32) -> Self {
         let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");

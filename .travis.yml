@@ -13,7 +13,8 @@ jobs:
     - name: "Standard tests + code coverage"
       cache: cargo
       install:
-        - curl https://sh.rustup.rs -sSf | sh -s -- -y
+        - curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
+        - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
         - make wasm_build
         - make install_tarpaulin

@@ -36,13 +36,11 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VE
 ENV PATH /home/${DOCKER_BUILD_USER}/.cargo/bin:$PATH
 RUN rustc --version
 
-RUN rustup toolchain install ${WASM_NIGHTLY}
+RUN make install_rust_wasm
 RUN rustup toolchain install ${TOOLS_NIGHTLY}
 
 RUN rustup component add rustfmt-preview --toolchain ${TOOLS_NIGHTLY}
 RUN rustup component add clippy-preview --toolchain ${TOOLS_NIGHTLY}
-
-RUN rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 
 RUN RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
 

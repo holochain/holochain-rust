@@ -1,9 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use json::ToJson;
-use nucleus::ribosome::api::{
-    HcApiReturnCode, Runtime,
-};
+use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};

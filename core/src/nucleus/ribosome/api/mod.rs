@@ -168,14 +168,10 @@ impl Runtime {
             .unwrap()
     }
 
-
     /// Store a string in wasm memory.
     /// Input should be a a json string.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_utf8(
-        &mut self,
-        json_str: &str,
-    ) -> Result<Option<RuntimeValue>, Trap> {
+    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
         // write str to runtime memory
         let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
         s_bytes.push(0); // Add string terminate character (important)

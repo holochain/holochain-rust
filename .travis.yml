@@ -11,7 +11,13 @@ jobs:
         - . docker/run make build test_c_ci
 
     - name: "Standard tests + code coverage"
-      cache: cargo
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      sudo: false
       install:
         - curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2018-06-01 -y
         - export PATH=$HOME/.cargo/bin:$PATH

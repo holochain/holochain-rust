@@ -84,7 +84,7 @@ impl NucleusState {
             return Err(ZomeFnResult::new(
                 fc.clone(),
                 Err(HolochainError::CapabilityNotFound(format!(
-                    "Capability '{:?}' not found in Zome '{:?}'",
+                    "Capability '{}' not found in Zome '{}'",
                     &fc.cap_name, &fc.zome_name
                 ))),
             ));
@@ -119,7 +119,7 @@ impl NucleusState {
             return Err(ZomeFnResult::new(
                 fc.clone(),
                 Err(HolochainError::CapabilityNotFound(format!(
-                    "Capability '{:?}' not found in Zome '{:?}'",
+                    "Capability '{}' not found in Zome '{}'",
                     &fc.cap_name, &fc.zome_name
                 ))),
             ));

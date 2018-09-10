@@ -53,21 +53,21 @@ impl fmt::Display for HolochainError {
 impl Error for HolochainError {
     fn description(&self) -> &str {
         match self {
-            HolochainError::ErrorGeneric(err_msg) => &err_msg,
-            HolochainError::NotImplemented => "not implemented",
-            HolochainError::InstanceNotActive => "the instance is not active",
-            HolochainError::InstanceActive => "the instance is active",
-            HolochainError::LoggingError => "logging failed",
-            HolochainError::DnaMissing => "DNA is missing",
-            HolochainError::ZomeNotFound(err_msg) => &err_msg,
-            HolochainError::CapabilityNotFound(err_msg) => &err_msg,
-            HolochainError::ZomeFunctionNotFound(err_msg) => &err_msg,
-            HolochainError::IoError(err_msg) => &err_msg,
-            HolochainError::SerializationError(err_msg) => &err_msg,
-            HolochainError::InvalidOperationOnSysEntry => {
+            ErrorGeneric(err_msg) => &err_msg,
+            NotImplemented => "not implemented",
+            InstanceNotActive => "the instance is not active",
+            InstanceActive => "the instance is active",
+            LoggingError => "logging failed",
+            DnaMissing => "DNA is missing",
+            ZomeNotFound(err_msg) => &err_msg,
+            CapabilityNotFound(err_msg) => &err_msg,
+            ZomeFunctionNotFound(err_msg) => &err_msg,
+            IoError(err_msg) => &err_msg,
+            SerializationError(err_msg) => &err_msg,
+            InvalidOperationOnSysEntry => {
                 "operation cannot be done on a system entry type"
             },
-            HolochainError::DoesNotHaveCapabilityToken => {
+            DoesNotHaveCapabilityToken => {
                 "Caller does not have Capability to make that call"
             }
 }

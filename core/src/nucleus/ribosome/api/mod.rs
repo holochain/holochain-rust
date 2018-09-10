@@ -152,7 +152,6 @@ pub struct Runtime {
 
 /// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
 pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
-    println!("runtime_args_to_utf8: {:?}", args);
     // @TODO don't panic in WASM
     // @see https://github.com/holochain/holochain-rust/issues/159
     assert_eq!(1, args.len());
@@ -160,10 +159,14 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
     // Read complex argument serialized in memory
     let encoded_allocation: u32 = args.nth(0);
     let allocation= SinglePageAllocation::new(encoded_allocation);
+    // Handle empty allocation edge case
+    if let Err(HcApiReturnCode::Success) = allocation {
+        return String::new();
+    }
     let allocation = allocation
         // @TODO don't panic in WASM
         // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
+        .expect("runtime_args_to_utf8(): received error instead of valid encoded allocation");
     let bin_arg = runtime.memory_manager.read(allocation);
 
     // deserialize complex argument
@@ -199,7 +202,7 @@ pub fn runtime_allocate_encode_str(
 }
 
 /// Executes an exposed function in a wasm binary
-///
+/// Multithreaded function
 /// panics if wasm isn't valid
 pub fn call(
     app_name: &str,

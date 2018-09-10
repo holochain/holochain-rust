@@ -393,7 +393,7 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-
+        println!("test_instance() - INIT DONE");
         instance
     }
 

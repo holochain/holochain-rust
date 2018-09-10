@@ -741,7 +741,7 @@ pub mod tests {
         match result {
             Err(HolochainError::CapabilityNotFound(err)) => assert_eq!(
                 err,
-                "Capability 'xxx' not found in Zome '\"test_zome\"'"
+                "Capability 'xxx' not found in Zome 'test_zome'"
             ),
             _ => assert!(false),
         }

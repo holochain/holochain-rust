@@ -51,7 +51,7 @@ test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 .PHONY: install_rustup
 install_rustup:
 	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${WASM_NIGHTLY} -y; \
-	export PATH=$HOME/.cargo/bin:$PATH
+	export PATH=${HOME}/.cargo/bin:${PATH}
 
 .PHONY: install_rust_wasm
 install_rust_wasm:

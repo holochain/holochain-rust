@@ -1,4 +1,4 @@
-use nucleus::ribosome::api::{runtime_args_to_utf8, Runtime};
+use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// HcApiFuncIndex::DEBUG function code
@@ -9,7 +9,7 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let arg = runtime_args_to_utf8(runtime, args);
+    let arg = runtime.load_utf8_from_args(args);
 
     println!("{}", arg);
     let _ = runtime.context.log(&arg);

@@ -142,51 +142,58 @@ pub struct Runtime {
     pub app_name: String,
 }
 
-/// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
-pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
-    // @TODO don't panic in WASM
-    // @see https://github.com/holochain/holochain-rust/issues/159
-    assert_eq!(1, args.len());
-
-    // Read complex argument serialized in memory
-    let encoded_allocation: u32 = args.nth(0);
-    let allocation = SinglePageAllocation::new(encoded_allocation);
-    let allocation = allocation
+impl Runtime {
+    /// Load a string stored in wasm memory.
+    /// Input RuntimeArgs should only have one input which is the encoded allocation holding
+    /// the complex data as an utf8 string.
+    /// Returns the utf8 string.
+    pub fn load_utf8_from_args(&self, args: &RuntimeArgs) -> String {
         // @TODO don't panic in WASM
         // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
-    let bin_arg = runtime.memory_manager.read(allocation);
+        assert_eq!(1, args.len());
 
-    // deserialize complex argument
-    String::from_utf8(bin_arg)
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-}
+        // Read complex argument serialized in memory
+        let encoded_allocation: u32 = args.nth(0);
+        let allocation = SinglePageAllocation::new(encoded_allocation);
+        let allocation = allocation
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .expect("received error instead of valid encoded allocation");
+        let bin_arg = self.memory_manager.read(allocation);
 
-/// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
-/// returns a Result suitable to return directly from a zome API function
-pub fn runtime_allocate_encode_str(
-    runtime: &mut Runtime,
-    s: &str,
-) -> Result<Option<RuntimeValue>, Trap> {
-    // write str to runtime memory
-    let mut s_bytes: Vec<_> = s.to_string().into_bytes();
-    s_bytes.push(0); // Add string terminate character (important)
-
-    let allocation_of_result = runtime.memory_manager.write(&s_bytes);
-    if allocation_of_result.is_err() {
-        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+        // convert complex argument
+        String::from_utf8(bin_arg)
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
     }
 
-    let encoded_allocation = allocation_of_result
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-        .encode();
 
-    // Return success in i32 format
-    Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+    /// Store a string in wasm memory.
+    /// Input should be a a json string.
+    /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
+    pub fn store_utf8(
+        &mut self,
+        json_str: &str,
+    ) -> Result<Option<RuntimeValue>, Trap> {
+        // write str to runtime memory
+        let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
+        s_bytes.push(0); // Add string terminate character (important)
+
+        let allocation_of_result = self.memory_manager.write(&s_bytes);
+        if allocation_of_result.is_err() {
+            return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+        }
+
+        let encoded_allocation = allocation_of_result
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
+            .encode();
+
+        // Return success in i32 format
+        Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+    }
 }
 
 /// Executes an exposed function in a wasm binary

@@ -11,6 +11,7 @@ jobs:
         - . docker/run make build test_c_ci
 
     - name: "Standard tests + code coverage"
+      sudo: required
       language: rust
       cache: cargo
       install: make wasm_build

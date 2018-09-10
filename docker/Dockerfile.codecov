@@ -7,6 +7,8 @@ COPY --chown=holochain . /holochain
 
 WORKDIR /holochain
 
+RUN ls -la
+
 RUN make wasm_build
 
 # warm cargo as much as possible

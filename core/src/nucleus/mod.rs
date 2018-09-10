@@ -48,9 +48,9 @@ impl ZomeFnCall {
     }
 
     pub fn same_as(&self, fn_call: &ZomeFnCall) -> bool {
-        self.zome_name == fn_call.zome_name &&
-        self.cap_name == fn_call.cap_name &&
-        self.fn_name == fn_call.fn_name
+        self.zome_name == fn_call.zome_name
+            && self.cap_name == fn_call.cap_name
+            && self.fn_name == fn_call.fn_name
     }
 }
 
@@ -434,9 +434,7 @@ pub fn reduce(
             );
             Arc::new(new_state)
         }
-        None => {
-            old_state
-        }
+        None => old_state,
     }
 }
 
@@ -736,10 +734,9 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::CapabilityNotFound(err)) => assert_eq!(
-                err,
-                "Capability 'xxx' not found in Zome 'test_zome'"
-            ),
+            Err(HolochainError::CapabilityNotFound(err)) => {
+                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+            }
             _ => assert!(false),
         }
     }

@@ -37,7 +37,6 @@ impl ZomeFnCall {
     }
 }
 
-
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: {zome_name: String, cap_name: String, fn_name: String, args: String}
@@ -155,11 +154,11 @@ pub(crate) fn reduce_call(
         Membrane::Agent => {
             // FIXME check if caller has Agent Capability
             false
-        },
+        }
         Membrane::ApiKey => {
             // FIXME check if caller has ApiKey Capability
             false
-        },
+        }
     };
     // Notify failure
     if !can_call {
@@ -188,31 +187,24 @@ pub mod tests {
     extern crate wabt;
 
     use super::*;
+    use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::Dna;
-    use context::Context;
-    use persister::SimplePersister;
+    use instance::tests::{test_instance, TestLogger};
     use nucleus::ribosome::{
         api::{
-            ZomeApiFunction,
-            tests::{test_zome_name,
-                    test_capability,
-                    test_function_name,
-                    test_parameters,
-                    test_zome_api_function_wasm,
+            tests::{
+                test_capability, test_function_name, test_parameters, test_zome_api_function_wasm,
+                test_zome_name,
             },
+            ZomeApiFunction,
         },
         Defn,
     };
-    use instance::tests::{test_instance, TestLogger};
-    use test_utils::{
-        create_test_cap,
-        create_test_dna_with_cap,
-    };
+    use persister::SimplePersister;
     use serde_json;
-    use std::{
-        sync::{Arc, Mutex, mpsc::RecvTimeoutError},
-    };
+    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use test_utils::{create_test_cap, create_test_dna_with_cap};
 
     /// dummy commit args from standard test entry
     pub fn test_bad_args_bytes() -> Vec<u8> {
@@ -239,16 +231,18 @@ pub mod tests {
             .into_bytes()
     }
 
-
     fn create_context() -> Arc<Context> {
-         Arc::new(Context {
-                    agent: Agent::from_string("alex".to_string()),
-                    logger:  Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-                    persister: Arc::new(Mutex::new(SimplePersister::new())),
-                })
+        Arc::new(Context {
+            agent: Agent::from_string("alex".to_string()),
+            logger: Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+            persister: Arc::new(Mutex::new(SimplePersister::new())),
+        })
     }
 
-    fn test_reduce_call(dna: Dna, expected: Result<Result<String, HolochainError>, RecvTimeoutError>) {
+    fn test_reduce_call(
+        dna: Dna,
+        expected: Result<Result<String, HolochainError>, RecvTimeoutError>,
+    ) {
         let context = create_context();
 
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "test", "{}");
@@ -286,8 +280,7 @@ pub mod tests {
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(zome_call_action, state_observers, &rx_observer, &context);
 
-        let action_result = receiver
-            .recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
+        let action_result = receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
 
         assert_eq!(expected, action_result);
     }
@@ -302,7 +295,9 @@ pub mod tests {
     #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::ZomeNotFound(r#"Zome 'test_zome' not found"#.to_string())));
+        let expected = Ok(Err(HolochainError::ZomeNotFound(
+            r#"Zome 'test_zome' not found"#.to_string(),
+        )));
         test_reduce_call(dna, expected);
     }
 
@@ -310,11 +305,7 @@ pub mod tests {
     fn test_call_ok() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
         let cap = create_test_cap(Membrane::Public, &wasm);
-        let dna = create_test_dna_with_cap(
-            &test_zome_name(),
-            "test_cap",
-            &cap,
-        );
+        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &cap);
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);

@@ -110,7 +110,7 @@ impl FromStr for ZomeApiFunction {
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
-"hc_call" => Ok(ZomeApiFunction::Call),
+            "hc_call" => Ok(ZomeApiFunction::Call),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -129,7 +129,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
-ZomeApiFunction::Call => invoke_call,
+            ZomeApiFunction::Call => invoke_call,
         }
     }
 }
@@ -158,7 +158,7 @@ pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
 
     // Read complex argument serialized in memory
     let encoded_allocation: u32 = args.nth(0);
-    let allocation= SinglePageAllocation::new(encoded_allocation);
+    let allocation = SinglePageAllocation::new(encoded_allocation);
     // Handle empty allocation edge case
     if let Err(HcApiReturnCode::Success) = allocation {
         return String::new();

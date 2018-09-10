@@ -59,7 +59,7 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-        instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
+    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
     nucleus::{call_and_wait_for_result, state::NucleusStatus, ZomeFnCall},
     state::State,
 };

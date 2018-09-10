@@ -7,7 +7,10 @@ use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Config, Zome, capabilities::Membrane},
+    zome::{
+        capabilities::{Capability, Membrane},
+        Config, Zome,
+    },
     Dna,
 };
 use std::{

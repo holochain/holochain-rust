@@ -14,7 +14,9 @@ jobs:
       sudo: required
       language: rust
       cache: cargo
-      install: make install_rust_wasm wasm_build
+      install:
+        - make install_rust_wasm
+        - make wasm_build
       script: make cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)

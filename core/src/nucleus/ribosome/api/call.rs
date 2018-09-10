@@ -7,7 +7,7 @@ use nucleus::{
     launch_zome_fn_call,
     ribosome::api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
     state::NucleusState,
-    FunctionCall,
+    ZomeFnCall,
 };
 use serde_json;
 use std::sync::{
@@ -25,10 +25,10 @@ pub struct ZomeCallArgs {
     pub fn_args: String,
 }
 
-// ZomeCallArgs to FunctionCall
-impl FunctionCall {
+// ZomeCallArgs to ZomeFnCall
+impl ZomeFnCall {
     fn from_args(args: ZomeCallArgs) -> Self {
-        FunctionCall::new(
+        ZomeFnCall::new(
             &args.zome_name,
             &args.cap_name,
             &args.fn_name,
@@ -38,15 +38,15 @@ impl FunctionCall {
 }
 
 /// Plan:
-/// args from API converts into a FunctionCall
-/// Invoke launch a Action::Call with said FunctionCall
+/// args from API converts into a ZomeFnCall
+/// Invoke launch a Action::Call with said ZomeFnCall
 /// Waits for a Action::ReturnZomeFunctionResult since action will launch a ExecuteZomeFunction
 /// on success.
 ///
 /// Action::Call reducer does:
-///   Checks for correctness of FunctionCall
+///   Checks for correctness of ZomeFnCall
 ///   Checks for correct access to Capability
-///   Launch a ExecuteZomeFunction with FunctionCall
+///   Launch a ExecuteZomeFunction with ZomeFnCall
 ///
 ///
 
@@ -70,11 +70,11 @@ pub fn invoke_call(
         }
     };
 
-    // ZomeCallArgs to FunctionCall
-    let fn_call = FunctionCall::from_args(input);
+    // ZomeCallArgs to ZomeFnCall
+    let fn_call = ZomeFnCall::from_args(input);
 
     // Don't allow recursive calls
-    if fn_call.same_as(&runtime.function_call) {
+    if fn_call.same_as(&runtime.zome_call) {
         return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorRecursiveCall as i32,
         )));
@@ -91,7 +91,7 @@ pub fn invoke_call(
         action_wrapper.clone(),
         move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
-            let opt_res = state.nucleus().ribosome_call_result(&fn_call);
+            let opt_res = state.nucleus().zome_call_result(&fn_call);
             println!("\t opt_res: {:?}", opt_res);
             match opt_res {
                 Some(res) => {
@@ -160,7 +160,7 @@ pub(crate) fn reduce_call(
         // Send Failed Result
         // println!("fn_res = {:?}", fn_res);
         state
-            .ribosome_calls
+            .zome_calls
             .insert(fn_call.clone(), Some(fn_res.result()));
         return;
     }
@@ -172,7 +172,7 @@ pub(crate) fn reduce_call(
     // TODO #301 - Do real Capability token check
     if cap.cap_type.membrane != Membrane::Zome {
         // Send Failed Result
-        state.ribosome_calls.insert(
+        state.zome_calls.insert(
             fn_call.clone(),
             Some(Err(HolochainError::DoesNotHaveCapabilityToken)),
         );
@@ -182,7 +182,7 @@ pub(crate) fn reduce_call(
     // println!("cap = {:?}", cap);
 
     // Prepare call
-    state.ribosome_calls.insert(fn_call.clone(), None);
+    state.zome_calls.insert(fn_call.clone(), None);
 
     // Launch thread with function call
     launch_zome_fn_call(
@@ -207,7 +207,7 @@ pub mod tests {
     use super::*;
     use nucleus::ribosome::{
         api::{
-            ZomeAPIFunction,
+            ZomeApiFunction,
             tests::{test_zome_api_function_runtime,
                     test_zome_name,
                     test_capability,
@@ -271,7 +271,7 @@ pub mod tests {
     fn test_reduce_call(dna: Dna, expected: Result<String, HolochainError>) {
         let context = create_context();
 
-        let zome_call = FunctionCall::new("test_zome", "test_cap", "main", "");
+        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
         // Set up instance and process the action
@@ -280,7 +280,7 @@ pub mod tests {
         let (sender, receiver) = channel();
         let closure = move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
-            let opt_res = state.nucleus().ribosome_call_result(&zome_call);
+            let opt_res = state.nucleus().zome_call_result(&zome_call);
             println!("\t opt_res: {:?}", opt_res);
             match opt_res {
                 Some(res) => {
@@ -332,7 +332,7 @@ pub mod tests {
 
     #[test]
     fn test_call_ok() {
-        let wasm = test_zome_api_function_wasm(ZomeAPIFunction::Call.as_str());
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
         let cap = create_test_cap(Membrane::Zome, &wasm);
 
         let dna = create_test_dna_with_cap(
@@ -348,14 +348,14 @@ pub mod tests {
 //    #[test]
 //    fn test_call_no_token() {
 //        let (runtime, _) =
-//            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_args_bytes());
+//            test_zome_api_function_runtime(ZomeApiFunction::Call.as_str(), test_args_bytes());
 //        assert_eq!(runtime.result, format!(r#""#),);
 //    }
 //
 //    #[test]
 //    fn test_call_no_zome() {
 //        let (runtime, _) =
-//            test_zome_api_function_runtime(ZomeAPIFunction::Call.as_str(), test_bad_args_bytes());
+//            test_zome_api_function_runtime(ZomeApiFunction::Call.as_str(), test_bad_args_bytes());
 //        assert_eq!(runtime.result, format!(r#""#),);
 //    }
 

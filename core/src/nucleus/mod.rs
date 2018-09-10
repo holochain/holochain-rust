@@ -747,4 +747,21 @@ pub mod tests {
         }
     }
 
+    #[test]
+    fn test_zomefncall_same_as() {
+        let base = ZomeFnCall::new("zozo", "caca", "fufu", "papa");
+        let copy = ZomeFnCall::new("zozo", "caca", "fufu", "papa");
+        let same = ZomeFnCall::new("zozo", "caca", "fufu", "papa1");
+        let diff1 = ZomeFnCall::new("zozo1", "caca", "fufu", "papa");
+        let diff2 = ZomeFnCall::new("zozo", "caca2", "fufu", "papa");
+        let diff3 = ZomeFnCall::new("zozo", "caca", "fufu3", "papa");
+
+        assert_ne!(base, copy);
+        assert!(base.same_as(&copy));
+        assert!(copy.same_as(&base));
+        assert!(base.same_as(&same));
+        assert!(!base.same_as(&diff1));
+        assert!(!base.same_as(&diff2));
+        assert!(!base.same_as(&diff3));
+    }
 }

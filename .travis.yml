@@ -18,6 +18,7 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - make install_rustup
+        - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
       script:
         - make build test_c_ci
@@ -31,6 +32,7 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - make install_rustup
+        - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
         - make install_tarpaulin
       script: make wasm_build cov
@@ -46,6 +48,7 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - make install_rustup
+        - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_tools
       script:
         - make fmt_check
@@ -59,6 +62,8 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
+        - make install_rustup
+        - export PATH=$HOME/.cargo/bin:$PATH
         - make install_mdbook
       script: ./travis-update-book.sh
       env:

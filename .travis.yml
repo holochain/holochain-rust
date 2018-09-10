@@ -3,6 +3,13 @@ services:
 
 dist: trusty
 
+# https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
+# we build all PRs already, don't need redundant branch builds
+branches:
+  only:
+    - master
+    - develop
+
 jobs:
   include:
     - name: "C tests"

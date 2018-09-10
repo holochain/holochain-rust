@@ -421,11 +421,9 @@ pub fn reduce(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) -> Arc<NucleusState> {
-    // println!("reduce: {:?}", action_wrapper);
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
-            // println!("=> new state");
             let mut new_state: NucleusState = (*old_state).clone();
             f(
                 context,
@@ -437,7 +435,6 @@ pub fn reduce(
             Arc::new(new_state)
         }
         None => {
-            // println!("=> old state");
             old_state
         }
     }

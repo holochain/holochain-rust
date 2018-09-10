@@ -37,28 +37,18 @@ impl ZomeFnCall {
     }
 }
 
-/// Plan:
-/// args from API converts into a ZomeFnCall
-/// Invoke launch a Action::Call with said ZomeFnCall
-/// Waits for a Action::ReturnZomeFunctionResult since action will launch a ExecuteZomeFunction
-/// on success.
-///
-/// Action::Call reducer does:
-///   Checks for correctness of ZomeFnCall
-///   Checks for correct access to Capability
-///   Launch a ExecuteZomeFunction with ZomeFnCall
-///
-///
 
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: {zome_name: String, cap_name: String, fn_name: String, args: String}
+/// args from API call are converted into a ZomeFnCall
+/// Launch an Action::Call with newly formed ZomeFnCall
+/// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_call(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    println!("RuntimeArgs: {:?}", args);
     // deserialize args
     let args_str = runtime_args_to_utf8(&runtime, &args);
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
@@ -82,7 +72,6 @@ pub fn invoke_call(
 
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(fn_call.clone()));
-    println!(" !! Looking for: {:?}", fn_call);
     // Send Action and block
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -92,7 +81,6 @@ pub fn invoke_call(
         move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
             let opt_res = state.nucleus().zome_call_result(&fn_call);
-            println!("\t opt_res: {:?}", opt_res);
             match opt_res {
                 Some(res) => {
                     // @TODO never panic in wasm
@@ -112,24 +100,15 @@ pub fn invoke_call(
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    println!("invoke_call: waiting...");
     let action_result = receiver
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
         .expect("observer dropped before done");
-    println!("invoke_call: Done: {:?}", action_result);
 
-    // action_result is Action::ReturnZomeFunctionResult(result))
-
+    // action_result should be a json str of the result of the zome function called
     match action_result {
-        Ok(res) => {
-            // let res = runtime.state().nucleus().ribosome_call_result(fn_call);
-            // serialize, allocate and encode result
-            //            let json = res.to_json();
-            //            match json {
-            //                Ok(j) => runtime_allocate_encode_str(runtime, &j),
-            //                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
-            //            }
-            runtime_allocate_encode_str(runtime, &res)
+        Ok(json_str) => {
+            // write result directly in wasm memory
+            runtime_allocate_encode_str(runtime, &json_str)
         }
         Err(_) => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -138,8 +117,10 @@ pub fn invoke_call(
 }
 
 /// Reduce Call Action
-/// Execute an exposed Zome function in a separate thread and send the result in
-/// a ReturnZomeFunctionResult Action on success or failure
+///   1. Checks for correctness of ZomeFnCall inside the Action
+///   2. Checks for permission to access Capability
+///   3. Execute the exposed Zome function in a separate thread
+/// Send the result in a ReturnZomeFunctionResult Action on success or failure like ExecuteZomeFunction
 pub(crate) fn reduce_call(
     context: Arc<Context>,
     state: &mut NucleusState,
@@ -147,16 +128,15 @@ pub(crate) fn reduce_call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
+    // 1.Checks for correctness of ZomeFnCall
     let fn_call = match action_wrapper.action().clone() {
         Action::Call(call) => call,
         _ => unreachable!(),
     };
-
     // Get Capability
     let maybe_cap = state.get_capability(fn_call.clone());
     if let Err(fn_res) = maybe_cap {
-        // Send Failed Result
-        // println!("fn_res = {:?}", fn_res);
+        // Notify failure
         state
             .zome_calls
             .insert(fn_call.clone(), Some(fn_res.result()));
@@ -164,7 +144,7 @@ pub(crate) fn reduce_call(
     }
     let cap = maybe_cap.unwrap();
 
-    // Check if we have permission to call that Zome function
+    // 2. Checks for permission to access Capability
     // TODO #301 - Do real Capability token check
     let can_call = match cap.cap_type.membrane {
         Membrane::Public => true,
@@ -181,8 +161,7 @@ pub(crate) fn reduce_call(
             false
         },
     };
-
-    // Send Failed Result
+    // Notify failure
     if !can_call {
         state.zome_calls.insert(
             fn_call.clone(),
@@ -191,10 +170,8 @@ pub(crate) fn reduce_call(
         return;
     }
 
-    // Prepare call
+    // 3. Execute the exposed Zome function in a separate thread
     state.zome_calls.insert(fn_call.clone(), None);
-
-    // Launch thread with function call
     launch_zome_fn_call(
         context,
         fn_call,
@@ -284,7 +261,6 @@ pub mod tests {
         let closure = move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
             let opt_res = state.nucleus().zome_call_result(&zome_call);
-            println!("\t opt_res: {:?}", opt_res);
             match opt_res {
                 Some(res) => {
                     // @TODO never panic in wasm
@@ -310,10 +286,8 @@ pub mod tests {
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(zome_call_action, state_observers, &rx_observer, &context);
 
-        println!("waiting...");
         let action_result = receiver
             .recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
-        println!("Done: {:?}", action_result);
 
         assert_eq!(expected, action_result);
     }

@@ -55,7 +55,7 @@ install_rust_wasm:
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +${WASM_NIGHTLY} install cargo-tarpaulin
 
 .PHONY: wasm_build
 wasm_build:
@@ -69,7 +69,7 @@ build:
 	make wasm_build
 
 cov:
-	$(CARGO) tarpaulin --all --out Xml
+	$(CARGO) +${WASM_NIGHTLY} tarpaulin --all --out Xml
 
 fmt_check:
 	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check

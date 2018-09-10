@@ -41,8 +41,11 @@ use wasmi::{
 #[repr(usize)]
 #[derive(FromPrimitive, Debug, PartialEq)]
 pub enum ZomeAPIFunction {
+    /// Abort
+    Abort = 0,
+
     /// Error index for unimplemented functions
-    MissingNo = 0,
+    MissingNo,
 
     /// Zome API
 
@@ -66,6 +69,7 @@ pub enum ZomeAPIFunction {
 impl Defn for ZomeAPIFunction {
     fn as_str(&self) -> &'static str {
         match *self {
+            ZomeAPIFunction::Abort => "abort",
             ZomeAPIFunction::MissingNo => "",
             ZomeAPIFunction::Debug => "hc_debug",
             ZomeAPIFunction::CommitEntry => "hc_commit_entry",
@@ -90,6 +94,7 @@ impl Defn for ZomeAPIFunction {
 
     fn capability(&self) -> ReservedCapabilityNames {
         match *self {
+            ZomeAPIFunction::Abort => ReservedCapabilityNames::MissingNo,
             ZomeAPIFunction::MissingNo => ReservedCapabilityNames::MissingNo,
             // @TODO what should this be?
             // @see https://github.com/holochain/holochain-rust/issues/133
@@ -129,6 +134,7 @@ impl ZomeAPIFunction {
 
         match *self {
             ZomeAPIFunction::MissingNo => noop,
+            ZomeAPIFunction::Abort => noop,
             ZomeAPIFunction::Debug => invoke_debug,
             ZomeAPIFunction::CommitEntry => invoke_commit_entry,
             ZomeAPIFunction::GetEntry => invoke_get_entry,
@@ -227,6 +233,13 @@ pub fn call(
             index: usize,
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
+            // Abort
+            if index == 0 {
+                // println!("message, file, line, column");
+                // println!("{:?}", args);
+                return Err(TrapKind::Unreachable.into());
+            }
+
             let zf = ZomeAPIFunction::from_index(index);
             match zf {
                 ZomeAPIFunction::MissingNo => panic!("unknown function index"),
@@ -245,6 +258,12 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
+            if field_name == "abort" {
+                return Ok(FuncInstance::alloc_host(
+                    Signature::new(&[ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32][..], None),
+                    0 as usize,
+                ))
+            }
             // Take the canonical name and find the corresponding ZomeAPIFunction index
             let index = ZomeAPIFunction::str_to_index(&field_name);
             match index {

@@ -1,6 +1,6 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
@@ -66,8 +66,8 @@ pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(Entry),
-    /// hash to Get
-    Get(String),
+    /// GetEntry by hash
+    GetEntry(HashString),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(FunctionCall),
@@ -79,14 +79,12 @@ pub enum Action {
     /// may call genesis internally
     InitApplication(Dna),
     /// return the result of an InitApplication action
+    /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(EntrySubmission),
-
-    /// add a network peer
-    AddPeer(String),
 }
 
 /// function signature for action handler functions
@@ -108,7 +106,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::Get(test_entry_hash())
+        Action::GetEntry(test_entry_hash())
     }
 
     /// dummy action wrapper with test_action()
@@ -123,7 +121,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Get(test_hash()))
+        ActionWrapper::new(Action::GetEntry(test_hash()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

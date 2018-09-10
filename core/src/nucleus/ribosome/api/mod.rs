@@ -40,7 +40,7 @@ use wasmi::{
 /// Enumeration converts to str
 #[repr(usize)]
 #[derive(FromPrimitive, Debug, PartialEq)]
-pub enum ZomeAPIFunction {
+pub enum ZomeApiFunction {
     /// Abort
     Abort = 0,
 
@@ -53,79 +53,67 @@ pub enum ZomeAPIFunction {
     /// debug(s: String)
     Debug,
 
-    /// Commit an entry to source chain
+    /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_content: String) -> Hash
-    CommitEntry,
+    CommitAppEntry,
 
-    /// Get an entry from source chain by key (header hash)
+    /// Get an app entry from source chain by key (header hash)
     /// get_entry(key: String) -> Pair
-    GetEntry,
+    GetAppEntry,
 
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
 }
 
-impl Defn for ZomeAPIFunction {
+impl Defn for ZomeApiFunction {
     fn as_str(&self) -> &'static str {
         match *self {
-            ZomeAPIFunction::Abort => "abort",
-            ZomeAPIFunction::MissingNo => "",
-            ZomeAPIFunction::Debug => "hc_debug",
-            ZomeAPIFunction::CommitEntry => "hc_commit_entry",
-            ZomeAPIFunction::GetEntry => "hc_get_entry",
-            ZomeAPIFunction::InitGlobals => "hc_init_globals",
+            ZomeApiFunction::Abort => "abort",
+            ZomeApiFunction::MissingNo => "",
+            ZomeApiFunction::Debug => "hc_debug",
+            ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
+            ZomeApiFunction::GetAppEntry => "hc_get_entry",
+            ZomeApiFunction::InitGlobals => "hc_init_globals",
         }
     }
 
     fn str_to_index(s: &str) -> usize {
-        match ZomeAPIFunction::from_str(s) {
+        match ZomeApiFunction::from_str(s) {
             Ok(i) => i as usize,
-            Err(_) => ZomeAPIFunction::MissingNo as usize,
+            Err(_) => ZomeApiFunction::MissingNo as usize,
         }
     }
 
     fn from_index(i: usize) -> Self {
         match FromPrimitive::from_usize(i) {
             Some(v) => v,
-            None => ZomeAPIFunction::MissingNo,
+            None => ZomeApiFunction::MissingNo,
         }
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
-        match *self {
-            ZomeAPIFunction::Abort => ReservedCapabilityNames::MissingNo,
-            ZomeAPIFunction::MissingNo => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::Debug => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::CommitEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::GetEntry => ReservedCapabilityNames::MissingNo,
-            // @TODO what should this be?
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            ZomeAPIFunction::InitGlobals => ReservedCapabilityNames::MissingNo,
-        }
+        // Zome API Functions are not part of any zome and capability
+        // @TODO architecture issue?
+        // @see https://github.com/holochain/holochain-rust/issues/299
+        unreachable!();
     }
 }
 
-impl FromStr for ZomeAPIFunction {
+impl FromStr for ZomeApiFunction {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "hc_debug" => Ok(ZomeAPIFunction::Debug),
-            "hc_commit_entry" => Ok(ZomeAPIFunction::CommitEntry),
-            "hc_get_entry" => Ok(ZomeAPIFunction::GetEntry),
-            "hc_init_globals" => Ok(ZomeAPIFunction::InitGlobals),
-            _ => Err("Cannot convert string to ZomeAPIFunction"),
+            "hc_debug" => Ok(ZomeApiFunction::Debug),
+            "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
+            "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
+            "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
+            _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
 }
 
-impl ZomeAPIFunction {
+impl ZomeApiFunction {
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
@@ -133,12 +121,12 @@ impl ZomeAPIFunction {
         }
 
         match *self {
-            ZomeAPIFunction::MissingNo => noop,
-            ZomeAPIFunction::Abort => noop,
-            ZomeAPIFunction::Debug => invoke_debug,
-            ZomeAPIFunction::CommitEntry => invoke_commit_entry,
-            ZomeAPIFunction::GetEntry => invoke_get_entry,
-            ZomeAPIFunction::InitGlobals => invoke_init_globals,
+            ZomeApiFunction::MissingNo => noop,
+            ZomeApiFunction::Abort => noop,
+            ZomeApiFunction::Debug => invoke_debug,
+            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeApiFunction::GetAppEntry => invoke_get_entry,
+            ZomeApiFunction::InitGlobals => invoke_init_globals,
         }
     }
 }
@@ -240,16 +228,16 @@ pub fn call(
                 return Err(TrapKind::Unreachable.into());
             }
 
-            let zf = ZomeAPIFunction::from_index(index);
+            let zf = ZomeApiFunction::from_index(index);
             match zf {
-                ZomeAPIFunction::MissingNo => panic!("unknown function index"),
+                ZomeApiFunction::MissingNo => panic!("unknown function index"),
                 // convert the function to its callable form and call it with the given arguments
                 _ => zf.as_fn()(self, &args),
             }
         }
     }
 
-    // Correlate the names of the core ZomeAPIFunction's with their indexes
+    // Correlate the names of the core ZomeApiFunction's with their indexes
     // and declare its function signature (which is always the same)
     struct RuntimeModuleImportResolver;
     impl ModuleImportResolver for RuntimeModuleImportResolver {
@@ -264,10 +252,10 @@ pub fn call(
                     0 as usize,
                 ))
             }
-            // Take the canonical name and find the corresponding ZomeAPIFunction index
-            let index = ZomeAPIFunction::str_to_index(&field_name);
+            // Take the canonical name and find the corresponding ZomeApiFunction index
+            let index = ZomeApiFunction::str_to_index(&field_name);
             match index {
-                index if index == ZomeAPIFunction::MissingNo as usize => {
+                index if index == ZomeApiFunction::MissingNo as usize => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name
@@ -348,7 +336,7 @@ pub mod tests {
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
-    use super::ZomeAPIFunction;
+    use super::ZomeApiFunction;
     use context::Context;
     use instance::{
         tests::{test_context_and_logger, test_instance, TestLogger},
@@ -528,24 +516,24 @@ pub mod tests {
     }
 
     #[test]
-    /// test the FromStr implementation for ZomeAPIFunction
+    /// test the FromStr implementation for ZomeApiFunction
     fn test_from_str() {
         assert_eq!(
-            ZomeAPIFunction::Debug,
-            ZomeAPIFunction::from_str("hc_debug").unwrap(),
+            ZomeApiFunction::Debug,
+            ZomeApiFunction::from_str("hc_debug").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::CommitEntry,
-            ZomeAPIFunction::from_str("hc_commit_entry").unwrap(),
+            ZomeApiFunction::CommitAppEntry,
+            ZomeApiFunction::from_str("hc_commit_entry").unwrap(),
         );
         assert_eq!(
-            ZomeAPIFunction::GetEntry,
-            ZomeAPIFunction::from_str("hc_get_entry").unwrap(),
+            ZomeApiFunction::GetAppEntry,
+            ZomeApiFunction::from_str("hc_get_entry").unwrap(),
         );
 
         assert_eq!(
-            "Cannot convert string to ZomeAPIFunction",
-            ZomeAPIFunction::from_str("foo").unwrap_err(),
+            "Cannot convert string to ZomeApiFunction",
+            ZomeApiFunction::from_str("foo").unwrap_err(),
         );
     }
 

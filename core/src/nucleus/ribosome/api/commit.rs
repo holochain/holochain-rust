@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use json::ToJson;
 use nucleus::ribosome::{
     api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
     callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
@@ -30,9 +31,7 @@ pub fn invoke_commit_entry(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ErrorSerdeJson as i32,
-            )));
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
         }
     };
 
@@ -88,7 +87,11 @@ pub fn invoke_commit_entry(
     match action_result {
         ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &action_result.to_json())
+            let json = action_result.to_json();
+            match json {
+                Ok(j) => runtime_allocate_encode_str(runtime, &j),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            }
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -103,8 +106,9 @@ pub mod tests {
 
     use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
+    use key::Key;
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -125,7 +129,7 @@ pub mod tests {
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
         let (runtime, _) = test_zome_api_function_runtime(
-            ZomeAPIFunction::CommitEntry.as_str(),
+            ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );
 

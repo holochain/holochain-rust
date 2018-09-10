@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use json::ToJson;
 use nucleus::ribosome::api::{
     runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
 };
@@ -22,14 +23,12 @@ pub fn invoke_get_entry(
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorSerdeJson as i32,
-        )));
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
     }
 
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::Get(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -60,11 +59,12 @@ pub fn invoke_get_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::Get(maybe_pair) => {
+        ActionResponse::GetEntry(maybe_pair) => {
             // serialize, allocate and encode result
-            let pair_str = maybe_pair.map(|p| p.to_json()).unwrap_or_default();
-
-            runtime_allocate_encode_str(runtime, &pair_str)
+            match maybe_pair.to_json() {
+                Ok(json) => runtime_allocate_encode_str(runtime, &json),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            }
         }
         _ => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
@@ -82,6 +82,7 @@ mod tests {
     use chain::SourceChain;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
     use instance::tests::{test_context_and_logger, test_instance};
+    use key::Key;
     use nucleus::{
         ribosome::api::{
             call,

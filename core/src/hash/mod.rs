@@ -23,6 +23,7 @@ pub fn serializable_to_b58_hash<S: Serialize>(s: S, hash_type: Hash) -> String {
 pub mod tests {
     use super::*;
     use hash_table::entry::tests::test_entry;
+    use key::Key;
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()

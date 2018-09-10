@@ -26,7 +26,7 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     match catch_unwind(|| {
         let json = unsafe { CStr::from_ptr(buf).to_string_lossy().into_owned() };
 
-        let dna = match Dna::new_from_json(&json) {
+        let dna = match Dna::from_json_str(&json) {
             Ok(d) => d,
             Err(_) => return std::ptr::null_mut(),
         };
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_holochain_dna_get_zome_names() {
-        let mut dna = Dna::new_from_json(
+        let mut dna = Dna::from_json_str(
             r#"{
                 "name": "test",
                 "description": "test",

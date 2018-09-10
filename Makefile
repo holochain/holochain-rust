@@ -54,7 +54,7 @@ install_rust_wasm:
 	rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
 
 .PHONY: install_tarpaulin
-TARPAULIN_INSTALLED = cargo +${WASM_NIGHTLY} install --list | grep -q 'cargo-tarpaulin'
+TARPAULIN_INSTALLED = $(shell cargo +${WASM_NIGHTLY} install --list | grep -q 'cargo-tarpaulin')
 install_tarpaulin:
 	ifeq($(TARPAULIN_INSTALLED),)
 		RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +${WASM_NIGHTLY} install cargo-tarpaulin

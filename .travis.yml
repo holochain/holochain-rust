@@ -24,6 +24,7 @@ jobs:
         - make build test_c_ci
 
     - name: "Standard tests + code coverage"
+      sudo: true
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:

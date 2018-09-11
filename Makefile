@@ -65,9 +65,9 @@ install_rust_wasm:
 .PHONY: install_rust_tools
 install_rust_tools:
 	rustup toolchain install ${TOOLS_NIGHTLY}
-	$(CARGO) install rustfmt-preview || echo "fmt already installed"
-	$(CARGO) install clippy-preview || echo "clippy already installed"
-	$(CARGO) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
+	rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview || echo "fmt already installed"
+	rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview || echo "clippy already installed"
+	$(CARGO_TOOLS) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:

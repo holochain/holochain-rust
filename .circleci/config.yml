@@ -1,4 +1,4 @@
-version: 2.0
+version: 2
 
 jobs:
   checkout_code:
@@ -8,35 +8,38 @@ jobs:
     steps:
       - checkout
       - save_cache:
-        key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-        paths:
-          - ~/holochain
-
-  cargo_dependencies:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/holochain
+  build:
     docker:
       - image: circleci/buildpack-deps:stable-curl
     working_directory: ~/holochain
     steps:
+      - checkout
       - restore_cache:
-        key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - restore_cache:
-        key: v1-bundle-{{ checksum "Cargo.lock" }}
+          key: v1-bundle-{{ checksum "Cargo.lock" }}
+      - run: ls -la
+      - run: df -h
       - run: make install_rustup
-      - command: |
-         echo 'export PATH=$HOME/.cargo/bin:$PATH' >> $BASH_ENV
-         source /home/circleci/.bashrc
-      - run: make build
+      - run: echo 'export PATH=$HOME/.cargo/bin:$PATH' >> $BASH_ENV
+      - run: source /home/circleci/.bashrc
       - save_cache:
-        key: v1-bundle-{{ checksum "Cargo.lock" }}
-        paths:
-          - $HOME/.cargo
-          - ~/holochain/target
+          key: v1-bundle-{{ checksum "Cargo.lock" }}
+          paths:
+            - $HOME/.cargo
+            - ~/holochain/target
 
 workflows:
   version: 2
-  build-and-test:
+  test:
     jobs:
       - checkout_code
-      - cargo_dependencies:
+      - build:
         requires:
           - checkout_code
+      # - cargo_dependencies:
+      #     requires:
+      #       - checkout_code

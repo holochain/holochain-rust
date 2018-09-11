@@ -3,7 +3,10 @@ use context::Context;
 use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
+use nucleus::{
+    state::{NucleusState, ValidationResult},
+    FunctionCall, FunctionResult,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -84,7 +87,8 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateEntry(Entry),
+    ValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions

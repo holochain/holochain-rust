@@ -20,9 +20,6 @@ RUN apt-get update && apt-get install --yes\
 # Set the internal user for the docker container (non-root)
 ENV DOCKER_BUILD_USER holochain
 
-# The Rust version used for the Wasm builds
-ENV WASM_NIGHTLY nightly-2018-06-01
-
 # The Rust version used for the tools
 ENV TOOLS_NIGHTLY nightly-2018-07-17
 

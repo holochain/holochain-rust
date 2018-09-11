@@ -9,7 +9,7 @@ branches:
 
 jobs:
   include:
-    - name: "C tests"
+    - name: "C binding tests"
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:

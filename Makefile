@@ -55,14 +55,16 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: install_rustup
 install_rustup:
-	if ! (which rustup && rustup toolchain list | grep '$(CORE_RUST_VERSION)') ; then \
+	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
 .PHONY: install_rustup
 install_rustup_tools:
-	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${TOOLS_NIGHTLY} -y
+	if ! which rustup ; then \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${TOOLS_NIGHTLY} -y; \
+	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
 .PHONY: install_rust_wasm

@@ -27,6 +27,7 @@ jobs:
       script:
         - make test_c_ci
       before_cache:
+        - echo $TRAVIS_BUILD_DIR
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
 
     - name: "Standard tests + code coverage"

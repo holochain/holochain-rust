@@ -31,6 +31,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower
@@ -58,6 +59,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
 
     - name: "Formatting & clippy"
       # manually cache as we manually install rustup
@@ -81,7 +83,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
 
     - name: "Mdbook Build"
       env:
@@ -106,3 +108,4 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json

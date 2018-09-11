@@ -94,7 +94,7 @@ fmt_check:
 	$(CARGO_TOOLS) fmt -- --check
 
 clippy:
-	$(CARGO_TOOLS) clippy --all --exclude holochain_dna_c_binding -- -A needless_return
+	$(CARGO_TOOLS) clippy -- -A needless_return
 
 fmt:
 	$(CARGO_TOOLS) fmt

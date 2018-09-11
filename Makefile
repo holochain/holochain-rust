@@ -7,7 +7,7 @@
 
 all: main
 
-CARGO = cargo $(CARGO_ARGS)
+CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -50,32 +50,30 @@ test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: install_rustup
 install_rustup:
-	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${WASM_NIGHTLY} -y
+	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
 
 .PHONY: install_rust_wasm
 install_rust_wasm:
-	rustup toolchain install ${WASM_NIGHTLY}
-	rustup target add wasm32-unknown-unknown --toolchain ${WASM_NIGHTLY}
+	rustup target add wasm32-unknown-unknown --toolchain ${CORE_RUST_VERSION}
 
 .PHONY: install_rust_tools
 install_rust_tools:
-	rustup toolchain install ${TOOLS_NIGHTLY}
-	rustup component add rustfmt-preview --toolchain ${TOOLS_NIGHTLY} || echo "fmt already installed"
-	rustup component add clippy-preview --toolchain ${TOOLS_NIGHTLY} || echo "clippy already installed"
+	$(CARGO) install rustfmt-preview || echo "fmt already installed"
+	$(CARGO) install clippy-preview || echo "clippy already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo +${WASM_NIGHTLY} install cargo-tarpaulin || echo "Tarpaulin already installed"
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin || echo "Tarpaulin already installed"
 
 .PHONY: install_mdbook
 install_mdbook:
-	cargo install mdbook --vers "^0.1.0" || echo "MDbook already installed"
+	$(CARGO) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: wasm_build
 wasm_build:
-	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+	cd core/src/nucleus/wasm-test && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
 
 .PHONY: build
 build:
@@ -83,16 +81,16 @@ build:
 	make wasm_build
 
 cov:
-	$(CARGO) +${WASM_NIGHTLY} tarpaulin --all --out Xml
+	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
+	$(CARGO) fmt -- --check
 
 clippy:
-	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
+	$(CARGO) clippy -- -A needless_return
 
 fmt:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt
+	$(CARGO) fmt
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

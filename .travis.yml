@@ -11,6 +11,8 @@ branches:
 jobs:
   include:
     - name: "C binding tests"
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -27,6 +29,8 @@ jobs:
         - make test_c_ci
 
     - name: "Standard tests + code coverage"
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
       # sudo is needed for codecov, which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
@@ -58,6 +62,8 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Formatting & clippy"
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -85,6 +91,8 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Mdbook Build"
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"
         - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"

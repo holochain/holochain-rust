@@ -7,6 +7,11 @@ use hash_table::entry::Entry;
 use instance::dispatch_action;
 use std::sync::{mpsc::Sender, Arc};
 
+/// Commit Action Creator
+/// This is the high-level commit function that wraps the whole commit process and is what should
+/// be called from zome api functions and other contexts that don't care about implementation details.
+///
+/// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
     entry: Entry,
     action_channel: &Sender<ActionWrapper>,
@@ -20,6 +25,8 @@ pub fn commit_entry(
     }
 }
 
+/// CommitFuture resolves to ActionResponse
+/// Tracks the state for a response to its ActionWrapper
 pub struct CommitFuture {
     context: Arc<Context>,
     action: ActionWrapper,
@@ -33,6 +40,10 @@ impl Future for CommitFuture {
         &mut self,
         cx: &mut futures::task::Context<'_>,
     ) -> Result<futures::Async<ActionResponse>, Self::Error> {
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
         cx.waker().wake();
         match self
             .context

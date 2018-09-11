@@ -27,6 +27,8 @@ jobs:
         # - make install_rust_wasm
       script:
         - make test_c_ci
+      before_cache:
+        - rm -rf $HOME/.cargo/registry/index
 
     - name: "Standard tests + code coverage"
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943

@@ -24,7 +24,7 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
       script:
-        - make wasm_build test_c_ci
+        - make test_c_ci
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower
@@ -44,7 +44,7 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
         - make install_tarpaulin
-      script: make wasm_build cov
+      script: make cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 

@@ -47,7 +47,8 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_c_ci: c_binding_tests ${C_BINDING_TESTS}
+test_c_ci: wasm_build
+	c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: install_rustup
 install_rustup:
@@ -81,7 +82,7 @@ build:
 	$(CARGO) build --all
 	make wasm_build
 
-cov:
+cov: wasm_build
 	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check:

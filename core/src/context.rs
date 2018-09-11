@@ -48,3 +48,74 @@ impl Context {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate holochain_agent;
+    extern crate test_utils;
+    use super::*;
+    use logger::Logger;
+    use persister::SimplePersister;
+    use state::State;
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone, Debug)]
+    pub struct TestLogger {
+        pub log: Vec<String>,
+    }
+
+    impl Logger for TestLogger {
+        fn log(&mut self, msg: String) {
+            self.log.push(msg);
+        }
+    }
+
+    /// create a test logger
+    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
+        Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
+    }
+
+    #[test]
+    fn test_state() {
+        let mut context = Context::new(
+            holochain_agent::Agent::from_string("Terence".to_string()),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        );
+
+        match context.state() {
+            None => assert!(true),
+            _ => assert!(false),
+        }
+
+        let global_state = Arc::new(RwLock::new(State::new()));
+        context.set_state(global_state.clone());
+
+        {
+            let _read_lock = global_state.read().unwrap();
+            match context.state() {
+                Some(_read_lock) => assert!(true),
+                _ => assert!(false),
+            };
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_deadlock() {
+        let mut context = Context::new(
+            holochain_agent::Agent::from_string("Terence".to_string()),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        );
+
+        let global_state = Arc::new(RwLock::new(State::new()));
+        context.set_state(global_state.clone());
+
+        {
+            let _write_lock = global_state.write().unwrap();
+            // This line panics because we would enter into a deadlock
+            context.state();
+        }
+    }
+}

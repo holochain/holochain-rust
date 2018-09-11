@@ -35,13 +35,16 @@ impl Iterator for ChainIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
-        self.current = previous.as_ref()
-                        .and_then(|p| p.header().link())
-                        // @TODO should this panic?
-                        // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| {
-                            self.table.pair(&h.to_string()).expect("getting from a table shouldn't fail")
-                        });
+        self.current = previous
+            .as_ref()
+            .and_then(|p| p.header().link())
+            // @TODO should this panic?
+            // @see https://github.com/holochain/holochain-rust/issues/146
+            .and_then(|h| {
+                self.table
+                    .pair(&h.to_string())
+                    .expect("getting from a table shouldn't fail")
+            });
         previous
     }
 }
@@ -191,18 +194,20 @@ impl SourceChain for Chain {
     }
 
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.block_on_ask(Protocol::GetPair(k.to_string()));
-        unwrap_to!(response => Protocol::GetPairResult).clone()
+        match self.table.block_on_ask(Protocol::GetPair(k.to_string())) {
+            Ok(response) => unwrap_to!(response => Protocol::GetPairResult).clone(),
+            Err(error) => Err(error),
+        }
     }
 
     fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| p.entry().hash() == entry_hash))
     }
 }
 

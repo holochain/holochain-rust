@@ -3,18 +3,6 @@ FROM ubuntu
 # This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
 
-# Set the internal user for the docker container (non-root)
-ENV DOCKER_BUILD_USER holochain
-
-# The Rust version used for the Wasm builds
-ENV WASM_NIGHTLY nightly-2018-07-17
-
-# The Rust version used for the tools
-ENV TOOLS_NIGHTLY nightly-2018-07-17
-
-# The Rust version that is used everywhere else
-ENV CORE_RUST_VERSION nightly-2018-07-17
-
 RUN apt-get update && apt-get install --yes\
   libssl-dev \
   pkg-config \
@@ -29,13 +17,29 @@ RUN apt-get update && apt-get install --yes\
   nodejs \
   npm
 
+# Set the internal user for the docker container (non-root)
+ENV DOCKER_BUILD_USER holochain
+
+# The Rust version used for the Wasm builds
+ENV WASM_NIGHTLY nightly-2018-06-01
+
+# The Rust version used for the tools
+ENV TOOLS_NIGHTLY nightly-2018-07-17
+
+# The Rust version that is used everywhere else
+ENV CORE_RUST_VERSION nightly-2018-06-01
+
 RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
 USER ${DOCKER_BUILD_USER}
 
+ADD ./Makefile ./Makefile
+
+# be sure to keep this in sync with install_rustup in the makefile
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
 ENV PATH /home/${DOCKER_BUILD_USER}/.cargo/bin:$PATH
 RUN rustc --version
 
+# keep this in sync with install_rust_wasm in the makefile
 RUN make install_rust_wasm
 
 RUN make install_rust_tools

@@ -9,7 +9,7 @@ all: main
 
 
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-RUSTUP_INSTALL = rustup component add --toolchain $(CORE_RUST_VERSION)
+CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_NIGHTLY)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -54,6 +54,7 @@ test_c_ci: build
 .PHONY: install_rustup
 install_rustup:
 	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
+	export PATH=${HOME}/.cargo/bin:${PATH}
 
 .PHONY: install_rust_wasm
 install_rust_wasm:
@@ -61,16 +62,14 @@ install_rust_wasm:
 
 .PHONY: install_rust_tools
 install_rust_tools:
-	$(RUSTUP_INSTALL) rustfmt-preview || echo "fmt already installed"
-	$(RUSTUP_INSTALL) clippy-preview || echo "clippy already installed"
+	rustup toolchain install ${TOOLS_NIGHTLY}
+	rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview || echo "fmt already installed"
+	rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview || echo "clippy already installed"
+	rustup component add --toolchain $(TOOLS_NIGHTLY) mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(RUSTUP_INSTALL) cargo-tarpaulin || echo "Tarpaulin already installed"
-
-.PHONY: install_mdbook
-install_mdbook:
-	$(RUSTUP_INSTALL) mdbook --vers "^0.1.0" || echo "MDbook already installed"
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" rustup component add --toolchain $(CORE_RUST_VERSION) cargo-tarpaulin || echo "Tarpaulin already installed"
 
 .PHONY: wasm_build
 wasm_build:
@@ -87,13 +86,13 @@ cov: wasm_build
 	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check:
-	$(CARGO) fmt -- --check
+	$(CARGO_TOOLS) fmt -- --check
 
 clippy:
-	$(CARGO) clippy -- -A needless_return
+	$(CARGO_TOOLS) clippy -- -A needless_return
 
 fmt:
-	$(CARGO) fmt
+	$(CARGO_TOOLS) fmt
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

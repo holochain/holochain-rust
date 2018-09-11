@@ -7,7 +7,6 @@ branches:
     - master
     - develop
 
-
 jobs:
   include:
     - name: "C binding tests"
@@ -24,7 +23,6 @@ jobs:
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rustup
-        # - make install_rust_wasm
       script:
         - make test_c_ci
       before_cache:

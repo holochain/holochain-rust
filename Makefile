@@ -80,7 +80,9 @@ install_mdbook:
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin || echo "Tarpaulin already installed"
+	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
+		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
+	fi
 
 .PHONY: wasm_build
 wasm_build:

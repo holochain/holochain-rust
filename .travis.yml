@@ -20,8 +20,8 @@ jobs:
           # faster to build this than manage a cache for the target
           # - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_rustup
         - make install_rust_wasm
       script:
         - make test_c_ci
@@ -38,8 +38,8 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_rustup
         - make install_rust_wasm
         - make install_tarpaulin
       script: make cov
@@ -66,8 +66,8 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup_tools
         - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_rustup_tools
         - make install_rust_tools
       script:
         - make fmt_check
@@ -96,8 +96,8 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup_tools
         - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_rustup_tools
         - make install_mdbook
       script: ./travis-update-book.sh
       before_cache:

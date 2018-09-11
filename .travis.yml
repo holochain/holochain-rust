@@ -54,6 +54,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
 
     - name: "Formatting & clippy"
       # manually cache as we manually install rustup
@@ -80,6 +81,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
 
     - name: "Mdbook Build"
       env:
@@ -107,3 +109,4 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index

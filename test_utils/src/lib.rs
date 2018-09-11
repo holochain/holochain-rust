@@ -7,7 +7,7 @@ use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Config, Zome},
+    zome::{capabilities::Capability, entry_types::EntryType, Config, Zome},
     Dna,
 };
 use std::{
@@ -64,10 +64,13 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
 
+    let mut entry_types = HashMap::new();
+    entry_types.insert("testEntryType".to_string(), EntryType::new());
+
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &HashMap::new(),
+        &entry_types,
         &capabilities,
     );
 

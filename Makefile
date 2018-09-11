@@ -90,7 +90,7 @@ install_rust_tools: tools_toolchain
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain
-	if ! $(CARGO) install --list | grep 'mdbook'; then \
+	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
 		$(CARGO_TOOLS) install mdbook --vers "^0.1.0"; \
 	fi
 

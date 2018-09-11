@@ -1,4 +1,4 @@
-version: 2
+version: 2.0
 
 jobs:
   checkout_code:
@@ -33,7 +33,7 @@ jobs:
             - ~/holochain/target
 
 workflows:
-  version: 2
+  version: 2.0
   test:
     jobs:
       - checkout_code

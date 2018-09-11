@@ -17,10 +17,6 @@ jobs:
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
-          - $TRAVIS_BUILD_DIR/core/src/nucleus/wasm-test/target
-          # commit always seems to be a cache miss
-          # - $TRAVIS_BUILD_DIR/core_api/wasm-test/commit/target
-          - $TRAVIS_BUILD_DIR/core_api/wasm-test/round_trip/target
       install:
         - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
@@ -28,11 +24,8 @@ jobs:
       script:
         - make test_c_ci
       before_cache:
-        - echo $TRAVIS_BUILD_DIR
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower
@@ -45,10 +38,6 @@ jobs:
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
-          - $TRAVIS_BUILD_DIR/core/src/nucleus/wasm-test/target
-          # commit always seems to be a cache miss
-          # - $TRAVIS_BUILD_DIR/core_api/wasm-test/commit/target
-          - $TRAVIS_BUILD_DIR/core_api/wasm-test/round_trip/target
       install:
         - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
@@ -58,11 +47,8 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       before_cache:
-        - echo $TRAVIS_BUILD_DIR
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
 
     - name: "Formatting & clippy"
       # manually cache as we manually install rustup
@@ -80,11 +66,8 @@ jobs:
         - make fmt_check
         - make clippy
       before_cache:
-        - echo $TRAVIS_BUILD_DIR
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
 
     - name: "Mdbook Build"
       env:
@@ -103,8 +86,5 @@ jobs:
         - make install_mdbook
       script: ./travis-update-book.sh
       before_cache:
-        - echo $TRAVIS_BUILD_DIR
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/

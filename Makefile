@@ -51,7 +51,7 @@ test_non_c: main
 c_build:
 	cd dna_c_binding && $(CARGO) build
 
-test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
+test_c_ci: core_toolchain c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: install_rustup
 install_rustup:

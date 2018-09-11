@@ -17,7 +17,7 @@ use nucleus::{
         },
         Defn,
     },
-    FunctionCall,
+    ZomeFnCall,
 };
 use num_traits::FromPrimitive;
 use std::{
@@ -143,7 +143,7 @@ pub struct Runtime {
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
-    function_call: FunctionCall,
+    zome_call: ZomeFnCall,
     pub app_name: String,
 }
 
@@ -203,7 +203,7 @@ pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
-    function_call: &FunctionCall,
+    zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
     // Create wasm module from wasm binary
@@ -288,7 +288,7 @@ pub fn call(
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
-        function_call: function_call.clone(),
+        zome_call: zome_call.clone(),
         app_name: app_name.to_string(),
     };
 
@@ -310,7 +310,7 @@ pub fn call(
         // which have been set in memory module
         encoded_allocation_of_output = wasm_instance
             .invoke_export(
-                function_call.function.clone().as_str(),
+                zome_call.fn_name.clone().as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
             )?
@@ -344,7 +344,7 @@ pub mod tests {
     };
     use nucleus::{
         ribosome::api::{call, Runtime},
-        FunctionCall,
+        ZomeFnCall,
     };
     use std::{
         str::FromStr,
@@ -467,7 +467,7 @@ pub mod tests {
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
-        let fc = FunctionCall::new(
+        let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
@@ -480,7 +480,7 @@ pub mod tests {
                 &instance.action_channel(),
                 &instance.observer_channel(),
                 wasm.clone(),
-                &fc,
+                &zome_call,
                 Some(args_bytes),
             ).expect("test should be callable"),
             logger,

@@ -29,6 +29,9 @@ jobs:
       before_cache:
         - echo $TRAVIS_BUILD_DIR
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower
@@ -52,6 +55,12 @@ jobs:
       script: make cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
+      before_cache:
+        - echo $TRAVIS_BUILD_DIR
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
 
     - name: "Formatting & clippy"
       # manually cache as we manually install rustup
@@ -68,8 +77,17 @@ jobs:
       script:
         - make fmt_check
         - make clippy
+      before_cache:
+        - echo $TRAVIS_BUILD_DIR
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/
 
     - name: "Mdbook Build"
+      env:
+        - ENCRYPTION_LABEL: "30dd9296640e"
+        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -82,6 +100,9 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_mdbook
       script: ./travis-update-book.sh
-      env:
-        - ENCRYPTION_LABEL: "30dd9296640e"
-        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+      before_cache:
+        - echo $TRAVIS_BUILD_DIR
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_dna_c_binding*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_agent*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain_core_api_c_binding*/

@@ -67,6 +67,9 @@ install_rust_tools:
 	rustup toolchain install ${TOOLS_NIGHTLY}
 	rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview || echo "fmt already installed"
 	rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview || echo "clippy already installed"
+
+.PHONY: install_mdbook
+install_mdbook:
 	$(CARGO_TOOLS) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: install_tarpaulin
@@ -91,7 +94,7 @@ fmt_check:
 	$(CARGO_TOOLS) fmt -- --check
 
 clippy:
-	$(CARGO_TOOLS) clippy -- -A needless_return
+	$(CARGO_TOOLS) clippy --all --exclude holochain_dna_c_binding -- -A needless_return
 
 fmt:
 	$(CARGO_TOOLS) fmt

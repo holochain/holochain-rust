@@ -73,7 +73,7 @@ jobs:
       install:
         - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_mdbook
+        - make install_rust_tools
       script: ./travis-update-book.sh
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"

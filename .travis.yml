@@ -64,7 +64,7 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup
+        - make install_rustup_tools
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_tools
       script:
@@ -93,7 +93,7 @@ jobs:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
       install:
-        - make install_rustup
+        - make install_rustup_tools
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_mdbook
       script: ./travis-update-book.sh

@@ -58,6 +58,11 @@ install_rustup:
 	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
+.PHONY: install_rustup
+install_rustup_tools:
+	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${TOOLS_NIGHTLY} -y
+	export PATH=${HOME}/.cargo/bin:${PATH}
+
 .PHONY: install_rust_wasm
 install_rust_wasm:
 	rustup target add wasm32-unknown-unknown --toolchain ${CORE_RUST_VERSION}
@@ -70,6 +75,7 @@ install_rust_tools:
 
 .PHONY: install_mdbook
 install_mdbook:
+	rustup toolchain install ${TOOLS_NIGHTLY}
 	$(CARGO_TOOLS) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: install_tarpaulin

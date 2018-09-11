@@ -51,13 +51,13 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    extern crate test_utils;
     extern crate holochain_agent;
+    extern crate test_utils;
     use super::*;
-    use persister::SimplePersister;
     use logger::Logger;
-    use std::sync::{Arc, Mutex};
+    use persister::SimplePersister;
     use state::State;
+    use std::sync::{Arc, Mutex};
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {

@@ -60,20 +60,27 @@ install_rustup:
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
-.PHONY: install_rustup
+.PHONY: install_rustup_tools
 install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${TOOLS_NIGHTLY} -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
+.PHONY: core_toolchain
+core_toolchain:
+	rustup toolchain install ${CORE_RUST_VERSION}
+
+.PHONY: tools_toolchain
+tools_toolchain:
+	rustup toolchain install ${TOOLS_NIGHTLY}
+
 .PHONY: install_rust_wasm
-install_rust_wasm:
+install_rust_wasm: core_toolchain
 	rustup target add wasm32-unknown-unknown --toolchain ${CORE_RUST_VERSION}
 
 .PHONY: install_rust_tools
-install_rust_tools:
-	rustup toolchain install ${TOOLS_NIGHTLY}
+install_rust_tools: tools_toolchain
 	if ! rustup component list | grep 'rustfmt-preview'; then \
 		rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview; \
 	fi
@@ -82,39 +89,38 @@ install_rust_tools:
 	fi
 
 .PHONY: install_mdbook
-install_mdbook:
-	rustup toolchain install ${TOOLS_NIGHTLY}
+install_mdbook: tools_toolchain
 	if ! $(CARGO) install --list | grep 'mdbook'; then \
 		$(CARGO_TOOLS) install mdbook --vers "^0.1.0"; \
 	fi
 
 .PHONY: install_tarpaulin
-install_tarpaulin:
+install_tarpaulin: core_toolchain
 	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
 		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
 	fi
 
 .PHONY: wasm_build
-wasm_build:
+wasm_build: core_toolchain
 	cd core/src/nucleus/wasm-test && $(CARGO) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && $(CARGO) build --target wasm32-unknown-unknown
 	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
 
 .PHONY: build
-build:
+build: core_toolchain
 	$(CARGO) build --all
 	make wasm_build
 
-cov: wasm_build
+cov: core_toolchain wasm_build
 	$(CARGO) tarpaulin -p holochain_core -p holochain_dna --out Xml --skip-clean
 
-fmt_check:
+fmt_check: tools_toolchain
 	$(CARGO_TOOLS) fmt -- --check
 
-clippy:
+clippy: tools_toolchain
 	$(CARGO_TOOLS) clippy -- -A needless_return
 
-fmt:
+fmt: tools_toolchain
 	$(CARGO_TOOLS) fmt
 
 # execute all the found "C" binding tests

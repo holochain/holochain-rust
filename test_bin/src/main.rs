@@ -37,11 +37,11 @@ fn main() {
     //let dna = holochain_dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
     let agent = Agent::from_string(identity.to_string());
-    let context = Context {
+    let context = Context::new(
         agent,
-        logger: Arc::new(Mutex::new(SimpleLogger {})),
-        persister: Arc::new(Mutex::new(SimplePersister::new())),
-    };
+        Arc::new(Mutex::new(SimpleLogger {})),
+        Arc::new(Mutex::new(SimplePersister::new())),
+    );
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 

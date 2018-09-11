@@ -191,11 +191,11 @@ mod tests {
         let agent = holochain_agent::Agent::from_string(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context {
-                agent: agent,
-                logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
-            }),
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+            )),
             logger,
         )
     }

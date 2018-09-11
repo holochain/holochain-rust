@@ -39,12 +39,12 @@ pub fn invoke_commit_entry(
     let entry =
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
-    let action_channel = runtime.action_channel.clone();
-    let context = runtime.context.clone();
-
+    // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
-        validate_entry(entry.clone(), &action_channel, &context)
-            .and_then(move |_| commit_entry(entry.clone(), &action_channel, &context)),
+        // First validate entry:
+        validate_entry(entry.clone(), &runtime.action_channel, &runtime.context)
+            // if successful, commit entry:
+            .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
     );
 
     let json = match task_result {

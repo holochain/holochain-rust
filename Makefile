@@ -48,8 +48,10 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_c_ci: build
-	c_binding_tests ${C_BINDING_TESTS}
+c_build:
+	cd dna_c_binding && $(CARGO) build
+
+test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: install_rustup
 install_rustup:

@@ -8,7 +8,7 @@
 all: main
 
 # CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-CARGO = cargo $(CARGO_ARGS) +nightly-2018-09-01
+CARGO = cargo $(CARGO_ARGS) +nightly-2018-07-07
 RUSTUP_INSTALL = rustup component add --toolchain $(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written

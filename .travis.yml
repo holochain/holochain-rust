@@ -16,6 +16,9 @@ jobs:
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
+          - $TRAVIS_BUILD_DIR/core/src/nucleus/wasm-test/target
+          - $TRAVIS_BUILD_DIR/core_api/wasm-test/commit/target
+          - $TRAVIS_BUILD_DIR/core_api/wasm-test/round_trip/target
       install:
         - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH
@@ -33,6 +36,9 @@ jobs:
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
+          - $TRAVIS_BUILD_DIR/core/src/nucleus/wasm-test/target
+          - $TRAVIS_BUILD_DIR/core_api/wasm-test/commit/target
+          - $TRAVIS_BUILD_DIR/core_api/wasm-test/round_trip/target
       install:
         - make install_rustup
         - export PATH=$HOME/.cargo/bin:$PATH

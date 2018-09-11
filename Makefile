@@ -81,10 +81,10 @@ install_rust_wasm: core_toolchain
 
 .PHONY: install_rust_tools
 install_rust_tools: tools_toolchain
-	if ! rustup component list | grep 'rustfmt-preview'; then \
+	if ! rustup component list --toolchain $(TOOLS_NIGHTLY) | grep 'rustfmt-preview.*(installed)'; then \
 		rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview; \
 	fi
-	if ! rustup component list | grep 'clippy-preview'; then \
+	if ! rustup component list --toolchain $(TOOLS_NIGHTLY) | grep 'clippy-preview.*(installed)'; then \
 		rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview; \
 	fi
 

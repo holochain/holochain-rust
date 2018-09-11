@@ -32,7 +32,6 @@ jobs:
           - $HOME/.cargo
           - ~/holochain/target
 
-
 workflows:
   version: 2
   build-and-test:

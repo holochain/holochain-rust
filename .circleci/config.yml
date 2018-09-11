@@ -1,0 +1,13 @@
+version: 2.0
+
+jobs:
+  checkout_code:
+    docker:
+      - image: circleci/buildpack-deps:
+    working_directory: ~/holochain
+    steps:
+      - checkout
+      - save_cache:
+        key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        paths:
+          - ~/holochain

@@ -65,13 +65,13 @@ install_rust_wasm:
 .PHONY: install_rust_tools
 install_rust_tools:
 	rustup toolchain install ${TOOLS_NIGHTLY}
-	rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview || echo "fmt already installed"
-	rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview || echo "clippy already installed"
-	rustup component add --toolchain $(TOOLS_NIGHTLY) mdbook --vers "^0.1.0" || echo "MDbook already installed"
+	$(CARGO) install rustfmt-preview || echo "fmt already installed"
+	$(CARGO) install clippy-preview || echo "clippy already installed"
+	$(CARGO) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" rustup component add --toolchain $(CORE_RUST_VERSION) cargo-tarpaulin || echo "Tarpaulin already installed"
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin || echo "Tarpaulin already installed"
 
 .PHONY: wasm_build
 wasm_build:
@@ -85,7 +85,7 @@ build:
 	make wasm_build
 
 cov: wasm_build
-	$(CARGO) tarpaulin --all --out Xml
+	$(CARGO) tarpaulin -p holochain_core -p holochain_dna --out Xml --skip-clean
 
 fmt_check:
 	$(CARGO_TOOLS) fmt -- --check

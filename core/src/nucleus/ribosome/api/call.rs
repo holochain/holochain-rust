@@ -60,17 +60,17 @@ pub fn invoke_call(
     };
 
     // ZomeCallArgs to ZomeFnCall
-    let fn_call = ZomeFnCall::from_args(input);
+    let zome_call = ZomeFnCall::from_args(input);
 
     // Don't allow recursive calls
-    if fn_call.same_as(&runtime.zome_call) {
+    if zome_call.same_as(&runtime.zome_call) {
         return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorRecursiveCall as i32,
         )));
     }
 
     // Create Call Action
-    let action_wrapper = ActionWrapper::new(Action::Call(fn_call.clone()));
+    let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -79,13 +79,13 @@ pub fn invoke_call(
         action_wrapper.clone(),
         move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
-            let opt_res = state.nucleus().zome_call_result(&fn_call);
-            match opt_res {
-                Some(res) => {
+            let maybe_result = state.nucleus().zome_call_result(&zome_call);
+            match maybe_result {
+                Some(result) => {
                     // @TODO never panic in wasm
                     // @see https://github.com/holochain/holochain-rust/issues/159
                     sender
-                        .send(res)
+                        .send(result)
                         // the channel stays connected until the first message has been sent
                         // if this fails that means that it was called after having returned done=true
                         .expect("observer called after done");
@@ -148,15 +148,15 @@ pub(crate) fn reduce_call(
     let can_call = match cap.cap_type.membrane {
         Membrane::Public => true,
         Membrane::Zome => {
-            // FIXME check if caller zome_name is same as called zome_name
+            // TODO #301 - check if caller zome_name is same as called zome_name
             false
         }
         Membrane::Agent => {
-            // FIXME check if caller has Agent Capability
+            // TODO #301 - check if caller has Agent Capability
             false
         }
         Membrane::ApiKey => {
-            // FIXME check if caller has ApiKey Capability
+            // TODO #301 - check if caller has ApiKey Capability
             false
         }
     };

@@ -24,6 +24,8 @@ jobs:
         - make build test_c_ci
 
     - name: "Standard tests + code coverage"
+      # sudo is needed for codecov, which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache

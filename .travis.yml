@@ -23,6 +23,7 @@ jobs:
         - make install_rust_wasm
       script:
         - make test_c_ci
+      # faster to build this than have it invalidate the cache every build
       before_cache:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/

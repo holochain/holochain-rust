@@ -13,6 +13,7 @@ jobs:
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
+        timeout: 1000
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
@@ -33,6 +34,7 @@ jobs:
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
+        timeout: 1000
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
@@ -52,6 +54,7 @@ jobs:
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
+        timeout: 1000
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
@@ -67,6 +70,7 @@ jobs:
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
+        timeout: 1000
         directories:
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target

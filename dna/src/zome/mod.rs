@@ -71,7 +71,7 @@ impl Default for Zome {
     /// Provide defaults for an individual "zome".
     fn default() -> Self {
         Zome {
-            description: String::from(""),
+            description: String::new(),
             config: Config::new(),
             entry_types: HashMap::new(),
             capabilities: HashMap::new(),
@@ -100,10 +100,6 @@ impl Zome {
 pub mod tests {
     use super::*;
     use serde_json;
-
-    pub fn test_zome_description() -> String {
-        "test zome description".into()
-    }
 
     #[test]
     fn build_and_compare() {

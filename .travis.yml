@@ -26,6 +26,8 @@ jobs:
         - make install_rust_wasm
       script:
         - make test_c_ci
+      before_cache:
+        - rm -rf ./target/debug/.fingerprint/holochain_dna_c_binding*/
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower

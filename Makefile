@@ -60,6 +60,8 @@ install_rust_wasm:
 .PHONY: install_rust_tools
 install_rust_tools:
 	rustup toolchain install ${TOOLS_NIGHTLY}
+	rustup component add rustfmt-preview --toolchain ${TOOLS_NIGHTLY} || echo "fmt already installed"
+	rustup component add clippy-preview --toolchain ${TOOLS_NIGHTLY} || echo "clippy already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:

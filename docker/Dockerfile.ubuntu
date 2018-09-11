@@ -37,10 +37,8 @@ ENV PATH /home/${DOCKER_BUILD_USER}/.cargo/bin:$PATH
 RUN rustc --version
 
 RUN make install_rust_wasm
-RUN rustup toolchain install ${TOOLS_NIGHTLY}
 
-RUN rustup component add rustfmt-preview --toolchain ${TOOLS_NIGHTLY}
-RUN rustup component add clippy-preview --toolchain ${TOOLS_NIGHTLY}
+RUN make install_rust_tools
 
 RUN make install_tarpaulin
 

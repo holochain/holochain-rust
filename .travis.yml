@@ -25,8 +25,11 @@ jobs:
         - make test_c_ci
       # faster to build this than have it invalidate the cache every build
       before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_tuils*/
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower
@@ -48,8 +51,11 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_tuils*/
 
     - name: "Formatting & clippy"
       # manually cache as we manually install rustup
@@ -67,8 +73,11 @@ jobs:
         - make fmt_check
         - make clippy
       before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_tuils*/
 
     - name: "Mdbook Build"
       env:
@@ -87,5 +96,8 @@ jobs:
         - make install_mdbook
       script: ./travis-update-book.sh
       before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_tuils*/

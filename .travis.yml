@@ -24,7 +24,7 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rust_wasm
       script:
-        - make build test_c_ci
+        - make wasm_build test_c_ci
 
     - name: "Standard tests + code coverage"
       # sudo is needed for codecov, which makes things 20-50s slower

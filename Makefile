@@ -8,6 +8,7 @@
 all: main
 
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+RUSTUP_INSTALL = rustup component add --toolchain $(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -58,16 +59,16 @@ install_rust_wasm:
 
 .PHONY: install_rust_tools
 install_rust_tools:
-	$(CARGO) install rustfmt-preview || echo "fmt already installed"
-	$(CARGO) install clippy-preview || echo "clippy already installed"
+	$(RUSTUP_INSTALL) rustfmt-preview || echo "fmt already installed"
+	$(RUSTUP_INSTALL) clippy-preview || echo "clippy already installed"
 
 .PHONY: install_tarpaulin
 install_tarpaulin:
-	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin || echo "Tarpaulin already installed"
+	RUSTFLAGS="--cfg procmacro2_semver_exempt" $(RUSTUP_INSTALL) cargo-tarpaulin || echo "Tarpaulin already installed"
 
 .PHONY: install_mdbook
 install_mdbook:
-	$(CARGO) install mdbook --vers "^0.1.0" || echo "MDbook already installed"
+	$(RUSTUP_INSTALL) mdbook --vers "^0.1.0" || echo "MDbook already installed"
 
 .PHONY: wasm_build
 wasm_build:

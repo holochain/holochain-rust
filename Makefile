@@ -7,6 +7,7 @@
 
 all: main
 
+
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 RUSTUP_INSTALL = rustup component add --toolchain $(CORE_RUST_VERSION)
 

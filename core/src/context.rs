@@ -37,7 +37,7 @@ impl Context {
         Ok(())
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub(crate) fn set_state(&mut self, state: Arc<RwLock<State>>) {
         self.state = Some(state);
     }
 
@@ -54,26 +54,11 @@ mod tests {
     extern crate holochain_agent;
     extern crate test_utils;
     use super::*;
-    use logger::Logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
+    use instance::tests::test_logger;
 
-    #[derive(Clone, Debug)]
-    pub struct TestLogger {
-        pub log: Vec<String>,
-    }
-
-    impl Logger for TestLogger {
-        fn log(&mut self, msg: String) {
-            self.log.push(msg);
-        }
-    }
-
-    /// create a test logger
-    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
-        Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
-    }
 
     #[test]
     fn test_state() {
@@ -83,20 +68,14 @@ mod tests {
             Arc::new(Mutex::new(SimplePersister::new())),
         );
 
-        match context.state() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(context.state().is_none());
 
         let global_state = Arc::new(RwLock::new(State::new()));
         context.set_state(global_state.clone());
 
         {
             let _read_lock = global_state.read().unwrap();
-            match context.state() {
-                Some(_read_lock) => assert!(true),
-                _ => assert!(false),
-            };
+            assert!(context.state().is_some());
         }
     }
 

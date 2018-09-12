@@ -104,16 +104,16 @@ wasm_build: ensure_wasm_target
 build: wasm_build
 	$(CARGO) build --all
 
-cov:
+cov: install_ci
 	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check
 
-clippy:
+clippy: install_rust_tools
 	$(CARGO_TOOLS) clippy -- -A needless_return
 
-fmt:
+fmt: install_rust_tools
 	$(CARGO_TOOLS) fmt
 
 # execute all the found "C" binding tests

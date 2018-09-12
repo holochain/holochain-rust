@@ -8,7 +8,7 @@ use hash_table::{
         },
         PairMeta,
     },
-    status::{CRUDStatus, LINK_NAME, STATUS_NAME},
+    status::{CrudStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };
 use key::Key;
@@ -41,7 +41,7 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
                 &test_keys(),
                 &pair_1,
                 STATUS_NAME,
-                &CRUDStatus::MODIFIED.bits().to_string(),
+                &CrudStatus::MODIFIED.bits().to_string(),
             ),
         ],
         table
@@ -80,7 +80,7 @@ pub fn test_retract_pair<HT: HashTable>(table: &mut HT) {
             &test_keys(),
             &pair,
             STATUS_NAME,
-            &CRUDStatus::DELETED.bits().to_string(),
+            &CrudStatus::DELETED.bits().to_string(),
         )],
         table
             .metas_for_pair(&pair)

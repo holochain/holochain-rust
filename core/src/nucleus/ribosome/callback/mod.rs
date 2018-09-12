@@ -14,7 +14,7 @@ use nucleus::{
         callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
         Defn,
     },
-    FunctionCall,
+    ZomeFnCall,
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
@@ -157,7 +157,7 @@ pub fn call(
     function: &Callback,
     params: &CallbackParams,
 ) -> CallbackResult {
-    let function_call = FunctionCall::new(
+    let zome_call = ZomeFnCall::new(
         zome,
         &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
@@ -165,7 +165,7 @@ pub fn call(
     );
 
     let call_result =
-        call_zome_and_wait_for_result(function_call.clone(), &action_channel, &observer_channel);
+        call_zome_and_wait_for_result(zome_call.clone(), &action_channel, &observer_channel);
 
     // translate the call result to a callback result
     match call_result {

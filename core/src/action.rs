@@ -88,7 +88,7 @@ pub enum Action {
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(Entry),
-    ValidationResult((Box<ActionWrapper>, ValidationResult)),
+    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions

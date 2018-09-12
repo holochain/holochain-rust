@@ -413,7 +413,7 @@ fn reduce_validate_entry(
                     )),
                 };
                 action_channel
-                    .send(ActionWrapper::new(Action::ValidationResult((
+                    .send(ActionWrapper::new(Action::ReturnValidationResult((
                         Box::new(action_wrapper),
                         validation_result,
                     ))))
@@ -422,7 +422,7 @@ fn reduce_validate_entry(
         }
     };
 }
-fn reduce_validation_result(
+fn reduce_return_validation_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
@@ -430,7 +430,7 @@ fn reduce_validation_result(
     _: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
-    let (action_wrapper, validation_result) = unwrap_to!(action => Action::ValidationResult);
+    let (action_wrapper, validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
     state
         .validation_results
         .insert(*action_wrapper.clone(), validation_result.clone());
@@ -464,7 +464,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ValidateEntry(_) => Some(reduce_validate_entry),
-        Action::ValidationResult(_) => Some(reduce_validation_result),
+        Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,
     }
 }

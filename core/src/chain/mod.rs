@@ -35,13 +35,16 @@ impl Iterator for ChainIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
-        self.current = previous.as_ref()
-                        .and_then(|p| p.header().link())
-                        // @TODO should this panic?
-                        // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| {
-                            self.table.pair(&h.to_string()).expect("getting from a table shouldn't fail")
-                        });
+        self.current = previous
+            .as_ref()
+            .and_then(|p| p.header().link())
+            // @TODO should this panic?
+            // @see https://github.com/holochain/holochain-rust/issues/146
+            .and_then(|h| {
+                self.table
+                    .pair(&h.to_string())
+                    .expect("getting from a table shouldn't fail")
+            });
         previous
     }
 }
@@ -149,7 +152,27 @@ impl SourceChain for Chain {
     }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        self.actor.set_top_pair(&pair)
+        match pair {
+            Some(pair_for_validation) => {
+                if !(pair_for_validation.validate()) {
+                    return Err(HolochainError::new(
+                        "attempted to push an invalid pair for this chain",
+                    ));
+                }
+
+                let top_pair = self.top_pair().as_ref().map(|p| p.key());
+                let next_pair = pair_for_validation.header().link();
+
+                if top_pair != next_pair {
+                    return Err(HolochainError::new(&format!(
+                        "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                        top_pair, next_pair,
+                    )));
+                }
+                self.actor.set_top_pair(&pair)
+            }
+            None => Ok(None),
+        }
     }
 
     fn top_pair_type(&self, t: &str) -> Option<Pair> {
@@ -157,22 +180,6 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        if !(pair.validate()) {
-            return Err(HolochainError::new(
-                "attempted to push an invalid pair for this chain",
-            ));
-        }
-
-        let top_pair = self.top_pair().as_ref().map(|p| p.key());
-        let next_pair = pair.header().link();
-
-        if top_pair != next_pair {
-            return Err(HolochainError::new(&format!(
-                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                top_pair, next_pair,
-            )));
-        }
-
         self.table.put_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
@@ -199,10 +206,10 @@ impl SourceChain for Chain {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| p.entry().hash() == entry_hash))
     }
 }
 

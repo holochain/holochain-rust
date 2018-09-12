@@ -40,6 +40,7 @@ impl NucleusState {
             status: NucleusStatus::New,
             ribosome_calls: HashMap::new(),
             validation_results: HashMap::new(),
+            #[cfg(debug)]
             validations_running: Vec::new(),
         }
     }
@@ -72,7 +73,7 @@ impl NucleusState {
     pub fn status(&self) -> NucleusStatus {
         self.status.clone()
     }
-    pub fn validation_result(&self, action: &ActionWrapper) -> Option<Result<(), String>> {
+    pub fn validation_result(&self, action: &ActionWrapper) -> Option<ValidationResult> {
         match self.validation_results.get(action) {
             None => None,
             Some(r) => Some(r.clone()),

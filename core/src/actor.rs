@@ -95,7 +95,9 @@ impl AskSelf for ActorRef<Protocol> {
         let a = ask(&(*SYS), self, message);
         match block_on(a) {
             Ok(block_result) => Ok(block_result),
-            Err(_) => Err(HolochainError::NotImplemented),
+            Err(_) => Err(HolochainError::ErrorGeneric(
+                "Could not block action".to_string(),
+            )),
         }
     }
 }

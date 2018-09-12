@@ -29,6 +29,7 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/196
     pub ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
     pub validation_results: HashMap<ActionWrapper, ValidationResult>,
+    #[cfg(debug)]
     pub validations_running: Vec<ActionWrapper>,
 }
 

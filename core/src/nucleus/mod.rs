@@ -393,6 +393,7 @@ fn reduce_validate_entry(
                 .insert(action_wrapper.clone(), Err(error.to_string()));
         }
         Some(zome_name) => {
+            #[cfg(debug)]
             state.validations_running.push(action_wrapper.clone());
             let action_channel = action_channel.clone();
             let observer_channel = observer_channel.clone();
@@ -434,6 +435,7 @@ fn reduce_return_validation_result(
     state
         .validation_results
         .insert(*action_wrapper.clone(), validation_result.clone());
+    #[cfg(debug)]
     state
         .validations_running
         .retain(|x| x.id() != action_wrapper.id());

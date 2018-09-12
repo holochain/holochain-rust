@@ -68,20 +68,14 @@ mod tests {
             Arc::new(Mutex::new(SimplePersister::new())),
         );
 
-        match context.state() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(context.state().is_none());
 
         let global_state = Arc::new(RwLock::new(State::new()));
         context.set_state(global_state.clone());
 
         {
             let _read_lock = global_state.read().unwrap();
-            match context.state() {
-                Some(_read_lock) => assert!(true),
-                _ => assert!(false),
-            };
+            assert!(context.state().is_some());
         }
     }
 

@@ -360,7 +360,7 @@ fn reduce_execute_zome_function(
     }
 }
 
-fn zome_name_for_entry_type(dna: &Dna, entry_type: String) -> Option<String> {
+fn get_zome_name_for_entry_type(dna: &Dna, entry_type: String) -> Option<String> {
     for (zome_name, zome) in &dna.zomes {
         for (entry_type_name, _) in &zome.entry_types {
             if *entry_type_name == entry_type {
@@ -385,7 +385,7 @@ fn reduce_validate_entry(
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::ValidateEntry);
-    match zome_name_for_entry_type(&state.dna.clone().unwrap(), entry.entry_type()) {
+    match get_zome_name_for_entry_type(&state.dna.clone().unwrap(), entry.entry_type()) {
         None => {
             let error = format!("Unknown entry type: '{}'", entry.entry_type());
             state

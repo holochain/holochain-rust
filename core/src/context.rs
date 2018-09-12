@@ -54,26 +54,11 @@ mod tests {
     extern crate holochain_agent;
     extern crate test_utils;
     use super::*;
-    use logger::Logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
+    use instance::tests::test_logger;
 
-    #[derive(Clone, Debug)]
-    pub struct TestLogger {
-        pub log: Vec<String>,
-    }
-
-    impl Logger for TestLogger {
-        fn log(&mut self, msg: String) {
-            self.log.push(msg);
-        }
-    }
-
-    /// create a test logger
-    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
-        Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
-    }
 
     #[test]
     fn test_state() {

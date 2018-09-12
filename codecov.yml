@@ -8,3 +8,4 @@ coverage:
         target: 85
 
     patch: no
+    changes: no

@@ -8,6 +8,8 @@
 all: main
 
 RUSTUP_DEFAULT_TOOLCHAIN ?= $(CORE_RUST_VERSION)
+CORE_RUST_VERSION ?= nightly-2018-06-01
+TOOLS_RUST_VERSION ?= nightly-2018-07-17
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
 
@@ -105,7 +107,7 @@ build: wasm_build
 cov:
 	$(CARGO) tarpaulin --all --out Xml
 
-fmt_check:
+fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check
 
 clippy:

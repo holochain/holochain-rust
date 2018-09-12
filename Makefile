@@ -7,7 +7,9 @@
 
 all: main
 
-CARGO = cargo $(CARGO_ARGS)
+RUSTUP_DEFAULT_TOOLCHAIN ?= $(CORE_RUST_VERSION)
+CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -26,11 +28,53 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
         test_non_c \
 	clean ${C_BINDING_CLEAN}
 
+# idempotent install rustup with the default toolchain set for Holochain core
+# best for green fields Rust installation
+.PHONY: install_rustup
+install_rustup:
+	if ! which rustup ; then \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUSTUP_DEFAULT_TOOLCHAIN) -y; \
+	fi
+	export PATH=${HOME}/.cargo/bin:${PATH}
+	rustc --version
+
+# idempotent installation of core toolchain
+.PHONY: core_toolchain
+core_toolchain: install_rustup
+	rustup toolchain install ${CORE_RUST_VERSION}
+
+# idempotent installation of tools toolchain
+.PHONY: tools_toolchain
+tools_toolchain: install_rustup
+	rustup toolchain install ${TOOLS_RUST_VERSION}
+
+# idempotent addition of wasm target
+.PHONY: ensure_wasm_target
+ensure_wasm_target: core_toolchain
+	rustup target add wasm32-unknown-unknown --toolchain ${CORE_RUST_VERSION}
+
+# idempotent installation of development tooling
+.PHONY: install_rust_tools
+install_rust_tools: tools_toolchain
+	# rust format
+	if ! rustup component list --toolchain $(TOOLS_RUST_VERSION) | grep 'rustfmt-preview.*(installed)'; then \
+		rustup component add --toolchain $(TOOLS_RUST_VERSION) rustfmt-preview; \
+	fi
+	# clippy
+	if ! rustup component list --toolchain $(TOOLS_RUST_VERSION) | grep 'clippy-preview.*(installed)'; then \
+		rustup component add --toolchain $(TOOLS_RUST_VERSION) clippy-preview; \
+	fi
+
+# idempotent installation of code coverage CI/testing tools
+.PHONY: install_ci
+install_ci: core_toolchain
+	# tarpaulin (code coverage)
+	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
+		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
+	fi
+
 # apply formatting / style guidelines, and build the rust project
-main:
-	make fmt_check
-	make clippy
-	make build
+main: fmt_check clippy build
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -49,27 +93,26 @@ test_non_c: main
 test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
-wasm_build:
-	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+wasm_build: ensure_wasm_target
+	cd core/src/nucleus/wasm-test && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
 
 .PHONY: build
-build:
+build: wasm_build
 	$(CARGO) build --all
-	make wasm_build
 
 cov:
 	$(CARGO) tarpaulin --all --out Xml
 
 fmt_check:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
+	$(CARGO_TOOLS) fmt -- --check
 
 clippy:
-	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
+	$(CARGO_TOOLS) clippy -- -A needless_return
 
 fmt:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt
+	$(CARGO_TOOLS) fmt
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

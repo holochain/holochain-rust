@@ -96,9 +96,9 @@ test_c_ci: c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
-	cd core/src/nucleus/wasm-test && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) +$(CORE_RUST_VERSION) build --target wasm32-unknown-unknown
+	cd core/src/nucleus/wasm-test && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
 
 .PHONY: build
 build: wasm_build

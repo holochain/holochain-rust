@@ -193,6 +193,18 @@ impl Dna {
         let entry_type = zome.entry_types.get(entry_type_name)?;
         Some(&entry_type.validation)
     }
+
+    pub fn get_zome_name_for_entry_type(&self, entry_type: String) -> Option<String> {
+        for (zome_name, zome) in &self.zomes {
+            for (entry_type_name, _) in &zome.entry_types {
+                if *entry_type_name == entry_type {
+                    return Some(zome_name.clone());
+                }
+            }
+        }
+
+        None
+    }
 }
 
 impl Hash for Dna {
@@ -611,5 +623,51 @@ pub mod tests {
 
         let fail = dna.get_validation_bytecode_for_entry_type("tets zome", "non existing type");
         assert_eq!(None, fail);
+    }
+
+    #[test]
+    fn teset_get_zome_name_for_entry_type() {
+        let dna = Dna::from_json_str(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test zome": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": [],
+                                "code": {
+                                    "code": ""
+                                }
+                            }
+                        },
+                        "entry_types": {
+                            "test type": {
+                                "description": "",
+                                "sharing": "public",
+                                "validation": {
+                                    "code": "AAECAw=="
+                                }
+                            }
+                        }
+                    }
+                }
+            }"#,
+        ).unwrap();
+
+        assert_eq!(dna.get_zome_name_for_entry_type("test type".to_string()), "test type".to_string());
+        assert!(dna.get_zome_name_for_entry_type("non existant entry type".to_string()).is_none());
     }
 }

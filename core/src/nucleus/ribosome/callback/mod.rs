@@ -271,8 +271,7 @@ pub mod tests {
                 "#,
                     canonical_name, result,
                 ),
-            )
-            .expect("string literal should be valid WAT")
+            ).expect("string literal should be valid WAT")
             .as_ref()
             .to_vec()
     }

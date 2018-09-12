@@ -150,8 +150,7 @@ mod tests {
     )
 )
                 "#,
-            )
-            .unwrap()
+            ).unwrap()
             .as_ref()
             .to_vec()
     }

@@ -37,7 +37,7 @@ impl Context {
         Ok(())
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub(crate) fn set_state(&mut self, state: Arc<RwLock<State>>) {
         self.state = Some(state);
     }
 

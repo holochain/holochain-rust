@@ -121,7 +121,7 @@ wasm_build: ensure_wasm_target
 build: core_toolchain wasm_build
 	$(CARGO) build --all
 
-cov: core_toolchain wasm_build
+code_coverage: core_toolchain wasm_build
 	$(CARGO) tarpaulin -p holochain_core -p holochain_dna --out Xml --skip-clean
 
 fmt_check: install_rust_tools

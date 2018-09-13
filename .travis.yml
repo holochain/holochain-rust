@@ -7,7 +7,6 @@ branches:
     - master
     - develop
 
-
 jobs:
   include:
     - name: "C binding tests"
@@ -45,9 +44,9 @@ jobs:
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
         - make install_rustup
-        - make install_rust_wasm
-        - make install_tarpaulin
-      script: make cov
+        - make ensure_wasm_target
+        - make install_ci
+      script: make code_coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       before_cache:

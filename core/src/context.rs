@@ -54,11 +54,10 @@ mod tests {
     extern crate holochain_agent;
     extern crate test_utils;
     use super::*;
+    use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
-    use instance::tests::test_logger;
-
 
     #[test]
     fn test_state() {

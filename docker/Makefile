@@ -33,9 +33,19 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines, and build the rust project
 main: fmt_check clippy build
 
+# idempotent install rustup with the default toolchain set for tooling
+# best for CI based on tools only
+.PHONY: install_rustup_tools
+install_rustup:
+	if ! which rustup ; then \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
+	fi
+	export PATH=${HOME}/.cargo/bin:${PATH}
+	rustc --version
+
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
-.PHONY: install_rustup
+.PHONY: install_rustup_tools
 install_rustup:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUSTUP_DEFAULT_TOOLCHAIN) -y; \

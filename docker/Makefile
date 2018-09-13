@@ -41,7 +41,6 @@ install_rustup:
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
-	rustc --version
 
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
@@ -51,7 +50,6 @@ install_rustup_tools:
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUSTUP_DEFAULT_TOOLCHAIN) -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
-	rustc --version
 
 # idempotent installation of core toolchain
 .PHONY: core_toolchain

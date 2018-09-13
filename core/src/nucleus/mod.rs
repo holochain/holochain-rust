@@ -6,7 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
-use holochain_dna::{wasm::DnaWasm, Dna, zome::capabilities::Capability};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
@@ -439,29 +439,40 @@ pub fn reduce(
 }
 
 // Helper function for getting a Capability for a ZomeFnCall request
-fn get_capability_with_zome_call(dna: Option<&Dna>, zome_call: &ZomeFnCall) -> Result<Capability, ZomeFnResult> {
+fn get_capability_with_zome_call(
+    dna: Option<&Dna>,
+    zome_call: &ZomeFnCall,
+) -> Result<Capability, ZomeFnResult> {
     // Must have DNA
     if dna.is_none() {
-        return Err(ZomeFnResult::new(zome_call.clone(), Err(HolochainError::DnaMissing)));
+        return Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaMissing),
+        ));
     }
     let dna = dna.unwrap();
     // Get Capability from DNA
     let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
     match res {
-        Err(e)  => Err(ZomeFnResult::new(zome_call.clone(), Err(HolochainError::DnaError(e)))),
+        Err(e) => Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaError(e)),
+        )),
         Ok(cap) => Ok(cap.clone()),
     }
 }
 
 // Helper function for getting WASM code for a ZomeFnCall request
-fn get_fn_wasm_with_zome_call(dna: Option<&Dna>, zome_call: &ZomeFnCall) -> Result<DnaWasm, ZomeFnResult> {
+fn get_fn_wasm_with_zome_call(
+    dna: Option<&Dna>,
+    zome_call: &ZomeFnCall,
+) -> Result<DnaWasm, ZomeFnResult> {
     let res = get_capability_with_zome_call(dna, zome_call);
     match res {
         Err(e) => Err(e),
         Ok(cap) => Ok(cap.code),
     }
 }
-
 
 #[cfg(test)]
 pub mod tests {
@@ -476,9 +487,7 @@ pub mod tests {
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::{mpsc::channel, Arc};
 
-    use std::{
-        error::Error,
-    };
+    use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -753,7 +762,9 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
+            Err(HolochainError::DnaError(err)) => {
+                assert_eq!(err.description(), "Zome 'xxx' not found")
+            }
             _ => assert!(false),
         }
 
@@ -763,9 +774,10 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => {
-                assert_eq!(err.description(), "Capability 'xxx' not found in Zome 'test_zome'")
-            }
+            Err(HolochainError::DnaError(err)) => assert_eq!(
+                err.description(),
+                "Capability 'xxx' not found in Zome 'test_zome'"
+            ),
             _ => assert!(false),
         }
     }

@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use holochain_dna::DnaError;
 use json::ToJson;
 use serde_json::Error as SerdeError;
 use std::{
@@ -8,7 +9,6 @@ use std::{
     path::Path,
 };
 use walkdir::Error as WalkdirError;
-use holochain_dna::DnaError;
 
 /// module for holding Holochain specific errors
 

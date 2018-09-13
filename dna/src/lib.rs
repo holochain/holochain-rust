@@ -28,10 +28,10 @@ extern crate base64;
 extern crate uuid;
 
 use serde_json::Value;
-use std::hash::{Hash, Hasher};
 use std::{
     error::Error,
     fmt,
+    hash::{Hash, Hasher},
 };
 pub mod wasm;
 pub mod zome;
@@ -76,7 +76,6 @@ impl fmt::Display for DnaError {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// Represents the top-level holochain dna object.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -202,11 +201,12 @@ impl Dna {
         zome.capabilities.get(capability_name)
     }
 
-
     /// Return a Zome's Capability from a Zome name and Capability name.
-    pub fn get_capability_with_zome_name(&self, zome_name: &str, cap_name: &str)
-        -> Result<&Capability, DnaError>
-    {
+    pub fn get_capability_with_zome_name(
+        &self,
+        zome_name: &str,
+        cap_name: &str,
+    ) -> Result<&Capability, DnaError> {
         // Zome must exist in DNA
         let zome = self.get_zome(zome_name);
         if zome.is_none() {

@@ -133,7 +133,8 @@ pub(crate) fn reduce_call(
         _ => unreachable!(),
     };
     // Get Capability
-    let maybe_cap = state.get_capability(fn_call.clone());
+    let maybe_cap = state.get_capability(&fn_call);
+
     if let Err(fn_res) = maybe_cap {
         // Notify failure
         state
@@ -141,7 +142,7 @@ pub(crate) fn reduce_call(
             .insert(fn_call.clone(), Some(fn_res.result()));
         return;
     }
-    let cap = maybe_cap.unwrap();
+    let cap = maybe_cap.unwrap().clone();
 
     // 2. Checks for permission to access Capability
     // TODO #301 - Do real Capability token check
@@ -189,7 +190,7 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::Dna;
+    use holochain_dna::{Dna, DnaError};
     use instance::tests::{test_instance, TestLogger};
     use nucleus::ribosome::{
         api::{
@@ -295,9 +296,9 @@ pub mod tests {
     #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::ZomeNotFound(
+        let expected = Ok(Err(HolochainError::DnaError(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
-        )));
+        ))));
         test_reduce_call(dna, expected);
     }
 

@@ -58,74 +58,33 @@ impl NucleusState {
         }
     }
 
-    // Return WASM from ZomeFnCall request
-    pub fn get_fn_wasm(&self, fc: ZomeFnCall) -> Result<DnaWasm, ZomeFnResult> {
+    // Return Capability for ZomeFnCall request
+    pub fn get_capability(&self, zome_call: &ZomeFnCall) -> Result<Capability, ZomeFnResult> {
         // Must have DNA
         let dna = self.dna.as_ref();
         if dna.is_none() {
-            return Err(ZomeFnResult::new(fc, Err(HolochainError::DnaMissing)));
+            return Err(ZomeFnResult::new(zome_call.clone(), Err(HolochainError::DnaMissing)));
         }
         let dna = dna.unwrap();
-        // Zome must exist in DNA
-        let zome = dna.get_zome(&fc.zome_name);
-        if zome.is_none() {
+        // Get Capability from DNA
+        let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
+        if let Err(e) = res {
             return Err(ZomeFnResult::new(
-                fc.clone(),
-                Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{}' not found",
-                    &fc.zome_name
-                ))),
+                zome_call.clone(),
+                Err(HolochainError::DnaError(e)),
             ));
         }
-        let zome = zome.unwrap();
-        // Capability must exist in Zome
-        let wasm = dna.get_wasm_from_capability(zome, &fc.cap_name);
-        if wasm.is_none() {
-            return Err(ZomeFnResult::new(
-                fc.clone(),
-                Err(HolochainError::CapabilityNotFound(format!(
-                    "Capability '{}' not found in Zome '{}'",
-                    &fc.cap_name, &fc.zome_name
-                ))),
-            ));
-        }
-        // Everything OK
-        Ok(wasm.unwrap().clone())
+        Ok(res.unwrap().clone())
     }
 
-    // Return Capability from ZomeFnCall request
-    pub fn get_capability(&self, fc: ZomeFnCall) -> Result<Capability, ZomeFnResult> {
-        // Must have DNA
-        let dna = self.dna.as_ref();
-        if dna.is_none() {
-            return Err(ZomeFnResult::new(fc, Err(HolochainError::DnaMissing)));
+
+    // Return WASM for ZomeFnCall request
+    pub fn get_fn_wasm(&self, zome_call: &ZomeFnCall) -> Result<DnaWasm, ZomeFnResult> {
+        let res = self.get_capability(zome_call);
+        if res.is_err() {
+            return Err(res.err().unwrap());
         }
-        let dna = dna.unwrap();
-        // Zome must exist in DNA
-        let zome = dna.get_zome(&fc.zome_name);
-        if zome.is_none() {
-            return Err(ZomeFnResult::new(
-                fc.clone(),
-                Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{}' not found",
-                    &fc.zome_name
-                ))),
-            ));
-        }
-        let zome = zome.unwrap();
-        // Capability must exist in Zome
-        let cap = dna.get_capability(zome, &fc.cap_name);
-        if cap.is_none() {
-            return Err(ZomeFnResult::new(
-                fc.clone(),
-                Err(HolochainError::CapabilityNotFound(format!(
-                    "Capability '{}' not found in Zome '{}'",
-                    &fc.cap_name, &fc.zome_name
-                ))),
-            ));
-        }
-        // Everything OK
-        Ok(cap.unwrap().clone())
+        Ok(res.unwrap().code)
     }
 
     // Getters

@@ -329,7 +329,7 @@ fn reduce_execute_zome_function(
     };
 
     // Get Wasm
-    let maybe_wasm = state.get_fn_wasm(fn_call.clone());
+    let maybe_wasm = state.get_fn_wasm(&fn_call);
 
     match maybe_wasm {
         Err(fn_res) => {
@@ -450,6 +450,10 @@ pub mod tests {
     };
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::{mpsc::channel, Arc};
+
+    use std::{
+        error::Error,
+    };
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -724,7 +728,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome 'xxx' not found"),
+            Err(HolochainError::DnaError(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 
@@ -734,8 +738,8 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::CapabilityNotFound(err)) => {
-                assert_eq!(err, "Capability 'xxx' not found in Zome 'test_zome'")
+            Err(HolochainError::DnaError(err)) => {
+                assert_eq!(err.description(), "Capability 'xxx' not found in Zome 'test_zome'")
             }
             _ => assert!(false),
         }

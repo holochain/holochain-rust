@@ -8,6 +8,7 @@ use std::{
     path::Path,
 };
 use walkdir::Error as WalkdirError;
+use holochain_dna::DnaError;
 
 /// module for holding Holochain specific errors
 
@@ -19,9 +20,7 @@ pub enum HolochainError {
     NotImplemented,
     LoggingError,
     DnaMissing,
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
+    DnaError(DnaError),
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
@@ -59,9 +58,7 @@ impl Error for HolochainError {
             InstanceActive => "the instance is active",
             LoggingError => "logging failed",
             DnaMissing => "DNA is missing",
-            ZomeNotFound(err_msg) => &err_msg,
-            CapabilityNotFound(err_msg) => &err_msg,
-            ZomeFunctionNotFound(err_msg) => &err_msg,
+            DnaError(dna_err) => dna_err.description(),
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",

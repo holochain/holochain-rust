@@ -8,6 +8,7 @@ use nucleus::{
     ribosome::api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
     state::NucleusState,
     ZomeFnCall,
+    get_capability_with_zome_call,
 };
 use serde_json;
 use std::sync::{
@@ -133,7 +134,7 @@ pub(crate) fn reduce_call(
         _ => unreachable!(),
     };
     // Get Capability
-    let maybe_cap = state.get_capability(&fn_call);
+    let maybe_cap = get_capability_with_zome_call(state.dna.as_ref(), &fn_call);
 
     if let Err(fn_res) = maybe_cap {
         // Notify failure

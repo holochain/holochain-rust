@@ -6,7 +6,7 @@ use context::Context;
 use error::HolochainError;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
-use holochain_dna::wasm::DnaWasm;
+use holochain_dna::{wasm::DnaWasm, Dna, zome::capabilities::Capability};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
@@ -329,7 +329,7 @@ fn reduce_execute_zome_function(
     };
 
     // Get Wasm
-    let maybe_wasm = state.get_fn_wasm(&fn_call);
+    let maybe_wasm = get_fn_wasm_with_zome_call(state.dna.as_ref(), &fn_call);
 
     match maybe_wasm {
         Err(fn_res) => {
@@ -437,6 +437,31 @@ pub fn reduce(
         None => old_state,
     }
 }
+
+// Helper function for getting a Capability for a ZomeFnCall request
+fn get_capability_with_zome_call(dna: Option<&Dna>, zome_call: &ZomeFnCall) -> Result<Capability, ZomeFnResult> {
+    // Must have DNA
+    if dna.is_none() {
+        return Err(ZomeFnResult::new(zome_call.clone(), Err(HolochainError::DnaMissing)));
+    }
+    let dna = dna.unwrap();
+    // Get Capability from DNA
+    let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
+    match res {
+        Err(e)  => Err(ZomeFnResult::new(zome_call.clone(), Err(HolochainError::DnaError(e)))),
+        Ok(cap) => Ok(cap.clone()),
+    }
+}
+
+// Helper function for getting WASM code for a ZomeFnCall request
+fn get_fn_wasm_with_zome_call(dna: Option<&Dna>, zome_call: &ZomeFnCall) -> Result<DnaWasm, ZomeFnResult> {
+    let res = get_capability_with_zome_call(dna, zome_call);
+    match res {
+        Err(e) => Err(e),
+        Ok(cap) => Ok(cap.code),
+    }
+}
+
 
 #[cfg(test)]
 pub mod tests {

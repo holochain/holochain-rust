@@ -35,7 +35,7 @@ main: fmt_check clippy build
 
 # idempotent install rustup with the default toolchain set for tooling
 # best for CI based on tools only
-.PHONY: install_rustup_tools
+.PHONY: install_rustup
 install_rustup:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \

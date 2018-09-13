@@ -182,9 +182,6 @@ impl SourceChain for Chain {
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
         self.table.put_pair(&pair.clone())?;
 
-        // @TODO instead of unwrapping this, move all the above validation logic inside of
-        // set_top_pair()
-        // @see https://github.com/holochain/holochain-rust/issues/258
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;

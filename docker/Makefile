@@ -46,7 +46,7 @@ install_rustup:
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
 .PHONY: install_rustup_tools
-install_rustup:
+install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUSTUP_DEFAULT_TOOLCHAIN) -y; \
 	fi

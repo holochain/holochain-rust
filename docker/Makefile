@@ -30,6 +30,9 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
         test_non_c \
 	clean ${C_BINDING_CLEAN}
 
+# apply formatting / style guidelines, and build the rust project
+main: fmt_check clippy build
+
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
 .PHONY: install_rustup
@@ -75,8 +78,11 @@ install_ci: core_toolchain
 		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
 	fi
 
-# apply formatting / style guidelines, and build the rust project
-main: fmt_check clippy build
+.PHONY: install_mdbook
+install_mdbook: tools_toolchain
+	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
+		$(CARGO_TOOLS) install mdbook --vers "^0.1.0"; \
+	fi
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}
@@ -92,7 +98,10 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_c_ci: c_binding_tests ${C_BINDING_TESTS}
+c_build:
+	cd dna_c_binding && $(CARGO) build
+
+test_c_ci: c_build core_toolchain c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
@@ -101,11 +110,11 @@ wasm_build: ensure_wasm_target
 	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
 
 .PHONY: build
-build: wasm_build
+build: core_toolchain wasm_build
 	$(CARGO) build --all
 
-cov: install_ci
-	$(CARGO) tarpaulin --all --out Xml
+cov: core_toolchain wasm_build
+	$(CARGO) tarpaulin -p holochain_core -p holochain_dna --out Xml --skip-clean
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check

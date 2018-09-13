@@ -7,7 +7,9 @@
 
 all: main
 
-CARGO = cargo $(CARGO_ARGS)
+
+CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_NIGHTLY)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -46,30 +48,80 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_c_ci: c_binding_tests ${C_BINDING_TESTS}
+c_build:
+	cd dna_c_binding && $(CARGO) build
+
+test_c_ci: core_toolchain c_build c_binding_tests ${C_BINDING_TESTS}
+
+.PHONY: install_rustup
+install_rustup:
+	if ! which rustup ; then \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y; \
+	fi
+	export PATH=${HOME}/.cargo/bin:${PATH}
+
+.PHONY: install_rustup_tools
+install_rustup_tools:
+	if ! which rustup ; then \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${TOOLS_NIGHTLY} -y; \
+	fi
+	export PATH=${HOME}/.cargo/bin:${PATH}
+
+.PHONY: core_toolchain
+core_toolchain:
+	rustup toolchain install ${CORE_RUST_VERSION}
+
+.PHONY: tools_toolchain
+tools_toolchain:
+	rustup toolchain install ${TOOLS_NIGHTLY}
+
+.PHONY: install_rust_wasm
+install_rust_wasm: core_toolchain
+	rustup target add wasm32-unknown-unknown --toolchain ${CORE_RUST_VERSION}
+
+.PHONY: install_rust_tools
+install_rust_tools: tools_toolchain
+	if ! rustup component list --toolchain $(TOOLS_NIGHTLY) | grep 'rustfmt-preview.*(installed)'; then \
+		rustup component add --toolchain $(TOOLS_NIGHTLY) rustfmt-preview; \
+	fi
+	if ! rustup component list --toolchain $(TOOLS_NIGHTLY) | grep 'clippy-preview.*(installed)'; then \
+		rustup component add --toolchain $(TOOLS_NIGHTLY) clippy-preview; \
+	fi
+
+.PHONY: install_mdbook
+install_mdbook: tools_toolchain
+	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
+		$(CARGO_TOOLS) install mdbook --vers "^0.1.0"; \
+	fi
+
+.PHONY: install_tarpaulin
+install_tarpaulin: core_toolchain
+	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
+		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
+	fi
 
 .PHONY: wasm_build
-wasm_build:
-	cd core/src/nucleus/wasm-test && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) +$(WASM_NIGHTLY) build --target wasm32-unknown-unknown
+wasm_build: core_toolchain
+	cd core/src/nucleus/wasm-test && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) build --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
 
 .PHONY: build
-build:
+build: core_toolchain
 	$(CARGO) build --all
 	make wasm_build
 
-cov:
-	$(CARGO) tarpaulin --all --out Xml
+cov: core_toolchain wasm_build
+	$(CARGO) tarpaulin -p holochain_core -p holochain_dna --out Xml --skip-clean
 
-fmt_check:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt -- --check
+fmt_check: tools_toolchain
+	$(CARGO_TOOLS) fmt -- --check
 
-clippy:
-	$(CARGO) +$(TOOLS_NIGHTLY) clippy -- -A needless_return
+clippy: tools_toolchain
+	$(CARGO_TOOLS) clippy -- -A needless_return
 
-fmt:
-	$(CARGO) +$(TOOLS_NIGHTLY) fmt
+fmt: tools_toolchain
+	$(CARGO_TOOLS) fmt
 
 # execute all the found "C" binding tests
 ${C_BINDING_TESTS}:

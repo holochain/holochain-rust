@@ -89,7 +89,7 @@ mod tests {
             commit::tests::test_commit_args_bytes,
             tests::{test_capability, test_parameters, test_zome_name},
         },
-        FunctionCall,
+        ZomeFnCall,
     };
     use serde_json;
     use std::sync::Arc;
@@ -174,7 +174,7 @@ mod tests {
             instance.state().agent().chain().top_pair().unwrap().key()
         );
 
-        let commit_call = FunctionCall::new(
+        let commit_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "commit_dispatch",
@@ -195,7 +195,7 @@ mod tests {
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
 
-        let get_call = FunctionCall::new(
+        let get_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",

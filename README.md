@@ -9,7 +9,16 @@ To read about the redux like architecture, see [here](doc/holochain_101/src/stat
 
 ## Local development & testing
 
-**NEVER RUN `make` ON ITS OWN UNLESS YOU KNOW WHAT YOU'RE DOING**
+### Makefile
+
+It is possible to use the `make` commands if you're on ubuntu.
+
+The make commands all support ubuntu, and sort-of work on Mac OS X, etc.
+
+Commands that don't run on your machine can all be run through our dedicated
+docker environments available on Docker Hub (see below).
+
+### CI
 
 CI builds are happening on circle CI.
 

@@ -20,28 +20,20 @@ RUN apt-get update && apt-get install --yes\
 # Set the internal user for the docker container (non-root)
 ENV DOCKER_BUILD_USER holochain
 
-# The Rust version used for the tools
-ENV TOOLS_NIGHTLY nightly-2018-07-17
-
-# The Rust version that is used everywhere else
-ENV CORE_RUST_VERSION nightly-2018-06-01
-
 RUN useradd -ms /bin/bash ${DOCKER_BUILD_USER}
 USER ${DOCKER_BUILD_USER}
 
 ADD ./Makefile ./Makefile
 
-# be sure to keep this in sync with install_rustup in the makefile
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${CORE_RUST_VERSION} -y
+# need to set path manually in docker as normal `export` in make doesn't work
 ENV PATH /home/${DOCKER_BUILD_USER}/.cargo/bin:$PATH
-RUN rustc --version
+RUN make install_rustup
 
-# keep this in sync with install_rust_wasm in the makefile
-RUN make install_rust_wasm
+RUN make ensure_wasm_target
 
 RUN make install_rust_tools
 
-RUN make install_tarpaulin
+RUN make install_ci
 
 WORKDIR /holochain
 

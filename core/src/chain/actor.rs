@@ -86,7 +86,8 @@ impl Actor for ChainActor {
                     _ => unreachable!(),
                 },
                 Some(context.myself()),
-            ).expect("failed to tell ChainActor sender");
+            )
+            .expect("failed to tell ChainActor sender");
     }
 }
 

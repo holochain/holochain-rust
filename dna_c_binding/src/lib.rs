@@ -97,21 +97,21 @@ macro_rules! _xa_str {
                     }
                     &*ptr
                 };
-        
+
                 let res = arg.$prop.clone();
-        
+
                 let res = match CString::new(res) {
                     Ok(s) => s,
                     Err(_) => return std::ptr::null_mut(),
                 };
-        
+
                 res.into_raw()
             }) {
                 Ok(r) => r,
                 Err(_) => std::ptr::null_mut(),
             }
         }
-        
+
         #[no_mangle]
         pub extern "C" fn $setname(ptr: *mut $struct, val: *const c_char) {
             catch_unwind(|| {
@@ -183,7 +183,8 @@ fn zome_names_as_vec(dna: &Dna) -> Option<Vec<*const c_char>> {
                     Err(_) => std::ptr::null(),
                 };
                 raw as *const c_char
-            }).collect::<Vec<*const c_char>>(),
+            })
+            .collect::<Vec<*const c_char>>(),
     )
 }
 
@@ -222,7 +223,8 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        }).collect::<Vec<*const c_char>>();
+        })
+        .collect::<Vec<*const c_char>>();
     Some(result)
 }
 
@@ -256,7 +258,8 @@ fn fn_names_as_vec(
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        }).collect::<Vec<*const c_char>>();
+        })
+        .collect::<Vec<*const c_char>>();
     Some(result)
 }
 
@@ -298,7 +301,8 @@ fn fn_parameters_as_vec(
                 Err(_) => std::ptr::null(),
             };
             raw as *const c_char
-        }).collect::<Vec<*const c_char>>();
+        })
+        .collect::<Vec<*const c_char>>();
     Some(result)
 }
 

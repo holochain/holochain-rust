@@ -166,7 +166,8 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     _ => unreachable!(),
                 },
                 Some(context.myself()),
-            ).expect("could not tell to HashTableActor sender");
+            )
+            .expect("could not tell to HashTableActor sender");
     }
 }
 

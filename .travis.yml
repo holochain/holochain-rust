@@ -22,7 +22,6 @@ jobs:
           # - $TRAVIS_BUILD_DIR/target
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_rustup
       script:
         - make test_c_ci
       before_cache:
@@ -43,9 +42,6 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_rustup
-        - make ensure_wasm_target
-        - make install_ci
       script: make code_coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
@@ -73,8 +69,6 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_rustup_tools
-        - make install_rust_tools
       script:
         - make fmt_check
         - make clippy
@@ -105,7 +99,6 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_rustup_tools
         - make install_mdbook
       script: ./travis-update-book.sh
       before_cache:

@@ -9,7 +9,6 @@ all: main
 
 CORE_RUST_VERSION ?= nightly-2018-06-01
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
-RUSTUP_DEFAULT_TOOLCHAIN ?= $(CORE_RUST_VERSION)
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
 
@@ -38,7 +37,7 @@ main: fmt_check clippy build
 .PHONY: install_rustup
 install_rustup:
 	if ! which rustup ; then \
-		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(CORE_RUST_VERSION) -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
@@ -47,7 +46,7 @@ install_rustup:
 .PHONY: install_rustup_tools
 install_rustup_tools:
 	if ! which rustup ; then \
-		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUSTUP_DEFAULT_TOOLCHAIN) -y; \
+		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
@@ -58,7 +57,7 @@ core_toolchain: install_rustup
 
 # idempotent installation of tools toolchain
 .PHONY: tools_toolchain
-tools_toolchain: install_rustup
+tools_toolchain: install_rustup_tools
 	rustup toolchain install ${TOOLS_RUST_VERSION}
 
 # idempotent addition of wasm target

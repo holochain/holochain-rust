@@ -63,7 +63,7 @@ pub fn invoke_call(
     let zome_call = ZomeFnCall::from_args(input);
 
     // Don't allow recursive calls
-    if zome_call.same_as(&runtime.zome_call) {
+    if zome_call.same_fn_as(&runtime.zome_call) {
         return Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorRecursiveCall as i32,
         )));

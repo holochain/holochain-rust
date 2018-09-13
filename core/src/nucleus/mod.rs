@@ -47,7 +47,7 @@ impl ZomeFnCall {
         }
     }
 
-    pub fn same_as(&self, fn_call: &ZomeFnCall) -> bool {
+    pub fn same_fn_as(&self, fn_call: &ZomeFnCall) -> bool {
         self.zome_name == fn_call.zome_name
             && self.cap_name == fn_call.cap_name
             && self.fn_name == fn_call.fn_name
@@ -792,11 +792,11 @@ pub mod tests {
         let diff3 = ZomeFnCall::new("zozo", "caca", "fufu3", "papa");
 
         assert_ne!(base, copy);
-        assert!(base.same_as(&copy));
-        assert!(copy.same_as(&base));
-        assert!(base.same_as(&same));
-        assert!(!base.same_as(&diff1));
-        assert!(!base.same_as(&diff2));
-        assert!(!base.same_as(&diff3));
+        assert!(base.same_fn_as(&copy));
+        assert!(copy.same_fn_as(&base));
+        assert!(base.same_fn_as(&same));
+        assert!(!base.same_fn_as(&diff1));
+        assert!(!base.same_fn_as(&diff2));
+        assert!(!base.same_fn_as(&diff3));
     }
 }

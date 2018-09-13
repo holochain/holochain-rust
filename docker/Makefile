@@ -106,10 +106,10 @@ test: test_non_c c_binding_tests ${C_BINDING_TESTS}
 test_non_c: main
 	RUSTFLAGS="-D warnings" $(CARGO) test
 
-c_build:
+c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
 
-test_c_ci: c_build core_toolchain c_binding_tests ${C_BINDING_TESTS}
+test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target

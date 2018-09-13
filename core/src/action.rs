@@ -4,9 +4,9 @@ use hash_table::{entry::Entry, links_entry::Link, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
-    ribosome::api::get_links::GetLinksArgs, state::NucleusState, EntrySubmission, FunctionCall,
-    FunctionResult,
+    ribosome::api::get_links::GetLinksArgs, EntrySubmission,
 };
+use nucleus::{state::NucleusState, ZomeFnCall, ZomeFnResult};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -78,9 +78,10 @@ pub enum Action {
     GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
-    ExecuteZomeFunction(FunctionCall),
+    ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(FunctionResult),
+    ReturnZomeFunctionResult(ZomeFnResult),
+
     /// initialize an application from a Dna
     /// not the same as genesis
     /// may call genesis internally
@@ -108,7 +109,7 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use hash::tests::test_hash;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::tests::test_function_result;
+    use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 
     /// dummy action
@@ -132,7 +133,7 @@ pub mod tests {
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_function_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_result()))
     }
 
     #[test]

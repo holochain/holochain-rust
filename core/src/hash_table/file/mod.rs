@@ -1,15 +1,13 @@
 use error::HolochainError;
-use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
+use hash_table::{entry::Entry, meta::EntryMeta};
 use std::{
-    fs,
     path::{Path, MAIN_SEPARATOR},
 };
-use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use hash_table::{HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 use std::{
     fs::{self, create_dir_all},
-    path::Path,
 };
 use walkdir::WalkDir;
 

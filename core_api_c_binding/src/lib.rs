@@ -27,11 +27,11 @@ impl Logger for NullLogger {
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     let agent = Agent::from_string("c_bob".to_string());
 
-    let context = Arc::new(Context {
+    let context = Arc::new(Context::new(
         agent,
-        logger: Arc::new(Mutex::new(NullLogger {})),
-        persister: Arc::new(Mutex::new(SimplePersister::new())),
-    });
+        Arc::new(Mutex::new(NullLogger {})),
+        Arc::new(Mutex::new(SimplePersister::new())),
+    ));
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);

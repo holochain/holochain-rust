@@ -5,7 +5,7 @@ use holochain_dna::zome::capabilities::Membrane;
 use instance::{Observer, RECV_DEFAULT_TIMEOUT_MS};
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    ribosome::api::{HcApiReturnCode, Runtime},
     state::NucleusState,
     ZomeFnCall,
 };
@@ -49,7 +49,7 @@ pub fn invoke_call(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
@@ -105,10 +105,7 @@ pub fn invoke_call(
 
     // action_result should be a json str of the result of the zome function called
     match action_result {
-        Ok(json_str) => {
-            // write result directly in wasm memory
-            runtime_allocate_encode_str(runtime, &json_str)
-        }
+        Ok(json_str) => runtime.store_utf8(&json_str),
         Err(_) => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ErrorActionResult as i32,
         ))),

@@ -24,11 +24,11 @@
 //! // but for now:
 //! let dna = Dna::new();
 //! let agent = Agent::from_string("bob".to_string());
-//! let context = Context {
-//!     agent: agent,
-//!     logger: Arc::new(Mutex::new(SimpleLogger {})),
-//!     persister: Arc::new(Mutex::new(SimplePersister::new())),
-//! };
+//! let context = Context::new(
+//!     agent,
+//!     Arc::new(Mutex::new(SimpleLogger {})),
+//!     Arc::new(Mutex::new(SimplePersister::new())),
+//! );
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the app
@@ -188,11 +188,11 @@ mod tests {
         let agent = holochain_agent::Agent::from_string(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context {
-                agent: agent,
-                logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
-            }),
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+            )),
             logger,
         )
     }

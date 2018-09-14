@@ -87,11 +87,18 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
+    pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
+        let mut sub_context = (*context).clone();
+        sub_context.set_state(self.state.clone());
+        Arc::new(sub_context)
+    }
+
     /// Start the Event Loop on a seperate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
         let sync_self = self.clone();
+        let sub_context = self.initialize_context(context);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
@@ -100,7 +107,7 @@ impl Instance {
                     action_wrapper,
                     state_observers,
                     &rx_observer,
-                    &context,
+                    &sub_context,
                 );
             }
         });
@@ -117,16 +124,32 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
+            let new_state: State;
+
+            {
+                // Only get a read lock first so code in reducers can read state as well
+                let state = self
+                    .state
+                    .read()
+                    .expect("owners of the state RwLock shouldn't panic");
+
+                // Create new state by reducing the action on old state
+                new_state = state.reduce(
+                    context.clone(),
+                    action_wrapper,
+                    &self.action_channel,
+                    &self.observer_channel,
+                );
+            }
+
+            // Get write lock
             let mut state = self
                 .state
                 .write()
                 .expect("owners of the state RwLock shouldn't panic");
-            *state = state.reduce(
-                context.clone(),
-                action_wrapper,
-                &self.action_channel,
-                &self.observer_channel,
-            );
+
+            // Change the state
+            *state = new_state;
         }
 
         // Add new observers
@@ -284,11 +307,11 @@ pub mod tests {
         let agent = Agent::from_string(agent_name.to_string());
         let logger = test_logger();
         (
-            Arc::new(Context {
+            Arc::new(Context::new(
                 agent,
-                logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
-            }),
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+            )),
             logger,
         )
     }

@@ -132,15 +132,16 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
     Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
 }
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
-        Arc::new(Context {
+        Arc::new(Context::new(
             agent,
-            logger: logger.clone(),
-            persister: Arc::new(Mutex::new(SimplePersister::new())),
-        }),
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        )),
         logger,
     )
 }

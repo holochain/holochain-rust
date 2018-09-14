@@ -1,4 +1,5 @@
 pub mod actor;
+pub mod header;
 
 use actor::{AskSelf, Protocol};
 use chain::actor::{AskChain, ChainActor};
@@ -8,7 +9,7 @@ use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
-pub mod header;
+use hash::HashString;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -40,7 +41,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            self.table_actor.pair(&h.to_string()).expect("getting from a table shouldn't fail")
+                            self.table_actor.pair(&h).expect("getting from a table shouldn't fail")
                         });
         previous
     }
@@ -135,12 +136,12 @@ pub trait SourceChain {
     /// the newly created and pushed Pair is returned in the fn Result
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
+    fn entry(&self, entry_hash: &HashString) -> Result<Option<Pair>, HolochainError>;
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError>;
 }
 
 impl SourceChain for Chain {
@@ -190,21 +191,19 @@ impl SourceChain for Chain {
         self.push_pair(&pair)
     }
 
-    fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self
-            .table_actor
-            .block_on_ask(Protocol::GetPair(k.to_string()));
+    fn pair(&self, k: &HashString) -> Result<Option<Pair>, HolochainError> {
+        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.clone()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    fn entry(&self, entry_hash: &HashString) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
                 .iter()
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
+                .find(|p| &p.entry().hash() == entry_hash))
     }
 }
 
@@ -232,6 +231,7 @@ pub mod tests {
     use json::ToJson;
     use key::Key;
     use std::thread;
+    use hash::HashString;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -346,7 +346,7 @@ pub mod tests {
 
         assert_eq!(Some(&p1), chain.top_pair().as_ref());
         assert_eq!(&e1, p1.entry());
-        assert_eq!(e1.hash(), p1.header().entry_hash());
+        assert_eq!(&e1.hash(), p1.header().entry_hash());
 
         // we should be able to do it again
         let e2 = test_entry_b();
@@ -356,7 +356,7 @@ pub mod tests {
 
         assert_eq!(Some(&p2), chain.top_pair().as_ref());
         assert_eq!(&e2, p2.entry());
-        assert_eq!(e2.hash(), p2.header().entry_hash());
+        assert_eq!(&e2.hash(), p2.header().entry_hash());
     }
 
     #[test]
@@ -480,7 +480,7 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .pair("")
+                .pair(&HashString::new())
                 .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
@@ -550,7 +550,7 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .entry("")
+                .entry(&HashString::new())
                 .expect("getting an entry from a chain shouldn't fail")
         );
         // @TODO at this point we have p3 with the same entry key as p1...

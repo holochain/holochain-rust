@@ -1,12 +1,12 @@
 use agent::keys::Keys;
 use error::HolochainError;
-use hash::serializable_to_b58_hash;
 use hash_table::pair::Pair;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
+use hash::HashString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data
@@ -19,7 +19,7 @@ use std::cmp::Ordering;
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
 pub struct PairMeta {
-    pair_hash: String,
+    pair_hash: HashString,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -66,7 +66,7 @@ impl PairMeta {
     }
 
     /// getter for pair clone
-    pub fn pair_hash(&self) -> String {
+    pub fn pair_hash(&self) -> HashString {
         self.pair_hash.clone()
     }
 
@@ -87,8 +87,8 @@ impl PairMeta {
 }
 
 impl Key for PairMeta {
-    fn key(&self) -> String {
-        serializable_to_b58_hash(&self, Hash::SHA2256)
+    fn key(&self) -> HashString {
+        HashString::encode_from_serializable(&self, Hash::SHA2256)
     }
 }
 

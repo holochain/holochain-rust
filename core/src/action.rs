@@ -1,6 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::{entry::Entry, HashString};
+use hash_table::{entry::Entry};
+use hash::HashString;
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{state::NucleusState, EntrySubmission, ZomeFnCall, ZomeFnResult};
@@ -61,7 +62,7 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks

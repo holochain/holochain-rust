@@ -4,6 +4,7 @@ use hash_table::entry::Entry;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use serde_json;
+use hash::HashString;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
@@ -63,14 +64,14 @@ impl Pair {
         // the header and entry must validate independently
         self.header.validate() && self.entry.validate()
         // the header entry hash must be the same as the entry hash
-        && self.header.entry_hash() == self.entry.hash()
+        && self.header.entry_hash() == &self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
     }
 }
 
 impl Key for Pair {
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         self.header.hash()
     }
 }
@@ -140,7 +141,7 @@ pub mod tests {
         let e1 = Entry::new(t, "some content");
         let h1 = Header::new(&chain, &e1);
 
-        assert_eq!(h1.entry_hash(), e1.hash());
+        assert_eq!(h1.entry_hash(), &e1.hash());
         assert_eq!(h1.link(), None);
 
         let p1 = Pair::new(&chain, &e1.clone());

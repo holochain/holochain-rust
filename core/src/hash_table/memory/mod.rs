@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use key::Key;
+use hash::HashString;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    pairs: HashMap<String, Pair>,
-    meta: HashMap<String, PairMeta>,
+    pairs: HashMap<HashString, Pair>,
+    meta: HashMap<HashString, PairMeta>,
 }
 
 impl MemTable {
@@ -26,7 +27,7 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
         Ok(self.pairs.get(key).cloned())
     }
 
@@ -35,7 +36,7 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
         Ok(self.meta.get(key).cloned())
     }
 

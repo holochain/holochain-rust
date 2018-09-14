@@ -17,8 +17,7 @@ use hash_table::{
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
-
-pub type HashString = String;
+use hash::HashString;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Pairs.
@@ -39,7 +38,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError>;
 
     /// lookup a Pair from the HashTable by Pair/Header key
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError>;
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError>;
 
     /// add a new Pair to the HashTable as per commit and status link an old Pair as MODIFIED
     fn modify_pair(
@@ -61,7 +60,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key()))
+        self.assert_pair_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key().to_str()))
     }
 
     /// set the status of a Pair to DELETED
@@ -79,7 +78,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError>;
 
     /// lookup a PairMeta from the HashTable by PairMeta key
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError>;
+    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError>;
     /// lookup all PairMeta for a given Pair
     fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError>;
 
@@ -87,4 +86,20 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     // @TODO how should we handle queries?
     // @see https://github.com/holochain/holochain-rust/issues/141
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    fn print_hashstring(input: HashString) {
+        println!("0x{}", input);
+    }
+
+    #[test]
+    fn test_hash() {
+        let stringy: String = "toto".to_string();
+        print_hashstring(HashString::from(stringy));
+
+    }
 }

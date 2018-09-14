@@ -4,6 +4,7 @@ use error::HolochainError;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use riker::actors::*;
 use snowflake;
+use hash::HashString;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
@@ -27,8 +28,8 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PutPairResult).clone()
     }
 
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPair(key.to_string()));
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetPair(key.clone()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
@@ -59,8 +60,8 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPairMeta(key.to_string()));
+    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetPairMeta(key.clone()));
         unwrap_to!(response => Protocol::GetPairMetaResult).clone()
     }
 

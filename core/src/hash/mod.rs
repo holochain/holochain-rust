@@ -28,10 +28,15 @@ impl fmt::Display for HashString {
 }
 
 impl HashString {
-    pub fn new() -> HashString { HashString("".to_string()) }
-    pub fn to_str(self) -> String { self.0 }
-    pub fn from(s: String) -> HashString { HashString(s) }
-
+    pub fn new() -> HashString {
+        HashString("".to_string())
+    }
+    pub fn to_str(self) -> String {
+        self.0
+    }
+    pub fn from(s: String) -> HashString {
+        HashString(s)
+    }
 
     /// convert bytes to a b58 hashed string
     pub fn encode_from_bytes(bytes: &[u8], hash_type: Hash) -> HashString {

@@ -1,6 +1,6 @@
 use chain::{Chain, SourceChain};
-use hash_table::entry::Entry;
 use hash::HashString;
+use hash_table::entry::Entry;
 use key::Key;
 use multihash::Hash;
 
@@ -122,9 +122,9 @@ impl Key for Header {
 #[cfg(test)]
 mod tests {
     use chain::{header::Header, tests::test_chain, SourceChain};
+    use hash::HashString;
     use hash_table::{entry::Entry, pair::tests::test_pair};
     use key::Key;
-    use hash::HashString;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -299,8 +299,10 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(HashString::from("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9".to_string()),
-                   h.hash());
+        assert_eq!(
+            HashString::from("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9".to_string()),
+            h.hash()
+        );
     }
 
     #[test]

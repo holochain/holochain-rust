@@ -1,10 +1,10 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use riker::actors::*;
 use snowflake;
-use hash::HashString;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker

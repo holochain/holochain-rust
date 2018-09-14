@@ -1,4 +1,5 @@
 use error::HolochainError;
+use hash::HashString;
 use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
 use key::Key;
@@ -8,7 +9,6 @@ use std::{
     hash::{Hash as StdHash, Hasher},
     str::FromStr,
 };
-use hash::HashString;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -115,11 +115,11 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
-    use hash::HashString;
 
     /// dummy entry type
     pub fn test_type() -> String {

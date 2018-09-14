@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use key::Key;
-use hash::HashString;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]

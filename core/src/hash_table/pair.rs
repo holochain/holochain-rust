@@ -1,10 +1,10 @@
 use chain::{header::Header, Chain};
 use error::HolochainError;
+use hash::HashString;
 use hash_table::entry::Entry;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use serde_json;
-use hash::HashString;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately

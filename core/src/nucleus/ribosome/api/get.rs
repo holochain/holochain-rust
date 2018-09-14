@@ -1,11 +1,11 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash::HashString;
 use json::ToJson;
 use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {

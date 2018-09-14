@@ -4,12 +4,12 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 use std::fs::create_dir_all;
 use walkdir::WalkDir;
-use hash::HashString;
 
 // folders actually... wish-it-was-tables
 #[derive(Debug, Clone)]
@@ -146,6 +146,7 @@ impl HashTable for FileTable {
 pub mod tests {
     use super::Table;
     use error::HolochainError;
+    use hash::HashString;
     use hash_table::{
         file::{FileTable, Row},
         test_util::standard_suite,
@@ -156,7 +157,6 @@ pub mod tests {
     use serde_json;
     use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};
-    use hash::HashString;
 
     /// returns a new FileTable for testing and the TempDir created for it
     /// the fs directory associated with TempDir will be deleted when the TempDir goes out of scope

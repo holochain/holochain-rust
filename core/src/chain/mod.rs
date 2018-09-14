@@ -4,12 +4,12 @@ pub mod header;
 use actor::{AskSelf, Protocol};
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
-use hash::HashString;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -222,6 +222,7 @@ pub mod tests {
 
     use super::Chain;
     use chain::SourceChain;
+    use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
@@ -231,7 +232,6 @@ pub mod tests {
     use json::ToJson;
     use key::Key;
     use std::thread;
-    use hash::HashString;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {

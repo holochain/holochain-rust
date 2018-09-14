@@ -11,13 +11,13 @@ pub mod test_util;
 
 use agent::keys::Keys;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{
     pair::Pair,
     pair_meta::PairMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
-use hash::HashString;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Pairs.
@@ -60,7 +60,12 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
         // @TODO what if meta fails when commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/142
-        self.assert_pair_meta(&PairMeta::new(keys, &old_pair, LINK_NAME, &new_pair.key().to_str()))
+        self.assert_pair_meta(&PairMeta::new(
+            keys,
+            &old_pair,
+            LINK_NAME,
+            &new_pair.key().to_str(),
+        ))
     }
 
     /// set the status of a Pair to DELETED
@@ -100,6 +105,5 @@ pub mod tests {
     fn test_hash() {
         let stringy: String = "toto".to_string();
         print_hashstring(HashString::from(stringy));
-
     }
 }

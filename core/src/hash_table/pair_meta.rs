@@ -1,12 +1,12 @@
 use agent::keys::Keys;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::pair::Pair;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
-use hash::HashString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// PairMeta represents an extended form of EAV (entity-attribute-value) data

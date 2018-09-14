@@ -69,6 +69,11 @@ pub enum Action {
     /// GetEntry by hash
     GetEntry(HashString),
 
+    /// link to add
+    AddLink(Link),
+    /// get links from entry hash and attribute-name
+    GetLinks(GetLinksArgs),
+
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call

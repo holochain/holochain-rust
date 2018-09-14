@@ -42,6 +42,13 @@ pub enum Protocol {
     },
     RetractPairResult(Result<(), HolochainError>),
 
+    /// HashTable::add_link()
+    AddLink(Link),
+    AddLinkResult(Result<(), HolochainError>),
+     /// HashTable::get_links()
+    GetLinks(GetLinksArgs),
+    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
+
     /// HashTable::assert_meta()
     AssertMeta(PairMeta),
     AssertMetaResult(Result<(), HolochainError>),

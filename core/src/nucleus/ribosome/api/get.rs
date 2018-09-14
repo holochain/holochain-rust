@@ -1,9 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use json::ToJson;
-use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
-};
+use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -18,7 +16,7 @@ pub fn invoke_get_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
@@ -62,7 +60,7 @@ pub fn invoke_get_entry(
         ActionResponse::GetEntry(maybe_pair) => {
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
-                Ok(json) => runtime_allocate_encode_str(runtime, &json),
+                Ok(json) => runtime.store_utf8(&json),
                 Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
             }
         }

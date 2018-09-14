@@ -14,17 +14,17 @@ pub mod header;
 /// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
     current: Option<Pair>,
 }
 
 impl ChainIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table_actor: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
-            table: table.clone(),
+            table_actor: table_actor.clone(),
         }
     }
 }
@@ -41,7 +41,7 @@ impl Iterator for ChainIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|h| {
-                self.table
+                self.table_actor
                     .pair(&h.to_string())
                     .expect("getting from a table shouldn't fail")
             });
@@ -51,8 +51,8 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone, Debug)]
 pub struct Chain {
-    actor: ActorRef<Protocol>,
-    table: ActorRef<Protocol>,
+    chain_actor: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
 }
 
 impl PartialEq for Chain {
@@ -83,14 +83,14 @@ impl IntoIterator for Chain {
 impl Chain {
     pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
-            actor: ChainActor::new_ref(),
-            table: table.clone(),
+            chain_actor: ChainActor::new_ref(),
+            table_actor: table.clone(),
         }
     }
 
     /// returns a reference to the underlying HashTable
     pub fn table(&self) -> ActorRef<Protocol> {
-        self.table.clone()
+        self.table_actor.clone()
     }
 
     /// returns true if all pairs in the chain pass validation
@@ -148,7 +148,7 @@ pub trait SourceChain {
 
 impl SourceChain for Chain {
     fn top_pair(&self) -> Option<Pair> {
-        self.actor.top_pair()
+        self.chain_actor.top_pair()
     }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
@@ -169,7 +169,7 @@ impl SourceChain for Chain {
                         top_pair, next_pair,
                     )));
                 }
-                self.actor.set_top_pair(&pair)
+                self.chain_actor.set_top_pair(&pair)
             }
             None => Ok(None),
         }
@@ -180,7 +180,7 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        self.table.put_pair(&pair.clone())?;
+        self.table_actor.put_pair(&pair.clone())?;
 
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
@@ -195,7 +195,9 @@ impl SourceChain for Chain {
     }
 
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.block_on_ask(Protocol::GetPair(k.to_string()));
+        let response = self
+            .table_actor
+            .block_on_ask(Protocol::GetPair(k.to_string()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 

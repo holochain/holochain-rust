@@ -668,7 +668,7 @@ pub mod tests {
             }"#,
         ).unwrap();
 
-        assert_eq!(dna.get_zome_name_for_entry_type("test type".to_string()).unwrap(), "test type".to_string());
+        assert_eq!(dna.get_zome_name_for_entry_type("test type".to_string()).unwrap(), "test zome".to_string());
         assert!(dna.get_zome_name_for_entry_type("non existant entry type".to_string()).is_none());
     }
 }

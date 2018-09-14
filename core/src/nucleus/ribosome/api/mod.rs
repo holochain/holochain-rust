@@ -39,13 +39,18 @@ use wasmi::{
 /// Enumeration of all Zome functions known and used by HC Core
 /// Enumeration converts to str
 #[repr(usize)]
-#[derive(FromPrimitive, Debug, PartialEq)]
+#[derive(FromPrimitive, Debug, PartialEq, Eq)]
 pub enum ZomeApiFunction {
-    /// Abort
-    Abort = 0,
-
     /// Error index for unimplemented functions
-    MissingNo,
+    MissingNo = 0,
+
+    /// Abort is a way to receive useful debug info from
+    /// assemblyscript memory allocators
+    /// message: mem address in the wasm memory for an error message
+    /// filename: mem address in the wasm memory for a filename
+    /// line: line number
+    /// column: column number
+    Abort,
 
     /// Zome API
 
@@ -69,8 +74,8 @@ pub enum ZomeApiFunction {
 impl Defn for ZomeApiFunction {
     fn as_str(&self) -> &'static str {
         match *self {
-            ZomeApiFunction::Abort => "abort",
             ZomeApiFunction::MissingNo => "",
+            ZomeApiFunction::Abort => "abort",
             ZomeApiFunction::Debug => "hc_debug",
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
@@ -104,6 +109,7 @@ impl FromStr for ZomeApiFunction {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "abort" => Ok(ZomeApiFunction::Abort),
             "hc_debug" => Ok(ZomeApiFunction::Debug),
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
@@ -225,11 +231,13 @@ pub fn call(
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
             // Abort
-            if index == 0 {
-                // println!("message, file, line, column");
-                // println!("{:?}", args);
-                return Err(TrapKind::Unreachable.into());
-            }
+            // if index == ZomeApiFunction::Abort {
+                // args will be an array of length 4
+                // at index 0 is a mem address in the wasm memory for an error message
+                // at index 1 is a mem address in the wasm memory for a filename
+                // at index 2 is a line number
+                // at index 3 is a column number
+            // }
 
             let zf = ZomeApiFunction::from_index(index);
             match zf {
@@ -249,24 +257,24 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            if field_name == "abort" {
-                return Ok(FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32][..], None),
-                    0 as usize,
-                ))
-            }
-            // Take the canonical name and find the corresponding ZomeApiFunction index
-            let index = ZomeApiFunction::str_to_index(&field_name);
-            match index {
-                index if index == ZomeApiFunction::MissingNo as usize => {
-                    return Err(InterpreterError::Function(format!(
+            let api_fn = ZomeApiFunction::from_str(&field_name)?;
+
+            match api_fn {
+                ZomeApiFunction::MissingNo => Err(InterpreterError::Function(
+                    format!(
                         "host module doesn't export function with name {}",
                         field_name
-                    )));
-                }
+                    )
+                )),
+                // Abort is a way to receive useful debug info from
+                // assemblyscript memory allocators, see enum definition for function signature
+                ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(
+                    Signature::new(&[ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32][..], None),
+                    api_fn as usize,
+                )),
                 _ => Ok(FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                    index as usize,
+                    api_fn as usize,
                 )),
             }
         }

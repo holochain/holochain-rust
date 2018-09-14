@@ -28,13 +28,17 @@ extern crate base64;
 extern crate uuid;
 
 use serde_json::Value;
-use std::hash::{Hash, Hasher};
-
+use std::{
+    error::Error,
+    fmt,
+    hash::{Hash, Hasher},
+};
 pub mod wasm;
 pub mod zome;
 
 use std::collections::HashMap;
 use uuid::Uuid;
+use zome::capabilities::Capability;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -44,6 +48,33 @@ fn empty_object() -> Value {
 /// serde helper, provides a default newly generated v4 uuid
 fn new_uuid() -> String {
     Uuid::new_v4().to_string()
+}
+
+#[derive(Clone, Debug, PartialEq, Hash)]
+pub enum DnaError {
+    ZomeNotFound(String),
+    CapabilityNotFound(String),
+    ZomeFunctionNotFound(String),
+}
+
+impl Error for DnaError {
+    fn description(&self) -> &str {
+        match self {
+            DnaError::ZomeNotFound(err_msg) => &err_msg,
+            DnaError::CapabilityNotFound(err_msg) => &err_msg,
+            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
+        }
+    }
+}
+
+impl fmt::Display for DnaError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // @TODO seems weird to use debug for display
+        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
+        // what is the right way to do this?
+        // @see https://github.com/holochain/holochain-rust/issues/223
+        write!(f, "{:?}", self)
+    }
 }
 
 /// Represents the top-level holochain dna object.
@@ -161,8 +192,44 @@ impl Dna {
         self.zomes.get(zome_name)
     }
 
-    /// Return a Zome's WASM bytecode for a specified Capability
+    /// Return a Zome's Capability from a Zome and a Capability name.
     pub fn get_capability<'a>(
+        &'a self,
+        zome: &'a zome::Zome,
+        capability_name: &str,
+    ) -> Option<&'a Capability> {
+        zome.capabilities.get(capability_name)
+    }
+
+    /// Return a Zome's Capability from a Zome name and Capability name.
+    pub fn get_capability_with_zome_name(
+        &self,
+        zome_name: &str,
+        cap_name: &str,
+    ) -> Result<&Capability, DnaError> {
+        // Zome must exist in DNA
+        let zome = self.get_zome(zome_name);
+        if zome.is_none() {
+            return Err(DnaError::ZomeNotFound(format!(
+                "Zome '{}' not found",
+                &zome_name,
+            )));
+        }
+        let zome = zome.unwrap();
+        // Capability must exist in Zome
+        let cap = self.get_capability(zome, &cap_name);
+        if cap.is_none() {
+            return Err(DnaError::CapabilityNotFound(format!(
+                "Capability '{}' not found in Zome '{}'",
+                &cap_name, &zome_name
+            )));
+        }
+        // Everything OK
+        Ok(cap.unwrap())
+    }
+
+    /// Return a Zome's WASM bytecode for a specified Capability
+    pub fn get_wasm_from_capability<'a>(
         &'a self,
         zome: &'a zome::Zome,
         capability_name: &str,
@@ -172,7 +239,7 @@ impl Dna {
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
-    pub fn get_wasm_for_capability<T: Into<String>>(
+    pub fn get_wasm_from_capability_name<T: Into<String>>(
         &self,
         zome_name: T,
         capability_name: T,
@@ -180,8 +247,8 @@ impl Dna {
         let zome_name = zome_name.into();
         let capability_name = capability_name.into();
         let zome = self.get_zome(&zome_name)?;
-        let capability = self.get_capability(&zome, &capability_name)?;
-        Some(capability)
+        let wasm = self.get_wasm_from_capability(&zome, &capability_name)?;
+        Some(wasm)
     }
 
     /// Return a Zome's WASM bytecode for the validation of an entry
@@ -570,10 +637,10 @@ pub mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_for_capability("test zome", "test capability");
+        let wasm = dna.get_wasm_from_capability_name("test zome", "test capability");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_for_capability("non existant zome", "test capability");
+        let fail = dna.get_wasm_from_capability_name("non existant zome", "test capability");
         assert_eq!(None, fail);
     }
 

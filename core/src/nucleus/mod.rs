@@ -5,6 +5,7 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{
@@ -22,6 +23,7 @@ use std::{
 };
 
 use hash_table::sys_entry::ToEntry;
+use nucleus::ribosome::api::call::reduce_call;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -44,6 +46,12 @@ impl ZomeFnCall {
             fn_name: function.to_string(),
             parameters: parameters.to_string(),
         }
+    }
+
+    pub fn same_fn_as(&self, fn_call: &ZomeFnCall) -> bool {
+        self.zome_name == fn_call.zome_name
+            && self.cap_name == fn_call.cap_name
+            && self.fn_name == fn_call.fn_name
     }
 }
 
@@ -266,6 +274,46 @@ fn reduce_init_application(
     });
 }
 
+pub(crate) fn launch_zome_fn_call(
+    context: Arc<Context>,
+    fc: ZomeFnCall,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
+    wasm: &DnaWasm,
+    app_name: String,
+) {
+    let action_channel = action_channel.clone();
+    let tx_observer = observer_channel.clone();
+    let code = wasm.code.clone();
+    thread::spawn(move || {
+        let result: ZomeFnResult;
+        match ribosome::api::call(
+            &app_name,
+            context,
+            &action_channel,
+            &tx_observer,
+            code,
+            &fc,
+            Some(fc.clone().parameters.into_bytes()),
+        ) {
+            Ok(runtime) => {
+                result = ZomeFnResult::new(fc.clone(), Ok(runtime.result.to_string()));
+            }
+
+            Err(ref error) => {
+                result = ZomeFnResult::new(
+                    fc.clone(),
+                    Err(HolochainError::ErrorGeneric(format!("{}", error))),
+                );
+            }
+        }
+        // Send ReturnResult Action
+        action_channel
+            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
+            .expect("action channel to be open in reducer");
+    });
+}
+
 /// Reduce ExecuteZomeFunction Action
 /// Execute an exposed Zome function in a seperate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
@@ -276,86 +324,34 @@ fn reduce_execute_zome_function(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-    let function_call = match action_wrapper.action().clone() {
+    let fn_call = match action_wrapper.action().clone() {
         Action::ExecuteZomeFunction(call) => call,
         _ => unreachable!(),
     };
-    let fc = function_call.clone();
 
-    let mut has_error = false;
-    let mut result = ZomeFnResult::new(
-        fc.clone(),
-        Err(HolochainError::ErrorGeneric("[]".to_string())),
-    );
+    // Get Wasm
+    let maybe_wasm = get_fn_wasm_with_zome_call(state.dna.as_ref(), &fn_call);
 
-    if let Some(ref dna) = state.dna {
-        if let Some(ref zome) = dna.get_zome(&fc.zome_name) {
-            if let Some(ref wasm) = dna.get_capability(zome, &fc.cap_name) {
-                state.zome_calls.insert(fc.clone(), None);
-
-                let action_channel = action_channel.clone();
-                let tx_observer = observer_channel.clone();
-                let code = wasm.code.clone();
-                let app_name = state.dna().unwrap().name;
-                thread::spawn(move || {
-                    let result: ZomeFnResult;
-                    match ribosome::api::call(
-                        &app_name,
-                        context,
-                        &action_channel,
-                        &tx_observer,
-                        code,
-                        &function_call,
-                        Some(function_call.clone().parameters.into_bytes()),
-                    ) {
-                        Ok(runtime) => {
-                            result = ZomeFnResult::new(
-                                function_call.clone(),
-                                Ok(runtime.result.to_string()),
-                            );
-                        }
-
-                        Err(ref error) => {
-                            result = ZomeFnResult::new(
-                                function_call.clone(),
-                                Err(HolochainError::ErrorGeneric(format!("{}", error))),
-                            );
-                        }
-                    }
-
-                    // Send ReturnResult Action
-                    action_channel
-                        .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
-                        .expect("action channel to be open in reducer");
-                });
-            } else {
-                has_error = true;
-                result = ZomeFnResult::new(
-                    fc.clone(),
-                    Err(HolochainError::CapabilityNotFound(format!(
-                        "Capability '{:?}' not found in Zome '{:?}'",
-                        &fc.cap_name, &fc.zome_name
-                    ))),
-                );
-            }
-        } else {
-            has_error = true;
-            result = ZomeFnResult::new(
-                fc.clone(),
-                Err(HolochainError::ZomeNotFound(format!(
-                    "Zome '{:?}' not found",
-                    &fc.zome_name
-                ))),
+    match maybe_wasm {
+        Err(fn_res) => {
+            // Send Failed Result
+            action_channel
+                .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(fn_res)))
+                .expect("action channel to be open in reducer");
+        }
+        Ok(wasm) => {
+            // Prepare call - FIXME is this really useful?
+            state.zome_calls.insert(fn_call.clone(), None);
+            // Launch thread with function call
+            launch_zome_fn_call(
+                context,
+                fn_call,
+                action_channel,
+                observer_channel,
+                &wasm,
+                state.dna.clone().unwrap().name,
             );
         }
-    } else {
-        has_error = true;
-        result = ZomeFnResult::new(fc.clone(), Err(HolochainError::DnaMissing));
-    }
-    if has_error {
-        action_channel
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
-            .expect("action channel to be open in reducer");
     }
 }
 
@@ -433,7 +429,7 @@ fn reduce_return_validation_result(
 }
 
 /// Reduce ReturnZomeFunctionResult Action.
-/// Simply drops function call into ribosome_calls state.
+/// Simply drops function call into zome_calls state.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_return_zome_function_result(
@@ -450,6 +446,7 @@ fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+/// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
@@ -457,6 +454,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ValidateEntry(_) => Some(reduce_validate_entry),
+        Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,
     }
@@ -488,6 +486,42 @@ pub fn reduce(
     }
 }
 
+// Helper function for getting a Capability for a ZomeFnCall request
+fn get_capability_with_zome_call(
+    dna: Option<&Dna>,
+    zome_call: &ZomeFnCall,
+) -> Result<Capability, ZomeFnResult> {
+    // Must have DNA
+    if dna.is_none() {
+        return Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaMissing),
+        ));
+    }
+    let dna = dna.unwrap();
+    // Get Capability from DNA
+    let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
+    match res {
+        Err(e) => Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaError(e)),
+        )),
+        Ok(cap) => Ok(cap.clone()),
+    }
+}
+
+// Helper function for getting WASM code for a ZomeFnCall request
+fn get_fn_wasm_with_zome_call(
+    dna: Option<&Dna>,
+    zome_call: &ZomeFnCall,
+) -> Result<DnaWasm, ZomeFnResult> {
+    let res = get_capability_with_zome_call(dna, zome_call);
+    match res {
+        Err(e) => Err(e),
+        Ok(cap) => Ok(cap.code),
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
@@ -500,6 +534,8 @@ pub mod tests {
     };
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::{mpsc::channel, Arc};
+
+    use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -764,7 +800,7 @@ pub mod tests {
 
     #[test]
     /// tests that calling the wrong zome/capability returns the correct errors
-    fn call_wrong_ribosome_function() {
+    fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let mut instance = test_instance(dna);
 
@@ -774,7 +810,9 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::ZomeNotFound(err)) => assert_eq!(err, "Zome '\"xxx\"' not found"),
+            Err(HolochainError::DnaError(err)) => {
+                assert_eq!(err.description(), "Zome 'xxx' not found")
+            }
             _ => assert!(false),
         }
 
@@ -784,12 +822,29 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::CapabilityNotFound(err)) => assert_eq!(
-                err,
-                "Capability '\"xxx\"' not found in Zome '\"test_zome\"'"
+            Err(HolochainError::DnaError(err)) => assert_eq!(
+                err.description(),
+                "Capability 'xxx' not found in Zome 'test_zome'"
             ),
             _ => assert!(false),
         }
     }
 
+    #[test]
+    fn test_zomefncall_same_as() {
+        let base = ZomeFnCall::new("zozo", "caca", "fufu", "papa");
+        let copy = ZomeFnCall::new("zozo", "caca", "fufu", "papa");
+        let same = ZomeFnCall::new("zozo", "caca", "fufu", "papa1");
+        let diff1 = ZomeFnCall::new("zozo1", "caca", "fufu", "papa");
+        let diff2 = ZomeFnCall::new("zozo", "caca2", "fufu", "papa");
+        let diff3 = ZomeFnCall::new("zozo", "caca", "fufu3", "papa");
+
+        assert_ne!(base, copy);
+        assert!(base.same_fn_as(&copy));
+        assert!(copy.same_fn_as(&base));
+        assert!(base.same_fn_as(&same));
+        assert!(!base.same_fn_as(&diff1));
+        assert!(!base.same_fn_as(&diff2));
+        assert!(!base.same_fn_as(&diff3));
+    }
 }

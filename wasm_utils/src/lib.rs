@@ -20,6 +20,7 @@ pub enum HcApiReturnCode {
     ErrorPageOverflow = 3 << 16,
     ErrorActionResult = 4 << 16,
     ErrorCallbackResult = 5 << 16,
+    ErrorRecursiveCall = 6 << 16,
 }
 
 //pub fn decode_error(encoded_allocation: u32) -> HcApiReturnCode {
@@ -34,6 +35,8 @@ pub fn encode_error(offset: u16) -> HcApiReturnCode {
         2 => HcApiReturnCode::ErrorJson,
         3 => HcApiReturnCode::ErrorPageOverflow,
         4 => HcApiReturnCode::ErrorActionResult,
+        5 => HcApiReturnCode::ErrorCallbackResult,
+        6 => HcApiReturnCode::ErrorRecursiveCall,
         1 | _ => HcApiReturnCode::Error,
     }
 }

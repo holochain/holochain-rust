@@ -1,3 +1,4 @@
+pub mod call;
 pub mod commit;
 pub mod debug;
 pub mod get;
@@ -12,8 +13,8 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            commit::invoke_commit_entry, debug::invoke_debug, get::invoke_get_entry,
-            init_globals::invoke_init_globals,
+            call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
+            get::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,
     },
@@ -61,6 +62,10 @@ pub enum ZomeApiFunction {
     /// Init App Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
+
+    /// Call a zome function in a different capability or zome
+    /// hc_call(zome_name: String, cap_name: String, fn_name: String, args: String);
+    Call,
 }
 
 impl Defn for ZomeApiFunction {
@@ -71,6 +76,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
             ZomeApiFunction::InitGlobals => "hc_init_globals",
+            ZomeApiFunction::Call => "hc_call",
         }
     }
 
@@ -104,6 +110,7 @@ impl FromStr for ZomeApiFunction {
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
+            "hc_call" => Ok(ZomeApiFunction::Call),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -122,6 +129,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
+            ZomeApiFunction::Call => invoke_call,
         }
     }
 }
@@ -155,17 +163,21 @@ impl Runtime {
         // Read complex argument serialized in memory
         let encoded_allocation: u32 = args.nth(0);
         let allocation = SinglePageAllocation::new(encoded_allocation);
+        // Handle empty allocation edge case
+        if let Err(HcApiReturnCode::Success) = allocation {
+            return String::new();
+        }
         let allocation = allocation
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .expect("received error instead of valid encoded allocation");
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .expect("received error instead of valid encoded allocation");
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
         String::from_utf8(bin_arg)
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .unwrap()
     }
 
     /// Store a string in wasm memory.
@@ -182,10 +194,10 @@ impl Runtime {
         }
 
         let encoded_allocation = allocation_of_result
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-            .encode();
+        // @TODO don't panic in WASM
+        // @see https://github.com/holochain/holochain-rust/issues/159
+        .unwrap()
+        .encode();
 
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
@@ -193,7 +205,7 @@ impl Runtime {
 }
 
 /// Executes an exposed function in a wasm binary
-///
+/// Multithreaded function
 /// panics if wasm isn't valid
 pub fn call(
     app_name: &str,

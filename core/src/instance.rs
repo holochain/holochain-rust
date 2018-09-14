@@ -8,9 +8,10 @@ use std::{
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
+    time::Duration,
 };
 
-pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
+pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
 /// Object representing a Holochain app instance.
 /// Holds the Event loop and processes it with the redux state model.
@@ -415,7 +416,6 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-
         instance
     }
 

@@ -82,6 +82,9 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// Execute a zome function call called by another zome function
+    Call(ZomeFnCall),
+
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(EntrySubmission),

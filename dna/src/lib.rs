@@ -627,7 +627,7 @@ pub mod tests {
     }
 
     #[test]
-    fn teset_get_zome_name_for_entry_type() {
+    fn test_get_zome_name_for_entry_type() {
         let dna = Dna::from_json_str(
             r#"{
                 "name": "test",

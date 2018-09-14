@@ -17,7 +17,7 @@ use nucleus::{
         },
         Defn,
     },
-    FunctionCall,
+    ZomeFnCall,
 };
 use num_traits::FromPrimitive;
 use std::{
@@ -138,55 +138,58 @@ pub struct Runtime {
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
-    function_call: FunctionCall,
+    zome_call: ZomeFnCall,
     pub app_name: String,
 }
 
-/// take standard, memory managed runtime argument bytes, extract and convert to serialized struct
-pub fn runtime_args_to_utf8(runtime: &Runtime, args: &RuntimeArgs) -> String {
-    // @TODO don't panic in WASM
-    // @see https://github.com/holochain/holochain-rust/issues/159
-    assert_eq!(1, args.len());
-
-    // Read complex argument serialized in memory
-    let encoded_allocation: u32 = args.nth(0);
-    let allocation = SinglePageAllocation::new(encoded_allocation);
-    let allocation = allocation
+impl Runtime {
+    /// Load a string stored in wasm memory.
+    /// Input RuntimeArgs should only have one input which is the encoded allocation holding
+    /// the complex data as an utf8 string.
+    /// Returns the utf8 string.
+    pub fn load_utf8_from_args(&self, args: &RuntimeArgs) -> String {
         // @TODO don't panic in WASM
         // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
-    let bin_arg = runtime.memory_manager.read(allocation);
+        assert_eq!(1, args.len());
 
-    // deserialize complex argument
-    String::from_utf8(bin_arg)
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-}
+        // Read complex argument serialized in memory
+        let encoded_allocation: u32 = args.nth(0);
+        let allocation = SinglePageAllocation::new(encoded_allocation);
+        let allocation = allocation
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .expect("received error instead of valid encoded allocation");
+        let bin_arg = self.memory_manager.read(allocation);
 
-/// given a runtime and a string (e.g. JSON serialized data), allocates bytes and encodes to memory
-/// returns a Result suitable to return directly from a zome API function
-pub fn runtime_allocate_encode_str(
-    runtime: &mut Runtime,
-    s: &str,
-) -> Result<Option<RuntimeValue>, Trap> {
-    // write str to runtime memory
-    let mut s_bytes: Vec<_> = s.to_string().into_bytes();
-    s_bytes.push(0); // Add string terminate character (important)
-
-    let allocation_of_result = runtime.memory_manager.write(&s_bytes);
-    if allocation_of_result.is_err() {
-        return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+        // convert complex argument
+        String::from_utf8(bin_arg)
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
     }
 
-    let encoded_allocation = allocation_of_result
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-        .encode();
+    /// Store a string in wasm memory.
+    /// Input should be a a json string.
+    /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
+    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
+        // write str to runtime memory
+        let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
+        s_bytes.push(0); // Add string terminate character (important)
 
-    // Return success in i32 format
-    Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+        let allocation_of_result = self.memory_manager.write(&s_bytes);
+        if allocation_of_result.is_err() {
+            return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
+        }
+
+        let encoded_allocation = allocation_of_result
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
+            .encode();
+
+        // Return success in i32 format
+        Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
+    }
 }
 
 /// Executes an exposed function in a wasm binary
@@ -198,7 +201,7 @@ pub fn call(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
-    function_call: &FunctionCall,
+    zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
 ) -> Result<Runtime, InterpreterError> {
     // Create wasm module from wasm binary
@@ -270,7 +273,7 @@ pub fn call(
         action_channel: action_channel.clone(),
         observer_channel: observer_channel.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
-        function_call: function_call.clone(),
+        zome_call: zome_call.clone(),
         app_name: app_name.to_string(),
     };
 
@@ -292,7 +295,7 @@ pub fn call(
         // which have been set in memory module
         encoded_allocation_of_output = wasm_instance
             .invoke_export(
-                function_call.function.clone().as_str(),
+                zome_call.fn_name.clone().as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
             )?
@@ -326,7 +329,7 @@ pub mod tests {
     };
     use nucleus::{
         ribosome::api::{call, Runtime},
-        FunctionCall,
+        ZomeFnCall,
     };
     use std::{
         str::FromStr,
@@ -449,7 +452,7 @@ pub mod tests {
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
-        let fc = FunctionCall::new(
+        let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
@@ -462,7 +465,7 @@ pub mod tests {
                 &instance.action_channel(),
                 &instance.observer_channel(),
                 wasm.clone(),
-                &fc,
+                &zome_call,
                 Some(args_bytes),
             ).expect("test should be callable"),
             logger,

@@ -3,7 +3,10 @@ use context::Context;
 use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, ZomeFnCall, ZomeFnResult};
+use nucleus::{
+    state::{NucleusState, ValidationResult},
+    ZomeFnCall, ZomeFnResult,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -82,9 +85,13 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// Execute a zome function call called by another zome function
+    Call(ZomeFnCall),
+
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateEntry(Entry),
+    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions

@@ -173,8 +173,8 @@ pub fn call(
         Ok(ref s) if s.is_empty() => CallbackResult::Pass,
 
         // things that = NotImplemented
-        Err(HolochainError::CapabilityNotFound(_)) => CallbackResult::NotImplemented,
-        Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
+        Err(HolochainError::DnaError(_)) => CallbackResult::NotImplemented,
+        // Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
         // @TODO this looks super fragile
         // without it we get stack overflows, but with it we rely on a specific string
         Err(HolochainError::ErrorGeneric(ref msg))

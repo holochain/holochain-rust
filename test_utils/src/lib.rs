@@ -7,7 +7,10 @@ use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Config, Zome},
+    zome::{
+        capabilities::{Capability, Membrane},
+        Config, Zome,
+    },
     Dna,
 };
 use std::{
@@ -63,6 +66,34 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
+
+    let zome = Zome::new(
+        "some zome description",
+        &Config::new(),
+        &HashMap::new(),
+        &capabilities,
+    );
+
+    // zome.capabilities.push(capability);
+    dna.zomes.insert(zome_name.to_string(), zome);
+    dna.name = "TestApp".into();
+    dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
+    dna
+}
+
+pub fn create_test_cap(membrane: Membrane, wasm: &Vec<u8>) -> Capability {
+    let mut capability = Capability::new();
+    capability.code = DnaWasm { code: wasm.clone() };
+    capability.cap_type.membrane = membrane;
+    capability
+}
+
+/// Prepare valid DNA struct with that WASM in a zome's capability
+pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability) -> Dna {
+    let mut dna = Dna::new();
+
+    let mut capabilities = HashMap::new();
+    capabilities.insert(cap_name.to_string(), cap.clone());
 
     let zome = Zome::new(
         "some zome description",

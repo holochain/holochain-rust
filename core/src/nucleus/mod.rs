@@ -372,7 +372,11 @@ fn reduce_validate_entry(
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::ValidateEntry);
-    match state.dna().unwrap().get_zome_name_for_entry_type(entry.entry_type()) {
+    match state
+        .dna()
+        .unwrap()
+        .get_zome_name_for_entry_type(entry.entry_type())
+    {
         None => {
             let error = format!("Unknown entry type: '{}'", entry.entry_type());
             state

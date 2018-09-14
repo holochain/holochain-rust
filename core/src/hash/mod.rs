@@ -4,20 +4,16 @@ use serde::Serialize;
 use serde_json;
 use std::fmt;
 
-// Newtype HashString
-// pub type HashString = String;
-// #[derive(Clone, PartialEq, Eq)]
+// HashString newtype for String
 #[derive(PartialOrd, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
 pub struct HashString(String);
 impl PartialEq for HashString {
     #[inline]
     fn eq(&self, other: &HashString) -> bool {
-        // PartialEq::eq(&self[..], &other[..])
         self.0 == other.0
     }
     #[inline]
     fn ne(&self, other: &HashString) -> bool {
-        // PartialEq::ne(&self[..], &other[..])
         self.0 != other.0
     }
 }

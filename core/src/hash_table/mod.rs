@@ -92,18 +92,3 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     // @see https://github.com/holochain/holochain-rust/issues/141
     // fn query (&self, query: &Query) -> Result<std::collections::HashSet, HolochainError>;
 }
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    fn print_hashstring(input: HashString) {
-        println!("0x{}", input);
-    }
-
-    #[test]
-    fn test_hash() {
-        let stringy: String = "toto".to_string();
-        print_hashstring(HashString::from(stringy));
-    }
-}

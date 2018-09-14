@@ -257,13 +257,21 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let api_fn = ZomeApiFunction::from_str(&field_name)?;
+            let res = ZomeApiFunction::from_str(&field_name);
+
+            let api_fn;
+
+            match res {
+                Ok(api_fnn) => api_fn = api_fnn,
+                Err(_) => {
+                    return Err(InterpreterError::Function(format!(
+                        "host module doesn't export function with name {}",
+                        field_name
+                    )));
+                }
+            }
 
             match api_fn {
-                ZomeApiFunction::MissingNo => Err(InterpreterError::Function(format!(
-                    "host module doesn't export function with name {}",
-                    field_name
-                ))),
                 // Abort is a way to receive useful debug info from
                 // assemblyscript memory allocators, see enum definition for function signature
                 ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(

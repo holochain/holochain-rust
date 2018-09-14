@@ -133,6 +133,9 @@ impl ZomeApiFunction {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
+        // TODO Implement a proper "abort" function for handling assemblyscript aborts
+        // @see: https://github.com/holochain/holochain-rust/issues/324
+
         match *self {
             ZomeApiFunction::MissingNo => noop,
             ZomeApiFunction::Abort => noop,
@@ -242,15 +245,6 @@ pub fn call(
             index: usize,
             args: RuntimeArgs,
         ) -> Result<Option<RuntimeValue>, Trap> {
-            // Abort
-            // if index == ZomeApiFunction::Abort {
-            // args will be an array of length 4
-            // at index 0 is a mem address in the wasm memory for an error message
-            // at index 1 is a mem address in the wasm memory for a filename
-            // at index 2 is a line number
-            // at index 3 is a column number
-            // }
-
             let zf = ZomeApiFunction::from_index(index);
             match zf {
                 ZomeApiFunction::MissingNo => panic!("unknown function index"),
@@ -269,19 +263,15 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let res = ZomeApiFunction::from_str(&field_name);
-
-            let api_fn;
-
-            match res {
-                Ok(api_fnn) => api_fn = api_fnn,
+            let api_fn = match ZomeApiFunction::from_str(&field_name) {
+                Ok(api_fn) => api_fn,
                 Err(_) => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name
                     )));
                 }
-            }
+            };
 
             match api_fn {
                 // Abort is a way to receive useful debug info from
@@ -298,6 +288,7 @@ pub fn call(
                     ),
                     api_fn as usize,
                 )),
+                // All of our Zome API Functions have the same signature
                 _ => Ok(FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
                     api_fn as usize,

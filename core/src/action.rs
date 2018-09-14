@@ -4,8 +4,8 @@ use hash_table::{entry::Entry, HashString};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
-    state::{NucleusState, ValidationResult, ZomeFnCall, ZomeFnResult},
-    FunctionCall, FunctionResult,
+    state::{NucleusState, ValidationResult},
+    ZomeFnCall, ZomeFnResult,
 };
 use snowflake;
 use std::{

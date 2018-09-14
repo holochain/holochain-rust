@@ -230,11 +230,11 @@ pub mod tests {
     }
 
     fn create_context() -> Arc<Context> {
-        Arc::new(Context {
-            agent: Agent::from_string("alex".to_string()),
-            logger: Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-            persister: Arc::new(Mutex::new(SimplePersister::new())),
-        })
+        Arc::new(Context::new(
+            Agent::from_string("alex".to_string()),
+            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        ))
     }
 
     fn test_reduce_call(

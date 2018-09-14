@@ -5,18 +5,9 @@ use serde_json;
 use std::fmt;
 
 // HashString newtype for String
-#[derive(PartialOrd, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
+#[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
 pub struct HashString(String);
-impl PartialEq for HashString {
-    #[inline]
-    fn eq(&self, other: &HashString) -> bool {
-        self.0 == other.0
-    }
-    #[inline]
-    fn ne(&self, other: &HashString) -> bool {
-        self.0 != other.0
-    }
-}
+
 impl fmt::Display for HashString {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)

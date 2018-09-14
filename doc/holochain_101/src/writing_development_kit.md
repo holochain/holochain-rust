@@ -1,26 +1,26 @@
-# Writing a Development Kit
+# Writing a DNA Framework
 
-The end goal of a Development Kit is to simplify the experience of writing Zomes that compile to WASM for Holochain apps.
+The end goal of a DNA Framework is to simplify the experience of writing Zomes that compile to WASM usable by Holochain apps.
 
-At the time of writing, there is currently one active Developer Kit being written, for the Rust language. While it is possible to look at the [Rust language HDK](https://github.com/holochain/hdk-rust) as a reference, this article is a more general guide that outlines what it takes to build a Development Kit.
+At the time of writing, there is currently one active DNA Framework being written, for the Rust language. While it is possible to look at the [Rust DNA Framework](https://github.com/holochain/hdk-rust) as a reference, this article is a more general guide that outlines what it takes to build a DNA Framework.
 
 If you are interested in supporting developers to write Zomes in an unsupported language, you will want to first of all check whether that language can be compiled to WebAssembly, as that is a requirement.
 
-### Why Development Kits
+### Why DNA Frameworks
 
-Development Kits are important because the WASM interface between Zomes and Holochain is really constrained. Because of WASMs design, WASM functions may only be called with 32 bit integers. Holochain implements a solution to this, but if app developers were to always have to interact with this solution directly, it would feel very complex. A Development Kit for each language should ideally be developed so that it gets so much simpler!
+DNA Frameworks are important because the WASM interface between Zomes and Holochain is really constrained. Because of WASMs design, WASM functions may only be called with 32 bit integers. Holochain implements a solution to this, but if app developers were to always have to interact with this solution directly, it would feel very complex. A DNA Framework for each language should ideally be developed so that it gets so much simpler!
 
-### The Development Kit WASM Solution
+### The DNA Framework WASM Solution
 
 To enable passing arguments more complex than 32 bit integers between Zomes and Holochain, a pattern of utilizing WASM memory is used. When it is running the WASM code for a Zome, Holochain has access to both read and write from the WASM memory.
 
-The pattern defines that Holochain Zome API functions expect to both give and receive 32 bit integers which actually represent a WASM memory location. So to provide a Holochain Zome API function a complex argument, one must first write it into memory, and then call the function, giving it the memory location. Holochain will pull the argument from memory, execute its behaviour, store the result in memory, and return the memory location of the result. The Zome code then has to *also* lookup the result by its location in memory.
+The pattern defines that Holochain Zome API functions expect to both give and receive 32 bit integers which actually represent a WASM memory allocation. So to provide a Holochain Zome API function a complex argument, one must first write it into memory, and then call the function, giving it the memory allocation. Holochain will pull the argument from memory, execute its behaviour, store the result in memory, and return the memory allocation of the result. The Zome code then has to *also* lookup the result by its location in memory.
 
-Technically, an app developer can do all of these things if they have a reason to, but most won't want to handle the extra step involving memory. A Development Kit, then, should handle the extra step of writing to memory, and calling the native API function, and reading the result from memory, and returning that instead. Plus a few other sprinkles on top.
+Technically, an app developer can do all of these things if they have a reason to, but most won't want to handle the extra step involving memory. A DNA Framework, then, should handle the extra step of writing to memory, and calling the native API function, and reading the result from memory, and returning that instead. Plus a few other sprinkles on top.
 
 ### Crafting the API
 
-Using its WASM interpreter, Holochain exposes its callable Zome API functions by making them available as "imports" in Zome WASM modules. Per the memory discussion above, each of the Zome API functions have the same explicit function signature, but different implicit function signatures. The native functions have each been given a prefix so that Development Kit wrappers can expose a regular function name. Here is a complete list:
+Using its WASM interpreter, Holochain exposes its callable Zome API functions by making them available as "imports" in Zome WASM modules. Per the memory discussion above, each of the Zome API functions have the same explicit function signature, but different implicit function signatures. The native functions have each been given a prefix so that DNA Framework wrappers can expose a regular function name. Here is a complete list:
 
 - hc_debug
 - hc_call
@@ -39,7 +39,7 @@ Using its WASM interpreter, Holochain exposes its callable Zome API functions by
 
 There is a special additional one called `hc_init_globals` which we will discuss further.
 
-The Development Kit should implement and export one function per each native function from the list. The function should be called the same as its native form, but without the prefix. E.g. `hc_update_agent` should be called `update_agent` or `updateAgent`. That function should internally call the native function and handle the additional complexity around that.
+The DNA Framework should implement and export one function per each native function from the list. The function should be called the same as its native form, but without the prefix. E.g. `hc_update_agent` should be called `update_agent` or `updateAgent`. That function should internally call the native function and handle the additional complexity around that.
 
 In order to call these "external" functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:
 ```rust
@@ -52,7 +52,7 @@ TODO: define or link to meaningful function signatures
 
 ### Working with WASM Memory
 
-The goal of the Development Kit is to expose a meaningful and easy to use version of the API functions, with meaningful arguments and return values. There is a bit of flexibility around how this is done, as coding languages differ. However, the internal process will be similar in nature. Here it is, generalized:
+The goal of the DNA Framework is to expose a meaningful and easy to use version of the API functions, with meaningful arguments and return values. There is a bit of flexibility around how this is done, as coding languages differ. However, the internal process will be similar in nature. Here it is, generalized:
 1. declare, or use a passed, single page 64 KiB memory stack
 2. join whatever inputs are given into a single serializable structure
 3. serialize the given data structure as an array of bytes
@@ -75,7 +75,7 @@ The goal of the Development Kit is to expose a meaningful and easy to use versio
 13. deallocate the memory
 14. deserialize the string to JSON if JSON is expected
 
-That looks like a lot of steps, but most of this code can be shared for the various functions throughout the Development Kit, leaving implementations to be as little as 5 lines long. Basically, the process inverts at the point of the native function call.
+That looks like a lot of steps, but most of this code can be shared for the various functions throughout the DNA Framework, leaving implementations to be as little as 5 lines long. Basically, the process inverts at the point of the native function call.
 
 #### WASM Single Page Stack
 
@@ -85,7 +85,7 @@ TODO
 
 When writing Zome code, it is common to need to reference aspects of the context it runs in, such as the active user/agent, or the DNA hash of the app. Holochain exposes certain values through to the Zome, though it does so natively by way of the `hc_init_globals` function mentioned. Taking care to expose these values as constants will simplify the developer experience.
 
-This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using `hdk::APP_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
+This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the DNA Framework. For example, in Rust, values become accessible in Zomes using `hdk::APP_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
 - app_name
 - app_dna_hash
 - app_agent_id_str

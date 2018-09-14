@@ -25,9 +25,9 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 use wasmi::{
-    self, Error as InterpreterError, Externals, NopExternals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
-    ValueType,
+    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
+    ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
+    TrapKind, ValueType,
 };
 
 // Zome API functions are exposed by HC to zome logic
@@ -232,11 +232,11 @@ pub fn call(
         ) -> Result<Option<RuntimeValue>, Trap> {
             // Abort
             // if index == ZomeApiFunction::Abort {
-                // args will be an array of length 4
-                // at index 0 is a mem address in the wasm memory for an error message
-                // at index 1 is a mem address in the wasm memory for a filename
-                // at index 2 is a line number
-                // at index 3 is a column number
+            // args will be an array of length 4
+            // at index 0 is a mem address in the wasm memory for an error message
+            // at index 1 is a mem address in the wasm memory for a filename
+            // at index 2 is a line number
+            // at index 3 is a column number
             // }
 
             let zf = ZomeApiFunction::from_index(index);
@@ -260,16 +260,22 @@ pub fn call(
             let api_fn = ZomeApiFunction::from_str(&field_name)?;
 
             match api_fn {
-                ZomeApiFunction::MissingNo => Err(InterpreterError::Function(
-                    format!(
-                        "host module doesn't export function with name {}",
-                        field_name
-                    )
-                )),
+                ZomeApiFunction::MissingNo => Err(InterpreterError::Function(format!(
+                    "host module doesn't export function with name {}",
+                    field_name
+                ))),
                 // Abort is a way to receive useful debug info from
                 // assemblyscript memory allocators, see enum definition for function signature
                 ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32][..], None),
+                    Signature::new(
+                        &[
+                            ValueType::I32,
+                            ValueType::I32,
+                            ValueType::I32,
+                            ValueType::I32,
+                        ][..],
+                        None,
+                    ),
                     api_fn as usize,
                 )),
                 _ => Ok(FuncInstance::alloc_host(

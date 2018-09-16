@@ -15,10 +15,8 @@ pub trait AskChain {
 
 impl AskChain for ActorRef<Protocol> {
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        match self.block_on_ask(Protocol::SetTopPair(pair.clone())) {
-            Ok(response) => unwrap_to!(response => Protocol::SetTopPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::SetTopPair(pair.clone()))?;
+        unwrap_to!(response => Protocol::SetTopPairResult).clone()
     }
 
     fn top_pair(&self) -> Option<Pair> {

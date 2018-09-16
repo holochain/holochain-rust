@@ -34,10 +34,8 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
-        match self.block_on_ask(Protocol::GetPair(key.to_string())) {
-            Ok(response) => unwrap_to!(response => Protocol::GetPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::GetPair(key.to_string()))?;
+        unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
     fn modify_pair(
@@ -74,17 +72,13 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
-        match self.block_on_ask(Protocol::GetPairMeta(key.to_string())) {
-            Ok(response) => unwrap_to!(response => Protocol::GetPairMetaResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::GetPairMeta(key.to_string()))?;
+        unwrap_to!(response => Protocol::GetPairMetaResult).clone()
     }
 
     fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        match self.block_on_ask(Protocol::GetMetasForPair(pair.clone())) {
-            Ok(response) => unwrap_to!(response => Protocol::GetMetasForPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::GetMetasForPair(pair.clone()))?;
+        unwrap_to!(response => Protocol::GetMetasForPairResult).clone()
     }
 }
 

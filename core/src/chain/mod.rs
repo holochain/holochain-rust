@@ -194,7 +194,9 @@ impl SourceChain for Chain {
     }
 
     fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        match self.table_actor.block_on_ask(Protocol::GetPair(k.to_string())) {
+        let response = self
+            .table_actor
+            .block_on_ask(Protocol::GetPair(k.to_string()))?;
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 

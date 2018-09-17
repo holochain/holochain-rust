@@ -35,23 +35,25 @@ It seems we need the advantages of both worlds:
 ### 1. Daemon container that accepts function calls via HTTP requests
 This is the solution implemented in proto. 
 - A single daemon container exposes end-points for calling functions namespaced by app and by zome
-- This will need to expose new functions such as getInstalledApps
-- Maybe use JSON-RPC spec this time?
+- Main drawback is that state changes need to be polled by UI - no push notifications
 
-### 2. Daemon container that exposes web sockets for bi-directional communication
-Extension of above to also allow back->front end calls via websockets. 
-- Will need a way for the front-end to register for certain messages
-    - New data in DHT shard, direct message received, validationCallback, brigeGenesis etc.
+### 2. Daemon container that exposes WebSockets for bi-directional communication
+Improvement of 1.
+- Instead of using HTTP, keep a permanent WebSocket connection between UI client and Holochain node. 
+- Define a protocol to use over the WebSocket so that clients can take advantage of container features such
+  as talking to multiple apps
+- Make use of sessions and a permission system to only expose certain apps or capabilities to remote UIs
 
-### 2. Daemon container communicating with browser plug-in via IPC
-This is similar to metamask for ethereum communicating with a local node via IPC. 
-- Plug-in exposes holochain calls to the javascript running on the page via an injected object
-- Plug-in communicates with daemon via an ipc file or similar
-- Not sure yet what substantial advantage this holds over browser without plug-in
+### 3. Daemon container communicating with browser plug-in via IPC
+This is similar to MetaMask for Ethereum communicating with a local node via IPC. 
+- Plug-in exposes Holochain calls to the JavaScript running on the page via an injected object
+- Plug-in communicates with daemon via an IPC file or similar
 
-### 3. Holochain container runs a custom browser that exposes calls directly
+Not sure yet what substantial advantage this holds over browser without plug-in.
+
+### 4. Holochain container runs a custom browser that exposes calls directly
 This is comparable to the Mist browser for Ethereum and currently implemented for QML
-front-ends with HoloSqape. 
+front-ends with [HoloSqape](https://github.com/holochain/holosqape). 
 This could be re-done with web technology such as [Electron](https://electronjs.org/) and [Holochain-nodejs](https://github.com/holochain/holochain-nodejs).  
 - Similar to above but removes the need for IPC
 - Would need to continue running in the background when no windows are open

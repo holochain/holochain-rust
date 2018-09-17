@@ -65,10 +65,30 @@ There is also the possibility to implement multiple of the above (as Ethereum ha
 
 ## Decision
 
-Decision here...
+Option 2.
+
+The existing Holochain container project HoloSqape is to be extended to provide a **WebSocket interface**
+(next to the QML based GUI plug-in system) that enables many different kinds of external
+user interfaces to connect to the local Holochain node, authenticate, issue zome calls and receive zome signals,
+depending on permissions administered by the local user of the node through an admin UI or default settings.
+
+A **JavaScript based client library** is to be implemented that makes it easy to use this interface from the context
+of a web browser, hiding the complexity and wire-protocol of the websocket interface itself, only offering high-level
+functionality such as:
+* connecting to a local or remote node
+* authentication (public-key?)
+* quering installed/running apps, the session has access to
+* issuing zome function calls and receiving results
+* registering callbacks for zome signals 
 
 ## Consequences
 
-Consequences here...
+* WebSocket interface needs to be designed (upcoming ADR) and implemented
+* App developers have an alternative to QML based UIs
+* Web based UIs can be build and run separately from the Holochain node itself, both locally and remotely
+* Web based UIs can just be a browser tab since Holochain app keeps running in HoloSqape without it
+* UI and Holochain node are connected through permanent bi-directional connection
+* Push notifications can be send from the node to the external UI 
+* Connection between Holo light-client and HoloPort could be implemented on top of this
 
 

@@ -31,6 +31,7 @@ pub enum EntryType {
     Header,
     Key,
     Link,
+    LinkList,
     Migration,
 }
 
@@ -45,6 +46,7 @@ impl FromStr for EntryType {
             sys_prefix!("header") => Ok(EntryType::Header),
             sys_prefix!("key") => Ok(EntryType::Key),
             sys_prefix!("link") => Ok(EntryType::Link),
+            sys_prefix!("link_list") => Ok(EntryType::LinkList),
             sys_prefix!("migration") => Ok(EntryType::Migration),
             _ => Ok(EntryType::App),
         }
@@ -61,6 +63,7 @@ impl EntryType {
             EntryType::Header => sys_prefix!("header"),
             EntryType::Key => sys_prefix!("key"),
             EntryType::Link => sys_prefix!("link"),
+            EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
         }
     }

@@ -3,7 +3,8 @@ use agent::keys::Keys;
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash_table::pair::Pair;
+use hash::HashString;
+use hash_table::{entry::Entry, pair::Pair};
 use instance::Observer;
 use json::ToJson;
 use key::Key;
@@ -59,6 +60,8 @@ impl AgentState {
 pub enum ActionResponse {
     Commit(Result<Pair, HolochainError>),
     GetEntry(Option<Pair>),
+    GetLinks(Result<Vec<HashString>, HolochainError>),
+    LinkEntries(Result<Entry, HolochainError>),
 }
 
 impl ToJson for ActionResponse {
@@ -71,6 +74,17 @@ impl ToJson for ActionResponse {
             ActionResponse::GetEntry(result) => match result {
                 Some(pair) => Ok(pair.to_json()?),
                 None => Ok("".to_string()),
+            },
+            ActionResponse::GetLinks(result) => match result {
+                Ok(hash_list) => Ok(json!(hash_list)
+                    .as_str()
+                    .expect("should jsonify")
+                    .to_string()),
+                Err(err) => Ok((*err).to_json()?),
+            },
+            ActionResponse::LinkEntries(result) => match result {
+                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Err(err) => Ok((*err).to_json()?),
             },
         }
     }

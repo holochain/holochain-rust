@@ -36,7 +36,7 @@ pub fn test_modify_pair<HT: HashTable>(table: &mut HT) {
 
     assert_eq!(
         vec![
-            PairMeta::new(&test_keys(), &pair_1, LINK_NAME, &pair_2.key()),
+            PairMeta::new(&test_keys(), &pair_1, LINK_NAME, &pair_2.key().to_str()),
             PairMeta::new(
                 &test_keys(),
                 &pair_1,

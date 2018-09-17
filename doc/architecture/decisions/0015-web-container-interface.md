@@ -10,7 +10,9 @@ Proposed
 * We have an implementation of a Holochain container that can load QML based UIs: https://github.com/holochain/holosqape
 * We also want to support HTML/JS/CSS based UIs
 * We need to enable pure Web clients to connect to a HoloPort for the Holo use-case
-
+* With [ADR 13](https://github.com/holochain/holochain-rust/blob/develop/doc/architecture/decisions/0013-signals-listeners-model-and-api.md)
+  we defined *app signals*, i.e. events that a Holochain app can push - we need to make sure UIs can receive these as
+  pushed notifications from the Holochain node 
     
 
 ## Requirements

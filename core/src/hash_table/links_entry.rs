@@ -14,7 +14,7 @@ use std::str::FromStr;
 pub struct Link {
     base: HashString,
     target: HashString,
-    tag: HashString,
+    tag: String,
 }
 
 impl Link {

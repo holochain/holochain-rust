@@ -179,13 +179,12 @@ pub mod tests {
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use chain::tests::test_chain;
     use error::HolochainError;
-    use hash_table::pair::tests::test_pair;
+    use hash::HashString;
+    use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
     use instance::tests::{test_context, test_instance_blank};
     use json::ToJson;
-    use std::{collections::HashMap, sync::Arc};
-    use hash_table::entry::tests::test_entry;
-    use hash::HashString;
     use key::Key;
+    use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -314,7 +313,9 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())])).to_json().unwrap(),
+            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+                .to_json()
+                .unwrap(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
@@ -328,7 +329,9 @@ pub mod tests {
     fn test_link_entries_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::LinkEntries(Ok(test_entry())).to_json().unwrap(),
+            ActionResponse::LinkEntries(Ok(test_entry()))
+                .to_json()
+                .unwrap(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",

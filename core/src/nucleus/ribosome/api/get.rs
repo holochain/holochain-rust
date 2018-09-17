@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash::HashString;
 use json::ToJson;
 use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
@@ -8,7 +9,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
-    key: String,
+    key: HashString,
 }
 
 pub fn invoke_get_entry(
@@ -211,7 +212,7 @@ mod tests {
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmT1NRaxbwMqpxXU1Adt1pVqtgnDXYxH1qH5rRbWPGxrkW\",\"entry_hash\":\"");
-        expected.push_str(&test_entry_hash());
+        expected.push_str(&test_entry_hash().to_str());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
         assert_eq!(get_runtime.result, expected,);

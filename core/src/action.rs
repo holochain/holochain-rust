@@ -1,6 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::{entry::Entry, HashString};
+use hash::HashString;
+use hash_table::entry::Entry;
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
@@ -64,7 +65,7 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks

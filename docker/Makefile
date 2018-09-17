@@ -121,7 +121,7 @@ build: core_toolchain wasm_build
 	$(CARGO) build --all
 
 code_coverage: core_toolchain wasm_build
-	$(CARGO) tarpaulin --all --out Xml --skip-clean
+	$(CARGO) tarpaulin --all --out Xml --skip-clean --ignore-tests
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check

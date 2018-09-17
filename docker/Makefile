@@ -129,9 +129,6 @@ fmt_check: install_rust_tools
 clippy: install_rust_tools
 	$(CARGO_TOOLS) clippy -- -A needless_return
 
-clippy_ci: install_rust_tools
-	$(CARGO_TOOLS) clippy
-
 fmt: install_rust_tools
 	$(CARGO_TOOLS) fmt
 

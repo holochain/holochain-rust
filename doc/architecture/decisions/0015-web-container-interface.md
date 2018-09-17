@@ -81,6 +81,8 @@ functionality such as:
 * issuing zome function calls and receiving results
 * registering callbacks for zome signals 
 
+![](../WebSocket-interface-HoloSqape.png)
+
 ## Consequences
 
 * WebSocket interface needs to be designed (upcoming ADR) and implemented

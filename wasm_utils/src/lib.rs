@@ -235,6 +235,12 @@ pub mod tests {
         assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow);
 
         assert_eq!(super::encode_error(4), HcApiReturnCode::ErrorActionResult);
+
+        assert_eq!(super::encode_error(5), HcApiReturnCode::ErrorCallbackResult);
+
+        assert_eq!(super::encode_error(6), HcApiReturnCode::ErrorRecursiveCall);
+
+        assert_eq!(super::encode_error(7), HcApiReturnCode::Error);
     }
 
     #[test]

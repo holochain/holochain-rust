@@ -19,7 +19,6 @@ use nucleus::{
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
 
-
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?

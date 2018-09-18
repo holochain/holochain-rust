@@ -1,3 +1,6 @@
+//! Module for ZomeApiFunctions
+//! ZomeApiFunctions are the functions provided by the ribosome that are callable by Zomes.
+
 pub mod call;
 pub mod commit;
 pub mod debug;
@@ -32,14 +35,12 @@ use wasmi::{
     TrapKind, ValueType,
 };
 
-// Zome API functions are exposed by HC to zome logic
-
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
+/// Enumeration of all the Zome Functions known and usable in Zomes.
+/// Enumeration can convert to str.
 #[repr(usize)]
 #[derive(FromPrimitive, Debug, PartialEq, Eq)]
 pub enum ZomeApiFunction {
@@ -153,7 +154,7 @@ impl ZomeApiFunction {
 // Wasm call
 //--------------------------------------------------------------------------------------------------
 
-/// Object holding data to pass around to invoked API functions
+/// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
 pub struct Runtime {
     pub context: Arc<Context>,

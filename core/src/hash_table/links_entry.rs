@@ -105,15 +105,15 @@ impl LinkListEntry {
 }
 
 impl ToEntry for LinkListEntry {
-    // Convert a LinkEntry into a JSON array of Links
+    // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        let json_array = serde_json::to_string(self).expect("LinkListEntry should serialize");
+        let json_array = serde_json::to_string(self).expect("LinkListEntry failed to serialize");
         Entry::new(EntryType::LinkList.as_str(), &json_array)
     }
 
     fn new_from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
-        serde_json::from_str(&entry.content()).expect("entry is not a valid LinkListEntry")
+        serde_json::from_str(&entry.content()).expect("entry failed converting into LinkListEntry")
     }
 }
 //-------------------------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ pub mod tests {
                 _ => false,
             });
     }
-    /// Committing a DnaEntry to source chain should work
+    /// Committing a LinkListEntry to source chain should work
     #[test]
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
@@ -192,7 +192,7 @@ pub mod tests {
                 _ => false,
             });
     }
-    /// Committing a LinkEntry to source chain should work
+    /// Committing a LinkListEntry to source chain should work
     #[test]
     fn can_round_trip_lle() {
         let link = Link::new("12", "34", "fake");

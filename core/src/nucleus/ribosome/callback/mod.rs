@@ -1,6 +1,3 @@
-//! Module for ZomeCallbacks
-//! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
-
 pub mod genesis;
 pub mod receive;
 pub mod validate_commit;
@@ -22,11 +19,10 @@ use nucleus::{
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::mpsc::Sender};
 
-
-/// Enumeration of all Zome Callbacks known and used by Holochain
-/// Enumeration can convert to str
+// Callback functions are zome logic called by HC actions
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
 // @see https://github.com/holochain/holochain-rust/issues/200
+
 #[derive(FromPrimitive, Debug, PartialEq)]
 pub enum Callback {
     /// Error index for unimplemented functions

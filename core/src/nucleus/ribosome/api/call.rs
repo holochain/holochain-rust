@@ -55,7 +55,7 @@ pub fn invoke_call(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ArgumentDeserializationFailed as i32)));
         }
     };
 
@@ -65,7 +65,7 @@ pub fn invoke_call(
     // Don't allow recursive calls
     if zome_call.same_fn_as(&runtime.zome_call) {
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorRecursiveCall as i32,
+            HcApiReturnCode::RecursiveCallForbidden as i32,
         )));
     }
 
@@ -107,7 +107,7 @@ pub fn invoke_call(
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
         Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }

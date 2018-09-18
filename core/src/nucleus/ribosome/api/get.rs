@@ -22,9 +22,8 @@ pub fn invoke_get_entry(
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ArgumentDeserializationFailed as i32)));
     }
-
     let input = res_entry.unwrap();
 
     let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
@@ -62,11 +61,11 @@ pub fn invoke_get_entry(
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }

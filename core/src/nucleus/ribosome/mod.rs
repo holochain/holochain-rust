@@ -1,5 +1,3 @@
-//! The virtual machine that runs DNA written in WASM
-
 pub mod api;
 pub mod callback;
 

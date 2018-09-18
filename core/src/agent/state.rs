@@ -12,9 +12,8 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-/// The state-slice for the Agent.
-/// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
+/// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
     /// every action and the result of that action

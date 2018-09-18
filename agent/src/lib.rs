@@ -12,7 +12,6 @@ impl Identity {
     }
 }
 
-/// Object holding all Agent's data.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Agent {
     identity: Identity,

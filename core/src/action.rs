@@ -65,7 +65,6 @@ impl Hash for ActionWrapper {
     }
 }
 
-/// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit

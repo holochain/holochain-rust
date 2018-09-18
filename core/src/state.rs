@@ -11,7 +11,8 @@ use std::{
 };
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
-/// Its composed of a Nucleus and Agent state slice.
+/// It's composed of all sub-module's state slices.
+/// To plug in a new module, its state slice needs to be added here.
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,

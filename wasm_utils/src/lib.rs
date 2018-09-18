@@ -42,9 +42,9 @@ impl ToString for HcApiReturnCode {
 
 impl HcApiReturnCode {
     pub fn from_offset(offset: u16) -> HcApiReturnCode {
-    match offset {
-        // @TODO what is a success error?
-        // @see https://github.com/holochain/holochain-rust/issues/181
+        match offset {
+            // @TODO what is a success error?
+            // @see https://github.com/holochain/holochain-rust/issues/181
             0 => Success,
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,

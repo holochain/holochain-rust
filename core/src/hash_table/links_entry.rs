@@ -22,7 +22,7 @@ impl Link {
         Link {
             base: HashString::from(base.to_string()),
             target: HashString::from(target.to_string()),
-            tag: HashString::from(tag.to_string()),
+            tag: tag.to_string(),
         }
     }
     // Key for HashTable
@@ -39,7 +39,7 @@ impl Link {
     pub fn target(&self) -> &HashString {
         &self.target
     }
-    pub fn tag(&self) -> &HashString {
+    pub fn tag(&self) -> &String {
         &self.tag
     }
 }

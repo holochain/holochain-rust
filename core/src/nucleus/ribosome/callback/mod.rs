@@ -1,3 +1,6 @@
+//! Module for ZomeCallbacks
+//! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
+
 pub mod genesis;
 pub mod receive;
 pub mod validate_commit;

@@ -10,7 +10,8 @@ use std::{
 };
 use walkdir::Error as WalkdirError;
 
-/// Enum holding all Holochain specific errors
+/// module for holding Holochain specific errors
+
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),

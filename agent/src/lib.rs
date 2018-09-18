@@ -1,6 +1,5 @@
 //! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
 
-/// Object holding a Agent's identity.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Identity {
     content: String,
@@ -12,7 +11,6 @@ impl Identity {
     }
 }
 
-/// Object holding all Agent's data.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Agent {
     identity: Identity,

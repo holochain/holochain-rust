@@ -10,8 +10,6 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
-/// The Store of the Holochain instance Object, according to Redux pattern.
-/// Its composed of a Nucleus and Agent state slice.
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,

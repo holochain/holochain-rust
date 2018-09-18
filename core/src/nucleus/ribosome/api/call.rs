@@ -55,7 +55,9 @@ pub fn invoke_call(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ArgumentDeserializationFailed as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 

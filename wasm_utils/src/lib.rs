@@ -1,9 +1,9 @@
 extern crate serde;
 extern crate serde_json;
 
+use self::HcApiReturnCode::*;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
-use self::HcApiReturnCode::*;
 
 //--------------------------------------------------------------------------------------------------
 // Error Codes

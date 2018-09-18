@@ -31,7 +31,9 @@ pub fn invoke_commit_entry(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ArgumentDeserializationFailed as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 
@@ -90,7 +92,9 @@ pub fn invoke_commit_entry(
             let maybe_json = action_result.to_json();
             match maybe_json {
                 Ok(json_str) => runtime.store_utf8(&json_str),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(

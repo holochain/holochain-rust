@@ -1,9 +1,13 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::{entry::Entry, HashString};
+use hash::HashString;
+use hash_table::entry::Entry;
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, ZomeFnCall, ZomeFnResult};
+use nucleus::{
+    state::{NucleusState, ValidationResult},
+    ZomeFnCall, ZomeFnResult,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -62,7 +66,7 @@ impl Hash for ActionWrapper {
 }
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
-#[derive(Clone, PartialEq, Hash, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
@@ -88,7 +92,8 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateEntry(Entry),
+    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions

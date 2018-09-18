@@ -4,14 +4,15 @@ pub mod memory;
 pub mod ribosome;
 pub mod state;
 
+use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
-
-use action::{Action, ActionWrapper, NucleusReduceFn};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
+    ribosome::callback::{
+        genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+    },
     state::{NucleusState, NucleusStatus},
 };
 use snowflake;
@@ -364,23 +365,69 @@ fn reduce_validate_entry(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
+    action_channel: &Sender<ActionWrapper>,
+    observer_channel: &Sender<Observer>,
 ) {
-    let mut _has_entry_type = false;
-
-    // must have entry_type
-    if let Some(ref dna) = state.dna {
-        let action = action_wrapper.action();
-        let es = unwrap_to!(action => Action::ValidateEntry);
-        if let Some(ref _wasm) =
-            dna.get_validation_bytecode_for_entry_type(&es.zome_name, &es.type_name)
-        {
-            // TODO #61 validate()
-            // Do same thing as Action::ExecuteZomeFunction
-            _has_entry_type = true;
+    let action = action_wrapper.action();
+    let entry = unwrap_to!(action => Action::ValidateEntry);
+    match state
+        .dna()
+        .unwrap()
+        .get_zome_name_for_entry_type(entry.entry_type())
+    {
+        None => {
+            let error = format!("Unknown entry type: '{}'", entry.entry_type());
+            state
+                .validation_results
+                .insert(action_wrapper.clone(), Err(error.to_string()));
         }
-    }
+        Some(zome_name) => {
+            #[cfg(debug)]
+            state.validations_running.push(action_wrapper.clone());
+            let action_channel = action_channel.clone();
+            let observer_channel = observer_channel.clone();
+            let action_wrapper = action_wrapper.clone();
+            let entry = entry.clone();
+            thread::spawn(move || {
+                let validation_result = match validate_commit(
+                    &action_channel,
+                    &observer_channel,
+                    &zome_name,
+                    &CallbackParams::ValidateCommit(entry.clone()),
+                ) {
+                    CallbackResult::Fail(error_string) => Err(error_string),
+                    CallbackResult::Pass => Ok(()),
+                    CallbackResult::NotImplemented => Err(format!(
+                        "Validation callback not implemented for {:?}",
+                        entry.entry_type()
+                    )),
+                };
+                action_channel
+                    .send(ActionWrapper::new(Action::ReturnValidationResult((
+                        Box::new(action_wrapper),
+                        validation_result,
+                    ))))
+                    .expect("action channel to be open in reducer");
+            });
+        }
+    };
+}
+fn reduce_return_validation_result(
+    _context: Arc<Context>,
+    state: &mut NucleusState,
+    action_wrapper: &ActionWrapper,
+    _: &Sender<ActionWrapper>,
+    _: &Sender<Observer>,
+) {
+    let action = action_wrapper.action();
+    let (action_wrapper, validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
+    state
+        .validation_results
+        .insert(*action_wrapper.clone(), validation_result.clone());
+    #[cfg(debug)]
+    state
+        .validations_running
+        .retain(|x| x.id() != action_wrapper.id());
 }
 
 /// Reduce ReturnZomeFunctionResult Action.
@@ -410,6 +457,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ValidateEntry(_) => Some(reduce_validate_entry),
         Action::Call(_) => Some(reduce_call),
+        Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,
     }
 }

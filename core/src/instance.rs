@@ -1,4 +1,3 @@
-//use error::HolochainError;
 use action::ActionWrapper;
 use context::Context;
 use state::State;
@@ -13,10 +12,11 @@ use std::{
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
-/// Object representing a Holochain app instance.
-/// Holds the Event loop and processes it with the redux state model.
+/// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
+/// Holds the Event loop and processes it with the redux pattern.
 #[derive(Clone)]
 pub struct Instance {
+    /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,

@@ -17,6 +17,8 @@ impl Default for NucleusStatus {
     }
 }
 
+/// The state-slice for the Nucleus.
+/// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     pub dna: Option<Dna>,

@@ -5,6 +5,7 @@
   - [How to contribute](./how_to_contribute.md)
 - [Planning a dApp](./planning_a_dapp.md)
 - [Building Holochain Apps](./building_apps.md)
+  - [Introduction to DNA](./intro_to_dna.md)
   - [Using Zome API global variables](./zome/api_globals.md)
   - [Using Zome API functions](./zome/api_functions.md)
   - [Using callback functions](./zome/callback_functions.md)

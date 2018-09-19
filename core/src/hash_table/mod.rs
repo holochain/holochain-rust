@@ -1,9 +1,9 @@
 pub mod actor;
 pub mod entry;
+pub mod entry_meta;
 pub mod file;
 pub mod links_entry;
 pub mod memory;
-pub mod entry_meta;
 pub mod status;
 pub mod sys_entry;
 #[cfg(test)]

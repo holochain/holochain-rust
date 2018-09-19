@@ -5,8 +5,8 @@ use futures::executor::block_on;
 use hash::HashString;
 use hash_table::{
     entry::Entry,
-    links_entry::{Link, LinkListEntry},
     entry_meta::EntryMeta,
+    links_entry::{Link, LinkListEntry},
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;

@@ -26,9 +26,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
     let entry_1 = test_entry_unique();
     let entry_2 = test_entry_unique();
 
-    table
-        .put_entry(&entry_1)
-        .unwrap();
+    table.put_entry(&entry_1).unwrap();
     table
         .modify_entry(&test_keys(), &entry_1, &entry_2)
         .unwrap();
@@ -48,33 +46,19 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
                 &CrudStatus::MODIFIED.bits().to_string(),
             ),
         ],
-        table
-            .metas_from_entry(&entry_1)
-            .unwrap()
+        table.metas_from_entry(&entry_1).unwrap()
     );
 
     let empty_vec: Vec<EntryMeta> = Vec::new();
-    assert_eq!(
-        empty_vec,
-        table
-            .metas_from_entry(&entry_2)
-            .unwrap()
-    );
+    assert_eq!(empty_vec, table.metas_from_entry(&entry_2).unwrap());
 }
 
 pub fn test_retract<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     let empty_vec: Vec<EntryMeta> = Vec::new();
 
-    table
-        .put_entry(&entry)
-        .unwrap();
-    assert_eq!(
-        empty_vec,
-        table
-            .metas_from_entry(&entry)
-            .unwrap()
-    );
+    table.put_entry(&entry).unwrap();
+    assert_eq!(empty_vec, table.metas_from_entry(&entry).unwrap());
 
     table
         .retract_entry(&test_keys(), &entry)
@@ -86,32 +70,19 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         )],
-        table
-            .metas_from_entry(&entry)
-            .unwrap(),
+        table.metas_from_entry(&entry).unwrap(),
     );
 }
 
 pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     let meta = test_meta();
 
-    assert_eq!(
-        None,
-        table
-            .get_meta(&meta.key())
-            .unwrap()
-    );
+    assert_eq!(None, table.get_meta(&meta.key()).unwrap());
 
     table
         .assert_meta(&meta)
         .expect("asserting metadata shouldn't fail");
-    assert_eq!(
-        Some(&meta),
-        table
-            .get_meta(&meta.key())
-            .unwrap()
-            .as_ref()
-    );
+    assert_eq!(Some(&meta), table.get_meta(&meta.key()).unwrap().as_ref());
 }
 
 /// assert a couple of unique metas against a single pair

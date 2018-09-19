@@ -77,10 +77,7 @@ impl ToJson for ActionResponse {
                 None => Ok("".to_string()),
             },
             ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => Ok(json!(hash_list)
-                    .as_str()
-                    .expect("should jsonify")
-                    .to_string()),
+                Ok(hash_list) => Ok(json!(hash_list).to_string()),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::LinkEntries(result) => match result {
@@ -319,7 +316,7 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+            ActionResponse::GetLinks(Ok(vec![test_entry().key()]))
                 .to_json()
                 .unwrap(),
         );

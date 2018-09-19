@@ -92,10 +92,11 @@ impl EntryMeta {
         HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
     }
 }
+
 impl Key for EntryMeta {
     /// the key for HashTable lookups, e.g. table.meta()
     fn key(&self) -> HashString {
-        HashString::encode_from_serializable(&self.entry_hash, Hash::SHA2256)
+        HashString::encode_from_serializable(&self, Hash::SHA2256)
     }
 }
 

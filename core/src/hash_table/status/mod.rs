@@ -5,7 +5,7 @@ pub const LINK_NAME: &str = "crud-link";
 
 bitflags! {
     #[derive(Default)]
-    /// the CRUD status of a Pair is stored as PairMeta in the hash table, NOT in the pair itself
+    /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the pair itself
     /// statuses are represented as bitflags so we can easily build masks for filtering lookups
     pub struct CrudStatus: u8 {
         const LIVE = 0x01;

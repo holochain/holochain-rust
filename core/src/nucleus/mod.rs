@@ -7,11 +7,15 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
+use hash_table::sys_entry::ToEntry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::callback::{
-        genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+    ribosome::{
+        api::call::reduce_call,
+        callback::{
+            genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+        },
     },
     state::{NucleusState, NucleusStatus},
 };
@@ -23,9 +27,6 @@ use std::{
     },
     thread,
 };
-
-use hash_table::sys_entry::ToEntry;
-use nucleus::ribosome::api::call::reduce_call;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

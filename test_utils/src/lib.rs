@@ -7,7 +7,10 @@ use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_dna::{
     wasm::DnaWasm,
-    zome::{capabilities::Capability, Config, Zome},
+    zome::{
+        capabilities::{Capability, Membrane},
+        Config, Zome,
+    },
     Dna,
 };
 use std::{
@@ -78,6 +81,34 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
+pub fn create_test_cap(membrane: Membrane, wasm: &Vec<u8>) -> Capability {
+    let mut capability = Capability::new();
+    capability.code = DnaWasm { code: wasm.clone() };
+    capability.cap_type.membrane = membrane;
+    capability
+}
+
+/// Prepare valid DNA struct with that WASM in a zome's capability
+pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability) -> Dna {
+    let mut dna = Dna::new();
+
+    let mut capabilities = HashMap::new();
+    capabilities.insert(cap_name.to_string(), cap.clone());
+
+    let zome = Zome::new(
+        "some zome description",
+        &Config::new(),
+        &HashMap::new(),
+        &capabilities,
+    );
+
+    // zome.capabilities.push(capability);
+    dna.zomes.insert(zome_name.to_string(), zome);
+    dna.name = "TestApp".into();
+    dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
+    dna
+}
+
 #[derive(Clone)]
 pub struct TestLogger {
     pub log: Vec<String>,
@@ -101,15 +132,16 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
     Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
 }
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
-        Arc::new(Context {
+        Arc::new(Context::new(
             agent,
-            logger: logger.clone(),
-            persister: Arc::new(Mutex::new(SimplePersister::new())),
-        }),
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        )),
         logger,
     )
 }

@@ -1,4 +1,4 @@
-use nucleus::ribosome::api::{runtime_allocate_encode_str, Runtime};
+use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;
@@ -37,7 +37,7 @@ pub fn invoke_init_globals(
         app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
     };
 
-    return runtime_allocate_encode_str(runtime, &serde_json::to_string(&globals).unwrap());
+    return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
 }
 
 #[cfg(test)]

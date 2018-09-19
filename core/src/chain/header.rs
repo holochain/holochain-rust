@@ -58,7 +58,7 @@ impl Header {
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }
-    }
+        }
 
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
@@ -73,15 +73,15 @@ impl Header {
         &self.timestamp
     }
     /// link getter
-    pub fn link(&self) -> Option<String> {
+    pub fn link(&self) -> Option<HashString> {
         self.link.clone()
     }
     /// entry_hash getter
-    pub fn entry_hash(&self) -> &str {
+    pub fn entry_hash(&self) -> &HashString {
         &self.entry_hash
     }
     /// link_same_type getter
-    pub fn link_same_type(&self) -> Option<String> {
+    pub fn link_same_type(&self) -> Option<HashString> {
         self.link_same_type.clone()
     }
     /// entry_signature getter
@@ -90,22 +90,22 @@ impl Header {
     }
 
     /// hashes the header
-    pub fn hash(&self) -> String {
+    pub fn hash(&self) -> HashString {
         // @TODO this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let pieces: [&str; 6] = [
             &self.entry_type,
             &self.timestamp,
-            &self.link.clone().unwrap_or_default(),
-            &self.entry_hash,
-            &self.link_same_type.clone().unwrap_or_default(),
+            &self.link.clone().unwrap_or_default().to_str(),
+            &self.entry_hash.clone().to_str(),
+            &self.link_same_type.clone().unwrap_or_default().to_str(),
             &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
     }
 
     /// returns true if the header is valid
@@ -116,7 +116,7 @@ impl Header {
 }
 
 impl Key for Header {
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         self.hash()
     }
 }
@@ -146,6 +146,7 @@ impl ToEntry for Header {
 mod tests {
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash_table::{entry::Entry, sys_entry::ToEntry};
+use hash::HashString;
     use key::Key;
 
     /// returns a dummy header for use in tests
@@ -198,9 +199,9 @@ mod tests {
         let e = Entry::new(t, "foo");
         let h = chain.create_next_header(&e);
 
-        assert_eq!(h.entry_hash(), e.hash());
+        assert_eq!(h.entry_hash(), &e.hash());
         assert_eq!(h.link(), None);
-        assert_ne!(h.hash(), "");
+        assert_ne!(h.hash(), HashString::new());
         assert!(h.validate());
     }
 
@@ -261,7 +262,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = chain.create_next_header(&e);
 
-        assert_eq!(h.entry_hash(), e.hash());
+        assert_eq!(h.entry_hash(), &e.hash());
     }
 
     #[test]
@@ -321,7 +322,10 @@ mod tests {
         let e = Entry::new(t, "");
         let h = chain.create_next_header(&e);
 
-        assert_eq!("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9", h.hash());
+        assert_eq!(
+            HashString::from("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9".to_string()),
+            h.hash()
+        );
     }
 
     #[test]

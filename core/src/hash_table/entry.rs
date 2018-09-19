@@ -1,5 +1,5 @@
 use error::HolochainError;
-use hash;
+use hash::HashString;
 use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
 use key::Key;
@@ -54,14 +54,14 @@ impl Entry {
     }
 
     /// hashes the entry
-    pub fn hash(&self) -> String {
+    pub fn hash(&self) -> HashString {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let string_to_hash = &self.content;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(string_to_hash, Hash::SHA2256)
     }
 
     /// content getter
@@ -80,9 +80,12 @@ impl Entry {
         true
     }
 
+    /// returns true if the entry type is a system entry
     pub fn is_sys(&self) -> bool {
         EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
     }
+
+    /// returns true if the entry type is an app entry
     pub fn is_app(&self) -> bool {
         EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
     }
@@ -91,7 +94,7 @@ impl Entry {
 impl Key for Entry {
     /// returns the key used for lookups in chain, HT, etc.
     /// note that entry keys have a parallel API to header/pair keys, e.g. chain.get_entry()
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         self.hash()
     }
 }
@@ -114,7 +117,8 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use hash_table::entry::Entry;
+    use hash::HashString;
+    use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
@@ -155,8 +159,8 @@ pub mod tests {
     }
 
     /// the correct hash for test_entry()
-    pub fn test_entry_hash() -> String {
-        "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".into()
+    pub fn test_entry_hash() -> HashString {
+        HashString::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
     }
 
     /// dummy entry, same as test_entry()
@@ -226,7 +230,7 @@ pub mod tests {
         let e = Entry::new(t, c);
 
         assert_eq!(e.content(), c);
-        assert_ne!(e.hash(), "");
+        assert_ne!(e.hash(), HashString::new());
         assert!(e.validate());
     }
 
@@ -311,5 +315,31 @@ pub mod tests {
         assert_eq!(expected, e.to_json().unwrap());
         assert_eq!(e, Entry::from_json(expected).unwrap());
         assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// test that we can detect system entry types
+    fn is_sys() {
+        for sys_type in vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::Dna,
+            EntryType::Header,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+        ] {
+            let entry = Entry::new(sys_type.as_str(), "");
+            assert!(entry.is_sys());
+            assert!(!entry.is_app());
+        }
+    }
+
+    #[test]
+    /// test that we can detect app entry types
+    fn is_app() {
+        let entry = Entry::new("foo", "");
+        assert!(entry.is_app());
+        assert!(!entry.is_sys());
     }
 }

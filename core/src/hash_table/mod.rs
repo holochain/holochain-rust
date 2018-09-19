@@ -11,6 +11,7 @@ pub mod test_util;
 
 use agent::keys::Keys;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
@@ -21,8 +22,6 @@ use hash_table::{
 use key::Key;
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use serde_json;
-
-pub type HashString = String;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Pairs.
@@ -42,7 +41,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Add an Entry to the HashTable, analogous to chain.push() but ordering is not enforced.
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError>;
     /// Lookup an Entry from the HashTable by key.
-    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError>;
+    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError>;
 
     /// Modify an existing Entry (by adding a new one and flagging the old one as MODIFIED)
     fn modify_entry(
@@ -71,7 +70,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             &keys.node_id(),
             &old.key(),
             LINK_NAME,
-            &new.key(),
+            &new.key().to_str(),
         ))
     }
 
@@ -190,7 +189,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Assert a given Meta in the HashTable.
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError>;
     /// Lookup a Meta from the HashTable by key.
-    fn get_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError>;
+    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError>;
     /// Lookup all Meta for a given Entry.
     fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError>;
     /// Lookup a Meta from a request.

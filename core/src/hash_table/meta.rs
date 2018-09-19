@@ -18,7 +18,7 @@ use std::cmp::Ordering;
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
 pub struct EntryMeta {
-    entry_hash: String,
+    entry_hash: HashString,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -65,7 +65,7 @@ impl EntryMeta {
     }
 
     /// getter for entry
-    pub fn entry_hash(&self) -> &str {
+    pub fn entry_hash(&self) -> &HashString {
         &self.entry_hash
     }
 
@@ -95,8 +95,8 @@ impl EntryMeta {
 }
 impl Key for EntryMeta {
     /// the key for HashTable lookups, e.g. table.meta()
-    fn key(&self) -> String {
-        EntryMeta::make_hash(&self.entry_hash, &self.attribute)
+    fn key(&self) -> HashString {
+        HashString::encode_from_serializable(&self.entry_hash, Hash::SHA2256)
     }
 }
 

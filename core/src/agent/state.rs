@@ -17,8 +17,9 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
+/// The state-slice for the Agent.
+/// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
-/// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
     /// every action and the result of that action
@@ -94,7 +95,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
         }
-    }
+        }
 }
 
 /// Do the AddLink Action against an agent state:
@@ -499,7 +500,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_response_to_json() {
+    fn test_commit_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::Commit(Ok(test_pair().entry().clone()))
@@ -512,7 +513,10 @@ pub mod tests {
                 .to_json()
                 .unwrap(),
         );
+    }
 
+    #[test]
+    fn test_get_response_to_json() {
         assert_eq!(
             "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}",
             ActionResponse::GetEntry(Some(test_pair().entry().clone()))
@@ -520,5 +524,37 @@ pub mod tests {
                 .unwrap(),
         );
         assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
+    }
+
+    #[test]
+    fn test_get_links_response_to_json() {
+        assert_eq!(
+            "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
+            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+                .to_json()
+                .unwrap(),
+        );
+        assert_eq!(
+            "{\"error\":\"some error\"}",
+            ActionResponse::GetLinks(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_link_entries_response_to_json() {
+        assert_eq!(
+            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            ActionResponse::LinkEntries(Ok(test_entry()))
+                .to_json()
+                .unwrap(),
+        );
+        assert_eq!(
+            "{\"error\":\"some error\"}",
+            ActionResponse::LinkEntries(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
+        );
     }
 }

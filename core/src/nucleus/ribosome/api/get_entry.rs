@@ -23,14 +23,15 @@ pub fn invoke_get_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ArgumentDeserializationFailed as i32,
+        )));
     }
-
     let input = res_entry.unwrap();
 
     let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
@@ -68,12 +69,12 @@ pub fn invoke_get_entry(
             // serialize, allocate and encode result
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
-                Ok(json) => runtime_allocate_encode_str(runtime, &json),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+                Ok(json) => runtime.store_utf8(&json),
+                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }
@@ -95,7 +96,7 @@ mod tests {
             commit::tests::test_commit_args_bytes,
             tests::{test_capability, test_parameters, test_zome_name},
         },
-        FunctionCall,
+        ZomeFnCall,
     };
     use serde_json;
     use std::sync::Arc;
@@ -180,7 +181,7 @@ mod tests {
             instance.state().agent().chain().top_pair().unwrap().key()
         );
 
-        let commit_call = FunctionCall::new(
+        let commit_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "commit_dispatch",
@@ -201,7 +202,7 @@ mod tests {
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
 
-        let get_call = FunctionCall::new(
+        let get_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",

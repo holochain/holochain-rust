@@ -3,7 +3,7 @@ use agent::state::ActionResponse;
 use hash_table::{entry::Entry, HashString};
 use json::ToJson;
 use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    api::{HcApiReturnCode, Runtime},
     callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
 };
 use serde_json;
@@ -32,7 +32,9 @@ pub fn invoke_commit_app_entry(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 
@@ -44,11 +46,11 @@ pub fn invoke_commit_app_entry(
     if let CallbackResult::Fail(_) = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
-        &runtime.function_call.zome,
+        &runtime.zome_call.zome_name,
         &CallbackParams::ValidateCommit(entry.clone()),
     ) {
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorCallbackResult as i32,
+            HcApiReturnCode::CallbackFailed as i32,
         )));
     }
     // anything other than a fail means we should commit the entry
@@ -87,14 +89,16 @@ pub fn invoke_commit_app_entry(
     match action_result {
         ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
-            let json = action_result.to_json();
-            match json {
-                Ok(j) => runtime_allocate_encode_str(runtime, &j),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            let maybe_json = action_result.to_json();
+            match maybe_json {
+                Ok(json_str) => runtime.store_utf8(&json_str),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }

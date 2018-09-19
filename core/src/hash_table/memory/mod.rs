@@ -3,6 +3,7 @@ use error::HolochainError;
 use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
 use key::Key;
 use std::collections::HashMap;
+use hash::HashString;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -26,7 +27,7 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
         Ok(self.entries.get(key).cloned())
     }
 
@@ -35,7 +36,7 @@ impl HashTable for MemTable {
         Ok(())
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError> {
+    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
         Ok(self.metas.get(key).cloned())
     }
 

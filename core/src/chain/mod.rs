@@ -10,6 +10,7 @@ use chain::{
 };
 use error::HolochainError;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
+use hash::HashString;
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
@@ -26,10 +27,10 @@ pub struct ChainIterator {
 impl ChainIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table_actor: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
-            table_actor: table.clone(),
+            table_actor: table_actor.clone(),
         }
     }
 }
@@ -287,7 +288,7 @@ impl SourceChain for Chain {
     }
 
     /// Browse Chain until Pair with entry_hash is found
-    fn entry(&self, entry_hash: &str) -> Option<Entry> {
+    fn entry(&self, entry_hash: &HashString) -> Option<Entry> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self

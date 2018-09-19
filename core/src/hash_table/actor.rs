@@ -8,6 +8,7 @@ use hash_table::{
     HashString, HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
+use hash::HashString;
 use riker::actors::*;
 use snowflake;
 
@@ -33,7 +34,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PutEntryResult).clone()
     }
 
-    fn entry(&self, key: &str) -> Result<Option<Entry>, HolochainError> {
+    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
         let response = self.block_on_ask(Protocol::GetEntry(key.to_string()));
         unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
@@ -83,7 +84,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn get_meta(&mut self, key: &str) -> Result<Option<EntryMeta>, HolochainError> {
+    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
         let response = self.block_on_ask(Protocol::GetMeta(key.to_string()));
         unwrap_to!(response => Protocol::GetMetaResult).clone()
     }

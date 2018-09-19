@@ -1,9 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash_table::HashString;
-use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
-};
+use hash::HashString;
+use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -13,6 +11,7 @@ pub struct GetLinksArgs {
     pub entry_hash: HashString,
     pub tag: String,
 }
+
 impl GetLinksArgs {
     pub fn to_attribute_name(&self) -> String {
         format!("link:{}:{}", &self.entry_hash, &self.tag)
@@ -28,12 +27,14 @@ pub fn invoke_get_links(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let res_entry: Result<GetLinksArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ArgumentDeserializationFailed as i32,
+        )));
     }
     let input = res_entry.unwrap();
 
@@ -41,11 +42,13 @@ pub fn invoke_get_links(
     let action_wrapper = ActionWrapper::new(Action::GetLinks(input));
     // Send Action and block for result
     let (sender, receiver) = channel();
+    // TODO #338 - lookup in DHT instead when it will be available (for caching). Will also be redesigned with Futures.
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
+            // TODO #338 - lookup in DHT instead when it will be available. Will also be redesigned with Futures.
             let mut actions_copy = state.agent().actions();
             match actions_copy.remove(&action_wrapper) {
                 Some(v) => {
@@ -70,15 +73,12 @@ pub fn invoke_get_links(
 
     if let ActionResponse::GetLinks(maybe_links) = action_result {
         if let Ok(link_list) = maybe_links {
-            return runtime_allocate_encode_str(
-                runtime,
-                json!(link_list).as_str().expect("should jsonify"),
-            );
+            return runtime.store_utf8(&json!(link_list).as_str().expect("should jsonify"));
         }
     }
 
     // Fail
     Ok(Some(RuntimeValue::I32(
-        HcApiReturnCode::ErrorActionResult as i32,
+        HcApiReturnCode::ReceivedWrongActionResult as i32,
     )))
 }

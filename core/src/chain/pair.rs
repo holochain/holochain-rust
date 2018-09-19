@@ -55,14 +55,14 @@ impl Pair {
         // the header and entry must validate independently
         self.header.validate() && self.entry.validate()
         // the header entry hash must be the same as the entry hash
-        && self.header.entry_hash() == self.entry.hash()
+        && self.header.entry_hash() == &self.entry.hash()
         // the entry_type must line up across header and entry
         && self.header.entry_type() == self.entry.entry_type()
     }
 }
 
 impl Key for Pair {
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         //        self.header.hash()
         self.header.to_entry().key()
     }
@@ -133,7 +133,7 @@ pub mod tests {
         let e1 = Entry::new(t, "some content");
         let h1 = chain.create_next_header(&e1);
 
-        assert_eq!(h1.entry_hash(), e1.hash());
+        assert_eq!(h1.entry_hash(), &e1.hash());
         assert_eq!(h1.link(), None);
 
         let p1 = chain.create_next_pair(&e1.clone());

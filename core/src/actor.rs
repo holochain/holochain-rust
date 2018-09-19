@@ -2,11 +2,11 @@ use agent::keys::Keys;
 use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
+use hash::HashString;
 use hash_table::{
-    entry::Entry,
     links_entry::{Link, LinkListEntry},
-    meta::EntryMeta,
-    HashString,
+    pair::Pair,
+    pair_meta::PairMeta,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
@@ -61,6 +61,13 @@ pub enum Protocol {
     AddLink(Link),
     AddLinkResult(Result<(), HolochainError>),
 
+    /// HashTable::get_links()
+    GetLinks(GetLinksArgs),
+    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
+
+    /// HashTable::add_link()
+    AddLink(Link),
+    AddLinkResult(Result<(), HolochainError>),
     /// HashTable::get_links()
     GetLinks(GetLinksArgs),
     GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),

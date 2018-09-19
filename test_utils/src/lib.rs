@@ -162,3 +162,26 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     t.hash(&mut s);
     s.finish()
 }
+
+/// Creates a capability with a validate_commit() function that always passes
+pub fn validation_capability() -> Capability {
+    let validate_commit_wat = r#"
+            (module
+                (memory (;0;) 17)
+                (func (export "validate_commit") (param $p0 i32) (result i32)
+                    i32.const 0
+                )
+                (export "memory" (memory 0))
+            )
+        "#;
+
+    let validate_commit_wasm = Wat2Wasm::new()
+        .canonicalize_lebs(false)
+        .write_debug_names(true)
+        .convert(validate_commit_wat)
+        .unwrap();
+
+    let mut validation_capability = Capability::new();
+    validation_capability.code = DnaWasm { code: validate_commit_wasm.as_ref().to_vec() };
+    validation_capability
+}

@@ -66,8 +66,7 @@ impl Hash for ActionWrapper {
     }
 }
 
-/// All Actions for the Holochain Instance Store, according to Redux pattern.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Hash, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
@@ -93,13 +92,9 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// Execute a zome function call called by another zome function
-    Call(ZomeFnCall),
-
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(Entry),
-    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
+    ValidateEntry(EntrySubmission),
 }
 
 /// function signature for action handler functions

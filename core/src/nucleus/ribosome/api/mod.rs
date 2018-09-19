@@ -160,6 +160,9 @@ impl ZomeApiFunction {
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
+            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeApiFunction::GetAppEntry => invoke_get_entry,
+            ZomeApiFunction::InitGlobals => invoke_init_globals,
 ZomeApiFunction::Call => invoke_call,
         }
     }
@@ -280,7 +283,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let api_fn = match ZomeApiFunction::from_str(&field_name) {
+            let api_fn = match ZomeApiFunction::str_to_index(&field_name) {
                 Ok(api_fn) => api_fn,
                 Err(_) => {
                     return Err(InterpreterError::Function(format!(

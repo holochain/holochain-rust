@@ -41,11 +41,13 @@ pub fn invoke_get_links(
     let action_wrapper = ActionWrapper::new(Action::GetLinks(input));
     // Send Action and block for result
     let (sender, receiver) = channel();
+    // TODO #338 - lookup in DHT instead when it will be available (for caching). Will also be redesigned with Futures.
     ::instance::dispatch_action_with_observer(
         &runtime.action_channel,
         &runtime.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
+            // TODO #338 - lookup in DHT instead when it will be available. Will also be redesigned with Futures.
             let mut actions_copy = state.agent().actions();
             match actions_copy.remove(&action_wrapper) {
                 Some(v) => {

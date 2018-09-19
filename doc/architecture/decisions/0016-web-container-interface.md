@@ -22,7 +22,7 @@ It seems we need the advantages of both worlds:
 * we need clients that are running any kind of UI (or connecting with IoT devices)
   to be able to connect with Holochain apps easily
 ### Mandatory
-- Any full-node Holochain instance must be running *persistenly* (i.e. not tied to the browser process)
+- Any full-node Holochain instance should be online most of the time (i.e. not tied to the browser process)
   to be available to the DHT, which makes it unattractive to run the whole instance in a web browser.
 
 

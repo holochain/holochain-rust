@@ -73,7 +73,7 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetPairMeta(key.to_string()))?;
+        let response = self.block_on_ask(Protocol::GetPairMeta(key.clone()))?;
         unwrap_to!(response => Protocol::GetPairMetaResult).clone()
     }
 

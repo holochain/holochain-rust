@@ -41,7 +41,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            self.table_actor.pair(&h.to_string()).expect("getting from a table shouldn't fail")
+                            self.table_actor.pair(&h).expect("getting from a table shouldn't fail")
                         });
         previous
     }
@@ -192,7 +192,7 @@ impl SourceChain for Chain {
     }
 
     fn pair(&self, k: &HashString) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.to_string()))?;
+        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.clone()))?;
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 

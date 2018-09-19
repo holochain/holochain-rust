@@ -6,7 +6,7 @@ use hash::HashString;
 use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
-    meta::EntryMeta,
+    entry_meta::EntryMeta,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;

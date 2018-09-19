@@ -57,7 +57,7 @@ impl AgentState {
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
 // @TODO abstract this to a standard trait
-// @see https://github.com/holochain/holochain-rust/issues/196///
+// @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Entry, HolochainError>),
     GetEntry(Option<Entry>),
@@ -124,7 +124,7 @@ fn reduce_commit_entry(
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn reduce_get_entry(
+fn reduce_get(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -149,7 +149,7 @@ fn reduce_get_entry(
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::GetEntry(_) => Some(reduce_get),
         _ => None,
     }
 }
@@ -252,7 +252,7 @@ pub mod tests {
         let instance = test_instance_blank();
 
         let aw1 = test_action_wrapper_get();
-        reduce_get_entry(
+        reduce_get(
             Arc::clone(&context),
             &mut state,
             &aw1,
@@ -276,7 +276,7 @@ pub mod tests {
         );
 
         let aw2 = test_action_wrapper_get();
-        reduce_get_entry(
+        reduce_get(
             Arc::clone(&context),
             &mut state,
             &aw2,

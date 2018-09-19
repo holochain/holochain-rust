@@ -4,7 +4,7 @@ Date: 2018-09-17
 
 ## Status
 
-Proposed
+Accepted
 
 ## Glossary
 * **Container**: *We have been struggling to find a term for this concept that feels fitting.

@@ -14,24 +14,18 @@ impl AskHashTable for ActorRef<Protocol> {}
 
 impl HashTable for ActorRef<Protocol> {
     fn setup(&mut self) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::Setup) {
-            Ok(response) => unwrap_to!(response => Protocol::SetupResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::Setup)?;
+        unwrap_to!(response => Protocol::SetupResult).clone()
     }
 
     fn teardown(&mut self) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::Teardown) {
-            Ok(response) => unwrap_to!(response => Protocol::TeardownResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::Teardown)?;
+        unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
     fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::PutPair(pair.clone())) {
-            Ok(response) => unwrap_to!(response => Protocol::PutPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::PutPair(pair.clone()))?;
+        unwrap_to!(response => Protocol::PutPairResult).clone()
     }
 
     fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {

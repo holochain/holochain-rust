@@ -101,7 +101,7 @@ impl From<SerdeError> for HolochainError {
 }
 
 impl From<FutureCanceled> for HolochainError {
-    fn from(error: FutureCanceled) -> Self {
+    fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
     }
 }

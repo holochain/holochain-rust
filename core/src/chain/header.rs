@@ -1,9 +1,9 @@
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
 };
-use hash::HashString;
 use json::ToJson;
 use key::Key;
 use multihash::Hash;
@@ -57,7 +57,7 @@ impl Header {
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }
-        }
+    }
 
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
@@ -144,8 +144,8 @@ impl ToEntry for Header {
 #[cfg(test)]
 mod tests {
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
+    use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::ToEntry};
-use hash::HashString;
     use key::Key;
 
     /// returns a dummy header for use in tests

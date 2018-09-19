@@ -1,12 +1,12 @@
 use actor::Protocol;
 use chain::header::Header;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use riker::actors::*;
 use serde_json;
-use hash::HashString;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately

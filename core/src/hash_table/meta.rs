@@ -119,6 +119,7 @@ impl RoundTripJson for EntryMeta {}
 pub mod tests {
 
     use agent::keys::tests::test_keys;
+    use hash::HashString;
     use hash_table::{
         entry::{tests::test_entry, Entry},
         meta::EntryMeta,
@@ -126,7 +127,6 @@ pub mod tests {
     use json::{FromJson, ToJson};
     use key::Key;
     use std::cmp::Ordering;
-    use hash::HashString;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {
@@ -221,10 +221,30 @@ pub mod tests {
     /// test that we can sort metas with cmp
     fn cmp() {
         // basic ordering
-        let m_1ax = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "a", "x");
-        let m_1ay = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "a", "y");
-        let m_1bx = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "b", "x");
-        let m_2ax = EntryMeta::new(&test_keys().node_id(), &HashString::from("2".to_string()), "a", "x");
+        let m_1ax = EntryMeta::new(
+            &test_keys().node_id(),
+            &HashString::from("1".to_string()),
+            "a",
+            "x",
+        );
+        let m_1ay = EntryMeta::new(
+            &test_keys().node_id(),
+            &HashString::from("1".to_string()),
+            "a",
+            "y",
+        );
+        let m_1bx = EntryMeta::new(
+            &test_keys().node_id(),
+            &HashString::from("1".to_string()),
+            "b",
+            "x",
+        );
+        let m_2ax = EntryMeta::new(
+            &test_keys().node_id(),
+            &HashString::from("2".to_string()),
+            "a",
+            "x",
+        );
 
         // sort by entry key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));

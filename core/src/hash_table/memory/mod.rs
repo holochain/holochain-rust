@@ -1,9 +1,9 @@
 use error::HolochainError;
 
+use hash::HashString;
 use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
 use key::Key;
 use std::collections::HashMap;
-use hash::HashString;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -59,6 +59,7 @@ impl HashTable for MemTable {
 pub mod tests {
 
     use agent::keys::tests::test_keys;
+    use hash::HashString;
     use hash_table::{
         entry::{tests::test_entry, Entry},
         links_entry::{Link, LinkListEntry},
@@ -73,7 +74,6 @@ pub mod tests {
     };
     use key::Key;
     use nucleus::ribosome::api::get_links::GetLinksArgs;
-    use hash::HashString;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -110,7 +110,12 @@ pub mod tests {
 
         assert_eq!(
             vec![
-                EntryMeta::new(&test_keys().node_id(), &e1.key(), LINK_NAME, &e2.key().to_str()),
+                EntryMeta::new(
+                    &test_keys().node_id(),
+                    &e1.key(),
+                    LINK_NAME,
+                    &e2.key().to_str(),
+                ),
                 EntryMeta::new(
                     &test_keys().node_id(),
                     &e1.key(),

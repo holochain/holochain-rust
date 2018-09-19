@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash_table::{entry::Entry};
+use hash_table::entry::Entry;
 use json::ToJson;
 use nucleus::ribosome::{
     api::{HcApiReturnCode, Runtime},

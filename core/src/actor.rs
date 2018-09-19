@@ -4,8 +4,8 @@ use error::HolochainError;
 use futures::executor::block_on;
 use hash::HashString;
 use hash_table::{
-    links_entry::{Link, LinkListEntry},
     entry::Entry,
+    links_entry::{Link, LinkListEntry},
     meta::EntryMeta,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;

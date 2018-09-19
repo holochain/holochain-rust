@@ -11,11 +11,13 @@ use hash_table::sys_entry::ToEntry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::callback::{
-        genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+    ribosome::{
+        api::call::reduce_call,
+        callback::{
+            genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+        },
     },
     state::{NucleusState, NucleusStatus},
-    ribosome::api::call::reduce_call,
 };
 use snowflake;
 use std::{
@@ -25,7 +27,6 @@ use std::{
     },
     thread,
 };
-
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -284,36 +285,36 @@ pub(crate) fn launch_zome_fn_call(
     wasm: &DnaWasm,
     app_name: String,
 ) {
-                let action_channel = action_channel.clone();
-                let tx_observer = observer_channel.clone();
-                let code = wasm.code.clone();
-                thread::spawn(move || {
+    let action_channel = action_channel.clone();
+    let tx_observer = observer_channel.clone();
+    let code = wasm.code.clone();
+    thread::spawn(move || {
         let result: ZomeFnResult;
-                    match ribosome::api::call(
-                        &app_name,
-                        context,
-                        &action_channel,
-                        &tx_observer,
-                        code,
+        match ribosome::api::call(
+            &app_name,
+            context,
+            &action_channel,
+            &tx_observer,
+            code,
             &fc,
             Some(fc.clone().parameters.into_bytes()),
-                    ) {
-                        Ok(runtime) => {
+        ) {
+            Ok(runtime) => {
                 result = ZomeFnResult::new(fc.clone(), Ok(runtime.result.to_string()));
-                        }
+            }
 
-                        Err(ref error) => {
+            Err(ref error) => {
                 result = ZomeFnResult::new(
                     fc.clone(),
-                                Err(HolochainError::ErrorGeneric(format!("{}", error))),
-                            );
-                        }
-                    }
-                    // Send ReturnResult Action
-                    action_channel
-                        .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
-                        .expect("action channel to be open in reducer");
-                });
+                    Err(HolochainError::ErrorGeneric(format!("{}", error))),
+                );
+            }
+        }
+        // Send ReturnResult Action
+        action_channel
+            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
+            .expect("action channel to be open in reducer");
+    });
 }
 
 /// Reduce ExecuteZomeFunction Action
@@ -340,7 +341,7 @@ fn reduce_execute_zome_function(
             action_channel
                 .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(fn_res)))
                 .expect("action channel to be open in reducer");
-            }
+        }
         Ok(wasm) => {
             // Prepare call - FIXME is this really useful?
             state.zome_calls.insert(fn_call.clone(), None);
@@ -368,13 +369,13 @@ fn reduce_validate_entry(
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
 ) {
-        let action = action_wrapper.action();
+    let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::ValidateEntry);
     match state
         .dna()
         .unwrap()
         .get_zome_name_for_entry_type(entry.entry_type())
-        {
+    {
         None => {
             let error = format!("Unknown entry type: '{}'", entry.entry_type());
             state
@@ -409,7 +410,7 @@ fn reduce_validate_entry(
                     ))))
                     .expect("action channel to be open in reducer");
             });
-    }
+        }
     };
 }
 fn reduce_return_validation_result(

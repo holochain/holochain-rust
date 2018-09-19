@@ -9,8 +9,8 @@ use chain::{
     pair::Pair,
 };
 use error::HolochainError;
-use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use hash::HashString;
+use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
@@ -323,6 +323,7 @@ pub mod tests {
         pair::{tests::test_pair, Pair},
         SourceChain,
     };
+    use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
@@ -331,7 +332,6 @@ pub mod tests {
     use json::ToJson;
     use key::Key;
     use std::thread;
-    use hash::HashString;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {

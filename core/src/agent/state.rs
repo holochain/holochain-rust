@@ -3,13 +3,13 @@ use agent::keys::Keys;
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{
     entry::Entry,
     links_entry::{LinkActionKind, LinkEntry},
     sys_entry::ToEntry,
     HashTable,
 };
-use hash::HashString;
 use instance::Observer;
 use json::ToJson;
 use key::Key;
@@ -96,7 +96,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
         }
-        }
+    }
 }
 
 /// Do the AddLink Action against an agent state:
@@ -280,11 +280,13 @@ pub mod tests {
     };
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
-    use hash_table::{entry::Entry, links_entry::Link, links_entry::tests::create_test_link};
+    use hash_table::{
+        entry::Entry,
+        links_entry::{tests::create_test_link, Link},
+    };
     use instance::tests::{test_context, test_instance_blank};
     use nucleus::ribosome::api::get_links::GetLinksArgs;
     use std::{collections::HashMap, sync::Arc};
-
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {

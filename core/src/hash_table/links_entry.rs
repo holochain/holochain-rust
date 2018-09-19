@@ -1,8 +1,8 @@
+use hash::HashString;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
 };
-use hash::HashString;
 use serde_json;
 use std::str::FromStr;
 
@@ -62,7 +62,12 @@ pub struct LinkEntry {
 }
 
 impl LinkEntry {
-    pub fn new(action_kind: LinkActionKind, base: &HashString, target: &HashString, tag: &str) -> Self {
+    pub fn new(
+        action_kind: LinkActionKind,
+        base: &HashString,
+        target: &HashString,
+        tag: &str,
+    ) -> Self {
         LinkEntry {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
@@ -130,7 +135,11 @@ pub mod tests {
     use std::{str::FromStr, sync::mpsc::channel};
 
     pub fn create_test_link() -> Link {
-        Link::new(&HashString::from("12".to_string()), &HashString::from("34".to_string()), "fake")
+        Link::new(
+            &HashString::from("12".to_string()),
+            &HashString::from("34".to_string()),
+            "fake",
+        )
     }
 
     /// Committing a LinkEntry to source chain should work
@@ -170,8 +179,16 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let link1 = create_test_link();
-        let link2 = Link::new(&HashString::from("56".to_string()), &HashString::from("78".to_string()), "faux");
-        let link3 = Link::new(&HashString::from("90".to_string()), &HashString::from("ab".to_string()), "fake");
+        let link2 = Link::new(
+            &HashString::from("56".to_string()),
+            &HashString::from("78".to_string()),
+            "faux",
+        );
+        let link3 = Link::new(
+            &HashString::from("90".to_string()),
+            &HashString::from("ab".to_string()),
+            "fake",
+        );
         let link_entry = LinkListEntry::new(&[link1, link2, link3]);
         let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
         println!("commit_multilink: {:?}", commit_action);

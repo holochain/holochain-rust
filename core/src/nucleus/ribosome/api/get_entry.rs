@@ -2,9 +2,7 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash::HashString;
 use json::ToJson;
-use nucleus::ribosome::api::{
-    HcApiReturnCode, Runtime,
-};
+use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -70,7 +68,9 @@ pub fn invoke_get_entry(
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(

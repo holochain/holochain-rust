@@ -1,6 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
@@ -8,7 +9,6 @@ use hash_table::{
     HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
-use hash::HashString;
 use riker::actors::*;
 use snowflake;
 

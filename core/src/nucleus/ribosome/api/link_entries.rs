@@ -3,7 +3,7 @@ use agent::state::ActionResponse;
 use hash_table::links_entry::*;
 use json::ToJson;
 use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+    HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;
@@ -18,7 +18,7 @@ pub fn invoke_link_entries(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let input: Link = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
@@ -64,7 +64,7 @@ pub fn invoke_link_entries(
             // serialize, allocate and encode result
             let json = action_result.to_json();
             match json {
-                Ok(j) => runtime_allocate_encode_str(runtime, &j),
+                Ok(j) => runtime.store_utf8(&j),
                 Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
             }
         }

@@ -1,6 +1,6 @@
 use error::HolochainError;
 use std::{
-    fs,
+    fs::{self, create_dir_all},
     path::{Path, MAIN_SEPARATOR},
 };
 
@@ -8,10 +8,7 @@ use hash::HashString;
 use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
-use std::{
-    fs::{self, create_dir_all},
-    path::Path,
-};
+
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
@@ -130,7 +127,7 @@ impl HashTable for FileTable {
             if let Some(stem) = path.file_stem() {
                 if let Some(key) = stem.to_str() {
                     if let Some(meta) = self.get_meta(&HashString::from(key.to_string()))? {
-                        if meta.entry_hash() == entry.key() {
+                        if meta.entry_hash() == &entry.key() {
                             metas.push(meta);
                         }
                     }

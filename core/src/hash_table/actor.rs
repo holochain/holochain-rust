@@ -5,7 +5,7 @@ use hash_table::{
     entry::Entry,
     links_entry::{Link, LinkListEntry},
     meta::EntryMeta,
-    HashString, HashTable,
+    HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use hash::HashString;
@@ -35,7 +35,7 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetEntry(key.to_string()));
+        let response = self.block_on_ask(Protocol::GetEntry(key.clone()));
         unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
 
@@ -85,7 +85,7 @@ impl HashTable for ActorRef<Protocol> {
     }
 
     fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetMeta(key.to_string()));
+        let response = self.block_on_ask(Protocol::GetMeta(key.clone()));
         unwrap_to!(response => Protocol::GetMetaResult).clone()
     }
 

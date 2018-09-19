@@ -5,8 +5,8 @@ use futures::executor::block_on;
 use hash::HashString;
 use hash_table::{
     links_entry::{Link, LinkListEntry},
-    pair::Pair,
-    pair_meta::PairMeta,
+    entry::Entry,
+    meta::EntryMeta,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
@@ -56,14 +56,6 @@ pub enum Protocol {
         entry: Entry,
     },
     RetractEntryResult(Result<(), HolochainError>),
-
-    /// HashTable::add_link()
-    AddLink(Link),
-    AddLinkResult(Result<(), HolochainError>),
-
-    /// HashTable::get_links()
-    GetLinks(GetLinksArgs),
-    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
 
     /// HashTable::add_link()
     AddLink(Link),

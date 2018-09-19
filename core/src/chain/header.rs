@@ -1,10 +1,9 @@
 use error::HolochainError;
-use hash;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
-    HashString,
 };
+use hash::HashString;
 use json::ToJson;
 use key::Key;
 use multihash::Hash;
@@ -46,7 +45,7 @@ impl Header {
         entry_type: &str,
         timestamp: &str,
         link: Option<HashString>,
-        entry_hash: &str,
+        entry_hash: &HashString,
         entry_signature: &str,
         link_same_type: Option<HashString>,
     ) -> Self {
@@ -54,7 +53,7 @@ impl Header {
             entry_type: entry_type.to_string(),
             timestamp: timestamp.to_string(),
             link: link,
-            entry_hash: entry_hash.to_string(),
+            entry_hash: entry_hash.clone(),
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }

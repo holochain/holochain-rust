@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash_table::{entry::Entry, HashString};
+use hash_table::{entry::Entry};
 use json::ToJson;
 use nucleus::ribosome::{
     api::{HcApiReturnCode, Runtime},
@@ -13,8 +13,8 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
-    entry_type_name: HashString,
-    entry_content: HashString,
+    entry_type_name: String,
+    entry_content: String,
 }
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -26,7 +26,7 @@ pub fn invoke_commit_app_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error

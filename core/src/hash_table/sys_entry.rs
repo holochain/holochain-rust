@@ -27,12 +27,10 @@ pub enum EntryType {
     App,
     AgentId,
     Deletion,
-    App,
     Dna,
     Header,
     Key,
     Link,
-    LinkList,
     Migration,
     /// TODO #339 - This is different kind of SystemEntry for the DHT only.
     /// Should be moved into a different enum for DHT entry types.

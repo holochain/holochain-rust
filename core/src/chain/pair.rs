@@ -6,6 +6,7 @@ use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use riker::actors::*;
 use serde_json;
+use hash::HashString;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately

@@ -7,8 +7,9 @@ use hash_table::{
     entry::Entry,
     links_entry::{LinkActionKind, LinkEntry},
     sys_entry::ToEntry,
-    HashString, HashTable,
+    HashTable,
 };
+use hash::HashString;
 use instance::Observer;
 use json::ToJson;
 use key::Key;
@@ -170,7 +171,7 @@ fn reduce_get_links(
     // Extract list of target hashes
     let mut link_hashes = Vec::new();
     for link in lle.links {
-        link_hashes.push(link.target().to_string());
+        link_hashes.push(link.target().clone());
     }
 
     // Insert reponse in state
@@ -279,10 +280,11 @@ pub mod tests {
     };
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
-    use hash_table::{entry::Entry, links_entry::Link};
+    use hash_table::{entry::Entry, links_entry::Link, links_entry::tests::create_test_link};
     use instance::tests::{test_context, test_instance_blank};
     use nucleus::ribosome::api::get_links::GetLinksArgs;
     use std::{collections::HashMap, sync::Arc};
+
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -323,7 +325,7 @@ pub mod tests {
         let mut state = test_agent_state();
 
         let req1 = GetLinksArgs {
-            entry_hash: "0x42".to_string(),
+            entry_hash: HashString::from("0x42".to_string()),
             tag: "child".to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(req1));
@@ -349,7 +351,7 @@ pub mod tests {
     fn test_reduce_add_link_empty() {
         let mut state = test_agent_state();
 
-        let link = Link::new("0x12", "0x34", "child");
+        let link = create_test_link();
         let action_wrapper = ActionWrapper::new(Action::AddLink(link));
 
         let instance = test_instance_blank();

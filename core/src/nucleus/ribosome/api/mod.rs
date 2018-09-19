@@ -20,7 +20,7 @@ use nucleus::{
         api::{
             commit::invoke_commit_app_entry, debug::invoke_debug, get_entry::invoke_get_entry,
             get_links::invoke_get_links, init_globals::invoke_init_globals,
-            link_entries::invoke_link_entries,
+            link_entries::invoke_link_entries, call::invoke_call,
         },
         Defn,
     },
@@ -117,7 +117,8 @@ impl Defn for ZomeApiFunction {
         }
     }
 
-    // Zome API Functions are not part of any zome and capability
+    fn capability(&self) -> ReservedCapabilityNames {
+        // Zome API Functions are not part of any zome and capability
         // @TODO architecture issue?
         // @see https://github.com/holochain/holochain-rust/issues/299
         unreachable!();
@@ -155,15 +156,12 @@ impl ZomeApiFunction {
             ZomeApiFunction::MissingNo => noop,
             ZomeApiFunction::Abort => noop,
             ZomeApiFunction::Debug => invoke_debug,
-            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeApiFunction::CommitAppEntry => invoke_commit_app_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
-            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
-            ZomeApiFunction::GetAppEntry => invoke_get_entry,
-            ZomeApiFunction::InitGlobals => invoke_init_globals,
-ZomeApiFunction::Call => invoke_call,
+            ZomeApiFunction::Call => invoke_call,
         }
     }
 }

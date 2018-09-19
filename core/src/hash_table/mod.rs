@@ -123,14 +123,14 @@ pub trait HashTable: Send + Sync + Clone + 'static {
                     &keys_fixme.node_id(),
                     &base_entry.key(),
                     &link.to_attribute_name(),
-                    &new_entry.key(),
+                    &new_entry.key().to_str(),
                 );
             }
             // Update existing LinkListEntry and Meta
             Some(meta) => {
                 // Get LinkListEntry in HashTable
                 let entry = self
-                    .entry(&meta.value())?
+                    .entry(&HashString::from(meta.value()))?
                     .expect("should have entry if meta points to it");
                 let mut lle: LinkListEntry = serde_json::from_str(&entry.content())
                     .expect("entry is not a valid LinkListEntry");
@@ -147,7 +147,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
                     &meta.source(),
                     &base_entry.key(),
                     &meta.attribute(),
-                    &entry.key(),
+                    &entry.key().to_str(),
                 );
             }
         }
@@ -180,7 +180,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
         // Get LinkListEntry in HashTable
         let entry = self
-            .entry(&meta.value())?
+            .entry(&HashString::from(meta.value()))?
             .expect("should have entry listed in meta");
         Ok(Some(LinkListEntry::from_entry(&entry)))
     }

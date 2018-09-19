@@ -8,8 +8,8 @@ use hash::HashString;
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    entries: HashMap<String, Entry>,
-    metas: HashMap<String, EntryMeta>,
+    entries: HashMap<HashString, Entry>,
+    metas: HashMap<HashString, EntryMeta>,
 }
 
 impl MemTable {
@@ -45,7 +45,7 @@ impl HashTable for MemTable {
         let mut vec_meta = self
             .metas
             .values()
-            .filter(|&m| m.entry_hash() == entry.key())
+            .filter(|&m| m.entry_hash() == &entry.key())
             .cloned()
             .collect::<Vec<EntryMeta>>();
         // @TODO should this be sorted at all at this point?
@@ -73,6 +73,7 @@ pub mod tests {
     };
     use key::Key;
     use nucleus::ribosome::api::get_links::GetLinksArgs;
+    use hash::HashString;
 
     pub fn test_table() -> MemTable {
         MemTable::new()
@@ -109,7 +110,7 @@ pub mod tests {
 
         assert_eq!(
             vec![
-                EntryMeta::new(&test_keys().node_id(), &e1.key(), LINK_NAME, &e2.key()),
+                EntryMeta::new(&test_keys().node_id(), &e1.key(), LINK_NAME, &e2.key().to_str()),
                 EntryMeta::new(
                     &test_keys().node_id(),
                     &e1.key(),
@@ -162,7 +163,7 @@ pub mod tests {
     /// Meta can round trip through table.assert_meta() and table.meta()
     fn meta_round_trip() {
         let mut table = test_table();
-        let meta = EntryMeta::new("42", &"0x42".to_string(), "name", "toto");
+        let meta = EntryMeta::new("42", &HashString::from("0x42".to_string()), "name", "toto");
 
         assert_eq!(
             None,

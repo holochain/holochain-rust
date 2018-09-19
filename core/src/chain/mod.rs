@@ -47,7 +47,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                let header_entry = &self.table_actor.entry(&h.to_string())
+                let header_entry = &self.table_actor.entry(&h)
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
@@ -116,7 +116,7 @@ impl Chain {
             self.top_pair()
                 .as_ref()
                 .map(|p| p.header().to_entry().key()),
-            &entry.hash().to_string(),
+            &entry.hash(),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
@@ -207,12 +207,12 @@ pub trait SourceChain {
     /// the newly created and pushed Pair is returned.
     fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &str) -> Option<Entry>;
+    fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
 
     /// pair-oriented version of push_entry()
     fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, pair_hash: &str) -> Option<Pair>;
+    fn pair(&self, pair_hash: &HashString) -> Option<Pair>;
 }
 
 impl SourceChain for Chain {
@@ -275,7 +275,7 @@ impl SourceChain for Chain {
     }
 
     /// Browse Chain until Pair is found
-    fn pair(&self, pair_hash: &str) -> Option<Pair> {
+    fn pair(&self, pair_hash: &HashString) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self
@@ -283,7 +283,7 @@ impl SourceChain for Chain {
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-                p.key() == pair_hash
+                &p.key() == pair_hash
             })
     }
 
@@ -296,7 +296,7 @@ impl SourceChain for Chain {
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-                p.entry().hash() == entry_hash
+                &p.entry().hash() == entry_hash
             });
         if pair.is_none() {
             return None;
@@ -331,6 +331,7 @@ pub mod tests {
     use json::ToJson;
     use key::Key;
     use std::thread;
+    use hash::HashString;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -583,7 +584,7 @@ pub mod tests {
             .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(""));
+        assert_eq!(None, chain.entry(&HashString::new()));
         assert_eq!(
             p3.entry().clone(),
             chain
@@ -640,7 +641,7 @@ pub mod tests {
             .commit_entry(&e1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(""));
+        assert_eq!(None, chain.entry(&HashString::new()));
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
             p3.entry().clone(),

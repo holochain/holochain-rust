@@ -6,8 +6,9 @@ use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
-    state::{NucleusState, ValidationResult},
+    state::{NucleusState},
     ZomeFnCall, ZomeFnResult,
+    EntrySubmission,
 };
 use snowflake;
 use std::{
@@ -94,7 +95,7 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateEntry(Entry),
 }
 
 /// function signature for action handler functions

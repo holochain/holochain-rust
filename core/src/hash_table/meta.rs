@@ -1,6 +1,5 @@
 use error::HolochainError;
-use hash;
-use hash_table::HashString;
+use hash::HashString;
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use multihash::Hash;
@@ -57,7 +56,7 @@ impl EntryMeta {
     /// @see https://github.com/holochain/holochain-rust/issues/140
     pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> EntryMeta {
         EntryMeta {
-            entry_hash: hash.to_string(),
+            entry_hash: hash.clone(),
             attribute: attribute.into(),
             value: value.into(),
             source: node_id.to_string(),
@@ -84,13 +83,13 @@ impl EntryMeta {
         self.source.clone()
     }
 
-    pub fn make_hash(entry_hash: &str, attribute_name: &str) -> String {
-        let pieces: [&str; 2] = [entry_hash, attribute_name];
+    pub fn make_hash(entry_hash: &HashString, attribute_name: &str) -> HashString {
+        let pieces: [String; 2] = [entry_hash.to_str(), attribute_name.to_string()];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
     }
 }
 impl Key for EntryMeta {
@@ -127,6 +126,7 @@ pub mod tests {
     use json::{FromJson, ToJson};
     use key::Key;
     use std::cmp::Ordering;
+    use hash::HashString;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {
@@ -221,10 +221,10 @@ pub mod tests {
     /// test that we can sort metas with cmp
     fn cmp() {
         // basic ordering
-        let m_1ax = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "a", "x");
-        let m_1ay = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "a", "y");
-        let m_1bx = EntryMeta::new(&test_keys().node_id(), &"1".to_string(), "b", "x");
-        let m_2ax = EntryMeta::new(&test_keys().node_id(), &"2".to_string(), "a", "x");
+        let m_1ax = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "a", "x");
+        let m_1ay = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "a", "y");
+        let m_1bx = EntryMeta::new(&test_keys().node_id(), &HashString::from("1".to_string()), "b", "x");
+        let m_2ax = EntryMeta::new(&test_keys().node_id(), &HashString::from("2".to_string()), "a", "x");
 
         // sort by entry key
         assert_eq!(Ordering::Less, m_1ax.cmp(&m_2ax));

@@ -23,7 +23,6 @@ pub enum HolochainError {
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
-    InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
 }
 

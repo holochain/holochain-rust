@@ -1,9 +1,9 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash_table::HashString;
+use hash::HashString;
 use json::ToJson;
 use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
+    HcApiReturnCode, Runtime,
 };
 use serde_json;
 use std::sync::mpsc::channel;

@@ -4,7 +4,7 @@ Date: 2018-09-14
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 * We have an implementation of a Holochain container that can load QML based UIs: https://github.com/holochain/holosqape

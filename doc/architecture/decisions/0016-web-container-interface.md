@@ -93,6 +93,4 @@ functionality such as:
 * Web based UIs can just be a browser tab since Holochain app keeps running in HoloSqape without it
 * UI and Holochain node are connected through permanent bi-directional connection
 * Push notifications can be send from the node to the external UI 
-* Connection between Holo light-client and HoloPort could be implemented on top of this
-
 

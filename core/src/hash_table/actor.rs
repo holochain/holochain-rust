@@ -2,13 +2,7 @@ use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
 use hash::HashString;
-use hash_table::{
-    entry::Entry,
-    links_entry::{Link, LinkListEntry},
-    meta::EntryMeta,
-    HashTable,
-};
-use nucleus::ribosome::api::get_links::GetLinksArgs;
+use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
 
@@ -61,7 +55,7 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::RetractEntryResult).clone()
     }
 
-    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+    fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
@@ -150,10 +144,6 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     Protocol::RetractEntry { keys, entry } => {
                         Protocol::RetractEntryResult(self.table.retract_entry(&keys, &entry))
                     }
-
-                    Protocol::GetLinks(req) => Protocol::GetLinksResult(self.table.get_links(&req)),
-
-                    Protocol::AddLink(link) => Protocol::AddLinkResult(self.table.add_link(&link)),
 
                     Protocol::AssertMeta(meta) => {
                         Protocol::AssertMetaResult(self.table.assert_meta(&meta))

@@ -49,7 +49,11 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
-            link: chain.top_pair().expect("could not get top pair when building header").as_ref().map(|p| p.header().hash()),
+            link: chain
+                .top_pair()
+                .expect("could not get top pair when building header")
+                .as_ref()
+                .map(|p| p.header().hash()),
             entry_hash: entry.hash(),
             link_same_type: chain
                 .top_pair_type(&entry.entry_type())

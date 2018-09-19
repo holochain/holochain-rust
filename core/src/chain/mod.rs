@@ -98,7 +98,12 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top_pair().expect("could not get top pair when building iterator"))
+        ChainIterator::new(
+            self.table(),
+            &self
+                .top_pair()
+                .expect("could not get top pair when building iterator"),
+        )
     }
 
     /// restore canonical JSON chain
@@ -276,7 +281,12 @@ pub mod tests {
     fn top_pair() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair().expect("could not get top pair from test chain"));
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair from test chain")
+        );
 
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
@@ -284,12 +294,18 @@ pub mod tests {
         let pair_a = chain
             .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_a), chain.top_pair().expect("could not get top pair a"));
+        assert_eq!(
+            Some(pair_a),
+            chain.top_pair().expect("could not get top pair a")
+        );
 
         let pair_b = chain
             .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_b), chain.top_pair().expect("could not get top pair b"));
+        assert_eq!(
+            Some(pair_b),
+            chain.top_pair().expect("could not get top pair b")
+        );
     }
 
     #[test]
@@ -299,13 +315,35 @@ pub mod tests {
         let mut chain_2 = chain_1.clone();
         let e = test_entry();
 
-        assert_eq!(None, chain_1.top_pair().expect("could not get top pair for chain 1"));
-        assert_eq!(None, chain_2.top_pair().expect("could not get top pair for chain 2"));
+        assert_eq!(
+            None,
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for chain 1")
+        );
+        assert_eq!(
+            None,
+            chain_2
+                .top_pair()
+                .expect("could not get top pair for chain 2")
+        );
 
         let pair = chain_2.push_entry(&e).unwrap();
 
-        assert_eq!(Some(pair.clone()), chain_2.top_pair().expect("could not get top pair after pushing to chain 2"));
-        assert_eq!(chain_1.top_pair().expect("could not get top pair for comparing chain 1"), chain_2.top_pair().expect("could not get top pair when comparing chain 2"));
+        assert_eq!(
+            Some(pair.clone()),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair after pushing to chain 2")
+        );
+        assert_eq!(
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for comparing chain 1"),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair when comparing chain 2")
+        );
     }
 
     #[test]
@@ -336,7 +374,12 @@ pub mod tests {
     fn push() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair().expect("could not get top pair for test chain"));
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair for test chain")
+        );
 
         // chain top, pair entry and headers should all line up after a push
         let entry_1 = test_entry_a();
@@ -344,7 +387,13 @@ pub mod tests {
             .push_entry(&entry_1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&pair_1), chain.top_pair().expect("could not get top pair for pair 1").as_ref());
+        assert_eq!(
+            Some(&pair_1),
+            chain
+                .top_pair()
+                .expect("could not get top pair for pair 1")
+                .as_ref()
+        );
         assert_eq!(&entry_1, pair_1.entry());
         assert_eq!(&entry_1.hash(), pair_1.header().entry_hash());
 
@@ -354,7 +403,10 @@ pub mod tests {
             .push_entry(&entry_2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&pair_2), chain.top_pair().expect("could not get top pair 2").as_ref());
+        assert_eq!(
+            Some(&pair_2),
+            chain.top_pair().expect("could not get top pair 2").as_ref()
+        );
         assert_eq!(&entry_2, pair_2.entry());
         assert_eq!(&entry_2.hash(), pair_2.header().entry_hash());
     }

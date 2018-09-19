@@ -110,21 +110,36 @@ pub mod tests {
     fn test_round_trip() {
         let chain_actor = test_chain_actor();
 
-        assert_eq!(None, chain_actor.top_pair().expect("could not get top pair from chain actor"));
+        assert_eq!(
+            None,
+            chain_actor
+                .top_pair()
+                .expect("could not get top pair from chain actor")
+        );
 
         let pair_a = test_pair_a();
         chain_actor
             .set_top_pair(&Some(pair_a.clone()))
             .expect("could not set top pair a");
 
-        assert_eq!(Some(pair_a.clone()), chain_actor.top_pair().expect("could not get top pair from chain actor"));
+        assert_eq!(
+            Some(pair_a.clone()),
+            chain_actor
+                .top_pair()
+                .expect("could not get top pair from chain actor")
+        );
 
         let pair_b = test_pair_b();
         chain_actor
             .set_top_pair(&Some(pair_b.clone()))
             .expect("could not set top pair b");
 
-        assert_eq!(Some(pair_b.clone()), chain_actor.top_pair().expect("could not get top pair from chain actor"));
+        assert_eq!(
+            Some(pair_b.clone()),
+            chain_actor
+                .top_pair()
+                .expect("could not get top pair from chain actor")
+        );
     }
 
 }

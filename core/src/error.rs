@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_dna::DnaError;
 use json::ToJson;
 use serde_json::Error as SerdeError;
@@ -9,7 +10,6 @@ use std::{
     path::Path,
 };
 use walkdir::Error as WalkdirError;
-use futures::channel::oneshot::Canceled as FutureCanceled;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash)]

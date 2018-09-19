@@ -6,6 +6,26 @@ Date: 2018-09-17
 
 Proposed
 
+## Glossary
+* **Container**: *We have been struggling to find a term for this concept that feels fitting.
+  In the following, we are using the word *Container*, knowing that this is a temporary placeholder term
+  and might be replaced in the future by something else (like *Composer*, *Orchestrator*, *Organism*, 
+  *Holochain System*, ...).*
+  
+  A *Container* contains Holochain instances - in the general case: multiple Holochain instances, of which
+  each run exactly one given DNA. 
+  It makes use of the [core_api](core_api/src/lib.rs) and 
+  thus manages (creates, deletes, starts, stops) instances. The Container is naturally
+  mediating between any kind of user and all installed Holochain apps (here: app = Holochain instance =
+  embodied DNA = *Phenotype*).  The Container is necessarily the only architectural piece that has unique
+  and direct access to the [core_api](core_api/src/lib.rs) and thus the capabilites and zome functions
+  of Holochain apps.
+  
+  **Definition**: Any software module that uses Holochain's [core_api](core_api/src/lib.rs) to instantiate
+  a Holochain instance is called *Container*. It is the necessary layer that *contains* an instance,
+  as [core_api](core_api/src/lib.rs) being a library it (and instances created by it)
+  can not exist as a process themselves.
+
 ## Context
 
 * We have several different roles for using a Holochain app (through a *container*):

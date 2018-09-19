@@ -94,11 +94,6 @@ pub trait AskSelf {
 impl AskSelf for ActorRef<Protocol> {
     fn block_on_ask(&self, message: Protocol) -> Result<Protocol, HolochainError> {
         let a = ask(&(*SYS), self, message);
-        match block_on(a) {
-            Ok(block_result) => Ok(block_result),
-            Err(_) => Err(HolochainError::ErrorGeneric(
-                "Could not block action".to_string(),
-            )),
-        }
+        Ok(block_on(a)?)
     }
 }

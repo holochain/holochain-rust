@@ -9,6 +9,7 @@ use std::{
     path::Path,
 };
 use walkdir::Error as WalkdirError;
+use futures::channel::oneshot::Canceled as FutureCanceled;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -96,6 +97,12 @@ impl From<IoError> for HolochainError {
 impl From<SerdeError> for HolochainError {
     fn from(error: SerdeError) -> Self {
         HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<FutureCanceled> for HolochainError {
+    fn from(error: FutureCanceled) -> Self {
+        HolochainError::ErrorGeneric("Failed future".to_string())
     }
 }
 

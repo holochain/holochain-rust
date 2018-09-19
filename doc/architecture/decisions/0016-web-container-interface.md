@@ -1,4 +1,4 @@
-# 16. Web <> Container interface
+# 16. Container Interface for web UI clients
 
 Date: 2018-09-14
 

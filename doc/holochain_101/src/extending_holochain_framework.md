@@ -1,1 +1,1 @@
-# Extending the Holochain Platform
+# Extending the Holochain Framework

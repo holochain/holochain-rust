@@ -18,7 +18,7 @@ pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     table
         .put_entry(&entry)
-        .expect("should be able to commit valid pair");
+        .expect("should be able to commit valid entry");
     assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
 }
 
@@ -85,7 +85,7 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     assert_eq!(Some(&meta), table.get_meta(&meta.key()).unwrap().as_ref());
 }
 
-/// assert a couple of unique metas against a single pair
+/// assert a couple of unique metas against a single entry
 fn test_metas_for<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     let meta_a = test_meta_for(&entry, &test_attribute(), &test_value());
@@ -96,7 +96,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         empty_vec,
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 
     table
@@ -106,7 +106,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         vec![meta_a.clone()],
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 
     table
@@ -116,7 +116,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         vec![meta_b, meta_a],
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 }
 

@@ -39,31 +39,25 @@ impl HashTable for ActorRef<Protocol> {
         old_pair: &Pair,
         new_pair: &Pair,
     ) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::ModifyPair {
+        let response = self.block_on_ask(Protocol::ModifyPair {
             keys: keys.clone(),
             old_pair: old_pair.clone(),
             new_pair: new_pair.clone(),
-        }) {
-            Ok(response) => unwrap_to!(response => Protocol::ModifyPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        })?;
+        unwrap_to!(response => Protocol::ModifyPairResult).clone()
     }
 
     fn retract_pair(&mut self, keys: &Keys, pair: &Pair) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::RetractPair {
+        let response = self.block_on_ask(Protocol::RetractPair {
             keys: keys.clone(),
             pair: pair.clone(),
-        }) {
-            Ok(response) => unwrap_to!(response => Protocol::RetractPairResult).clone(),
-            Err(error) => Err(error),
-        }
+        })?;
+        unwrap_to!(response => Protocol::RetractPairResult).clone()
     }
 
     fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
-        match self.block_on_ask(Protocol::AssertMeta(meta.clone())) {
-            Ok(response) => unwrap_to!(response => Protocol::AssertMetaResult).clone(),
-            Err(error) => Err(error),
-        }
+        let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()))?;
+        unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
     fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {

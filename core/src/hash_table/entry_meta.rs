@@ -122,7 +122,7 @@ pub mod tests {
     use hash::HashString;
     use hash_table::{
         entry::{tests::test_entry, Entry},
-        meta::EntryMeta,
+        entry_meta::EntryMeta,
     };
     use json::{FromJson, ToJson};
     use key::Key;

@@ -2,7 +2,7 @@ use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
 use error::HolochainError;
 use hash::HashString;
-use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
+use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
 

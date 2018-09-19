@@ -1,7 +1,7 @@
 use agent::keys::tests::test_keys;
 use hash_table::{
     entry::tests::test_entry_unique,
-    meta::{
+    entry_meta::{
         tests::{
             test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
         },
@@ -28,10 +28,10 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
 
     table
         .put_entry(&entry_1)
-        .expect("should be able to commit valid pair");
+        .unwrap();
     table
         .modify_entry(&test_keys(), &entry_1, &entry_2)
-        .expect("should be able to edit with valid pair");
+        .unwrap();
 
     assert_eq!(
         vec![
@@ -50,7 +50,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
         ],
         table
             .metas_from_entry(&entry_1)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .unwrap()
     );
 
     let empty_vec: Vec<EntryMeta> = Vec::new();
@@ -58,7 +58,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
         empty_vec,
         table
             .metas_from_entry(&entry_2)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .unwrap()
     );
 }
 
@@ -68,12 +68,12 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
 
     table
         .put_entry(&entry)
-        .expect("should be able to commit valid pair");
+        .unwrap();
     assert_eq!(
         empty_vec,
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .unwrap()
     );
 
     table
@@ -88,7 +88,7 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
         )],
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail"),
+            .unwrap(),
     );
 }
 
@@ -99,7 +99,7 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
         None,
         table
             .get_meta(&meta.key())
-            .expect("getting the metadata on a pair shouldn't fail")
+            .unwrap()
     );
 
     table
@@ -109,7 +109,7 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
         Some(&meta),
         table
             .get_meta(&meta.key())
-            .expect("getting the metadata on a pair shouldn't fail")
+            .unwrap()
             .as_ref()
     );
 }

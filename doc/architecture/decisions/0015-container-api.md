@@ -13,7 +13,7 @@ Proposed
   * as a special case of the above: administration UI
   * externally located (living in a browser) web UIs connected through some form of IPC
   * *bridged* apps, i.e. Holochain app as the user of another Holochain app
-  * A Holo light-client connecting to the Holochain instance running on a HoloPort full-node
+  * Services hosting multiple Holochain apps and exposing their zome functions to UIs selectively
 * With HoloSqape and the Holochain-nodejs, we already have two container implementations
 
 A Holochain app cannot be used directly. Holochain is built as a library that exposes an interface for
@@ -93,11 +93,9 @@ More API capabilities might be added in the future.
 
 * We can build several separate pieces independently against the specified API
 * We can build different container implementations for different contexts but have components that
-  rely on a the existence of a container be decoupled from those specific implementations.
+  rely on the existence of a container decoupled from those specific implementations.
   Components that rely on and could use this API:
   * any kind of GUI
   * app composition code like bridging
   * external web UI
-  * Holo apps, orchastrating hosted apps
-  * Holo admin UI
-  * Holo light-client bridge
+  * Services orchastrating several hosted apps

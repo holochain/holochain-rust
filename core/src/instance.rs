@@ -1,4 +1,3 @@
-//use error::HolochainError;
 use action::ActionWrapper;
 use context::Context;
 use state::State;
@@ -8,14 +7,16 @@ use std::{
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
+    time::Duration,
 };
 
-pub const REDUX_DEFAULT_TIMEOUT_MS: u64 = 2000;
+pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
-/// Object representing a Holochain app instance.
-/// Holds the Event loop and processes it with the redux state model.
+/// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
+/// Holds the Event loop and processes it with the redux pattern.
 #[derive(Clone)]
 pub struct Instance {
+    /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
     observer_channel: Sender<Observer>,
@@ -86,11 +87,18 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
+    pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
+        let mut sub_context = (*context).clone();
+        sub_context.set_state(self.state.clone());
+        Arc::new(sub_context)
+    }
+
     /// Start the Event Loop on a seperate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
         let sync_self = self.clone();
+        let sub_context = self.initialize_context(context);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
@@ -99,7 +107,7 @@ impl Instance {
                     action_wrapper,
                     state_observers,
                     &rx_observer,
-                    &context,
+                    &sub_context,
                 );
             }
         });
@@ -116,16 +124,32 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
+            let new_state: State;
+
+            {
+                // Only get a read lock first so code in reducers can read state as well
+                let state = self
+                    .state
+                    .read()
+                    .expect("owners of the state RwLock shouldn't panic");
+
+                // Create new state by reducing the action on old state
+                new_state = state.reduce(
+                    context.clone(),
+                    action_wrapper,
+                    &self.action_channel,
+                    &self.observer_channel,
+                );
+            }
+
+            // Get write lock
             let mut state = self
                 .state
                 .write()
                 .expect("owners of the state RwLock shouldn't panic");
-            *state = state.reduce(
-                context.clone(),
-                action_wrapper,
-                &self.action_channel,
-                &self.observer_channel,
-            );
+
+            // Change the state
+            *state = new_state;
         }
 
         // Add new observers
@@ -283,11 +307,11 @@ pub mod tests {
         let agent = Agent::from_string(agent_name.to_string());
         let logger = test_logger();
         (
-            Arc::new(Context {
+            Arc::new(Context::new(
                 agent,
-                logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
-            }),
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+            )),
             logger,
         )
     }
@@ -392,7 +416,6 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-
         instance
     }
 

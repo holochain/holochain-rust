@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash::HashString;
 use json::ToJson;
 use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
@@ -8,7 +9,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
-    key: String,
+    key: HashString,
 }
 
 pub fn invoke_get_entry(
@@ -21,9 +22,10 @@ pub fn invoke_get_entry(
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ArgumentDeserializationFailed as i32,
+        )));
     }
-
     let input = res_entry.unwrap();
 
     let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
@@ -61,11 +63,13 @@ pub fn invoke_get_entry(
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }
@@ -211,7 +215,7 @@ mod tests {
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmT1NRaxbwMqpxXU1Adt1pVqtgnDXYxH1qH5rRbWPGxrkW\",\"entry_hash\":\"");
-        expected.push_str(&test_entry_hash());
+        expected.push_str(&test_entry_hash().to_str());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
         assert_eq!(get_runtime.result, expected,);

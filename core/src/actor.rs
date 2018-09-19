@@ -1,6 +1,7 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta};
 use riker::actors::*;
 use riker_default::DefaultModel;
@@ -47,7 +48,7 @@ pub enum Protocol {
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::pair_meta()
-    GetPairMeta(String),
+    GetPairMeta(HashString),
     GetPairMetaResult(Result<Option<PairMeta>, HolochainError>),
 
     /// HashTable::all_metas_for_pair()
@@ -55,7 +56,7 @@ pub enum Protocol {
     GetMetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
 
     /// HashTable::pair()
-    GetPair(String),
+    GetPair(HashString),
     GetPairResult(Result<Option<Pair>, HolochainError>),
 
     /// HashTable::put_pair()

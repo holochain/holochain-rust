@@ -281,7 +281,7 @@ pub mod tests {
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
     use hash_table::{
-        entry::Entry, entry::tests::test_entry,
+        entry::{tests::test_entry, Entry},
         links_entry::{tests::create_test_link, Link},
     };
     use instance::tests::{test_context, test_instance_blank};

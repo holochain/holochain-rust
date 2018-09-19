@@ -22,7 +22,9 @@ pub fn invoke_link_entries(
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ArgumentDeserializationFailed as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 
@@ -63,7 +65,9 @@ pub fn invoke_link_entries(
             let json = action_result.to_json();
             match json {
                 Ok(j) => runtime.store_utf8(&j),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(

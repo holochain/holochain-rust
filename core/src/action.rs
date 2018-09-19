@@ -5,8 +5,9 @@ use hash_table::{entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
-    ribosome::api::get_links::GetLinksArgs, state::NucleusState, ZomeFnCall,
-    ZomeFnResult, state::ValidationResult,
+    ribosome::api::get_links::GetLinksArgs,
+    state::{NucleusState, ValidationResult},
+    ZomeFnCall, ZomeFnResult,
 };
 use snowflake;
 use std::{

@@ -229,7 +229,7 @@ pub mod tests {
             let entry = test_entry();
             table_actor_thread.put_entry(&entry).unwrap();
 
-            // push the committed pair through to the next thread
+            // push the committed entry through to the next thread
             tx2.send(entry).unwrap();
         });
 

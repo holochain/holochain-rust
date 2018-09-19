@@ -20,8 +20,7 @@ use hash_table::{
 use key::Key;
 
 /// Trait of the data structure storing the source chain
-/// source chain is stored as a hash table of Pairs.
-/// Pair is a pair holding an Entry and its Header
+/// source chain is stored as a hash table of Headers and Entries.
 pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     // @TODO does this make sense at the trait level?

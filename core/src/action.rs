@@ -1,10 +1,11 @@
 use agent::state::AgentState;
 use context::Context;
 use hash::HashString;
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
+    ribosome::api::get_links::GetLinksArgs,
     state::{NucleusState, ValidationResult},
     ZomeFnCall, ZomeFnResult,
 };
@@ -73,6 +74,11 @@ pub enum Action {
     Commit(Entry),
     /// GetEntry by hash
     GetEntry(HashString),
+
+    /// link to add
+    AddLink(Link),
+    /// get links from entry hash and attribute-name
+    GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),

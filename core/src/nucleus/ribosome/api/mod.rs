@@ -5,6 +5,7 @@ pub mod call;
 pub mod commit;
 pub mod debug;
 pub mod get;
+pub mod get_links;
 pub mod init_globals;
 
 use action::ActionWrapper;

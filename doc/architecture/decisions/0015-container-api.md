@@ -54,15 +54,15 @@ functions in the case of bridging)
 and remote processes alike to be implemented by the context a Holochain app is executed in.
 
 
-Fundamental to this API is user roles and permissions.
-Users will be able to use different subsets of the Container's API depending on their specific permissions. 
+Fundamental to this API is user/client roles and permissions.
+Clients will be able to use different subsets of the Container's API depending on their specific permissions. 
 
 ### Generic API
 
-Every user (of the Container API, i.e. QML root widgets, admin UI in the case of HoloSqape, 
+Every client (of the Container API, i.e. QML root widgets, admin UI in the case of HoloSqape, 
 and network services built on top of the Container) 
 will have these functions available, though functions can return with a permission denied
-error in case an app or capability was given that the current user is not allowed to use.
+error in case an app or capability was given that the current client is not allowed to use.
 
 * `call(app_hash, capability_name, function_name, parameters) -> {results}`
 * `connect(app_hash, capability_name, signal_name, callback_function)`
@@ -81,10 +81,10 @@ Only the admin user can manage apps and permissions:
 * `uninstall_app(hash)`
 * `start_app(hash)`
 * `stop_app(hash)`
-* `promote_to_admin(user_id)`
-* `retract_admin(user_id)`
-* `grant_capability(user_id, app_hash, capability)`
-* `deny_capability(user_id, app_hash, capability)`
+* `promote_to_admin(client_id)`
+* `retract_admin(client_id)`
+* `grant_capability(client_id, app_hash, capability)`
+* `deny_capability(client_id, app_hash, capability)`
 
 ### Extensible
 More API capabilities might be added in the future.

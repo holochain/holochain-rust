@@ -53,11 +53,15 @@ by specifying its **API**, that can be assumed by UI components, Holochain apps 
 functions in the case of bridging)
 and remote processes alike to be implemented by the context a Holochain app is executed in.
 
-
-Fundamental to this API is user/client roles and permissions.
+Fundamental to this API is **user/client roles and permissions**.
 Clients will be able to use different subsets of the Container's API depending on their specific permissions. 
+So an implicit aspect of this API is that every potential API call happens in the context of a known
+client identified through a client ID that the API manages and returns to the admin client as handles. 
 
-### Generic API
+We will specify this API in a separate *specification document*.
+The following subsection provide examples for how this *could* look like:
+
+### Example API
 
 Every client (of the Container API, i.e. QML root widgets, admin UI in the case of HoloSqape, 
 and network services built on top of the Container) 

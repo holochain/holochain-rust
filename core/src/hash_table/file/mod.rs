@@ -4,6 +4,7 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
@@ -69,7 +70,7 @@ impl FileTable {
         Ok(dir_string)
     }
 
-    fn row_path(&self, table: Table, key: &str) -> Result<String, HolochainError> {
+    fn row_path(&self, table: Table, key: &HashString) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
         Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, key))
     }
@@ -82,7 +83,7 @@ impl FileTable {
     }
 
     /// Returns a JSON string option for the given key in the given table
-    fn lookup(&self, table: Table, key: &str) -> Result<Option<String>, HolochainError> {
+    fn lookup(&self, table: Table, key: &HashString) -> Result<Option<String>, HolochainError> {
         let path_string = self.row_path(table, key)?;
         if Path::new(&path_string).is_file() {
             Ok(Some(fs::read_to_string(path_string)?))
@@ -97,7 +98,7 @@ impl HashTable for FileTable {
         self.upsert(Table::Pairs, pair)
     }
 
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
         match self.lookup(Table::Pairs, key)? {
             Some(json) => Ok(Some(Pair::from_json(&json)?)),
             None => Ok(None),
@@ -108,7 +109,7 @@ impl HashTable for FileTable {
         self.upsert(Table::Metas, meta)
     }
 
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
         match self.lookup(Table::Metas, key)? {
             Some(json) => Ok(Some(PairMeta::from_json(&json)?)),
             None => Ok(None),
@@ -125,7 +126,7 @@ impl HashTable for FileTable {
             let path = meta.path();
             if let Some(stem) = path.file_stem() {
                 if let Some(key) = stem.to_str() {
-                    if let Some(pair_meta) = self.pair_meta(&key)? {
+                    if let Some(pair_meta) = self.pair_meta(&HashString::from(key.to_string()))? {
                         if pair_meta.pair_hash() == pair.key() {
                             metas.push(pair_meta);
                         }
@@ -145,6 +146,7 @@ impl HashTable for FileTable {
 pub mod tests {
     use super::Table;
     use error::HolochainError;
+    use hash::HashString;
     use hash_table::{
         file::{FileTable, Row},
         test_util::standard_suite,
@@ -232,7 +234,7 @@ pub mod tests {
                 assert!(
                     re(s, k).is_match(
                         &table
-                            .row_path(t.clone(), k.clone())
+                            .row_path(t.clone(), &HashString::from(k.to_string()))
                             .expect(&format!("could not get row path for {:?} in {:?}", k, t)),
                     )
                 );
@@ -255,8 +257,8 @@ pub mod tests {
         }
 
         impl Key for SomeData {
-            fn key(&self) -> String {
-                "bar".to_string()
+            fn key(&self) -> HashString {
+                HashString::from("bar".to_string())
             }
         }
 

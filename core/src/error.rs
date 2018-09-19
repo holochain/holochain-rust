@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use holochain_dna::DnaError;
 use json::ToJson;
 use serde_json::Error as SerdeError;
 use std::{
@@ -9,8 +10,7 @@ use std::{
 };
 use walkdir::Error as WalkdirError;
 
-/// module for holding Holochain specific errors
-
+/// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
@@ -19,12 +19,11 @@ pub enum HolochainError {
     NotImplemented,
     LoggingError,
     DnaMissing,
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
+    DnaError(DnaError),
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
+    DoesNotHaveCapabilityToken,
 }
 
 impl HolochainError {
@@ -58,12 +57,11 @@ impl Error for HolochainError {
             InstanceActive => "the instance is active",
             LoggingError => "logging failed",
             DnaMissing => "DNA is missing",
-            ZomeNotFound(err_msg) => &err_msg,
-            CapabilityNotFound(err_msg) => &err_msg,
-            ZomeFunctionNotFound(err_msg) => &err_msg,
+            DnaError(dna_err) => dna_err.description(),
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
+            DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
         }
     }
 }

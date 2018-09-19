@@ -4,7 +4,7 @@ use futures::{executor::block_on, FutureExt};
 use json::ToJson;
 use nucleus::{
     actions::validate::*,
-    ribosome::api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    ribosome::api::{HcApiReturnCode, Runtime},
 };
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -25,13 +25,15 @@ pub fn invoke_commit_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 
@@ -57,8 +59,8 @@ pub fn invoke_commit_entry(
 
     // allocate and encode result
     match json {
-        Ok(j) => runtime_allocate_encode_str(runtime, &j),
-        Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+        Ok(j) => runtime.store_utf8(&j),
+        Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
     }
 
     // @TODO test that failing validation prevents commits happening

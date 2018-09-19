@@ -1,16 +1,15 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use hash::HashString;
 use json::ToJson;
-use nucleus::ribosome::api::{
-    runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime,
-};
+use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetArgs {
-    key: String,
+    key: HashString,
 }
 
 pub fn invoke_get_entry(
@@ -18,14 +17,15 @@ pub fn invoke_get_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+        return Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ArgumentDeserializationFailed as i32,
+        )));
     }
-
     let input = res_entry.unwrap();
 
     let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
@@ -62,12 +62,14 @@ pub fn invoke_get_entry(
         ActionResponse::GetEntry(maybe_pair) => {
             // serialize, allocate and encode result
             match maybe_pair.to_json() {
-                Ok(json) => runtime_allocate_encode_str(runtime, &json),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+                Ok(json) => runtime.store_utf8(&json),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }
@@ -89,7 +91,7 @@ mod tests {
             commit::tests::test_commit_args_bytes,
             tests::{test_capability, test_parameters, test_zome_name},
         },
-        FunctionCall,
+        ZomeFnCall,
     };
     use serde_json;
     use std::sync::Arc;
@@ -183,7 +185,7 @@ mod tests {
             instance.state().agent().chain().top_pair().unwrap().key()
         );
 
-        let commit_call = FunctionCall::new(
+        let commit_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "commit_dispatch",
@@ -204,7 +206,7 @@ mod tests {
             format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
         );
 
-        let get_call = FunctionCall::new(
+        let get_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",
@@ -222,7 +224,7 @@ mod tests {
 
         let mut expected = "".to_owned();
         expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmbxF7U8tSvGzzRmQTNdSXK6kUMKzcSXE54jkN1WMnb6Qo\",\"entry_hash\":\"");
-        expected.push_str(&test_entry_hash());
+        expected.push_str(&test_entry_hash().to_str());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
         assert_eq!(get_runtime.result, expected,);

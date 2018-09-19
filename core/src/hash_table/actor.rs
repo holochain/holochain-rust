@@ -168,6 +168,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     Protocol::RetractEntry { keys, entry } => {
                         Protocol::RetractEntryResult(self.table.retract_entry(&keys, &entry))
                     }
+
                     Protocol::GetLinks(req) => Protocol::GetLinksResult(self.table.get_links(&req)),
 
                     Protocol::AddLink(link) => Protocol::AddLinkResult(self.table.add_link(&link)),

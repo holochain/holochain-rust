@@ -44,7 +44,7 @@ or a custom one for HoloPorts) we should drive the process of building this Cont
 consciously and with more coherence and visibility amongst our separate dev teams.
 
 We need a protocol for communication with a Holochain container and a specification of what upcoming
-containers have to implement, so that apps and UIs can be build against a standardised
+containers have to implement, so that apps and UIs can be build against a standardised interface.
 
 ## Decision
 

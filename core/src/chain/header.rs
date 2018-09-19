@@ -40,7 +40,15 @@ impl PartialEq for Header {
 }
 
 impl Header {
-    //
+    /// build a new Header from a chain, entry type and entry.
+    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+    /// this means that a header becomes invalid and useless as soon as the chain is mutated
+    /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
+    /// normally (outside unit tests) the generation of valid headers is internal to the
+    /// chain::SourceChain trait and should not need to be handled manually
+    ///
+    /// @see chain::pair::Pair
+    /// @see chain::entry::Entry
     pub fn new(
         entry_type: &str,
         timestamp: &str,
@@ -51,9 +59,13 @@ impl Header {
     ) -> Self {
         Header {
             entry_type: entry_type.to_string(),
+            // @TODO implement timestamps
+            // https://github.com/holochain/holochain-rust/issues/70
             timestamp: timestamp.to_string(),
             link: link,
             entry_hash: entry_hash.clone(),
+            // @TODO implement signatures
+            // https://github.com/holochain/holochain-rust/issues/71
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }

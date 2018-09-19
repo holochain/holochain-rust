@@ -84,7 +84,7 @@ impl EntryMeta {
     }
 
     pub fn make_hash(entry_hash: &HashString, attribute_name: &str) -> HashString {
-        let pieces: [String; 2] = [entry_hash.to_str(), attribute_name.to_string()];
+        let pieces: [String; 2] = [entry_hash.clone().to_str(), attribute_name.to_string()];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
@@ -196,7 +196,7 @@ pub mod tests {
     #[test]
     // test meta.entry_hash()
     fn entry_hash() {
-        assert_eq!(test_meta().entry_hash(), test_entry().key());
+        assert_eq!(test_meta().entry_hash(), &test_entry().key());
     }
 
     /// test meta.attribute()

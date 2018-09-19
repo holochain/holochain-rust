@@ -5,8 +5,8 @@ use hash_table::{entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
 use nucleus::{
-    ribosome::api::get_links::GetLinksArgs, state::NucleusState, EntrySubmission, ZomeFnCall,
-    ZomeFnResult,
+    ribosome::api::get_links::GetLinksArgs, state::NucleusState, ZomeFnCall,
+    ZomeFnResult, state::ValidationResult,
 };
 use snowflake;
 use std::{
@@ -91,9 +91,12 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// Execute a zome function call called by another zome function
+    Call(ZomeFnCall),
     /// ???
     // @TODO how does this relate to validating a commit?
     ValidateEntry(Entry),
+    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions

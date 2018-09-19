@@ -39,7 +39,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
                 &test_keys().node_id(),
                 &entry_1.key(),
                 LINK_NAME,
-                &entry_2.key(),
+                &entry_2.key().to_str(),
             ),
             EntryMeta::new(
                 &test_keys().node_id(),

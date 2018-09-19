@@ -221,7 +221,7 @@ pub mod tests {
         let link = create_test_link();
         let lle = LinkListEntry::new(&[link]);
         let lle_entry = lle.to_entry();
-        let lle_trip = LinkListEntry::new_from_entry(&lle_entry);
+        let lle_trip = LinkListEntry::from_entry(&lle_entry);
         assert_eq!(lle, lle_trip);
     }
 }

@@ -281,7 +281,7 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            let api_fn = match ZomeApiFunction::str_to_index(&field_name) {
+            let api_fn = match ZomeApiFunction::from_str(&field_name) {
                 Ok(api_fn) => api_fn,
                 Err(_) => {
                     return Err(InterpreterError::Function(format!(

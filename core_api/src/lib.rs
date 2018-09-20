@@ -24,11 +24,11 @@
 //! // but for now:
 //! let dna = Dna::new();
 //! let agent = Agent::from_string("bob".to_string());
-//! let context = Context {
-//!     agent: agent,
-//!     logger: Arc::new(Mutex::new(SimpleLogger {})),
-//!     persister: Arc::new(Mutex::new(SimplePersister::new())),
-//! };
+//! let context = Context::new(
+//!     agent,
+//!     Arc::new(Mutex::new(SimpleLogger {})),
+//!     Arc::new(Mutex::new(SimplePersister::new())),
+//! );
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the app
@@ -59,15 +59,12 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::Instance,
-    nucleus::{call_and_wait_for_result, state::NucleusStatus, FunctionCall},
+    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
+    nucleus::{call_and_wait_for_result, state::NucleusStatus, ZomeFnCall},
     state::State,
 };
 use holochain_dna::Dna;
-use std::{
-    sync::{mpsc::channel, Arc},
-    time::Duration,
-};
+use std::sync::{mpsc::channel, Arc};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -104,7 +101,7 @@ impl Holochain {
         // had to increase this number when merging develop into feature branch 221-dna-improvements
         // https://github.com/holochain/holochain-rust/pull/253
         // solving ticket https://github.com/holochain/holochain-rust/issues/221
-        match receiver.recv_timeout(Duration::from_millis(10000)) {
+        match receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS) {
             Ok(status) => match status {
                 NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
                 _ => {
@@ -155,9 +152,9 @@ impl Holochain {
             return Err(HolochainError::InstanceNotActive);
         }
 
-        let call = FunctionCall::new(&zome, &cap, &fn_name, &params);
+        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, &params);
 
-        call_and_wait_for_result(call, &mut self.instance)
+        call_and_wait_for_result(zome_call, &mut self.instance)
     }
 
     /// checks to see if an instance is active
@@ -191,11 +188,11 @@ mod tests {
         let agent = holochain_agent::Agent::from_string(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context {
-                agent: agent,
-                logger: logger.clone(),
-                persister: Arc::new(Mutex::new(SimplePersister::new())),
-            }),
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+            )),
             logger,
         )
     }

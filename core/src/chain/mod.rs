@@ -1,30 +1,31 @@
 pub mod actor;
+pub mod header;
 
 use actor::{AskSelf, Protocol};
 use chain::actor::{AskChain, ChainActor};
 use error::HolochainError;
+use hash::HashString;
 use hash_table::{entry::Entry, pair::Pair, HashTable};
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
-pub mod header;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator {
-    table: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
     current: Option<Pair>,
 }
 
 impl ChainIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table_actor: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
-            table: table.clone(),
+            table_actor: table_actor.clone(),
         }
     }
 }
@@ -40,7 +41,7 @@ impl Iterator for ChainIterator {
                         // @TODO should this panic?
                         // @see https://github.com/holochain/holochain-rust/issues/146
                         .and_then(|h| {
-                            self.table.pair(&h.to_string()).expect("getting from a table shouldn't fail")
+                            self.table_actor.pair(&h).expect("getting from a table shouldn't fail")
                         });
         previous
     }
@@ -48,8 +49,8 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone, Debug)]
 pub struct Chain {
-    actor: ActorRef<Protocol>,
-    table: ActorRef<Protocol>,
+    chain_actor: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol>,
 }
 
 impl PartialEq for Chain {
@@ -80,14 +81,14 @@ impl IntoIterator for Chain {
 impl Chain {
     pub fn new(table: ActorRef<Protocol>) -> Chain {
         Chain {
-            actor: ChainActor::new_ref(),
-            table: table.clone(),
+            chain_actor: ChainActor::new_ref(),
+            table_actor: table.clone(),
         }
     }
 
     /// returns a reference to the underlying HashTable
     pub fn table(&self) -> ActorRef<Protocol> {
-        self.table.clone()
+        self.table_actor.clone()
     }
 
     /// returns true if all pairs in the chain pass validation
@@ -135,21 +136,21 @@ pub trait SourceChain {
     /// the newly created and pushed Pair is returned in the fn Result
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError>;
+    fn entry(&self, entry_hash: &HashString) -> Result<Option<Pair>, HolochainError>;
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
     /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, message: &str) -> Result<Option<Pair>, HolochainError>;
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError>;
 }
 
 impl SourceChain for Chain {
     fn top_pair(&self) -> Option<Pair> {
-        self.actor.top_pair()
+        self.chain_actor.top_pair()
     }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        self.actor.set_top_pair(&pair)
+        self.chain_actor.set_top_pair(&pair)
     }
 
     fn top_pair_type(&self, t: &str) -> Option<Pair> {
@@ -173,7 +174,7 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table.put_pair(&pair.clone())?;
+        self.table_actor.put_pair(&pair.clone())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()
@@ -190,19 +191,19 @@ impl SourceChain for Chain {
         self.push_pair(&pair)
     }
 
-    fn pair(&self, k: &str) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table.block_on_ask(Protocol::GetPair(k.to_string()));
+    fn pair(&self, k: &HashString) -> Result<Option<Pair>, HolochainError> {
+        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.clone()));
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
-    fn entry(&self, entry_hash: &str) -> Result<Option<Pair>, HolochainError> {
+    fn entry(&self, entry_hash: &HashString) -> Result<Option<Pair>, HolochainError> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
                 .iter()
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| p.entry().hash() == entry_hash))
+                .find(|p| &p.entry().hash() == entry_hash))
     }
 }
 
@@ -221,6 +222,7 @@ pub mod tests {
 
     use super::Chain;
     use chain::SourceChain;
+    use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{test_entry, test_entry_a, test_entry_b, test_type_a, test_type_b},
@@ -344,7 +346,7 @@ pub mod tests {
 
         assert_eq!(Some(&p1), chain.top_pair().as_ref());
         assert_eq!(&e1, p1.entry());
-        assert_eq!(e1.hash(), p1.header().entry_hash());
+        assert_eq!(&e1.hash(), p1.header().entry_hash());
 
         // we should be able to do it again
         let e2 = test_entry_b();
@@ -354,7 +356,7 @@ pub mod tests {
 
         assert_eq!(Some(&p2), chain.top_pair().as_ref());
         assert_eq!(&e2, p2.entry());
-        assert_eq!(e2.hash(), p2.header().entry_hash());
+        assert_eq!(&e2.hash(), p2.header().entry_hash());
     }
 
     #[test]
@@ -478,7 +480,7 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .pair("")
+                .pair(&HashString::new())
                 .expect("getting an entry from a chain shouldn't fail")
         );
         assert_eq!(
@@ -548,7 +550,7 @@ pub mod tests {
         assert_eq!(
             None,
             chain
-                .entry("")
+                .entry(&HashString::new())
                 .expect("getting an entry from a chain shouldn't fail")
         );
         // @TODO at this point we have p3 with the same entry key as p1...

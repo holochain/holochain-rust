@@ -2,7 +2,7 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use json::ToJson;
 use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
+    api::{HcApiReturnCode, Runtime},
     callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
 };
 use serde_json;
@@ -25,13 +25,15 @@ pub fn invoke_commit_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
+    let args_str = runtime.load_utf8_from_args(&args);
     let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32)));
+            return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ArgumentDeserializationFailed as i32,
+            )));
         }
     };
 
@@ -44,11 +46,11 @@ pub fn invoke_commit_entry(
     if let CallbackResult::Fail(_) = validate_commit(
         &runtime.action_channel,
         &runtime.observer_channel,
-        &runtime.function_call.zome,
+        &runtime.zome_call.zome_name,
         &CallbackParams::ValidateCommit(entry.clone()),
     ) {
         return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorCallbackResult as i32,
+            HcApiReturnCode::CallbackFailed as i32,
         )));
     }
     // anything other than a fail means we should commit the entry
@@ -87,14 +89,16 @@ pub fn invoke_commit_entry(
     match action_result {
         ActionResponse::Commit(_) => {
             // serialize, allocate and encode result
-            let json = action_result.to_json();
-            match json {
-                Ok(j) => runtime_allocate_encode_str(runtime, &j),
-                Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ErrorJson as i32))),
+            let maybe_json = action_result.to_json();
+            match maybe_json {
+                Ok(json_str) => runtime.store_utf8(&json_str),
+                Err(_) => Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ResponseSerializationFailed as i32,
+                ))),
             }
         }
         _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
+            HcApiReturnCode::ReceivedWrongActionResult as i32,
         ))),
     }
 }
@@ -108,7 +112,7 @@ pub mod tests {
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -129,7 +133,7 @@ pub mod tests {
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
         let (runtime, _) = test_zome_api_function_runtime(
-            ZomeAPIFunction::CommitEntry.as_str(),
+            ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );
 

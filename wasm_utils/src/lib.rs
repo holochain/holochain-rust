@@ -1,6 +1,7 @@
 extern crate serde;
 extern crate serde_json;
 
+use self::HcApiReturnCode::*;
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
 
@@ -8,33 +9,51 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 // Error Codes
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all possible return codes that an HC API function can return
-/// represents a zero length offset in SinglePageAllocation
+/// Enumeration of all possible return codes that an HC API function call can return.
+/// represents a zero length offset in SinglePageAllocation.
 /// @see SinglePageAllocation
 #[repr(u32)]
 #[derive(Debug, PartialEq)]
 pub enum HcApiReturnCode {
     Success = 0,
-    Error = 1 << 16,
-    ErrorJson = 2 << 16,
-    ErrorPageOverflow = 3 << 16,
-    ErrorActionResult = 4 << 16,
-    ErrorCallbackResult = 5 << 16,
+    Failure = 1 << 16,
+    ArgumentDeserializationFailed = 2 << 16,
+    OutOfMemory = 3 << 16,
+    ReceivedWrongActionResult = 4 << 16,
+    CallbackFailed = 5 << 16,
+    RecursiveCallForbidden = 6 << 16,
+    ResponseSerializationFailed = 7 << 16,
 }
 
-//pub fn decode_error(encoded_allocation: u32) -> HcApiReturnCode {
-//
-//}
+impl ToString for HcApiReturnCode {
+    fn to_string(&self) -> String {
+        match self {
+            Success => "Success",
+            Failure => "Failure",
+            ArgumentDeserializationFailed => "Argument deserialization failed",
+            OutOfMemory => "Out of memory",
+            ReceivedWrongActionResult => "Received wrong action result",
+            CallbackFailed => "Callback failed",
+            RecursiveCallForbidden => "Recursive call forbidden",
+            ResponseSerializationFailed => "Response serialization failed",
+        }.to_string()
+    }
+}
 
-pub fn encode_error(offset: u16) -> HcApiReturnCode {
-    match offset {
-        // @TODO what is a success error?
-        // @see https://github.com/holochain/holochain-rust/issues/181
-        0 => HcApiReturnCode::Success,
-        2 => HcApiReturnCode::ErrorJson,
-        3 => HcApiReturnCode::ErrorPageOverflow,
-        4 => HcApiReturnCode::ErrorActionResult,
-        1 | _ => HcApiReturnCode::Error,
+impl HcApiReturnCode {
+    pub fn from_offset(offset: u16) -> HcApiReturnCode {
+        match offset {
+            // @TODO what is a success error?
+            // @see https://github.com/holochain/holochain-rust/issues/181
+            0 => Success,
+            2 => ArgumentDeserializationFailed,
+            3 => OutOfMemory,
+            4 => ReceivedWrongActionResult,
+            5 => CallbackFailed,
+            6 => RecursiveCallForbidden,
+            7 => ResponseSerializationFailed,
+            1 | _ => Failure,
+        }
     }
 }
 
@@ -83,13 +102,13 @@ impl SinglePageAllocation {
         if allocation.length == 0 {
             // @TODO is it right to return success as Err for 0? what is a "success" error?
             // @see https://github.com/holochain/holochain-rust/issues/181
-            return Err(encode_error(allocation.offset));
+            return Err(HcApiReturnCode::from_offset(allocation.offset));
         }
 
         // should never happen
         // we don't panic because this needs to work with wasm, which doesn't support panic
         if (allocation.offset as u32 + allocation.length as u32) > std::u16::MAX as u32 {
-            return Err(HcApiReturnCode::ErrorPageOverflow);
+            return Err(HcApiReturnCode::OutOfMemory);
         }
 
         Ok(allocation)
@@ -124,7 +143,7 @@ impl SinglePageStack {
         }
     }
 
-    pub fn new_from_encoded(encoded_last_allocation: u32) -> Self {
+    pub fn from_encoded(encoded_last_allocation: u32) -> Self {
         let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");
@@ -221,20 +240,6 @@ pub mod tests {
     use super::{HcApiReturnCode, SinglePageAllocation};
 
     #[test]
-    /// tests that encoding integers for errors returns the correct return code
-    fn encode_error() {
-        assert_eq!(super::encode_error(0), HcApiReturnCode::Success);
-
-        assert_eq!(super::encode_error(1), HcApiReturnCode::Error);
-
-        assert_eq!(super::encode_error(2), HcApiReturnCode::ErrorJson);
-
-        assert_eq!(super::encode_error(3), HcApiReturnCode::ErrorPageOverflow);
-
-        assert_eq!(super::encode_error(4), HcApiReturnCode::ErrorActionResult);
-    }
-
-    #[test]
     /// tests construction and encoding in a new single page allocation
     fn new_spa() {
         let i = 0b1010101010101010_0101010101010101;
@@ -258,31 +263,31 @@ pub mod tests {
         assert_eq!(
             // offset 1 = generic error
             SinglePageAllocation::new(0b0000000000000001_0000000000000000).unwrap_err(),
-            HcApiReturnCode::Error,
+            HcApiReturnCode::Failure,
         );
 
         assert_eq!(
             // offset 2 = serde json error
             SinglePageAllocation::new(0b0000000000000010_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ErrorJson,
+            HcApiReturnCode::ArgumentDeserializationFailed,
         );
 
         assert_eq!(
             // offset 3 = page overflow error
             SinglePageAllocation::new(0b0000000000000011_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ErrorPageOverflow,
+            HcApiReturnCode::OutOfMemory,
         );
 
         assert_eq!(
             // offset 4 = page overflow error
             SinglePageAllocation::new(0b0000000000000100_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ErrorActionResult,
+            HcApiReturnCode::ReceivedWrongActionResult,
         );
 
         assert_eq!(
             // nonsense offset = generic error
             SinglePageAllocation::new(0b1010101010101010_0000000000000000).unwrap_err(),
-            HcApiReturnCode::Error,
+            HcApiReturnCode::Failure,
         );
     }
 

@@ -1,9 +1,14 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::{entry::Entry, HashString};
+use hash::HashString;
+use hash_table::{entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
 use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
+use nucleus::{
+    ribosome::api::get_links::GetLinksArgs,
+    state::{NucleusState, ValidationResult},
+    ZomeFnCall, ZomeFnResult,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -61,7 +66,8 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+/// All Actions for the Holochain Instance Store, according to Redux pattern.
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
@@ -69,10 +75,15 @@ pub enum Action {
     /// GetEntry by hash
     GetEntry(HashString),
 
+    /// link to add
+    AddLink(Link),
+    /// get links from entry hash and attribute-name
+    GetLinks(GetLinksArgs),
+
     /// execute a function in a zome WASM
-    ExecuteZomeFunction(FunctionCall),
+    ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(FunctionResult),
+    ReturnZomeFunctionResult(ZomeFnResult),
 
     /// initialize an application from a Dna
     /// not the same as genesis
@@ -82,9 +93,13 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// Execute a zome function call called by another zome function
+    Call(ZomeFnCall),
+
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    ValidateEntry(Entry),
+    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 
 /// function signature for action handler functions
@@ -101,7 +116,7 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use hash::tests::test_hash;
     use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::tests::test_function_result;
+    use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 
     /// dummy action
@@ -125,7 +140,7 @@ pub mod tests {
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_function_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_result()))
     }
 
     #[test]

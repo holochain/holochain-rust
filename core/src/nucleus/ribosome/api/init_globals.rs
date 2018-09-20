@@ -1,4 +1,4 @@
-use nucleus::ribosome::api::{runtime_allocate_encode_str, Runtime};
+use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;
@@ -37,13 +37,13 @@ pub fn invoke_init_globals(
         app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
     };
 
-    return runtime_allocate_encode_str(runtime, &serde_json::to_string(&globals).unwrap());
+    return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
 }
 
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
 
@@ -52,7 +52,7 @@ pub mod tests {
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (runtime, _) =
-            test_zome_api_function_runtime(ZomeAPIFunction::InitGlobals.as_str(), input);
+            test_zome_api_function_runtime(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
       runtime.result.to_string(),
       "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"

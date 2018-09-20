@@ -40,8 +40,8 @@ impl Default for LinksTo {
     /// Provide defaults for a "links_to" object.
     fn default() -> Self {
         LinksTo {
-            target_type: String::from(""),
-            tag: String::from(""),
+            target_type: String::new(),
+            tag: String::new(),
             validation: DnaWasm::new(),
         }
     }
@@ -71,8 +71,8 @@ impl Default for LinkedFrom {
     /// Provide defaults for a "links_to" object.
     fn default() -> Self {
         LinkedFrom {
-            base_type: String::from(""),
-            tag: String::from(""),
+            base_type: String::new(),
+            tag: String::new(),
         }
     }
 }
@@ -112,7 +112,7 @@ impl Default for EntryType {
     /// Provide defaults for a "zome"s "entry_types" object.
     fn default() -> Self {
         EntryType {
-            description: String::from(""),
+            description: String::new(),
             sharing: Sharing::Public,
             validation: DnaWasm::new(),
             links_to: Vec::new(),

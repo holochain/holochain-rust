@@ -17,3 +17,5 @@ cobertura.xml
 .DS_Store
 /**/Makefile
 !/Makefile
+# symlinked Makefile for docker hub
+!/docker/Makefile

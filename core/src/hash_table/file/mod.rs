@@ -1,8 +1,10 @@
-use std::path::Path;
-
 use error::HolochainError;
-use std::fs;
+use std::{
+    fs,
+    path::{Path, MAIN_SEPARATOR},
+};
 
+use hash::HashString;
 use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
@@ -61,16 +63,16 @@ impl FileTable {
 
     /// given a Table enum, ensure that the correct sub-directory exists and return the string path
     fn dir(&self, table: Table) -> Result<String, HolochainError> {
-        let dir_string = format!("{}/{}", self.path, table.to_string());
+        let dir_string = format!("{}{}{}", self.path, MAIN_SEPARATOR, table.to_string());
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&dir_string)?;
         Ok(dir_string)
     }
 
-    fn row_path(&self, table: Table, key: &str) -> Result<String, HolochainError> {
+    fn row_path(&self, table: Table, key: &HashString) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
-        Ok(format!("{}/{}.json", dir, key))
+        Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, key))
     }
 
     fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
@@ -81,7 +83,7 @@ impl FileTable {
     }
 
     /// Returns a JSON string option for the given key in the given table
-    fn lookup(&self, table: Table, key: &str) -> Result<Option<String>, HolochainError> {
+    fn lookup(&self, table: Table, key: &HashString) -> Result<Option<String>, HolochainError> {
         let path_string = self.row_path(table, key)?;
         if Path::new(&path_string).is_file() {
             Ok(Some(fs::read_to_string(path_string)?))
@@ -96,7 +98,7 @@ impl HashTable for FileTable {
         self.upsert(Table::Pairs, pair)
     }
 
-    fn pair(&self, key: &str) -> Result<Option<Pair>, HolochainError> {
+    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
         match self.lookup(Table::Pairs, key)? {
             Some(json) => Ok(Some(Pair::from_json(&json)?)),
             None => Ok(None),
@@ -107,7 +109,7 @@ impl HashTable for FileTable {
         self.upsert(Table::Metas, meta)
     }
 
-    fn pair_meta(&mut self, key: &str) -> Result<Option<PairMeta>, HolochainError> {
+    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
         match self.lookup(Table::Metas, key)? {
             Some(json) => Ok(Some(PairMeta::from_json(&json)?)),
             None => Ok(None),
@@ -124,7 +126,7 @@ impl HashTable for FileTable {
             let path = meta.path();
             if let Some(stem) = path.file_stem() {
                 if let Some(key) = stem.to_str() {
-                    if let Some(pair_meta) = self.pair_meta(&key)? {
+                    if let Some(pair_meta) = self.pair_meta(&HashString::from(key.to_string()))? {
                         if pair_meta.pair_hash() == pair.key() {
                             metas.push(pair_meta);
                         }
@@ -144,6 +146,7 @@ impl HashTable for FileTable {
 pub mod tests {
     use super::Table;
     use error::HolochainError;
+    use hash::HashString;
     use hash_table::{
         file::{FileTable, Row},
         test_util::standard_suite,
@@ -152,6 +155,7 @@ pub mod tests {
     use key::Key;
     use regex::Regex;
     use serde_json;
+    use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};
 
     /// returns a new FileTable for testing and the TempDir created for it
@@ -185,8 +189,14 @@ pub mod tests {
     /// dir returns a sensible string for every Table enum variant
     fn test_dir() {
         let (table, _dir) = test_table();
-
-        let re = |s| Regex::new(&format!(r".*\.tmp.*/{}", s)).expect("failed to build regex");
+        let re = |s| {
+            let regex_str = if MAIN_SEPARATOR == '\\' {
+                format!(r".*\.tmp.*\{}{}", MAIN_SEPARATOR, s)
+            } else {
+                format!(r".*\.tmp.*{}{}", MAIN_SEPARATOR, s)
+            };
+            Regex::new(&regex_str).expect("failed to build regex")
+        };
 
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
             assert!(
@@ -205,7 +215,18 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         let re = |s, k| {
-            Regex::new(&format!(r".*\.tmp.*/{}/{}\.json", s, k)).expect("failed to build regex")
+            let regex_str = if MAIN_SEPARATOR == '\\' {
+                format!(
+                    r".*\.tmp.*\{}{}\{}{}\.json",
+                    MAIN_SEPARATOR, s, MAIN_SEPARATOR, k
+                )
+            } else {
+                format!(
+                    r".*\.tmp.*{}{}{}{}\.json",
+                    MAIN_SEPARATOR, s, MAIN_SEPARATOR, k
+                )
+            };
+            Regex::new(&regex_str).expect("failed to build regex")
         };
 
         for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
@@ -213,7 +234,7 @@ pub mod tests {
                 assert!(
                     re(s, k).is_match(
                         &table
-                            .row_path(t.clone(), k.clone())
+                            .row_path(t.clone(), &HashString::from(k.to_string()))
                             .expect(&format!("could not get row path for {:?} in {:?}", k, t)),
                     )
                 );
@@ -236,8 +257,8 @@ pub mod tests {
         }
 
         impl Key for SomeData {
-            fn key(&self) -> String {
-                "bar".to_string()
+            fn key(&self) -> HashString {
+                HashString::from("bar".to_string())
             }
         }
 

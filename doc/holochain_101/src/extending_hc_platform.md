@@ -1,1 +1,0 @@
-# Extending the HC Platform

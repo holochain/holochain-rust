@@ -7,7 +7,6 @@ branches:
     - master
     - develop
 
-
 jobs:
   include:
     - name: "C binding tests"

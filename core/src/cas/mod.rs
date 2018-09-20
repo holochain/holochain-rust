@@ -2,15 +2,16 @@ use hash::HashString;
 use error::HolochainError;
 
 /// an address for some Content
-/// not actually the content because pragmatically it must be some HashString
+/// ideally it would be the Content but pragmatically it must be some HashString
 /// consider what would happen if we had multi GB addresses...
 type Address = HashString;
-/// the content as a String
-/// serializing is the only way to be confident in persisting all Rust types across all backends
+/// the Content is a String
+/// this is the only way to be confident in persisting all Rust types across all backends
 type Content = String;
 
 /// can be stored as serialized content
-/// the content is the address, there is no "location" like a file system
+/// the content is the address, there is no "location" like a file system or URL
+/// @see https://en.wikipedia.org/wiki/Content-addressable_storage
 pub trait AddressableContent {
     fn address(&self) -> Address;
     fn content(&self) -> Content;

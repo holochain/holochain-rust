@@ -177,13 +177,15 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_dna::{
-        zome::Zome,
-        Dna,
+    use holochain_dna::{zome::Zome, Dna};
+    use std::{
+        collections::HashMap,
+        sync::{Arc, Mutex},
     };
-    use std::{collections::HashMap, sync::{Arc, Mutex}};
-    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file, validation_capability};
-
+    use test_utils::{
+        create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file,
+        validation_capability,
+    };
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -416,16 +418,17 @@ mod tests {
         // instead.
         // Or we go all the way and change the spec to have only one WASM module per zome..
         // See: https://github.com/holochain/holochain-rust/issues/342
-        dna.zomes = dna.zomes
+        dna.zomes = dna
+            .zomes
             .into_iter()
             .map(|(zome_name, mut zome)| {
                 if zome_name == "test_zome" {
-                    zome.capabilities.insert("".to_string(), validation_capability());
+                    zome.capabilities
+                        .insert("".to_string(), validation_capability());
                 }
                 (zome_name, zome)
             })
             .collect::<HashMap<String, Zome>>();
-
 
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

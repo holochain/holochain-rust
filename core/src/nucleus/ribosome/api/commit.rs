@@ -60,7 +60,9 @@ pub fn invoke_commit_entry(
     // allocate and encode result
     match json {
         Ok(j) => runtime.store_utf8(&j),
-        Err(_) => Ok(Some(RuntimeValue::I32(HcApiReturnCode::ResponseSerializationFailed as i32))),
+        Err(_) => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ResponseSerializationFailed as i32,
+        ))),
     }
 
     // @TODO test that failing validation prevents commits happening

@@ -9,7 +9,8 @@ use holochain_dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, Membrane},
-        entry_types::EntryType, Config, Zome,
+        entry_types::EntryType,
+        Config, Zome,
     },
     Dna,
 };
@@ -182,6 +183,8 @@ pub fn validation_capability() -> Capability {
         .unwrap();
 
     let mut validation_capability = Capability::new();
-    validation_capability.code = DnaWasm { code: validate_commit_wasm.as_ref().to_vec() };
+    validation_capability.code = DnaWasm {
+        code: validate_commit_wasm.as_ref().to_vec(),
+    };
     validation_capability
 }

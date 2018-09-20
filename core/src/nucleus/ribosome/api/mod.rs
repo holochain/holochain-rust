@@ -4,7 +4,7 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
-pub mod get_entry;
+pub mod get;
 pub mod get_links;
 pub mod init_globals;
 
@@ -18,7 +18,7 @@ use nucleus::{
     ribosome::{
         api::{
             call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
-            get_entry::invoke_get_entry, init_globals::invoke_init_globals,
+            get::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,
     },

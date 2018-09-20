@@ -18,10 +18,11 @@ Accepted
   thus manages (creates, deletes, starts, stops) instances. The Container is naturally
   mediating between any kind of user and all installed Holochain apps (here: app = Holochain instance =
   embodied DNA = *Phenotype*).  The Container is necessarily the only architectural piece that has unique
-  and direct access to the [core_api](core_api/src/lib.rs) and thus the capabilites and zome functions
+  and direct access to the [core_api](core_api/src/lib.rs) and thus the capabilities and zome functions
   of Holochain apps.
   
-  **Definition**: Any software module that uses Holochain's [core_api](core_api/src/lib.rs) to instantiate
+  **Definition**: Any software module (be it a library, network service or executable run by end-users) 
+  that uses Holochain's [core_api](core_api/src/lib.rs) to instantiate
   a Holochain instance is called *Container*. It is the necessary layer that *contains* an instance,
   as [core_api](core_api/src/lib.rs) being a library it (and instances created by it)
   can not exist as a process themselves.

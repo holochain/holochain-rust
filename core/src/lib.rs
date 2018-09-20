@@ -49,3 +49,4 @@ pub mod logger;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
+pub mod cas;

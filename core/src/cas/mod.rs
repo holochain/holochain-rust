@@ -20,7 +20,7 @@ pub trait AddressableContent {
 /// content addressable store
 /// implements storage in memory or persistently
 /// anything implementing AddressableContent can be stored and retrieved
-pub trait Store {
+pub trait ContentAddressableStore {
     /// stores AddressableContent in the Store by its Address as Content
     fn store(&self, content: &AddressableContent) -> Result<(), HolochainError>;
     /// true if the Address is in the Store, false otherwise.

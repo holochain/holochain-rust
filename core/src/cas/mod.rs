@@ -1,5 +1,5 @@
-use hash::HashString;
 use error::HolochainError;
+use hash::HashString;
 
 /// an address for some Content
 /// ideally it would be the Content but pragmatically it must be some HashString

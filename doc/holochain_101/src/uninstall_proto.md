@@ -7,4 +7,4 @@ This was compiled from the answers at https://stackoverflow.com/questions/137922
 3. Find the compiled package file under $GOPATH/pkg/<archictecture> (for example darwin_amd64).
 4. Delete $GOPATH/pkg/<architecture>/github.com/holochain
 5. execute this command:
-`go clean github.com/holochain/holochain-proto
+`go clean github.com/holochain/holochain-proto`

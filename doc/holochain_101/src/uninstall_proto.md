@@ -6,6 +6,9 @@ This was compiled from the answers at https://stackoverflow.com/questions/137922
 1. Delete `$GOPATH/src/github.com/holochain`
 1. Delete `$GOPATH/pkg/<architecture>/github.com/holochain`
 1. execute `go clean` with the -n flag to do a dry run and see what it will do:
+
 `go clean -i -n github.com/holochain/holochain-proto...`
+
 1. execute `go clean` for real
+
 `go clean -i github.com/holochain/holochain-proto...`

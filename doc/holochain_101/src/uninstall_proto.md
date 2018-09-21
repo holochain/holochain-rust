@@ -7,7 +7,8 @@ This was compiled from the answers at https://stackoverflow.com/questions/137922
 1. Delete `$GOPATH/src/github.com/holochain`
 1. Delete `$GOPATH/pkg/<architecture>/github.com/holochain`
 1. Delete the following files under `$GOPATH/bin/`:
-    ```hcadmin
+    ```
+    hcadmin
     hcd
     hcdev
     bs

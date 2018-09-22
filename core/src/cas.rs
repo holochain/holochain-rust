@@ -15,6 +15,7 @@ type Content = String;
 pub trait AddressableContent {
     fn address(&self) -> Address;
     fn content(&self) -> Content;
+    fn from_content(&Content) -> Self where Self: Sized;
 }
 
 /// content addressable store (CAS)
@@ -29,7 +30,7 @@ pub trait ContentAddressableStorage {
     fn contains(&self, address: &Address) -> Result<bool, HolochainError>;
     /// returns Some Content String if it is in the Store, else None
     /// note: the original struct/type is NOT restored/deserialized
-    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
+    fn fetch<C: AddressableContent> (&self, address: &Address) -> Result<Option<C>, HolochainError>;
 }
 
 #[cfg(test)]
@@ -43,6 +44,7 @@ mod tests {
     use hash::HashString;
     use multihash::Hash;
 
+    #[derive(Debug, PartialEq, Clone)]
     struct ExampleAddressableContent {
         content: Content,
     }
@@ -54,6 +56,10 @@ mod tests {
 
         fn content (&self) -> Content {
             self.content.clone()
+        }
+
+        fn from_content (content: &Content) -> Self {
+            ExampleAddressableContent::new(content)
         }
     }
 
@@ -87,8 +93,8 @@ mod tests {
             Ok(self.storage.contains_key(address))
         }
 
-        fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-            Ok(self.storage.get(address).and_then(|c| Some(c.to_string())))
+        fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
+            Ok(self.storage.get(address).and_then(|c| Some(C::from_content(c))))
         }
     }
 
@@ -101,6 +107,6 @@ mod tests {
 
         assert_eq!(Ok(()), cas.add(&content));
         assert_eq!(Ok(true), cas.contains(&content.address()));
-        assert_eq!(Ok(Some(content.content())), cas.fetch(&content.address()));
+        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
     }
 }

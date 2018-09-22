@@ -3,6 +3,8 @@ use rust_base58::ToBase58;
 use serde::Serialize;
 use serde_json;
 use std::fmt;
+use cas::content::AddressableContent;
+use cas::content::Content;
 
 // HashString newtype for String
 #[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
@@ -14,13 +16,26 @@ impl fmt::Display for HashString {
     }
 }
 
+impl AddressableContent for HashString {
+    fn content(&self) -> Content {
+        self.to_owned().to_str().clone()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        HashString::from(content.clone())
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
     }
+    // @TODO implement this as the ToString trait
     pub fn to_str(self) -> String {
         self.0
     }
+
+    // @TODO implement this as From<String> trait
     pub fn from(s: String) -> HashString {
         HashString(s)
     }

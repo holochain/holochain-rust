@@ -1,3 +1,6 @@
+use cas::content::AddressableContent;
+use cas::content::Content;
+
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
 pub const STATUS_NAME: &str = "crud-status";
@@ -13,6 +16,35 @@ bitflags! {
         const DELETED = 0x04;
         const MODIFIED = 0x08;
         const ANY = 0xFF;
+    }
+}
+
+impl ToString for CrudStatus {
+    fn to_string(&self) -> String {
+        self.bits().to_string()
+    }
+}
+
+impl<'a> From<&'a String> for CrudStatus {
+    fn from(s: &String) -> CrudStatus {
+        match s.as_ref() {
+            "1" => CrudStatus::LIVE,
+            "2" => CrudStatus::REJECTED,
+            "4" => CrudStatus::DELETED,
+            "8" => CrudStatus::MODIFIED,
+            "255" => CrudStatus::ANY,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl AddressableContent for CrudStatus {
+    fn content(&self) -> Content {
+        self.to_string()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        CrudStatus::from(content)
     }
 }
 

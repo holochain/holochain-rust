@@ -1,6 +1,6 @@
 pub mod storage;
 pub mod content;
-pub mod meta;
+pub mod eav;
 
 #[cfg(test)]
 mod tests {

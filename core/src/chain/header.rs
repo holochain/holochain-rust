@@ -1,6 +1,6 @@
 use chain::{Chain, SourceChain};
-use hash;
-use hash_table::{entry::Entry, HashString};
+use hash::HashString;
+use hash_table::entry::Entry;
 use key::Key;
 use multihash::Hash;
 
@@ -50,7 +50,7 @@ impl Header {
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: String::new(),
             link: chain.top_pair().as_ref().map(|p| p.header().hash()),
-            entry_hash: entry.hash().to_string(),
+            entry_hash: entry.hash(),
             link_same_type: chain
                 .top_pair_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
@@ -71,15 +71,15 @@ impl Header {
         &self.timestamp
     }
     /// link getter
-    pub fn link(&self) -> Option<String> {
+    pub fn link(&self) -> Option<HashString> {
         self.link.clone()
     }
     /// entry_hash getter
-    pub fn entry_hash(&self) -> &str {
+    pub fn entry_hash(&self) -> &HashString {
         &self.entry_hash
     }
     /// link_same_type getter
-    pub fn link_same_type(&self) -> Option<String> {
+    pub fn link_same_type(&self) -> Option<HashString> {
         self.link_same_type.clone()
     }
     /// entry_signature getter
@@ -88,22 +88,22 @@ impl Header {
     }
 
     /// hashes the header
-    pub fn hash(&self) -> String {
+    pub fn hash(&self) -> HashString {
         // @TODO this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let pieces: [&str; 6] = [
             &self.entry_type,
             &self.timestamp,
-            &self.link.clone().unwrap_or_default(),
-            &self.entry_hash,
-            &self.link_same_type.clone().unwrap_or_default(),
+            &self.link.clone().unwrap_or_default().to_str(),
+            &self.entry_hash.clone().to_str(),
+            &self.link_same_type.clone().unwrap_or_default().to_str(),
             &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(&string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
     }
 
     /// returns true if the header is valid
@@ -114,7 +114,7 @@ impl Header {
 }
 
 impl Key for Header {
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         self.hash()
     }
 }
@@ -122,6 +122,7 @@ impl Key for Header {
 #[cfg(test)]
 mod tests {
     use chain::{header::Header, tests::test_chain, SourceChain};
+    use hash::HashString;
     use hash_table::{entry::Entry, pair::tests::test_pair};
     use key::Key;
 
@@ -175,9 +176,9 @@ mod tests {
         let e = Entry::new(t, "foo");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry_hash(), e.hash());
+        assert_eq!(h.entry_hash(), &e.hash());
         assert_eq!(h.link(), None);
-        assert_ne!(h.hash(), "");
+        assert_ne!(h.hash(), HashString::new());
         assert!(h.validate());
     }
 
@@ -238,7 +239,7 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!(h.entry_hash(), e.hash());
+        assert_eq!(h.entry_hash(), &e.hash());
     }
 
     #[test]
@@ -298,7 +299,10 @@ mod tests {
         let e = Entry::new(t, "");
         let h = Header::new(&chain, &e);
 
-        assert_eq!("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9", h.hash());
+        assert_eq!(
+            HashString::from("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9".to_string()),
+            h.hash()
+        );
     }
 
     #[test]

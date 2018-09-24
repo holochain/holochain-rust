@@ -1,5 +1,5 @@
 use error::HolochainError;
-use hash;
+use hash::HashString;
 use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
 use key::Key;
@@ -54,14 +54,14 @@ impl Entry {
     }
 
     /// hashes the entry
-    pub fn hash(&self) -> String {
+    pub fn hash(&self) -> HashString {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let string_to_hash = &self.content;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        hash::str_to_b58_hash(string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(string_to_hash, Hash::SHA2256)
     }
 
     /// content getter
@@ -92,7 +92,7 @@ impl Entry {
 }
 
 impl Key for Entry {
-    fn key(&self) -> String {
+    fn key(&self) -> HashString {
         self.hash()
     }
 }
@@ -115,6 +115,7 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
@@ -156,8 +157,8 @@ pub mod tests {
     }
 
     /// the correct hash for test_entry()
-    pub fn test_entry_hash() -> String {
-        "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".into()
+    pub fn test_entry_hash() -> HashString {
+        HashString::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
     }
 
     /// dummy entry, same as test_entry()
@@ -227,7 +228,7 @@ pub mod tests {
         let e = Entry::new(t, c);
 
         assert_eq!(e.content(), c);
-        assert_ne!(e.hash(), "");
+        assert_ne!(e.hash(), HashString::new());
         assert!(e.validate());
     }
 

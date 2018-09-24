@@ -1,9 +1,12 @@
+//! Module for ZomeApiFunctions
+//! ZomeApiFunctions are the functions provided by the ribosome that are callable by Zomes.
+
 pub mod call;
 pub mod commit;
 pub mod debug;
 pub mod get;
+pub mod get_links;
 pub mod init_globals;
-
 use action::ActionWrapper;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -27,23 +30,29 @@ use std::{
 };
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
-    ValueType,
+    ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
+    TrapKind, ValueType,
 };
-
-// Zome API functions are exposed by HC to zome logic
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
+/// Enumeration of all the Zome Functions known and usable in Zomes.
+/// Enumeration can convert to str.
 #[repr(usize)]
-#[derive(FromPrimitive, Debug, PartialEq)]
+#[derive(FromPrimitive, Debug, PartialEq, Eq)]
 pub enum ZomeApiFunction {
     /// Error index for unimplemented functions
     MissingNo = 0,
+
+    /// Abort is a way to receive useful debug info from
+    /// assemblyscript memory allocators
+    /// message: mem address in the wasm memory for an error message
+    /// filename: mem address in the wasm memory for a filename
+    /// line: line number
+    /// column: column number
+    Abort,
 
     /// Zome API
 
@@ -72,6 +81,7 @@ impl Defn for ZomeApiFunction {
     fn as_str(&self) -> &'static str {
         match *self {
             ZomeApiFunction::MissingNo => "",
+            ZomeApiFunction::Abort => "abort",
             ZomeApiFunction::Debug => "hc_debug",
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
@@ -106,6 +116,7 @@ impl FromStr for ZomeApiFunction {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "abort" => Ok(ZomeApiFunction::Abort),
             "hc_debug" => Ok(ZomeApiFunction::Debug),
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
@@ -123,8 +134,12 @@ impl ZomeApiFunction {
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
+        // TODO Implement a proper "abort" function for handling assemblyscript aborts
+        // @see: https://github.com/holochain/holochain-rust/issues/324
+
         match *self {
             ZomeApiFunction::MissingNo => noop,
+            ZomeApiFunction::Abort => noop,
             ZomeApiFunction::Debug => invoke_debug,
             ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
@@ -138,7 +153,7 @@ impl ZomeApiFunction {
 // Wasm call
 //--------------------------------------------------------------------------------------------------
 
-/// Object holding data to pass around to invoked API functions
+/// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
 pub struct Runtime {
     pub context: Arc<Context>,
@@ -249,18 +264,35 @@ pub fn call(
             field_name: &str,
             _signature: &Signature,
         ) -> Result<FuncRef, InterpreterError> {
-            // Take the canonical name and find the corresponding ZomeApiFunction index
-            let index = ZomeApiFunction::str_to_index(&field_name);
-            match index {
-                index if index == ZomeApiFunction::MissingNo as usize => {
+            let api_fn = match ZomeApiFunction::from_str(&field_name) {
+                Ok(api_fn) => api_fn,
+                Err(_) => {
                     return Err(InterpreterError::Function(format!(
                         "host module doesn't export function with name {}",
                         field_name
                     )));
                 }
+            };
+
+            match api_fn {
+                // Abort is a way to receive useful debug info from
+                // assemblyscript memory allocators, see enum definition for function signature
+                ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(
+                    Signature::new(
+                        &[
+                            ValueType::I32,
+                            ValueType::I32,
+                            ValueType::I32,
+                            ValueType::I32,
+                        ][..],
+                        None,
+                    ),
+                    api_fn as usize,
+                )),
+                // All of our Zome API Functions have the same signature
                 _ => Ok(FuncInstance::alloc_host(
                     Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                    index as usize,
+                    api_fn as usize,
                 )),
             }
         }
@@ -270,10 +302,10 @@ pub fn call(
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
-    // Create module instance from wasm module, and without starting it
+    // Create module instance from wasm module, and start it if start is defined
     let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
-        .assert_no_start();
+        .run_start(&mut NopExternals)?;
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
@@ -336,11 +368,15 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
+        tests::{test_context_and_logger, TestLogger},
         Instance,
     };
     use nucleus::{
-        ribosome::api::{call, Runtime},
+        ribosome::{
+            api::{call, Runtime},
+            callback::{tests::test_callback_instance, Callback},
+            Defn,
+        },
         ZomeFnCall,
     };
     use std::{
@@ -499,8 +535,12 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
-        let (context, logger) = test_context_and_logger("joan");
+        //let instance = test_instance(dna.clone());
+        let instance =
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+
+        let (c, logger) = test_context_and_logger("joan");
+        let context = instance.initialize_context(c);
 
         test_zome_api_function_call(
             &dna.name.to_string(),

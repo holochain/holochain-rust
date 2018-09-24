@@ -1,3 +1,4 @@
+use action::ActionWrapper;
 use error::HolochainError;
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
@@ -17,6 +18,10 @@ impl Default for NucleusStatus {
     }
 }
 
+pub type ValidationResult = Result<(), String>;
+
+/// The state-slice for the Nucleus.
+/// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     pub dna: Option<Dna>,
@@ -26,6 +31,9 @@ pub struct NucleusState {
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_calls: HashMap<ZomeFnCall, Option<Result<String, HolochainError>>>,
+    pub validation_results: HashMap<ActionWrapper, ValidationResult>,
+    #[cfg(debug)]
+    pub validations_running: Vec<ActionWrapper>,
 }
 
 impl NucleusState {
@@ -34,6 +42,9 @@ impl NucleusState {
             dna: None,
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
+            validation_results: HashMap::new(),
+            #[cfg(debug)]
+            validations_running: Vec::new(),
         }
     }
 
@@ -64,6 +75,12 @@ impl NucleusState {
     }
     pub fn status(&self) -> NucleusStatus {
         self.status.clone()
+    }
+    pub fn validation_result(&self, action: &ActionWrapper) -> Option<ValidationResult> {
+        match self.validation_results.get(action) {
+            None => None,
+            Some(r) => Some(r.clone()),
+        }
     }
 }
 

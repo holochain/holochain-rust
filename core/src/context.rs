@@ -5,9 +5,9 @@ use persister::Persister;
 use state::State;
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
-/// Context holds those aspects of a living Holochain instance that components need to operate.
-/// This includes modules that are injected from the outside like logger and persister
-/// but also the state of the instance that gets injected before passing on the context
+/// Context holds the components that parts of a Holochain instance need in order to operate.
+/// This includes components that are injected from the outside like logger and persister
+/// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {

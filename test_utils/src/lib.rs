@@ -9,7 +9,7 @@ use holochain_dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, Membrane},
-        entry_types::EntryType,
+        entry_types::EntryTypeDef,
         Config, Zome,
     },
     Dna,
@@ -69,7 +69,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     capabilities.insert(cap_name.to_string(), capability);
 
     let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), EntryType::new());
+    entry_types.insert("testEntryType".to_string(), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",

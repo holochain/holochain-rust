@@ -228,40 +228,6 @@ impl Dna {
         Ok(cap.unwrap())
     }
 
-    /// Return a Zome's WASM bytecode for a specified Capability
-    pub fn get_wasm_from_capability<'a>(
-        &'a self,
-        zome: &'a zome::Zome,
-        capability_name: &str,
-    ) -> Option<&'a wasm::DnaWasm> {
-        let capability = zome.capabilities.get(capability_name);
-        Some(&capability?.code)
-    }
-
-    /// Find a Zome and return it's WASM bytecode for a specified Capability
-    pub fn get_wasm_from_capability_name<T: Into<String>>(
-        &self,
-        zome_name: T,
-        capability_name: T,
-    ) -> Option<&wasm::DnaWasm> {
-        let zome_name = zome_name.into();
-        let capability_name = capability_name.into();
-        let zome = self.get_zome(&zome_name)?;
-        let wasm = self.get_wasm_from_capability(&zome, &capability_name)?;
-        Some(wasm)
-    }
-
-    /// Return a Zome's WASM bytecode for the validation of an entry
-    pub fn get_validation_bytecode_for_entry_type(
-        &self,
-        zome_name: &str,
-        entry_type_name: &str,
-    ) -> Option<&wasm::DnaWasm> {
-        let zome = self.get_zome(zome_name)?;
-        let entry_type = zome.entry_types.get(entry_type_name)?;
-        Some(&entry_type.validation)
-    }
-
     pub fn get_zome_name_for_entry_type(&self, entry_type: String) -> Option<String> {
         for (zome_name, zome) in &self.zomes {
             for (entry_type_name, _) in &zome.entry_types {
@@ -398,7 +364,7 @@ pub mod tests {
         };
         let mut zome = zome::Zome::default();
         zome.entry_types
-            .insert("".to_string(), zome::entry_types::EntryType::new());
+            .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
 
         let fixture = Dna::from_json_str(

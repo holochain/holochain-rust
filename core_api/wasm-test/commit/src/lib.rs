@@ -61,7 +61,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
 fn test_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 {
   // Call Commit API function
-  let hash = hdk_commit(mem_stack, "post", "hello");
+  let hash = hdk_commit(mem_stack, "testEntryType", "hello");
 
   // Return result in complex format
   return

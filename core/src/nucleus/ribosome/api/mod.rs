@@ -1,9 +1,12 @@
+//! Module for ZomeApiFunctions
+//! ZomeApiFunctions are the functions provided by the ribosome that are callable by Zomes.
+
 pub mod call;
 pub mod commit;
 pub mod debug;
 pub mod get;
+pub mod get_links;
 pub mod init_globals;
-
 use action::ActionWrapper;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -31,14 +34,12 @@ use wasmi::{
     TrapKind, ValueType,
 };
 
-// Zome API functions are exposed by HC to zome logic
-
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Enumeration of all Zome functions known and used by HC Core
-/// Enumeration converts to str
+/// Enumeration of all the Zome Functions known and usable in Zomes.
+/// Enumeration can convert to str.
 #[repr(usize)]
 #[derive(FromPrimitive, Debug, PartialEq, Eq)]
 pub enum ZomeApiFunction {
@@ -152,7 +153,7 @@ impl ZomeApiFunction {
 // Wasm call
 //--------------------------------------------------------------------------------------------------
 
-/// Object holding data to pass around to invoked API functions
+/// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
 pub struct Runtime {
     pub context: Arc<Context>,
@@ -367,11 +368,15 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
+        tests::{test_context_and_logger, TestLogger},
         Instance,
     };
     use nucleus::{
-        ribosome::api::{call, Runtime},
+        ribosome::{
+            api::{call, Runtime},
+            callback::{tests::test_callback_instance, Callback},
+            Defn,
+        },
         ZomeFnCall,
     };
     use std::{
@@ -530,8 +535,12 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
-        let (context, logger) = test_context_and_logger("joan");
+        //let instance = test_instance(dna.clone());
+        let instance =
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+
+        let (c, logger) = test_context_and_logger("joan");
+        let context = instance.initialize_context(c);
 
         test_zome_api_function_call(
             &dna.name.to_string(),

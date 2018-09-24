@@ -1,9 +1,12 @@
+//! The library implementing the holochain pattern of validation rules + local source chain + DHT
+
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
 extern crate multihash;
 extern crate rust_base58;
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
 extern crate snowflake;
 #[cfg(test)]

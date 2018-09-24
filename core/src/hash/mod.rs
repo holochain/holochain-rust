@@ -1,10 +1,9 @@
+use cas::content::{AddressableContent, Content};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use serde::Serialize;
 use serde_json;
 use std::fmt;
-use cas::content::AddressableContent;
-use cas::content::Content;
 
 // HashString newtype for String
 #[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]

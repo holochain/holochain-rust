@@ -1,5 +1,4 @@
-use cas::content::AddressableContent;
-use cas::content::Content;
+use cas::content::{AddressableContent, Content};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -51,6 +50,14 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
+    use cas::{
+        content::{tests::ExampleAddressableContent, AddressableContent, Content},
+        eav::{
+            tests::{eav_round_trip_test_runner, ExampleEntityAttributeValueStorage},
+            EntityAttributeValue, EntityAttributeValueStorage,
+        },
+    };
+    use std::collections::HashSet;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -76,4 +83,30 @@ mod tests {
 
         assert!(CrudStatus::ANY.contains(CrudStatus::LIVE));
     }
+
+    #[test]
+    fn crud_status_eav() {
+        let zip_crud: Vec<(String, CrudStatus)> = vec![
+            (String::from("1"), CrudStatus::LIVE),
+            (String::from("2"), CrudStatus::REJECTED),
+            (String::from("4"), CrudStatus::DELETED),
+            (String::from("8"), CrudStatus::MODIFIED),
+            (String::from("255"), CrudStatus::ANY),
+        ];
+        zip_crud
+            .into_iter()
+            .map(|c| {
+                assert_eq!(CrudStatus::from_content(&c.0).content(), c.1.to_string());
+            })
+            .collect::<Vec<_>>();
+    }
+
+    #[test]
+    fn crud_status_example_eav() {
+        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
+        let attribute = "favourite-badge".to_string();
+        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        eav_round_trip_test_runner(entity_content, attribute, value_content);
+    }
+
 }

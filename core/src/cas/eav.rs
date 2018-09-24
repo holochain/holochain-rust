@@ -1,5 +1,5 @@
-use error::HolochainError;
 use cas::content::Address;
+use error::HolochainError;
 use std::collections::HashSet;
 
 /// EAV (entity-attribute-value) data
@@ -36,7 +36,7 @@ pub struct EntityAttributeValue {
 
 impl EntityAttributeValue {
     pub fn new(entity: &Entity, attribute: &Attribute, value: &Value) -> EntityAttributeValue {
-        EntityAttributeValue{
+        EntityAttributeValue {
             entity: entity.clone(),
             attribute: attribute.clone(),
             value: value.clone(),
@@ -71,21 +71,23 @@ pub trait EntityAttributeValueStorage {
     /// Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
     /// Some(Attribute) = requires the given attribute (e.g. all links)
     /// Some(Value) = requires the given value (e.g. all entities referencing an Address)
-    fn fetch_eav(&self, entity: Option<Entity>, attribute: Option<Attribute>, value: Option<Value>) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
+    fn fetch_eav(
+        &self,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
 #[cfg(test)]
 pub mod tests {
+    use cas::{
+        content::{tests::ExampleAddressableContent, AddressableContent, Content},
+        eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    };
     use error::HolochainError;
-    use cas::eav::Entity;
-    use cas::eav::Attribute;
-    use cas::eav::Value;
-    use cas::eav::EntityAttributeValueStorage;
-    use cas::eav::EntityAttributeValue;
+    use hash_table::status::CrudStatus;
     use std::collections::HashSet;
-    use cas::content::Content;
-    use cas::content::AddressableContent;
-    use cas::content::tests::ExampleAddressableContent;
 
     pub struct ExampleEntityAttributeValueStorage {
         eavs: HashSet<EntityAttributeValue>,
@@ -93,7 +95,7 @@ pub mod tests {
 
     impl ExampleEntityAttributeValueStorage {
         pub fn new() -> ExampleEntityAttributeValueStorage {
-            ExampleEntityAttributeValueStorage{
+            ExampleEntityAttributeValueStorage {
                 eavs: HashSet::new(),
             }
         }
@@ -105,44 +107,53 @@ pub mod tests {
             Ok(())
         }
 
-        fn fetch_eav(&self, entity: Option<Entity>, attribute: Option<Attribute>, value: Option<Value>) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-            let filtered = self.eavs.iter().cloned()
-                    .filter(|eav| {
-                        match entity {
-                            Some(ref e) => &eav.entity() == e,
-                            None => true,
-                        }
-                    })
-                    .filter(|eav| {
-                        match attribute {
-                            Some(ref a) => &eav.attribute() == a,
-                            None => true,
-                        }
-                    })
-                    .filter(|eav| {
-                        match value {
-                            Some(ref v) => &eav.value() == v,
-                            None => true,
-                        }
-                    })
-                    .collect::<HashSet<EntityAttributeValue>>();
+        fn fetch_eav(
+            &self,
+            entity: Option<Entity>,
+            attribute: Option<Attribute>,
+            value: Option<Value>,
+        ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+            let filtered = self
+                .eavs
+                .iter()
+                .cloned()
+                .filter(|eav| match entity {
+                    Some(ref e) => &eav.entity() == e,
+                    None => true,
+                })
+                .filter(|eav| match attribute {
+                    Some(ref a) => &eav.attribute() == a,
+                    None => true,
+                })
+                .filter(|eav| match value {
+                    Some(ref v) => &eav.value() == v,
+                    None => true,
+                })
+                .collect::<HashSet<EntityAttributeValue>>();
             Ok(filtered)
         }
     }
 
-    #[test]
-    fn example_eav_round_trip () {
-        let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
-        let attribute = "favourite-color".to_string();
-        let value_content: Content = AddressableContent::from_content(&"blue".to_string());
-
-        let eav = EntityAttributeValue::new(&entity_content.address(), &attribute, &value_content.address());
+    pub fn eav_round_trip_test_runner(
+        entity_content: impl AddressableContent,
+        attribute: String,
+        value_content: impl AddressableContent,
+    ) {
+        let eav = EntityAttributeValue::new(
+            &entity_content.address(),
+            &attribute,
+            &value_content.address(),
+        );
         let mut eav_storage = ExampleEntityAttributeValueStorage::new();
 
         assert_eq!(
             HashSet::new(),
             eav_storage
-                .fetch_eav(Some(entity_content.address()), Some(attribute.clone()), Some(value_content.address()))
+                .fetch_eav(
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    Some(value_content.address())
+                )
                 .expect("could not fetch eav"),
         );
 
@@ -151,23 +162,95 @@ pub mod tests {
         let mut expected = HashSet::new();
         expected.insert(eav.clone());
         // some examples of constraints that should all return the eav
-        for (e, a, v) in vec![// constrain all
-                              (Some(entity_content.address()), Some(attribute.clone()), Some(value_content.address())),
-                              // open entity
-                              (None, Some(attribute.clone()), Some(value_content.address())),
-                              // open attribute
-                              (Some(entity_content.address()), None, Some(value_content.address())),
-                              // open value
-                              (Some(entity_content.address()), Some(attribute.clone()), None),
-                              // open
-                              (None, None, None),
+        for (e, a, v) in vec![
+            // constrain all
+            (
+                Some(entity_content.address()),
+                Some(attribute.clone()),
+                Some(value_content.address()),
+            ),
+            // open entity
+            (None, Some(attribute.clone()), Some(value_content.address())),
+            // open attribute
+            (
+                Some(entity_content.address()),
+                None,
+                Some(value_content.address()),
+            ),
+            // open value
+            (
+                Some(entity_content.address()),
+                Some(attribute.clone()),
+                None,
+            ),
+            // open
+            (None, None, None),
         ] {
             assert_eq!(
                 expected,
-                eav_storage
-                    .fetch_eav(e, a, v)
-                    .expect("could not fetch eav"),
+                eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
             );
         }
     }
+
+    #[test]
+    fn example_eav_round_trip() {
+        let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
+        let attribute = "favourite-color".to_string();
+        let value_content: Content = AddressableContent::from_content(&"blue".to_string());
+
+        let eav = EntityAttributeValue::new(
+            &entity_content.address(),
+            &attribute,
+            &value_content.address(),
+        );
+        let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+
+        assert_eq!(
+            HashSet::new(),
+            eav_storage
+                .fetch_eav(
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    Some(value_content.address())
+                )
+                .expect("could not fetch eav"),
+        );
+
+        eav_storage.add_eav(&eav).expect("could not add eav");
+
+        let mut expected = HashSet::new();
+        expected.insert(eav.clone());
+        // some examples of constraints that should all return the eav
+        for (e, a, v) in vec![
+            // constrain all
+            (
+                Some(entity_content.address()),
+                Some(attribute.clone()),
+                Some(value_content.address()),
+            ),
+            // open entity
+            (None, Some(attribute.clone()), Some(value_content.address())),
+            // open attribute
+            (
+                Some(entity_content.address()),
+                None,
+                Some(value_content.address()),
+            ),
+            // open value
+            (
+                Some(entity_content.address()),
+                Some(attribute.clone()),
+                None,
+            ),
+            // open
+            (None, None, None),
+        ] {
+            assert_eq!(
+                expected,
+                eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
+            );
+        }
+    }
+
 }

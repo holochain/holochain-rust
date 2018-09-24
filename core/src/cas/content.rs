@@ -22,11 +22,13 @@ pub trait AddressableContent {
     /// the Content that would be stored in a ContentAddressableStorage
     fn content(&self) -> Content;
     /// restore/deserialize the original struct/type from serialized Content
-    fn from_content(&Content) -> Self where Self: Sized;
+    fn from_content(&Content) -> Self
+    where
+        Self: Sized;
 }
 
 impl AddressableContent for Content {
-    fn content (&self) -> Content {
+    fn content(&self) -> Content {
         self.clone()
     }
 
@@ -37,8 +39,7 @@ impl AddressableContent for Content {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::Content;
-    use cas::content::AddressableContent;
+    use cas::content::{AddressableContent, Content};
 
     #[derive(Debug, PartialEq, Clone)]
     /// some struct that can be content addressed
@@ -48,11 +49,11 @@ pub mod tests {
     }
 
     impl AddressableContent for ExampleAddressableContent {
-        fn content (&self) -> Content {
+        fn content(&self) -> Content {
             self.content.clone()
         }
 
-        fn from_content (content: &Content) -> Self {
+        fn from_content(content: &Content) -> Self {
             ExampleAddressableContent {
                 content: content.clone(),
             }
@@ -68,14 +69,15 @@ pub mod tests {
 
     /// identical implementation to ExampleAddressableContent for simplicity
     impl AddressableContent for OtherExampleAddressableContent {
-        fn content (&self) -> Content {
+        fn content(&self) -> Content {
             self.content.clone()
         }
 
-        fn from_content (content: &Content) -> Self {
+        fn from_content(content: &Content) -> Self {
             OtherExampleAddressableContent {
                 content: content.clone(),
             }
         }
     }
+
 }

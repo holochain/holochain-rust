@@ -1,6 +1,5 @@
+use cas::content::{Address, AddressableContent};
 use error::HolochainError;
-use cas::content::AddressableContent;
-use cas::content::Address;
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
@@ -15,17 +14,17 @@ pub trait ContentAddressableStorage {
     /// returns Some AddressableContent if it is in the Store, else None
     /// AddressableContent::from_content() can be used to allow the compiler to infer the type
     /// @see the fetch implementation for ExampleCas in the cas module tests
-    fn fetch<C: AddressableContent> (&self, address: &Address) -> Result<Option<C>, HolochainError>;
+    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError>;
 }
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::HashMap;
-    use cas::content::Address;
-    use cas::content::Content;
-    use cas::storage::ContentAddressableStorage;
-    use cas::content::AddressableContent;
+    use cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    };
     use error::HolochainError;
+    use std::collections::HashMap;
 
     /// some struct to show an example ContentAddressableStorage implementation
     /// there is no persistence or concurrency in this example so use a raw HashMap
@@ -35,7 +34,7 @@ pub mod tests {
 
     impl ExampleContentAddressableStorage {
         pub fn new() -> ExampleContentAddressableStorage {
-            ExampleContentAddressableStorage{
+            ExampleContentAddressableStorage {
                 storage: HashMap::new(),
             }
         }
@@ -51,8 +50,14 @@ pub mod tests {
             Ok(self.storage.contains_key(address))
         }
 
-        fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-            Ok(self.storage.get(address).and_then(|c| Some(C::from_content(c))))
+        fn fetch<C: AddressableContent>(
+            &self,
+            address: &Address,
+        ) -> Result<Option<C>, HolochainError> {
+            Ok(self
+                .storage
+                .get(address)
+                .and_then(|c| Some(C::from_content(c))))
         }
     }
 }

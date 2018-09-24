@@ -183,16 +183,16 @@ impl Runtime {
             return String::new();
         }
         let allocation = allocation
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .expect("received error instead of valid encoded allocation");
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
         String::from_utf8(bin_arg)
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
     }
 
     /// Store a string in wasm memory.
@@ -209,10 +209,10 @@ impl Runtime {
         }
 
         let encoded_allocation = allocation_of_result
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-        .encode();
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
+            .encode();
 
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))

@@ -1,14 +1,16 @@
-pub mod storage;
 pub mod content;
 pub mod eav;
+pub mod storage;
 
 #[cfg(test)]
 mod tests {
-    use cas::storage::ContentAddressableStorage;
-    use cas::content::AddressableContent;
-    use cas::content::tests::ExampleAddressableContent;
-    use cas::content::tests::OtherExampleAddressableContent;
-    use cas::storage::tests::ExampleContentAddressableStorage;
+    use cas::{
+        content::{
+            tests::{ExampleAddressableContent, OtherExampleAddressableContent},
+            AddressableContent,
+        },
+        storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
+    };
 
     #[test]
     fn example_content_round_trip() {
@@ -31,6 +33,9 @@ mod tests {
         assert_eq!(Ok(true), cas.contains(&content.address()));
         assert_eq!(Ok(true), cas.contains(&other_content.address()));
         assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-        assert_eq!(Ok(Some(other_content.clone())), cas.fetch(&other_content.address()));
+        assert_eq!(
+            Ok(Some(other_content.clone())),
+            cas.fetch(&other_content.address())
+        );
     }
 }

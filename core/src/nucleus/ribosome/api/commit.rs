@@ -1,12 +1,12 @@
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
+extern crate futures;
+use agent::{actions::commit::*, state::ActionResponse};
+use futures::{executor::block_on, FutureExt};
 use json::ToJson;
-use nucleus::ribosome::{
-    api::{HcApiReturnCode, Runtime},
-    callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
+use nucleus::{
+    actions::validate::*,
+    ribosome::api::{HcApiReturnCode, Runtime},
 };
 use serde_json;
-use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
@@ -41,66 +41,32 @@ pub fn invoke_commit_entry(
     let entry =
         ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
 
-    // @TODO test that failing validation prevents commits happening
-    // @see https://github.com/holochain/holochain-rust/issues/206
-    if let CallbackResult::Fail(_) = validate_commit(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        &runtime.zome_call.zome_name,
-        &CallbackParams::ValidateCommit(entry.clone()),
-    ) {
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::CallbackFailed as i32,
-        )));
-    }
-    // anything other than a fail means we should commit the entry
-
-    // Create Commit Action
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
-    // Send Action and block for result
-    let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        action_wrapper.clone(),
-        move |state: &::state::State| {
-            let mut actions_copy = state.agent().actions();
-            match actions_copy.remove(&action_wrapper) {
-                Some(v) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(v)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
-            }
-        },
+    // Wait for future to be resolved
+    let task_result: Result<ActionResponse, String> = block_on(
+        // First validate entry:
+        validate_entry(entry.clone(), &runtime.action_channel, &runtime.context)
+            // if successful, commit entry:
+            .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
     );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
 
-    let action_result = receiver.recv().expect("observer dropped before done");
+    let json = match task_result {
+        Ok(action_response) => match action_response {
+            ActionResponse::Commit(_) => action_response.to_json(),
+            _ => Ok("Unknown error".to_string()),
+        },
+        Err(error_string) => Ok(json!({ "error": error_string }).to_string()),
+    };
 
-    match action_result {
-        ActionResponse::Commit(_) => {
-            // serialize, allocate and encode result
-            let maybe_json = action_result.to_json();
-            match maybe_json {
-                Ok(json_str) => runtime.store_utf8(&json_str),
-                Err(_) => Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ResponseSerializationFailed as i32,
-                ))),
-            }
-        }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ReceivedWrongActionResult as i32,
+    // allocate and encode result
+    match json {
+        Ok(j) => runtime.store_utf8(&j),
+        Err(_) => Ok(Some(RuntimeValue::I32(
+            HcApiReturnCode::ResponseSerializationFailed as i32,
         ))),
     }
+
+    // @TODO test that failing validation prevents commits happening
+    // @see https://github.com/holochain/holochain-rust/issues/206
 }
 
 #[cfg(test)]

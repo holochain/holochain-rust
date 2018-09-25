@@ -823,8 +823,8 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::ErrorGeneric(err)) => {
-                assert_eq!(err, "Function: Module doesn\'t have export xxx")
+            Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(err))) => {
+                assert_eq!(err, "Zome function \'xxx\' not found")
             }
             _ => assert!(false),
         }

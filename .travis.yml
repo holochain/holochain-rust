@@ -10,7 +10,7 @@ branches:
 addons:
   apt:
     packages:
-      libzmq3-dev
+      - libzmq3-dev
 
 jobs:
   include:

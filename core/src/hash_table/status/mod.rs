@@ -12,6 +12,8 @@ bitflags! {
         const REJECTED = 0x02;
         const DELETED = 0x04;
         const MODIFIED = 0x08;
+        /// CRDT resolution in progress
+        const LOCKED = 0x10;
         const ANY = 0xFF;
     }
 }
@@ -30,6 +32,7 @@ mod tests {
         assert_eq!(CrudStatus::REJECTED.bits(), 2);
         assert_eq!(CrudStatus::DELETED.bits(), 4);
         assert_eq!(CrudStatus::MODIFIED.bits(), 8);
+        assert_eq!(CrudStatus::LOCKED.bits(), 16);
         assert_eq!(CrudStatus::ANY.bits(), 255);
     }
 
@@ -41,6 +44,7 @@ mod tests {
         assert!(example_mask.contains(CrudStatus::DELETED));
         assert!(!example_mask.contains(CrudStatus::LIVE));
         assert!(!example_mask.contains(CrudStatus::MODIFIED));
+        assert!(!example_mask.contains(CrudStatus::LOCKED));
 
         assert!(CrudStatus::ANY.contains(CrudStatus::LIVE));
     }

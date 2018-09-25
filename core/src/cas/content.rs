@@ -112,7 +112,7 @@ pub mod tests {
     fn example_addressable_content_trait_test() {
         let example_addressable_content = test_example_addressable_content();
 
-        assert_eq!(test_example_addressable_content, ExampleAddressableContent::from_content(&test_content()));
+        assert_eq!(example_addressable_content, ExampleAddressableContent::from_content(&test_content()));
         assert_eq!(test_content(), example_addressable_content.content());
         assert_eq!(HashString::new(), example_addressable_content.address());
     }
@@ -122,7 +122,7 @@ pub mod tests {
     fn other_example_addressable_content_trait_test() {
         let other_example_addressable_content = test_other_example_addressable_content();
 
-        assert_eq!(test_other_example_addressable_content, OtherExampleAddressableContent::from_content(&test_content()));
+        assert_eq!(other_example_addressable_content, OtherExampleAddressableContent::from_content(&test_content()));
         assert_eq!(test_content(), other_example_addressable_content.content());
         assert_eq!(HashString::new(), other_example_addressable_content.address());
     }
@@ -133,7 +133,6 @@ pub mod tests {
         let example_addressable_content = test_example_addressable_content();
         let other_example_addressable_content = test_other_example_addressable_content();
 
-        assert_eq!(example_addressable_content, other_example_addressable_content);
         assert_eq!(example_addressable_content.content(), other_example_addressable_content.content());
         assert_eq!(example_addressable_content.address(), other_example_addressable_content.address());
     }

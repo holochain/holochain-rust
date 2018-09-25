@@ -28,6 +28,8 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::PutEntryResult).clone()
     }
 
+    // TODO #358 - Rename entry to something else. Entry is only to be used for a chain.
+    // https://github.com/holochain/holochain-rust/pull/340#discussion_r220332130
     fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
         let response = self.block_on_ask(Protocol::GetEntry(key.clone()));
         unwrap_to!(response => Protocol::GetEntryResult).clone()

@@ -38,6 +38,7 @@ pub mod action;
 pub mod actor;
 pub mod agent;
 pub mod chain;
+pub mod cas;
 pub mod context;
 pub mod error;
 pub mod hash;

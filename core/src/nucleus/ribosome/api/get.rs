@@ -223,7 +223,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmbxF7U8tSvGzzRmQTNdSXK6kUMKzcSXE54jkN1WMnb6Qo\",\"entry_hash\":\"");
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmVxuNWJ6FsGqp8pg4q8eV5brnfiN3XpfsNF76Pd4dfe4h\",\"entry_hash\":\"");
         expected.push_str(&test_entry_hash().to_str());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 

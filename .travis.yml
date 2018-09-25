@@ -7,6 +7,12 @@ branches:
     - master
     - develop
 
+addons:
+  apt:
+    packages:
+      - nodejs
+      - npm
+
 before_script:
  - echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list
  - wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add

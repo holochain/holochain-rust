@@ -7,12 +7,6 @@ branches:
     - master
     - develop
 
-addons:
-  apt:
-    packages:
-      - nodejs
-      - npm
-
 before_script:
  - echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list
  - wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add
@@ -40,8 +34,10 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Standard tests + code coverage"
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
+      language: node_js
+      node_js:
+        - "8"
+
       # sudo is needed for codecov, which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true

@@ -16,6 +16,9 @@ pub trait AddressableContent {
     /// the Address the Content would be available at once stored in a ContentAddressableStorage
     /// default implementation is provided as hashing Content with sha256
     /// the default implementation should cover most use-cases
+    /// it is critical that there are no hash collisions across all stored AddressableContent
+    /// it is recommended to implement an "address space" prefix for address algorithms that don't
+    /// offer strong cryptographic guarantees like sha et. al.
     fn address(&self) -> Address {
         HashString::encode_from_str(&self.content(), Hash::SHA2256)
     }

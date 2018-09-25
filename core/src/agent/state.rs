@@ -3,7 +3,8 @@ use agent::keys::Keys;
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash_table::pair::Pair;
+use hash::HashString;
+use hash_table::{entry::Entry, pair::Pair};
 use instance::Observer;
 use json::ToJson;
 use key::Key;
@@ -12,8 +13,9 @@ use std::{
     sync::{mpsc::Sender, Arc},
 };
 
+/// The state-slice for the Agent.
+/// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
-/// struct to track the internal state of an agent exposed to reducers/observers
 pub struct AgentState {
     keys: Option<Keys>,
     /// every action and the result of that action
@@ -59,6 +61,8 @@ impl AgentState {
 pub enum ActionResponse {
     Commit(Result<Pair, HolochainError>),
     GetEntry(Option<Pair>),
+    GetLinks(Result<Vec<HashString>, HolochainError>),
+    LinkEntries(Result<Entry, HolochainError>),
 }
 
 impl ToJson for ActionResponse {
@@ -71,6 +75,14 @@ impl ToJson for ActionResponse {
             ActionResponse::GetEntry(result) => match result {
                 Some(pair) => Ok(pair.to_json()?),
                 None => Ok("".to_string()),
+            },
+            ActionResponse::GetLinks(result) => match result {
+                Ok(hash_list) => Ok(json!(hash_list).to_string()),
+                Err(err) => Ok((*err).to_json()?),
+            },
+            ActionResponse::LinkEntries(result) => match result {
+                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Err(err) => Ok((*err).to_json()?),
             },
         }
     }
@@ -168,9 +180,11 @@ pub mod tests {
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use chain::tests::test_chain;
     use error::HolochainError;
-    use hash_table::pair::tests::test_pair;
+    use hash::HashString;
+    use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
     use instance::tests::{test_context, test_instance_blank};
     use json::ToJson;
+    use key::Key;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -274,7 +288,7 @@ pub mod tests {
 
     #[test]
     /// test response to json
-    fn test_response_to_json() {
+    fn test_commit_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::Commit(Ok(test_pair())).to_json().unwrap(),
@@ -285,11 +299,46 @@ pub mod tests {
                 .to_json()
                 .unwrap(),
         );
+    }
 
+    #[test]
+    fn test_get_response_to_json() {
         assert_eq!(
             "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
             ActionResponse::GetEntry(Some(test_pair())).to_json().unwrap(),
         );
         assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
+    }
+
+    #[test]
+    fn test_get_links_response_to_json() {
+        assert_eq!(
+            "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
+            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+                .to_json()
+                .unwrap(),
+        );
+        assert_eq!(
+            "{\"error\":\"some error\"}",
+            ActionResponse::GetLinks(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_link_entries_response_to_json() {
+        assert_eq!(
+            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            ActionResponse::LinkEntries(Ok(test_entry()))
+                .to_json()
+                .unwrap(),
+        );
+        assert_eq!(
+            "{\"error\":\"some error\"}",
+            ActionResponse::LinkEntries(Err(HolochainError::new("some error")))
+                .to_json()
+                .unwrap(),
+        );
     }
 }

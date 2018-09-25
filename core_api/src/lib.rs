@@ -59,15 +59,12 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::Instance,
+    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
     nucleus::{call_and_wait_for_result, state::NucleusStatus, ZomeFnCall},
     state::State,
 };
 use holochain_dna::Dna;
-use std::{
-    sync::{mpsc::channel, Arc},
-    time::Duration,
-};
+use std::sync::{mpsc::channel, Arc};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -104,7 +101,7 @@ impl Holochain {
         // had to increase this number when merging develop into feature branch 221-dna-improvements
         // https://github.com/holochain/holochain-rust/pull/253
         // solving ticket https://github.com/holochain/holochain-rust/issues/221
-        match receiver.recv_timeout(Duration::from_millis(10000)) {
+        match receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS) {
             Ok(status) => match status {
                 NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
                 _ => {
@@ -180,8 +177,15 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use std::sync::{Arc, Mutex};
-    use test_utils::{create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file};
+    use holochain_dna::{zome::Zome, Dna};
+    use std::{
+        collections::HashMap,
+        sync::{Arc, Mutex},
+    };
+    use test_utils::{
+        create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file,
+        validation_capability,
+    };
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -404,7 +408,28 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
-        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
+        let mut dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
+
+        // We need to inject a capability with empty string as name because the validation callback
+        // has set its capability to nothing and the callback mechanism is using that as a string
+        // and tries to call the callback there.
+        // TODO:
+        // That has to be changed. Validation callbacks should be found in the WASM of the entry type
+        // instead.
+        // Or we go all the way and change the spec to have only one WASM module per zome..
+        // See: https://github.com/holochain/holochain-rust/issues/342
+        dna.zomes = dna
+            .zomes
+            .into_iter()
+            .map(|(zome_name, mut zome)| {
+                if zome_name == "test_zome" {
+                    zome.capabilities
+                        .insert("".to_string(), validation_capability());
+                }
+                (zome_name, zome)
+            })
+            .collect::<HashMap<String, Zome>>();
+
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -429,7 +454,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 10);
+        assert_eq!(hc.state().unwrap().history.len(), 12);
     }
 
     #[test]

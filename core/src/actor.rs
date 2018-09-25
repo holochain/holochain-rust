@@ -1,7 +1,13 @@
 use agent::keys::Keys;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{pair::Pair, pair_meta::PairMeta};
+use hash::HashString;
+use hash_table::{
+    links_entry::{Link, LinkListEntry},
+    pair::Pair,
+    pair_meta::PairMeta,
+};
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
@@ -42,12 +48,19 @@ pub enum Protocol {
     },
     RetractPairResult(Result<(), HolochainError>),
 
+    /// HashTable::add_link()
+    AddLink(Link),
+    AddLinkResult(Result<(), HolochainError>),
+    /// HashTable::get_links()
+    GetLinks(GetLinksArgs),
+    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
+
     /// HashTable::assert_meta()
     AssertMeta(PairMeta),
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::pair_meta()
-    GetPairMeta(String),
+    GetPairMeta(HashString),
     GetPairMetaResult(Result<Option<PairMeta>, HolochainError>),
 
     /// HashTable::all_metas_for_pair()
@@ -55,7 +68,7 @@ pub enum Protocol {
     GetMetasForPairResult(Result<Vec<PairMeta>, HolochainError>),
 
     /// HashTable::pair()
-    GetPair(String),
+    GetPair(HashString),
     GetPairResult(Result<Option<Pair>, HolochainError>),
 
     /// HashTable::put_pair()

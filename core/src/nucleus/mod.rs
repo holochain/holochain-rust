@@ -194,7 +194,7 @@ fn return_initialization_result(result: Option<String>, action_channel: &Sender<
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_init_application(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
     action_channel: &Sender<ActionWrapper>,
@@ -242,6 +242,7 @@ fn reduce_init_application(
             .keys()
             .map(|zome_name| {
                 genesis(
+                    context.clone(),
                     &genesis_action_channel,
                     &genesis_observer_channel,
                     zome_name,
@@ -410,7 +411,7 @@ fn reduce_execute_zome_function(
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_validate_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
     action_channel: &Sender<ActionWrapper>,
@@ -438,6 +439,7 @@ fn reduce_validate_entry(
             let entry = entry.clone();
             thread::spawn(move || {
                 let validation_result = match validate_commit(
+                    context.clone(),
                     &action_channel,
                     &observer_channel,
                     &zome_name,

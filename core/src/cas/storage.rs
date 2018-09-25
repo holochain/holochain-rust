@@ -20,12 +20,14 @@ pub trait ContentAddressableStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{Address, AddressableContent, Content},
+        content::{
+            tests::{ExampleAddressableContent, OtherExampleAddressableContent},
+            Address, AddressableContent, Content,
+        },
         storage::ContentAddressableStorage,
     };
     use error::HolochainError;
     use std::collections::HashMap;
-    use cas::content::tests::{ExampleAddressableContent, OtherExampleAddressableContent};
 
     /// some struct to show an example ContentAddressableStorage implementation
     /// there is no persistence or concurrency in this example so use a raw HashMap

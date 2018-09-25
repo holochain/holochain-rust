@@ -6,22 +6,26 @@ pub mod receive;
 pub mod validate_commit;
 
 use action::ActionWrapper;
+use context::Context;
 use hash_table::entry::Entry;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
 use instance::Observer;
 use json::ToJson;
 use nucleus::{
-    ribosome,
     ribosome::{
+        self,
         callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
         Defn,
     },
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::{Arc, mpsc::Sender}, thread::sleep, time::Duration};
-use context::Context;
-use holochain_dna::wasm::DnaWasm;
+use std::{
+    str::FromStr,
+    sync::{mpsc::Sender, Arc},
+    thread::sleep,
+    time::Duration,
+};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -174,13 +178,11 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => {
-            match runtime.result.is_empty() {
-                true => CallbackResult::Pass,
-                false => CallbackResult::Fail(runtime.result),
-            }
-        }
-        Err(_) => CallbackResult::NotImplemented
+        Ok(runtime) => match runtime.result.is_empty() {
+            true => CallbackResult::Pass,
+            false => CallbackResult::Fail(runtime.result),
+        },
+        Err(_) => CallbackResult::NotImplemented,
     }
 }
 
@@ -209,7 +211,9 @@ pub fn call(
     let mut tries = 0;
     while !done {
         {
-            let state = context.state().expect("Callback called without application state!");
+            let state = context
+                .state()
+                .expect("Callback called without application state!");
             dna = state.nucleus().dna();
         }
         match dna {
@@ -223,7 +227,7 @@ pub fn call(
                 }
             }
         }
-    };
+    }
 
     let dna = dna.expect("Callback called without DNA set!");
 
@@ -232,12 +236,18 @@ pub fn call(
         Some(wasm) => {
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented
-            } else  {
-                run_callback(context.clone(), zome_call, action_channel, observer_channel, wasm, dna.name.clone())
+            } else {
+                run_callback(
+                    context.clone(),
+                    zome_call,
+                    action_channel,
+                    observer_channel,
+                    wasm,
+                    dna.name.clone(),
+                )
             }
         }
     }
-
 
     /*
 

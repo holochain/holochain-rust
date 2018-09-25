@@ -471,14 +471,7 @@ pub mod tests {
             }"#,
         ).unwrap();
 
-        assert_eq!(
-            vec![0, 1, 2, 3],
-            dna.zomes
-                .get("zome1")
-                .unwrap()
-                .code
-                .code
-        );
+        assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
     }
 
     #[test]

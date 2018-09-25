@@ -1,9 +1,9 @@
 use super::call;
 use action::ActionWrapper;
+use context::Context;
 use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::{Arc, mpsc::Sender};
-use context::Context;
+use std::sync::{mpsc::Sender, Arc};
 
 pub fn validate_commit(
     context: Arc<Context>,
@@ -27,11 +27,11 @@ pub mod tests {
 
     use super::validate_commit;
     use hash_table::entry::tests::test_entry;
+    use instance::tests::test_context;
     use nucleus::ribosome::{
         callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
         Defn,
     };
-    use instance::tests::test_context;
 
     #[test]
     fn pass() {

@@ -7,7 +7,6 @@ pub mod debug;
 pub mod get;
 pub mod get_links;
 pub mod init_globals;
-
 use action::ActionWrapper;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -369,11 +368,15 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
+        tests::{test_context_and_logger, TestLogger},
         Instance,
     };
     use nucleus::{
-        ribosome::api::{call, Runtime},
+        ribosome::{
+            api::{call, Runtime},
+            callback::{tests::test_callback_instance, Callback},
+            Defn,
+        },
         ZomeFnCall,
     };
     use std::{
@@ -532,8 +535,12 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
-        let (context, logger) = test_context_and_logger("joan");
+        //let instance = test_instance(dna.clone());
+        let instance =
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+
+        let (c, logger) = test_context_and_logger("joan");
+        let context = instance.initialize_context(c);
 
         test_zome_api_function_call(
             &dna.name.to_string(),

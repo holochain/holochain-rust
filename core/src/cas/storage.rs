@@ -25,6 +25,7 @@ pub mod tests {
     };
     use error::HolochainError;
     use std::collections::HashMap;
+    use cas::content::tests::{ExampleAddressableContent, OtherExampleAddressableContent};
 
     /// some struct to show an example ContentAddressableStorage implementation
     /// there is no persistence or concurrency in this example so use a raw HashMap
@@ -59,5 +60,33 @@ pub mod tests {
                 .get(address)
                 .and_then(|c| Some(C::from_content(c))))
         }
+    }
+
+    #[test]
+    /// show that content of different types can round trip through the same storage
+    fn example_content_round_trip_test() {
+        let content = ExampleAddressableContent::from_content(&"foo".to_string());
+        let other_content = OtherExampleAddressableContent::from_content(&"bar".to_string());
+        let mut cas = ExampleContentAddressableStorage::new();
+
+        assert_eq!(Ok(false), cas.contains(&content.address()));
+        assert_eq!(Ok(false), cas.contains(&other_content.address()));
+
+        // round trip some AddressableContent through the ContentAddressableStorage
+        assert_eq!(Ok(()), cas.add(&content));
+        assert_eq!(Ok(true), cas.contains(&content.address()));
+        assert_eq!(Ok(false), cas.contains(&other_content.address()));
+        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
+
+        // multiple types of AddressableContent can sit in a single ContentAddressableStorage
+        // the safety of this is only as good as the hashing algorithm(s) used
+        assert_eq!(Ok(()), cas.add(&other_content));
+        assert_eq!(Ok(true), cas.contains(&content.address()));
+        assert_eq!(Ok(true), cas.contains(&other_content.address()));
+        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
+        assert_eq!(
+            Ok(Some(other_content.clone())),
+            cas.fetch(&other_content.address())
+        );
     }
 }

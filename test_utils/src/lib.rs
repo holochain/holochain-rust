@@ -62,7 +62,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut capability = Capability::new();
+    let capability = Capability::new();
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
@@ -167,29 +167,4 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
-}
-
-/// Creates a capability with a validate_commit() function that always passes
-pub fn validation_capability() -> Capability {
-    let validate_commit_wat = r#"
-            (module
-                (memory (;0;) 17)
-                (func (export "validate_commit") (param $p0 i32) (result i32)
-                    i32.const 0
-                )
-                (export "memory" (memory 0))
-            )
-        "#;
-
-    let validate_commit_wasm = Wat2Wasm::new()
-        .canonicalize_lebs(false)
-        .write_debug_names(true)
-        .convert(validate_commit_wat)
-        .unwrap();
-
-    let mut validation_capability = Capability::new();
-    //    validation_capability.code = DnaWasm {
-    //        code: validate_commit_wasm.as_ref().to_vec(),
-    //    };
-    validation_capability
 }

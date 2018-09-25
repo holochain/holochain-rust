@@ -184,7 +184,6 @@ mod tests {
     };
     use test_utils::{
         create_test_dna_with_wasm, create_test_dna_with_wat, create_wasm_from_file,
-        validation_capability,
     };
 
     // TODO: TestLogger duplicated in test_utils because:
@@ -408,27 +407,7 @@ mod tests {
         let wasm = create_wasm_from_file(
             "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
         );
-        let mut dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
-
-        // We need to inject a capability with empty string as name because the validation callback
-        // has set its capability to nothing and the callback mechanism is using that as a string
-        // and tries to call the callback there.
-        // TODO:
-        // That has to be changed. Validation callbacks should be found in the WASM of the entry type
-        // instead.
-        // Or we go all the way and change the spec to have only one WASM module per zome..
-        // See: https://github.com/holochain/holochain-rust/issues/342
-        dna.zomes = dna
-            .zomes
-            .into_iter()
-            .map(|(zome_name, mut zome)| {
-                if zome_name == "test_zome" {
-                    zome.capabilities
-                        .insert("".to_string(), validation_capability());
-                }
-                (zome_name, zome)
-            })
-            .collect::<HashMap<String, Zome>>();
+        let dna = create_test_dna_with_wasm("test_zome", "test_cap", wasm);
 
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();

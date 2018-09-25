@@ -214,7 +214,7 @@ pub mod tests {
     use persister::SimplePersister;
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
-    use test_utils::{create_test_cap, create_test_dna_with_cap};
+    use test_utils::{create_test_dna_with_wasm};
 
     /// dummy commit args from standard test entry
     pub fn test_bad_args_bytes() -> Vec<u8> {
@@ -314,8 +314,7 @@ pub mod tests {
     #[test]
     fn test_call_ok() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let cap = create_test_cap(Membrane::Public);
-        let dna = create_test_dna_with_wasm(&test_zome_name(), "test_cap", &cap, &wasm);
+        let dna = create_test_dna_with_wasm(&test_zome_name(), "test_cap", wasm);
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);

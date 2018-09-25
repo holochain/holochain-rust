@@ -246,7 +246,9 @@ impl SourceChain for Chain {
             )));
         }
 
-        self.table_actor.put_pair(&pair.clone())?;
+        let header_entry = &pair.clone().header().to_entry();
+        self.table_actor.put_entry(header_entry)?;
+        self.table_actor.put_entry(&pair.clone().entry())?;
 
         // @TODO instead of unwrapping this, move all the above validation logic inside of
         // set_top_pair()

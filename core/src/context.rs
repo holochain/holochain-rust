@@ -78,7 +78,7 @@ mod tests {
         }
     }
 
-    /* #[test]
+    #[test]
     #[should_panic]
     fn test_deadlock() {
         let mut context = Context::new(
@@ -95,5 +95,5 @@ mod tests {
             // This line panics because we would enter into a deadlock
             context.state();
         }
-    }*/
+    }
 }

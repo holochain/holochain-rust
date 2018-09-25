@@ -51,7 +51,6 @@
   - [Redux Architecture](./state_actions.md)
     - [State actions](./state/actions.md)
   - [State actors](./state/actors.md)
-  - [Pairs](./pairs.md)
 - [Glossary](./glossary.md)
   - [Agent](./agent.md)
   - [Keys](./keys.md)

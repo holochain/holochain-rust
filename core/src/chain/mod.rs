@@ -36,13 +36,14 @@ impl Iterator for ChainIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
-        self.current = previous.as_ref()
-                        .and_then(|p| p.header().link())
-                        // @TODO should this panic?
-                        // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| {
+        self.current = previous
+            .as_ref()
+            .and_then(|p| p.header().link())
+            // @TODO should this panic?
+            // @see https://github.com/holochain/holochain-rust/issues/146
+            .and_then(|h| {
                             self.table_actor.pair(&h).expect("getting from a table shouldn't fail")
-                        });
+            });
         previous
     }
 }
@@ -98,7 +99,12 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top_pair())
+        ChainIterator::new(
+            self.table(),
+            &self
+                .top_pair()
+                .expect("could not get top pair when building iterator"),
+        )
     }
 
     /// restore canonical JSON chain
@@ -126,7 +132,7 @@ pub trait SourceChain {
     /// sets an option for the top Pair
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
     /// returns an option for the top Pair
-    fn top_pair(&self) -> Option<Pair>;
+    fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
     /// get the top Pair by Entry type
     fn top_pair_type(&self, t: &str) -> Option<Pair>;
 
@@ -145,12 +151,32 @@ pub trait SourceChain {
 }
 
 impl SourceChain for Chain {
-    fn top_pair(&self) -> Option<Pair> {
+    fn top_pair(&self) -> Result<Option<Pair>, HolochainError> {
         self.chain_actor.top_pair()
     }
 
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        self.chain_actor.set_top_pair(&pair)
+        match pair {
+            Some(pair_for_validation) => {
+                if !(pair_for_validation.validate()) {
+                    return Err(HolochainError::new(
+                        "attempted to push an invalid pair for this chain",
+                    ));
+                }
+
+                let top_pair = self.top_pair()?.as_ref().map(|p| p.key());
+                let next_pair = pair_for_validation.header().link();
+
+                if top_pair != next_pair {
+                    return Err(HolochainError::new(&format!(
+                        "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
+                        top_pair, next_pair,
+                    )));
+                }
+                self.chain_actor.set_top_pair(&pair)
+            }
+            None => Ok(None),
+        }
     }
 
     fn top_pair_type(&self, t: &str) -> Option<Pair> {
@@ -158,27 +184,8 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        if !(pair.validate()) {
-            return Err(HolochainError::new(
-                "attempted to push an invalid pair for this chain",
-            ));
-        }
-
-        let top_pair = self.top_pair().as_ref().map(|p| p.key());
-        let next_pair = pair.header().link();
-
-        if top_pair != next_pair {
-            return Err(HolochainError::new(&format!(
-                "top pair did not match next hash pair from pushed pair: {:?} vs. {:?}",
-                top_pair, next_pair,
-            )));
-        }
-
         self.table_actor.put_pair(&pair.clone())?;
 
-        // @TODO instead of unwrapping this, move all the above validation logic inside of
-        // set_top_pair()
-        // @see https://github.com/holochain/holochain-rust/issues/258
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
@@ -192,7 +199,7 @@ impl SourceChain for Chain {
     }
 
     fn pair(&self, k: &HashString) -> Result<Option<Pair>, HolochainError> {
-        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.clone()));
+        let response = self.table_actor.block_on_ask(Protocol::GetPair(k.clone()))?;
         unwrap_to!(response => Protocol::GetPairResult).clone()
     }
 
@@ -200,10 +207,10 @@ impl SourceChain for Chain {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         Ok(self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-                .find(|p| &p.entry().hash() == entry_hash))
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| &p.entry().hash() == entry_hash))
     }
 }
 
@@ -276,7 +283,12 @@ pub mod tests {
     fn top_pair() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair from test chain")
+        );
 
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
@@ -284,28 +296,56 @@ pub mod tests {
         let pair_a = chain
             .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_a), chain.top_pair());
+        assert_eq!(
+            Some(pair_a),
+            chain.top_pair().expect("could not get top pair a")
+        );
 
         let pair_b = chain
             .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(Some(pair_b), chain.top_pair());
+        assert_eq!(
+            Some(pair_b),
+            chain.top_pair().expect("could not get top pair b")
+        );
     }
 
     #[test]
     /// tests that the chain state is consistent across clones
     fn clone_safe() {
-        let c1 = test_chain();
-        let mut c2 = c1.clone();
+        let chain_1 = test_chain();
+        let mut chain_2 = chain_1.clone();
         let e = test_entry();
 
-        assert_eq!(None, c1.top_pair());
-        assert_eq!(None, c2.top_pair());
+        assert_eq!(
+            None,
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for chain 1")
+        );
+        assert_eq!(
+            None,
+            chain_2
+                .top_pair()
+                .expect("could not get top pair for chain 2")
+        );
 
-        let pair = c2.push_entry(&e).unwrap();
+        let pair = chain_2.push_entry(&e).unwrap();
 
-        assert_eq!(Some(pair.clone()), c2.top_pair());
-        assert_eq!(c1.top_pair(), c2.top_pair());
+        assert_eq!(
+            Some(pair.clone()),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair after pushing to chain 2")
+        );
+        assert_eq!(
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for comparing chain 1"),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair when comparing chain 2")
+        );
     }
 
     #[test]
@@ -336,27 +376,41 @@ pub mod tests {
     fn push() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair for test chain")
+        );
 
         // chain top, pair entry and headers should all line up after a push
-        let e1 = test_entry_a();
-        let p1 = chain
-            .push_entry(&e1)
+        let entry_1 = test_entry_a();
+        let pair_1 = chain
+            .push_entry(&entry_1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&p1), chain.top_pair().as_ref());
-        assert_eq!(&e1, p1.entry());
-        assert_eq!(&e1.hash(), p1.header().entry_hash());
+        assert_eq!(
+            Some(&pair_1),
+            chain
+                .top_pair()
+                .expect("could not get top pair for pair 1")
+                .as_ref()
+        );
+        assert_eq!(&entry_1, pair_1.entry());
+        assert_eq!(&entry_1.hash(), pair_1.header().entry_hash());
 
         // we should be able to do it again
-        let e2 = test_entry_b();
-        let p2 = chain
-            .push_entry(&e2)
+        let entry_2 = test_entry_b();
+        let pair_2 = chain
+            .push_entry(&entry_2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&p2), chain.top_pair().as_ref());
-        assert_eq!(&e2, p2.entry());
-        assert_eq!(&e2.hash(), p2.header().entry_hash());
+        assert_eq!(
+            Some(&pair_2),
+            chain.top_pair().expect("could not get top pair 2").as_ref()
+        );
+        assert_eq!(&entry_2, pair_2.entry());
+        assert_eq!(&entry_2.hash(), pair_2.header().entry_hash());
     }
 
     #[test]

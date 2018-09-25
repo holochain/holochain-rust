@@ -150,6 +150,14 @@ mod tests {
             (get_local $allocation)
         )
     )
+
+    (func
+        (export "validate_commit")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
             )
@@ -169,11 +177,19 @@ mod tests {
         );
         let instance = test_instance(dna.clone());
         let (context, _) = test_context_and_logger("joan");
+        let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().chain().top_pair());
         println!(
             "{:?}",
-            instance.state().agent().chain().top_pair().unwrap().key()
+            instance
+                .state()
+                .agent()
+                .chain()
+                .top_pair()
+                .expect("could not get top pair")
+                .expect("top pair was None")
+                .key()
         );
 
         let commit_call = ZomeFnCall::new(
@@ -214,7 +230,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmT1NRaxbwMqpxXU1Adt1pVqtgnDXYxH1qH5rRbWPGxrkW\",\"entry_hash\":\"");
+        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmbxF7U8tSvGzzRmQTNdSXK6kUMKzcSXE54jkN1WMnb6Qo\",\"entry_hash\":\"");
         expected.push_str(&test_entry_hash().to_str());
         expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
 

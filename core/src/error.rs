@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_dna::DnaError;
 use json::ToJson;
 use serde_json::Error as SerdeError;
@@ -96,6 +97,12 @@ impl From<IoError> for HolochainError {
 impl From<SerdeError> for HolochainError {
     fn from(error: SerdeError) -> Self {
         HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<FutureCanceled> for HolochainError {
+    fn from(_: FutureCanceled) -> Self {
+        HolochainError::ErrorGeneric("Failed future".to_string())
     }
 }
 

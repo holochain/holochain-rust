@@ -114,7 +114,7 @@ pub mod tests {
 
         assert_eq!(example_addressable_content, ExampleAddressableContent::from_content(&test_content()));
         assert_eq!(test_content(), example_addressable_content.content());
-        assert_eq!(HashString::new(), example_addressable_content.address());
+        assert_eq!(HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()), example_addressable_content.address());
     }
 
     #[test]
@@ -124,7 +124,7 @@ pub mod tests {
 
         assert_eq!(other_example_addressable_content, OtherExampleAddressableContent::from_content(&test_content()));
         assert_eq!(test_content(), other_example_addressable_content.content());
-        assert_eq!(HashString::new(), other_example_addressable_content.address());
+        assert_eq!(HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()), other_example_addressable_content.address());
     }
 
     #[test]

@@ -7,6 +7,11 @@ branches:
     - master
     - develop
 
+addons:
+  apt:
+    packages:
+      libzmq3-dev
+
 jobs:
   include:
     - name: "C binding tests"

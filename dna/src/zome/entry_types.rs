@@ -125,18 +125,12 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryTypeDef = serde_json::from_str(
             r#"{
-                "description": "test",
-                "validation": {
-                    "code": "AAECAw=="
-                },
+                "description": "test"
                 "sharing": "public",
                 "links_to": [
                     {
                         "target_type": "test",
-                        "tag": "test",
-                        "validation": {
-                            "code": "AAECAw=="
-                        }
+                        "tag": "test"
                     }
                 ],
                 "linked_from": [
@@ -150,13 +144,11 @@ mod tests {
 
         let mut entry = EntryTypeDef::new();
         entry.description = String::from("test");
-        entry.validation.code = vec![0, 1, 2, 3];
         entry.sharing = Sharing::Public;
 
         let mut link = LinksTo::new();
         link.target_type = String::from("test");
         link.tag = String::from("test");
-        link.validation.code = vec![0, 1, 2, 3];
         entry.links_to.push(link);
 
         let mut linked = LinkedFrom::new();

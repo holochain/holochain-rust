@@ -220,10 +220,7 @@ mod tests {
                             }
                         ]
                     }
-                ],
-                "code": {
-                    "code": "AAECAw=="
-                }
+                ]
             }"#,
         ).unwrap();
 
@@ -235,7 +232,6 @@ mod tests {
         fn_dec.inputs.push(input);
         fn_dec.outputs.push(output);
         cap.functions.push(fn_dec);
-        cap.code.code = vec![0, 1, 2, 3];
 
         assert_eq!(fixture, cap);
     }

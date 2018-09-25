@@ -136,9 +136,7 @@ pub(crate) fn reduce_call(
         // Notify failure
         state
             .zome_calls
-            .insert(fn_call.clone(),
-                    Some(Err(HolochainError::DnaMissing)),
-        );
+            .insert(fn_call.clone(), Some(Err(HolochainError::DnaMissing)));
         return;
     }
     let dna = state.dna.clone().unwrap();
@@ -180,7 +178,8 @@ pub(crate) fn reduce_call(
 
     // 3. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
-    let code = maybe_code.expect("zome not found, so should have failed before when getting capability");
+    let code =
+        maybe_code.expect("zome not found, Should have failed before when getting capability.");
     state.zome_calls.insert(fn_call.clone(), None);
     launch_zome_fn_call(
         context,

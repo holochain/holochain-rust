@@ -92,7 +92,12 @@ pub fn create_test_cap(membrane: Membrane) -> Capability {
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability, wasm: &Vec<u8>) -> Dna {
+pub fn create_test_dna_with_cap(
+    zome_name: &str,
+    cap_name: &str,
+    cap: &Capability,
+    wasm: &Vec<u8>,
+) -> Dna {
     let mut dna = Dna::new();
 
     let mut capabilities = HashMap::new();
@@ -183,8 +188,8 @@ pub fn validation_capability() -> Capability {
         .unwrap();
 
     let mut validation_capability = Capability::new();
-//    validation_capability.code = DnaWasm {
-//        code: validate_commit_wasm.as_ref().to_vec(),
-//    };
+    //    validation_capability.code = DnaWasm {
+    //        code: validate_commit_wasm.as_ref().to_vec(),
+    //    };
     validation_capability
 }

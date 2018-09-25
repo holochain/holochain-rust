@@ -202,10 +202,7 @@ impl Dna {
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
-    pub fn get_wasm_from_zome_name<T: Into<String>>(
-        &self,
-        zome_name: T,
-    ) -> Option<&wasm::DnaWasm> {
+    pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
         let zome = self.get_zome(&zome_name)?;
         Some(&zome.code)

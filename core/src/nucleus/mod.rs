@@ -511,16 +511,20 @@ fn get_wasm_with_zome_call(
     zome_call: &ZomeFnCall,
 ) -> Result<DnaWasm, ZomeFnResult> {
     if dna.is_none() {
-        return Err(ZomeFnResult::new(zome_call.clone(),Err(HolochainError::DnaMissing)));
+        return Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaMissing),
+        ));
     }
     let dna = dna.unwrap();
     let res = dna.get_wasm_from_zome_name(zome_call.zome_name.clone());
     match res {
-        None => Err(
-            ZomeFnResult::new(
-                zome_call.clone(),
-                Err(HolochainError::DnaError(DnaError::ZomeNotFound(zome_call.zome_name.clone())),
-                ))),
+        None => Err(ZomeFnResult::new(
+            zome_call.clone(),
+            Err(HolochainError::DnaError(DnaError::ZomeNotFound(
+                zome_call.zome_name.clone(),
+            ))),
+        )),
         Some(code) => Ok(code.clone()),
     }
 }

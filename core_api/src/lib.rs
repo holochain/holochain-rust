@@ -177,9 +177,8 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_dna::{zome::Zome, Dna};
+    use holochain_dna::{Dna};
     use std::{
-        collections::HashMap,
         sync::{Arc, Mutex},
     };
     use test_utils::{

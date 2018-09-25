@@ -63,7 +63,6 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm };
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
@@ -76,6 +75,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
         &Config::new(),
         &entry_types,
         &capabilities,
+        &DnaWasm { code: wasm },
     );
 
     // zome.capabilities.push(capability);
@@ -85,15 +85,14 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
-pub fn create_test_cap(membrane: Membrane, wasm: &Vec<u8>) -> Capability {
+pub fn create_test_cap(membrane: Membrane) -> Capability {
     let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm.clone() };
     capability.cap_type.membrane = membrane;
     capability
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability) -> Dna {
+pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability, wasm: &Vec<u8>) -> Dna {
     let mut dna = Dna::new();
 
     let mut capabilities = HashMap::new();
@@ -104,6 +103,7 @@ pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capabilit
         &Config::new(),
         &HashMap::new(),
         &capabilities,
+        &DnaWasm { code: wasm.clone() },
     );
 
     // zome.capabilities.push(capability);
@@ -183,8 +183,8 @@ pub fn validation_capability() -> Capability {
         .unwrap();
 
     let mut validation_capability = Capability::new();
-    validation_capability.code = DnaWasm {
-        code: validate_commit_wasm.as_ref().to_vec(),
-    };
+//    validation_capability.code = DnaWasm {
+//        code: validate_commit_wasm.as_ref().to_vec(),
+//    };
     validation_capability
 }

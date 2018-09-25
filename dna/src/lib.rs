@@ -201,6 +201,16 @@ impl Dna {
         zome.capabilities.get(capability_name)
     }
 
+    /// Find a Zome and return it's WASM bytecode for a specified Capability
+    pub fn get_wasm_from_zome_name<T: Into<String>>(
+        &self,
+        zome_name: T,
+    ) -> Option<&wasm::DnaWasm> {
+        let zome_name = zome_name.into();
+        let zome = self.get_zome(&zome_name)?;
+        Some(&zome.code)
+    }
+
     /// Return a Zome's Capability from a Zome name and Capability name.
     pub fn get_capability_with_zome_name(
         &self,
@@ -603,10 +613,10 @@ pub mod tests {
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_wasm_from_capability_name("test zome", "test capability");
+        let wasm = dna.get_wasm_from_zome_name("test zome");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_wasm_from_capability_name("non existant zome", "test capability");
+        let fail = dna.get_wasm_from_zome_name("non existant zome");
         assert_eq!(None, fail);
     }
 

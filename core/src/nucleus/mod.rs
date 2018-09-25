@@ -8,7 +8,7 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::callback::{
@@ -333,7 +333,7 @@ fn reduce_execute_zome_function(
     };
 
     // Get Wasm
-    let maybe_wasm = get_fn_wasm_with_zome_call(state.dna.as_ref(), &fn_call);
+    let maybe_wasm = get_wasm_with_zome_call(state.dna.as_ref(), &fn_call);
 
     match maybe_wasm {
         Err(fn_res) => {
@@ -491,17 +491,9 @@ pub fn reduce(
 
 // Helper function for getting a Capability for a ZomeFnCall request
 fn get_capability_with_zome_call(
-    dna: Option<&Dna>,
+    dna: &Dna,
     zome_call: &ZomeFnCall,
 ) -> Result<Capability, ZomeFnResult> {
-    // Must have DNA
-    if dna.is_none() {
-        return Err(ZomeFnResult::new(
-            zome_call.clone(),
-            Err(HolochainError::DnaMissing),
-        ));
-    }
-    let dna = dna.unwrap();
     // Get Capability from DNA
     let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
     match res {
@@ -514,14 +506,22 @@ fn get_capability_with_zome_call(
 }
 
 // Helper function for getting WASM code for a ZomeFnCall request
-fn get_fn_wasm_with_zome_call(
+fn get_wasm_with_zome_call(
     dna: Option<&Dna>,
     zome_call: &ZomeFnCall,
 ) -> Result<DnaWasm, ZomeFnResult> {
-    let res = get_capability_with_zome_call(dna, zome_call);
+    if dna.is_none() {
+        return Err(ZomeFnResult::new(zome_call.clone(),Err(HolochainError::DnaMissing)));
+    }
+    let dna = dna.unwrap();
+    let res = dna.get_wasm_from_zome_name(zome_call.zome_name.clone());
     match res {
-        Err(e) => Err(e),
-        Ok(cap) => Ok(cap.code),
+        None => Err(
+            ZomeFnResult::new(
+                zome_call.clone(),
+                Err(HolochainError::DnaError(DnaError::ZomeNotFound(zome_call.zome_name.clone())),
+                ))),
+        Some(code) => Ok(code.clone()),
     }
 }
 

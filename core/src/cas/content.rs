@@ -42,10 +42,9 @@ impl AddressableContent for Content {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{AddressableContent, Content};
-    use multihash::Hash;
+    use cas::content::{Address, AddressableContent, Content};
     use hash::HashString;
-    use cas::content::Address;
+    use multihash::Hash;
 
     #[derive(Debug, PartialEq, Clone)]
     /// some struct that can be content addressed
@@ -87,7 +86,7 @@ pub mod tests {
         fn from_content(content: &Content) -> Self {
             OtherExampleAddressableContent {
                 content: content.clone(),
-                address: HashString::encode_from_str(&content, Hash::SHA2256)
+                address: HashString::encode_from_str(&content, Hash::SHA2256),
             }
         }
     }
@@ -112,9 +111,15 @@ pub mod tests {
     fn example_addressable_content_trait_test() {
         let example_addressable_content = test_example_addressable_content();
 
-        assert_eq!(example_addressable_content, ExampleAddressableContent::from_content(&test_content()));
+        assert_eq!(
+            example_addressable_content,
+            ExampleAddressableContent::from_content(&test_content())
+        );
         assert_eq!(test_content(), example_addressable_content.content());
-        assert_eq!(HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()), example_addressable_content.address());
+        assert_eq!(
+            HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()),
+            example_addressable_content.address()
+        );
     }
 
     #[test]
@@ -122,9 +127,15 @@ pub mod tests {
     fn other_example_addressable_content_trait_test() {
         let other_example_addressable_content = test_other_example_addressable_content();
 
-        assert_eq!(other_example_addressable_content, OtherExampleAddressableContent::from_content(&test_content()));
+        assert_eq!(
+            other_example_addressable_content,
+            OtherExampleAddressableContent::from_content(&test_content())
+        );
         assert_eq!(test_content(), other_example_addressable_content.content());
-        assert_eq!(HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()), other_example_addressable_content.address());
+        assert_eq!(
+            HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()),
+            other_example_addressable_content.address()
+        );
     }
 
     #[test]
@@ -133,8 +144,14 @@ pub mod tests {
         let example_addressable_content = test_example_addressable_content();
         let other_example_addressable_content = test_other_example_addressable_content();
 
-        assert_eq!(example_addressable_content.content(), other_example_addressable_content.content());
-        assert_eq!(example_addressable_content.address(), other_example_addressable_content.address());
+        assert_eq!(
+            example_addressable_content.content(),
+            other_example_addressable_content.content()
+        );
+        assert_eq!(
+            example_addressable_content.address(),
+            other_example_addressable_content.address()
+        );
     }
 
 }

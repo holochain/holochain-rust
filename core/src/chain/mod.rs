@@ -186,7 +186,7 @@ impl Chain {
         let mut chain = Chain::new(table);
 
         for p in as_seq {
-            chain.push_pair(&p).expect("pair should be valid");
+            chain.commit_pair(&p).expect("pair should be valid");
         }
         chain
     }
@@ -212,12 +212,12 @@ pub trait SourceChain {
     /// The Pair for the new Entry is generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned.
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
+    fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
     fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
 
-    /// pair-oriented version of push_entry()
-    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
+    /// pair-oriented version of commit_entry()
+    fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
     /// get a Pair by Pair/Header key from the HashTable if it exists
     fn pair(&self, pair_hash: &HashString) -> Option<Pair>;
 }
@@ -235,7 +235,7 @@ impl SourceChain for Chain {
         self.iter().find(|p| p.header().entry_type() == t)
     }
 
-    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+    fn commit_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
         let header_entry = &pair.clone().header().to_entry();
         self.table_actor.put_entry(header_entry)?;
         self.table_actor.put_entry(&pair.clone().entry())?;
@@ -247,9 +247,9 @@ impl SourceChain for Chain {
         Ok(pair.clone())
     }
 
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
+    fn commit_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
         let pair = self.create_next_pair(entry);
-        self.push_pair(&pair)
+        self.commit_pair(&pair)
     }
 
     /// Browse Chain until Pair is found
@@ -333,13 +333,13 @@ pub mod tests {
         let entry_b = test_entry_b();
 
         chain1
-            .push_entry(&entry_a)
+            .commit_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         chain2
-            .push_entry(&entry_a)
+            .commit_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         chain3
-            .push_entry(&entry_b)
+            .commit_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(chain1.top_pair(), chain2.top_pair());
@@ -365,14 +365,14 @@ pub mod tests {
         let entry_b = test_entry_b();
 
         let pair_a = chain
-            .push_entry(&entry_a)
+            .commit_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_a, pair_a.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
         assert_eq!(Some(pair_a), top_pair);
 
         let pair_b = chain
-            .push_entry(&entry_b)
+            .commit_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_b, pair_b.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
@@ -399,7 +399,7 @@ pub mod tests {
                 .expect("could not get top pair for chain 2")
         );
 
-        let pair = chain_2.push_pair(&test_pair).unwrap();
+        let pair = chain_2.commit_pair(&test_pair).unwrap();
 
         assert_eq!(
             Some(pair.clone()),
@@ -424,7 +424,7 @@ pub mod tests {
         let mut chain = Chain::new(table_actor.clone());
 
         let pair = chain
-            .push_pair(&test_pair())
+            .commit_pair(&test_pair())
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
@@ -453,7 +453,7 @@ pub mod tests {
         // chain top, pair entry and headers should all line up after a push
         let entry_1 = test_entry_a();
         let pair_1 = chain
-            .push_entry(&entry_1)
+            .commit_entry(&entry_1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -469,7 +469,7 @@ pub mod tests {
         // we should be able to do it again
         let entry_2 = test_entry_b();
         let pair_2 = chain
-            .push_entry(&entry_2)
+            .commit_entry(&entry_2)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -492,14 +492,14 @@ pub mod tests {
         println!("can_validate: Chain One");
         let e1 = test_entry_a();
         chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         assert!(chain.validate());
 
         println!("can_validate: Chain with Two");
         let e2 = test_entry_b();
         chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         assert!(chain.validate());
     }
@@ -510,7 +510,7 @@ pub mod tests {
         let mut chain = test_chain();
         let entry = test_entry();
         let pair = chain
-            .push_entry(&entry)
+            .commit_entry(&entry)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -529,7 +529,7 @@ pub mod tests {
             let entry = test_entry();
 
             for _ in 1..100 {
-                let pair = chain.push_entry(&entry).unwrap();
+                let pair = chain.commit_entry(&entry).unwrap();
                 assert_eq!(Some(pair.entry().clone()), chain.entry(&pair.entry().key()),);
             }
         });
@@ -545,10 +545,10 @@ pub mod tests {
         let e2 = test_entry_b();
 
         let p1 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p2 = chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(vec![p2, p1], chain.iter().collect::<Vec<Pair>>());
@@ -563,13 +563,13 @@ pub mod tests {
         let e2 = test_entry_b();
 
         let p1 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let _p2 = chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p3 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -589,10 +589,10 @@ pub mod tests {
         let e2 = test_entry_b();
 
         let p1 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p2 = chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -603,7 +603,7 @@ pub mod tests {
         );
 
         let p3 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(None, chain.entry(&HashString::new()));
@@ -654,13 +654,13 @@ pub mod tests {
         let e2 = test_entry_b();
 
         let p1 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         let p2 = chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
         let p3 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
         assert_eq!(None, chain.entry(&HashString::new()));
@@ -698,7 +698,7 @@ pub mod tests {
         // type a should be p1
         // type b should be None
         let pair1 = chain
-            .push_entry(&entry1)
+            .commit_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(
             Some(&pair1),
@@ -709,7 +709,7 @@ pub mod tests {
         // type a should still be pair1
         // type b should be p2
         let pair2 = chain
-            .push_entry(&entry2)
+            .commit_entry(&entry2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(
             Some(&pair1),
@@ -723,7 +723,7 @@ pub mod tests {
         // type a should be pair3
         // type b should still be pair2
         let pair3 = chain
-            .push_entry(&entry1)
+            .commit_entry(&entry1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(
@@ -745,13 +745,13 @@ pub mod tests {
         let e2 = test_entry_b();
 
         let p1 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p2 = chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let p3 = chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         // into_iter() returns clones of pairs
@@ -767,13 +767,13 @@ pub mod tests {
         let e2 = test_entry_b();
 
         chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         chain
-            .push_entry(&e2)
+            .commit_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         chain
-            .push_entry(&e1)
+            .commit_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let expected_json = "[{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmdEVL9whBj1Tr9VoR6BzmVjrgyPdN5vJ2bbdQdwwfQ9Uq\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}},{\"header\":{\"entry_type\":\"testEntryTypeB\",\"timestamp\":\"\",\"link\":\"QmU8vuUfCQGBb8SUdWjKqmSmsWwXBn4AJPb3HLb8cqWtYn\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"other test entry content\",\"entry_type\":\"testEntryTypeB\"}},{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}]"

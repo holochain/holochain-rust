@@ -107,7 +107,7 @@ fn reduce_commit_entry(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let res = state.chain.push_entry(&entry);
+    let res = state.chain.commit_entry(&entry);
     let response = match res {
         Ok(pair) => Ok(pair.entry().clone()),
         Err(e) => Err(e),

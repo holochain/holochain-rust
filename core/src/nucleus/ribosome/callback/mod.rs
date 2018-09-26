@@ -248,38 +248,6 @@ pub fn call(
             }
         }
     }
-
-    /*
-
-    let call_result =
-        call_zome_and_wait_for_result(zome_call.clone(), &action_channel, &observer_channel);
-
-    // translate the call result to a callback result
-    match call_result {
-        // empty string OK = Success
-        Ok(ref s) if s.is_empty() => CallbackResult::Pass,
-
-        // things that = NotImplemented
-        Err(HolochainError::DnaError(e)) => {
-            println!("DNA error during call: {:?}", e);
-            CallbackResult::NotImplemented
-        },
-        // Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
-        // @TODO this looks super fragile
-        // without it we get stack overflows, but with it we rely on a specific string
-        Err(HolochainError::ErrorGeneric(ref msg))
-            if msg == &format!(
-                "Function: Module doesn\'t have export {}",
-                function.as_str()
-            ) =>
-        {
-            CallbackResult::NotImplemented
-        }
-
-        // string value or error = fail
-        Ok(s) => CallbackResult::Fail(s),
-        Err(err) => CallbackResult::Fail(err.to_string()),
-    }*/
 }
 
 #[cfg(test)]

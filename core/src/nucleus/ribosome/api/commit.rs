@@ -54,7 +54,13 @@ pub fn invoke_commit_entry(
             ActionResponse::Commit(_) => action_response.to_json(),
             _ => Ok("Unknown error".to_string()),
         },
-        Err(error_string) => Ok(json!({ "error": error_string }).to_string()),
+        Err(error_string) => {
+            // TODO - Have Failure write message in wasm memory
+            // so wasm can return custom error message to end-user
+            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
+            // Return Error code in i32 format
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
+        }
     };
 
     // allocate and encode result

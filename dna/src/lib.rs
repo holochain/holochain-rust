@@ -201,6 +201,13 @@ impl Dna {
         zome.capabilities.get(capability_name)
     }
 
+    /// Find a Zome and return it's WASM bytecode for a specified Capability
+    pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
+        let zome_name = zome_name.into();
+        let zome = self.get_zome(&zome_name)?;
+        Some(&zome.code)
+    }
+
     /// Return a Zome's Capability from a Zome name and Capability name.
     pub fn get_capability_with_zome_name(
         &self,
@@ -226,40 +233,6 @@ impl Dna {
         }
         // Everything OK
         Ok(cap.unwrap())
-    }
-
-    /// Return a Zome's WASM bytecode for a specified Capability
-    pub fn get_wasm_from_capability<'a>(
-        &'a self,
-        zome: &'a zome::Zome,
-        capability_name: &str,
-    ) -> Option<&'a wasm::DnaWasm> {
-        let capability = zome.capabilities.get(capability_name);
-        Some(&capability?.code)
-    }
-
-    /// Find a Zome and return it's WASM bytecode for a specified Capability
-    pub fn get_wasm_from_capability_name<T: Into<String>>(
-        &self,
-        zome_name: T,
-        capability_name: T,
-    ) -> Option<&wasm::DnaWasm> {
-        let zome_name = zome_name.into();
-        let capability_name = capability_name.into();
-        let zome = self.get_zome(&zome_name)?;
-        let wasm = self.get_wasm_from_capability(&zome, &capability_name)?;
-        Some(wasm)
-    }
-
-    /// Return a Zome's WASM bytecode for the validation of an entry
-    pub fn get_validation_bytecode_for_entry_type(
-        &self,
-        zome_name: &str,
-        entry_type_name: &str,
-    ) -> Option<&wasm::DnaWasm> {
-        let zome = self.get_zome(zome_name)?;
-        let entry_type = zome.entry_types.get(entry_type_name)?;
-        Some(&entry_type.validation)
     }
 
     pub fn get_zome_name_for_entry_type(&self, entry_type: String) -> Option<String> {
@@ -344,16 +317,10 @@ pub mod tests {
                             "test": {
                                 "description": "test",
                                 "sharing": "public",
-                                "validation": {
-                                    "code": "AAECAw=="
-                                },
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test",
-                                        "validation": {
-                                            "code": "AAECAw=="
-                                        }
+                                        "tag": "test"
                                     }
                                 ],
                                 "linked_from": []
@@ -370,11 +337,11 @@ pub mod tests {
                                         "inputs": [],
                                         "outputs": []
                                     }
-                                ],
-                                "code": {
-                                    "code": "AAECAw=="
-                                }
+                                ]
                             }
+                        },
+                        "code": {
+                            "code": "AAECAw=="
                         }
                     }
                 }
@@ -398,7 +365,7 @@ pub mod tests {
         };
         let mut zome = zome::Zome::default();
         zome.entry_types
-            .insert("".to_string(), zome::entry_types::EntryType::new());
+            .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
 
         let fixture = Dna::from_json_str(
@@ -488,28 +455,17 @@ pub mod tests {
                 "zomes": {
                     "zome1": {
                         "entry_types": {
-                            "type1": {
-                                "validation": {
-                                    "code": "AAECAw=="
-                                }
-                            }
+                            "type1": {}
+                        },
+                        "code": {
+                            "code": "AAECAw=="
                         }
                     }
                 }
             }"#,
         ).unwrap();
 
-        assert_eq!(
-            vec![0, 1, 2, 3],
-            dna.zomes
-                .get("zome1")
-                .unwrap()
-                .entry_types
-                .get("type1")
-                .unwrap()
-                .validation
-                .code
-        );
+        assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
     }
 
     #[test]
@@ -596,7 +552,7 @@ pub mod tests {
     }
 
     #[test]
-    fn get_wasm_for_capability() {
+    fn get_wasm_from_zome_name() {
         let dna = Dna::from_json_str(
             r#"{
                 "name": "test",
@@ -626,70 +582,21 @@ pub mod tests {
                                             "outputs": []
                                         }
                                     }
-                                ],
-                                "code": {
-                                    "code": "AAECAw=="
-                                }
-                            }
-                        }
-                    }
-                }
-            }"#,
-        ).unwrap();
-
-        let wasm = dna.get_wasm_from_capability_name("test zome", "test capability");
-        assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
-
-        let fail = dna.get_wasm_from_capability_name("non existant zome", "test capability");
-        assert_eq!(None, fail);
-    }
-
-    #[test]
-    fn get_wasm_for_entry_type() {
-        let dna = Dna::from_json_str(
-            r#"{
-                "name": "test",
-                "description": "test",
-                "version": "test",
-                "uuid": "00000000-0000-0000-0000-000000000000",
-                "dna_spec_version": "2.0",
-                "properties": {
-                    "test": "test"
-                },
-                "zomes": {
-                    "test zome": {
-                        "name": "test zome",
-                        "description": "test",
-                        "config": {},
-                        "capabilities": {
-                            "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
-                                "fn_declarations": [],
-                                "code": {
-                                    "code": ""
-                                }
+                                ]
                             }
                         },
-                        "entry_types": {
-                            "test type": {
-                                "description": "",
-                                "sharing": "public",
-                                "validation": {
-                                    "code": "AAECAw=="
-                                }
-                            }
+                        "code": {
+                            "code": "AAECAw=="
                         }
                     }
                 }
             }"#,
         ).unwrap();
 
-        let wasm = dna.get_validation_bytecode_for_entry_type("test zome", "test type");
+        let wasm = dna.get_wasm_from_zome_name("test zome");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
 
-        let fail = dna.get_validation_bytecode_for_entry_type("tets zome", "non existing type");
+        let fail = dna.get_wasm_from_zome_name("non existant zome");
         assert_eq!(None, fail);
     }
 
@@ -715,20 +622,17 @@ pub mod tests {
                                 "capability": {
                                     "membrane": "public"
                                 },
-                                "fn_declarations": [],
-                                "code": {
-                                    "code": ""
-                                }
+                                "fn_declarations": []
                             }
                         },
                         "entry_types": {
                             "test type": {
                                 "description": "",
-                                "sharing": "public",
-                                "validation": {
-                                    "code": "AAECAw=="
-                                }
+                                "sharing": "public"
                             }
+                        },
+                        "code": {
+                            "code": ""
                         }
                     }
                 }

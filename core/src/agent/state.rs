@@ -108,10 +108,9 @@ fn reduce_commit_entry(
     // @see https://github.com/holochain/holochain-rust/issues/256
 
     let res = state.chain.push_entry(&entry);
-    let response = if res.is_ok() {
-        Ok(res.unwrap().entry().clone())
-    } else {
-        Err(res.err().unwrap())
+    let response = match res {
+        Ok(pair) => Ok(pair.entry().clone()),
+        Err(e) => Err(e),
     };
 
     state

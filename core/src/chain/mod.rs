@@ -42,11 +42,12 @@ impl Iterator for ChainIterator {
     fn next(&mut self) -> Option<Pair> {
         let previous = self.current.take();
 
-        self.current = previous.as_ref()
-                        .and_then(|p| p.header().link())
-                        // @TODO should this panic?
-                        // @see https://github.com/holochain/holochain-rust/issues/146
-                        .and_then(|h| {
+        self.current = previous
+            .as_ref()
+            .and_then(|p| p.header().link())
+            // @TODO should this panic?
+            // @see https://github.com/holochain/holochain-rust/issues/146
+            .and_then(|h| {
                 let header_entry = &self.table_actor.entry(&h)
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
@@ -54,7 +55,7 @@ impl Iterator for ChainIterator {
                 let header = Header::from_entry(header_entry);
                 let pair = Pair::from_header(&self.table_actor, &header);
                 pair
-                        });
+            });
         previous
     }
 }
@@ -235,8 +236,6 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        //self.table_actor.put_pair(&pair.clone())?;
-
         let header_entry = &pair.clone().header().to_entry();
         self.table_actor.put_entry(header_entry)?;
         self.table_actor.put_entry(&pair.clone().entry())?;
@@ -365,19 +364,19 @@ pub mod tests {
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
 
-        let p1 = chain
+        let pair_a = chain
             .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(&entry_a, p1.entry());
+        assert_eq!(&entry_a, pair_a.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
-        assert_eq!(Some(p1), top_pair);
+        assert_eq!(Some(pair_a), top_pair);
 
-        let p2 = chain
+        let pair_b = chain
             .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        assert_eq!(&entry_b, p2.entry());
+        assert_eq!(&entry_b, pair_b.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
-        assert_eq!(Some(p2), top_pair);
+        assert_eq!(Some(pair_b), top_pair);
     }
 
     #[test]

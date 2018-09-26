@@ -1,3 +1,4 @@
+use cas::content::{AddressableContent, Content};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use serde::Serialize;
@@ -11,6 +12,16 @@ pub struct HashString(String);
 impl fmt::Display for HashString {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl AddressableContent for HashString {
+    fn content(&self) -> Content {
+        self.to_owned().to_str().clone()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        HashString::from(content.clone())
     }
 }
 
@@ -44,6 +55,7 @@ impl HashString {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use cas::storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage};
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use multihash::Hash;
@@ -82,6 +94,43 @@ pub mod tests {
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
             HashString::encode_from_serializable(Foo { foo: 5 }, Hash::SHA2256).to_str(),
+        );
+    }
+
+    #[test]
+    /// show AddressableContent implementation
+    fn addressable_content_test() {
+        // from_content()
+        assert_eq!(
+            HashString::from_content(&test_entry().key().to_str()),
+            test_hash()
+        );
+
+        // content()
+        assert_eq!(test_hash().to_str(), test_hash().content());
+
+        // address()
+        // hash of hash
+        assert_eq!(
+            HashString::encode_from_str(&test_hash().to_str(), Hash::SHA2256),
+            test_hash().address(),
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let mut content_addressable_storage = ExampleContentAddressableStorage::new();
+        let hash = test_hash();
+        content_addressable_storage
+            .add(&hash)
+            .expect("could not add hash");
+
+        assert_eq!(
+            Some(hash.clone()),
+            content_addressable_storage
+                .fetch(&hash.address())
+                .expect("could not fetch hash"),
         );
     }
 }

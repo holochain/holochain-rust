@@ -234,39 +234,6 @@ impl SourceChain for Chain {
         self.iter().find(|p| p.header().entry_type() == t)
     }
 
-//    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-//        if !(pair.validate()) {
-//            return Err(HolochainError::new(
-//                "attempted to push an invalid pair for this chain",
-//            ));
-//        }
-//
-//        let top_pair = self.top_pair()?.as_ref().map(|p| p.key());
-//        let prev_pair = pair_for_validation.header().link();
-//
-//        if top_pair != prev_pair {
-//            return Err(HolochainError::new(&format!(
-//                "top pair did not match previous hash pair from commited pair: {:?} vs. {:?}",
-//                top_pair, prev_pair,
-//            )));
-//        }
-//        //                self.chain_actor.set_top_pair(&pair)
-//        //            }
-//        //            None => Ok(None),
-//        //        }
-//        //    }
-//
-//        let header_entry = &pair.clone().header().to_entry();
-//        self.table_actor.put_entry(header_entry)?;
-//        self.table_actor.put_entry(&pair.clone().entry())?;
-//
-//        // @TODO if top pair set fails but commit succeeds?
-//        // @see https://github.com/holochain/holochain-rust/issues/259
-//        self.set_top_pair(&Some(pair.clone()))?;
-//
-//        Ok(pair.clone())
-//    }
-
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
         //self.table_actor.put_pair(&pair.clone())?;
 
@@ -490,7 +457,13 @@ pub mod tests {
             .push_entry(&entry_1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&pair_1), chain.top_pair().expect("could not get top pair for pair 1").as_ref());
+        assert_eq!(
+            Some(&pair_1),
+            chain
+                .top_pair()
+                .expect("could not get top pair for pair 1")
+                .as_ref()
+        );
         assert_eq!(&entry_1, pair_1.entry());
         assert_eq!(entry_1.key(), pair_1.entry().key());
 
@@ -500,7 +473,13 @@ pub mod tests {
             .push_entry(&entry_2)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(Some(&pair_2), chain.top_pair().expect("could not get top pair for pair 2").as_ref());
+        assert_eq!(
+            Some(&pair_2),
+            chain
+                .top_pair()
+                .expect("could not get top pair for pair 2")
+                .as_ref()
+        );
         assert_eq!(&entry_2, pair_2.entry());
         assert_eq!(entry_2.key(), pair_2.entry().key());
     }

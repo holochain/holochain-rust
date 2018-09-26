@@ -183,6 +183,8 @@ pub mod tests {
     use error::HolochainError;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context, test_instance_blank};
+    use json::ToJson;
+    use key::Key;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state

@@ -162,7 +162,7 @@ pub mod tests {
         let t = "foo";
         let e = Entry::new(t, "");
         let p = chain
-            .push_entry(&e)
+            .commit_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(&e, p.entry());

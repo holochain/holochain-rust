@@ -182,7 +182,14 @@ mod tests {
         println!("{:?}", instance.state().agent().chain().top_pair());
         println!(
             "{:?}",
-            instance.state().agent().chain().top_pair().unwrap().key()
+            instance
+                .state()
+                .agent()
+                .chain()
+                .top_pair()
+                .expect("could not get top pair")
+                .expect("top pair was None")
+                .key()
         );
 
         let commit_call = ZomeFnCall::new(

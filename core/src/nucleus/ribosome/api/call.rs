@@ -132,8 +132,15 @@ pub(crate) fn reduce_call(
         _ => unreachable!(),
     };
     // Get Capability
-    let maybe_cap = get_capability_with_zome_call(state.dna.as_ref(), &fn_call);
-
+    if state.dna.is_none() {
+        // Notify failure
+        state
+            .zome_calls
+            .insert(fn_call.clone(), Some(Err(HolochainError::DnaMissing)));
+        return;
+    }
+    let dna = state.dna.clone().unwrap();
+    let maybe_cap = get_capability_with_zome_call(&dna, &fn_call);
     if let Err(fn_res) = maybe_cap {
         // Notify failure
         state
@@ -160,8 +167,8 @@ pub(crate) fn reduce_call(
             false
         }
     };
-    // Notify failure
     if !can_call {
+        // Notify failure
         state.zome_calls.insert(
             fn_call.clone(),
             Some(Err(HolochainError::DoesNotHaveCapabilityToken)),
@@ -169,14 +176,17 @@ pub(crate) fn reduce_call(
         return;
     }
 
-    // 3. Execute the exposed Zome function in a separate thread
+    // 3. Get the exposed Zome function WASM and execute it in a separate thread
+    let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
+    let code =
+        maybe_code.expect("zome not found, Should have failed before when getting capability.");
     state.zome_calls.insert(fn_call.clone(), None);
     launch_zome_fn_call(
         context,
         fn_call,
         action_channel,
         observer_channel,
-        &cap.code,
+        &code,
         state.dna.clone().unwrap().name,
     );
 }
@@ -189,7 +199,7 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{Dna, DnaError};
+    use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
     use instance::tests::{test_instance, TestLogger};
     use nucleus::ribosome::{
         api::{
@@ -204,7 +214,7 @@ pub mod tests {
     use persister::SimplePersister;
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
-    use test_utils::{create_test_cap, create_test_dna_with_cap};
+    use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
     pub fn test_bad_args_bytes() -> Vec<u8> {
@@ -304,8 +314,9 @@ pub mod tests {
     #[test]
     fn test_call_ok() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let cap = create_test_cap(Membrane::Public, &wasm);
-        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &cap);
+        let mut capability = Capability::new();
+        capability.cap_type.membrane = Membrane::Public;
+        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);

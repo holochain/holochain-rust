@@ -198,11 +198,8 @@ pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -
 pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
     encoded_allocation: u32,
 ) -> Result<T, HcApiReturnCode> {
-    let allocation = SinglePageAllocation::new(encoded_allocation);
-    if let Err(e) = allocation {
-        return Err(e);
-    }
-    return Ok(deserialize(allocation.unwrap().offset as *mut c_char));
+    let allocation = SinglePageAllocation::new(encoded_allocation)?;
+    return Ok(deserialize(allocation.offset as *mut c_char));
 }
 
 // Write a data struct into a memory buffer as json string

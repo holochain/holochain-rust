@@ -380,34 +380,6 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::ExecuteZomeFunction(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ExecuteZomeFunction for genesis");
-            sleep(Duration::from_millis(10))
-        }
-
-        while instance
-            .state()
-            .history
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::ReturnZomeFunctionResult(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ReturnZomeFunctionResult from genesis");
-            sleep(Duration::from_millis(10))
-        }
-
-        while instance
-            .state()
-            .history
-            .iter()
-            .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
                 _ => false,
             })

@@ -108,12 +108,12 @@ pub trait AskSelf {
     /// uses the ask() fn from riker patterns under the hood to create a future then block on it
     /// handles passing the actor system through to ask() to hide that implementation detail
     /// @see http://riker.rs/patterns/#ask
-    fn block_on_ask(&self, message: Protocol) -> Protocol;
+    fn block_on_ask(&self, message: Protocol) -> Result<Protocol, HolochainError>;
 }
 
 impl AskSelf for ActorRef<Protocol> {
-    fn block_on_ask(&self, message: Protocol) -> Protocol {
+    fn block_on_ask(&self, message: Protocol) -> Result<Protocol, HolochainError> {
         let a = ask(&(*SYS), self, message);
-        block_on(a).unwrap()
+        Ok(block_on(a)?)
     }
 }

@@ -163,7 +163,12 @@ impl Chain {
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
     fn iter(&self) -> ChainIterator {
-        ChainIterator::new(self.table(), &self.top_pair())
+        ChainIterator::new(
+            self.table(),
+            &self
+                .top_pair()
+                .expect("could not get top pair when building iterator"),
+        )
     }
 
     /// restore canonical JSON chain
@@ -197,7 +202,7 @@ pub trait SourceChain {
     /// sets an option for the top Pair
     fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
     /// returns an option for the top Pair
-    fn top_pair(&self) -> Option<Pair>;
+    fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
     /// get the top Pair by Entry type
     fn top_pair_of_type(&self, t: &str) -> Option<Pair>;
 
@@ -216,7 +221,7 @@ pub trait SourceChain {
 }
 
 impl SourceChain for Chain {
-    fn top_pair(&self) -> Option<Pair> {
+    fn top_pair(&self) -> Result<Option<Pair>, HolochainError> {
         self.chain_actor.top_pair()
     }
 
@@ -229,15 +234,14 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        // 1. validation
         if !(pair.validate()) {
             return Err(HolochainError::new(
                 "attempted to push an invalid pair for this chain",
             ));
         }
 
-        let top_pair = self.top_pair().as_ref().map(|p| p.key());
-        let prev_pair = pair.header().link();
+                let top_pair = self.top_pair()?.as_ref().map(|p| p.key());
+                let prev_pair = pair_for_validation.header().link();
 
         if top_pair != prev_pair {
             return Err(HolochainError::new(&format!(
@@ -245,14 +249,16 @@ impl SourceChain for Chain {
                 top_pair, prev_pair,
             )));
         }
+                self.chain_actor.set_top_pair(&pair)
+            }
+            None => Ok(None),
+        }
+    }
 
         let header_entry = &pair.clone().header().to_entry();
         self.table_actor.put_entry(header_entry)?;
         self.table_actor.put_entry(&pair.clone().entry())?;
 
-        // @TODO instead of unwrapping this, move all the above validation logic inside of
-        // set_top_pair()
-        // @see https://github.com/holochain/holochain-rust/issues/258
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
@@ -367,7 +373,12 @@ pub mod tests {
     fn top_pair() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair from test chain")
+        );
 
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
@@ -394,13 +405,35 @@ pub mod tests {
         let mut c2 = c1.clone();
         let test_pair = test_pair();
 
-        assert_eq!(None, c1.top_pair());
-        assert_eq!(None, c2.top_pair());
+        assert_eq!(
+            None,
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for chain 1")
+        );
+        assert_eq!(
+            None,
+            chain_2
+                .top_pair()
+                .expect("could not get top pair for chain 2")
+        );
 
         let pair = c2.push_pair(&test_pair).unwrap();
 
-        assert_eq!(Some(pair.clone()), c2.top_pair());
-        assert_eq!(c1.top_pair(), c2.top_pair());
+        assert_eq!(
+            Some(pair.clone()),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair after pushing to chain 2")
+        );
+        assert_eq!(
+            chain_1
+                .top_pair()
+                .expect("could not get top pair for comparing chain 1"),
+            chain_2
+                .top_pair()
+                .expect("could not get top pair when comparing chain 2")
+        );
     }
 
     #[test]
@@ -429,7 +462,12 @@ pub mod tests {
     fn can_commit_entry() {
         let mut chain = test_chain();
 
-        assert_eq!(None, chain.top_pair());
+        assert_eq!(
+            None,
+            chain
+                .top_pair()
+                .expect("could not get top pair for test chain")
+        );
 
         // chain top, pair entry and headers should all line up after a push
         let e1 = test_entry_a();

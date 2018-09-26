@@ -62,14 +62,23 @@ impl Header {
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             timestamp: timestamp.to_string(),
-            link: link,
+            link: chain
+                .top_pair()
+                .expect("could not get top pair when building header")
+                .as_ref()
+                .map(|p| p.header().hash()),
             entry_hash: entry_hash.clone(),
+            link_same_type: chain
+                .top_pair_type(&entry.entry_type())
+                // @TODO inappropriate expect()?
+                // @see https://github.com/holochain/holochain-rust/issues/147
+                .map(|p| p.header().hash()),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }
-    }
+        }
 
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)

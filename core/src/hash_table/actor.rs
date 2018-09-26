@@ -14,24 +14,24 @@ impl AskHashTable for ActorRef<Protocol> {}
 
 impl HashTable for ActorRef<Protocol> {
     fn setup(&mut self) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Setup);
+        let response = self.block_on_ask(Protocol::Setup)?;
         unwrap_to!(response => Protocol::SetupResult).clone()
     }
 
     fn teardown(&mut self) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Teardown);
+        let response = self.block_on_ask(Protocol::Teardown)?;
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::PutEntry(entry.clone()));
+        let response = self.block_on_ask(Protocol::PutEntry(entry.clone()))?;
         unwrap_to!(response => Protocol::PutEntryResult).clone()
     }
 
     // TODO #358 - Rename entry to something else. Entry is only to be used for a chain.
     // https://github.com/holochain/holochain-rust/pull/340#discussion_r220332130
     fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetEntry(key.clone()));
+        let response = self.block_on_ask(Protocol::GetEntry(key.clone()))?;
         unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
 
@@ -45,7 +45,7 @@ impl HashTable for ActorRef<Protocol> {
             keys: keys.clone(),
             old: old_entry.clone(),
             new: new_entry.clone(),
-        });
+        })?;
         unwrap_to!(response => Protocol::ModifyEntryResult).clone()
     }
 
@@ -53,22 +53,22 @@ impl HashTable for ActorRef<Protocol> {
         let response = self.block_on_ask(Protocol::RetractEntry {
             keys: keys.clone(),
             entry: entry.clone(),
-        });
+        })?;
         unwrap_to!(response => Protocol::RetractEntryResult).clone()
     }
 
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()));
+        let response = self.block_on_ask(Protocol::AssertMeta(meta.clone()))?;
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
     fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetMeta(key.clone()));
+        let response = self.block_on_ask(Protocol::GetMeta(key.clone()))?;
         unwrap_to!(response => Protocol::GetMetaResult).clone()
     }
 
     fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::MetasFromEntry(entry.clone()));
+        let response = self.block_on_ask(Protocol::MetasFromEntry(entry.clone()))?;
         unwrap_to!(response => Protocol::MetasFromEntryResult).clone()
     }
 
@@ -80,7 +80,7 @@ impl HashTable for ActorRef<Protocol> {
         let response = self.block_on_ask(Protocol::MetaFromRequest {
             entry_hash: entry_hash,
             attribute_name: attribute_name.to_string(),
-        });
+        })?;
         unwrap_to!(response => Protocol::MetaFromRequestResult).clone()
     }
 }

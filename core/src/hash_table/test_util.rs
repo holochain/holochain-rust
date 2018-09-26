@@ -115,7 +115,7 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     );
 }
 
-/// assert a couple of unique metas against a single pair
+/// assert a couple of unique metas against a single entry
 fn test_metas_for<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     let meta_a = test_meta_for(&entry, &test_attribute(), &test_value());

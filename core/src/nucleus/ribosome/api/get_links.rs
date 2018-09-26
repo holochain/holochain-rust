@@ -59,7 +59,6 @@ pub fn invoke_get_links(
                         // the channel stays connected until the first message has been sent
                         // if this fails that means that it was called after having returned done=true
                         .expect("observer called after done");
-
                     true
                 }
                 None => false,

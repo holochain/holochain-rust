@@ -59,13 +59,9 @@ impl Header {
     ) -> Self {
         Header {
             entry_type: entry_type.to_string(),
-            // @TODO implement timestamps
-            // https://github.com/holochain/holochain-rust/issues/70
             timestamp: timestamp.to_string(),
             link: link,
             entry_hash: entry_hash.clone(),
-            // @TODO implement signatures
-            // https://github.com/holochain/holochain-rust/issues/71
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }

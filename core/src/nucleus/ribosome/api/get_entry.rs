@@ -182,7 +182,6 @@ mod tests {
         );
         let instance = test_instance(dna.clone());
         let (context, _) = test_context_and_logger("joan");
-
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().chain().top_pair());

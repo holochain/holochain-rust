@@ -24,9 +24,9 @@ macro_rules! sys_prefix {
 // Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq)]
 pub enum EntryType {
-    App,
     AgentId,
     Deletion,
+    App,
     Dna,
     Header,
     Key,

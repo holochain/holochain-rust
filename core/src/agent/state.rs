@@ -59,6 +59,8 @@ impl AgentState {
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
+// @TODO abstract this to a standard trait
+// @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Entry, HolochainError>),
     GetEntry(Option<Entry>),
@@ -66,8 +68,6 @@ pub enum ActionResponse {
     LinkEntries(Result<Entry, HolochainError>),
 }
 
-// @TODO abstract this to a standard trait
-// @see https://github.com/holochain/holochain-rust/issues/196
 impl ToJson for ActionResponse {
     /// serialize data or error to JSON
     // @TODO implement this as a round tripping trait
@@ -297,6 +297,7 @@ pub mod tests {
     }
 
     #[test]
+    /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",

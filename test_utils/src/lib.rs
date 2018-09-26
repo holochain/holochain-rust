@@ -8,7 +8,7 @@ use holochain_core::{context::Context, logger::Logger, persister::SimplePersiste
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, Membrane, FnDeclaration},
+        capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
         Config, Zome,
     },

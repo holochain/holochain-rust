@@ -59,6 +59,8 @@ mod tests {
     use super::CrudStatus;
     use cas::content::AddressableContent;
     use hash::HashString;
+    use cas::storage::ContentAddressableStorage;
+    use cas::storage::tests::ExampleContentAddressableStorage;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -105,9 +107,18 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         assert_eq!(CrudStatus::from_content(&"1".to_string()), CrudStatus::LIVE);
-        assert_eq!(CrudStatus::from_content(&"2".to_string()), CrudStatus::REJECTED);
-        assert_eq!(CrudStatus::from_content(&"4".to_string()), CrudStatus::DELETED);
-        assert_eq!(CrudStatus::from_content(&"8".to_string()), CrudStatus::MODIFIED);
+        assert_eq!(
+            CrudStatus::from_content(&"2".to_string()),
+            CrudStatus::REJECTED
+        );
+        assert_eq!(
+            CrudStatus::from_content(&"4".to_string()),
+            CrudStatus::DELETED
+        );
+        assert_eq!(
+            CrudStatus::from_content(&"8".to_string()),
+            CrudStatus::MODIFIED
+        );
 
         // content()
         assert_eq!("1".to_string(), CrudStatus::LIVE.content());
@@ -116,9 +127,48 @@ mod tests {
         assert_eq!("8".to_string(), CrudStatus::MODIFIED.content());
 
         // address()
-        assert_eq!(HashString::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG".to_string()), CrudStatus::LIVE.address());
-        assert_eq!(HashString::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg".to_string()), CrudStatus::REJECTED.address());
-        assert_eq!(HashString::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm".to_string()), CrudStatus::DELETED.address());
-        assert_eq!(HashString::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi".to_string()), CrudStatus::MODIFIED.address());
+        assert_eq!(
+            HashString::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG".to_string()),
+            CrudStatus::LIVE.address()
+        );
+        assert_eq!(
+            HashString::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg".to_string()),
+            CrudStatus::REJECTED.address()
+        );
+        assert_eq!(
+            HashString::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm".to_string()),
+            CrudStatus::DELETED.address()
+        );
+        assert_eq!(
+            HashString::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi".to_string()),
+            CrudStatus::MODIFIED.address()
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let mut content_addressable_storage = ExampleContentAddressableStorage::new();
+        content_addressable_storage.add(&CrudStatus::LIVE).expect("could not add LIVE");
+        content_addressable_storage.add(&CrudStatus::REJECTED).expect("could not add REJECTED");
+        content_addressable_storage.add(&CrudStatus::DELETED).expect("could not add DELETED");
+        content_addressable_storage.add(&CrudStatus::MODIFIED).expect("could not add MODIFIED");
+
+        assert_eq!(
+            Some(CrudStatus::LIVE),
+            content_addressable_storage.fetch(&CrudStatus::LIVE.address()).expect("could not fetch LIVE"),
+        );
+        assert_eq!(
+            Some(CrudStatus::REJECTED),
+            content_addressable_storage.fetch(&CrudStatus::REJECTED.address()).expect("could not fetch REJECTED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::DELETED),
+            content_addressable_storage.fetch(&CrudStatus::DELETED.address()).expect("could not fetch DELETED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::MODIFIED),
+            content_addressable_storage.fetch(&CrudStatus::MODIFIED.address()).expect("could not fetch MODIFIED"),
+        );
     }
 }

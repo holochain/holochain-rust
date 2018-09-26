@@ -114,6 +114,7 @@ impl Chain {
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
             self.top_pair()
+                .expect("could not get top pair when building header")
                 .as_ref()
                 .map(|p| p.header().to_entry().key()),
             &entry.hash(),
@@ -233,27 +234,41 @@ impl SourceChain for Chain {
         self.iter().find(|p| p.header().entry_type() == t)
     }
 
+//    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+//        if !(pair.validate()) {
+//            return Err(HolochainError::new(
+//                "attempted to push an invalid pair for this chain",
+//            ));
+//        }
+//
+//        let top_pair = self.top_pair()?.as_ref().map(|p| p.key());
+//        let prev_pair = pair_for_validation.header().link();
+//
+//        if top_pair != prev_pair {
+//            return Err(HolochainError::new(&format!(
+//                "top pair did not match previous hash pair from commited pair: {:?} vs. {:?}",
+//                top_pair, prev_pair,
+//            )));
+//        }
+//        //                self.chain_actor.set_top_pair(&pair)
+//        //            }
+//        //            None => Ok(None),
+//        //        }
+//        //    }
+//
+//        let header_entry = &pair.clone().header().to_entry();
+//        self.table_actor.put_entry(header_entry)?;
+//        self.table_actor.put_entry(&pair.clone().entry())?;
+//
+//        // @TODO if top pair set fails but commit succeeds?
+//        // @see https://github.com/holochain/holochain-rust/issues/259
+//        self.set_top_pair(&Some(pair.clone()))?;
+//
+//        Ok(pair.clone())
+//    }
+
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        if !(pair.validate()) {
-            return Err(HolochainError::new(
-                "attempted to push an invalid pair for this chain",
-            ));
-        }
-
-                let top_pair = self.top_pair()?.as_ref().map(|p| p.key());
-                let prev_pair = pair_for_validation.header().link();
-
-        if top_pair != prev_pair {
-            return Err(HolochainError::new(&format!(
-                "top pair did not match previous hash pair from commited pair: {:?} vs. {:?}",
-                top_pair, prev_pair,
-            )));
-        }
-                self.chain_actor.set_top_pair(&pair)
-            }
-            None => Ok(None),
-        }
-    }
+        //self.table_actor.put_pair(&pair.clone())?;
 
         let header_entry = &pair.clone().header().to_entry();
         self.table_actor.put_entry(header_entry)?;
@@ -388,21 +403,21 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_a, p1.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
-        assert_eq!(p1, top_pair);
+        assert_eq!(Some(p1), top_pair);
 
         let p2 = chain
             .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_b, p2.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
-        assert_eq!(p2, top_pair);
+        assert_eq!(Some(p2), top_pair);
     }
 
     #[test]
     /// tests that the chain state is consistent across clones
     fn clone_safe() {
-        let c1 = test_chain();
-        let mut c2 = c1.clone();
+        let chain_1 = test_chain();
+        let mut chain_2 = chain_1.clone();
         let test_pair = test_pair();
 
         assert_eq!(
@@ -418,7 +433,7 @@ pub mod tests {
                 .expect("could not get top pair for chain 2")
         );
 
-        let pair = c2.push_pair(&test_pair).unwrap();
+        let pair = chain_2.push_pair(&test_pair).unwrap();
 
         assert_eq!(
             Some(pair.clone()),
@@ -470,24 +485,24 @@ pub mod tests {
         );
 
         // chain top, pair entry and headers should all line up after a push
-        let e1 = test_entry_a();
-        let p1 = chain
-            .push_entry(&e1)
+        let entry_1 = test_entry_a();
+        let pair_1 = chain
+            .push_entry(&entry_1)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(&e1, p1.entry());
-        assert_eq!(Some(&p1), chain.top_pair().as_ref());
-        assert_eq!(e1.key(), p1.entry().key());
+        assert_eq!(Some(&pair_1), chain.top_pair().expect("could not get top pair for pair 1").as_ref());
+        assert_eq!(&entry_1, pair_1.entry());
+        assert_eq!(entry_1.key(), pair_1.entry().key());
 
         // we should be able to do it again
-        let e2 = test_entry_b();
-        let p2 = chain
-            .push_entry(&e2)
+        let entry_2 = test_entry_b();
+        let pair_2 = chain
+            .push_entry(&entry_2)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(&e2, p2.entry());
-        assert_eq!(Some(&p2), chain.top_pair().as_ref());
-        assert_eq!(e2.key(), p2.entry().key());
+        assert_eq!(Some(&pair_2), chain.top_pair().expect("could not get top pair for pair 2").as_ref());
+        assert_eq!(&entry_2, pair_2.entry());
+        assert_eq!(entry_2.key(), pair_2.entry().key());
     }
 
     #[test]

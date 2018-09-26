@@ -20,6 +20,11 @@ struct CommitOutputStruct {
   hash: String,
 }
 
+//#[derive(Deserialize, Serialize, Default)]
+//struct CommitErrorStruct {
+//  error: String,
+//}
+
 //-------------------------------------------------------------------------------------------------
 // HC Commit Function Call - Succesful
 //-------------------------------------------------------------------------------------------------
@@ -27,7 +32,7 @@ struct CommitOutputStruct {
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
 fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content: &str)
-  -> Result<String, HcApiReturnCode>
+  -> Result<String, ErrorStruct>
 {
   // Put args in struct and serialize into memory
   let input = CommitInputStruct {
@@ -49,6 +54,8 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
 
   // Return hash
   Ok(output.hash.to_string())
+  //Ok("fuck it".to_string())
+  //Ok(output.error)
 }
 
 /// Actual test function code
@@ -58,76 +65,71 @@ fn test_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
   let hash = hdk_commit(mem_stack, "testEntryType", "hello");
 
   // Return result in complex format
-  return
-    if let Ok(hash_str) = hash {
-      CommitOutputStruct {
-        hash: hash_str,
-      }
+  CommitOutputStruct {
+    hash: match hash {
+      Ok(hash_str) => hash_str,
+      Err(err_struct) => err_struct.error.to_string(),
     }
-      else
-      {
-        CommitOutputStruct {
-          hash: "fail".to_string(),
-        }
-      };
+  }
+
 }
 
 //-------------------------------------------------------------------------------------------------
 // HC COMMIT Function Call - Fail
 //-------------------------------------------------------------------------------------------------
-
-// Simulate error in commit function by inputing output struct as input
-fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
-  -> Result<String, HcApiReturnCode>
-{
-  // Put args in struct and serialize into memory
-  let input = CommitOutputStruct {
-    hash: "whatever".to_string(),
-  };
-  let allocation_of_input =  serialize(mem_stack, input);
-
-  // Call WASMI-able commit
-  let encoded_allocation_of_result: i32;
-  unsafe {
-    encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
-  }
-  // DECODE ERROR
-  let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
-  if let Err(e) = result {
-    return Err(e)
-  }
-
-  // Deserialize complex result stored in memory
-  let output: CommitOutputStruct = result.unwrap();
-  // Free result & input allocations and all allocations made inside commit()
-  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
-
-  // Return hash
-  Ok(output.hash.to_string())
-}
-
-
-/// Actual test function code
-fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
-{
-  // Call Commit API function
-  let hash = hdk_commit_fail(mem_stack);
-
-  // Return result in complex format
-  return
-    if let Ok(hash_str) = hash {
-      CommitOutputStruct {
-        hash: hash_str,
-      }
-    }
-      else
-      {
-        CommitOutputStruct {
-          hash: "fail".to_string(),
-        }
-      };
-}
-
+//
+//// Simulate error in commit function by inputing output struct as input
+//fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
+//  -> Result<String, HcApiReturnCode>
+//{
+//  // Put args in struct and serialize into memory
+//  let input = CommitOutputStruct {
+//    hash: "whatever".to_string(),
+//  };
+//  let allocation_of_input =  serialize(mem_stack, input);
+//
+//  // Call WASMI-able commit
+//  let encoded_allocation_of_result: i32;
+//  unsafe {
+//    encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
+//  }
+//  // DECODE ERROR
+//  let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
+//  if let Err(e) = result {
+//    return Err(e)
+//  }
+//
+//  // Deserialize complex result stored in memory
+//  let output: CommitOutputStruct = result.unwrap();
+//  // Free result & input allocations and all allocations made inside commit()
+//  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
+//
+//  // Return hash
+//  Ok(output.hash.to_string())
+//}
+//
+//
+///// Actual test function code
+//fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
+//{
+//  // Call Commit API function
+//  let hash = hdk_commit_fail(mem_stack);
+//
+//  // Return result in complex format
+//  return
+//    if let Ok(hash_str) = hash {
+//      CommitOutputStruct {
+//        hash: hash_str,
+//      }
+//    }
+//      else
+//      {
+//        CommitOutputStruct {
+//          hash: "fail".to_string(),
+//        }
+//      };
+//}
+//
 
 //-------------------------------------------------------------------------------------------------
 //  Exported functions with required signature (=pointer to serialized complex parameter)
@@ -140,17 +142,19 @@ fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
-  let output = test_inner(&mut mem_stack);
+  // let output = test_inner(&mut mem_stack);
+  let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
+
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }
 
-/// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
-/// holding input arguments
-/// returns encoded allocation used to store output
-#[no_mangle]
-pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
-  let output = test_fail_inner(&mut mem_stack);
-  return serialize_into_encoded_allocation(&mut mem_stack, output);
-}
+///// Function called by Holochain Instance
+///// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+///// holding input arguments
+///// returns encoded allocation used to store output
+//#[no_mangle]
+//pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
+//  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+//  let output = test_fail_inner(&mut mem_stack);
+//  return serialize_into_encoded_allocation(&mut mem_stack, output);
+//}

@@ -49,23 +49,30 @@ pub fn invoke_commit_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
     );
 
-    let json = match task_result {
+    let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => Ok("Unknown error".to_string()),
+            _ => return Ok(Some(RuntimeValue::I32(
+                HcApiReturnCode::ReceivedWrongActionResult as i32,
+            ))),
         },
-        Err(error_string) => {
-            // TODO - Have Failure write message in wasm memory
-            // so wasm can return custom error message to end-user
-            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
-        }
+        Err(error_string) =>  {
+            Ok(json!({ "error": error_string }).to_string())
+            //Ok(error_string)
+        },
+//        Err(error_string) => {
+//            // TODO - Have Failure write message in wasm memory
+//            // so wasm can return custom error message to end-user
+//            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
+//            // Return Error code in i32 format
+//            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
+//        }
     };
 
+    println!("json = {:?}", maybe_json);
     // allocate and encode result
-    match json {
-        Ok(j) => runtime.store_utf8(&j),
+    match maybe_json {
+        Ok(json) => runtime.store_utf8(&json),
         Err(_) => Ok(Some(RuntimeValue::I32(
             HcApiReturnCode::ResponseSerializationFailed as i32,
         ))),

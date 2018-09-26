@@ -412,6 +412,7 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
+        println!("result = {:?}", result);
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);

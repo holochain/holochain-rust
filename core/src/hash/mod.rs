@@ -18,9 +18,7 @@ impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
     }
-    pub fn to_str(self) -> String {
-        self.0
-    }
+
     pub fn from(s: String) -> HashString {
         HashString(s)
     }
@@ -54,10 +52,20 @@ pub mod tests {
     }
 
     #[test]
+    /// show ToString implementation
+    /// automatically derived by Rust because fmt::Display is implemented
+    fn to_string_test() {
+        assert_eq!(
+            test_hash().to_string(),
+            "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT",
+        )
+    }
+
+    #[test]
     /// mimics tests from legacy golang holochain core hashing bytes
     fn bytes_to_b58_known_golang() {
         assert_eq!(
-            HashString::encode_from_bytes(b"test data", Hash::SHA2256).to_str(),
+            HashString::encode_from_bytes(b"test data", Hash::SHA2256).to_string(),
             "QmY8Mzg9F69e5P9AoQPYat655HEhc1TVGs11tmfNSzkqh2"
         )
     }
@@ -66,7 +74,7 @@ pub mod tests {
     /// mimics tests from legacy golang holochain core hashing strings
     fn str_to_b58_hash_known_golang() {
         assert_eq!(
-            HashString::encode_from_str("test data", Hash::SHA2256).to_str(),
+            HashString::encode_from_str("test data", Hash::SHA2256).to_string(),
             "QmY8Mzg9F69e5P9AoQPYat655HEhc1TVGs11tmfNSzkqh2"
         );
     }
@@ -81,7 +89,7 @@ pub mod tests {
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            HashString::encode_from_serializable(Foo { foo: 5 }, Hash::SHA2256).to_str(),
+            HashString::encode_from_serializable(Foo { foo: 5 }, Hash::SHA2256).to_string(),
         );
     }
 }

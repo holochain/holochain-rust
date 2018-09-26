@@ -10,7 +10,6 @@ use std::str::FromStr;
 // Link
 //-------------------------------------------------------------------------------------------------
 
-//
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Link {
     base: HashString,

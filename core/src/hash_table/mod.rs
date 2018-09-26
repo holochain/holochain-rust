@@ -5,7 +5,6 @@ pub mod entry_meta;
 pub mod file;
 pub mod links_entry;
 pub mod memory;
-pub mod meta;
 
 pub mod status;
 pub mod sys_entry;
@@ -86,12 +85,20 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     }
 
     // Linking
-    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError>;
-    fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError>;
+    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+        unreachable!()
+    }
+
+    fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
+        unreachable!()
+    }
+
     fn get_links(
         &mut self,
         request: &GetLinksArgs,
-    ) -> Result<Option<LinkListEntry>, HolochainError>;
+    ) -> Result<Option<LinkListEntry>, HolochainError> {
+        unreachable!()
+    }
 
     // Meta
     /// Assert a given Meta in the HashTable.

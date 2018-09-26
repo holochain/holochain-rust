@@ -2,7 +2,8 @@ use error::HolochainError;
 
 use agent::keys::Keys;
 use hash::HashString;
-use hash_table::{entry::Entry, links_entry::*, meta::EntryMeta, sys_entry::ToEntry, HashTable};
+use hash_table::{entry::Entry, links_entry::*,
+                 entry_meta::EntryMeta, sys_entry::ToEntry, HashTable};
 use key::Key;
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use serde_json;
@@ -47,9 +48,7 @@ impl HashTable for Dht {
         vec_meta.sort();
         Ok(vec_meta)
     }
-}
 
-impl Dht {
     /// Add link metadata to an Entry
     fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         // Retrieve entry from HashTable

@@ -29,7 +29,7 @@ pub(crate) fn reduce_add_link(
 
     // Create and Commit a LinkEntry on source chain
     let link_entry = LinkEntry::from_link(LinkActionKind::ADD, link);
-    let res = state.chain().clone().commit_entry(&link_entry.to_entry());
+    let res = state.chain().clone().push_entry(&link_entry.to_entry());
     let mut response = if res.is_ok() {
         Ok(res.unwrap().entry().clone())
     } else {

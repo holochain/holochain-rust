@@ -192,7 +192,7 @@ mod tests {
         let mut chain2 = test_chain();
         let e = Entry::new(t1, c1);
         chain2
-            .commit_entry(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_ne!(chain1.create_next_header(&e), chain2.create_next_header(&e));
@@ -243,7 +243,7 @@ mod tests {
         // first header is genesis so next should be None
         let e1 = Entry::new(t, "");
         let p1 = chain
-            .commit_entry(&e1)
+            .push_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
@@ -252,7 +252,7 @@ mod tests {
         // second header next should be first header hash
         let e2 = Entry::new(t, "foo");
         let p2 = chain
-            .commit_entry(&e2)
+            .push_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
@@ -282,7 +282,7 @@ mod tests {
         // first header is genesis so next should be None
         let e1 = Entry::new(t1, "");
         let p1 = chain
-            .commit_entry(&e1)
+            .push_entry(&e1)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h1 = p1.header();
 
@@ -291,7 +291,7 @@ mod tests {
         // second header is a different type so next should be None
         let e2 = Entry::new(t2, "");
         let p2 = chain
-            .commit_entry(&e2)
+            .push_entry(&e2)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h2 = p2.header();
 
@@ -300,7 +300,7 @@ mod tests {
         // third header is same type as first header so next should be first header hash
         let e3 = Entry::new(t1, "");
         let p3 = chain
-            .commit_entry(&e3)
+            .push_entry(&e3)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let h3 = p3.header();
 
@@ -386,11 +386,11 @@ mod tests {
         let h = chain.create_next_header(&e);
 
         let p1 = chain
-            .commit_entry(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         // p2 will have a different hash to p1 with the same entry as the chain state is different
         let p2 = chain
-            .commit_entry(&e)
+            .push_entry(&e)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_eq!(h.hash(), p1.header().hash());

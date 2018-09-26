@@ -82,7 +82,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             &CrudStatus::DELETED.bits().to_string(),
         ))
     }
-
+    
     // Meta
     /// Assert a given Meta in the HashTable.
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError>;

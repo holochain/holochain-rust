@@ -268,7 +268,7 @@ pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: A
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use super::Instance;
+    use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
@@ -372,34 +372,6 @@ pub mod tests {
             .is_none()
         {
             println!("Waiting for Commit for genesis");
-            sleep(Duration::from_millis(10))
-        }
-
-        while instance
-            .state()
-            .history
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::ExecuteZomeFunction(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ExecuteZomeFunction for genesis");
-            sleep(Duration::from_millis(10))
-        }
-
-        while instance
-            .state()
-            .history
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::ReturnZomeFunctionResult(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ReturnZomeFunctionResult from genesis");
             sleep(Duration::from_millis(10))
         }
 

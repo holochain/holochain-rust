@@ -1,10 +1,12 @@
 use super::call;
 use action::ActionWrapper;
+use context::Context;
 use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc};
 
 pub fn receive(
+    context: Arc<Context>,
     action_channel: &Sender<ActionWrapper>,
     observer_channel: &Sender<Observer>,
     zome: &str,
@@ -12,6 +14,7 @@ pub fn receive(
     params: &CallbackParams,
 ) -> CallbackResult {
     call(
+        context,
         action_channel,
         observer_channel,
         zome,
@@ -24,6 +27,7 @@ pub fn receive(
 pub mod tests {
 
     use super::receive;
+    use instance::tests::test_context;
     use nucleus::ribosome::{
         callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
         Defn,
@@ -33,8 +37,10 @@ pub mod tests {
     fn pass() {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0);
+        let context = instance.initialize_context(test_context("test"));
 
         let result = receive(
+            context,
             &instance.action_channel(),
             &instance.observer_channel(),
             zome,
@@ -53,8 +59,10 @@ pub mod tests {
             Callback::MissingNo.as_str(),
             0,
         );
+        let context = instance.initialize_context(test_context("test"));
 
         let result = receive(
+            context,
             &instance.action_channel(),
             &instance.observer_channel(),
             zome,
@@ -68,8 +76,10 @@ pub mod tests {
     fn fail() {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 1);
+        let context = instance.initialize_context(test_context("test"));
 
         let result = receive(
+            context,
             &instance.action_channel(),
             &instance.observer_channel(),
             zome,

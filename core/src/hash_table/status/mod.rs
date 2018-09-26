@@ -57,10 +57,11 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use cas::content::AddressableContent;
+    use cas::{
+        content::AddressableContent,
+        storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
+    };
     use hash::HashString;
-    use cas::storage::ContentAddressableStorage;
-    use cas::storage::tests::ExampleContentAddressableStorage;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -149,26 +150,42 @@ mod tests {
     /// show CAS round trip
     fn cas_round_trip_test() {
         let mut content_addressable_storage = ExampleContentAddressableStorage::new();
-        content_addressable_storage.add(&CrudStatus::LIVE).expect("could not add LIVE");
-        content_addressable_storage.add(&CrudStatus::REJECTED).expect("could not add REJECTED");
-        content_addressable_storage.add(&CrudStatus::DELETED).expect("could not add DELETED");
-        content_addressable_storage.add(&CrudStatus::MODIFIED).expect("could not add MODIFIED");
+        content_addressable_storage
+            .add(&CrudStatus::LIVE)
+            .expect("could not add LIVE");
+        content_addressable_storage
+            .add(&CrudStatus::REJECTED)
+            .expect("could not add REJECTED");
+        content_addressable_storage
+            .add(&CrudStatus::DELETED)
+            .expect("could not add DELETED");
+        content_addressable_storage
+            .add(&CrudStatus::MODIFIED)
+            .expect("could not add MODIFIED");
 
         assert_eq!(
             Some(CrudStatus::LIVE),
-            content_addressable_storage.fetch(&CrudStatus::LIVE.address()).expect("could not fetch LIVE"),
+            content_addressable_storage
+                .fetch(&CrudStatus::LIVE.address())
+                .expect("could not fetch LIVE"),
         );
         assert_eq!(
             Some(CrudStatus::REJECTED),
-            content_addressable_storage.fetch(&CrudStatus::REJECTED.address()).expect("could not fetch REJECTED"),
+            content_addressable_storage
+                .fetch(&CrudStatus::REJECTED.address())
+                .expect("could not fetch REJECTED"),
         );
         assert_eq!(
             Some(CrudStatus::DELETED),
-            content_addressable_storage.fetch(&CrudStatus::DELETED.address()).expect("could not fetch DELETED"),
+            content_addressable_storage
+                .fetch(&CrudStatus::DELETED.address())
+                .expect("could not fetch DELETED"),
         );
         assert_eq!(
             Some(CrudStatus::MODIFIED),
-            content_addressable_storage.fetch(&CrudStatus::MODIFIED.address()).expect("could not fetch MODIFIED"),
+            content_addressable_storage
+                .fetch(&CrudStatus::MODIFIED.address())
+                .expect("could not fetch MODIFIED"),
         );
     }
 }

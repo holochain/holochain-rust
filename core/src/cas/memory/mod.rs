@@ -62,12 +62,12 @@ pub mod tests {
             Ok(None),
             cas.fetch::<OtherExampleAddressableContent>(&other_content.address())
         );
-        // round trip some AddressableContent through the FilesystemStorage
+        // round trip some AddressableContent through the MemoryStorage
         assert_eq!(Ok(()), cas.add(&content));
         assert_eq!(Ok(true), cas.contains(&content.address()));
         assert_eq!(Ok(false), cas.contains(&other_content.address()));
         assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-        // multiple types of AddressableContent can sit in a single FilesystemStorage
+        // multiple types of AddressableContent can sit in a single MemoryStorage
         // the safety of this is only as good as the hashing algorithm(s) used
         assert_eq!(Ok(()), cas.add(&other_content));
         assert_eq!(Ok(true), cas.contains(&content.address()));

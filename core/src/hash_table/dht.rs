@@ -156,7 +156,6 @@ pub mod tests {
         entry::Entry,
         links_entry::{Link, LinkListEntry},
         memory::MemTable,
-        test_util::standard_suite,
         HashTable,
     };
     use key::Key;

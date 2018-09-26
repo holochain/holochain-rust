@@ -59,14 +59,9 @@ impl HashTable for MemTable {
 pub mod tests {
 
     use hash_table::{
-        entry::Entry,
-        links_entry::{Link, LinkListEntry},
         memory::MemTable,
         test_util::standard_suite,
-        HashTable,
     };
-    use key::Key;
-    use nucleus::ribosome::api::get_links::GetLinksArgs;
 
     pub fn test_table() -> MemTable {
         MemTable::new()

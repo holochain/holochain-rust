@@ -142,6 +142,26 @@ pub mod tests {
         )
     }
 
+    pub fn create_test_link_a() -> Link {
+        create_test_link()
+    }
+
+    pub fn create_test_link_b() -> Link {
+        Link::new(
+            &HashString::from("56".to_string()),
+            &HashString::from("78".to_string()),
+            "faux",
+        )
+    }
+
+    pub fn create_test_link_c() -> Link {
+        Link::new(
+            &HashString::from("90".to_string()),
+            &HashString::from("ab".to_string()),
+            "fake",
+        )
+    }
+
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_commit_link() {
@@ -178,18 +198,10 @@ pub mod tests {
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let link1 = create_test_link();
-        let link2 = Link::new(
-            &HashString::from("56".to_string()),
-            &HashString::from("78".to_string()),
-            "faux",
-        );
-        let link3 = Link::new(
-            &HashString::from("90".to_string()),
-            &HashString::from("ab".to_string()),
-            "fake",
-        );
-        let link_entry = LinkListEntry::new(&[link1, link2, link3]);
+        let link_a = create_test_link_a();
+        let link_b = create_test_link_b();
+        let link_c = create_test_link_c();
+        let link_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
         let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action

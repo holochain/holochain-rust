@@ -32,8 +32,8 @@ extern crate walkdir;
 extern crate config;
 extern crate holochain_agent;
 extern crate holochain_dna;
-extern crate holochain_wasm_utils;
 extern crate holochain_net;
+extern crate holochain_wasm_utils;
 
 pub mod action;
 pub mod actor;

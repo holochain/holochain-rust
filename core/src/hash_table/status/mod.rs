@@ -14,7 +14,6 @@ bitflags! {
         const REJECTED = 0x02;
         const DELETED = 0x04;
         const MODIFIED = 0x08;
-        const ANY = 0xFF;
     }
 }
 
@@ -63,13 +62,12 @@ mod tests {
     /// test the CrudStatus bit flags as ints
     fn status_bits() {
         assert_eq!(CrudStatus::default().bits(), 0);
-        assert_eq!(CrudStatus::all().bits(), 255);
+        assert_eq!(CrudStatus::all().bits(), 15);
 
         assert_eq!(CrudStatus::LIVE.bits(), 1);
         assert_eq!(CrudStatus::REJECTED.bits(), 2);
         assert_eq!(CrudStatus::DELETED.bits(), 4);
         assert_eq!(CrudStatus::MODIFIED.bits(), 8);
-        assert_eq!(CrudStatus::ANY.bits(), 255);
     }
 
     #[test]
@@ -80,8 +78,6 @@ mod tests {
         assert!(example_mask.contains(CrudStatus::DELETED));
         assert!(!example_mask.contains(CrudStatus::LIVE));
         assert!(!example_mask.contains(CrudStatus::MODIFIED));
-
-        assert!(CrudStatus::ANY.contains(CrudStatus::LIVE));
     }
 
     #[test]

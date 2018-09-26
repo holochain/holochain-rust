@@ -46,7 +46,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
                 &CrudStatus::MODIFIED.bits().to_string(),
             ),
         ],
-        table.metas_from_entry(&entry_1).unwrap(),
+        table.metas_from_entry(&entry_1).unwrap()
     );
 
     let empty_vec: Vec<EntryMeta> = Vec::new();
@@ -70,7 +70,7 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         )],
-        table.metas_from_entry(&entry).unwrap()
+        table.metas_from_entry(&entry).unwrap(),
     );
 }
 

@@ -133,7 +133,7 @@ impl<S: IpcSocket> IpcClient<S> {
             bail_generic!("bad msg len: {}", res.len());
         }
 
-        let (t, msg) = res[2].split_first().ok_or(IpcError::NoneError)?;
+        let (t, msg) = res[2].split_first().ok_or(IpcError::MissingDataError)?;
         match *t {
             MSG_PONG => {
                 let pong: MsgPongRecv = rmp_serde::from_slice(msg)?;

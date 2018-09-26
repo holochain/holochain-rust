@@ -7,8 +7,8 @@ use std;
 #[derive(Debug, Clone, Fail)]
 pub enum IpcError {
     /// Translate an Option<_> unwrap into a Result::Err
-    #[fail(display = "NoneError")]
-    NoneError,
+    #[fail(display = "MissingDataError")]
+    MissingDataError,
 
     /// Socket timeout
     #[fail(display = "Timeout")]

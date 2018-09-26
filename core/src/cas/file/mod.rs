@@ -9,24 +9,30 @@ use std::{
 };
 
 pub struct FileContentAddressableStorage {
-    path: String,
+    /// path to the directory where content will be saved to disk
+    dir_path: String,
 }
 
 impl FileContentAddressableStorage {
-    pub fn new(path: &str) -> FileContentAddressableStorage {
+    pub fn new(dir_path: &str) -> FileContentAddressableStorage {
         FileContentAddressableStorage {
-            path: path.to_string(),
+            dir_path: dir_path.to_string(),
         }
     }
 
+    /// builds an absolute path for an AddressableContent address
     fn address_to_path(&self, address: &Address) -> String {
-        format!("{}{}{}.json", self.path, MAIN_SEPARATOR, address)
+        // using .txt extension because content is arbitrary and controlled by the
+        // AddressableContent trait implementation
+        format!("{}{}{}.txt", self.dir_path, MAIN_SEPARATOR, address)
     }
 }
 
 impl ContentAddressableStorage for FileContentAddressableStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        create_dir_all(&self.path)?;
+        // @TODO be more efficient here
+        // @see https://github.com/holochain/holochain-rust/issues/248
+        create_dir_all(&self.dir_path)?;
         Ok(write(
             self.address_to_path(&content.address()),
             content.content(),
@@ -77,7 +83,9 @@ pub mod tests {
         let (mut cas, _dir) = test_file_cas();
 
         assert_eq!(Ok(false), cas.contains(&content.address()));
+        assert_eq!(Ok(None), cas.fetch::<ExampleAddressableContent>(&content.address()));
         assert_eq!(Ok(false), cas.contains(&other_content.address()));
+        assert_eq!(Ok(None), cas.fetch::<OtherExampleAddressableContent>(&other_content.address()));
 
         // round trip some AddressableContent through the FileContentAddressableStorage
         assert_eq!(Ok(()), cas.add(&content));

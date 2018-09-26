@@ -85,7 +85,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     }
 
     // Linking
-    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
+    fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
         unreachable!()
     }
 
@@ -95,7 +95,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
 
     fn get_links(
         &mut self,
-        request: &GetLinksArgs,
+        _request: &GetLinksArgs,
     ) -> Result<Option<LinkListEntry>, HolochainError> {
         unreachable!()
     }

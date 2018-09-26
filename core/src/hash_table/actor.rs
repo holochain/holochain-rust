@@ -75,7 +75,7 @@ impl HashTable for ActorRef<Protocol> {
         &mut self,
         request: &GetLinksArgs,
     ) -> Result<Option<LinkListEntry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetLinks(request.clone()));
+        let response = self.block_on_ask(Protocol::GetLinks(request.clone()))?;
         unwrap_to!(response => Protocol::GetLinksResult).clone()
     }
 

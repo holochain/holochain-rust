@@ -415,10 +415,7 @@ mod tests {
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
-        assert_eq!(
-            result.ok().unwrap(),
-            r#"{"hash":"fail"}"#
-        );
+        assert_eq!(result.ok().unwrap(), r#"{"hash":"fail"}"#);
 
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests

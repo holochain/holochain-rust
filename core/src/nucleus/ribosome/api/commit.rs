@@ -59,10 +59,8 @@ pub fn invoke_commit_entry(
             // so wasm can return custom error message to end-user
             println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
             // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::Failure as i32,
-            )));
-        },
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
+        }
     };
 
     // allocate and encode result

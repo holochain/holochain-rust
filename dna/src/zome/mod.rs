@@ -118,10 +118,7 @@ pub mod tests {
                     "error_handling": "throw-errors"
                 },
                 "entry_types": {},
-                "capabilities": {},
-                "code": {
-                    "code": "AAECAw=="
-                }
+                "capabilities": {}
             }"#,
         ).unwrap();
 

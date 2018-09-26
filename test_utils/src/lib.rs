@@ -62,11 +62,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut capability = Capability::new();
-
-    let mut main_fn_decl = FnDeclaration::new();
-    main_fn_decl.name = String::from("main");
-    capability.functions.push(main_fn_decl);
+    let capability = create_test_cap_with_fn_name("main");
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
@@ -95,6 +91,14 @@ pub fn create_test_cap(membrane: Membrane) -> Capability {
     capability
 }
 
+pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
+    let mut capability = Capability::new();
+    let mut fn_decl = FnDeclaration::new();
+    fn_decl.name = String::from(fn_name);
+    capability.functions.push(fn_decl);
+    capability
+}
+
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_cap(
     zome_name: &str,
@@ -107,10 +111,13 @@ pub fn create_test_dna_with_cap(
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), cap.clone());
 
+    let etypedef = EntryTypeDef::new();
+    let mut entry_types = HashMap::new();
+    entry_types.insert("testEntryType".to_string(), etypedef);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &HashMap::new(),
+        &entry_types,
         &capabilities,
         &DnaWasm { code: wasm.clone() },
     );

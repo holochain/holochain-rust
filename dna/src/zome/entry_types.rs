@@ -125,7 +125,7 @@ mod tests {
     fn build_and_compare() {
         let fixture: EntryTypeDef = serde_json::from_str(
             r#"{
-                "description": "test"
+                "description": "test",
                 "sharing": "public",
                 "links_to": [
                     {

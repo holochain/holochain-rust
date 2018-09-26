@@ -317,16 +317,10 @@ pub mod tests {
                             "test": {
                                 "description": "test",
                                 "sharing": "public",
-                                "validation": {
-                                    "code": "AAECAw=="
-                                },
                                 "links_to": [
                                     {
                                         "target_type": "test",
-                                        "tag": "test",
-                                        "validation": {
-                                            "code": "AAECAw=="
-                                        }
+                                        "tag": "test"
                                     }
                                 ],
                                 "linked_from": []
@@ -343,11 +337,11 @@ pub mod tests {
                                         "inputs": [],
                                         "outputs": []
                                     }
-                                ],
-                                "code": {
-                                    "code": "AAECAw=="
-                                }
+                                ]
                             }
+                        },
+                        "code": {
+                            "code": "AAECAw=="
                         }
                     }
                 }
@@ -462,7 +456,7 @@ pub mod tests {
                     "zome1": {
                         "entry_types": {
                             "type1": {}
-                        }
+                        },
                         "code": {
                             "code": "AAECAw=="
                         }

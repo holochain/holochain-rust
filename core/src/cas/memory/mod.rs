@@ -49,7 +49,7 @@ pub mod tests {
 
     #[test]
     fn memory_round_trip() {
-        let mut cas = MemoryAddressableStorage::new();
+        let mut cas = MemoryStorage::new();
         let content = ExampleAddressableContent::from_content(&"foo".to_string());
         let other_content = OtherExampleAddressableContent::from_content(&"bar".to_string());
         assert_eq!(Ok(false), cas.contains(&content.address()));

@@ -8,8 +8,8 @@ use holochain_core::{context::Context, logger::Logger, persister::SimplePersiste
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, Membrane},
-        entry_types::EntryType,
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
         Config, Zome,
     },
     Dna,
@@ -62,20 +62,20 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm };
+    let capability = create_test_cap_with_fn_name("main");
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
 
     let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), EntryType::new());
+    entry_types.insert("testEntryType".to_string(), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
         &entry_types,
         &capabilities,
+        &DnaWasm { code: wasm },
     );
 
     // zome.capabilities.push(capability);
@@ -85,28 +85,43 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
-pub fn create_test_cap(membrane: Membrane, wasm: &Vec<u8>) -> Capability {
+pub fn create_test_cap(membrane: Membrane) -> Capability {
     let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm.clone() };
     capability.cap_type.membrane = membrane;
     capability
 }
 
+pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
+    let mut capability = Capability::new();
+    let mut fn_decl = FnDeclaration::new();
+    fn_decl.name = String::from(fn_name);
+    capability.functions.push(fn_decl);
+    capability
+}
+
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability) -> Dna {
+pub fn create_test_dna_with_cap(
+    zome_name: &str,
+    cap_name: &str,
+    cap: &Capability,
+    wasm: &Vec<u8>,
+) -> Dna {
     let mut dna = Dna::new();
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), cap.clone());
 
+    let etypedef = EntryTypeDef::new();
+    let mut entry_types = HashMap::new();
+    entry_types.insert("testEntryType".to_string(), etypedef);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &HashMap::new(),
+        &entry_types,
         &capabilities,
+        &DnaWasm { code: wasm.clone() },
     );
 
-    // zome.capabilities.push(capability);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
@@ -162,29 +177,4 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
-}
-
-/// Creates a capability with a validate_commit() function that always passes
-pub fn validation_capability() -> Capability {
-    let validate_commit_wat = r#"
-            (module
-                (memory (;0;) 17)
-                (func (export "validate_commit") (param $p0 i32) (result i32)
-                    i32.const 0
-                )
-                (export "memory" (memory 0))
-            )
-        "#;
-
-    let validate_commit_wasm = Wat2Wasm::new()
-        .canonicalize_lebs(false)
-        .write_debug_names(true)
-        .convert(validate_commit_wat)
-        .unwrap();
-
-    let mut validation_capability = Capability::new();
-    validation_capability.code = DnaWasm {
-        code: validate_commit_wasm.as_ref().to_vec(),
-    };
-    validation_capability
 }

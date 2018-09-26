@@ -8,14 +8,14 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
-pub struct FileContentAddressableStorage {
+pub struct FilesystemStorage {
     /// path to the directory where content will be saved to disk
     dir_path: String,
 }
 
-impl FileContentAddressableStorage {
-    pub fn new(dir_path: &str) -> FileContentAddressableStorage {
-        FileContentAddressableStorage {
+impl FilesystemStorage {
+    pub fn new(dir_path: &str) -> FilesystemStorage {
+        FilesystemStorage {
             dir_path: dir_path.to_string(),
         }
     }
@@ -28,7 +28,7 @@ impl FileContentAddressableStorage {
     }
 }
 
-impl ContentAddressableStorage for FileContentAddressableStorage {
+impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
@@ -61,17 +61,14 @@ pub mod tests {
             tests::{ExampleAddressableContent, OtherExampleAddressableContent},
             AddressableContent,
         },
-        file::FileContentAddressableStorage,
+        file::FilesystemStorage,
         storage::ContentAddressableStorage,
     };
     use tempfile::{tempdir, TempDir};
 
-    pub fn test_file_cas() -> (FileContentAddressableStorage, TempDir) {
+    pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();
-        (
-            FileContentAddressableStorage::new(dir.path().to_str().unwrap()),
-            dir,
-        )
+        (FilesystemStorage::new(dir.path().to_str().unwrap()), dir)
     }
 
     #[test]
@@ -93,13 +90,13 @@ pub mod tests {
             cas.fetch::<OtherExampleAddressableContent>(&other_content.address())
         );
 
-        // round trip some AddressableContent through the FileContentAddressableStorage
+        // round trip some AddressableContent through the FilesystemStorage
         assert_eq!(Ok(()), cas.add(&content));
         assert_eq!(Ok(true), cas.contains(&content.address()));
         assert_eq!(Ok(false), cas.contains(&other_content.address()));
         assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
 
-        // multiple types of AddressableContent can sit in a single FileContentAddressableStorage
+        // multiple types of AddressableContent can sit in a single FilesystemStorage
         // the safety of this is only as good as the hashing algorithm(s) used
         assert_eq!(Ok(()), cas.add(&other_content));
         assert_eq!(Ok(true), cas.contains(&content.address()));

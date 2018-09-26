@@ -8,17 +8,21 @@ use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
-struct GetArgs {
+struct GetAppEntryArgs {
     key: HashString,
 }
 
+/// ZomeApiFunction::GetAppEntry function code
+/// args: [0] encoded MemoryAllocation as u32
+/// Expected complex argument: GetEntryArgs
+/// Returns an HcApiReturnCode as I32
 pub fn invoke_get_entry(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let res_entry: Result<GetArgs, _> = serde_json::from_str(&args_str);
+    let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         // Return Error code in i32 format
@@ -59,9 +63,10 @@ pub fn invoke_get_entry(
     let action_result = receiver.recv().expect("observer dropped before done");
 
     match action_result {
-        ActionResponse::GetEntry(maybe_pair) => {
+        ActionResponse::GetEntry(maybe_entry) => {
             // serialize, allocate and encode result
-            match maybe_pair.to_json() {
+            let json_str = maybe_entry.expect("should be valid json entry").to_json();
+            match json_str {
                 Ok(json) => runtime.store_utf8(&json),
                 Err(_) => Ok(Some(RuntimeValue::I32(
                     HcApiReturnCode::ResponseSerializationFailed as i32,
@@ -80,9 +85,9 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
-    use super::GetArgs;
+    use super::GetAppEntryArgs;
     use chain::SourceChain;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
     use key::Key;
     use nucleus::{
@@ -98,7 +103,7 @@ mod tests {
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        let args = GetArgs {
+        let args = GetAppEntryArgs {
             key: test_entry().hash().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
@@ -230,11 +235,10 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":\"QmbxF7U8tSvGzzRmQTNdSXK6kUMKzcSXE54jkN1WMnb6Qo\",\"entry_hash\":\"");
-        expected.push_str(&test_entry_hash().to_str());
-        expected.push_str("\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}\u{0}");
+        expected
+            .push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
 
-        assert_eq!(get_runtime.result, expected,);
+        assert_eq!(expected, get_runtime.result);
     }
 
 }

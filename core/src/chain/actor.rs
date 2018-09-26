@@ -1,6 +1,6 @@
 use actor::{AskSelf, Protocol, SYS};
+use chain::pair::Pair;
 use error::HolochainError;
-use hash_table::pair::Pair;
 use riker::actors::*;
 use snowflake;
 
@@ -90,8 +90,10 @@ impl Actor for ChainActor {
 #[cfg(test)]
 pub mod tests {
     use actor::Protocol;
-    use chain::actor::{AskChain, ChainActor};
-    use hash_table::pair::tests::{test_pair_a, test_pair_b};
+    use chain::{
+        actor::{AskChain, ChainActor},
+        pair::tests::{test_pair_a, test_pair_b},
+    };
     use riker::actors::*;
 
     /// dummy chain actor reference

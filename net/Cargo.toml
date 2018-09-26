@@ -1,0 +1,7 @@
+[package]
+name = "holochain_net"
+version = "0.1.0"
+authors = ["holochain dev core <devcore@holo.host>"]
+
+[dependencies]
+failure = "0.1.1"

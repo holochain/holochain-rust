@@ -7,5 +7,6 @@ members = [
   "core",
   "dna",
   "dna_c_binding",
+  "net",
   "test_bin",
 ]

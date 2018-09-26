@@ -14,15 +14,18 @@ impl fmt::Display for HashString {
     }
 }
 
+impl From<String> for HashString {
+    fn from(s: String) -> HashString {
+        HashString(s)
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
     }
     pub fn to_str(self) -> String {
         self.0
-    }
-    pub fn from(s: String) -> HashString {
-        HashString(s)
     }
 
     /// convert bytes to a b58 hashed string

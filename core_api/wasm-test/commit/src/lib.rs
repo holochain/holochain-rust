@@ -41,14 +41,8 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
   unsafe {
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
-  // Check for ERROR in encoding
-  let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
-  if let Err(e) = result {
-    return Err(e)
-  }
-
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct = result.unwrap();
+  let output: CommitOutputStruct = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");

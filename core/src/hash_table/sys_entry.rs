@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 pub trait ToEntry {
     fn to_entry(&self) -> Entry;
-    fn new_from_entry(&Entry) -> Self;
+    fn from_entry(&Entry) -> Self;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ impl ToEntry for Dna {
         Entry::new(EntryType::Dna.as_str(), &self.to_json())
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
         return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
@@ -96,7 +96,7 @@ impl ToEntry for Agent {
         Entry::new(EntryType::AgentId.as_str(), &self.to_string())
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::AgentId);
         let id_content: String =
             serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
@@ -126,7 +126,7 @@ pub mod tests {
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry));
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -144,8 +144,9 @@ pub mod tests {
                 Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna
+                        EntryType::Dna,
                     );
+                    assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
                 _ => false,
@@ -158,7 +159,7 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry));
+        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -176,8 +177,9 @@ pub mod tests {
                 Action::Commit(entry) => {
                     assert_eq!(
                         EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::AgentId
+                        EntryType::AgentId,
                     );
+                    assert_eq!(entry.content(), agent_entry.content());
                     true
                 }
                 _ => false,

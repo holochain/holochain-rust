@@ -1,7 +1,7 @@
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-/// HcApiFuncIndex::DEBUG function code
+/// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32

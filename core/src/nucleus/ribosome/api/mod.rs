@@ -9,6 +9,7 @@ pub mod get_links;
 pub mod init_globals;
 pub mod link_entries;
 
+use nucleus::ribosome::api::get_links::invoke_get_links;
 use action::ActionWrapper;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -18,10 +19,8 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
+            link_entries::invoke_link_entries,
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-            get_entry::invoke_get_entry, get_links::invoke_get_links,
-            init_globals::invoke_init_globals, link_entries::invoke_link_entries,
-            call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,

@@ -3,10 +3,7 @@ use agent::keys::Keys;
 use error::HolochainError;
 use hash::HashString;
 use hash_table::{
-    entry::Entry,
     links_entry::{Link, LinkListEntry},
-    meta::EntryMeta,
-    HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};

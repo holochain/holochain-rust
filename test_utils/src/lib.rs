@@ -8,7 +8,7 @@ use holochain_core::{context::Context, logger::Logger, persister::SimplePersiste
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, Membrane},
+        capabilities::{Capability, Membrane, FnDeclaration},
         entry_types::EntryTypeDef,
         Config, Zome,
     },
@@ -62,7 +62,11 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let capability = Capability::new();
+    let mut capability = Capability::new();
+
+    let mut main_fn_decl = FnDeclaration::new();
+    main_fn_decl.name = String::from("main");
+    capability.functions.push(main_fn_decl);
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
@@ -111,7 +115,6 @@ pub fn create_test_dna_with_cap(
         &DnaWasm { code: wasm.clone() },
     );
 
-    // zome.capabilities.push(capability);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();

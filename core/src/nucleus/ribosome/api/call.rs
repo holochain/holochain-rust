@@ -199,7 +199,7 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{Dna, DnaError};
+    use holochain_dna::{Dna, DnaError, zome::capabilities::Capability};
     use instance::tests::{test_instance, TestLogger};
     use nucleus::ribosome::{
         api::{
@@ -214,7 +214,7 @@ pub mod tests {
     use persister::SimplePersister;
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
-    use test_utils::create_test_dna_with_wasm;
+    use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
     pub fn test_bad_args_bytes() -> Vec<u8> {
@@ -314,7 +314,9 @@ pub mod tests {
     #[test]
     fn test_call_ok() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let dna = create_test_dna_with_wasm(&test_zome_name(), "test_cap", wasm);
+        let mut capability = Capability::new();
+        capability.cap_type.membrane = Membrane::Public;
+        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap",&capability, &wasm);
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);

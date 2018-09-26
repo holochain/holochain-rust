@@ -120,7 +120,7 @@ fn reduce_commit_entry(
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn reduce_get(
+fn reduce_get_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
@@ -145,7 +145,7 @@ fn reduce_get(
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get),
+        Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
 }
@@ -177,12 +177,14 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context, test_instance_blank};
+    use json::ToJson;
+    use key::Key;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -241,6 +243,7 @@ pub mod tests {
     }
 
     #[test]
+    /// test for reducing get entry
     fn test_reduce_get_entry() {
         let mut state = test_agent_state();
         let context = test_context("foo");
@@ -248,7 +251,7 @@ pub mod tests {
         let instance = test_instance_blank();
 
         let aw1 = test_action_wrapper_get();
-        reduce_get(
+        reduce_get_entry(
             Arc::clone(&context),
             &mut state,
             &aw1,
@@ -272,7 +275,7 @@ pub mod tests {
         );
 
         let aw2 = test_action_wrapper_get();
-        reduce_get(
+        reduce_get_entry(
             Arc::clone(&context),
             &mut state,
             &aw2,

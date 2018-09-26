@@ -1,9 +1,11 @@
-use chain::{header::Header, Chain};
+use actor::Protocol;
+use chain::header::Header;
 use error::HolochainError;
 use hash::HashString;
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
+use riker::actors::*;
 use serde_json;
 
 /// Struct for holding a source chain "Item"
@@ -16,37 +18,27 @@ pub struct Pair {
 }
 
 impl Pair {
-    /// build a new Pair from a chain and entry
-    ///
-    /// Header is generated automatically
-    ///
-    /// a Pair is immutable, but the chain is mutable if chain.push() is used.
-    ///
-    /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
-    /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
-    /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
-    /// now be valid, the new Y' will include correct headers pointing to X.
-    ///
-    /// # Panics
-    ///
-    /// Panics if entry is somehow invalid
-    ///
-    /// @see chain::entry::Entry
-    /// @see chain::header::Header
-    pub fn new(chain: &Chain, entry: &Entry) -> Pair {
-        let header = Header::new(chain, entry);
+    /// Reconstruct Pair from Header stored in a HashTable
+    pub fn from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
+        let entry = table
+            .entry(&header.entry_hash())
+            .expect("should not attempt to create invalid pair");
+        if entry.is_none() {
+            return None;
+        }
 
-        let p = Pair {
-            header: header,
+        Some(Pair {
+            header: header.clone(),
+            entry: entry.expect("should not attempt to create invalid pair"),
+        })
+    }
+
+    /// Standard constructor
+    pub fn new(header: &Header, entry: &Entry) -> Self {
+        Pair {
+            header: header.clone(),
             entry: entry.clone(),
-        };
-
-        // we panic as no code path should attempt to create invalid pairs
-        // creating a Pair is an internal process of chain.push() and is deterministic based on
-        // an immutable Entry (that itself cannot be invalid), so this should never happen.
-        assert!(p.validate(), "attempted to create an invalid pair");
-
-        p
+        }
     }
 
     /// header getter
@@ -59,7 +51,7 @@ impl Pair {
         &self.entry
     }
 
-    /// true if the pair is valid
+    /// Return true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header and entry must validate independently
         self.header.validate() && self.entry.validate()
@@ -72,7 +64,8 @@ impl Pair {
 
 impl Key for Pair {
     fn key(&self) -> HashString {
-        self.header.hash()
+        //        self.header.hash()
+        self.header.to_entry().key()
     }
 }
 
@@ -106,7 +99,7 @@ impl RoundTripJson for Pair {}
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
-    use chain::{header::Header, tests::test_chain, SourceChain};
+    use chain::{tests::test_chain, SourceChain};
     use hash_table::entry::{
         tests::{test_entry, test_entry_b, test_entry_unique},
         Entry,
@@ -115,7 +108,7 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        Pair::new(&test_chain(), &test_entry())
+        test_chain().create_next_pair(&test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -125,12 +118,12 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        Pair::new(&test_chain(), &test_entry_b())
+        test_chain().create_next_pair(&test_entry_b())
     }
 
     /// dummy pair, uses test_entry_unique()
     pub fn test_pair_unique() -> Pair {
-        Pair::new(&test_chain(), &test_entry_unique())
+        Pair::new(test_pair().header(), &test_entry_unique())
     }
 
     #[test]
@@ -139,12 +132,12 @@ pub mod tests {
         let chain = test_chain();
         let t = "fooType";
         let e1 = Entry::new(t, "some content");
-        let h1 = Header::new(&chain, &e1);
+        let h1 = chain.create_next_header(&e1);
 
         assert_eq!(h1.entry_hash(), &e1.hash());
         assert_eq!(h1.link(), None);
 
-        let p1 = Pair::new(&chain, &e1.clone());
+        let p1 = chain.create_next_pair(&e1.clone());
         assert_eq!(&e1, p1.entry());
         assert_eq!(&h1, p1.header());
     }
@@ -156,8 +149,8 @@ pub mod tests {
         let t = "foo";
         let c = "bar";
         let e = Entry::new(t, c);
-        let h = Header::new(&chain, &e);
-        let p = Pair::new(&chain, &e);
+        let h = chain.create_next_header(&e);
+        let p = chain.create_next_pair(&e);
 
         assert_eq!(&h, p.header());
     }
@@ -182,7 +175,7 @@ pub mod tests {
         let t = "fooType";
 
         let e1 = Entry::new(t, "bar");
-        let p1 = Pair::new(&chain, &e1);
+        let p1 = chain.create_next_pair(&e1);
 
         assert!(p1.validate());
     }

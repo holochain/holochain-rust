@@ -13,7 +13,7 @@ struct InitGlobalsOutput {
     app_agent_latest_hash: String,
 }
 
-/// HcApiFuncIndex::INIT_GLOBALS secret function code
+/// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I32

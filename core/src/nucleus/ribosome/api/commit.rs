@@ -1,6 +1,7 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
+use hash_table::entry::Entry;
 use json::ToJson;
 use nucleus::{
     actions::validate::*,
@@ -16,9 +17,9 @@ struct CommitArgs {
     entry_content: String,
 }
 
-/// HcApiFuncIndex::COMMIT function code
+/// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
+/// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_commit_entry(
     runtime: &mut Runtime,
@@ -26,7 +27,7 @@ pub fn invoke_commit_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
+    let input: CommitArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
@@ -38,8 +39,7 @@ pub fn invoke_commit_entry(
     };
 
     // Create Chain Entry
-    let entry =
-        ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
+    let entry = Entry::new(&input.entry_type_name, &input.entry_content);
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(

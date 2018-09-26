@@ -1,56 +1,57 @@
-use std::collections::HashMap;
-
 use error::HolochainError;
+
 use hash::HashString;
-use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use key::Key;
+use std::collections::HashMap;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    pairs: HashMap<HashString, Pair>,
-    meta: HashMap<HashString, PairMeta>,
+    entries: HashMap<HashString, Entry>,
+    metas: HashMap<HashString, EntryMeta>,
 }
 
 impl MemTable {
     pub fn new() -> MemTable {
         MemTable {
-            pairs: HashMap::new(),
-            meta: HashMap::new(),
+            entries: HashMap::new(),
+            metas: HashMap::new(),
         }
     }
 }
 
 impl HashTable for MemTable {
-    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        self.pairs.insert(pair.key(), pair.clone());
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+        self.entries.insert(entry.key(), entry.clone());
         Ok(())
     }
 
-    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
-        Ok(self.pairs.get(key).cloned())
+    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
+        Ok(self.entries.get(key).cloned())
     }
 
-    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
-        self.meta.insert(meta.key(), meta.clone());
+    fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
+        self.metas.insert(meta.key(), meta.clone());
         Ok(())
     }
 
-    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
-        Ok(self.meta.get(key).cloned())
+    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
+        Ok(self.metas.get(key).cloned())
     }
 
-    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
-        let mut metas = self
-            .meta
+    /// Return all the Metas for an entry
+    fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError> {
+        let mut vec_meta = self
+            .metas
             .values()
-            .filter(|&m| m.pair_hash() == pair.key())
+            .filter(|&m| m.entry_hash() == &entry.key())
             .cloned()
-            .collect::<Vec<PairMeta>>();
+            .collect::<Vec<EntryMeta>>();
         // @TODO should this be sorted at all at this point?
         // @see https://github.com/holochain/holochain-rust/issues/144
-        metas.sort();
-        Ok(metas)
+        vec_meta.sort();
+        Ok(vec_meta)
     }
 }
 

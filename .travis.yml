@@ -54,6 +54,11 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
         - rm -rf $HOME/.cargo/registry/index
 
@@ -81,6 +86,11 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
         - rm -rf $HOME/.cargo/registry/index
 
@@ -110,5 +120,10 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
         - rm -rf $HOME/.cargo/registry/index

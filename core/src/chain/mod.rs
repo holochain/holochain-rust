@@ -235,45 +235,15 @@ impl SourceChain for Chain {
         self.iter().find(|p| p.header().entry_type() == t)
     }
 
-    /// Whole process of authoring an entry.
-    /// 1. `validation` of the new entry using the ribosome and validation WASM code
-    /// 2. `pushing` the new entry onto the source chain, if valid
-    /// 3. `putting` the entry into the (distributed) hash table, if defined as public
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        // 1. validation
-        if !(pair.validate()) {
-            return Err(HolochainError::new(
-                "attempted to push an invalid pair for this chain",
-            ));
-        }
-
-        let top_pair = self.top_pair().as_ref().map(|p| p.key());
-        let prev_pair = pair.header().link();
-
-        if top_pair != prev_pair {
-            return Err(HolochainError::new(&format!(
-                "top pair did not match previous hash pair from commited pair: {:?} vs. {:?}",
-                top_pair, prev_pair,
-            )));
-        }
-
-        // 2. pushing
-        // 3. putting
         let header_entry = &pair.clone().header().to_entry();
-        // println!("Chain.commit_pair() header_entry = {:?}", header_entry);
         self.table_actor.put_entry(header_entry)?;
         self.table_actor.put_entry(&pair.clone().entry())?;
-
-        // 4. Mutate Chain accordingly
-        // @TODO instead of unwrapping this, move all the above validation logic inside of
-        // set_top_pair()
-        // @see https://github.com/holochain/holochain-rust/issues/258
 
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
         self.set_top_pair(&Some(pair.clone()))?;
 
-        // Done
         Ok(pair.clone())
     }
 

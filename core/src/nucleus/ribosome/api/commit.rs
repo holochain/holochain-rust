@@ -12,7 +12,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
-struct CommitAppEntryArgs {
+struct CommitEntryArgs {
     entry_type_name: String,
     entry_content: String,
 }
@@ -27,7 +27,7 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
+    let input: CommitEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
@@ -74,7 +74,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use super::CommitAppEntryArgs;
+    use super::CommitEntryArgs;
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use nucleus::ribosome::{
@@ -86,7 +86,7 @@ pub mod tests {
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
         let e = test_entry();
-        let args = CommitAppEntryArgs {
+        let args = CommitEntryArgs {
             entry_type_name: e.entry_type().into(),
             entry_content: e.content().into(),
         };

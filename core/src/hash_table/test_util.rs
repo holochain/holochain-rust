@@ -70,19 +70,14 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         )],
-        table.metas_from_entry(&entry).unwrap(),
+        table.metas_from_entry(&entry).unwrap()
     );
 }
 
 pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     let meta = test_meta();
 
-    assert_eq!(
-        None,
-        table
-            .get_meta(&meta.key())
-            .expect("getting the metadata on a pair shouldn't fail")
-    );
+    assert_eq!(None, table.get_meta(&meta.key()).unwrap());
 
     table
         .assert_meta(&meta)

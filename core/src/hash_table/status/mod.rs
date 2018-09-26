@@ -29,6 +29,7 @@ impl ToString for CrudStatus {
             CrudStatus::REJECTED => "2",
             CrudStatus::DELETED => "4",
             CrudStatus::MODIFIED => "8",
+            CrudStatus::LOCKED => "16",
             _ => unreachable!(),
         }.to_string()
     }
@@ -41,6 +42,7 @@ impl<'a> From<&'a String> for CrudStatus {
             "2" => CrudStatus::REJECTED,
             "4" => CrudStatus::DELETED,
             "8" => CrudStatus::MODIFIED,
+            "16" => CrudStatus::LOCKED,
             _ => unreachable!(),
         }
     }
@@ -96,6 +98,7 @@ mod tests {
         assert_eq!("2".to_string(), CrudStatus::REJECTED.to_string());
         assert_eq!("4".to_string(), CrudStatus::DELETED.to_string());
         assert_eq!("8".to_string(), CrudStatus::MODIFIED.to_string());
+        assert_eq!("16".to_string(), CrudStatus::LOCKED.to_string());
     }
 
     #[test]
@@ -105,6 +108,7 @@ mod tests {
         assert_eq!(CrudStatus::from(&"2".to_string()), CrudStatus::REJECTED);
         assert_eq!(CrudStatus::from(&"4".to_string()), CrudStatus::DELETED);
         assert_eq!(CrudStatus::from(&"8".to_string()), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from(&"16".to_string()), CrudStatus::LOCKED);
     }
 
     #[test]
@@ -124,12 +128,17 @@ mod tests {
             CrudStatus::from_content(&"8".to_string()),
             CrudStatus::MODIFIED
         );
+        assert_eq!(
+            CrudStatus::from_content(&"16".to_string()),
+            CrudStatus::LOCKED
+        );
 
         // content()
         assert_eq!("1".to_string(), CrudStatus::LIVE.content());
         assert_eq!("2".to_string(), CrudStatus::REJECTED.content());
         assert_eq!("4".to_string(), CrudStatus::DELETED.content());
         assert_eq!("8".to_string(), CrudStatus::MODIFIED.content());
+        assert_eq!("16".to_string(), CrudStatus::LOCKED.content());
 
         // address()
         assert_eq!(
@@ -147,6 +156,10 @@ mod tests {
         assert_eq!(
             HashString::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi".to_string()),
             CrudStatus::MODIFIED.address()
+        );
+        assert_eq!(
+            HashString::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a".to_string()),
+            CrudStatus::LOCKED.address()
         );
     }
 
@@ -166,6 +179,9 @@ mod tests {
         content_addressable_storage
             .add(&CrudStatus::MODIFIED)
             .expect("could not add MODIFIED");
+        content_addressable_storage
+            .add(&CrudStatus::LOCKED)
+            .expect("could not add LOCKED");
 
         assert_eq!(
             Some(CrudStatus::LIVE),
@@ -190,6 +206,12 @@ mod tests {
             content_addressable_storage
                 .fetch(&CrudStatus::MODIFIED.address())
                 .expect("could not fetch MODIFIED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::LOCKED),
+            content_addressable_storage
+                .fetch(&CrudStatus::LOCKED.address())
+                .expect("could not fetch LOCKED"),
         );
     }
 }

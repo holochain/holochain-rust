@@ -1,32 +1,32 @@
 use error::HolochainError;
 use std::{
-    fs,
+    fs::{self, create_dir_all},
     path::{Path, MAIN_SEPARATOR},
 };
 
 use hash::HashString;
-use hash_table::{pair::Pair, pair_meta::PairMeta, HashTable};
+use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
-use std::fs::create_dir_all;
+
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
 #[derive(Debug, Clone)]
 enum Table {
-    Pairs,
+    Entries,
     Metas,
 }
 
 // things that can be serialized and put in a file... wish-it-was-rows
 trait Row: ToJson + Key {}
-impl Row for Pair {}
-impl Row for PairMeta {}
+impl Row for Entry {}
+impl Row for EntryMeta {}
 
 impl ToString for Table {
     fn to_string(&self) -> String {
         match self {
-            Table::Pairs => "pairs",
+            Table::Entries => "entries",
             Table::Metas => "metas",
         }.to_string()
     }
@@ -94,29 +94,29 @@ impl FileTable {
 }
 
 impl HashTable for FileTable {
-    fn put_pair(&mut self, pair: &Pair) -> Result<(), HolochainError> {
-        self.upsert(Table::Pairs, pair)
+    fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
+        self.upsert(Table::Entries, entry)
     }
 
-    fn pair(&self, key: &HashString) -> Result<Option<Pair>, HolochainError> {
-        match self.lookup(Table::Pairs, key)? {
-            Some(json) => Ok(Some(Pair::from_json(&json)?)),
+    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
+        match self.lookup(Table::Entries, key)? {
+            Some(json) => Ok(Some(Entry::from_json(&json)?)),
             None => Ok(None),
         }
     }
 
-    fn assert_pair_meta(&mut self, meta: &PairMeta) -> Result<(), HolochainError> {
+    fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
         self.upsert(Table::Metas, meta)
     }
 
-    fn pair_meta(&mut self, key: &HashString) -> Result<Option<PairMeta>, HolochainError> {
+    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
         match self.lookup(Table::Metas, key)? {
-            Some(json) => Ok(Some(PairMeta::from_json(&json)?)),
+            Some(json) => Ok(Some(EntryMeta::from_json(&json)?)),
             None => Ok(None),
         }
     }
 
-    fn metas_for_pair(&mut self, pair: &Pair) -> Result<Vec<PairMeta>, HolochainError> {
+    fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError> {
         let mut metas = Vec::new();
 
         // this is a brute force approach that involves reading and parsing every file
@@ -126,9 +126,9 @@ impl HashTable for FileTable {
             let path = meta.path();
             if let Some(stem) = path.file_stem() {
                 if let Some(key) = stem.to_str() {
-                    if let Some(pair_meta) = self.pair_meta(&HashString::from(key.to_string()))? {
-                        if pair_meta.pair_hash() == pair.key() {
-                            metas.push(pair_meta);
+                    if let Some(meta) = self.get_meta(&HashString::from(key.to_string()))? {
+                        if meta.entry_hash() == &entry.key() {
+                            metas.push(meta);
                         }
                     }
                 }
@@ -198,7 +198,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
+        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
             assert!(
                 re(s).is_match(
                     &table
@@ -229,7 +229,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("pairs", Table::Pairs), ("metas", Table::Metas)] {
+        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
             for k in vec!["foo", "bar"] {
                 assert!(
                     re(s, k).is_match(
@@ -272,13 +272,13 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         table
-            .upsert(Table::Pairs, &data)
+            .upsert(Table::Entries, &data)
             .expect("could not upsert data");
 
         assert_eq!(
             Some(s),
             table
-                .lookup(Table::Pairs, &data.key())
+                .lookup(Table::Entries, &data.key())
                 .expect("could not lookup data"),
         );
     }

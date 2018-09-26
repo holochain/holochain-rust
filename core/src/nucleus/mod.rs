@@ -333,7 +333,7 @@ fn reduce_execute_zome_function(
         _ => unreachable!(),
     };
 
-    fn dispatch_zome_fn_error(
+    fn dispatch_error_result(
         action_channel: &Sender<ActionWrapper>,
         fn_call: &ZomeFnCall,
         error: HolochainError,
@@ -347,72 +347,73 @@ fn reduce_execute_zome_function(
             .expect("action channel to be open in reducer");
     }
 
+    // Get DNA
     let dna = match state.dna {
-        Some(ref d) => d,
         None => {
-            dispatch_zome_fn_error(action_channel, &fn_call, HolochainError::DnaMissing);
+            dispatch_error_result(action_channel, &fn_call, HolochainError::DnaMissing);
             return;
         }
+        Some(ref d) => d,
     };
-
-    // Walk through DNA and check if Zome, Capability, Function exists.
-    // Create according errors if not.
-    let wasm_for_function = match dna.zomes.get(&fn_call.zome_name) {
-        None => Err(HolochainError::DnaError(DnaError::ZomeNotFound(format!(
-            "Zome '{}' not found",
-            fn_call.zome_name.clone()
-        )))),
-        Some(zome) => match zome.capabilities.get(&fn_call.cap_name) {
-            None => Err(HolochainError::DnaError(DnaError::CapabilityNotFound(
-                format!(
+    // Get zome
+    let zome = match dna.zomes.get(&fn_call.zome_name) {
+        None => {
+            dispatch_error_result(
+                action_channel,
+                &fn_call,
+                HolochainError::DnaError(DnaError::ZomeNotFound(format!(
+                    "Zome '{}' not found",
+                    fn_call.zome_name.clone()
+                ))),
+            );
+            return;
+        }
+        Some(zome) => zome,
+    };
+    // Get capability
+    let capability = match zome.capabilities.get(&fn_call.cap_name) {
+        None => {
+            dispatch_error_result(
+                action_channel,
+                &fn_call,
+                HolochainError::DnaError(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
                     fn_call.cap_name.clone(),
                     fn_call.zome_name.clone()
-                ),
-            ))),
-
-            Some(capability) => {
-                match capability
-                    .functions
-                    .iter()
-                    .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name)
-                {
-                    None => Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(
-                        format!("Zome function '{}' not found", fn_call.fn_name.clone()),
-                    ))),
-
-                    Some(_) => {
-                        // Ok Zome function is defined in given capability.
-                        // Try getting this zome's WASM code:
-                        match dna.get_wasm_from_zome_name(fn_call.zome_name.clone()) {
-                            None => Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(
-                                format!("Zome '{}' has no binary code", fn_call.zome_name.clone()),
-                            ))),
-
-                            Some(wasm) => Ok(wasm),
-                        }
-                    }
-                }
-            }
-        },
-    };
-
-    match wasm_for_function {
-        Err(error) => dispatch_zome_fn_error(action_channel, &fn_call, error),
-        Ok(wasm) => {
-            // Prepare call - FIXME is this really useful?
-            state.zome_calls.insert(fn_call.clone(), None);
-            // Launch thread with function call
-            launch_zome_fn_call(
-                context,
-                fn_call,
-                action_channel,
-                observer_channel,
-                &wasm,
-                state.dna.clone().unwrap().name,
+                ))),
             );
+            return;
         }
+        Some(capability) => capability,
     };
+    // Get ZomeFn
+    let maybe_fn = capability
+        .functions
+        .iter()
+        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
+    if maybe_fn.is_none() {
+        dispatch_error_result(
+            action_channel,
+            &fn_call,
+            HolochainError::DnaError(DnaError::ZomeFunctionNotFound(format!(
+                "Zome function '{}' not found",
+                fn_call.fn_name.clone()
+            ))),
+        );
+        return;
+    }
+    // Ok Zome function is defined in given capability.
+    // Prepare call - FIXME is this really useful?
+    state.zome_calls.insert(fn_call.clone(), None);
+    // Launch thread with function call
+    launch_zome_fn_call(
+        context,
+        fn_call,
+        action_channel,
+        observer_channel,
+        &zome.code,
+        state.dna.clone().unwrap().name,
+    );
 }
 
 /// Reduce ValidateEntry Action

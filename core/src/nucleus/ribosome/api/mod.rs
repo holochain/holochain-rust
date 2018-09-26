@@ -21,6 +21,8 @@ use nucleus::{
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, get_links::invoke_get_links,
             init_globals::invoke_init_globals, link_entries::invoke_link_entries,
+            call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
+            get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,
     },
@@ -385,11 +387,15 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
+        tests::{test_context_and_logger, TestLogger},
         Instance,
     };
     use nucleus::{
-        ribosome::api::{call, Runtime},
+        ribosome::{
+            api::{call, Runtime},
+            callback::{tests::test_callback_instance, Callback},
+            Defn,
+        },
         ZomeFnCall,
     };
     use std::{
@@ -548,8 +554,12 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
-        let (context, logger) = test_context_and_logger("joan");
+        //let instance = test_instance(dna.clone());
+        let instance =
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+
+        let (c, logger) = test_context_and_logger("joan");
+        let context = instance.initialize_context(c);
 
         test_zome_api_function_call(
             &dna.name.to_string(),

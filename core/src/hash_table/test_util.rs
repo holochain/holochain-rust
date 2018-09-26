@@ -1,7 +1,7 @@
 use agent::keys::tests::test_keys;
 use hash_table::{
     entry::tests::test_entry_unique,
-    meta::{
+    entry_meta::{
         tests::{
             test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
         },
@@ -18,7 +18,7 @@ pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     let entry = test_entry_unique();
     table
         .put_entry(&entry)
-        .expect("should be able to commit valid pair");
+        .expect("should be able to commit valid entry");
     assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
 }
 
@@ -26,6 +26,7 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
     let entry_1 = test_entry_unique();
     let entry_2 = test_entry_unique();
 
+    table.put_entry(&entry_1).unwrap();
     table
         .put_entry(&entry_1)
         .expect("should be able to commit valid pair");
@@ -125,7 +126,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         empty_vec,
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 
     table
@@ -135,7 +136,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         vec![meta_a.clone()],
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 
     table
@@ -145,7 +146,7 @@ fn test_metas_for<HT: HashTable>(table: &mut HT) {
         vec![meta_b, meta_a],
         table
             .metas_from_entry(&entry)
-            .expect("getting the metadata on a pair shouldn't fail")
+            .expect("getting the metadata on a entry shouldn't fail")
     );
 }
 

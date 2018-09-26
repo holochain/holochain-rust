@@ -5,7 +5,7 @@ use std::{
 };
 
 use hash::HashString;
-use hash_table::{entry::Entry, meta::EntryMeta, HashTable};
+use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 

@@ -37,6 +37,7 @@ extern crate holochain_wasm_utils;
 pub mod action;
 pub mod actor;
 pub mod agent;
+pub mod cas;
 pub mod chain;
 pub mod context;
 pub mod error;

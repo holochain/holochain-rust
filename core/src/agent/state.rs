@@ -189,7 +189,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
@@ -253,6 +253,7 @@ pub mod tests {
     }
 
     #[test]
+    /// test for reducing get entry
     fn test_reduce_get_entry() {
         let mut state = test_agent_state();
         let context = test_context("foo");
@@ -326,7 +327,7 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+            ActionResponse::GetLinks(Ok(vec![test_entry().key()]))
                 .to_json()
                 .unwrap(),
         );

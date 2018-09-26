@@ -9,6 +9,7 @@ use hash_table::{
     HashTable,
 };
 use nucleus::ribosome::api::get_links::GetLinksArgs;
+use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
 
@@ -20,12 +21,12 @@ impl AskHashTable for ActorRef<Protocol> {}
 
 impl HashTable for ActorRef<Protocol> {
     fn setup(&mut self) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Setup);
+        let response = self.block_on_ask(Protocol::Setup)?;
         unwrap_to!(response => Protocol::SetupResult).clone()
     }
 
     fn teardown(&mut self) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::Teardown);
+        let response = self.block_on_ask(Protocol::Teardown)?;
         unwrap_to!(response => Protocol::TeardownResult).clone()
     }
 
@@ -49,7 +50,7 @@ impl HashTable for ActorRef<Protocol> {
             keys: keys.clone(),
             old: old_entry.clone(),
             new: new_entry.clone(),
-        });
+        })?;
         unwrap_to!(response => Protocol::ModifyEntryResult).clone()
     }
 
@@ -173,6 +174,7 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
                     Protocol::AddLink(link) => Protocol::AddLinkResult(self.table.add_link(&link)),
 
+
                     Protocol::AssertMeta(meta) => {
                         Protocol::AssertMetaResult(self.table.assert_meta(&meta))
                     }
@@ -257,7 +259,7 @@ pub mod tests {
             let entry = test_entry();
             table_actor_thread.put_entry(&entry).unwrap();
 
-            // push the committed pair through to the next thread
+            // push the committed entry through to the next thread
             tx2.send(entry).unwrap();
         });
 

@@ -1,10 +1,12 @@
 pub mod actor;
 pub mod dht;
 pub mod entry;
+pub mod entry_meta;
 pub mod file;
 pub mod links_entry;
 pub mod memory;
 pub mod meta;
+
 pub mod status;
 pub mod sys_entry;
 #[cfg(test)]
@@ -15,14 +17,13 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::{
     entry::Entry,
-    meta::EntryMeta,
+    entry_meta::EntryMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use key::Key;
 
 /// Trait of the data structure storing the source chain
-/// source chain is stored as a hash table of Pairs.
-/// Pair is a pair holding an Entry and its Header
+/// source chain is stored as a hash table of Headers and Entries.
 pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     // @TODO does this make sense at the trait level?

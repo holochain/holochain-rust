@@ -72,10 +72,16 @@ pub mod tests {
         let mut cas = ExampleContentAddressableStorage::new();
 
         assert_eq!(Ok(false), cas.contains(&content.address()));
-        assert_eq!(Ok(None), cas.fetch::<ExampleAddressableContent>(&content.address()));
+        assert_eq!(
+            Ok(None),
+            cas.fetch::<ExampleAddressableContent>(&content.address())
+        );
 
         assert_eq!(Ok(false), cas.contains(&other_content.address()));
-        assert_eq!(Ok(None), cas.fetch::<OtherExampleAddressableContent>(&other_content.address()));
+        assert_eq!(
+            Ok(None),
+            cas.fetch::<OtherExampleAddressableContent>(&other_content.address())
+        );
 
         // round trip some AddressableContent through the ContentAddressableStorage
         assert_eq!(Ok(()), cas.add(&content));

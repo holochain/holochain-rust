@@ -394,14 +394,14 @@ pub mod tests {
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
 
-        let p1 = chain
+        let pair_a = chain
             .push_entry(&entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_a, pair_a.entry());
         let top_pair = chain.top_pair().expect("should have commited entry");
         assert_eq!(Some(pair_a), top_pair);
 
-        let p2 = chain
+        let pair_b = chain
             .push_entry(&entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         assert_eq!(&entry_b, pair_b.entry());

@@ -19,8 +19,10 @@ use hash_table::{
     entry::Entry,
     entry_meta::EntryMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    links_entry::{Link, LinkListEntry},
 };
 use key::Key;
+use nucleus::ribosome::api::get_links::GetLinksArgs;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Headers and Entries.
@@ -82,7 +84,15 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             &CrudStatus::DELETED.bits().to_string(),
         ))
     }
-    
+
+    // Linking
+    fn add_link(&mut self, link: &Link) -> Result<(), HolochainError>;
+    fn remove_link(&mut self, _link: &Link) -> Result<(), HolochainError>;
+    fn get_links(
+        &mut self,
+        request: &GetLinksArgs,
+    ) -> Result<Option<LinkListEntry>, HolochainError>;
+
     // Meta
     /// Assert a given Meta in the HashTable.
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError>;

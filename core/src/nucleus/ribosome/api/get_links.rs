@@ -37,7 +37,6 @@ pub fn invoke_get_links(
         )));
     }
     let input = res_entry.unwrap();
-
     // Create GetLinks Action
     let action_wrapper = ActionWrapper::new(Action::GetLinks(input));
     // Send Action and block for result
@@ -67,15 +66,12 @@ pub fn invoke_get_links(
     );
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
-
     let action_result = receiver.recv().expect("observer dropped before done");
-
     if let ActionResponse::GetLinks(maybe_links) = action_result {
         if let Ok(link_list) = maybe_links {
             return runtime.store_utf8(&json!(link_list).as_str().expect("should jsonify"));
         }
     }
-
     // Fail
     Ok(Some(RuntimeValue::I32(
         HcApiReturnCode::ReceivedWrongActionResult as i32,

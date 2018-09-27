@@ -181,28 +181,37 @@ impl SinglePageStack {
 #[macro_use]
 extern crate serde_derive;
 
-//use std::error::Error;
-
 #[derive(Deserialize, Serialize, Default, Debug)]
-pub struct ErrorStruct {
-    pub error: String,
+pub struct RibosomeErrorReport {
+    pub description: String,
+    pub file_name: String,
+    pub line: String,
+    // TODO - Add advance error debugging info
+    // pub stack_trace: Backtrace
 }
 
+impl RibosomeErrorReport {
+    pub fn to_string(&self) -> String {
+        format!("Error in Ribosome in file '{}':{} :\n\t{}", self.file_name, self.line, self.description)
+    }
+}
+
+pub type RibosomeError = Result<RibosomeErrorReport, String>;
 
 // Convert json data in a memory buffer into a meaningful data struct
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
-pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, ErrorStruct> {
+pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
     let actual_str = ptr_safe_c_str.to_str().unwrap();
     let res = serde_json::from_str(actual_str);
     match res {
         Err(_) => {
-            let maybe_error_string : Result<ErrorStruct, serde_json::Error> = serde_json::from_str(actual_str);
-            Err(match maybe_error_string {
-                Ok(error_string) => error_string,
-                Err(_) => ErrorStruct{ error: HcApiReturnCode::ArgumentDeserializationFailed.to_string()},
-            })
+            let maybe_error_report : Result<RibosomeErrorReport, serde_json::Error> = serde_json::from_str(actual_str);
+            match maybe_error_report {
+                Err(_) => Err(actual_str.to_string()),
+                Ok(error_report) => Err(error_report.description),
+            }
         },
         Ok(x) => Ok(x),
     }
@@ -218,12 +227,12 @@ pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -
 // Helper for retrieving struct or ERROR from encoded allocation
 pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
     encoded_allocation: u32,
-) -> Result<T, ErrorStruct> {
-    let allocation = SinglePageAllocation::new(encoded_allocation);
-    if allocation.is_err() {
-        return Err(ErrorStruct { error: "FUCKING WASM".to_string() });
+) -> Result<T, String> {
+    let maybe_allocation = SinglePageAllocation::new(encoded_allocation);
+    match maybe_allocation {
+        Err(return_code) => Err(return_code.to_string()),
+        Ok(allocation) => deserialize(allocation.offset as *mut c_char),
     }
-    return deserialize(allocation.unwrap().offset as *mut c_char);
 }
 
 // Write a data struct into a memory buffer as json string

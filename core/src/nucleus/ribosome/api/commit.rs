@@ -9,6 +9,7 @@ use nucleus::{
 };
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::RibosomeErrorReport;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -57,16 +58,15 @@ pub fn invoke_commit_entry(
             ))),
         },
         Err(error_string) =>  {
-            Ok(json!({ "error": error_string }).to_string())
-            //Ok(error_string)
+            let error_report = RibosomeErrorReport {
+                description: format!("Call to `hc_commit_entry()` failed: {}", error_string),
+                file_name: file!().to_string(),
+                line: line!().to_string(),
+            };
+            Ok(json!(error_report).to_string())
+            // TODO - In release return error_string directly and not a RibosomeErrorReport
+            // Ok(error_string)
         },
-//        Err(error_string) => {
-//            // TODO - Have Failure write message in wasm memory
-//            // so wasm can return custom error message to end-user
-//            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
-//            // Return Error code in i32 format
-//            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
-//        }
     };
 
     println!("json = {:?}", maybe_json);

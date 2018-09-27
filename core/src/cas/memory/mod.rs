@@ -10,7 +10,7 @@ pub struct MemoryStorage {
 }
 
 impl MemoryStorage {
-    fn new() -> MemoryStorage {
+    pub fn new() -> MemoryStorage {
         MemoryStorage {
             storage: HashMap::new(),
         }
@@ -45,7 +45,6 @@ pub mod tests {
         memory::MemoryStorage,
         storage::ContentAddressableStorage,
     };
-    use tempfile::{tempdir, TempDir};
 
     #[test]
     fn memory_round_trip() {

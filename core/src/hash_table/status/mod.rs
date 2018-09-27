@@ -62,7 +62,8 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use cas::{
-        content::AddressableContent,
+        content::{tests::ExampleAddressableContent, AddressableContent, Content},
+        eav::tests::eav_round_trip_test_runner,
         storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
     };
     use hash::HashString;
@@ -98,7 +99,7 @@ mod tests {
             (String::from("2"), CrudStatus::REJECTED),
             (String::from("4"), CrudStatus::DELETED),
             (String::from("8"), CrudStatus::MODIFIED),
-            (String::from("255"), CrudStatus::ANY),
+            (String::from("16"), CrudStatus::LOCKED),
         ];
         zip_crud
             .into_iter()

@@ -86,7 +86,6 @@ pub mod tests {
         eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     };
     use error::HolochainError;
-    use hash_table::status::CrudStatus;
     use std::collections::HashSet;
 
     pub struct ExampleEntityAttributeValueStorage {

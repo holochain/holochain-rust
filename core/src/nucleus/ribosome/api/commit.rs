@@ -71,7 +71,6 @@ pub fn invoke_commit_entry(
         }
     };
 
-    println!("json = {:?}", maybe_json);
     // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),

@@ -84,7 +84,7 @@ core_toolchain: install_rustup install_system_libs
 
 # idempotent installation of tools toolchain
 .PHONY: tools_toolchain
-tools_toolchain: install_rustup_tools
+tools_toolchain: install_rustup_tools install_system_libs
 	rustup toolchain install ${TOOLS_RUST_VERSION}
 
 # idempotent addition of wasm target

@@ -4,10 +4,13 @@
 
 #[macro_use]
 extern crate failure;
+#[macro_use]
+extern crate serde_json;
 
 use failure::Error;
 
 pub mod error;
+pub mod p2p_network;
 
 pub type SerializedAddress = Vec<u8>;
 pub type TransportAddress = Vec<u8>;

@@ -21,7 +21,17 @@ bitflags! {
 
 impl ToString for CrudStatus {
     fn to_string(&self) -> String {
-        self.bits().to_string()
+        // don't do self.bits().to_string() because that spits out values for default() and all()
+        // only explicit statuses are safe as strings
+        // the expectation is that strings will be stored, referenced and parsed
+        match self.to_owned() {
+            CrudStatus::LIVE => "1",
+            CrudStatus::REJECTED => "2",
+            CrudStatus::DELETED => "4",
+            CrudStatus::MODIFIED => "8",
+            CrudStatus::LOCKED => "16",
+            _ => unreachable!(),
+        }.to_string()
     }
 }
 
@@ -32,7 +42,7 @@ impl<'a> From<&'a String> for CrudStatus {
             "2" => CrudStatus::REJECTED,
             "4" => CrudStatus::DELETED,
             "8" => CrudStatus::MODIFIED,
-            "255" => CrudStatus::ANY,
+            "16" => CrudStatus::LOCKED,
             _ => unreachable!(),
         }
     }
@@ -52,13 +62,10 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use cas::{
-        content::{tests::ExampleAddressableContent, AddressableContent, Content},
-        eav::{
-            tests::{eav_round_trip_test_runner, ExampleEntityAttributeValueStorage},
-            EntityAttributeValue, EntityAttributeValueStorage,
-        },
+        content::AddressableContent,
+        storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
     };
-    use std::collections::HashSet;
+    use hash::HashString;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -109,4 +116,126 @@ mod tests {
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
+    /// show ToString implementation
+    fn to_string_test() {
+        assert_eq!("1".to_string(), CrudStatus::LIVE.to_string());
+        assert_eq!("2".to_string(), CrudStatus::REJECTED.to_string());
+        assert_eq!("4".to_string(), CrudStatus::DELETED.to_string());
+        assert_eq!("8".to_string(), CrudStatus::MODIFIED.to_string());
+        assert_eq!("16".to_string(), CrudStatus::LOCKED.to_string());
+    }
+
+    #[test]
+    /// show From<String> implementation
+    fn from_string_test() {
+        assert_eq!(CrudStatus::from(&"1".to_string()), CrudStatus::LIVE);
+        assert_eq!(CrudStatus::from(&"2".to_string()), CrudStatus::REJECTED);
+        assert_eq!(CrudStatus::from(&"4".to_string()), CrudStatus::DELETED);
+        assert_eq!(CrudStatus::from(&"8".to_string()), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from(&"16".to_string()), CrudStatus::LOCKED);
+    }
+
+    #[test]
+    /// show AddressableContent implementation
+    fn addressable_content_test() {
+        // from_content()
+        assert_eq!(CrudStatus::from_content(&"1".to_string()), CrudStatus::LIVE);
+        assert_eq!(
+            CrudStatus::from_content(&"2".to_string()),
+            CrudStatus::REJECTED
+        );
+        assert_eq!(
+            CrudStatus::from_content(&"4".to_string()),
+            CrudStatus::DELETED
+        );
+        assert_eq!(
+            CrudStatus::from_content(&"8".to_string()),
+            CrudStatus::MODIFIED
+        );
+        assert_eq!(
+            CrudStatus::from_content(&"16".to_string()),
+            CrudStatus::LOCKED
+        );
+
+        // content()
+        assert_eq!("1".to_string(), CrudStatus::LIVE.content());
+        assert_eq!("2".to_string(), CrudStatus::REJECTED.content());
+        assert_eq!("4".to_string(), CrudStatus::DELETED.content());
+        assert_eq!("8".to_string(), CrudStatus::MODIFIED.content());
+        assert_eq!("16".to_string(), CrudStatus::LOCKED.content());
+
+        // address()
+        assert_eq!(
+            HashString::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG".to_string()),
+            CrudStatus::LIVE.address()
+        );
+        assert_eq!(
+            HashString::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg".to_string()),
+            CrudStatus::REJECTED.address()
+        );
+        assert_eq!(
+            HashString::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm".to_string()),
+            CrudStatus::DELETED.address()
+        );
+        assert_eq!(
+            HashString::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi".to_string()),
+            CrudStatus::MODIFIED.address()
+        );
+        assert_eq!(
+            HashString::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a".to_string()),
+            CrudStatus::LOCKED.address()
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let mut content_addressable_storage = ExampleContentAddressableStorage::new();
+        content_addressable_storage
+            .add(&CrudStatus::LIVE)
+            .expect("could not add LIVE");
+        content_addressable_storage
+            .add(&CrudStatus::REJECTED)
+            .expect("could not add REJECTED");
+        content_addressable_storage
+            .add(&CrudStatus::DELETED)
+            .expect("could not add DELETED");
+        content_addressable_storage
+            .add(&CrudStatus::MODIFIED)
+            .expect("could not add MODIFIED");
+        content_addressable_storage
+            .add(&CrudStatus::LOCKED)
+            .expect("could not add LOCKED");
+
+        assert_eq!(
+            Some(CrudStatus::LIVE),
+            content_addressable_storage
+                .fetch(&CrudStatus::LIVE.address())
+                .expect("could not fetch LIVE"),
+        );
+        assert_eq!(
+            Some(CrudStatus::REJECTED),
+            content_addressable_storage
+                .fetch(&CrudStatus::REJECTED.address())
+                .expect("could not fetch REJECTED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::DELETED),
+            content_addressable_storage
+                .fetch(&CrudStatus::DELETED.address())
+                .expect("could not fetch DELETED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::MODIFIED),
+            content_addressable_storage
+                .fetch(&CrudStatus::MODIFIED.address())
+                .expect("could not fetch MODIFIED"),
+        );
+        assert_eq!(
+            Some(CrudStatus::LOCKED),
+            content_addressable_storage
+                .fetch(&CrudStatus::LOCKED.address())
+                .expect("could not fetch LOCKED"),
+        );
+    }
 }

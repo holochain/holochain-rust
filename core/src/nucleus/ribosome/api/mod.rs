@@ -16,7 +16,7 @@ use nucleus::{
     memory::SinglePageManager,
     ribosome::{
         api::{
-            call::invoke_call, commit::invoke_commit_entry, debug::invoke_debug,
+            call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
         Defn,
@@ -141,7 +141,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::MissingNo => noop,
             ZomeApiFunction::Abort => noop,
             ZomeApiFunction::Debug => invoke_debug,
-            ZomeApiFunction::CommitAppEntry => invoke_commit_entry,
+            ZomeApiFunction::CommitAppEntry => invoke_commit_app_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::Call => invoke_call,

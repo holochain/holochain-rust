@@ -30,8 +30,6 @@ There is a work-in-progress book being written about `holochain-rust`. See the p
 
 #### Make
 
-`make` or [docker](https://www.docker.com/)
-
 If you are running on ubuntu or Mac OS X, and you have `make` installed, you can do local development by simply typing:
 
 `make` which will:
@@ -41,7 +39,7 @@ If you are running on ubuntu or Mac OS X, and you have `make` installed, you can
 
 ### Docker
 
-We mostly use docker because it's easier to count on things working the expected way across platforms.
+However, we mostly use [docker](https://www.docker.com/) because it's easier to count on things working the expected way across platforms.
 
 The `docker` folder contains scripts to build and run docker images.
 

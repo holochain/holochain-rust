@@ -2,7 +2,7 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
-use instance::{Observer, RECV_DEFAULT_TIMEOUT_MS};
+use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call,
     ribosome::api::{HcApiReturnCode, Runtime},
@@ -11,7 +11,7 @@ use nucleus::{
 };
 use serde_json;
 use std::sync::{
-    mpsc::{channel, Sender},
+    mpsc::channel,
     Arc,
 };
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -76,8 +76,8 @@ pub fn invoke_call(
     // Send Action and block
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
+        &runtime.context.action_channel,
+        &runtime.context.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
@@ -123,8 +123,6 @@ pub(crate) fn reduce_call(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) {
     // 1.Checks for correctness of ZomeFnCall
     let fn_call = match action_wrapper.action().clone() {
@@ -184,8 +182,6 @@ pub(crate) fn reduce_call(
     launch_zome_fn_call(
         context,
         fn_call,
-        action_channel,
-        observer_channel,
         &code,
         state.dna.clone().unwrap().name,
     );
@@ -200,7 +196,7 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
-    use instance::tests::{test_instance, TestLogger};
+    use instance::{Observer, tests::{test_instance, TestLogger}};
     use nucleus::ribosome::{
         api::{
             tests::{

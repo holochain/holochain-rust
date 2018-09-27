@@ -5,11 +5,9 @@ pub mod genesis;
 pub mod receive;
 pub mod validate_commit;
 
-use action::ActionWrapper;
 use context::Context;
 use hash_table::entry::Entry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
-use instance::Observer;
 use json::ToJson;
 use nucleus::{
     ribosome::{
@@ -22,7 +20,7 @@ use nucleus::{
 use num_traits::FromPrimitive;
 use std::{
     str::FromStr,
-    sync::{mpsc::Sender, Arc},
+    sync::Arc,
     thread::sleep,
     time::Duration,
 };
@@ -71,15 +69,11 @@ impl Callback {
         &self,
     ) -> fn(
         context: Arc<Context>,
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
         zome: &str,
         params: &CallbackParams,
     ) -> CallbackResult {
         fn noop(
             _context: Arc<Context>,
-            _action_channel: &Sender<ActionWrapper>,
-            _observer_channel: &Sender<Observer>,
             _zome: &str,
             _params: &CallbackParams,
         ) -> CallbackResult {
@@ -164,16 +158,12 @@ pub enum CallbackResult {
 pub(crate) fn run_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     wasm: &DnaWasm,
     app_name: String,
 ) -> CallbackResult {
     match ribosome::api::call(
         &app_name,
         context,
-        &action_channel,
-        &observer_channel,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
@@ -188,8 +178,6 @@ pub(crate) fn run_callback(
 
 pub fn call(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,
@@ -240,8 +228,6 @@ pub fn call(
                 run_callback(
                     context.clone(),
                     zome_call,
-                    action_channel,
-                    observer_channel,
                     wasm,
                     dna.name.clone(),
                 )

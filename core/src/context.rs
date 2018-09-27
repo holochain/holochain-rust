@@ -1,9 +1,11 @@
+use action::ActionWrapper;
 use error::HolochainError;
 use holochain_agent::Agent;
 use logger::Logger;
+use instance::Observer;
 use persister::Persister;
 use state::State;
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
+use std::sync::{Arc, mpsc::{sync_channel, SyncSender}, Mutex, RwLock, RwLockReadGuard};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -15,6 +17,8 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
+    pub action_channel: SyncSender<ActionWrapper>,
+    pub observer_channel: SyncSender<Observer>
 }
 
 impl Context {
@@ -23,11 +27,32 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
+        let (tx_action, _) = sync_channel(100);
+        let (tx_observer, _) = sync_channel(100);
         Context {
             agent,
             logger,
             persister,
             state: None,
+            action_channel: tx_action,
+            observer_channel: tx_observer,
+        }
+    }
+
+    pub fn new_with_channels(
+        agent: Agent,
+        logger: Arc<Mutex<Logger>>,
+        persister: Arc<Mutex<Persister>>,
+        action_channel: SyncSender<ActionWrapper>,
+        observer_channel: SyncSender<Observer>,
+    ) -> Context {
+        Context {
+            agent,
+            logger,
+            persister,
+            state: None,
+            action_channel,
+            observer_channel,
         }
     }
     // helper function to make it easier to call the logger

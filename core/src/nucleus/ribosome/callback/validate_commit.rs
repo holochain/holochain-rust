@@ -1,21 +1,15 @@
 use super::call;
-use action::ActionWrapper;
 use context::Context;
-use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
 
 pub fn validate_commit(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     params: &CallbackParams,
 ) -> CallbackResult {
     call(
         context,
-        action_channel,
-        observer_channel,
         zome,
         &Callback::ValidateCommit,
         params,
@@ -41,8 +35,6 @@ pub mod tests {
 
         let result = validate_commit(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::ValidateCommit(test_entry()),
         );
@@ -63,8 +55,6 @@ pub mod tests {
 
         let result = validate_commit(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::ValidateCommit(test_entry()),
         );
@@ -80,8 +70,6 @@ pub mod tests {
 
         let result = validate_commit(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::ValidateCommit(test_entry()),
         );

@@ -5,12 +5,11 @@ use context::Context;
 use error::HolochainError;
 use hash::HashString;
 use hash_table::entry::Entry;
-use instance::Observer;
 use json::ToJson;
 use key::Key;
 use std::{
     collections::HashMap,
-    sync::{mpsc::Sender, Arc},
+    sync::Arc,
 };
 
 /// The state-slice for the Agent.
@@ -98,8 +97,6 @@ fn reduce_commit_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
@@ -124,8 +121,6 @@ fn reduce_get_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::GetEntry);
@@ -155,8 +150,6 @@ pub fn reduce(
     context: Arc<Context>,
     old_state: Arc<AgentState>,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
@@ -166,8 +159,6 @@ pub fn reduce(
                 context,
                 &mut new_state,
                 &action_wrapper,
-                action_channel,
-                observer_channel,
             );
             Arc::new(new_state)
         }
@@ -182,7 +173,7 @@ pub mod tests {
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
     use hash_table::entry::tests::test_entry;
-    use instance::tests::{test_context, test_instance_blank};
+    use instance::tests::test_context;
     use json::ToJson;
     use key::Key;
     use std::{collections::HashMap, sync::Arc};
@@ -226,14 +217,10 @@ pub mod tests {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_commit();
 
-        let instance = test_instance_blank();
-
         reduce_commit_entry(
             test_context("bob"),
             &mut state,
             &action_wrapper,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
         );
 
         assert_eq!(
@@ -248,15 +235,11 @@ pub mod tests {
         let mut state = test_agent_state();
         let context = test_context("foo");
 
-        let instance = test_instance_blank();
-
         let aw1 = test_action_wrapper_get();
         reduce_get_entry(
             Arc::clone(&context),
             &mut state,
             &aw1,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
         );
 
         // nothing has been committed so the get must be None
@@ -270,8 +253,6 @@ pub mod tests {
             Arc::clone(&context),
             &mut state,
             &test_action_wrapper_commit(),
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
         );
 
         let aw2 = test_action_wrapper_get();
@@ -279,8 +260,6 @@ pub mod tests {
             Arc::clone(&context),
             &mut state,
             &aw2,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
         );
 
         assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);

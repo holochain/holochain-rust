@@ -34,9 +34,8 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use action::{tests::test_action_wrapper_commit, ActionWrapper};
+    use action::tests::test_action_wrapper_commit;
     use instance::tests::test_context;
-    use std::sync::mpsc::channel;
 
     #[test]
     fn can_instantiate() {
@@ -48,18 +47,12 @@ mod tests {
     #[test]
     fn can_roundtrip() {
         let mut store = SimplePersister::new();
-
         let state = State::new();
-
         let action_wrapper = test_action_wrapper_commit();
 
-        let (sender, _receiver) = channel::<ActionWrapper>();
-        let (tx_observer, _observer) = channel::<::instance::Observer>();
         let new_state = state.reduce(
             test_context("jane"),
             action_wrapper.clone(),
-            &sender,
-            &tx_observer,
         );
 
         store.save(new_state.clone());

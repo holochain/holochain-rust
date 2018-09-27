@@ -4,7 +4,7 @@ use context::Context;
 use futures::{Async, Future};
 use hash_table::entry::Entry;
 use instance::dispatch_action;
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -13,11 +13,10 @@ use std::sync::{mpsc::Sender, Arc};
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry(
     entry: Entry,
-    action_channel: &Sender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> ValidationFuture {
     let action_wrapper = ActionWrapper::new(Action::ValidateEntry(entry));
-    dispatch_action(action_channel, action_wrapper.clone());
+    dispatch_action(&context.action_channel, action_wrapper.clone());
     ValidationFuture {
         context: context.clone(),
         action: action_wrapper,

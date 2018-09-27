@@ -1,22 +1,16 @@
 use super::call;
-use action::ActionWrapper;
 use context::Context;
-use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
 
 pub fn receive(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     // we ignore params for genesis
     params: &CallbackParams,
 ) -> CallbackResult {
     call(
         context,
-        action_channel,
-        observer_channel,
         zome,
         &Callback::Receive,
         params,
@@ -41,8 +35,6 @@ pub mod tests {
 
         let result = receive(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::Receive,
         );
@@ -63,8 +55,6 @@ pub mod tests {
 
         let result = receive(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::Receive,
         );
@@ -80,8 +70,6 @@ pub mod tests {
 
         let result = receive(
             context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
             zome,
             &CallbackParams::Receive,
         );

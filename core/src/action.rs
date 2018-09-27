@@ -3,7 +3,6 @@ use context::Context;
 use hash::HashString;
 use hash_table::{entry::Entry, links_entry::Link};
 use holochain_dna::Dna;
-use instance::Observer;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
     state::{NucleusState, ValidationResult},
@@ -12,7 +11,7 @@ use nucleus::{
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    sync::{mpsc::Sender, Arc},
+    sync::Arc,
 };
 
 /// Wrapper for actions that provides a unique ID
@@ -108,7 +107,7 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> =
-    fn(Arc<Context>, &mut S, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
+    fn(Arc<Context>, &mut S, &ActionWrapper);
 
 #[cfg(test)]
 pub mod tests {

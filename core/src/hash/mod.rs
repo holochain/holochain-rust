@@ -14,13 +14,15 @@ impl fmt::Display for HashString {
     }
 }
 
+impl From<String> for HashString {
+    fn from(s: String) -> HashString {
+        HashString(s)
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
-    }
-
-    pub fn from(s: String) -> HashString {
-        HashString(s)
     }
 
     /// convert bytes to a b58 hashed string
@@ -59,6 +61,17 @@ pub mod tests {
             test_hash().to_string(),
             "QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT",
         )
+    }
+
+    #[test]
+    /// show From<String> implementation
+    fn from_string_test() {
+        assert_eq!(HashString::new(), HashString::from("".to_string()),);
+
+        assert_eq!(
+            test_hash(),
+            HashString::from(test_entry().key().to_string()),
+        );
     }
 
     #[test]

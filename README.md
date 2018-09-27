@@ -1,5 +1,4 @@
 # Holochain-rust
-This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust. See https://holochain.org.
 
 [![Code Status](https://img.shields.io/badge/Code-Pre_Alpha-red.svg)](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)
 [![Travis](https://img.shields.io/travis/holochain/holochain-rust/develop.svg)](https://travis-ci.org/holochain/holochain-rust/branches)
@@ -8,16 +7,13 @@ This is the home of the Holochain Rust library, being rewritten from [Go](https:
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
 
-**Holographic storage for distributed applications.** A holochain is a monotonic distributed hash table (DHT) where every node enforces validation rules on data before publishing that data against the signed chains where the data originated.
-
-In other words, a holochain functions very much **like a blockchain without bottlenecks** when it comes to enforcing validation rules, but is designed to  be fully distributed with each node only needing to hold a small portion of the data instead of everything needing a full copy of a global ledger. This makes it feasible to run blockchain-like applications on devices as lightweight as mobile phones.
+This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust. See https://holochain.org.
 
 **[Code Status:](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 was released October 2017.  Alpha 1 was released May 2018.  We expect a developer pre-release of this Rust re-write in mid October 2018.
 <br/>
 
 | Holochain Links: | [FAQ](https://github.com/holochain/holochain-proto/wiki/FAQ) | [Developer Docs](https://holochain.github.io/holochain-rust/) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |
 |---|---|---|---|
-
 
 ## Documentation: The Book on Holochain
 

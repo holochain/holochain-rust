@@ -7,12 +7,6 @@ branches:
     - master
     - develop
 
-before_script:
- - echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list
- - wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add
- - sudo apt-get update -qq
- - sudo apt-get install libzmq3-dev
-
 jobs:
   include:
     - name: "C binding tests"

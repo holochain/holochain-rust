@@ -50,9 +50,37 @@ install_rustup_tools:
 	fi
 	export PATH=${HOME}/.cargo/bin:${PATH}
 
+# idempotent installation of libzmq system library
+# note, this is complicated by our use of travis-ci ubuntu trusty
+# we need to install a newer version than is otherwise available
+.PHONY: install_system_libzmq
+install_system_libzmq:
+	if ! (pkg-config libzmq --libs) ; then \
+		echo "need install"; \
+		if ! which apt-get ; then \
+			echo "\033[0;93mNo apt-get installed and no system libzmq, build probably won't work\033[0m"; \
+		else \
+			if ! (grep "trusty" /etc/os-release) ; then \
+				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
+				sudo apt-get install -y libzmq3-dev; \
+			else \
+				echo "\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\033[0m"; \
+				echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list; \
+				wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add; \
+				sudo apt-get update -qq; \
+				sudo apt-get install libzmq3-dev; \
+			fi; \
+		fi; \
+	fi; \
+fi
+
+# idempotent install of any required system libraries
+.PHONY: install_system_libs
+install_system_libs: install_system_libzmq
+
 # idempotent installation of core toolchain
 .PHONY: core_toolchain
-core_toolchain: install_rustup
+core_toolchain: install_rustup install_system_libs
 	rustup toolchain install ${CORE_RUST_VERSION}
 
 # idempotent installation of tools toolchain

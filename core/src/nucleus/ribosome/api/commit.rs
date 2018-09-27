@@ -2,6 +2,7 @@ extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
 use hash_table::entry::Entry;
+use holochain_wasm_utils::RibosomeErrorReport;
 use json::ToJson;
 use nucleus::{
     actions::validate::*,
@@ -9,7 +10,6 @@ use nucleus::{
 };
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_wasm_utils::RibosomeErrorReport;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -53,11 +53,13 @@ pub fn invoke_commit_entry(
     let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ReceivedWrongActionResult as i32,
-            ))),
+            _ => {
+                return Ok(Some(RuntimeValue::I32(
+                    HcApiReturnCode::ReceivedWrongActionResult as i32,
+                )))
+            }
         },
-        Err(error_string) =>  {
+        Err(error_string) => {
             let error_report = RibosomeErrorReport {
                 description: format!("Call to `hc_commit_entry()` failed: {}", error_string),
                 file_name: file!().to_string(),
@@ -66,7 +68,7 @@ pub fn invoke_commit_entry(
             Ok(json!(error_report).to_string())
             // TODO - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
-        },
+        }
     };
 
     println!("json = {:?}", maybe_json);

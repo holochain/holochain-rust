@@ -192,11 +192,12 @@ pub struct RibosomeErrorReport {
 
 impl RibosomeErrorReport {
     pub fn to_string(&self) -> String {
-        format!("Error in Ribosome in file '{}':{} :\n\t{}", self.file_name, self.line, self.description)
+        format!(
+            "Error in Ribosome in file '{}':{} :\n\t{}",
+            self.file_name, self.line, self.description
+        )
     }
 }
-
-pub type RibosomeError = Result<RibosomeErrorReport, String>;
 
 // Convert json data in a memory buffer into a meaningful data struct
 #[allow(unknown_lints)]
@@ -207,12 +208,13 @@ pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, S
     let res = serde_json::from_str(actual_str);
     match res {
         Err(_) => {
-            let maybe_error_report : Result<RibosomeErrorReport, serde_json::Error> = serde_json::from_str(actual_str);
+            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
+                serde_json::from_str(actual_str);
             match maybe_error_report {
                 Err(_) => Err(actual_str.to_string()),
                 Ok(error_report) => Err(error_report.description),
             }
-        },
+        }
         Ok(x) => Ok(x),
     }
 }

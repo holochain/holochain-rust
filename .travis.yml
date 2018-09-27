@@ -12,6 +12,11 @@ jobs:
     - name: "C binding tests"
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -32,9 +37,10 @@ jobs:
       node_js:
         - "8"
 
-      # sudo is needed for codecov, which makes things 20-50s slower
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -67,6 +73,11 @@ jobs:
     - name: "Formatting & clippy"
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -102,6 +113,11 @@ jobs:
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"
         - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:

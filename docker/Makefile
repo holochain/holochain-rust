@@ -56,11 +56,10 @@ install_rustup_tools:
 .PHONY: install_system_libzmq
 install_system_libzmq:
 	if ! (pkg-config libzmq --libs) ; then \
-		echo "need install"; \
 		if ! which apt-get ; then \
 			echo "\033[0;93mNo apt-get installed and no system libzmq, build probably won't work\033[0m"; \
 		else \
-			if ! (grep "trusty" /etc/os-release) ; then \
+			if [ "x${TRAVIS}" = "x" ]; then \
 				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
 				sudo apt-get install -y libzmq3-dev; \
 			else \

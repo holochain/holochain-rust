@@ -16,7 +16,7 @@ More importantly, there are too many Holochain specific additions to a vanilla K
 
 ## Decision
 
-We will to build our own DHT implementation in Rust from scratch.
+We will build our own DHT implementation in Rust from scratch.
 
 ## Consequences
 

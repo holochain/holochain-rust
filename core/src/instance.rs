@@ -32,6 +32,10 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
+    pub fn default_channel_buffer_size() -> usize {
+        100
+    }
+
     /// get a clone of the action channel
     pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
         self.action_channel.clone()
@@ -79,8 +83,8 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(100);
-        let (tx_observer, rx_observer) = sync_channel::<Observer>(100);
+        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
+        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::default_channel_buffer_size());
         self.action_channel = tx_action.clone();
         self.observer_channel = tx_observer.clone();
 
@@ -334,6 +338,11 @@ pub mod tests {
             action_channel.clone(),
             observer_channel.clone(),
         ))
+    }
+
+    #[test]
+    fn default_buffer_size_test() {
+        assert_eq!(Context::default_channel_buffer_size(), 100);
     }
 
     /// create a test instance

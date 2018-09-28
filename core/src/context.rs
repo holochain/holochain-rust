@@ -25,13 +25,17 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn default_channel_buffer_size() -> usize {
+        100
+    }
+
     pub fn new(
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
-        let (tx_action, _) = sync_channel(100);
-        let (tx_observer, _) = sync_channel(100);
+        let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
+        let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Context {
             agent,
             logger,
@@ -86,6 +90,11 @@ mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn default_buffer_size_test() {
+        assert_eq!(Context::default_channel_buffer_size(), 100);
+    }
 
     #[test]
     fn test_state() {

@@ -15,13 +15,9 @@ impl fmt::Display for HashString {
     }
 }
 
-impl AddressableContent for HashString {
-    fn content(&self) -> Content {
-        self.to_owned().to_str().clone()
-    }
-
-    fn from_content(content: &Content) -> Self {
-        HashString::from(content.clone())
+impl From<String> for HashString {
+    fn from(s: String) -> HashString {
+        HashString(s)
     }
 }
 
@@ -32,11 +28,6 @@ impl HashString {
     // @TODO implement this as the ToString trait
     pub fn to_str(self) -> String {
         self.0
-    }
-
-    // @TODO implement this as From<String> trait
-    pub fn from(s: String) -> HashString {
-        HashString(s)
     }
 
     /// convert bytes to a b58 hashed string
@@ -65,6 +56,17 @@ pub mod tests {
     /// dummy hash based on the key of test_entry()
     pub fn test_hash() -> HashString {
         test_entry().key()
+    }
+
+    #[test]
+    /// show From<String> implementation
+    fn from_string_test() {
+        assert_eq!(HashString::new(), HashString::from("".to_string()),);
+
+        assert_eq!(
+            test_hash(),
+            HashString::from(test_entry().key().to_string()),
+        );
     }
 
     #[test]

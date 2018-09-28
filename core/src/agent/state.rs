@@ -4,14 +4,10 @@ use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
 use hash::HashString;
-use hash_table::{entry::Entry, pair::Pair};
-use instance::Observer;
+use hash_table::entry::Entry;
 use json::ToJson;
 use key::Key;
-use std::{
-    collections::HashMap,
-    sync::{mpsc::Sender, Arc},
-};
+use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -59,8 +55,8 @@ impl AgentState {
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
-    Commit(Result<Pair, HolochainError>),
-    GetEntry(Option<Pair>),
+    Commit(Result<Entry, HolochainError>),
+    GetEntry(Option<Entry>),
     GetLinks(Result<Vec<HashString>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
@@ -69,11 +65,11 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(pair) => Ok(format!("{{\"hash\":\"{}\"}}", pair.entry().key())),
+                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
-                Some(pair) => Ok(pair.to_json()?),
+                Some(entry) => Ok(entry.to_json()?),
                 None => Ok("".to_string()),
             },
             ActionResponse::GetLinks(result) => match result {
@@ -88,18 +84,16 @@ impl ToJson for ActionResponse {
     }
 }
 
-/// do a commit action against an agent state
-/// intended for use inside the reducer, isolated for unit testing
+/// Do a Commit Action against an agent state.
+/// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
 /// @see https://github.com/holochain/holochain-rust/issues/222
-fn reduce_commit(
+fn reduce_commit_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
@@ -107,20 +101,23 @@ fn reduce_commit(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::Commit(state.chain.push_entry(&entry)),
-    );
+    let res = state.chain.push_entry(&entry);
+    let response = match res {
+        Ok(pair) => Ok(pair.entry().clone()),
+        Err(e) => Err(e),
+    };
+
+    state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::Commit(response));
 }
 
 /// do a get action against an agent state
 /// intended for use inside the reducer, isolated for unit testing
-fn reduce_get(
+fn reduce_get_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let key = unwrap_to!(action => Action::GetEntry);
@@ -132,19 +129,15 @@ fn reduce_get(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::GetEntry(
-            result
-                .clone()
-                .expect("should be able to get entry that we just added"),
-        ),
+        ActionResponse::GetEntry(result.clone()),
     );
 }
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit),
-        Action::GetEntry(_) => Some(reduce_get),
+        Action::Commit(_) => Some(reduce_commit_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
 }
@@ -154,20 +147,12 @@ pub fn reduce(
     context: Arc<Context>,
     old_state: Arc<AgentState>,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(
-                context,
-                &mut new_state,
-                &action_wrapper,
-                action_channel,
-                observer_channel,
-            );
+            f(context, &mut new_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,
@@ -176,13 +161,12 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit, reduce_get, ActionResponse, AgentState};
+    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use chain::tests::test_chain;
+    use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
-    use hash::HashString;
-    use hash_table::{entry::tests::test_entry, pair::tests::test_pair};
-    use instance::tests::{test_context, test_instance_blank};
+    use hash_table::entry::tests::test_entry;
+    use instance::tests::test_context;
     use json::ToJson;
     use key::Key;
     use std::{collections::HashMap, sync::Arc};
@@ -194,12 +178,12 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_pair()))
+        ActionResponse::Commit(Ok(test_pair().entry().clone()))
     }
 
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_pair()))
+        ActionResponse::GetEntry(Some(test_pair().entry().clone()))
     }
 
     #[test]
@@ -221,20 +205,12 @@ pub mod tests {
     }
 
     #[test]
-    /// test for reducing commit
-    fn test_reduce_commit() {
+    /// test for reducing commit entry
+    fn test_reduce_commit_entry() {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_commit();
 
-        let instance = test_instance_blank();
-
-        reduce_commit(
-            test_context("bob"),
-            &mut state,
-            &action_wrapper,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
-        );
+        reduce_commit_entry(test_context("bob"), &mut state, &action_wrapper);
 
         assert_eq!(
             state.actions().get(&action_wrapper),
@@ -243,21 +219,13 @@ pub mod tests {
     }
 
     #[test]
-    /// test for reducing get
-    fn test_reduce_get() {
+    /// test for reducing get entry
+    fn test_reduce_get_entry() {
         let mut state = test_agent_state();
         let context = test_context("foo");
 
-        let instance = test_instance_blank();
-
         let aw1 = test_action_wrapper_get();
-        reduce_get(
-            Arc::clone(&context),
-            &mut state,
-            &aw1,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
-        );
+        reduce_get_entry(Arc::clone(&context), &mut state, &aw1);
 
         // nothing has been committed so the get must be None
         assert_eq!(
@@ -266,22 +234,14 @@ pub mod tests {
         );
 
         // do a round trip
-        reduce_commit(
+        reduce_commit_entry(
             Arc::clone(&context),
             &mut state,
             &test_action_wrapper_commit(),
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
         );
 
         let aw2 = test_action_wrapper_get();
-        reduce_get(
-            Arc::clone(&context),
-            &mut state,
-            &aw2,
-            &instance.action_channel().clone(),
-            &instance.observer_channel().clone(),
-        );
+        reduce_get_entry(Arc::clone(&context), &mut state, &aw2);
 
         assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
     }
@@ -291,7 +251,9 @@ pub mod tests {
     fn test_commit_response_to_json() {
         assert_eq!(
             "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::Commit(Ok(test_pair())).to_json().unwrap(),
+            ActionResponse::Commit(Ok(test_pair().entry().clone()))
+                .to_json()
+                .unwrap(),
         );
         assert_eq!(
             "{\"error\":\"some error\"}",
@@ -304,8 +266,10 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "{\"header\":{\"entry_type\":\"testEntryType\",\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}}",
-            ActionResponse::GetEntry(Some(test_pair())).to_json().unwrap(),
+            "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}",
+            ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+                .to_json()
+                .unwrap(),
         );
         assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
     }
@@ -314,7 +278,7 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![HashString::from(test_entry().key().to_string())]))
+            ActionResponse::GetLinks(Ok(vec![test_entry().key()]))
                 .to_json()
                 .unwrap(),
         );

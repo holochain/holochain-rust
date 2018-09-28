@@ -1,6 +1,7 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
+use hash_table::entry::Entry;
 use json::ToJson;
 use nucleus::{
     actions::validate::*,
@@ -11,22 +12,22 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
-struct CommitArgs {
+struct CommitAppEntryArgs {
     entry_type_name: String,
     entry_content: String,
 }
 
-/// HcApiFuncIndex::COMMIT function code
+/// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
+/// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_commit_entry(
+pub fn invoke_commit_app_entry(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
+    let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
@@ -38,15 +39,14 @@ pub fn invoke_commit_entry(
     };
 
     // Create Chain Entry
-    let entry =
-        ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
+    let entry = Entry::new(&input.entry_type_name, &input.entry_content);
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry.clone(), &runtime.action_channel, &runtime.context)
+        validate_entry(entry.clone(), &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let json = match task_result {
@@ -54,7 +54,13 @@ pub fn invoke_commit_entry(
             ActionResponse::Commit(_) => action_response.to_json(),
             _ => Ok("Unknown error".to_string()),
         },
-        Err(error_string) => Ok(json!({ "error": error_string }).to_string()),
+        Err(error_string) => {
+            // TODO - Have Failure write message in wasm memory
+            // so wasm can return custom error message to end-user
+            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
+            // Return Error code in i32 format
+            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
+        }
     };
 
     // allocate and encode result
@@ -74,11 +80,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use super::CommitArgs;
     use hash_table::entry::tests::test_entry;
     use key::Key;
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -86,7 +91,7 @@ pub mod tests {
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
         let e = test_entry();
-        let args = CommitArgs {
+        let args = CommitAppEntryArgs {
             entry_type_name: e.entry_type().into(),
             entry_content: e.content().into(),
         };

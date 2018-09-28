@@ -5,22 +5,20 @@ pub mod genesis;
 pub mod receive;
 pub mod validate_commit;
 
-use action::ActionWrapper;
-use error::HolochainError;
+use context::Context;
 use hash_table::entry::Entry;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use instance::Observer;
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
 use json::ToJson;
 use nucleus::{
-    call_zome_and_wait_for_result,
     ribosome::{
+        self,
         callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
         Defn,
     },
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::mpsc::Sender};
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -64,18 +62,8 @@ impl FromStr for Callback {
 impl Callback {
     pub fn as_fn(
         &self,
-    ) -> fn(
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-        zome: &str,
-        params: &CallbackParams,
-    ) -> CallbackResult {
-        fn noop(
-            _action_channel: &Sender<ActionWrapper>,
-            _observer_channel: &Sender<Observer>,
-            _zome: &str,
-            _params: &CallbackParams,
-        ) -> CallbackResult {
+    ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
+        fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
             CallbackResult::Pass
         }
 
@@ -154,9 +142,29 @@ pub enum CallbackResult {
     NotImplemented,
 }
 
+pub(crate) fn run_callback(
+    context: Arc<Context>,
+    fc: ZomeFnCall,
+    wasm: &DnaWasm,
+    app_name: String,
+) -> CallbackResult {
+    match ribosome::api::call(
+        &app_name,
+        context,
+        wasm.code.clone(),
+        &fc,
+        Some(fc.clone().parameters.into_bytes()),
+    ) {
+        Ok(runtime) => match runtime.result.is_empty() {
+            true => CallbackResult::Pass,
+            false => CallbackResult::Fail(runtime.result),
+        },
+        Err(_) => CallbackResult::NotImplemented,
+    }
+}
+
 pub fn call(
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    context: Arc<Context>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,
@@ -168,31 +176,45 @@ pub fn call(
         &params.to_string(),
     );
 
-    let call_result =
-        call_zome_and_wait_for_result(zome_call.clone(), &action_channel, &observer_channel);
-
-    // translate the call result to a callback result
-    match call_result {
-        // empty string OK = Success
-        Ok(ref s) if s.is_empty() => CallbackResult::Pass,
-
-        // things that = NotImplemented
-        Err(HolochainError::DnaError(_)) => CallbackResult::NotImplemented,
-        // Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
-        // @TODO this looks super fragile
-        // without it we get stack overflows, but with it we rely on a specific string
-        Err(HolochainError::ErrorGeneric(ref msg))
-            if msg == &format!(
-                "Function: Module doesn\'t have export {}",
-                function.as_str()
-            ) =>
+    // In the case of genesis we encounter race conditions with regards to setting the DNA.
+    // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+    // the state, which can result in this code being executed first.
+    // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+    // TODO: use a future here
+    let mut dna = None;
+    let mut done = false;
+    let mut tries = 0;
+    while !done {
         {
-            CallbackResult::NotImplemented
+            let state = context
+                .state()
+                .expect("Callback called without application state!");
+            dna = state.nucleus().dna();
         }
+        match dna {
+            Some(_) => done = true,
+            None => {
+                if tries > 10 {
+                    done = true;
+                } else {
+                    sleep(Duration::from_millis(10));
+                    tries += 1;
+                }
+            }
+        }
+    }
 
-        // string value or error = fail
-        Ok(s) => CallbackResult::Fail(s),
-        Err(err) => CallbackResult::Fail(err.to_string()),
+    let dna = dna.expect("Callback called without DNA set!");
+
+    match dna.get_wasm_from_zome_name(zome) {
+        None => CallbackResult::NotImplemented,
+        Some(wasm) => {
+            if wasm.code.is_empty() {
+                CallbackResult::NotImplemented
+            } else {
+                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
+            }
+        }
     }
 }
 

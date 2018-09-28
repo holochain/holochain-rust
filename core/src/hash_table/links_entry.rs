@@ -18,10 +18,10 @@ pub struct Link {
 }
 
 impl Link {
-    pub fn new(base: &str, target: &str, tag: &str) -> Self {
+    pub fn new(base: &HashString, target: &HashString, tag: &str) -> Self {
         Link {
-            base: HashString::from(base.to_string()),
-            target: HashString::from(target.to_string()),
+            base: base.clone(),
+            target: target.clone(),
             tag: tag.to_string(),
         }
     }
@@ -61,7 +61,12 @@ pub struct LinkEntry {
 }
 
 impl LinkEntry {
-    pub fn new(action_kind: LinkActionKind, base: &str, target: &str, tag: &str) -> Self {
+    pub fn new(
+        action_kind: LinkActionKind,
+        base: &HashString,
+        target: &HashString,
+        tag: &str,
+    ) -> Self {
         LinkEntry {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
@@ -82,7 +87,7 @@ impl ToEntry for LinkEntry {
         Entry::new(EntryType::Link.as_str(), &json_array)
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
         serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
     }
@@ -111,7 +116,7 @@ impl ToEntry for LinkListEntry {
         Entry::new(EntryType::LinkList.as_str(), &json_array)
     }
 
-    fn new_from_entry(entry: &Entry) -> Self {
+    fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
         serde_json::from_str(&entry.content()).expect("entry failed converting into LinkListEntry")
     }
@@ -127,12 +132,41 @@ pub mod tests {
     use hash_table::sys_entry::{EntryType, ToEntry};
     use instance::{tests::test_context, Instance, Observer};
     use std::{str::FromStr, sync::mpsc::channel};
+
+    pub fn create_test_link() -> Link {
+        Link::new(
+            &HashString::from("12".to_string()),
+            &HashString::from("34".to_string()),
+            "fake",
+        )
+    }
+
+    pub fn create_test_link_a() -> Link {
+        create_test_link()
+    }
+
+    pub fn create_test_link_b() -> Link {
+        Link::new(
+            &HashString::from("56".to_string()),
+            &HashString::from("78".to_string()),
+            "faux",
+        )
+    }
+
+    pub fn create_test_link_c() -> Link {
+        Link::new(
+            &HashString::from("90".to_string()),
+            &HashString::from("ab".to_string()),
+            "fake",
+        )
+    }
+
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_commit_link() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let link = Link::new("12", "34", "fake");
+        let link = create_test_link();
         let link_entry = LinkListEntry::new(&[link]);
         let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
         // Set up instance and process the action
@@ -163,10 +197,10 @@ pub mod tests {
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let link1 = Link::new("12", "34", "fake");
-        let link2 = Link::new("56", "78", "faux");
-        let link3 = Link::new("90", "ab", "fake");
-        let link_entry = LinkListEntry::new(&[link1, link2, link3]);
+        let link_a = create_test_link_a();
+        let link_b = create_test_link_b();
+        let link_c = create_test_link_c();
+        let link_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
         let commit_action = ActionWrapper::new(Action::Commit(link_entry.to_entry()));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
@@ -195,10 +229,10 @@ pub mod tests {
     /// Committing a LinkListEntry to source chain should work
     #[test]
     fn can_round_trip_lle() {
-        let link = Link::new("12", "34", "fake");
+        let link = create_test_link();
         let lle = LinkListEntry::new(&[link]);
         let lle_entry = lle.to_entry();
-        let lle_trip = LinkListEntry::new_from_entry(&lle_entry);
+        let lle_trip = LinkListEntry::from_entry(&lle_entry);
         assert_eq!(lle, lle_trip);
     }
 }

@@ -36,8 +36,8 @@ pub fn invoke_get_entry(
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
+        &runtime.context.action_channel,
+        &runtime.context.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
             let mut actions_copy = state.agent().actions();
@@ -206,8 +206,6 @@ mod tests {
         let commit_runtime = call(
             &dna.name.to_string(),
             Arc::clone(&context),
-            &instance.action_channel(),
-            &instance.observer_channel(),
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
@@ -227,8 +225,6 @@ mod tests {
         let get_runtime = call(
             &dna.name.to_string(),
             Arc::clone(&context),
-            &instance.action_channel(),
-            &instance.observer_channel(),
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),

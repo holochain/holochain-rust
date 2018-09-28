@@ -1,25 +1,14 @@
 use super::call;
-use action::ActionWrapper;
 use context::Context;
-use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
 
 pub fn validate_commit(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     params: &CallbackParams,
 ) -> CallbackResult {
-    call(
-        context,
-        action_channel,
-        observer_channel,
-        zome,
-        &Callback::ValidateCommit,
-        params,
-    )
+    call(context, zome, &Callback::ValidateCommit, params)
 }
 
 #[cfg(test)]
@@ -39,13 +28,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 0);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -61,13 +44,7 @@ pub mod tests {
         );
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         assert_eq!(CallbackResult::NotImplemented, result);
     }
@@ -78,13 +55,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 1);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         // @TODO how to get fail strings back out?
         // @see https://github.com/holochain/holochain-rust/issues/205

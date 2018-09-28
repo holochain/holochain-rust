@@ -1,26 +1,15 @@
 use super::call;
-use action::ActionWrapper;
 use context::Context;
-use instance::Observer;
 use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
 
 pub fn genesis(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     // we ignore params for genesis
     params: &CallbackParams,
 ) -> CallbackResult {
-    call(
-        context,
-        action_channel,
-        observer_channel,
-        zome,
-        &Callback::Genesis,
-        params,
-    )
+    call(context, zome, &Callback::Genesis, params)
 }
 
 #[cfg(test)]
@@ -39,13 +28,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -62,13 +45,7 @@ pub mod tests {
 
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         assert_eq!(CallbackResult::NotImplemented, result);
     }
@@ -79,13 +56,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         // @TODO how to get fail strings back out?
         // @see https://github.com/holochain/holochain-rust/issues/205

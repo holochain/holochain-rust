@@ -43,8 +43,8 @@ pub fn invoke_get_links(
     let (sender, receiver) = channel();
     // TODO #338 - lookup in DHT instead when it will be available (for caching). Will also be redesigned with Futures.
     ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
+        &runtime.context.action_channel,
+        &runtime.context.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
             // TODO #338 - lookup in DHT instead when it will be available. Will also be redesigned with Futures.

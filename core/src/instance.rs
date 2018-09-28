@@ -83,8 +83,10 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
-        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::default_channel_buffer_size());
+        let (tx_action, rx_action) =
+            sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
+        let (tx_observer, rx_observer) =
+            sync_channel::<Observer>(Self::default_channel_buffer_size());
         self.action_channel = tx_action.clone();
         self.observer_channel = tx_observer.clone();
 

@@ -103,9 +103,9 @@ impl Header {
         let pieces: [&str; 6] = [
             &self.entry_type,
             &self.timestamp,
-            &self.link.clone().unwrap_or_default().to_str(),
-            &self.entry_hash.clone().to_str(),
-            &self.link_same_type.clone().unwrap_or_default().to_str(),
+            &self.link.clone().unwrap_or_default().to_string(),
+            &self.entry_hash.clone().to_string(),
+            &self.link_same_type.clone().unwrap_or_default().to_string(),
             &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();

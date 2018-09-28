@@ -8,19 +8,8 @@ use dht::dht_store::DhtStore;
 use cas::storage::ContentAddressableStorage;
 
 // A function that might return a mutated DhtStore
-pub type DhtReducer<CAS: ContentAddressableStorage> =
+type DhtReducer<CAS: ContentAddressableStorage> =
 fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
-
-/// Maps incoming action to the correct reducer
-fn resolve_reducer<CAS: ContentAddressableStorage>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>> {
-    match action_wrapper.action() {
-        Action::Commit(_)   => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
-        Action::AddLink(_)  => Some(reduce_add_link),
-        Action::GetLinks(_) => Some(reduce_get_links),
-        _ => None,
-    }
-}
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
@@ -44,6 +33,17 @@ pub fn reduce<CAS: ContentAddressableStorage>(
     match maybe_new_store {
         None => old_store,
         Some(new_store) => Arc::new(new_store),
+    }
+}
+
+/// Maps incoming action to the correct reducer
+fn resolve_reducer<CAS: ContentAddressableStorage>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>> {
+    match action_wrapper.action() {
+        Action::Commit(_)   => Some(reduce_commit_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::AddLink(_)  => Some(reduce_add_link),
+        Action::GetLinks(_) => Some(reduce_get_links),
+        _ => None,
     }
 }
 

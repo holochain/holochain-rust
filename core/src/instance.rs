@@ -337,6 +337,7 @@ pub mod tests {
     }
 
     /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
@@ -406,6 +407,7 @@ pub mod tests {
     }
 
     /// create a test instance with a blank DNA
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::default());

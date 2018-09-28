@@ -84,7 +84,7 @@ impl EntryMeta {
     }
 
     pub fn make_hash(entry_hash: &HashString, attribute_name: &str) -> HashString {
-        let pieces: [String; 2] = [entry_hash.clone().to_str(), attribute_name.to_string()];
+        let pieces: [String; 2] = [entry_hash.clone().to_string(), attribute_name.to_string()];
         let string_to_hash = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded

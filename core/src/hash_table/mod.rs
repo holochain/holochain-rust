@@ -65,7 +65,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
             &keys.node_id(),
             &old.key(),
             LINK_NAME,
-            &new.key().to_str(),
+            &new.key().to_string(),
         ))
     }
 

@@ -95,7 +95,7 @@ pub mod tests {
     struct AddressableContentTestSuite;
 
     impl AddressableContentTestSuite {
-        //test that trait gives the write content
+        /// test that trait gives the write content
         fn addressable_content_trait_test<T>(content: Content)
         where
             T: AddressableContent + Debug + PartialEq + Clone,
@@ -110,7 +110,7 @@ pub mod tests {
             );
         }
 
-        //test that two different addressable contents would give them same thing
+        /// test that two different addressable contents would give them same thing
         fn addressable_contents_are_the_same_test<T, K>(content: Content)
         where
             T: AddressableContent + Debug + PartialEq + Clone,

@@ -11,7 +11,7 @@ It's not allways clear what goes in which level. For example, schema used to liv
 Function declarations (i.e. names and signatures) are shown outside of WASM in the manifest, kind of like C header files, because they are used for validating function calls according to capability membranes at the Holochain Core library level, not the WASM level.
 
 ### WASM
-One WASM module per zome: All different Capability DNA and validation DNA is to be be compiled in one WASM module.
+One WASM module per zome: All different Capability DNA and validation DNA is to be be compiled into one WASM module.
 
 ### Bundle mode
 
@@ -51,7 +51,7 @@ hc_start_bundle_mode();
   hc_commit_link(myHandle, "_tag" + theTag, post);
   hc_commit_link(post,"taggedBy", myHandle);
 }
-hc_end_bundle_mode(FINISH_BUNDLE); // CANCEL_BUNDLE
+hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
 ```
 
 ### Reserved Capabilities and functions
@@ -112,7 +112,7 @@ They are available in keyword specific Capabilities and function names.
           "entry_type_name": "post",
           "description": "A blog post entry which has an author.",
           "data_format": "string",
-          "sharing": "public",  // private, encrypted
+          "sharing": "public",  // or private, encrypted
           "links_to": [
             {
               "target_type": "handle",
@@ -148,7 +148,7 @@ They are available in keyword specific Capabilities and function names.
         {
           "cap_name": "web_gateway",
           "cap_type": {
-            "membrane": "public" // agent, zome, api-key
+            "membrane": "public" // or agent, zome, api-key
           },
           "functions": [
             {

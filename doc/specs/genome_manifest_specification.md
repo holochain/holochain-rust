@@ -15,8 +15,8 @@ One WASM module per zome: All different Capability DNA and validation DNA is to 
 
 ### Bundle mode
 
-Bundle is a mode where the ribosome intepretates API calls differently by not doing validation directly but when a call to `hc_end_bundle_mode(FINISH_BUNDLE)` is made.
-If for some reason, something failed, the developer can cancel the validation and discard their commits by calling `hc_end_bundle_mode(CANCEL_BUNDLE)`.
+`Bundle` is a mode where the ribosome behaves to API calls differently by not doing validation directly but when the mode finishes (by a call to `hc_end_bundle_mode(FINISH_BUNDLE)`).
+The developer can cancel the bundle and discard their commits by calling `hc_end_bundle_mode(CANCEL_BUNDLE)`. This could be useful if some error happened during the bundle mode for example.
 
 
 ### No more links as entry-types

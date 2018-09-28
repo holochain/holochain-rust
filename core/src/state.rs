@@ -4,10 +4,7 @@ use chain::Chain;
 use context::Context;
 use hash_table::{actor::HashTableActor, memory::MemTable};
 use nucleus::state::NucleusState;
-use std::{
-    collections::HashSet,
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -34,11 +31,7 @@ impl State {
         }
     }
 
-    pub fn reduce(
-        &self,
-        context: Arc<Context>,
-        action_wrapper: ActionWrapper,
-    ) -> Self {
+    pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
                 Arc::clone(&context),

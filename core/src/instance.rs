@@ -136,10 +136,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(
-                    context.clone(),
-                    action_wrapper,
-                );
+                new_state = state.reduce(context.clone(), action_wrapper);
             }
 
             // Get write lock
@@ -323,7 +320,11 @@ pub mod tests {
     }
 
     /// create a test context
-    pub fn test_context_with_channels(agent_name: &str, action_channel: &SyncSender<ActionWrapper>, observer_channel: &SyncSender<Observer>) -> Arc<Context> {
+    pub fn test_context_with_channels(
+        agent_name: &str,
+        action_channel: &SyncSender<ActionWrapper>,
+        observer_channel: &SyncSender<Observer>,
+    ) -> Arc<Context> {
         let agent = Agent::from_string(agent_name.to_string());
         let logger = test_logger();
         Arc::new(Context::new_with_channels(

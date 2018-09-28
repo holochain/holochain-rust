@@ -1,11 +1,14 @@
 use action::ActionWrapper;
 use error::HolochainError;
 use holochain_agent::Agent;
-use logger::Logger;
 use instance::Observer;
+use logger::Logger;
 use persister::Persister;
 use state::State;
-use std::sync::{Arc, mpsc::{sync_channel, SyncSender}, Mutex, RwLock, RwLockReadGuard};
+use std::sync::{
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex, RwLock, RwLockReadGuard,
+};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -18,7 +21,7 @@ pub struct Context {
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
-    pub observer_channel: SyncSender<Observer>
+    pub observer_channel: SyncSender<Observer>,
 }
 
 impl Context {

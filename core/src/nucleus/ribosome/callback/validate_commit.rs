@@ -8,12 +8,7 @@ pub fn validate_commit(
     zome: &str,
     params: &CallbackParams,
 ) -> CallbackResult {
-    call(
-        context,
-        zome,
-        &Callback::ValidateCommit,
-        params,
-    )
+    call(context, zome, &Callback::ValidateCommit, params)
 }
 
 #[cfg(test)]
@@ -33,11 +28,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 0);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -53,11 +44,7 @@ pub mod tests {
         );
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         assert_eq!(CallbackResult::NotImplemented, result);
     }
@@ -68,11 +55,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 1);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = validate_commit(
-            context,
-            zome,
-            &CallbackParams::ValidateCommit(test_entry()),
-        );
+        let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
 
         // @TODO how to get fail strings back out?
         // @see https://github.com/holochain/holochain-rust/issues/205

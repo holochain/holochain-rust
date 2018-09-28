@@ -106,8 +106,7 @@ pub enum Action {
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> =
-    fn(Arc<Context>, &mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
 #[cfg(test)]
 pub mod tests {

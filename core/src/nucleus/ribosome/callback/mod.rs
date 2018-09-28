@@ -18,12 +18,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{
-    str::FromStr,
-    sync::Arc,
-    thread::sleep,
-    time::Duration,
-};
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -67,16 +62,8 @@ impl FromStr for Callback {
 impl Callback {
     pub fn as_fn(
         &self,
-    ) -> fn(
-        context: Arc<Context>,
-        zome: &str,
-        params: &CallbackParams,
-    ) -> CallbackResult {
-        fn noop(
-            _context: Arc<Context>,
-            _zome: &str,
-            _params: &CallbackParams,
-        ) -> CallbackResult {
+    ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
+        fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
             CallbackResult::Pass
         }
 
@@ -225,12 +212,7 @@ pub fn call(
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented
             } else {
-                run_callback(
-                    context.clone(),
-                    zome_call,
-                    wasm,
-                    dna.name.clone(),
-                )
+                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
             }
         }
     }

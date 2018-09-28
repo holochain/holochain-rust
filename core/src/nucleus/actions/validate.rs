@@ -11,10 +11,7 @@ use std::sync::Arc;
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn validate_entry(
-    entry: Entry,
-    context: &Arc<Context>,
-) -> ValidationFuture {
+pub fn validate_entry(entry: Entry, context: &Arc<Context>) -> ValidationFuture {
     let action_wrapper = ActionWrapper::new(Action::ValidateEntry(entry));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     ValidationFuture {

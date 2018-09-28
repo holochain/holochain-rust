@@ -9,12 +9,7 @@ pub fn genesis(
     // we ignore params for genesis
     params: &CallbackParams,
 ) -> CallbackResult {
-    call(
-        context,
-        zome,
-        &Callback::Genesis,
-        params,
-    )
+    call(context, zome, &Callback::Genesis, params)
 }
 
 #[cfg(test)]
@@ -33,11 +28,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         assert_eq!(CallbackResult::Pass, result);
     }
@@ -54,11 +45,7 @@ pub mod tests {
 
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         assert_eq!(CallbackResult::NotImplemented, result);
     }
@@ -69,11 +56,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
         let context = instance.initialize_context(test_context("test"));
 
-        let result = genesis(
-            context,
-            zome,
-            &CallbackParams::Genesis,
-        );
+        let result = genesis(context, zome, &CallbackParams::Genesis);
 
         // @TODO how to get fail strings back out?
         // @see https://github.com/holochain/holochain-rust/issues/205

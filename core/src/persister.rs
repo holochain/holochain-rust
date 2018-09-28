@@ -50,10 +50,7 @@ mod tests {
         let state = State::new();
         let action_wrapper = test_action_wrapper_commit();
 
-        let new_state = state.reduce(
-            test_context("jane"),
-            action_wrapper.clone(),
-        );
+        let new_state = state.reduce(test_context("jane"), action_wrapper.clone());
 
         store.save(new_state.clone());
 

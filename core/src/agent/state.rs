@@ -7,10 +7,7 @@ use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
 use key::Key;
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -155,11 +152,7 @@ pub fn reduce(
     match handler {
         Some(f) => {
             let mut new_state: AgentState = (*old_state).clone();
-            f(
-                context,
-                &mut new_state,
-                &action_wrapper,
-            );
+            f(context, &mut new_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,
@@ -217,11 +210,7 @@ pub mod tests {
         let mut state = test_agent_state();
         let action_wrapper = test_action_wrapper_commit();
 
-        reduce_commit_entry(
-            test_context("bob"),
-            &mut state,
-            &action_wrapper,
-        );
+        reduce_commit_entry(test_context("bob"), &mut state, &action_wrapper);
 
         assert_eq!(
             state.actions().get(&action_wrapper),
@@ -236,11 +225,7 @@ pub mod tests {
         let context = test_context("foo");
 
         let aw1 = test_action_wrapper_get();
-        reduce_get_entry(
-            Arc::clone(&context),
-            &mut state,
-            &aw1,
-        );
+        reduce_get_entry(Arc::clone(&context), &mut state, &aw1);
 
         // nothing has been committed so the get must be None
         assert_eq!(
@@ -256,11 +241,7 @@ pub mod tests {
         );
 
         let aw2 = test_action_wrapper_get();
-        reduce_get_entry(
-            Arc::clone(&context),
-            &mut state,
-            &aw2,
-        );
+        reduce_get_entry(Arc::clone(&context), &mut state, &aw2);
 
         assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
     }

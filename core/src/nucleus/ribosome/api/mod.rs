@@ -22,10 +22,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{
-    str::FromStr,
-    sync::Arc,
-};
+use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,

@@ -10,10 +10,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use serde_json;
-use std::sync::{
-    mpsc::channel,
-    Arc,
-};
+use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Call API function is invoked
@@ -179,12 +176,7 @@ pub(crate) fn reduce_call(
     let code =
         maybe_code.expect("zome not found, Should have failed before when getting capability.");
     state.zome_calls.insert(fn_call.clone(), None);
-    launch_zome_fn_call(
-        context,
-        fn_call,
-        &code,
-        state.dna.clone().unwrap().name,
-    );
+    launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
 #[cfg(test)]
@@ -196,7 +188,10 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
-    use instance::{Observer, tests::{test_instance, TestLogger}};
+    use instance::{
+        tests::{test_instance, TestLogger},
+        Observer,
+    };
     use nucleus::ribosome::{
         api::{
             tests::{

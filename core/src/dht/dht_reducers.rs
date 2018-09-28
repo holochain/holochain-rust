@@ -19,7 +19,7 @@ pub fn reduce<CAS: ContentAddressableStorage>(
     action_wrapper: &ActionWrapper,
 ) -> Arc<DhtStore<CAS>> {
     // Get reducer
-    let maybe_reducer: Option<DhtReducer<CAS>> = resolve_reducer(action_wrapper);
+    let maybe_reducer = resolve_reducer(action_wrapper);
     if maybe_reducer.is_none() {
         return old_store;
     }

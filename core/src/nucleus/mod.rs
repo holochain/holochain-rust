@@ -23,7 +23,7 @@ use nucleus::{
 use snowflake;
 use std::{
     sync::{
-        mpsc::{channel, Sender},
+        mpsc::{sync_channel, SyncSender},
         Arc,
     },
     thread,
@@ -80,13 +80,13 @@ impl EntrySubmission {
 /// Dispatch ExecuteZoneFunction to and block until call has finished.
 pub fn call_zome_and_wait_for_result(
     call: ZomeFnCall,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
 ) -> Result<String, HolochainError> {
     let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(1);
     dispatch_action_with_observer(
         action_channel,
         observer_channel,
@@ -115,7 +115,7 @@ pub fn call_and_wait_for_result(
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = channel();
+    let (sender, receiver) = sync_channel(1);
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
         if let Some(result) = state.nucleus().zome_call_result(&call) {
             sender
@@ -162,8 +162,6 @@ fn reduce_return_initialization_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     if state.status() != NucleusStatus::Initializing {
         state.status = NucleusStatus::InitializationFailed(
@@ -180,7 +178,10 @@ fn reduce_return_initialization_result(
 }
 
 /// Helper
-fn return_initialization_result(result: Option<String>, action_channel: &Sender<ActionWrapper>) {
+fn return_initialization_result(
+    result: Option<String>,
+    action_channel: &SyncSender<ActionWrapper>,
+) {
     action_channel
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             result,
@@ -198,15 +199,13 @@ fn reduce_init_application(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) {
     // check pre-condition
     if state.status() != NucleusStatus::New {
         // Send bad start state ReturnInitializationResult Action
         return_initialization_result(
             Some("Nucleus already initialized or initializing".to_string()),
-            &action_channel,
+            &context.action_channel,
         );
         return;
     }
@@ -221,8 +220,7 @@ fn reduce_init_application(
     state.dna = Some(dna.clone());
 
     // Create & launch thread
-    let genesis_action_channel = action_channel.clone();
-    let genesis_observer_channel = observer_channel.clone();
+    let context = context.clone();
     let dna_clone = dna.clone();
 
     thread::spawn(move || {
@@ -234,22 +232,14 @@ fn reduce_init_application(
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
-            ::instance::dispatch_action(&genesis_action_channel, commit_genesis_action);
+            ::instance::dispatch_action(&context.action_channel, commit_genesis_action);
         }
 
         // map genesis across every zome
         let mut results: Vec<_> = dna_clone
             .zomes
             .keys()
-            .map(|zome_name| {
-                genesis(
-                    context.clone(),
-                    &genesis_action_channel,
-                    &genesis_observer_channel,
-                    zome_name,
-                    &CallbackParams::Genesis,
-                )
-            })
+            .map(|zome_name| genesis(context.clone(), zome_name, &CallbackParams::Genesis))
             .collect();
 
         // pad out a single pass if there are no zome results
@@ -271,9 +261,9 @@ fn reduce_init_application(
         for result in results {
             match result {
                 CallbackResult::Fail(s) => {
-                    return_initialization_result(Some(s.to_string()), &genesis_action_channel)
+                    return_initialization_result(Some(s.to_string()), &context.action_channel)
                 }
-                _ => return_initialization_result(None, &genesis_action_channel),
+                _ => return_initialization_result(None, &context.action_channel),
             }
         }
     });
@@ -282,21 +272,16 @@ fn reduce_init_application(
 pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,
     fc: ZomeFnCall,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     wasm: &DnaWasm,
     app_name: String,
 ) {
-    let action_channel = action_channel.clone();
-    let tx_observer = observer_channel.clone();
     let code = wasm.code.clone();
+
     thread::spawn(move || {
         let result: ZomeFnResult;
         match ribosome::api::call(
             &app_name,
-            context,
-            &action_channel,
-            &tx_observer,
+            context.clone(),
             code,
             &fc,
             Some(fc.clone().parameters.into_bytes()),
@@ -313,7 +298,8 @@ pub(crate) fn launch_zome_fn_call(
             }
         }
         // Send ReturnResult Action
-        action_channel
+        context
+            .action_channel
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(result)))
             .expect("action channel to be open in reducer");
     });
@@ -326,8 +312,6 @@ fn reduce_execute_zome_function(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) {
     let fn_call = match action_wrapper.action().clone() {
         Action::ExecuteZomeFunction(call) => call,
@@ -335,7 +319,7 @@ fn reduce_execute_zome_function(
     };
 
     fn dispatch_error_result(
-        action_channel: &Sender<ActionWrapper>,
+        action_channel: &SyncSender<ActionWrapper>,
         fn_call: &ZomeFnCall,
         error: HolochainError,
     ) {
@@ -351,7 +335,11 @@ fn reduce_execute_zome_function(
     // Get DNA
     let dna = match state.dna {
         None => {
-            dispatch_error_result(action_channel, &fn_call, HolochainError::DnaMissing);
+            dispatch_error_result(
+                &context.action_channel,
+                &fn_call,
+                HolochainError::DnaMissing,
+            );
             return;
         }
         Some(ref d) => d,
@@ -360,7 +348,7 @@ fn reduce_execute_zome_function(
     let zome = match dna.zomes.get(&fn_call.zome_name) {
         None => {
             dispatch_error_result(
-                action_channel,
+                &context.action_channel,
                 &fn_call,
                 HolochainError::DnaError(DnaError::ZomeNotFound(format!(
                     "Zome '{}' not found",
@@ -375,7 +363,7 @@ fn reduce_execute_zome_function(
     let capability = match zome.capabilities.get(&fn_call.cap_name) {
         None => {
             dispatch_error_result(
-                action_channel,
+                &context.action_channel,
                 &fn_call,
                 HolochainError::DnaError(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
@@ -394,7 +382,7 @@ fn reduce_execute_zome_function(
         .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
     if maybe_fn.is_none() {
         dispatch_error_result(
-            action_channel,
+            &context.action_channel,
             &fn_call,
             HolochainError::DnaError(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found",
@@ -410,8 +398,6 @@ fn reduce_execute_zome_function(
     launch_zome_fn_call(
         context,
         fn_call,
-        action_channel,
-        observer_channel,
         &zome.code,
         state.dna.clone().unwrap().name,
     );
@@ -425,8 +411,6 @@ fn reduce_validate_entry(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::ValidateEntry);
@@ -444,15 +428,11 @@ fn reduce_validate_entry(
         Some(zome_name) => {
             #[cfg(debug)]
             state.validations_running.push(action_wrapper.clone());
-            let action_channel = action_channel.clone();
-            let observer_channel = observer_channel.clone();
             let action_wrapper = action_wrapper.clone();
             let entry = entry.clone();
             thread::spawn(move || {
                 let validation_result = match validate_commit(
                     context.clone(),
-                    &action_channel,
-                    &observer_channel,
                     &zome_name,
                     &CallbackParams::ValidateCommit(entry.clone()),
                 ) {
@@ -463,7 +443,8 @@ fn reduce_validate_entry(
                         entry.entry_type()
                     )),
                 };
-                action_channel
+                context
+                    .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
                         Box::new(action_wrapper),
                         validation_result,
@@ -477,8 +458,6 @@ fn reduce_return_validation_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    _: &Sender<ActionWrapper>,
-    _: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let (action_wrapper, validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
@@ -499,8 +478,6 @@ fn reduce_return_zome_function_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
-    _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();
     let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
@@ -529,20 +506,12 @@ pub fn reduce(
     context: Arc<Context>,
     old_state: Arc<NucleusState>,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) -> Arc<NucleusState> {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
             let mut new_state: NucleusState = (*old_state).clone();
-            f(
-                context,
-                &mut new_state,
-                &action_wrapper,
-                action_channel,
-                observer_channel,
-            );
+            f(context, &mut new_state, &action_wrapper);
             Arc::new(new_state)
         }
         None => old_state,
@@ -572,11 +541,11 @@ pub mod tests {
     use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
     use holochain_dna::Dna;
     use instance::{
-        tests::{test_context, test_instance, test_instance_blank},
+        tests::{test_context, test_context_with_channels, test_instance},
         Instance,
     };
     use nucleus::state::tests::test_nucleus_state;
-    use std::sync::{mpsc::channel, Arc};
+    use std::sync::Arc;
 
     use std::error::Error;
 
@@ -654,7 +623,6 @@ pub mod tests {
     /// test for returning zome function result actions
     fn test_reduce_return_zome_function_result() {
         let context = test_context("jimmy");
-        let instance = test_instance_blank();
         let mut state = test_nucleus_state();
         let action_wrapper = test_action_wrapper_rzfr();
 
@@ -663,13 +631,7 @@ pub mod tests {
         let action = action_wrapper.action();
         let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
 
-        reduce_return_zome_function_result(
-            context,
-            &mut state,
-            &action_wrapper,
-            &instance.action_channel(),
-            &instance.observer_channel(),
-        );
+        reduce_return_zome_function_result(context, &mut state, &action_wrapper);
 
         assert!(state.zome_calls.contains_key(&fr.call()));
     }
@@ -680,17 +642,12 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = channel::<ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
+        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (tx_observer, _observer) = sync_channel::<Observer>(10);
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
 
         // Reduce Init action and block until receiving ReturnInit Action
-        let reduced_nucleus = reduce(
-            test_context("jimmy"),
-            nucleus.clone(),
-            &action_wrapper,
-            &sender.clone(),
-            &tx_observer.clone(),
-        );
+        let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
         receiver.recv().expect("channel failed");
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
@@ -704,17 +661,12 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = channel::<ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
+        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (tx_observer, _observer) = sync_channel::<Observer>(10);
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
 
         // Reduce Init action and block until receiving ReturnInit Action
-        let initializing_nucleus = reduce(
-            test_context("jimmy"),
-            nucleus.clone(),
-            &action_wrapper,
-            &sender.clone(),
-            &tx_observer.clone(),
-        );
+        let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
         receiver.recv().expect("receiver fail");
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
@@ -726,11 +678,9 @@ pub mod tests {
             "init failed".to_string(),
         )));
         let reduced_nucleus = reduce(
-            test_context("jimmy"),
+            context.clone(),
             initializing_nucleus.clone(),
             &return_action_wrapper,
-            &sender.clone(),
-            &tx_observer.clone(),
         );
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
@@ -741,13 +691,7 @@ pub mod tests {
         );
 
         // Reduce Init action and block until receiving ReturnInit Action
-        let reduced_nucleus = reduce(
-            test_context("jane"),
-            reduced_nucleus.clone(),
-            &action_wrapper,
-            &sender.clone(),
-            &tx_observer.clone(),
-        );
+        let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
         receiver.recv().expect("receiver shouldn't fail");
 
         assert_eq!(
@@ -758,11 +702,9 @@ pub mod tests {
         // Send ReturnInit(None) ActionWrapper
         let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(None));
         let reduced_nucleus = reduce(
-            test_context("jimmy"),
+            context.clone(),
             initializing_nucleus.clone(),
             &return_action_wrapper,
-            &sender.clone(),
-            &tx_observer.clone(),
         );
 
         assert_eq!(reduced_nucleus.has_initialized(), true);
@@ -777,15 +719,11 @@ pub mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = channel::<ActionWrapper>();
-        let (tx_observer, _observer) = channel::<Observer>();
-        let reduced_nucleus = reduce(
-            test_context("jimmy"),
-            nucleus.clone(),
-            &action_wrapper,
-            &sender,
-            &tx_observer,
-        );
+        let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
+        let (tx_observer, _observer) = sync_channel::<Observer>(10);
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+
+        let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
     }
 

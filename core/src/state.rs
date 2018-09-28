@@ -3,12 +3,8 @@ use agent::state::AgentState;
 use chain::Chain;
 use context::Context;
 use hash_table::{actor::HashTableActor, memory::MemTable};
-use instance::Observer;
 use nucleus::state::NucleusState;
-use std::{
-    collections::HashSet,
-    sync::{mpsc::Sender, Arc},
-};
+use std::{collections::HashSet, sync::Arc};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -35,27 +31,17 @@ impl State {
         }
     }
 
-    pub fn reduce(
-        &self,
-        context: Arc<Context>,
-        action_wrapper: ActionWrapper,
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-    ) -> Self {
+    pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
             nucleus: ::nucleus::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.nucleus),
                 &action_wrapper,
-                action_channel,
-                observer_channel,
             ),
             agent: ::agent::state::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.agent),
                 &action_wrapper,
-                action_channel,
-                observer_channel,
             ),
             history: self.history.clone(),
         };

@@ -279,13 +279,13 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         table
-            .upsert(Table::Metas, &data)
+            .upsert(Table::Entries, &data)
             .expect("could not upsert data");
 
         assert_eq!(
             Some(s),
             table
-                .lookup(Table::Metas, &data.key())
+                .lookup(Table::Entries, &data.key())
                 .expect("could not lookup data"),
         );
     }

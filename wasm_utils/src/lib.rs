@@ -1,61 +1,11 @@
 extern crate serde;
 extern crate serde_json;
 
-use self::HcApiReturnCode::*;
+pub mod error;
+
+use error::{HcApiReturnCode, RibosomeErrorReport};
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
-
-//--------------------------------------------------------------------------------------------------
-// Error Codes
-//--------------------------------------------------------------------------------------------------
-
-/// Enumeration of all possible return codes that an HC API function call can return.
-/// represents a zero length offset in SinglePageAllocation.
-/// @see SinglePageAllocation
-#[repr(u32)]
-#[derive(Debug, PartialEq)]
-pub enum HcApiReturnCode {
-    Success = 0,
-    Failure = 1 << 16,
-    ArgumentDeserializationFailed = 2 << 16,
-    OutOfMemory = 3 << 16,
-    ReceivedWrongActionResult = 4 << 16,
-    CallbackFailed = 5 << 16,
-    RecursiveCallForbidden = 6 << 16,
-    ResponseSerializationFailed = 7 << 16,
-}
-
-impl ToString for HcApiReturnCode {
-    fn to_string(&self) -> String {
-        match self {
-            Success => "Success",
-            Failure => "Failure",
-            ArgumentDeserializationFailed => "Argument deserialization failed",
-            OutOfMemory => "Out of memory",
-            ReceivedWrongActionResult => "Received wrong action result",
-            CallbackFailed => "Callback failed",
-            RecursiveCallForbidden => "Recursive call forbidden",
-            ResponseSerializationFailed => "Response serialization failed",
-        }.to_string()
-    }
-}
-
-impl HcApiReturnCode {
-    pub fn from_offset(offset: u16) -> HcApiReturnCode {
-        match offset {
-            // @TODO what is a success error?
-            // @see https://github.com/holochain/holochain-rust/issues/181
-            0 => Success,
-            2 => ArgumentDeserializationFailed,
-            3 => OutOfMemory,
-            4 => ReceivedWrongActionResult,
-            5 => CallbackFailed,
-            6 => RecursiveCallForbidden,
-            7 => ResponseSerializationFailed,
-            1 | _ => Failure,
-        }
-    }
-}
 
 /// returns the u16 high bits from a u32
 pub fn u32_high_bits(i: u32) -> u16 {
@@ -181,24 +131,6 @@ impl SinglePageStack {
 #[macro_use]
 extern crate serde_derive;
 
-#[derive(Deserialize, Serialize, Default, Debug)]
-pub struct RibosomeErrorReport {
-    pub description: String,
-    pub file_name: String,
-    pub line: String,
-    // TODO - Add advance error debugging info
-    // pub stack_trace: Backtrace
-}
-
-impl RibosomeErrorReport {
-    pub fn to_string(&self) -> String {
-        format!(
-            "Error in Ribosome in file '{}':{} :\n\t{}",
-            self.file_name, self.line, self.description
-        )
-    }
-}
-
 // Convert json data in a memory buffer into a meaningful data struct
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
@@ -269,7 +201,8 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
 #[cfg(test)]
 pub mod tests {
 
-    use super::{HcApiReturnCode, SinglePageAllocation};
+    use super::*;
+    use error::HcApiReturnCode;
 
     #[test]
     /// tests construction and encoding in a new single page allocation

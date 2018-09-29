@@ -205,7 +205,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("metas", Table::Metas)] {
+        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
             assert!(
                 re(s).is_match(
                     &table
@@ -236,7 +236,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("metas", Table::Metas)] {
+        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
             for k in vec!["foo", "bar"] {
                 assert!(
                     re(s, k).is_match(

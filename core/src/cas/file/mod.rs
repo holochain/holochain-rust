@@ -8,6 +8,7 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
+#[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct FilesystemStorage {
     /// path to the directory where content will be saved to disk
     dir_path: String,

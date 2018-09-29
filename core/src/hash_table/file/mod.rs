@@ -10,23 +10,23 @@ use json::{FromJson, ToJson};
 use key::Key;
 
 use walkdir::WalkDir;
+use cas::file::FilesystemStorage;
+use cas::storage::ContentAddressableStorage;
+use cas::content::Address;
 
 // folders actually... wish-it-was-tables
 #[derive(Debug, Clone)]
 enum Table {
-    Entries,
     Metas,
 }
 
 // things that can be serialized and put in a file... wish-it-was-rows
 trait Row: ToJson + Key {}
-impl Row for Entry {}
 impl Row for EntryMeta {}
 
 impl ToString for Table {
     fn to_string(&self) -> String {
         match self {
-            Table::Entries => "entries",
             Table::Metas => "metas",
         }.to_string()
     }
@@ -34,6 +34,7 @@ impl ToString for Table {
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct FileTable {
+    entry_storage: FilesystemStorage,
     path: String,
 }
 
@@ -42,17 +43,21 @@ impl FileTable {
     /// can fail if the given path can't be resolved to a directory on the filesystem
     /// can fail if permissions don't allow access to the directory on the filesystem
     pub fn new(path: &str) -> Result<FileTable, HolochainError> {
+        // @TODO we should make this logic available to and used by FileStorage
         let canonical = Path::new(path).canonicalize()?;
+        let canonical_path_string = match canonical.to_str() {
+            Some(p) => p.to_string(),
+            None => {
+                return Err(HolochainError::IoError(
+                    "could not convert path to string".to_string(),
+                ));
+            }
+        };
+
         if canonical.is_dir() {
             Ok(FileTable {
-                path: match canonical.to_str() {
-                    Some(p) => p.to_string(),
-                    None => {
-                        return Err(HolochainError::IoError(
-                            "could not convert path to string".to_string(),
-                        ));
-                    }
-                },
+                entry_storage: FilesystemStorage::new(&canonical_path_string),
+                path: canonical_path_string,
             })
         } else {
             Err(HolochainError::IoError(
@@ -95,14 +100,11 @@ impl FileTable {
 
 impl HashTable for FileTable {
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        self.upsert(Table::Entries, entry)
+        self.entry_storage.add(entry)
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        match self.lookup(Table::Entries, key)? {
-            Some(json) => Ok(Some(Entry::from_json(&json)?)),
-            None => Ok(None),
-        }
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        self.entry_storage.fetch(address)
     }
 
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
@@ -198,7 +200,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
+        for (s, t) in vec![("metas", Table::Metas)] {
             assert!(
                 re(s).is_match(
                     &table
@@ -229,7 +231,7 @@ pub mod tests {
             Regex::new(&regex_str).expect("failed to build regex")
         };
 
-        for (s, t) in vec![("entries", Table::Entries), ("metas", Table::Metas)] {
+        for (s, t) in vec![("metas", Table::Metas)] {
             for k in vec!["foo", "bar"] {
                 assert!(
                     re(s, k).is_match(
@@ -272,13 +274,13 @@ pub mod tests {
         let (table, _dir) = test_table();
 
         table
-            .upsert(Table::Entries, &data)
+            .upsert(Table::Metas, &data)
             .expect("could not upsert data");
 
         assert_eq!(
             Some(s),
             table
-                .lookup(Table::Entries, &data.key())
+                .lookup(Table::Metas, &data.key())
                 .expect("could not lookup data"),
         );
     }

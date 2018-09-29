@@ -9,14 +9,13 @@ use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 
+use cas::{content::Address, file::FilesystemStorage, storage::ContentAddressableStorage};
 use walkdir::WalkDir;
-use cas::file::FilesystemStorage;
-use cas::storage::ContentAddressableStorage;
-use cas::content::Address;
 
 // folders actually... wish-it-was-tables
 #[derive(Debug, Clone)]
 enum Table {
+    Entries,
     Metas,
 }
 
@@ -28,6 +27,7 @@ impl ToString for Table {
     fn to_string(&self) -> String {
         match self {
             Table::Metas => "metas",
+            Table::Entries => "entries",
         }.to_string()
     }
 }
@@ -56,7 +56,12 @@ impl FileTable {
 
         if canonical.is_dir() {
             Ok(FileTable {
-                entry_storage: FilesystemStorage::new(&canonical_path_string),
+                entry_storage: FilesystemStorage::new(&format!(
+                    "{}{}{}",
+                    canonical_path_string,
+                    MAIN_SEPARATOR,
+                    Table::Entries.to_string()
+                )),
                 path: canonical_path_string,
             })
         } else {

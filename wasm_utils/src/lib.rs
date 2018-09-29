@@ -131,7 +131,9 @@ impl SinglePageStack {
 #[macro_use]
 extern crate serde_derive;
 
-// Convert json data in a memory buffer into a meaningful data struct
+// Convert a json string stored in wasm memory into a specified struct
+// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
 pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
@@ -140,6 +142,7 @@ pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, S
     let res = serde_json::from_str(actual_str);
     match res {
         Err(_) => {
+            // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
             let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
                 serde_json::from_str(actual_str);
             match maybe_error_report {

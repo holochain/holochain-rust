@@ -1,5 +1,4 @@
 use agent::keys::tests::test_keys;
-use cas::content::AddressableContent;
 use hash_table::{
     entry::tests::test_entry_unique,
     entry_meta::{
@@ -20,7 +19,7 @@ pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     table
         .put_entry(&entry)
         .expect("should be able to commit valid entry");
-    assert_eq!(table.entry(&entry.address()), Ok(Some(entry)));
+    assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
 }
 
 pub fn test_modify<HT: HashTable>(table: &mut HT) {

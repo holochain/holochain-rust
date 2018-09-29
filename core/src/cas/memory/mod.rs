@@ -5,6 +5,7 @@ use cas::{
 use error::HolochainError;
 use std::collections::HashMap;
 
+#[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemoryStorage {
     storage: HashMap<Address, Content>,
 }

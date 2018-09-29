@@ -4,18 +4,21 @@ use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use key::Key;
 use std::collections::HashMap;
+use cas::memory::MemoryStorage;
+use cas::storage::ContentAddressableStorage;
+use cas::content::Address;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    entries: HashMap<HashString, Entry>,
+    entry_storage: MemoryStorage,
     metas: HashMap<HashString, EntryMeta>,
 }
 
 impl MemTable {
-    pub fn new() -> MemTable {
+    pub fn new(entry_storage: MemoryStorage) -> MemTable {
         MemTable {
-            entries: HashMap::new(),
+            entry_storage: entry_storage,
             metas: HashMap::new(),
         }
     }
@@ -23,12 +26,11 @@ impl MemTable {
 
 impl HashTable for MemTable {
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        self.entries.insert(entry.key(), entry.clone());
-        Ok(())
+        self.entry_storage.add(entry)
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        Ok(self.entries.get(key).cloned())
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        self.entry_storage.fetch(address)
     }
 
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
@@ -59,9 +61,10 @@ impl HashTable for MemTable {
 pub mod tests {
 
     use hash_table::{memory::MemTable, test_util::standard_suite};
+    use cas::memory::MemoryStorage;
 
     pub fn test_table() -> MemTable {
-        MemTable::new()
+        MemTable::new(MemoryStorage::new())
     }
 
     #[test]

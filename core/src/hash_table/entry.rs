@@ -8,7 +8,9 @@ use serde_json;
 use std::{
     hash::{Hash as StdHash, Hasher},
     str::FromStr,
-};
+};use cas::content::Content;
+use cas::content::AddressableContent;
+use cas::content::Address;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -113,6 +115,20 @@ impl FromJson for Entry {
     }
 }
 
+impl AddressableContent for Entry {
+    fn address(&self) -> Address {
+        self.hash()
+    }
+
+    fn content(&self) -> Content {
+        self.to_json().expect("could not serialize entry to JSON")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Self::from_json(content).expect("could not deserialize entry from JSON")
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use hash::HashString;
@@ -120,6 +136,7 @@ pub mod tests {
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
+    use cas::content::AddressableContent;
 
     /// dummy entry type
     pub fn test_type() -> String {
@@ -313,6 +330,14 @@ pub mod tests {
         assert_eq!(expected, e.to_json().unwrap());
         assert_eq!(e, Entry::from_json(expected).unwrap());
         assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// show AddressableContent implementation
+    fn entry_addressable_content_trait() {
+        let entry = test_entry();
+
+        assert_eq!(entry.key(), entry.address());
     }
 
     #[test]

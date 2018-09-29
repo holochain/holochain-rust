@@ -11,6 +11,7 @@ use hash_table::{
     HashTable,
 };
 use key::Key;
+use cas::content::AddressableContent;
 
 // standard tests that should pass for every hash table implementation
 
@@ -19,7 +20,7 @@ pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     table
         .put_entry(&entry)
         .expect("should be able to commit valid entry");
-    assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
+    assert_eq!(table.entry(&entry.address()), Ok(Some(entry)));
 }
 
 pub fn test_modify<HT: HashTable>(table: &mut HT) {

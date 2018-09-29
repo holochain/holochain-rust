@@ -26,8 +26,8 @@ impl Row for EntryMeta {}
 impl ToString for Table {
     fn to_string(&self) -> String {
         match self {
-            Table::Metas => "metas",
             Table::Entries => "entries",
+            Table::Metas => "metas",
         }.to_string()
     }
 }

@@ -43,7 +43,6 @@ impl FileTable {
     /// can fail if the given path can't be resolved to a directory on the filesystem
     /// can fail if permissions don't allow access to the directory on the filesystem
     pub fn new(path: &str) -> Result<FileTable, HolochainError> {
-        // @TODO we should make this logic available to and used by FileStorage
         let canonical = Path::new(path).canonicalize()?;
         let canonical_path_string = match canonical.to_str() {
             Some(p) => p.to_string(),

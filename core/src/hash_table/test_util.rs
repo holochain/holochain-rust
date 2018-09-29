@@ -1,4 +1,5 @@
 use agent::keys::tests::test_keys;
+use cas::content::AddressableContent;
 use hash_table::{
     entry::tests::test_entry_unique,
     entry_meta::{
@@ -11,7 +12,6 @@ use hash_table::{
     HashTable,
 };
 use key::Key;
-use cas::content::AddressableContent;
 
 // standard tests that should pass for every hash table implementation
 

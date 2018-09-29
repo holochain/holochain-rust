@@ -1,3 +1,4 @@
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use hash_table::sys_entry::EntryType;
@@ -8,9 +9,7 @@ use serde_json;
 use std::{
     hash::{Hash as StdHash, Hasher},
     str::FromStr,
-};use cas::content::Content;
-use cas::content::AddressableContent;
-use cas::content::Address;
+};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -131,12 +130,12 @@ impl AddressableContent for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::content::AddressableContent;
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
-    use cas::content::AddressableContent;
 
     /// dummy entry type
     pub fn test_type() -> String {

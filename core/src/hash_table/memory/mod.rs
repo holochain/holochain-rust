@@ -1,12 +1,10 @@
 use error::HolochainError;
 
+use cas::{content::Address, memory::MemoryStorage, storage::ContentAddressableStorage};
 use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use key::Key;
 use std::collections::HashMap;
-use cas::memory::MemoryStorage;
-use cas::storage::ContentAddressableStorage;
-use cas::content::Address;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -60,8 +58,8 @@ impl HashTable for MemTable {
 #[cfg(test)]
 pub mod tests {
 
-    use hash_table::{memory::MemTable, test_util::standard_suite};
     use cas::memory::MemoryStorage;
+    use hash_table::{memory::MemTable, test_util::standard_suite};
 
     pub fn test_table() -> MemTable {
         MemTable::new(MemoryStorage::new())

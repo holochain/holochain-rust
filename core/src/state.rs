@@ -1,11 +1,11 @@
 use action::ActionWrapper;
 use agent::state::AgentState;
+use cas::memory::MemoryStorage;
 use chain::Chain;
 use context::Context;
 use hash_table::{actor::HashTableActor, memory::MemTable};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
-use cas::memory::MemoryStorage;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.

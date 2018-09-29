@@ -62,7 +62,7 @@ pub fn invoke_commit_entry(
                 error_string
             ));
             Ok(json!(error_report).to_string())
-            // TODO - In release return error_string directly and not a RibosomeErrorReport
+            // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };

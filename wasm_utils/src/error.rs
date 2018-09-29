@@ -18,12 +18,11 @@ pub struct RibosomeErrorReport {
     pub description: String,
     pub file_name: String,
     pub line: String,
-    // TODO - Add advance error debugging info
+    // TODO #395 - Add advance error debugging info
     // pub stack_trace: Backtrace
 }
 
 impl fmt::Display for RibosomeErrorReport {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

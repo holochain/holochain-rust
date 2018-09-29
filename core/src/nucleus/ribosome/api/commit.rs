@@ -14,7 +14,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
     entry_type_name: String,
-    entry_content: String,
+    value: String,
 }
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -39,7 +39,7 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry = Entry::new(&input.entry_type_name, &input.entry_content);
+    let entry = Entry::new(&input.entry_type_name, &input.value);
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
@@ -90,10 +90,10 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let e = test_entry();
+        let entry = test_entry();
         let args = CommitAppEntryArgs {
-            entry_type_name: e.entry_type().into(),
-            entry_content: e.content().into(),
+            entry_type_name: entry.entry_type().into(),
+            value: entry.value().into(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

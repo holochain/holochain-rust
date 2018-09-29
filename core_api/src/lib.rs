@@ -417,6 +417,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(result.ok().unwrap(), r#"{"hash":"fail"}"#);
 
+        println!("{:?}", hc.state().unwrap().history.iter().last());
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195

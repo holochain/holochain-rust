@@ -2,12 +2,9 @@ extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
 use hash_table::entry::Entry;
-use holochain_wasm_utils::error::{RibosomeErrorReport, HcApiReturnCode};
+use holochain_wasm_utils::error::{HcApiReturnCode, RibosomeErrorReport};
 use json::ToJson;
-use nucleus::{
-    actions::validate::*,
-    ribosome::api::Runtime,
-};
+use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -60,7 +57,10 @@ pub fn invoke_commit_entry(
             }
         },
         Err(error_string) => {
-            let error_report = report_error!(format!("Call to `hc_commit_entry()` failed: {}", error_string));
+            let error_report = report_error!(format!(
+                "Call to `hc_commit_entry()` failed: {}",
+                error_string
+            ));
             Ok(json!(error_report).to_string())
             // TODO - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)

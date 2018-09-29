@@ -1,4 +1,3 @@
-
 use self::HcApiReturnCode::*;
 use std::fmt;
 
@@ -6,7 +5,7 @@ use std::fmt;
 #[macro_export]
 macro_rules! report_error {
     ($s:expr) => {
-         RibosomeErrorReport {
+        RibosomeErrorReport {
             description: $s.to_string(),
             file_name: file!().to_string(),
             line: line!().to_string(),
@@ -23,13 +22,13 @@ pub struct RibosomeErrorReport {
     // pub stack_trace: Backtrace
 }
 
-
 impl fmt::Display for RibosomeErrorReport {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
+        write!(
+            f,
             "Ribosome error: {}\n  --> {}:{}\n",
-               self.description, self.file_name, self.line,
+            self.description, self.file_name, self.line,
         )
     }
 }
@@ -90,7 +89,8 @@ pub mod tests {
 
     #[test]
     fn hc_api_return_code_round_trip() {
-        let oom = HcApiReturnCode::from_offset(((HcApiReturnCode::OutOfMemory as u32) >> 16) as u16);
+        let oom =
+            HcApiReturnCode::from_offset(((HcApiReturnCode::OutOfMemory as u32) >> 16) as u16);
         assert_eq!(HcApiReturnCode::OutOfMemory, oom);
         assert_eq!(HcApiReturnCode::OutOfMemory.to_string(), oom.to_string());
     }

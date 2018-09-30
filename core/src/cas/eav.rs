@@ -82,7 +82,7 @@ pub trait EntityAttributeValueStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{tests::ExampleAddressableContent, AddressableContent, Content},
+        content::{tests::ExampleAddressableContent, AddressableContent},
         eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     };
     use error::HolochainError;
@@ -194,62 +194,11 @@ pub mod tests {
 
     #[test]
     fn example_eav_round_trip() {
-        let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
-        let attribute = "favourite-color".to_string();
-        let value_content: Content = AddressableContent::from_content(&"blue".to_string());
-
-        let eav = EntityAttributeValue::new(
-            &entity_content.address(),
-            &attribute,
-            &value_content.address(),
+        eav_round_trip_test_runner(
+            ExampleAddressableContent::from_content(&"foo".to_string()),
+            "favourite-color".to_string(),
+            ExampleAddressableContent::from_content(&"blue".to_string()),
         );
-        let mut eav_storage = ExampleEntityAttributeValueStorage::new();
-
-        assert_eq!(
-            HashSet::new(),
-            eav_storage
-                .fetch_eav(
-                    Some(entity_content.address()),
-                    Some(attribute.clone()),
-                    Some(value_content.address())
-                )
-                .expect("could not fetch eav"),
-        );
-
-        eav_storage.add_eav(&eav).expect("could not add eav");
-
-        let mut expected = HashSet::new();
-        expected.insert(eav.clone());
-        // some examples of constraints that should all return the eav
-        for (e, a, v) in vec![
-            // constrain all
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                Some(value_content.address()),
-            ),
-            // open entity
-            (None, Some(attribute.clone()), Some(value_content.address())),
-            // open attribute
-            (
-                Some(entity_content.address()),
-                None,
-                Some(value_content.address()),
-            ),
-            // open value
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                None,
-            ),
-            // open
-            (None, None, None),
-        ] {
-            assert_eq!(
-                expected,
-                eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
-            );
-        }
     }
 
 }

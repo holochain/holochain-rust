@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn crud_status_eav() {
+    fn crud_status_addressable_content() {
         let zip_crud: Vec<(String, CrudStatus)> = vec![
             (String::from("1"), CrudStatus::LIVE),
             (String::from("2"), CrudStatus::REJECTED),
@@ -106,7 +106,7 @@ mod tests {
             .map(|c| {
                 assert_eq!(CrudStatus::from_content(&c.0).content(), c.1.to_string());
             })
-            .collect::<Vec<_>>();
+            .for_each(drop);
     }
 
     #[test]
@@ -117,6 +117,7 @@ mod tests {
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
+    #[test]
     /// show ToString implementation
     fn to_string_test() {
         assert_eq!("1".to_string(), CrudStatus::LIVE.to_string());

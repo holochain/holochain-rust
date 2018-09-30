@@ -1,4 +1,3 @@
-use cas::content::{AddressableContent, Content};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use serde::Serialize;

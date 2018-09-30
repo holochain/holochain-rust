@@ -93,7 +93,7 @@ pub mod tests {
         let e = test_entry();
         let args = CommitAppEntryArgs {
             entry_type_name: e.entry_type().into(),
-            entry_content: e.content().into(),
+            entry_content: e.value().into(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

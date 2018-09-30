@@ -145,7 +145,7 @@ impl ToEntry for Header {
 
     fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Header);
-        return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
+        return Header::from_json_str(&entry.value()).expect("entry is not a valid Header Entry");
     }
 }
 

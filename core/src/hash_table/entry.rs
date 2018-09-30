@@ -126,14 +126,15 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::AddressableContent;
+    use cas::{
+        content::AddressableContent,
+        storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
+    };
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
-    use cas::storage::tests::ExampleContentAddressableStorage;
-    use cas::storage::ContentAddressableStorage;
 
     /// dummy entry type
     pub fn test_type() -> String {

@@ -2,7 +2,7 @@
 Date: 2018-06-5
 
 ## Status
-proposed
+Accepted
 
 ## Context
 Distributed applications, like centralized ones, often need a source of randomness.  Having confidence and verifiability of that randomness poses particular challenges in the the distributed context. Specifically, we need a source of randomness with some of the following properties:
@@ -23,3 +23,4 @@ We will:
 ## Consequences
 
 - We will want to have our approach reviewed as proof of the validity of these approaches  (i.e. this should get included in the security review(s))
+- We need to add protocol/calls/callbacks in the network abstraction layer (See ADR 7) to gain access to this randomness.

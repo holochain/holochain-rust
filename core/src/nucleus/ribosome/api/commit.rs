@@ -44,9 +44,9 @@ pub fn invoke_commit_app_entry(
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry.clone(), &runtime.action_channel, &runtime.context)
+        validate_entry(entry.clone(), &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let json = match task_result {

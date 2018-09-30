@@ -1,3 +1,4 @@
+use cas::content::{AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use hash_table::sys_entry::EntryType;
@@ -37,6 +38,16 @@ impl PartialEq for Entry {
 impl StdHash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.value.hash(state);
+    }
+}
+
+impl AddressableContent for Entry {
+    fn content(&self) -> Content {
+        self.to_json().expect("could not JSONify entry")
+    }
+
+    fn from_content(content: &Content) -> Entry {
+        Entry::from_json(content).expect("could not read entry from JSON")
     }
 }
 
@@ -115,11 +126,14 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::content::AddressableContent;
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
+    use cas::storage::tests::ExampleContentAddressableStorage;
+    use cas::storage::ContentAddressableStorage;
 
     /// dummy entry type
     pub fn test_type() -> String {
@@ -236,6 +250,53 @@ pub mod tests {
     /// test entry.hash() against a known value
     fn hash_known() {
         assert_eq!(test_entry_hash(), test_entry().hash());
+    }
+
+    #[test]
+    /// show Entry implements AddressableContent
+    fn addressable_content_trait() {
+        let entry = test_entry();
+
+        // address contains entry type, key does not
+        // this avoids collissions on write where a single address could deserialize to ambiguous
+        // entity types on read
+        assert_ne!(entry.address(), entry.key());
+        // round trip
+        assert_eq!(Entry::from_content(&entry.content()), entry);
+        // entity.address()
+        assert_eq!(
+            HashString::from("QmQxbTWwY6bo8XsqYr7UgbBftSJZSV8QCbStGVcnZMHSjZ".to_string()),
+            entry.address()
+        );
+        // entity.content()
+        assert_eq!(
+            "{\"value\":\"test entry content\",\"entry_type\":\"testEntryType\"}".to_string(),
+            entry.content()
+        );
+        // Entity::from_content()
+        assert_eq!(
+            Entry::from_content(
+                &"{\"value\":\"test entry content\",\"entry_type\":\"testEntryType\"}".to_string()
+            ),
+            entry
+        );
+    }
+
+    #[test]
+    /// show Entry safely round trips through the CAS
+    fn cas_round_trip_test() {
+        let mut content_addressable_storage = ExampleContentAddressableStorage::new();
+        let entry = test_entry();
+        content_addressable_storage
+            .add(&entry)
+            .expect("could not add entry to CAS");
+
+        assert_eq!(
+            Some(entry.clone()),
+            content_addressable_storage
+                .fetch(&entry.address())
+                .expect("could not fetch entry from CAS")
+        );
     }
 
     #[test]

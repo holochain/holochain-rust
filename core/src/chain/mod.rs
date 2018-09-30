@@ -48,9 +48,11 @@ impl Iterator for ChainIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|h| {
-                let header_entry = &self.table_actor.entry(&h)
-                                    .expect("getting from a table shouldn't fail")
-                                    .expect("getting from a table shouldn't fail");
+                let header_entry = &self
+                    .table_actor
+                    .entry(&h)
+                    .expect("getting from a table shouldn't fail")
+                    .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
                 let header = Header::from_entry(header_entry);
                 let pair = Pair::from_header(&self.table_actor, &header);
@@ -110,7 +112,7 @@ impl Chain {
     /// @see chain::entry::Entry
     pub fn create_next_header(&self, entry: &Entry) -> Header {
         Header::new(
-            &entry.entry_type().clone(),
+            &entry.entry_type(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
@@ -122,8 +124,7 @@ impl Chain {
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
-            self
-                .top_pair_of_type(&entry.entry_type())
+            self.top_pair_of_type(&entry.entry_type())
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
                 .map(|p| p.header().hash()),
@@ -248,7 +249,7 @@ impl SourceChain for Chain {
     }
 
     fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = self.create_next_pair(entry);
+        let pair = self.create_next_pair(&entry);
         self.push_pair(&pair)
     }
 
@@ -256,13 +257,10 @@ impl SourceChain for Chain {
     fn pair(&self, pair_hash: &HashString) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
-        self
-            .iter()
+        self.iter()
             // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.key() == pair_hash
-            })
+            .find(|p| &p.key() == pair_hash)
     }
 
     /// Browse Chain until Pair with entry_hash is found
@@ -270,12 +268,10 @@ impl SourceChain for Chain {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self
-                .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
-                // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.entry().hash() == entry_hash
-            });
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|p| &p.entry().hash() == entry_hash);
         if pair.is_none() {
             return None;
         };

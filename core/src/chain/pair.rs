@@ -27,10 +27,10 @@ impl Pair {
             return None;
         }
 
-        Some(Pair {
-            header: header.clone(),
-            entry: entry.expect("should not attempt to create invalid pair"),
-        })
+        Some(Pair::new(
+            &header,
+            &entry.expect("should not attempt to create invalid pair"),
+        ))
     }
 
     /// Standard constructor
@@ -137,7 +137,7 @@ pub mod tests {
         assert_eq!(h1.entry_hash(), &e1.hash());
         assert_eq!(h1.link(), None);
 
-        let p1 = chain.create_next_pair(&e1.clone());
+        let p1 = chain.create_next_pair(&e1);
         assert_eq!(&e1, p1.entry());
         assert_eq!(&h1, p1.header());
     }

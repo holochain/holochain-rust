@@ -14,7 +14,7 @@ use std::{
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
-    content: String,
+    content: Box<String>,
 
     // @TODO do NOT serialize entry_type in Entry as it should only be in Header
     // @see https://github.com/holochain/holochain-rust/issues/80
@@ -36,7 +36,7 @@ impl PartialEq for Entry {
 // @see https://github.com/holochain/holochain-rust/issues/85
 impl StdHash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+        self.content().hash(state);
     }
 }
 
@@ -49,7 +49,7 @@ impl Entry {
     pub fn new(entry_type: &str, content: &str) -> Entry {
         Entry {
             entry_type: entry_type.to_string(),
-            content: content.to_string(),
+            content: Box::new(content.to_string()),
         }
     }
 
@@ -57,21 +57,21 @@ impl Entry {
     pub fn hash(&self) -> HashString {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = &self.content;
+        let string_to_hash = &self.content();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        HashString::encode_from_str(string_to_hash, Hash::SHA2256)
+        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
     }
 
     /// content getter
     pub fn content(&self) -> String {
-        self.content.clone()
+        self.content.to_string()
     }
 
     /// entry_type getter
     pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
+        self.entry_type.to_string()
     }
 
     /// returns true iff the entry is valid

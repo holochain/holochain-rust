@@ -201,4 +201,35 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn example_eav_one_to_many() {
+        let one = ExampleAddressableContent::from_content(&"foo".to_string());
+        // it can reference itself, why not?
+        let many_one = ExampleAddressableContent::from_content(&"foo".to_string());
+        let many_two = ExampleAddressableContent::from_content(&"bar".to_string());
+        let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
+        let attribute = "one_to_many".to_string();
+
+        let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+        let mut expected = HashSet::new();
+        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
+            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
+            eav_storage.add_eav(&eav)
+            .expect("could not add eav");
+            expected.insert(eav);
+        }
+
+        // throw an extra thing referencing many to show fetch ignores it
+        let two = ExampleAddressableContent::from_content(&"foo".to_string());
+        for many in vec![many_one.clone(), many_three.clone()] {
+            eav_storage.add_eav(&EntityAttributeValue::new(&two.address(), &attribute, &many.address()))
+            .expect("could not add eav");
+        }
+
+        assert_eq!(
+            expected,
+            eav_storage.fetch_eav(Some(one.address()), Some(attribute), None).expect("could not fetch eav"),
+        );
+    }
+
 }

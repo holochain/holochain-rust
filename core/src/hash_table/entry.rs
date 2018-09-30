@@ -268,6 +268,12 @@ pub mod tests {
             HashString::from("QmQxbTWwY6bo8XsqYr7UgbBftSJZSV8QCbStGVcnZMHSjZ".to_string()),
             entry.address()
         );
+        // different entry type = different address
+        // this is important otherwise there will be collissions on writing to the CAS
+        assert_ne!(
+            Entry::new(&test_type_a(), &test_content()).address(),
+            Entry::new(&test_type_b(), &test_content()).address(),
+        );
         // entity.content()
         assert_eq!(
             "{\"value\":\"test entry content\",\"entry_type\":\"testEntryType\"}".to_string(),

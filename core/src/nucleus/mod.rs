@@ -176,18 +176,6 @@ fn reduce_return_initialization_result(
     }
 }
 
-/// Helper
-fn return_initialization_result(
-    result: Option<String>,
-    action_channel: &SyncSender<ActionWrapper>,
-) {
-    action_channel
-        .send(ActionWrapper::new(Action::ReturnInitializationResult(
-            result,
-        )))
-        .expect("action channel to be open in reducer");
-}
-
 /// Reduce InitApplication Action
 /// Initialize the Holochain's Nucleus by doing the following:
 /// Send Commit Action for Genesis Entry
@@ -199,24 +187,22 @@ fn reduce_init_application(
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
-    // check pre-condition
-    if state.status() != NucleusStatus::New {
-        // Send bad start state ReturnInitializationResult Action
-        return_initialization_result(
-            Some("Nucleus already initialized or initializing".to_string()),
-            &context.action_channel,
-        );
-        return;
+    match state.status() {
+        NucleusStatus::Initializing => state.status = NucleusStatus::InitializationFailed(
+            "Nucleus already initializing".to_string()
+        ),
+        NucleusStatus::Initialized => state.status = NucleusStatus::InitializationFailed(
+            "Nucleus already initialized".to_string()
+        ),
+        _ => {
+            let ia_action = action_wrapper.action();
+            let dna = unwrap_to!(ia_action => Action::InitApplication);
+            // Update status
+            state.status = NucleusStatus::Initializing;
+            // Set DNA
+            state.dna = Some(dna.clone());
+        }
     }
-
-    let ia_action = action_wrapper.action();
-    let dna = unwrap_to!(ia_action => Action::InitApplication);
-
-    // Update status
-    state.status = NucleusStatus::Initializing;
-
-    // Set DNA
-    state.dna = Some(dna.clone());
 }
 
 pub(crate) fn launch_zome_fn_call(
@@ -643,10 +629,7 @@ pub mod tests {
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
 
-        assert_eq!(
-            reduced_nucleus.status(),
-            NucleusStatus::InitializationFailed("init failed".to_string())
-        );
+        assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(None) ActionWrapper
         let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(None));

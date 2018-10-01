@@ -70,9 +70,6 @@ impl PartialEq for Chain {
     // @TODO can we just check the actors are equal? is actor equality a thing?
     // @see https://github.com/holochain/holochain-rust/issues/257
     fn eq(&self, other: &Chain) -> bool {
-        // an invalid chain is like NaN... not even equal to itself
-        self.validate() &&
-        other.validate() &&
         // header hashing ensures that if the tops match the whole chain matches
         self.top_pair() == other.top_pair()
     }
@@ -150,17 +147,7 @@ impl Chain {
     pub fn create_next_pair(&self, entry: &Entry) -> Pair {
         let new_pair = Pair::new(&self.create_next_header(entry), &entry.clone());
 
-        // we panic as no code path should attempt to create invalid pairs
-        // creating a Pair is an internal process of chain.push() and is deterministic based on
-        // an immutable Entry (that itself cannot be invalid), so this should never happen.
-        assert!(new_pair.validate(), "attempted to create an invalid pair");
-
         new_pair
-    }
-
-    /// returns true if all pairs in the chain pass validation
-    fn validate(&self) -> bool {
-        self.iter().all(|p| p.validate())
     }
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
@@ -481,27 +468,6 @@ pub mod tests {
         );
         assert_eq!(&entry_2, pair_2.entry());
         assert_eq!(entry_2.key(), pair_2.entry().key());
-    }
-
-    #[test]
-    fn validate() {
-        println!("can_validate: Empty Chain");
-        let mut chain = test_chain();
-        assert!(chain.validate());
-
-        println!("can_validate: Chain One");
-        let e1 = test_entry_a();
-        chain
-            .push_entry(&e1)
-            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
-        assert!(chain.validate());
-
-        println!("can_validate: Chain with Two");
-        let e2 = test_entry_b();
-        chain
-            .push_entry(&e2)
-            .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
-        assert!(chain.validate());
     }
 
     #[test]

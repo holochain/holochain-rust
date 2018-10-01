@@ -62,7 +62,8 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use cas::{
-        content::AddressableContent,
+        content::{tests::ExampleAddressableContent, AddressableContent, Content},
+        eav::tests::eav_round_trip_test_runner,
         storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
     };
     use hash::HashString;
@@ -89,6 +90,31 @@ mod tests {
         assert!(!example_mask.contains(CrudStatus::LIVE));
         assert!(!example_mask.contains(CrudStatus::MODIFIED));
         assert!(!example_mask.contains(CrudStatus::LOCKED));
+    }
+
+    #[test]
+    fn crud_status_addressable_content() {
+        let zip_crud: Vec<(String, CrudStatus)> = vec![
+            (String::from("1"), CrudStatus::LIVE),
+            (String::from("2"), CrudStatus::REJECTED),
+            (String::from("4"), CrudStatus::DELETED),
+            (String::from("8"), CrudStatus::MODIFIED),
+            (String::from("16"), CrudStatus::LOCKED),
+        ];
+        zip_crud
+            .into_iter()
+            .map(|c| {
+                assert_eq!(CrudStatus::from_content(&c.0).content(), c.1.to_string());
+            })
+            .for_each(drop);
+    }
+
+    #[test]
+    fn crud_status_example_eav() {
+        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
+        let attribute = "favourite-badge".to_string();
+        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
     #[test]

@@ -46,7 +46,7 @@ pub mod tests {
     use hash::HashString;
     use multihash::Hash;
 
-    #[derive(Debug, PartialEq, Clone)]
+    #[derive(Debug, PartialEq, Clone, Hash, Eq)]
     /// some struct that can be content addressed
     /// imagine an Entry, Header, Meta Value, etc.
     pub struct ExampleAddressableContent {

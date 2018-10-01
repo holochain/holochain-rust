@@ -5,7 +5,6 @@ use hash_table::{
     sys_entry::{EntryType, ToEntry},
 };
 use json::ToJson;
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::str::FromStr;
@@ -119,12 +118,6 @@ impl Header {
     pub fn validate(&self) -> bool {
         // always valid iff immutable and new() enforces validity
         true
-    }
-}
-
-impl Key for Header {
-    fn key(&self) -> HashString {
-        self.hash()
     }
 }
 

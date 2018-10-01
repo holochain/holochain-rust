@@ -2,7 +2,6 @@ use error::HolochainError;
 
 use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
-use key::Key;
 use std::collections::HashMap;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory

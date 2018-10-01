@@ -12,7 +12,6 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use json::ToJson;
-use key::Key;
 use riker::actors::*;
 use serde_json;
 

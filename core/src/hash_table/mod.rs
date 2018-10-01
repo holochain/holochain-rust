@@ -17,7 +17,6 @@ use hash_table::{
     entry_meta::EntryMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
-use key::Key;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Headers and Entries.

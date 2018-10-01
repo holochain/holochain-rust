@@ -629,7 +629,7 @@ pub mod tests {
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
 
-        assert_eq!(initializing_nucleus.status(), NucleusStatus::Initializing);
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(None) ActionWrapper
         let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(None));

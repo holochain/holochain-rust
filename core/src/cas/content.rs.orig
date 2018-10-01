@@ -95,12 +95,18 @@ pub mod tests {
     pub struct AddressableContentTestSuite;
 
     impl AddressableContentTestSuite {
-        /// test that trait gives the write content
+<<<<<<< HEAD
+        //test that trait gives the write content
         pub fn addressable_content_trait_test<T>(
             content: Content,
             expected_content: T,
             hash_string: String,
         ) where
+=======
+        /// test that trait gives the write content
+        fn addressable_content_trait_test<T>(content: Content)
+        where
+>>>>>>> 713b0551a8eae69a0aa35b884abaed46ed6b445f
             T: AddressableContent + Debug + PartialEq + Clone,
         {
             let addressable_content = T::from_content(&content);
@@ -110,8 +116,13 @@ pub mod tests {
             assert_eq!(HashString::from(hash_string), addressable_content.address());
         }
 
-        /// test that two different addressable contents would give them same thing
+<<<<<<< HEAD
+        //test that two different addressable contents would give them same thing
         pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
+=======
+        /// test that two different addressable contents would give them same thing
+        fn addressable_contents_are_the_same_test<T, K>(content: Content)
+>>>>>>> 713b0551a8eae69a0aa35b884abaed46ed6b445f
         where
             T: AddressableContent + Debug + PartialEq + Clone,
             K: AddressableContent + Debug + PartialEq + Clone,

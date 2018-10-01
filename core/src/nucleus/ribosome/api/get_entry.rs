@@ -180,8 +180,7 @@ mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone())
-            .expect("Could not initialize test instance");
+        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 

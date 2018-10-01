@@ -13,9 +13,7 @@ use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::{
         api::call::reduce_call,
-        callback::{
-            validate_commit::validate_commit, CallbackParams, CallbackResult,
-        },
+        callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
     },
     state::{NucleusState, NucleusStatus},
 };
@@ -183,17 +181,19 @@ fn reduce_return_initialization_result(
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_init_application(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
     match state.status() {
-        NucleusStatus::Initializing => state.status = NucleusStatus::InitializationFailed(
-            "Nucleus already initializing".to_string()
-        ),
-        NucleusStatus::Initialized => state.status = NucleusStatus::InitializationFailed(
-            "Nucleus already initialized".to_string()
-        ),
+        NucleusStatus::Initializing => {
+            state.status =
+                NucleusStatus::InitializationFailed("Nucleus already initializing".to_string())
+        }
+        NucleusStatus::Initialized => {
+            state.status =
+                NucleusStatus::InitializationFailed("Nucleus already initialized".to_string())
+        }
         _ => {
             let ia_action = action_wrapper.action();
             let dna = unwrap_to!(ia_action => Action::InitApplication);
@@ -648,8 +648,7 @@ pub mod tests {
     /// tests that calling a valid zome function returns a valid result
     fn call_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna)
-            .expect("Could not initialize test instance");
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
 
         // Create zome function call
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
@@ -697,8 +696,7 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna)
-            .expect("Could not initialize test instance");
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", "test_cap", "xxx", "{}");
@@ -717,8 +715,7 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna)
-            .expect("Could not initialize test instance");
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", "test_cap", "main", "{}");

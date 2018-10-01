@@ -275,13 +275,14 @@ pub mod tests {
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
+    use futures::executor::block_on;
     use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn}
+        ribosome::{callback::Callback, Defn},
     };
     use persister::SimplePersister;
     use state::State;
@@ -291,7 +292,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use futures::executor::block_on;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -353,16 +353,14 @@ pub mod tests {
 
     /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance(dna: Dna) -> Result<Instance,String> {
+    pub fn test_instance(dna: Dna) -> Result<Instance, String> {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
         let context = test_context("jane");
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
-        block_on(
-            initialize_application(dna.clone(), context.clone())
-        )?;
+        block_on(initialize_application(dna.clone(), context.clone()))?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -536,7 +534,9 @@ pub mod tests {
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert!(instance.state().nucleus().status() == ::nucleus::state::NucleusStatus::Initializing);
+        assert!(
+            instance.state().nucleus().status() == ::nucleus::state::NucleusStatus::Initializing
+        );
     }
 
     #[test]

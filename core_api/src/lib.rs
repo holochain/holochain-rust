@@ -60,7 +60,7 @@ use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     error::HolochainError,
-    instance::{Instance},
+    instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
@@ -91,7 +91,7 @@ impl Holochain {
                     active: false,
                 };
                 Ok(app)
-            },
+            }
             Err(initialization_error) => Err(HolochainError::ErrorGeneric(initialization_error)),
         }
     }

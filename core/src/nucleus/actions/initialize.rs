@@ -1,20 +1,16 @@
 extern crate futures;
 use action::{Action, ActionWrapper};
+use agent::actions::commit::commit_entry;
 use context::Context;
-use futures::{Async, Future, future};
+use futures::{future, Async, Future};
+use hash_table::sys_entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
-use nucleus::state::NucleusStatus;
-use std::{
-    sync::Arc,
-    thread,
+use nucleus::{
+    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
+    state::NucleusStatus,
 };
-use agent::actions::commit::commit_entry;
-use nucleus::ribosome::callback::{
-    CallbackParams, CallbackResult,
-    genesis::genesis,
-};
-use hash_table::sys_entry::ToEntry;
+use std::{sync::Arc, thread};
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -29,17 +25,27 @@ pub fn initialize_application(
     context: Arc<Context>,
 ) -> Box<dyn Future<Item = NucleusStatus, Error = String>> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return Box::new(future::err("Can't trigger initialization: Nucleus status is not New".to_string()));
+        return Box::new(future::err(
+            "Can't trigger initialization: Nucleus status is not New".to_string(),
+        ));
     }
 
     let context_clone = context.clone();
 
     thread::spawn(move || {
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        dispatch_action_and_wait(&context_clone.action_channel, &context_clone.observer_channel, action_wrapper.clone());
+        dispatch_action_and_wait(
+            &context_clone.action_channel,
+            &context_clone.observer_channel,
+            action_wrapper.clone(),
+        );
 
         // Create Commit Action for Genesis Entry
-        commit_entry(dna.clone().to_entry(), &context_clone.action_channel.clone(), &context_clone);
+        commit_entry(
+            dna.clone().to_entry(),
+            &context_clone.action_channel.clone(),
+            &context_clone,
+        );
 
         // map genesis across every zome
         let results: Vec<_> = dna
@@ -48,33 +54,31 @@ pub fn initialize_application(
             .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
             .collect();
 
-        let fail_result = results.iter()
-            .find( |ref r| {
-                match r {
-                    CallbackResult::Fail(_) => true,
-                    _ => false,
-                }
-            });
+        let fail_result = results.iter().find(|ref r| match r {
+            CallbackResult::Fail(_) => true,
+            _ => false,
+        });
 
         let maybe_error = match fail_result {
             Some(result) => match result {
                 CallbackResult::Fail(error_string) => Some(error_string.clone()),
                 _ => None,
-            }
+            },
             None => None,
         };
 
-        context_clone.action_channel
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(maybe_error)))
+        context_clone
+            .action_channel
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                maybe_error,
+            )))
             .expect("Action channel not usable in initialize_application()");
     });
 
-    Box::new(
-        InitializationFuture {
-            context: context.clone(),
-        })
+    Box::new(InitializationFuture {
+        context: context.clone(),
+    })
 }
-
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
 /// Tracks the nucleus status.

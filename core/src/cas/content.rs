@@ -92,26 +92,26 @@ pub mod tests {
         }
     }
 
-    struct AddressableContentTestSuite;
+    pub struct AddressableContentTestSuite;
 
     impl AddressableContentTestSuite {
         //test that trait gives the write content
-        fn addressable_content_trait_test<T>(content: Content)
-        where
+        pub fn addressable_content_trait_test<T>(
+            content: Content,
+            expected_content: T,
+            hash_string: String,
+        ) where
             T: AddressableContent + Debug + PartialEq + Clone,
         {
             let addressable_content = T::from_content(&content);
 
-            assert_eq!(addressable_content, T::from_content(&content));
+            assert_eq!(addressable_content, expected_content);
             assert_eq!(content, addressable_content.content());
-            assert_eq!(
-                HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()),
-                addressable_content.address()
-            );
+            assert_eq!(HashString::from(hash_string), addressable_content.address());
         }
 
         //test that two different addressable contents would give them same thing
-        fn addressable_contents_are_the_same_test<T, K>(content: Content)
+        pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
         where
             T: AddressableContent + Debug + PartialEq + Clone,
             K: AddressableContent + Debug + PartialEq + Clone,
@@ -135,6 +135,8 @@ pub mod tests {
     fn example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<ExampleAddressableContent>(
             String::from("foo"),
+            ExampleAddressableContent::from_content(&String::from("foo")),
+            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
         );
     }
 
@@ -143,6 +145,8 @@ pub mod tests {
     fn other_example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<OtherExampleAddressableContent>(
             String::from("foo"),
+            OtherExampleAddressableContent::from_content(&String::from("foo")),
+            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
         );
     }
 

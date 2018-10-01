@@ -25,7 +25,8 @@ pub mod tests {
     #[test]
     fn pass() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 0);
+        let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 0)
+            .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
@@ -41,7 +42,8 @@ pub mod tests {
             // anything other than ValidateCommit is fine here
             Callback::Genesis.as_str(),
             0,
-        );
+        ).expect("Test callback instance could not be initialized");
+
         let context = instance.initialize_context(test_context("test"));
 
         let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));
@@ -52,7 +54,8 @@ pub mod tests {
     #[test]
     fn fail() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 1);
+        let instance = test_callback_instance(zome, Callback::ValidateCommit.as_str(), 1)
+            .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = validate_commit(context, zome, &CallbackParams::ValidateCommit(test_entry()));

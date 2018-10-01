@@ -8,14 +8,13 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
-use hash_table::sys_entry::ToEntry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::{
         api::call::reduce_call,
         callback::{
-            genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+            validate_commit::validate_commit, CallbackParams, CallbackResult,
         },
     },
     state::{NucleusState, NucleusStatus},
@@ -591,19 +590,20 @@ pub mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
+        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer);
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("channel failed");
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
+        assert!(reduced_nucleus.dna().is_some());
+        assert_eq!(reduced_nucleus.dna().unwrap(), dna);
     }
 
     #[test]
@@ -612,13 +612,12 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
 
         // Reduce Init action and block until receiving ReturnInit Action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("receiver fail");
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
         assert_eq!(initializing_nucleus.has_initialization_failed(), false);
@@ -643,7 +642,6 @@ pub mod tests {
 
         // Reduce Init action and block until receiving ReturnInit Action
         let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("receiver shouldn't fail");
 
         assert_eq!(
             reduced_nucleus.status(),
@@ -664,6 +662,24 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that calling a valid zome function returns a valid result
+    fn call_zome_function() {
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut instance = test_instance(dna)
+            .expect("Could not initialize test instance");
+
+        // Create zome function call
+        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
+
+        let result = super::call_and_wait_for_result(zome_call, &mut instance);
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(val) => assert_eq!(val, "1337"),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+        }
+    }
+
+    #[test]
     /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = ZomeFnCall::new("myZome", "public", "bogusfn", "");
@@ -676,23 +692,6 @@ pub mod tests {
 
         let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
-    }
-
-    #[test]
-    /// tests that calling a valid zome function returns a valid result
-    fn call_zome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
-
-        // Create zome function call
-        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
-
-        let result = super::call_and_wait_for_result(zome_call, &mut instance);
-        match result {
-            // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
-            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-        }
     }
 
     #[test]
@@ -715,7 +714,8 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
+        let mut instance = test_instance(dna)
+            .expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", "test_cap", "xxx", "{}");
@@ -734,7 +734,8 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
+        let mut instance = test_instance(dna)
+            .expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", "test_cap", "main", "{}");

@@ -218,55 +218,6 @@ fn reduce_init_application(
 
     // Set DNA
     state.dna = Some(dna.clone());
-
-    // Create & launch thread
-    let context = context.clone();
-    let dna_clone = dna.clone();
-
-    thread::spawn(move || {
-        // Send Commit Action for Genesis Entry
-        {
-            // Create Commit Action for Genesis Entry
-            let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
-
-            // Send Action and wait for it
-            // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
-            ::instance::dispatch_action(&context.action_channel, commit_genesis_action);
-        }
-
-        // map genesis across every zome
-        let mut results: Vec<_> = dna_clone
-            .zomes
-            .keys()
-            .map(|zome_name| genesis(context.clone(), zome_name, &CallbackParams::Genesis))
-            .collect();
-
-        // pad out a single pass if there are no zome results
-        // @TODO #78 - is this really OK?
-        // should we be steamrolling ahead with an instance that has no zomes and no
-        // genesis?
-        // actually this can cause some really nasty edge case bugs for code that assumes
-        // there is a genesis (real example: wait for length 4 in history) in a loop before
-        // moving forward. it will seem to work OK, but then hang if ever hit with an empty
-        // Dna.
-        // on the flip side, code cannot simply wait for 2 items in history, or even the
-        // initialization result on its own, because then it will miss the genesis
-        // sometimes where a genesis does happen.
-        if results.is_empty() {
-            results.push(CallbackResult::Pass);
-        }
-
-        // map the genesis results to initialization result responses
-        for result in results {
-            match result {
-                CallbackResult::Fail(s) => {
-                    return_initialization_result(Some(s.to_string()), &context.action_channel)
-                }
-                _ => return_initialization_result(None, &context.action_channel),
-            }
-        }
-    });
 }
 
 pub(crate) fn launch_zome_fn_call(

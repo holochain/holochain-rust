@@ -13,12 +13,6 @@ Function declarations (i.e. names and signatures) are shown outside of WASM in t
 ### WASM
 One WASM module per zome: All different Capability DNA and validation DNA is to be be compiled into one WASM module.
 
-### Bundle mode
-
-`Bundle` is a mode where the ribosome behaves to API calls differently by not doing validation directly but when the mode finishes (by a call to `hc_end_bundle_mode(FINISH_BUNDLE)`).
-The developer can cancel the bundle and discard their commits by calling `hc_end_bundle_mode(CANCEL_BUNDLE)`. This could be useful if some error happened during the bundle mode for example.
-
-
 ### No more links as entry-types
 
 We want to remove the notion of links as an entry format.
@@ -92,6 +86,7 @@ They are available in keyword specific Capabilities and function names.
   // ...  
   // Properties: Settings specific to a genome-template, used only by DNA.
   // Available in DNA with the `hc_property()` Zome API Function.
+  // Note: Later we might also want have properties defined within a Zome, and possibly move this part.
   "properties": {
     "language": "en"
   },
@@ -101,6 +96,8 @@ They are available in keyword specific Capabilities and function names.
       // Zome config
       "zome_name": "clutter",
       "description": "zome that implements micro-blogging",
+      // Ribosome or HDK level config that might need to be set
+      // to indicate how to handle this Zome. Not used yet, but anticipating.
       "config": {
         "error_handling": "throw-errors"
       },

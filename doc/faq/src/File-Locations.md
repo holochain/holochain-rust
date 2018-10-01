@@ -1,0 +1,1 @@
+This page has been [relocated](https://developer.holochain.net/File_locations) to our new documentation site.

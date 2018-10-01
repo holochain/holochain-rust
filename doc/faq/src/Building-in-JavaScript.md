@@ -1,0 +1,1 @@
+This page has been [relocated](https://developer.holochain.net/Building_Holochain_apps_in_JavaScript) to our new documentation site.

@@ -1,0 +1,1 @@
+This page has been [relocated](https://developer.holochain.net/Packaging_your_app_for_distribution) to our new documentation site.

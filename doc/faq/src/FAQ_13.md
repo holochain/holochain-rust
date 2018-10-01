@@ -1,0 +1,10 @@
+# How are data validated on Holochain?
+
+> On Holochain, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator.
+
+There is no overall, global "correctness" (or consensus) built in to Holochain. Instead, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator. If foul play is detected on a node's part (the node is either propagating or validating bad data) that node is blocked and a warning is sent to others. Here's [an infographic](https://i.imgur.com/bjp7Txg.png) describing this process. In summary, instead of a global consensus system, Holochain uses an [accountability-based system](https://www.youtube.com/watch?v=PVTnEKxwYls&t=1s) with data validation by peers.
+
+Applying this to the example of 'Ourbnb', an imaginary distributed version ofAirbnb: The Ourbnb Holochain app would certainly be written with a rule, "don't rent your apartment to two parties at the same time." So the moment a user rents to two parties at the same time, nodes receiving that datum on the DHT attempt to validate it against the app rules, detect a collision, and reject it. Holochain's gossip protocol is designed to operate at a rate at which collisions will be detected nearly immediately by gossiping peers. And since Holochain doesn't have a coin built into it, it incentivizes users to cooperate and co-create.
+
+As a user, you don't need to trust the provider of the application you're using, only agree with the shared protocols that make up the application itself. Aside from being responsible for the maintenance and security of apps they provide, application providers on Holochain are not like traditional application providers today (think Facebook, Twitter, etc.). They don't host your data because your data is stored by you and a random subset of the users of the application.
+

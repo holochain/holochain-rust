@@ -1,0 +1,1 @@
+This page has been [relocated](https://developer.holochain.net/Command_line_tools) to our new documentation site.

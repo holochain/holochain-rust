@@ -1,0 +1,1 @@
+This page has been [relocated](https://developer.holochain.net/Overview_of_holochain_applications) to our new documentation site.

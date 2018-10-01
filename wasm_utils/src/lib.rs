@@ -1,61 +1,11 @@
 extern crate serde;
 extern crate serde_json;
 
-use self::HcApiReturnCode::*;
+pub mod error;
+
+use error::{HcApiReturnCode, RibosomeErrorReport};
 use serde::{Deserialize, Serialize};
 use std::{ffi::CStr, os::raw::c_char, slice};
-
-//--------------------------------------------------------------------------------------------------
-// Error Codes
-//--------------------------------------------------------------------------------------------------
-
-/// Enumeration of all possible return codes that an HC API function call can return.
-/// represents a zero length offset in SinglePageAllocation.
-/// @see SinglePageAllocation
-#[repr(u32)]
-#[derive(Debug, PartialEq)]
-pub enum HcApiReturnCode {
-    Success = 0,
-    Failure = 1 << 16,
-    ArgumentDeserializationFailed = 2 << 16,
-    OutOfMemory = 3 << 16,
-    ReceivedWrongActionResult = 4 << 16,
-    CallbackFailed = 5 << 16,
-    RecursiveCallForbidden = 6 << 16,
-    ResponseSerializationFailed = 7 << 16,
-}
-
-impl ToString for HcApiReturnCode {
-    fn to_string(&self) -> String {
-        match self {
-            Success => "Success",
-            Failure => "Failure",
-            ArgumentDeserializationFailed => "Argument deserialization failed",
-            OutOfMemory => "Out of memory",
-            ReceivedWrongActionResult => "Received wrong action result",
-            CallbackFailed => "Callback failed",
-            RecursiveCallForbidden => "Recursive call forbidden",
-            ResponseSerializationFailed => "Response serialization failed",
-        }.to_string()
-    }
-}
-
-impl HcApiReturnCode {
-    pub fn from_offset(offset: u16) -> HcApiReturnCode {
-        match offset {
-            // @TODO what is a success error?
-            // @see https://github.com/holochain/holochain-rust/issues/181
-            0 => Success,
-            2 => ArgumentDeserializationFailed,
-            3 => OutOfMemory,
-            4 => ReceivedWrongActionResult,
-            5 => CallbackFailed,
-            6 => RecursiveCallForbidden,
-            7 => ResponseSerializationFailed,
-            1 | _ => Failure,
-        }
-    }
-}
 
 /// returns the u16 high bits from a u32
 pub fn u32_high_bits(i: u32) -> u16 {
@@ -178,28 +128,48 @@ impl SinglePageStack {
 // Serialization
 //-------------------------------------------------------------------------------------------------
 
-// Convert json data in a memory buffer into a meaningful data struct
+#[macro_use]
+extern crate serde_derive;
+
+// Convert a json string stored in wasm memory into a specified struct
+// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
-pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> T {
+pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
     let actual_str = ptr_safe_c_str.to_str().unwrap();
-    serde_json::from_str(actual_str).unwrap()
+    let res = serde_json::from_str(actual_str);
+    match res {
+        Err(_) => {
+            // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
+            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
+                serde_json::from_str(actual_str);
+            match maybe_error_report {
+                Err(_) => Err(actual_str.to_string()),
+                Ok(error_report) => Err(error_report.description),
+            }
+        }
+        Ok(x) => Ok(x),
+    }
 }
 
 // Helper for retrieving struct from encoded allocation
 pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> T {
     let allocation = SinglePageAllocation::new(encoded_allocation);
     let allocation = allocation.expect("received error instead of valid encoded allocation");
-    return deserialize(allocation.offset as *mut c_char);
+    return deserialize(allocation.offset as *mut c_char).unwrap();
 }
 
 // Helper for retrieving struct or ERROR from encoded allocation
 pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
     encoded_allocation: u32,
-) -> Result<T, HcApiReturnCode> {
-    let allocation = SinglePageAllocation::new(encoded_allocation)?;
-    return Ok(deserialize(allocation.offset as *mut c_char));
+) -> Result<T, String> {
+    let maybe_allocation = SinglePageAllocation::new(encoded_allocation);
+    match maybe_allocation {
+        Err(return_code) => Err(return_code.to_string()),
+        Ok(allocation) => deserialize(allocation.offset as *mut c_char),
+    }
 }
 
 // Write a data struct into a memory buffer as json string
@@ -234,7 +204,8 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
 #[cfg(test)]
 pub mod tests {
 
-    use super::{HcApiReturnCode, SinglePageAllocation};
+    use super::*;
+    use error::HcApiReturnCode;
 
     #[test]
     /// tests construction and encoding in a new single page allocation

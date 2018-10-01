@@ -20,6 +20,7 @@ struct CommitOutputStruct {
   hash: String,
 }
 
+
 //-------------------------------------------------------------------------------------------------
 // HC Commit Function Call - Succesful
 //-------------------------------------------------------------------------------------------------
@@ -27,7 +28,7 @@ struct CommitOutputStruct {
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
 fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content: &str)
-  -> Result<String, HcApiReturnCode>
+  -> Result<String, String>
 {
   // Put args in struct and serialize into memory
   let input = CommitInputStruct {
@@ -51,26 +52,6 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
   Ok(output.hash.to_string())
 }
 
-/// Actual test function code
-fn test_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
-{
-  // Call Commit API function
-  let hash = hdk_commit(mem_stack, "testEntryType", "hello");
-
-  // Return result in complex format
-  return
-    if let Ok(hash_str) = hash {
-      CommitOutputStruct {
-        hash: hash_str,
-      }
-    }
-      else
-      {
-        CommitOutputStruct {
-          hash: "fail".to_string(),
-        }
-      };
-}
 
 //-------------------------------------------------------------------------------------------------
 // HC COMMIT Function Call - Fail
@@ -78,7 +59,7 @@ fn test_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 
 // Simulate error in commit function by inputing output struct as input
 fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
-  -> Result<String, HcApiReturnCode>
+  -> Result<String, String>
 {
   // Put args in struct and serialize into memory
   let input = CommitOutputStruct {
@@ -91,41 +72,14 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   unsafe {
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
-  // DECODE ERROR
-  let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
-  if let Err(e) = result {
-    return Err(e)
-  }
-
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct = result.unwrap();
+  let output: CommitOutputStruct  = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
   Ok(output.hash.to_string())
-}
-
-
-/// Actual test function code
-fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
-{
-  // Call Commit API function
-  let hash = hdk_commit_fail(mem_stack);
-
-  // Return result in complex format
-  return
-    if let Ok(hash_str) = hash {
-      CommitOutputStruct {
-        hash: hash_str,
-      }
-    }
-      else
-      {
-        CommitOutputStruct {
-          hash: "fail".to_string(),
-        }
-      };
 }
 
 
@@ -140,7 +94,7 @@ fn test_fail_inner(mem_stack: &mut SinglePageStack) -> CommitOutputStruct
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
-  let output = test_inner(&mut mem_stack);
+  let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }
 
@@ -151,6 +105,6 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
-  let output = test_fail_inner(&mut mem_stack);
+  let output = hdk_commit_fail(&mut mem_stack);
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }

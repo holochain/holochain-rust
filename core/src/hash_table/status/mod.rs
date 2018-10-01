@@ -62,7 +62,11 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use cas::{
-        content::{tests::AddressableContentTestSuite, AddressableContent},
+        content::{
+            tests::{AddressableContentTestSuite, ExampleAddressableContent},
+            AddressableContent, Content,
+        },
+        eav::tests::eav_round_trip_test_runner,
         storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
     };
     use hash::HashString;
@@ -89,6 +93,14 @@ mod tests {
         assert!(!example_mask.contains(CrudStatus::LIVE));
         assert!(!example_mask.contains(CrudStatus::MODIFIED));
         assert!(!example_mask.contains(CrudStatus::LOCKED));
+    }
+
+    #[test]
+    fn crud_status_example_eav() {
+        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
+        let attribute = "favourite-badge".to_string();
+        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
     #[test]

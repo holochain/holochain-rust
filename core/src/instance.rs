@@ -530,12 +530,16 @@ pub mod tests {
         instance.start_action_loop(test_context("jane"));
 
         // the initial state is not intialized
-        assert_eq!(instance.state().nucleus().status(), ::nucleus::state::NucleusStatus::New);
+        assert_eq!(
+            instance.state().nucleus().status(),
+            ::nucleus::state::NucleusStatus::New
+        );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
-            instance.state().nucleus().status(), ::nucleus::state::NucleusStatus::Initializing
+            instance.state().nucleus().status(),
+            ::nucleus::state::NucleusStatus::Initializing
         );
     }
 

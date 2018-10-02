@@ -14,7 +14,7 @@ use std::{sync::Arc, thread, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
-const INITIALIZATION_TIMEOUT : u64 = 10;
+const INITIALIZATION_TIMEOUT: u64 = 10;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -45,12 +45,11 @@ pub fn initialize_application(
         );
 
         // Commit DNA to chain
-        let dna_commit = block_on(
-            commit_entry(
-                dna.clone().to_entry(),
-                &context_clone.action_channel.clone(),
-                &context_clone,
-            ));
+        let dna_commit = block_on(commit_entry(
+            dna.clone().to_entry(),
+            &context_clone.action_channel.clone(),
+            &context_clone,
+        ));
 
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
@@ -68,7 +67,6 @@ pub fn initialize_application(
                 return;
             };
         }
-
 
         // map genesis across every zome
         let results: Vec<_> = dna
@@ -125,7 +123,9 @@ impl Future for InitializationFuture {
         //
         cx.waker().wake();
 
-        if Instant::now().duration_since(self.created_at) > Duration::from_secs(INITIALIZATION_TIMEOUT) {
+        if Instant::now().duration_since(self.created_at)
+            > Duration::from_secs(INITIALIZATION_TIMEOUT)
+        {
             return Err("Timeout while initializing".to_string());
         }
         if let Some(state) = self.context.state() {

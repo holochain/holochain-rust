@@ -1,7 +1,6 @@
 /// Nucleus is the module that handles DNA, including the Ribosome.
 ///
 pub mod actions;
-pub mod memory;
 pub mod ribosome;
 pub mod state;
 

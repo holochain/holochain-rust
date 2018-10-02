@@ -194,7 +194,7 @@ fn reduce_init_application(
             state.status =
                 NucleusStatus::InitializationFailed("Nucleus already initialized".to_string())
         }
-        _ => {
+        NucleusStatus::New | NucleusStatus::InitializationFailed(_) => {
             let ia_action = action_wrapper.action();
             let dna = unwrap_to!(ia_action => Action::InitApplication);
             // Update status

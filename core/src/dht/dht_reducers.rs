@@ -6,18 +6,19 @@ use action::ActionWrapper;
 use context::Context;
 use dht::dht_store::DhtStore;
 use cas::storage::ContentAddressableStorage;
+use cas::eav::EntityAttributeValueStorage;
 
 // A function that might return a mutated DhtStore
-type DhtReducer<CAS: ContentAddressableStorage> =
-fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
+type DhtReducer<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage> =
+fn(Arc<Context>, &DhtStore<CAS, EAVS>, &ActionWrapper) -> Option<DhtStore<CAS, EAVS>>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce<CAS: ContentAddressableStorage>(
+pub fn reduce<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(
     context: Arc<Context>,
-    old_store: Arc<DhtStore<CAS>>,
+    old_store: Arc<DhtStore<CAS, EAVS>>,
     action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore<CAS>> {
+) -> Arc<DhtStore<CAS, EAVS>> {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
     if maybe_reducer.is_none() {
@@ -37,7 +38,8 @@ pub fn reduce<CAS: ContentAddressableStorage>(
 }
 
 /// Maps incoming action to the correct reducer
-fn resolve_reducer<CAS: ContentAddressableStorage>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>> {
+fn resolve_reducer<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(action_wrapper: &ActionWrapper)
+    -> Option<DhtReducer<CAS, EAVS>> {
     match action_wrapper.action() {
         Action::Commit(_)   => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
@@ -48,60 +50,60 @@ fn resolve_reducer<CAS: ContentAddressableStorage>(action_wrapper: &ActionWrappe
 }
 
 //
-pub(crate) fn reduce_commit_entry<CAS: ContentAddressableStorage>(
+pub(crate) fn reduce_commit_entry<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>> {
+) -> Option<DhtStore<CAS, EAVS>> {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::GetEntry);
 
     // Look in local storage if it already has it
-    if old_store.storage().contains(entry.key()).unwrap() {
+    if old_store.data_storage().contains(entry.key()).unwrap() {
         // Maybe panic as this should never happen?
         return None;
     }
     // Otherwise add it local storage...
     let mut new_store = (*old_store).clone();
-    new_store.storage().add(entry.content());
+    new_store.data_storage().add(entry.content());
     // ...and publish to the network
     new_store.network().publish(entry.content());
     Some(new_store)
 }
 
 //
-pub(crate) fn reduce_get_entry<CAS: ContentAddressableStorage>(
+pub(crate) fn reduce_get_entry<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>> {
+) -> Option<DhtStore<CAS, EAVS>> {
     // Get Action's input data
     let action = action_wrapper.action();
     let hash = unwrap_to!(action => Action::GetEntry);
 
     // Look in local storage if it already has it
-    if old_store.storage().contains(hash).unwrap() {
+    if old_store.data_storage().contains(hash).unwrap() {
         return None;
     }
     // Otherwise retrieve it from the network...
     let mut new_store = (*old_store).clone();
     let content = old_store.network().get(hash);
     // ...and add it to the local storage
-    new_store.storage().add(content);
+    new_store.data_storage().add(content);
     Some(new_store)
 }
 
 //
-pub(crate) fn reduce_add_link<CAS: ContentAddressableStorage>(
+pub(crate) fn reduce_add_link<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>> {
+) -> Option<DhtStore<CAS, EAVS>> {
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::AddLink);
 
     // Look in local storage if it already has it
-    if old_store.storage().contains(&link.key()).unwrap() {
+    if old_store.data_storage().contains(&link.key()).unwrap() {
         // TODO Maybe panic as this should never happen?
         return None;
     }
@@ -116,11 +118,11 @@ pub(crate) fn reduce_add_link<CAS: ContentAddressableStorage>(
 }
 
 //
-pub(crate) fn reduce_get_links<CAS: ContentAddressableStorage>(
+pub(crate) fn reduce_get_links<CAS: ContentAddressableStorage, EAVS: EntityAttributeValueStorage>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>> {
+) -> Option<DhtStore<CAS, EAVS>> {
     // Get Action's input data
     let action = action_wrapper.action();
     let get_links_args = unwrap_to!(action => Action::GetLinks);

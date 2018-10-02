@@ -1,60 +1,57 @@
-// p2p_network.rs
+//! This module defines the trait for holochain networking / p2p
+//! The goal is to make implementing concrete strucs as simple as possible
+//! so that we can iterate quickly on the API.
+//! All calls will go through one of two api functions, one using json
+//! strings, and the other using binary buffers.
 
 use base64;
 use failure::Error;
 use serde_json;
 
-#[derive(Debug, Clone, Fail)]
-pub enum E {
-    #[fail(display = "None")]
-    None,
-}
-
-pub type Json = serde_json::value::Value;
-
-pub fn json_parse(input: &str) -> Result<Json, Error> {
-    let v: Json = serde_json::from_str(input)?;
-    Ok(v)
-}
-
-pub fn json_obj_str(input: &Json, property: &str) -> Result<String, Error> {
-    Ok(input
-        .as_object()
-        .ok_or(E::None)?
-        .get(property)
-        .ok_or(E::None)?
-        .as_str()
-        .ok_or(E::None)?
-        .to_string())
-}
-
-/// callback function type for json functions
+/// callback function type for api methods transporting json data
 pub type ApiFnJson = Box<FnMut(&str) -> Result<String, Error>>;
+
+/// callback function type for api methods transporting binary data
+pub type ApiFnBin = Box<FnMut(&[u8]) -> Result<Vec<u8>, Error>>;
+
+/// when the network is requesting we store data
+/// this callback will be invoked, expecting the data to be validated
+pub type DhtHoldCallback = Box<FnMut(&str) -> Result<bool, Error>>;
 
 /// the identifier for an application
 pub type GenomeHash = [u8; 32];
 
-/// callback
-pub type DhtHoldCallback = Box<FnMut(&str) -> Result<bool, Error>>;
-
-///
+/// binary api function `track_app` uses this leading byte
 pub const BIN_TYPE_TRACK_APP: u8 = 0x11;
+
+/// binary api function `untrack_app` uses this leading byte
 pub const BIN_TYPE_UNTRACK_APP: u8 = 0x12;
+
+/// binary api function `set_app_signature_callback` uses this leading byte
 pub const BIN_TYPE_APP_SIGNATURE: u8 = 0x21;
+
+/// binary api function `set_app_encryption_callback` uses this leading byte
 pub const BIN_TYPE_APP_ENCRYPTION: u8 = 0x22;
 
-/// callback function type for binary functions
-pub type ApiFnBin = Box<FnMut(&[u8]) -> Result<Vec<u8>, Error>>;
-
-///
+/// enum defining the state of this p2p/network connection
 pub enum P2pNetworkState {
+    /// we are still setting up the connection, please wait
     Pending,
+
+    /// connection established, but needs config, please call `set_config`
     NeedConfig,
+
+    /// connection established and configure, all APIs available
     Running,
 }
 
 /// Represents a connection to a peer to peer network module
+/// On initial instantiation, only calling `get_state` is valid
+/// see P2pNetorkState for usage
 pub trait P2pNetwork {
+    // -- only these top two functions are required to be implemented
+    // -- by concrete structs
+
     /// This is the main backbone api throughput function
     /// that must be implemented by structs implementing this trait
     fn exec_raw_json(&mut self, input: &str, cb: Option<ApiFnJson>) -> Result<String, Error>;
@@ -62,15 +59,8 @@ pub trait P2pNetwork {
     /// This is similar to `exec_raw_json`, but permits binary data transfer
     fn exec_raw_bin(&mut self, input: &[u8], cb: Option<ApiFnBin>) -> Result<Vec<u8>, Error>;
 
-    /// This call should return a json configuration blob for the p2p module
-    fn get_default_config(&mut self) -> Result<String, Error> {
-        self.exec_raw_json(
-            &(json!({
-                "method": "getDefaultConfig"
-            }).to_string()),
-            None,
-        )
-    }
+    // -- All following functions are default implementations
+    // -- making use of the above two functions
 
     /// This call should return a state within:
     ///  - `pending`
@@ -92,6 +82,16 @@ pub trait P2pNetwork {
         } else {
             bail!("unexpected state: '{}'", r);
         }
+    }
+
+    /// This call should return a json configuration blob for the p2p module
+    fn get_default_config(&mut self) -> Result<String, Error> {
+        self.exec_raw_json(
+            &(json!({
+                "method": "getDefaultConfig"
+            }).to_string()),
+            None,
+        )
     }
 
     /// pass along configuration to the network module
@@ -186,15 +186,49 @@ pub trait P2pNetwork {
 mod tests {
     use super::*;
 
-    pub type JsonHandler = Box<FnMut(&str, Option<ApiFnJson>) -> Result<String, Error>>;
-    pub type BinHandler = Box<FnMut(&[u8], Option<ApiFnBin>) -> Result<Vec<u8>, Error>>;
+    /// helper for easy conversion of None to an error type
+    #[derive(Debug, Clone, Fail)]
+    enum E {
+        #[fail(display = "None")]
+        None,
+    }
 
-    pub struct P2pStub {
+    /// short name better than `Value`
+    type Json = serde_json::value::Value;
+
+    /// helper to convert a String into `Json`
+    fn json_parse(input: &str) -> Result<Json, Error> {
+        let v: Json = serde_json::from_str(input)?;
+        Ok(v)
+    }
+
+    /// helper to grab a string from a `Json` instance of type object
+    fn json_obj_str(input: &Json, property: &str) -> Result<String, Error> {
+        Ok(input
+            .as_object()
+            .ok_or(E::None)?
+            .get(property)
+            .ok_or(E::None)?
+            .as_str()
+            .ok_or(E::None)?
+            .to_string())
+    }
+
+    /// test struct stub function for handling ApiFnJson requests
+    type JsonHandler = Box<FnMut(&str, Option<ApiFnJson>) -> Result<String, Error>>;
+
+    /// test struct stub function for handling ApiFnBin requests
+    type BinHandler = Box<FnMut(&[u8], Option<ApiFnBin>) -> Result<Vec<u8>, Error>>;
+
+    /// test struct stub that will implement P2pNetwork trait
+    struct P2pStub {
         pub json_handler_queue: Vec<JsonHandler>,
         pub bin_handler_queue: Vec<BinHandler>,
     }
 
+    /// some custom test functions
     impl P2pStub {
+        /// create a new network stub
         pub fn new() -> Self {
             P2pStub {
                 json_handler_queue: Vec::new(),
@@ -203,21 +237,27 @@ mod tests {
         }
     }
 
+    /// the stub implementation will just sequentially execute any
+    /// handlers that have been define in the test function
     impl P2pNetwork for P2pStub {
+        /// execute the next test stub json handler
         fn exec_raw_json(&mut self, input: &str, cb: Option<ApiFnJson>) -> Result<String, Error> {
             self.json_handler_queue.remove(0)(input, cb)
         }
 
+        /// execute the next test stub binary handler
         fn exec_raw_bin(&mut self, input: &[u8], cb: Option<ApiFnBin>) -> Result<Vec<u8>, Error> {
             self.bin_handler_queue.remove(0)(input, cb)
         }
     }
 
-    pub struct NodeStub {
+    /// a wrapper struct in case we need to track additional state
+    struct NodeStub {
         pub net: P2pStub,
     }
 
     impl NodeStub {
+        /// create a new wrapper struct
         pub fn new() -> Self {
             NodeStub {
                 net: P2pStub::new(),
@@ -225,6 +265,7 @@ mod tests {
         }
     }
 
+    /// assert that an expression is None
     macro_rules! assert_none {
         ($e:expr) => {
             if let Some(_) = $e {
@@ -233,6 +274,7 @@ mod tests {
         };
     }
 
+    /// assert that an expression is Some(??)
     macro_rules! assert_some {
         ($e:expr) => {
             if let None = $e {
@@ -241,6 +283,8 @@ mod tests {
         };
     }
 
+    /// parse a json string and make sure it is an object
+    /// with a "method" property that matches `$method`
     macro_rules! setup_handler {
         ($input:expr, $method:expr) => {{
             let v: Json = json_parse($input)?;
@@ -269,6 +313,20 @@ mod tests {
     }
 
     #[test]
+    fn it_should_return_state_pending() {
+        let mut node = NodeStub::new();
+        node.net.json_handler_queue.push(Box::new(|input, cb| {
+            assert_none!(cb);
+            setup_handler!(input, "getState");
+            Ok("pending".to_string())
+        }));
+        match node.net.get_state().unwrap() {
+            P2pNetworkState::Pending => (),
+            _ => panic!("unexpected get_state return value"),
+        };
+    }
+
+    #[test]
     fn it_should_return_state_need_config() {
         let mut node = NodeStub::new();
         node.net.json_handler_queue.push(Box::new(|input, cb| {
@@ -278,6 +336,20 @@ mod tests {
         }));
         match node.net.get_state().unwrap() {
             P2pNetworkState::NeedConfig => (),
+            _ => panic!("unexpected get_state return value"),
+        };
+    }
+
+    #[test]
+    fn it_should_return_state_running() {
+        let mut node = NodeStub::new();
+        node.net.json_handler_queue.push(Box::new(|input, cb| {
+            assert_none!(cb);
+            setup_handler!(input, "getState");
+            Ok("running".to_string())
+        }));
+        match node.net.get_state().unwrap() {
+            P2pNetworkState::Running => (),
             _ => panic!("unexpected get_state return value"),
         };
     }

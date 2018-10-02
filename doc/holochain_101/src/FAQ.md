@@ -19,7 +19,7 @@
 
 
 
-# How is Holochain different from blockchain?
+## How is Holochain different from blockchain?
 
 > Holochain and blockchain are built for fundamentally different use cases. Blockchain is relatively good for systems where it’s absolutely necessary to maintain global consensus. Holochain is much better than blockchain at anything that requires less than universal consensus (most things): It’s faster, more efficient, more scalable, adaptable, and extendable. 
 
@@ -31,11 +31,11 @@ The initial [Bitcoin white paper](https://bitcoin.org/bitcoin.pdf) introduced a 
 
 Now Bitcoin and blockchain have pervaded people's consciousness and many perceive it as a solution for all sorts of decentralized applications. However, when the problems are framed slightly differently, there are much more efficient and elegant solutions (like holochains) which don't have the [processing bottlenecks](https://www.google.com/search?q=blockchain+bottleneck) of global consensus, storage requirements of everyone having a [FULL copy](https://blockchain.info/charts/blocks-size) of all the data, or [wasting so much electricity ](https://blog.p2pfoundation.net/essay-of-the-day-bitcoin-mining-and-its-energy-footprint/2015/12/20) on busywork.
 
-# Why do you call it "Holochain"?
+## Why do you call it "Holochain"?
 
 > A variety of reasons: it's a composed whole of other technologies, it's structurally holographic, and it empowers holistic patterns.
 
-## A unified cryptographic _whole_
+### A unified cryptographic _whole_
 
 Holochain is made from multiple cryptographic technologies composed into a new whole.
 
@@ -45,7 +45,7 @@ Holochain is made from multiple cryptographic technologies composed into a new w
 
 - **DHT (Distributed Hash Table)** leverages cryptographic hashes for content addressable storage, while randomizing of interactions by hashing into neighborhoods to impede collusion, and processing validation #1 and #2 to store data on the DHT.
 
-## *Holo*graphic storage
+### *Holo*graphic storage
 
 Every node has a resilient sample of the whole. Like cutting a hologram, if you were to cut a Holochain network in half (make it so half the nodes were isolated from the other half), you would have two whole, functioning systems, not two partial, broken systems.
 
@@ -55,11 +55,11 @@ Where is the English language stored? Every speaker carries it. People have diff
 
 If you keep cutting a hologram smaller and smaller eventually the image degrades enough to stop being recognizable, and depending on the resiliency rules for DHT neighborhoods, holochains would likely share a similar fate. Although, if the process of killing off the nodes was not instantaneous, the network may be able to keep reshuffling data per redundancy requirements to keep it alive.
 
-## *Hol*archy
+### *Hol*archy
 
 Holochains are composable with each other into new levels of unification. In other words, Holochains can build on decentralized capacities provided by other Holochains, making new holistic patterns possible. Like bodies build new unity on holographic storage patterns that cells use for DNA, and a society build new unity on the holographic storage patterns of language, and so on.
 
-# How is Holochain different from a DHT (Distributed Hash Table)?
+## How is Holochain different from a DHT (Distributed Hash Table)?
 
 DHTs enable key/value pair storage and retrieval across many machines. The only validation rules they have is the hash of the data itself to confirm what you're getting is probably what you intended to get. They have no other means to confirm authenticity, provenance, timelines, or integrity of data sources.
 
@@ -71,7 +71,7 @@ The DHT leverages the signed source chains to ensure tamper-proof immutability o
 
 The Holochain DHT also emulates aspects of a graph database by enabling people to connect links to other hashes in the DHT tagged with semantic markers. This helps solve the problem of finding the hashes that you want to retrieve from the DHT. For example, if I have the hash of your user identity, I could query it for links to blogs you've published to a holochain so that I can find them without knowing either the hash or the content. This is part of how we eliminate the need for tracking nodes that many DHTs rely on.
 
-# What kind of projects is Holochain good for?
+## What kind of projects is Holochain good for?
 
 Sharing collaborative data without centralized control. Imagine a completely decentralized Wikipedia, DNS without root servers, or the ability to have fast reliable queries on a fully distributed PKI, etc.
 
@@ -89,7 +89,7 @@ Sharing collaborative data without centralized control. Imagine a completely dec
 
 - **Reputational or Mutual Credit Cryptocurrencies:** Currencies where issuance can be accounted for by actions of peers (like ratings), or through double-entry accounting are well-suited for holochains. Fiat currencies where tokens are thought to exist independent of accountability by agents are more challenging to implement on holochains.
 
-# What is Holochain _not_ good for?
+## What is Holochain _not_ good for?
 
 You probably should not use Holochain for:
 
@@ -102,7 +102,7 @@ You probably should not use Holochain for:
 - **Data positivist-oriented apps:** If you have built all of your application logic around the idea that data exists as an absolute truth, not as an assertion by an agent at a time, then you would need to rethink your whole approach before putting it in a Holochain app. This is why most existing cryptocurrencies would need significant refactoring to move from blockchain to Holochain, since they are organized around managing the existence of cryptographic tokens.
 
 
-# What is Holochain's consensus algorithm?
+## What is Holochain's consensus algorithm?
 
 > Holochains don't manage consensus, at least not about some absolute perspective on data or sequence of events. They manage distributed data integrity. Holochains do rely on consensus about the validation rules (DNA) which define that integrity, but so does every blockchain or blockchain alternative (e.g. Bitcoin Core). If you have different validation rules, you're not on the same chain. These validation rules establish the "data physics," and then applications are built on that foundation.
 
@@ -118,7 +118,7 @@ Holochains do sign every change of data and timestamp (without a universal time 
 
 However, if your system is designed around data having one absolute true state, not one which is dynamic and varied based on vantage point, we would suggest you rethink your design. So far, for every problem space where people thought they needed an absolute sequence of events or global consensus, we have been able to map an alternate approach without those requirements. Also, we already know this is how the world outside of computers works, so to design your system to require (or construct) an artificial reality is probably setting yourself up for failure, or at the very least for massive amounts of unnecessary computation, communication, and fragility within your system.
 
-# How is Holochain more environmentally ethical than blockchain?
+## How is Holochain more environmentally ethical than blockchain?
 
 > Holochain removes the need for global consensus, and with it the expenditure of massive amounts of electricity to synchronize millions of nodes about data that aren't relevant to them.
 
@@ -132,13 +132,13 @@ There are two reasons Holochain is vastly more efficient than blockchain and mor
 
 2. There's no mining on Holochain. Blockchain's proof-of-work system provides a hefty incentive for thousands of people to spend the processing power of their CPUs and GPUs using up [huge amounts](https://digiconomist.net/bitcoin-energy-consumption) [of electricity](https://motherboard.vice.com/en_us/article/ywbbpm/bitcoin-mining-electricity-consumption-ethereum-energy-climate-change) on solving a meaningless cryptographic puzzle. Holochain doesn't have mining.
 
-# How is Holochain different from __________?
+## How is Holochain different from __________?
 
 **TODO: Update with reference to Rust project.**
 
 Please see the [Comparisons page](https://github.com/Holochain/holochain-proto/wiki/Comparisons).
 
-# What language is Holochain written in? What languages can I use to make Holochain apps?
+## What language is Holochain written in? What languages can I use to make Holochain apps?
 
 **TODO: Update re Rust and Wasm.**
 
@@ -148,11 +148,11 @@ Holochain core is written in Go. We picked Go because it's similar to C but has 
 
 Holochain apps can currently be developed in JavaScript or Lisp, with front-end/UI built using CSS, HTML, and JavaScript. It's relatively easy to add more to the list of languages with which apps can be built. So for most of the development people will be doing on Holochain, a choice of languages can be used.
 
-# Is Holochain open source?
+## Is Holochain open source?
 
 Yes, it has an open source [license](https://github.com/Holochain/holochain-rust/#license).
 
-# Can you run a cryptocurrency on Holochain?
+## Can you run a cryptocurrency on Holochain?
 
 > Theoretically, yes—but for the moment, we'd discourage it.
 
@@ -162,7 +162,7 @@ However, you probably shouldn't try to do it in the way everyone is used to buil
 
 Unfortunately, this is a hotly contested topic by many who often don't have a deep understanding of currency design nor cryptography, so we're not going to go too deep in this FAQ. We intend to publish a white paper on this topic soon, as well as launch some currencies built this way.
 
-# How are data validated on Holochain?
+## How are data validated on Holochain?
 
 > On Holochain, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator.
 
@@ -172,19 +172,19 @@ Applying this to the example of 'Ourbnb', an imaginary distributed version ofAir
 
 As a user, you don't need to trust the provider of the application you're using, only agree with the shared protocols that make up the application itself. Aside from being responsible for the maintenance and security of apps they provide, application providers on Holochain are not like traditional application providers today (think Facebook, Twitter, etc.). They don't host your data because your data is stored by you and a random subset of the users of the application.
 
-# What happens to data when a node leaves the network?
+## What happens to data when a node leaves the network?
 
 > The DHT of a Holochain app makes sure that there are always enough nodes on the network that hold a given datum.
 
 When people running Holochain apps turn off their device, they leave the network. What happens to their data and the data of other people they were storing? There are always enough nodes that hold a given piece of data in the network so as to prevent data loss when nodes leave. The DHT and Holochain gossip protocol are designed this way. Also, the redundancy factor of data on a given DHT is configurable so it can be fine-tuned for any purpose. For example, a chat app for a small team might set a redundancy factor of 100% in order to prevent long loading times, while an app with thousands of users might have a very small redundancy factor.
 
-# Should I build my coin/token on Holochain?
+## Should I build my coin/token on Holochain?
 
 > Since it's agent-centric instead of data-centric like traditional blockchains, Holochain isn't the best platform on which to build a token or coin.
 
 The idea of tokens or coins is a direct representation of a system being data-centric. While theoretically it would be possible to create a token on Holochain, it would be taking a step back instead of a step forward. The more exciting possibility is creating mutual credit currencies on Holochain. These are agent-centric currencies that are designed to facilitate active exchange of value and flourishing ecosystems instead of hoarding.
 
-# What does “agent-centric” mean? How is this different from “data-centric?”
+## What does “agent-centric” mean? How is this different from “data-centric?”
 
 > Agent-centric systems view data not as an object, but as a shared experience.
 
@@ -192,7 +192,7 @@ Traditional blockchains are data-centric: they rely on and are built around the 
 
 Holochain is deeply agent-centric. Using tech that embodies this mindset enables vastly richer interactions and collaboration to happen through its technology while at the same time being thousands of times more efficient.
 
-# What is the TPS (Transactions Per Second) on Holochain?
+## What is the TPS (Transactions Per Second) on Holochain?
 
 > Holochain doesn't have a set TPS (transactions per second) like other blockchain-based or blockchain-derived projects might because there's central point through which all transactions must pass. Instead, Holochain is a generalized protocol for distributed computing.
 

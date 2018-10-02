@@ -9,14 +9,14 @@ pub mod get_links;
 pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
+use holochain_wasm_utils::{error::HcApiReturnCode, memory_allocation::SinglePageAllocation};
 use nucleus::{
-    memory::SinglePageManager,
     ribosome::{
         api::{
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
+        memory::SinglePageManager,
         Defn,
     },
     ZomeFnCall,

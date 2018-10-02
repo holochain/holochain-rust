@@ -1,6 +1,6 @@
 extern crate holochain_wasm_utils;
 
-use holochain_wasm_utils::*;
+use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
 extern {
   fn hc_debug(encoded_allocation_of_input: i32) -> i32;

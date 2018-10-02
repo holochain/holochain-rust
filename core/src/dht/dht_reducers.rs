@@ -63,9 +63,9 @@ pub(crate) fn reduce_commit_entry<CAS: ContentAddressableStorage>(
     }
     // Otherwise add it local storage...
     let mut new_store = (*old_store).clone();
-    new_store.storage().add(entry);
+    new_store.storage().add(entry.content());
     // ...and publish to the network
-    new_store.network().publish(entry);
+    new_store.network().publish(entry.content());
     Some(new_store)
 }
 

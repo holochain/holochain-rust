@@ -1,8 +1,12 @@
 use hash_table::{
-    entry::Entry, sys_entry::ToEntry, entry_meta::EntryMeta,
+    sys_entry::ToEntry,
     links_entry::{Link, LinkEntry, LinkActionKind},
 };
 use cas::storage::ContentAddressableStorage;
+use cas::content::Content;
+
+// FIXME placeholder
+pub type EntityAttributeValue = String;
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -10,10 +14,10 @@ pub struct Network {
     // FIXME
 }
 impl Network {
-    pub fn publish(&mut self, entry: &Entry) {
+    pub fn publish(&mut self, content: &Content) {
         // FIXME
     }
-    pub fn publish_meta(&mut self, entry_meta: &EntryMeta) {
+    pub fn publish_meta(&mut self, meta: &EntityAttributeValue) {
         // FIXME
     }
 }
@@ -31,7 +35,8 @@ impl<CAS: ContentAddressableStorage> DhtStore<CAS> {
     // Linking
     pub fn add_link(&mut self, link: &Link) {
         // FIXME
-        self.storage.add(&LinkEntry::from_link(LinkActionKind::ADD, link).to_entry());
+        self.storage.add(
+            &LinkEntry::from_link(LinkActionKind::ADD, link).to_entry().content());
     }
     pub fn remove_link() {
         // FIXME

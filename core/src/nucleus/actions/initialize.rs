@@ -2,7 +2,7 @@ extern crate futures;
 use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
-use futures::{future, Async, Future};
+use futures::{executor::block_on, future, Async, Future};
 use hash_table::sys_entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
@@ -40,12 +40,31 @@ pub fn initialize_application(
             action_wrapper.clone(),
         );
 
-        // Create Commit Action for Genesis Entry
-        commit_entry(
-            dna.clone().to_entry(),
-            &context_clone.action_channel.clone(),
-            &context_clone,
-        );
+        // Commit DNA to chain
+        let dna_commit = block_on(
+            commit_entry(
+                dna.clone().to_entry(),
+                &context_clone.action_channel.clone(),
+                &context_clone,
+            ));
+
+        // Let initialization fail if DNA could not be committed.
+        // Currently this cannot happen since ToEntry for Dna always creates
+        // an entry from a Dna object. So I can't create a test for the code below.
+        // Hence skipping it for codecov for now but leaving it in for resilience.
+        #[cfg_attr(tarpaulin, skip)]
+        {
+            if dna_commit.is_err() {
+                context_clone
+                    .action_channel
+                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                        Some(dna_commit.err().unwrap()),
+                    )))
+                    .expect("Action channel not usable in initialize_application()");
+                return;
+            };
+        }
+
 
         // map genesis across every zome
         let results: Vec<_> = dna

@@ -16,20 +16,19 @@ pub struct FilesystemStorage {
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
         let canonical = Path::new(dir_path).canonicalize()?;
-        if canonical.is_dir() {
-            Ok(FilesystemStorage {
-                dir_path: canonical
-                    .to_str()
-                    .ok_or_else(|| {
-                        HolochainError::IoError("could not convert path to string".to_string())
-                    })?
-                    .to_string(),
-            })
-        } else {
-            Err(HolochainError::IoError(
+        if !canonical.is_dir() {
+            return Err(HolochainError::IoError(
                 "path is not a directory or permissions don't allow access".to_string(),
-            ))
+            ));
         }
+        Ok(FilesystemStorage {
+            dir_path: canonical
+                .to_str()
+                .ok_or_else(|| {
+                    HolochainError::IoError("could not convert path to string".to_string())
+                })?
+                .to_string(),
+        })
     }
 
     /// builds an absolute path for an AddressableContent address

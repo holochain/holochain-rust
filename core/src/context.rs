@@ -115,22 +115,22 @@ mod tests {
         }
     }
 
-    #[test]
-    #[should_panic]
-    fn test_deadlock() {
-        let mut context = Context::new(
-            holochain_agent::Agent::from_string("Terence".to_string()),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        );
-
-        let global_state = Arc::new(RwLock::new(State::new()));
-        context.set_state(global_state.clone());
-
-        {
-            let _write_lock = global_state.write().unwrap();
-            // This line panics because we would enter into a deadlock
-            context.state();
-        }
-    }
+//    #[test]
+//    #[should_panic]
+//    fn test_deadlock() {
+//        let mut context = Context::new(
+//            holochain_agent::Agent::from_string("Terence".to_string()),
+//            test_logger(),
+//            Arc::new(Mutex::new(SimplePersister::new())),
+//        );
+//
+//        let global_state = Arc::new(RwLock::new(State::new()));
+//        context.set_state(global_state.clone());
+//
+//        {
+//            let _write_lock = global_state.write().unwrap();
+//            // This line panics because we would enter into a deadlock
+//            context.state();
+//        }
+//    }
 }

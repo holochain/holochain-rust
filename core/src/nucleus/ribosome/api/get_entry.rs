@@ -2,10 +2,11 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash::HashString;
 use json::ToJson;
-use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
+use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::error::RibosomeReturnCode;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
@@ -25,10 +26,7 @@ pub fn invoke_get_entry(
     let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ArgumentDeserializationFailed as i32,
-        )));
+        return ribosome_return_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
 
@@ -68,14 +66,10 @@ pub fn invoke_get_entry(
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ResponseSerializationFailed as i32,
-                ))),
+                Err(_) => ribosome_return_code!(ResponseSerializationFailed),
             }
         }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ReceivedWrongActionResult as i32,
-        ))),
+        _ => ribosome_return_code!(ReceivedWrongActionResult),
     }
 }
 

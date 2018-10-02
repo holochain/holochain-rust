@@ -1,5 +1,6 @@
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::error::RibosomeReturnCode;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -13,7 +14,7 @@ pub fn invoke_debug(
 
     println!("{}", arg);
     let _ = runtime.context.log(&arg);
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+    ribosome_return_code!(Success)
 }
 
 #[cfg(test)]

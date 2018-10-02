@@ -5,13 +5,14 @@ use holochain_dna::zome::capabilities::Membrane;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::api::{HcApiReturnCode, Runtime},
+    ribosome::api::Runtime,
     state::NucleusState,
     ZomeFnCall,
 };
 use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::error::RibosomeReturnCode;
 
 /// Struct for input data received when Call API function is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -50,12 +51,7 @@ pub fn invoke_call(
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ArgumentDeserializationFailed as i32,
-            )));
-        }
+        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
     };
 
     // ZomeCallArgs to ZomeFnCall
@@ -63,9 +59,7 @@ pub fn invoke_call(
 
     // Don't allow recursive calls
     if zome_call.same_fn_as(&runtime.zome_call) {
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::RecursiveCallForbidden as i32,
-        )));
+        return ribosome_return_code!(RecursiveCallForbidden);
     }
 
     // Create Call Action
@@ -105,9 +99,7 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
-        Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ReceivedWrongActionResult as i32,
-        ))),
+        Err(_) => ribosome_return_code!(ReceivedWrongActionResult),
     }
 }
 

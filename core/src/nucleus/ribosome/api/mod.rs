@@ -16,8 +16,8 @@ use nucleus::{
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
-        Defn,
         memory::SinglePageManager,
+        Defn,
     },
     ZomeFnCall,
 };

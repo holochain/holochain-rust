@@ -1,9 +1,8 @@
-
-use serde_json;
 use error::RibosomeErrorReport;
+use memory_allocation::{SinglePageAllocation, SinglePageStack};
 use serde::{Deserialize, Serialize};
+use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
-use memory_allocation::{SinglePageStack, SinglePageAllocation};
 
 // Convert a json string stored in wasm memory into a specified struct
 // If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.

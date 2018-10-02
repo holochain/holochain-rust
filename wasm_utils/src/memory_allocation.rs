@@ -1,4 +1,3 @@
-
 use error::HcApiReturnCode;
 
 //--------------------------------------------------------------------------------------------------
@@ -85,9 +84,7 @@ pub struct SinglePageStack {
 impl SinglePageStack {
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new(last_allocation: SinglePageAllocation) -> Self {
-        assert!(
-            last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX
-        );
+        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX);
         SinglePageStack {
             top: last_allocation.offset + last_allocation.length,
         }
@@ -97,9 +94,7 @@ impl SinglePageStack {
         let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
         let last_allocation =
             last_allocation.expect("received error instead of valid encoded allocation");
-        assert!(
-            last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX
-        );
+        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX);
         return SinglePageStack::new(last_allocation);
     }
 
@@ -123,7 +118,6 @@ impl SinglePageStack {
         self.top
     }
 }
-
 
 #[cfg(test)]
 pub mod tests {

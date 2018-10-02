@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.net/Buliding_Holochain_apps_in_Lisp) to our new documentation site.

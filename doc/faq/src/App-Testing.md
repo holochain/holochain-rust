@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.net/Test_driven_development_features) to our new documentation site.

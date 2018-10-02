@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.org/DNA) to our new documentation site.

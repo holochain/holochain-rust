@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.net/hcdev) to our new documentation site.

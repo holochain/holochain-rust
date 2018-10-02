@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.net/How_to_get_started_building_an_app) to our new documentation site.

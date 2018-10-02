@@ -1,1 +1,0 @@
-This page has been [relocated](https://developer.holochain.net/Technical_architecture) to our new documentation site.

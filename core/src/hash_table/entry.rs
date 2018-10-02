@@ -15,10 +15,6 @@ use std::{
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
     content: String,
-
-    // @TODO do NOT serialize entry_type in Entry as it should only be in Header
-    // @see https://github.com/holochain/holochain-rust/issues/80
-    entry_type: String,
 }
 
 impl PartialEq for Entry {

@@ -36,12 +36,20 @@ impl Entry {
     }
 }
 
+#[derive(Clone, PartialEq, Debug, Hash)]
 pub struct EntryHeader {
     entry_type: EntryType,
     entry_address: Address,
 }
 
 impl EntryHeader {
+    pub fn new(entry_type: &EntryType, entry_address: &Address) -> EntryHeader {
+        EntryHeader {
+            entry_type: entry_type.clone(),
+            entry_address: entry_address.clone(),
+        }
+    }
+
     pub fn entry_type(&self) -> EntryType {
         self.entry_type.clone()
     }

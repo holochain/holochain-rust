@@ -3,11 +3,13 @@ use agent::keys::Keys;
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
 use std::{collections::HashMap, sync::Arc};
 use cas::content::AddressableContent;
+use chain::header::ChainHeader;
+use cas::content::Address;
+use hash_table::entry::EntryHeader;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -55,9 +57,9 @@ impl AgentState {
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
-    Commit(Result<Entry, HolochainError>),
+    Commit(Result<ChainHeader, HolochainError>),
     GetEntry(Option<Entry>),
-    GetLinks(Result<Vec<HashString>, HolochainError>),
+    GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
 
@@ -65,7 +67,7 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
+                Ok(chain_header) => Ok(json!(chain_header.content()).to_string()),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
@@ -104,9 +106,10 @@ fn reduce_commit_entry(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let res = state.chain.push_entry(&entry_type, &entry);
+    // @TODO assumes entry already added to CAS
+    let res = state.chain.push_entry(&EntryHeader::new(&entry_type, &entry.address()), &entry);
     let response = match res {
-        Ok(pair) => Ok(pair.entry().clone()),
+        Ok(chain_header) => Ok(chain_header),
         Err(e) => Err(e),
     };
 
@@ -123,9 +126,10 @@ fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => Action::GetEntry);
+    let address = unwrap_to!(action => Action::GetEntry);
 
-    let result = state.chain.entry(&key.clone());
+    // @TODO lookup from CAS not chain
+    let result = state.chain.entry(&address.clone());
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

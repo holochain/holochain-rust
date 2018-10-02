@@ -16,9 +16,9 @@ use nucleus::{
     },
     ZomeFnCall,
 };
+use hash_table::entry::EntryHeader;
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
-use chain::pair::Pair;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -119,7 +119,7 @@ impl Defn for Callback {
 #[derive(Debug)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(Pair),
+    ValidateCommit(EntryHeader),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,

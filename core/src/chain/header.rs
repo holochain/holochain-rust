@@ -5,10 +5,11 @@ use hash_table::{
     sys_entry::{EntryType, ToEntry},
 };
 use json::ToJson;
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use cas::content::AddressableContent;
+use cas::content::Address;
+use cas::content::Content;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table
@@ -33,9 +34,9 @@ pub struct ChainHeader {
     link_same_type: Option<HashString>,
 }
 
-impl PartialEq for Header {
-    fn eq(&self, other: &Header) -> bool {
-        self.hash() == other.hash()
+impl PartialEq for ChainHeader {
+    fn eq(&self, other: &ChainHeader) -> bool {
+        self.address() == other.address()
     }
 }
 
@@ -119,6 +120,16 @@ impl ChainHeader {
     pub fn validate(&self) -> bool {
         // always valid iff immutable and new() enforces validity
         true
+    }
+}
+
+impl AddressableContent for ChainHeader {
+    fn content(&self) -> Content {
+        self.to_entry().content()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        ChainHeader::from_json_str(content).expect("entry is not a valid Header Entry")
     }
 }
 

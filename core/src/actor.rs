@@ -1,5 +1,4 @@
 use agent::keys::Keys;
-use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash::HashString;
@@ -12,6 +11,7 @@ use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
+use chain::header::ChainHeader;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
@@ -19,12 +19,12 @@ use riker_patterns::ask::ask;
 /// @see https://github.com/riker-rs/riker/issues/17
 pub enum Protocol {
     /// Chain::set_top_pair()
-    SetTopPair(Option<Pair>),
-    SetTopPairResult(Result<Option<Pair>, HolochainError>),
+    SetTopChainHeader(Option<ChainHeader>),
+    SetTopChainHeaderResult(Result<Option<ChainHeader>, HolochainError>),
 
     /// Chain::top_pair()
-    GetTopPair,
-    GetTopPairResult(Option<Pair>),
+    GetTopChainHeader,
+    GetTopChainHeaderResult(Option<ChainHeader>),
 
     /// HashTable::setup()
     Setup,

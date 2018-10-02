@@ -1,7 +1,6 @@
 use agent::state::AgentState;
 use context::Context;
-use hash::HashString;
-use hash_table::{entry::Entry, links_entry::Link};
+use hash_table::{links_entry::Link};
 use holochain_dna::Dna;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
@@ -13,8 +12,10 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
+use hash_table::entry::EntryHeader;
+use cas::content::Address;
 use hash_table::sys_entry::EntryType;
-use chain::pair::Pair;
+use hash_table::entry::Entry;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -74,7 +75,7 @@ pub enum Action {
     /// MUST already have passed all callback checks
     Commit(EntryType, Entry),
     /// GetEntry by hash
-    GetEntry(HashString),
+    GetEntry(Address),
 
     /// link to add
     AddLink(Link),
@@ -99,7 +100,7 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidatePair(Pair),
+    ValidateEntry(EntryHeader),
     ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 

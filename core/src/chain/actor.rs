@@ -1,39 +1,39 @@
 use actor::{AskSelf, Protocol, SYS};
-use chain::pair::Pair;
 use error::HolochainError;
 use riker::actors::*;
 use snowflake;
+use chain::header::ChainHeader;
 
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
 pub trait AskChain {
     /// Protocol::SetTopPair -> Protocol::SetTopPairResult
-    fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
+    fn set_top_chain_header(&self, &Option<ChainHeader>) -> Result<Option<ChainHeader>, HolochainError>;
     /// Protocol::GetTopPair -> Protocol::GetTopPairResult
-    fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
+    fn top_chain_header(&self) -> Result<Option<ChainHeader>, HolochainError>;
 }
 
 impl AskChain for ActorRef<Protocol> {
-    fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::SetTopPair(pair.clone()))?;
-        unwrap_to!(response => Protocol::SetTopPairResult).clone()
+    fn set_top_chain_header(&self, chain_header: &Option<ChainHeader>) -> Result<Option<ChainHeader>, HolochainError> {
+        let response = self.block_on_ask(Protocol::SetTopChainHeader(chain_header.clone()))?;
+        unwrap_to!(response => Protocol::SetTopChainHeaderResult).clone()
     }
 
-    fn top_pair(&self) -> Result<Option<Pair>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetTopPair)?;
-        Ok(unwrap_to!(response => Protocol::GetTopPairResult).clone())
+    fn top_chain_header(&self) -> Result<Option<ChainHeader>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetTopChainHeader)?;
+        Ok(unwrap_to!(response => Protocol::GetTopChainHeaderResult).clone())
     }
 }
 
 pub struct ChainActor {
-    top_pair: Option<Pair>,
+    top_chain_header: Option<ChainHeader>,
 }
 
 impl ChainActor {
     /// returns a new ChainActor struct
     /// internal use for riker, use new_ref instead
     fn new() -> ChainActor {
-        ChainActor { top_pair: None }
+        ChainActor { top_chain_header: None }
     }
 
     /// actor() for riker

@@ -38,43 +38,17 @@ impl ContentAddressableStorage for MemoryStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{
-            tests::{ExampleAddressableContent, OtherExampleAddressableContent},
-            AddressableContent,
-        },
+        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
         memory::MemoryStorage,
-        storage::ContentAddressableStorage,
+        storage::tests::StorageTestSuite,
     };
 
     #[test]
     fn memory_round_trip() {
-        let mut cas = MemoryStorage::new();
-        let content = ExampleAddressableContent::from_content(&"foo".to_string());
-        let other_content = OtherExampleAddressableContent::from_content(&"bar".to_string());
-        assert_eq!(Ok(false), cas.contains(&content.address()));
-        assert_eq!(
-            Ok(None),
-            cas.fetch::<ExampleAddressableContent>(&content.address())
-        );
-        assert_eq!(Ok(false), cas.contains(&other_content.address()));
-        assert_eq!(
-            Ok(None),
-            cas.fetch::<OtherExampleAddressableContent>(&other_content.address())
-        );
-        // round trip some AddressableContent through the MemoryStorage
-        assert_eq!(Ok(()), cas.add(&content));
-        assert_eq!(Ok(true), cas.contains(&content.address()));
-        assert_eq!(Ok(false), cas.contains(&other_content.address()));
-        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-        // multiple types of AddressableContent can sit in a single MemoryStorage
-        // the safety of this is only as good as the hashing algorithm(s) used
-        assert_eq!(Ok(()), cas.add(&other_content));
-        assert_eq!(Ok(true), cas.contains(&content.address()));
-        assert_eq!(Ok(true), cas.contains(&other_content.address()));
-        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-        assert_eq!(
-            Ok(Some(other_content.clone())),
-            cas.fetch(&other_content.address())
+        let test_suite = StorageTestSuite::new(MemoryStorage::new());
+        test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
+            String::from("foo"),
+            String::from("bar"),
         );
     }
 

@@ -62,10 +62,13 @@ impl AddressableContent for CrudStatus {
 mod tests {
     use super::CrudStatus;
     use cas::{
-        content::AddressableContent,
+        content::{
+            tests::{AddressableContentTestSuite, ExampleAddressableContent},
+            AddressableContent, Content,
+        },
+        eav::tests::eav_round_trip_test_runner,
         storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
     };
-    use hash::HashString;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -92,6 +95,14 @@ mod tests {
     }
 
     #[test]
+    fn crud_status_example_eav() {
+        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
+        let attribute = "favourite-badge".to_string();
+        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        eav_round_trip_test_runner(entity_content, attribute, value_content);
+    }
+
+    #[test]
     /// show ToString implementation
     fn to_string_test() {
         assert_eq!("1".to_string(), CrudStatus::LIVE.to_string());
@@ -115,51 +126,30 @@ mod tests {
     /// show AddressableContent implementation
     fn addressable_content_test() {
         // from_content()
-        assert_eq!(CrudStatus::from_content(&"1".to_string()), CrudStatus::LIVE);
-        assert_eq!(
-            CrudStatus::from_content(&"2".to_string()),
-            CrudStatus::REJECTED
+        AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
+            String::from("1"),
+            CrudStatus::LIVE,
+            String::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG"),
         );
-        assert_eq!(
-            CrudStatus::from_content(&"4".to_string()),
-            CrudStatus::DELETED
+        AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
+            String::from("2"),
+            CrudStatus::REJECTED,
+            String::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg"),
         );
-        assert_eq!(
-            CrudStatus::from_content(&"8".to_string()),
-            CrudStatus::MODIFIED
+        AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
+            String::from("4"),
+            CrudStatus::DELETED,
+            String::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm"),
         );
-        assert_eq!(
-            CrudStatus::from_content(&"16".to_string()),
-            CrudStatus::LOCKED
+        AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
+            String::from("8"),
+            CrudStatus::MODIFIED,
+            String::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi"),
         );
-
-        // content()
-        assert_eq!("1".to_string(), CrudStatus::LIVE.content());
-        assert_eq!("2".to_string(), CrudStatus::REJECTED.content());
-        assert_eq!("4".to_string(), CrudStatus::DELETED.content());
-        assert_eq!("8".to_string(), CrudStatus::MODIFIED.content());
-        assert_eq!("16".to_string(), CrudStatus::LOCKED.content());
-
-        // address()
-        assert_eq!(
-            HashString::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG".to_string()),
-            CrudStatus::LIVE.address()
-        );
-        assert_eq!(
-            HashString::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg".to_string()),
-            CrudStatus::REJECTED.address()
-        );
-        assert_eq!(
-            HashString::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm".to_string()),
-            CrudStatus::DELETED.address()
-        );
-        assert_eq!(
-            HashString::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi".to_string()),
-            CrudStatus::MODIFIED.address()
-        );
-        assert_eq!(
-            HashString::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a".to_string()),
-            CrudStatus::LOCKED.address()
+        AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
+            String::from("16"),
+            CrudStatus::LOCKED,
+            String::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a"),
         );
     }
 

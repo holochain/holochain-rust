@@ -33,6 +33,7 @@ extern crate config;
 extern crate holochain_agent;
 extern crate holochain_dna;
 extern crate holochain_net;
+#[macro_use]
 extern crate holochain_wasm_utils;
 
 pub mod action;

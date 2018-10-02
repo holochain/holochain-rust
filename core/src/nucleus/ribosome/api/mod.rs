@@ -7,10 +7,9 @@ pub mod debug;
 pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
-use action::ActionWrapper;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
+use holochain_wasm_utils::{error::HcApiReturnCode, SinglePageAllocation};
 use instance::Observer;
 use nucleus::{
     memory::SinglePageManager,
@@ -24,10 +23,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{
-    str::FromStr,
-    sync::{mpsc::Sender, Arc},
-};
+use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
@@ -158,8 +154,6 @@ impl ZomeApiFunction {
 pub struct Runtime {
     pub context: Arc<Context>,
     pub result: String,
-    action_channel: Sender<ActionWrapper>,
-    observer_channel: Sender<Observer>,
     memory_manager: SinglePageManager,
     zome_call: ZomeFnCall,
     pub app_name: String,
@@ -183,16 +177,16 @@ impl Runtime {
             return String::new();
         }
         let allocation = allocation
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .expect("received error instead of valid encoded allocation");
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
         String::from_utf8(bin_arg)
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
     }
 
     /// Store a string in wasm memory.
@@ -209,10 +203,10 @@ impl Runtime {
         }
 
         let encoded_allocation = allocation_of_result
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-        .encode();
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
+            .encode();
 
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
@@ -225,8 +219,6 @@ impl Runtime {
 pub fn call(
     app_name: &str,
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     wasm: Vec<u8>,
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
@@ -314,8 +306,6 @@ pub fn call(
     let mut runtime = Runtime {
         context,
         result: String::new(),
-        action_channel: action_channel.clone(),
-        observer_channel: observer_channel.clone(),
         memory_manager: SinglePageManager::new(&wasm_instance),
         zome_call: zome_call.clone(),
         app_name: app_name.to_string(),
@@ -496,7 +486,7 @@ pub mod tests {
         app_name: &str,
         context: Arc<Context>,
         logger: Arc<Mutex<TestLogger>>,
-        instance: &Instance,
+        _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
     ) -> (Runtime, Arc<Mutex<TestLogger>>) {
@@ -510,8 +500,6 @@ pub mod tests {
             call(
                 &app_name,
                 context,
-                &instance.action_channel(),
-                &instance.observer_channel(),
                 wasm.clone(),
                 &zome_call,
                 Some(args_bytes),

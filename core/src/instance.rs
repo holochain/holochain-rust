@@ -3,7 +3,7 @@ use context::Context;
 use state::State;
 use std::{
     sync::{
-        mpsc::{channel, Receiver, Sender},
+        mpsc::{sync_channel, Receiver, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -18,8 +18,8 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
-    action_channel: Sender<ActionWrapper>,
-    observer_channel: Sender<Observer>,
+    action_channel: SyncSender<ActionWrapper>,
+    observer_channel: SyncSender<Observer>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -32,13 +32,17 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
+    pub fn default_channel_buffer_size() -> usize {
+        100
+    }
+
     /// get a clone of the action channel
-    pub fn action_channel(&self) -> Sender<ActionWrapper> {
+    pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
         self.action_channel.clone()
     }
 
     /// get a clone of the observer channel
-    pub fn observer_channel(&self) -> Sender<Observer> {
+    pub fn observer_channel(&self) -> SyncSender<Observer> {
         self.observer_channel.clone()
     }
 
@@ -79,8 +83,10 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = channel::<ActionWrapper>();
-        let (tx_observer, rx_observer) = channel::<Observer>();
+        let (tx_action, rx_action) =
+            sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
+        let (tx_observer, rx_observer) =
+            sync_channel::<Observer>(Self::default_channel_buffer_size());
         self.action_channel = tx_action.clone();
         self.observer_channel = tx_observer.clone();
 
@@ -90,6 +96,8 @@ impl Instance {
     pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
         let mut sub_context = (*context).clone();
         sub_context.set_state(self.state.clone());
+        sub_context.action_channel = self.action_channel.clone();
+        sub_context.observer_channel = self.observer_channel.clone();
         Arc::new(sub_context)
     }
 
@@ -134,12 +142,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(
-                    context.clone(),
-                    action_wrapper,
-                    &self.action_channel,
-                    &self.observer_channel,
-                );
+                new_state = state.reduce(context.clone(), action_wrapper);
             }
 
             // Get write lock
@@ -175,8 +178,8 @@ impl Instance {
 
     /// Creates a new Instance with disconnected channels.
     pub fn new() -> Self {
-        let (tx_action, _) = channel();
-        let (tx_observer, _) = channel();
+        let (tx_action, _) = sync_channel(1);
+        let (tx_observer, _) = sync_channel(1);
         Instance {
             state: Arc::new(RwLock::new(State::new())),
             action_channel: tx_action,
@@ -203,12 +206,12 @@ impl Default for Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
     action_wrapper: ActionWrapper,
 ) {
     // Create blocking channel
-    let (sender, receiver) = channel::<()>();
+    let (sender, receiver) = sync_channel::<()>(1);
 
     // Create blocking observer
     let observer_action_wrapper = action_wrapper.clone();
@@ -237,8 +240,8 @@ pub fn dispatch_action_and_wait(
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_with_observer<F>(
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
     action_wrapper: ActionWrapper,
     closure: F,
 ) where
@@ -259,7 +262,7 @@ pub fn dispatch_action_with_observer<F>(
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
+pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
     action_channel
         .send(action_wrapper)
         .expect(DISPATCH_WITHOUT_CHANNELS);
@@ -281,7 +284,7 @@ pub mod tests {
     use state::State;
     use std::{
         str::FromStr,
-        sync::{mpsc::channel, Arc, Mutex},
+        sync::{mpsc::sync_channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
@@ -322,7 +325,30 @@ pub mod tests {
         context
     }
 
+    /// create a test context
+    pub fn test_context_with_channels(
+        agent_name: &str,
+        action_channel: &SyncSender<ActionWrapper>,
+        observer_channel: &SyncSender<Observer>,
+    ) -> Arc<Context> {
+        let agent = Agent::from_string(agent_name.to_string());
+        let logger = test_logger();
+        Arc::new(Context::new_with_channels(
+            agent,
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+            action_channel.clone(),
+            observer_channel.clone(),
+        ))
+    }
+
+    #[test]
+    fn default_buffer_size_test() {
+        assert_eq!(Context::default_channel_buffer_size(), 100);
+    }
+
     /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Instance {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
@@ -392,6 +418,7 @@ pub mod tests {
     }
 
     /// create a test instance with a blank DNA
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::default());
@@ -460,7 +487,7 @@ pub mod tests {
         instance.start_action_loop(test_context("jane"));
 
         let dna = Dna::new();
-        let (sender, receiver) = channel();
+        let (sender, receiver) = sync_channel(1);
         instance.dispatch_with_observer(
             ActionWrapper::new(Action::InitApplication(dna.clone())),
             move |state: &State| match state.nucleus().dna() {

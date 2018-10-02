@@ -1,13 +1,21 @@
 # Holochain-rust
 
-[![Code Status](https://img.shields.io/badge/Code-Pre_Alpha-red.svg)](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)
+<h1 align="center">
+  <a href="http://holochain.org"><img width="250" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
+</h1>
+
+<p align="center">
+[![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
+[![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat)](https://waffle.io/holochain/holochain-rust)
+[![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
+
 [![Travis](https://img.shields.io/travis/holochain/holochain-rust/develop.svg)](https://travis-ci.org/holochain/holochain-rust/branches)
 [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/develop)
 [![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-[![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
+</p>
 
-This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust. See https://holochain.org.
+This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust.
 
 **[Code Status:](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 was released October 2017.  Alpha 1 was released May 2018.  We expect a developer pre-release of this Rust re-write in mid October 2018.
 <br/>

@@ -14,7 +14,7 @@ use nucleus::{
     ribosome::{
         api::call::reduce_call,
         callback::{
-            genesis::genesis, validate_commit::validate_commit, CallbackParams, CallbackResult,
+            genesis::genesis, CallbackParams, CallbackResult,
         },
     },
     state::{NucleusState, NucleusStatus},
@@ -402,57 +402,6 @@ fn reduce_execute_zome_function(
     );
 }
 
-/// Reduce ValidateEntry Action
-/// Validate an Entry by calling its validation function
-#[allow(unknown_lints)]
-#[allow(needless_pass_by_value)]
-fn reduce_validate_entry(
-    context: Arc<Context>,
-    state: &mut NucleusState,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::ValidateEntry);
-    match state
-        .dna()
-        .unwrap()
-        .get_zome_name_for_entry_type(entry.entry_type())
-    {
-        None => {
-            let error = format!("Unknown entry type: '{}'", entry.entry_type());
-            state
-                .validation_results
-                .insert(action_wrapper.clone(), Err(error.to_string()));
-        }
-        Some(zome_name) => {
-            #[cfg(debug)]
-            state.validations_running.push(action_wrapper.clone());
-            let action_wrapper = action_wrapper.clone();
-            let entry = entry.clone();
-            thread::spawn(move || {
-                let validation_result = match validate_commit(
-                    context.clone(),
-                    &zome_name,
-                    &CallbackParams::ValidateCommit(entry.clone()),
-                ) {
-                    CallbackResult::Fail(error_string) => Err(error_string),
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry.entry_type()
-                    )),
-                };
-                context
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        Box::new(action_wrapper),
-                        validation_result,
-                    ))))
-                    .expect("action channel to be open in reducer");
-            });
-        }
-    };
-}
 fn reduce_return_validation_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
@@ -492,7 +441,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::ValidateEntry(_) => Some(reduce_validate_entry),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,

@@ -2,7 +2,7 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_derive;
 
-use holochain_wasm_utils::*;
+use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;

@@ -2,7 +2,7 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_derive;
 
-use holochain_wasm_utils::*;
+use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
 
 //--------------------------------------------------------------------------------------------------

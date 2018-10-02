@@ -15,23 +15,34 @@ This is the home of the Holochain Rust library, being rewritten from [Go](https:
 | Holochain Links: | [FAQ](https://github.com/holochain/holochain-proto/wiki/FAQ) | [Developer Docs](https://holochain.github.io/holochain-rust/) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |
 |---|---|---|---|
 
+## Overview
+
+This `holochain-rust` repo does not contain any end-user executables, rather it delivers the holochain-core libraries in the form of a number of rust cargo crates which other repos use for building utilities or Holochain services that actually run Holochain applications:
+
+- `holochain_core_api`: the primary client wrapper crate used to instantiate and run a Holochain genome.
+- `hoclocian_core`: the main crate that implements the core Holochain functionality.
+- `holochain_dna`: a crate for working with holochain genome from a package file.  Used by both holochain_core the [packager utility](https://github.com/holochain/holochain-cmd)
+- `holochain_agent`: a crate for managing holochain agent info, including identities, keys etc..  Used by both holochain_core and other utilities.
+
+We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  `[hdk-rust]`(https://github.com/holochain/hdk-rust) and `[hdk-assemblyscript]`(https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and TypeScript compatibility.  We expect many more languages to be added by the community.
+
 ## Documentation: The Book on Holochain
 
 There is a work-in-progress book being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [./doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
-## Installation
-**Core Developers Only:** This `holochain-rust` repo delivers the holochain-core rust based cargo libraries, not any end-user executables.  These installation instructions are for developers of Holochain Core itself.  If you are developing Holochain applications, you will want to install the [`hcdev` command line tool](https://github.com/holochain/holochain-cmd) to create Holochain Genome packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install Genome packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or you application will come with them built in.
+## Installation & Usage
+**Core Developers Only:**  These instructions are for developers of Holochain Core itself.  If you are developing Holochain applications, you will want to install the [`hcdev` command line tool](https://github.com/holochain/holochain-cmd) to help create Holochain Genome packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install Genome packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or you application will come with them built in.
 
-### Local development & testing
+There are two approaches to building and testing Holochain, using `make` or using `docker`:
 
-#### Make
+### Make
 
 If you are running on ubuntu or Mac OS X, and you have `make` installed, you can do local development by simply typing:
 
 `make` which will:
 
 1. install (or update to) the correct version of rust
-2. build all the rust libraries
+2. build all the rust libraries from the source code in this repository.
 
 ### Docker
 
@@ -91,9 +102,16 @@ Otherwise, you will need to speak to an admin who can force merge your full chan
 ### Building for Android
 Note there is an article written for how to build Holochain for Android, read it [here](doc/holochain_101/src/holochain_across_platforms.md).
 
-### Contribute
-We accept Pull Requests and welcome your participation. Please make sure to include the issue number your branch names and use descriptive commit messages.
+## Contribute
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 
+In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
+1. Start by creating a branch in the [app-spec-rust](https://github.com/holochain/app-spec-rust) repository which demonstrates an actual implementation of the use of the new feature in the sample application that lives in that repository, including tests that would pass if the feature were actually implemented here in the holochain-rust repo.
+1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail, because they try and run the proposed changes against the `develop` branch of this `holochain-rust` repo.
+1. Do any development necessary to on here on `holochain-rust` and `hdk-rust` to implement the feature demonstrated in `app-spec-rust`
+1. Finally, when the feature is fully implemented, the CI tests should turn green on `app-spec-rust` and the branch can be merged indicating that that feature.
+
+In this way [`app-spec-rust`](https://github.com/holochain/app-spec-rust) works as a living specification with example app to build against.
 
 [![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
 
@@ -105,8 +123,6 @@ Some helpful links:
 Current Throughput graph:
 
 [![Throughput Graph](http://graphs.waffle.io/holochain/holochain-rust/throughput.svg)](https://waffle.io/holochain/holochain-rust/metrics)
-
-Contributors to this project are expected to follow our [development protocols & practices](https://github.com/holochain/holochain-rust/wiki/Development-Protocols).
 
 
 ## License

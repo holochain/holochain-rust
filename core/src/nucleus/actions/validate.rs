@@ -2,10 +2,12 @@ extern crate futures;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
+use hash::HashString;
 use hash_table::entry::Entry;
 use nucleus::ribosome::callback::{
     validate_commit::validate_commit, CallbackParams, CallbackResult,
 };
+use snowflake;
 use std::{sync::Arc, thread};
 
 /// ValidateEntry Action Creator
@@ -16,9 +18,9 @@ use std::{sync::Arc, thread};
 pub fn validate_entry(
     entry: Entry,
     context: &Arc<Context>,
-) -> Box<dyn Future<Item = ActionWrapper, Error = String>> {
-    let action_wrapper = ActionWrapper::new(Action::ValidateEntry(entry.clone()));
-    //dispatch_action(&context.action_channel, action_wrapper.clone());
+) -> Box<dyn Future<Item = HashString, Error = String>> {
+    let id = snowflake::ProcessUniqueId::new();
+    let hash = entry.hash();
 
     match context
         .state()
@@ -35,8 +37,8 @@ pub fn validate_entry(
             )));;
         }
         Some(zome_name) => {
-            //#[cfg(debug)] state.validations_running.push(action_wrapper.clone());
-            let action_wrapper = action_wrapper.clone();
+            let id = id.clone();
+            let hash = hash.clone();
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
@@ -55,7 +57,7 @@ pub fn validate_entry(
                 context
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        Box::new(action_wrapper),
+                        (id, hash),
                         validation_result,
                     ))))
                     .expect("action channel to be open in reducer");
@@ -65,7 +67,7 @@ pub fn validate_entry(
 
     Box::new(ValidationFuture {
         context: context.clone(),
-        action: action_wrapper,
+        key: (id, hash),
     })
 }
 
@@ -73,11 +75,11 @@ pub fn validate_entry(
 /// Tracks the state for ValidationResults.
 pub struct ValidationFuture {
     context: Arc<Context>,
-    action: ActionWrapper,
+    key: (snowflake::ProcessUniqueId, HashString),
 }
 
 impl Future for ValidationFuture {
-    type Item = ActionWrapper;
+    type Item = HashString;
     type Error = String;
 
     fn poll(
@@ -90,9 +92,9 @@ impl Future for ValidationFuture {
         //
         cx.waker().wake();
         if let Some(state) = self.context.state() {
-            match state.nucleus().validation_result(&self.action) {
-                Some(Ok(())) => Ok(futures::Async::Ready(self.action.clone())),
-                Some(Err(e)) => Err(e),
+            match state.nucleus().validation_results.get(&self.key) {
+                Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
+                Some(Err(e)) => Err(e.clone()),
                 None => Ok(futures::Async::Pending),
             }
         } else {

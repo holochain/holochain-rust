@@ -406,14 +406,10 @@ fn reduce_return_validation_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (action_wrapper, validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
+    let ((id, hash), validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
     state
         .validation_results
-        .insert(*action_wrapper.clone(), validation_result.clone());
-    #[cfg(debug)]
-    state
-        .validations_running
-        .retain(|x| x.id() != action_wrapper.id());
+        .insert((id.clone(), hash.clone()), validation_result.clone());
 }
 
 /// Reduce ReturnZomeFunctionResult Action.

@@ -95,10 +95,10 @@ pub enum Action {
     /// Execute a zome function call called by another zome function
     Call(ZomeFnCall),
 
-    /// ???
-    // @TODO how does this relate to validating a commit?
-    ValidateEntry(Entry),
-    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
+    /// A validation result that should be stored
+    /// Key is an unique id of the calling context
+    /// and the hash of the entry that was validated
+    ReturnValidationResult(((snowflake::ProcessUniqueId, HashString), ValidationResult)),
 }
 
 /// function signature for action handler functions

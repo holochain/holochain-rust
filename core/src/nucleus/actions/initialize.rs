@@ -10,7 +10,11 @@ use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::NucleusStatus,
 };
-use std::{sync::Arc, thread};
+use std::{sync::Arc, thread, time::*};
+
+/// Timeout in seconds for initialization process.
+/// Future will resolve to an error after this duration.
+const INITIALIZATION_TIMEOUT : u64 = 10;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -96,6 +100,7 @@ pub fn initialize_application(
 
     Box::new(InitializationFuture {
         context: context.clone(),
+        created_at: Instant::now(),
     })
 }
 
@@ -103,6 +108,7 @@ pub fn initialize_application(
 /// Tracks the nucleus status.
 pub struct InitializationFuture {
     context: Arc<Context>,
+    created_at: Instant,
 }
 
 impl Future for InitializationFuture {
@@ -118,6 +124,10 @@ impl Future for InitializationFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().wake();
+
+        if Instant::now().duration_since(self.created_at) > Duration::from_secs(INITIALIZATION_TIMEOUT) {
+            return Err("Timeout while initializing".to_string());
+        }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
                 NucleusStatus::New => Ok(futures::Async::Pending),

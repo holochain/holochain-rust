@@ -251,7 +251,7 @@ mod tests {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(
                 err,
-                HolochainError::ErrorGeneric("timed out waiting on channel".to_string())
+                HolochainError::ErrorGeneric("Timeout while initializing".to_string())
             ),
         };
     }

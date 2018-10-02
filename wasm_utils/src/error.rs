@@ -96,8 +96,9 @@ pub mod tests {
 
     #[test]
     fn hc_api_return_code_round_trip() {
-        let oom =
-            RibosomeReturnCode::from_offset(((RibosomeReturnCode::OutOfMemory as u32) >> 16) as u16);
+        let oom = RibosomeReturnCode::from_offset(
+            ((RibosomeReturnCode::OutOfMemory as u32) >> 16) as u16,
+        );
         assert_eq!(RibosomeReturnCode::OutOfMemory, oom);
         assert_eq!(RibosomeReturnCode::OutOfMemory.to_string(), oom.to_string());
     }
@@ -111,6 +112,9 @@ pub mod tests {
             line: line!().to_string(),
         };
 
-        assert_ne!(report.to_string(), ribosome_error_report!(description).to_string());
+        assert_ne!(
+            report.to_string(),
+            ribosome_error_report!(description).to_string()
+        );
     }
 }

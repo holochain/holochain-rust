@@ -1,11 +1,11 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash::HashString;
+use holochain_wasm_utils::error::RibosomeReturnCode;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_wasm_utils::error::RibosomeReturnCode;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksArgs {

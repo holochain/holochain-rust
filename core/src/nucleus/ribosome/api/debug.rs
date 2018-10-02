@@ -1,6 +1,6 @@
+use holochain_wasm_utils::error::RibosomeReturnCode;
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_wasm_utils::error::RibosomeReturnCode;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32

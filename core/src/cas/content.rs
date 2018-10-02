@@ -42,10 +42,13 @@ impl AddressableContent for Content {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{Address, AddressableContent, Content};
+    use cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    };
     use hash::HashString;
     use multihash::Hash;
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Write};
 
     #[derive(Debug, PartialEq, Clone, Hash, Eq)]
     /// some struct that can be content addressed
@@ -127,6 +130,25 @@ pub mod tests {
                 addressable_content.address(),
                 other_addressable_content.address()
             );
+        }
+
+        pub fn addressalbe_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
+        where
+            T: AddressableContent + PartialEq + Clone + Debug,
+            K: ContentAddressableStorage,
+        {
+            contents.into_iter().for_each(|f| {
+                let mut add_error_message = String::new();
+                let mut fetch_error_message = String::new();
+                writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
+                writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
+
+                cas.add(&f).expect(&add_error_message);
+                assert_eq!(
+                    Some(f.clone()),
+                    cas.fetch::<T>(&f.address()).expect(&fetch_error_message)
+                );
+            });
         }
     }
 

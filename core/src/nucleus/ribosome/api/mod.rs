@@ -9,8 +9,7 @@ pub mod get_links;
 pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{error::HcApiReturnCode, SinglePageAllocation};
-use instance::Observer;
+use holochain_wasm_utils::{error::HcApiReturnCode, memory_allocation::SinglePageAllocation};
 use nucleus::{
     memory::SinglePageManager,
     ribosome::{

@@ -69,7 +69,6 @@ mod tests {
         eav::tests::eav_round_trip_test_runner,
         storage::tests::ExampleContentAddressableStorage,
     };
-    use hash::HashString;
 
     #[test]
     /// test the CrudStatus bit flags as ints

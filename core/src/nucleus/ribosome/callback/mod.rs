@@ -6,7 +6,6 @@ pub mod receive;
 pub mod validate_commit;
 
 use context::Context;
-use hash_table::entry::Entry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
 use json::ToJson;
 use nucleus::{
@@ -19,6 +18,7 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use chain::pair::Pair;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -119,7 +119,7 @@ impl Defn for Callback {
 #[derive(Debug)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(Entry),
+    ValidateCommit(Pair),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,

@@ -21,8 +21,8 @@ macro_rules! sys_prefix {
 }
 
 // Enum for listing all System Entry Types
-// Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq)]
+// Variant `App` is for user defined entry types
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum EntryType {
     AgentId,
     Deletion,
@@ -71,6 +71,12 @@ impl EntryType {
     }
 }
 
+impl ToString for EntryType {
+    fn to_string(&self) -> String {
+        self.as_str().to_string()
+    }
+}
+
 //-------------------------------------------------------------------------------------------------
 // Dna Entry
 //-------------------------------------------------------------------------------------------------
@@ -78,11 +84,10 @@ impl EntryType {
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(EntryType::Dna.as_str(), &self.to_json())
+        Entry::new(&self.to_json())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
         return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
@@ -93,11 +98,10 @@ impl ToEntry for Dna {
 
 impl ToEntry for Agent {
     fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::AgentId.as_str(), &self.to_string())
+        Entry::new(&self.to_string())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::AgentId);
         let id_content: String =
             serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
         Agent::new(Identity::new(id_content))

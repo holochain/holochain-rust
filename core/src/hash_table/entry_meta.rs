@@ -1,10 +1,10 @@
-use error::HolochainError;
 use hash::HashString;
-use json::{FromJson, RoundTripJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
+use cas::content::AddressableContent;
+use cas::content::Content;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
@@ -100,21 +100,15 @@ impl Key for EntryMeta {
     }
 }
 
-impl ToJson for EntryMeta {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
+impl AddressableContent for EntryMeta {
+    fn content(&self) -> Content {
+        serde_json::to_string(&self)?
+    }
+
+    fn from_content(content: &Content) -> Self {
+        serde_json::from_str(content)?
     }
 }
-
-impl FromJson for EntryMeta {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
-    }
-}
-
-impl RoundTripJson for EntryMeta {}
 
 #[cfg(test)]
 pub mod tests {

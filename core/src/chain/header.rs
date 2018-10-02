@@ -8,7 +8,7 @@ use json::ToJson;
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::str::FromStr;
+use cas::content::AddressableContent;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table
@@ -16,17 +16,17 @@ use std::str::FromStr;
 // @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Header {
+#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
+pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
-    entry_type: String,
+    entry_type: EntryType,
     /// ISO8601 time stamp
     timestamp: String,
-    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
-    link: Option<HashString>,
+    /// Address of the immediately preceding chain header. Only the genesis ChainHeader can have None as valid
+    link: Option<Address>,
     /// Key to the entry of this header
-    entry_hash: HashString,
+    entry_address: Address,
     /// agent's cryptographic signature of the entry
     entry_signature: String,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
@@ -39,7 +39,7 @@ impl PartialEq for Header {
     }
 }
 
-impl Header {
+impl ChainHeader {
     /// build a new Header from a chain, entry type and entry.
     /// a Header is immutable, but the chain is mutable if chain.push() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
@@ -50,18 +50,18 @@ impl Header {
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new(
-        entry_type: &str,
+        entry_type: &EntryType,
         timestamp: &str,
-        link: Option<HashString>,
-        entry_hash: &HashString,
+        link: Option<Address>,
+        entry_address: &Address,
         entry_signature: &str,
         link_same_type: Option<HashString>,
     ) -> Self {
-        Header {
-            entry_type: entry_type.to_string(),
+        ChainHeader {
+            entry_type: entry_type.clone(),
             timestamp: timestamp.to_string(),
             link: link,
-            entry_hash: entry_hash.clone(),
+            entry_address: entry_address.clone(),
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }
@@ -72,7 +72,7 @@ impl Header {
     }
 
     /// entry_type getter
-    pub fn entry_type(&self) -> &str {
+    pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
     }
     /// timestamp getter
@@ -101,7 +101,7 @@ impl Header {
         // @TODO this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let pieces: [&str; 6] = [
-            &self.entry_type,
+            &self.entry_type.to_string(),
             &self.timestamp,
             &self.link.clone().unwrap_or_default().to_string(),
             &self.entry_hash.clone().to_string(),
@@ -122,30 +122,22 @@ impl Header {
     }
 }
 
-impl Key for Header {
-    fn key(&self) -> HashString {
-        self.hash()
-    }
-}
-
-impl ToJson for Header {
+impl ToJson for ChainHeader {
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(serde_json::to_string(self)?)
     }
 }
 
 //
-impl ToEntry for Header {
+impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
-        Entry::new(
-            EntryType::Header.as_str(),
-            &self.to_json().expect("entry should be valid"),
+        Entry::from(
+            self.to_json().expect("entry should be valid"),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Header);
-        return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
+        return ChainHeader::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
     }
 }
 

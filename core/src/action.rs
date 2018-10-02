@@ -13,6 +13,8 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
+use hash_table::sys_entry::EntryType;
+use chain::pair::Pair;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -70,7 +72,7 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(Entry),
+    Commit(EntryType, Entry),
     /// GetEntry by hash
     GetEntry(HashString),
 
@@ -97,7 +99,7 @@ pub enum Action {
 
     /// ???
     // @TODO how does this relate to validating a commit?
-    ValidateEntry(Entry),
+    ValidatePair(Pair),
     ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
 }
 

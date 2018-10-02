@@ -5,7 +5,6 @@ pub mod pair;
 use actor::Protocol;
 use chain::{
     actor::{AskChain, ChainActor},
-    header::Header,
     pair::Pair,
 };
 use error::HolochainError;
@@ -15,6 +14,11 @@ use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
+use hash_table::sys_entry::EntryType;
+use cas::content::AddressableContent;
+use cas::content::Address;
+use hash_table::entry::EntryHeader;
+use chain::header::ChainHeader;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -36,25 +40,24 @@ impl ChainIterator {
 }
 
 impl Iterator for ChainIterator {
-    type Item = Pair;
+    type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
-    fn next(&mut self) -> Option<Pair> {
+    fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
 
         self.current = previous
             .as_ref()
-            .and_then(|p| p.header().link())
+            .and_then(|h| h.link())
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
-            .and_then(|h| {
-                let header_entry = &self.table_actor.entry(&h)
+            .and_then(|header_address| {
+                let header_entry = &self.table_actor.entry(&header_address)
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
-                let header = Header::from_entry(header_entry);
-                let pair = Pair::from_header(&self.table_actor, &header);
-                pair
+                let chain_header = ChainHeader::from_entry(header_entry);
+                chain_header
             });
         previous
     }
@@ -67,13 +70,8 @@ pub struct Chain {
 }
 
 impl PartialEq for Chain {
-    // @TODO can we just check the actors are equal? is actor equality a thing?
-    // @see https://github.com/holochain/holochain-rust/issues/257
     fn eq(&self, other: &Chain) -> bool {
-        // an invalid chain is like NaN... not even equal to itself
-        self.validate() &&
-        other.validate() &&
-        // header hashing ensures that if the tops match the whole chain matches
+        // list linking by header addresses ensures that if the tops match the whole chain matches
         self.top_pair() == other.top_pair()
     }
 }
@@ -108,59 +106,26 @@ impl Chain {
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn create_next_header(&self, entry: &Entry) -> Header {
-        Header::new(
-            &entry.entry_type().clone(),
+    pub fn create_next_chain_header(&self, entry_header: &EntryHeader) -> ChainHeader {
+        ChainHeader::new(
+            entry_header.entry_type(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
-            self.top_pair()
+            self.top_chain_header()
                 .expect("could not get top pair when building header")
                 .as_ref()
-                .map(|p| p.header().to_entry().key()),
-            &entry.hash(),
+                .map(|h| h.to_entry().address()),
+            &entry.address(),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
             self
-                .top_pair_of_type(&entry.entry_type())
+                .top_pair_of_type(&entry_type)
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
                 .map(|p| p.header().hash()),
         )
-    }
-
-    /// Create the next commitable Pair for this chain
-    ///
-    /// Header is generated
-    ///
-    /// a Pair is immutable, but the chain is mutable if chain.commit_*() is used.
-    ///
-    /// this means that if two Pairs X and Y are generated for chain C then Pair X is pushed onto
-    /// C to create chain C' (containing X), then Pair Y is no longer valid as the headers would
-    /// need to include X. Pair Y can be regenerated with the same parameters as Y' and will be
-    /// now be valid, the new Y' will include correct headers pointing to X.
-    ///
-    /// # Panics
-    ///
-    /// Panics if entry is somehow invalid
-    ///
-    /// @see chain::entry::Entry
-    /// @see chain::header::Header
-    pub fn create_next_pair(&self, entry: &Entry) -> Pair {
-        let new_pair = Pair::new(&self.create_next_header(entry), &entry.clone());
-
-        // we panic as no code path should attempt to create invalid pairs
-        // creating a Pair is an internal process of chain.push() and is deterministic based on
-        // an immutable Entry (that itself cannot be invalid), so this should never happen.
-        assert!(new_pair.validate(), "attempted to create an invalid pair");
-
-        new_pair
-    }
-
-    /// returns true if all pairs in the chain pass validation
-    fn validate(&self) -> bool {
-        self.iter().all(|p| p.validate())
     }
 
     /// returns a ChainIterator that provides cloned Pairs from the underlying HashTable
@@ -202,17 +167,17 @@ impl Chain {
 // @see https://github.com/holochain/holochain-rust/issues/261
 pub trait SourceChain {
     /// sets an option for the top Pair
-    fn set_top_pair(&self, &Option<Pair>) -> Result<Option<Pair>, HolochainError>;
+    fn set_top_chain_header(&self, &Option<ChainHeader>) -> Result<Option<ChainHeader>, HolochainError>;
     /// returns an option for the top Pair
-    fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
+    fn top_chain_header(&self) -> Result<Option<ChainHeader>, HolochainError>;
     /// get the top Pair by Entry type
-    fn top_pair_of_type(&self, t: &str) -> Option<Pair>;
+    fn top_pair_of_type(&self, entry_type: &EntryType) -> Option<Pair>;
 
     /// push a new Entry on to the top of the Chain.
     /// The Pair for the new Entry is generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned.
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
+    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
     fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
 
@@ -223,21 +188,28 @@ pub trait SourceChain {
 }
 
 impl SourceChain for Chain {
-    fn top_pair(&self) -> Result<Option<Pair>, HolochainError> {
+    fn top_chain_header(&self) -> Result<Option<ChainHeader>, HolochainError> {
         self.chain_actor.top_pair()
     }
 
-    fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
+    fn set_top_chain_header(&self, pair: &Option<Pair>) -> Result<Option<ChainHeader>, HolochainError> {
         self.chain_actor.set_top_pair(&pair)
     }
 
-    fn top_pair_of_type(&self, t: &str) -> Option<Pair> {
-        self.iter().find(|p| p.header().entry_type() == t)
+    fn top_chain_header_of_type(&self, entry_type: &EntryType) -> Option<ChainHeader> {
+        self.iter().find(|p| p.header().entry_type() == entry_type)
     }
 
-    fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
+    fn push_entry(&mut self, entry_header: &EntryHeader, entry: &Entry) -> Result<EntryHeader, HolochainError> {
         let header_entry = &pair.clone().header().to_entry();
-        self.table_actor.put_entry(header_entry)?;
+
+        assert_eq!(entry_header.entry(), entry.address());
+
+        // drop the entry into the CAS
+        self.table_actor.put_entry(entry)?;
+
+        let chain_header = self.create_next_header(entry_header);
+
         self.table_actor.put_entry(&pair.clone().entry())?;
 
         // @TODO if top pair set fails but commit succeeds?
@@ -247,8 +219,8 @@ impl SourceChain for Chain {
         Ok(pair.clone())
     }
 
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = self.create_next_pair(entry);
+    fn push_entry(&mut self, entry_header: &EntryHeader, entry: &Entry) -> Result<Pair, HolochainError> {
+        let pair = self.create_next_pair(entry_type, entry);
         self.push_pair(&pair)
     }
 
@@ -266,7 +238,7 @@ impl SourceChain for Chain {
     }
 
     /// Browse Chain until Pair with entry_hash is found
-    fn entry(&self, entry_hash: &HashString) -> Option<Entry> {
+    fn entry(&self, address: &Address) -> Option<Entry> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self
@@ -274,7 +246,7 @@ impl SourceChain for Chain {
                 // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|p| {
-                &p.entry().hash() == entry_hash
+                &p.entry().address() == address
             });
         if pair.is_none() {
             return None;

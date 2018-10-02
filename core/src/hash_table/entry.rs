@@ -1,111 +1,63 @@
-use error::HolochainError;
-use hash::HashString;
 use hash_table::sys_entry::EntryType;
-use json::{FromJson, ToJson};
-use key::Key;
-use multihash::Hash;
-use serde_json;
-use std::{
-    hash::{Hash as StdHash, Hasher},
-    str::FromStr,
-};
+use cas::content::Address;
+use cas::content::AddressableContent;
+use cas::content::Content;
+use std::fmt;
 
-/// Structure holding actual data in a source chain "Item"
-/// data is stored as a JSON string
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Entry {
-    content: String,
-}
+/// integrates Entry Content with the Rust type system
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq)]
+pub struct Entry(Content);
 
-impl PartialEq for Entry {
-    fn eq(&self, other: &Entry) -> bool {
-        // @TODO is this right?
-        // e.g. two entries with the same content but different type are equal
-        // @see https://github.com/holochain/holochain-rust/issues/85
-        self.hash() == other.hash()
+impl fmt::Display for Entry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
-/// implement Hash for Entry to match PartialEq logic
-// @TODO is this right?
-// e.g. two entries with the same content but different type are equal
-// @see https://github.com/holochain/holochain-rust/issues/85
-impl StdHash for Entry {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+impl From<String> for Entry {
+    fn from(s: String) -> Entry {
+        Entry(s)
+    }
+}
+
+impl AddressableContent for Entry {
+    fn content(&self) -> Content {
+        self.0
+    }
+
+    fn from_content(c: &Content) -> Self {
+        Entry::from(&c)
     }
 }
 
 impl Entry {
-    /// build a new Entry from passed content
-    /// an Entry is immutable, this is important for absolutely everything downstream
-    /// an entry is not valid until paired with a header and included in a chain.
-    /// @see chain::header::Header
-    /// @see chain::pair::Pair
-    pub fn new(entry_type: &str, content: &str) -> Entry {
-        Entry {
-            entry_type: entry_type.to_string(),
-            content: content.to_string(),
-        }
+    pub fn new() -> Entry {
+        Entry("".to_string())
     }
+}
 
-    /// hashes the entry
-    pub fn hash(&self) -> HashString {
-        // @TODO - this is the wrong string being hashed
-        // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = &self.content;
+pub struct EntryHeader {
+    entry_type: EntryType,
+    entry_address: Address,
+}
 
-        // @TODO the hashing algo should not be hardcoded
-        // @see https://github.com/holochain/holochain-rust/issues/104
-        HashString::encode_from_str(string_to_hash, Hash::SHA2256)
-    }
-
-    /// content getter
-    pub fn content(&self) -> String {
-        self.content.clone()
-    }
-
-    /// entry_type getter
-    pub fn entry_type(&self) -> String {
+impl EntryHeader {
+    pub fn entry_type(&self) -> EntryType {
         self.entry_type.clone()
     }
 
-    /// returns true iff the entry is valid
-    pub fn validate(&self) -> bool {
-        // always valid if immutable and new() enforces validity
-        true
+    pub fn entry_address(&self) -> Address {
+        self.entry_address.clone()
     }
 
     /// returns true if the entry type is a system entry
     pub fn is_sys(&self) -> bool {
-        EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
+        &self.entry_type != EntryType::App
     }
 
     /// returns true if the entry type is an app entry
     pub fn is_app(&self) -> bool {
-        EntryType::from_str(&self.entry_type).unwrap() == EntryType::App
-    }
-}
-
-impl Key for Entry {
-    fn key(&self) -> HashString {
-        self.hash()
-    }
-}
-
-impl ToJson for Entry {
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
-    }
-}
-
-impl FromJson for Entry {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
+        &self.entry_type == EntryType::App
     }
 }
 

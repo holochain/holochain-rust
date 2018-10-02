@@ -1,5 +1,5 @@
 use actor::Protocol;
-use chain::header::Header;
+use chain::header::ChainHeader;
 use error::HolochainError;
 use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
@@ -11,7 +11,7 @@ use serde_json;
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
 /// The source chain being a hash table, the key of a Pair is the hash of its Header
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Hash)]
 pub struct Pair {
     header: Header,
     entry: Entry,
@@ -49,16 +49,6 @@ impl Pair {
     /// entry getter
     pub fn entry(&self) -> &Entry {
         &self.entry
-    }
-
-    /// Return true if the pair is valid
-    pub fn validate(&self) -> bool {
-        // the header and entry must validate independently
-        self.header.validate() && self.entry.validate()
-        // the header entry hash must be the same as the entry hash
-        && self.header.entry_hash() == &self.entry.hash()
-        // the entry_type must line up across header and entry
-        && self.header.entry_type() == self.entry.entry_type()
     }
 }
 

@@ -8,6 +8,7 @@ use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
+use cas::content::AddressableContent;
 
 use walkdir::WalkDir;
 
@@ -19,7 +20,7 @@ enum Table {
 }
 
 // things that can be serialized and put in a file... wish-it-was-rows
-trait Row: ToJson + Key {}
+trait Row: AddressableContent {}
 impl Row for Entry {}
 impl Row for EntryMeta {}
 

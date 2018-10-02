@@ -4,7 +4,6 @@
   <a href="http://holochain.org"><img width="250" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
 </h1>
 
-<p align="center">
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat)](https://waffle.io/holochain/holochain-rust)
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
@@ -13,7 +12,6 @@
 [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/develop)
 [![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-</p>
 
 This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust.
 

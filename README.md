@@ -5,7 +5,9 @@
 </h1>
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
-[![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat)](https://waffle.io/holochain/holochain-rust)
+[![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/holochain-rust)
+[![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
+
 [![Twitter Follow](https://img.shields.io/twitter/follow/holochain.svg?style=social&label=Follow)](https://twitter.com/holochain)
 
 [![Travis](https://img.shields.io/travis/holochain/holochain-rust/develop.svg)](https://travis-ci.org/holochain/holochain-rust/branches)
@@ -109,7 +111,7 @@ Otherwise, you will need to speak to an admin who can force merge your full chan
 Note there is an article written for how to build Holochain for Android, read it [here](doc/holochain_101/src/holochain_across_platforms.md).
 
 ## Contribute
-Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 
 In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
 1. Start by creating a branch in the [app-spec-rust](https://github.com/holochain/app-spec-rust) repository which demonstrates an actual implementation of the use of the new feature in the sample application that lives in that repository, including tests that would pass if the feature were actually implemented here in the holochain-rust repo.

@@ -32,7 +32,7 @@ This `holochain-rust` repo does not contain any end-user executables, rather it 
 - `holochain_dna`: a crate for working with holochain genome from a package file.  Used by both holochain_core the [packager utility](https://github.com/holochain/holochain-cmd)
 - `holochain_agent`: a crate for managing holochain agent info, including identities, keys etc..  Used by both holochain_core and other utilities.
 
-We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  `[hdk-rust]`(https://github.com/holochain/hdk-rust) and `[hdk-assemblyscript]`(https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and TypeScript compatibility.  We expect many more languages to be added by the community.
+We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  [`hdk-rust`](https://github.com/holochain/hdk-rust) and [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and TypeScript compatibility.  We expect many more languages to be added by the community.
 
 ## Documentation: The Book on Holochain
 

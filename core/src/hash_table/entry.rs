@@ -179,6 +179,18 @@ pub mod tests {
     }
 
     #[test]
+    /// show From<Entry> for String
+    fn string_from_entry_test() {
+        assert_eq!(test_entry_content().to_string(), String::from(test_entry()));
+    }
+
+    #[test]
+    /// show From<String> for Entry
+    fn entry_from_string_test() {
+        assert_eq!(test_entry(), Entry::from(test_entry_content().to_string()));
+    }
+
+    #[test]
     /// test that the content changes the hash
     fn hash_content() {
         let entry_a = test_entry_a();

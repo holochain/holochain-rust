@@ -121,11 +121,9 @@ In adding significant changes and new features to Holochain, we follow a specifi
 
 In this way [`app-spec-rust`](https://github.com/holochain/app-spec-rust) works as a living specification with example app to build against.
 
-[![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
-
 Some helpful links:
 
-* View our [Kanban on Waffle](https://waffle.io/holochain/holochain-org).
+* View our [Kanban on Waffle](https://waffle.io/holochain/holochain-org) [![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
 * Chat with us on our [Chat Server](https://chat.holochain.org) or [Gitter](https://gitter.im/metacurrency/holochain)
 
 Current Throughput graph:

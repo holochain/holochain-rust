@@ -15,6 +15,7 @@ use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
+use hash_table::sys_entry::EntryType;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -105,9 +106,9 @@ impl Chain {
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn create_next_header(&self, entry: &Entry) -> Header {
+    pub fn create_next_header(&self, entry_type: &EntryType, entry: &Entry) -> Header {
         Header::new(
-            &entry.entry_type().clone(),
+            entry_type,
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
@@ -120,7 +121,7 @@ impl Chain {
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
             self
-                .top_pair_of_type(&entry.entry_type())
+                .top_pair_of_type(entry_type)
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
                 .map(|p| p.header().hash()),
@@ -144,8 +145,8 @@ impl Chain {
     ///
     /// @see chain::entry::Entry
     /// @see chain::header::Header
-    pub fn create_next_pair(&self, entry: &Entry) -> Pair {
-        let new_pair = Pair::new(&self.create_next_header(entry), &entry.clone());
+    pub fn create_next_pair(&self, entry_type: &EntryType, entry: &Entry) -> Pair {
+        let new_pair = Pair::new(&self.create_next_header(entry_type, entry), &entry.clone());
 
         new_pair
     }
@@ -193,13 +194,13 @@ pub trait SourceChain {
     /// returns an option for the top Pair
     fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
     /// get the top Pair by Entry type
-    fn top_pair_of_type(&self, t: &str) -> Option<Pair>;
+    fn top_pair_of_type(&self, entry_type: &EntryType) -> Option<Pair>;
 
     /// push a new Entry on to the top of the Chain.
     /// The Pair for the new Entry is generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned.
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError>;
+    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry) -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
     fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
 
@@ -218,8 +219,8 @@ impl SourceChain for Chain {
         self.chain_actor.set_top_pair(&pair)
     }
 
-    fn top_pair_of_type(&self, t: &str) -> Option<Pair> {
-        self.iter().find(|p| p.header().entry_type() == t)
+    fn top_pair_of_type(&self, entry_type: &EntryType) -> Option<Pair> {
+        self.iter().find(|pair| pair.header().entry_type() == entry_type)
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
@@ -234,8 +235,8 @@ impl SourceChain for Chain {
         Ok(pair.clone())
     }
 
-    fn push_entry(&mut self, entry: &Entry) -> Result<Pair, HolochainError> {
-        let pair = self.create_next_pair(entry);
+    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry) -> Result<Pair, HolochainError> {
+        let pair = self.create_next_pair(entry_type, entry);
         self.push_pair(&pair)
     }
 

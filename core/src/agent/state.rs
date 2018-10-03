@@ -96,12 +96,15 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
+    let (entry_type, entry) = match action {
+        Action::Commit(entry_type, entry) => (entry_type, entry),
+        _ => unreachable!(),
+    };
 
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let res = state.chain.push_entry(&entry);
+    let res = state.chain.push_entry(&entry_type, &entry);
     let response = match res {
         Ok(pair) => Ok(pair.entry().clone()),
         Err(e) => Err(e),
@@ -136,7 +139,7 @@ fn reduce_get_entry(
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Commit(_, _) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }

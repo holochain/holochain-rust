@@ -2,13 +2,14 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::{
     entry::Entry,
-    sys_entry::{EntryType, ToEntry},
+    sys_entry::{ToEntry},
 };
 use json::ToJson;
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::str::FromStr;
+use hash_table::sys_entry::EntryType;
+use cas::content::Address;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table
@@ -20,17 +21,17 @@ use std::str::FromStr;
 pub struct Header {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
-    entry_type: String,
+    entry_type: EntryType,
     /// ISO8601 time stamp
     timestamp: String,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
-    link: Option<HashString>,
+    link: Option<Address>,
     /// Key to the entry of this header
-    entry_hash: HashString,
+    entry_hash: Address,
     /// agent's cryptographic signature of the entry
     entry_signature: String,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
-    link_same_type: Option<HashString>,
+    link_same_type: Option<Address>,
 }
 
 impl PartialEq for Header {
@@ -50,7 +51,7 @@ impl Header {
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new(
-        entry_type: &str,
+        entry_type: &EntryType,
         timestamp: &str,
         link: Option<HashString>,
         entry_hash: &HashString,
@@ -58,7 +59,7 @@ impl Header {
         link_same_type: Option<HashString>,
     ) -> Self {
         Header {
-            entry_type: entry_type.to_string(),
+            entry_type: entry_type.to_owned(),
             timestamp: timestamp.to_string(),
             link: link,
             entry_hash: entry_hash.clone(),
@@ -72,25 +73,30 @@ impl Header {
     }
 
     /// entry_type getter
-    pub fn entry_type(&self) -> &str {
+    pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
     }
+
     /// timestamp getter
     pub fn timestamp(&self) -> &str {
         &self.timestamp
     }
+
     /// link getter
     pub fn link(&self) -> Option<HashString> {
         self.link.clone()
     }
+
     /// entry_hash getter
     pub fn entry_hash(&self) -> &HashString {
         &self.entry_hash
     }
+
     /// link_same_type getter
     pub fn link_same_type(&self) -> Option<HashString> {
         self.link_same_type.clone()
     }
+
     /// entry_signature getter
     pub fn entry_signature(&self) -> &str {
         &self.entry_signature
@@ -101,7 +107,7 @@ impl Header {
         // @TODO this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
         let pieces: [&str; 6] = [
-            &self.entry_type,
+            &self.entry_type.as_str(),
             &self.timestamp,
             &self.link.clone().unwrap_or_default().to_string(),
             &self.entry_hash.clone().to_string(),
@@ -131,14 +137,12 @@ impl ToJson for Header {
 //
 impl ToEntry for Header {
     fn to_entry(&self) -> Entry {
-        Entry::new(
-            EntryType::Header.as_str(),
-            &self.to_json().expect("entry should be valid"),
+        Entry::from(
+            self.to_json().expect("entry should be valid"),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Header);
         return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
     }
 }

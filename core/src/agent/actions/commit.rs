@@ -6,6 +6,7 @@ use futures::Future;
 use hash_table::entry::Entry;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
+use hash_table::sys_entry::EntryType;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
@@ -13,11 +14,12 @@ use std::sync::{mpsc::SyncSender, Arc};
 ///
 /// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
+    entry_type: EntryType,
     entry: Entry,
     action_channel: &SyncSender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> CommitFuture {
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
+    let action_wrapper = ActionWrapper::new(Action::Commit(entry_type, entry));
     dispatch_action(action_channel, action_wrapper.clone());
     CommitFuture {
         context: context.clone(),

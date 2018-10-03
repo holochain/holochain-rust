@@ -55,8 +55,6 @@ impl Pair {
     pub fn validate(&self) -> bool {
         // the header entry hash must be the same as the entry hash
         self.header().entry_hash() == &self.entry().hash()
-        // the entry_type must line up across header and entry
-        && self.header().entry_type() == self.entry().entry_type()
     }
 }
 

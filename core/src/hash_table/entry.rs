@@ -13,13 +13,7 @@ use std::{
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Entry {
-    content: String,
-
-    // @TODO do NOT serialize entry_type in Entry as it should only be in Header
-    // @see https://github.com/holochain/holochain-rust/issues/80
-    entry_type: String,
-}
+pub struct Entry(String);
 
 impl PartialEq for Entry {
     fn eq(&self, other: &Entry) -> bool {
@@ -36,28 +30,26 @@ impl PartialEq for Entry {
 // @see https://github.com/holochain/holochain-rust/issues/85
 impl StdHash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+        self.0.hash(state);
+    }
+}
+
+impl From<String> for Entry {
+    fn from(s: String) -> Self {
+        Entry(s)
     }
 }
 
 impl Entry {
-    /// build a new Entry from passed content
-    /// an Entry is immutable, this is important for absolutely everything downstream
-    /// an entry is not valid until paired with a header and included in a chain.
-    /// @see chain::header::Header
-    /// @see chain::pair::Pair
-    pub fn new(entry_type: &str, content: &str) -> Entry {
-        Entry {
-            entry_type: entry_type.to_string(),
-            content: content.to_string(),
-        }
+    pub fn new() -> Entry {
+        Entry(String::new())
     }
 
     /// hashes the entry
     pub fn hash(&self) -> HashString {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = &self.content;
+        let string_to_hash = &self.0;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
@@ -66,12 +58,7 @@ impl Entry {
 
     /// content getter
     pub fn content(&self) -> String {
-        self.content.clone()
-    }
-
-    /// entry_type getter
-    pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
+        self.0.clone()
     }
 
     /// returns true if the entry type is a system entry

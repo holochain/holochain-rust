@@ -22,7 +22,7 @@ macro_rules! sys_prefix {
 
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum EntryType {
     AgentId,
     Deletion,

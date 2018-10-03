@@ -103,9 +103,9 @@ impl Header {
         let pieces: [&str; 6] = [
             &self.entry_type,
             &self.timestamp,
-            &self.link.clone().unwrap_or_default().to_str(),
-            &self.entry_hash.clone().to_str(),
-            &self.link_same_type.clone().unwrap_or_default().to_str(),
+            &self.link.clone().unwrap_or_default().to_string(),
+            &self.entry_hash.clone().to_string(),
+            &self.link_same_type.clone().unwrap_or_default().to_string(),
             &self.entry_signature,
         ];
         let string_to_hash = pieces.concat();
@@ -113,12 +113,6 @@ impl Header {
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
-    }
-
-    /// returns true if the header is valid
-    pub fn validate(&self) -> bool {
-        // always valid iff immutable and new() enforces validity
-        true
     }
 }
 
@@ -209,7 +203,6 @@ mod tests {
         assert_eq!(h.entry_hash(), &e.hash());
         assert_eq!(h.link(), None);
         assert_ne!(h.hash(), HashString::new());
-        assert!(h.validate());
     }
 
     #[test]
@@ -402,18 +395,6 @@ mod tests {
     fn hash_type_next() {
         // @TODO is it possible to test that type_next changes the hash in an isolated way?
         // @see https://github.com/holochain/holochain-rust/issues/76
-    }
-
-    #[test]
-    /// tests for header.validate()
-    fn validate() {
-        let chain = test_chain();
-        let t = "foo";
-
-        let e = Entry::new(t, "");
-        let h = chain.create_next_header(&e);
-
-        assert!(h.validate());
     }
 
     #[test]

@@ -2,18 +2,14 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
-use instance::{Observer, RECV_DEFAULT_TIMEOUT_MS};
+use holochain_wasm_utils::error::RibosomeReturnCode;
+use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::api::{HcApiReturnCode, Runtime},
-    state::NucleusState,
-    ZomeFnCall,
+    get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,
+    state::NucleusState, ZomeFnCall,
 };
 use serde_json;
-use std::sync::{
-    mpsc::{channel, Sender},
-    Arc,
-};
+use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Call API function is invoked
@@ -53,12 +49,7 @@ pub fn invoke_call(
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ArgumentDeserializationFailed as i32,
-            )));
-        }
+        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
     };
 
     // ZomeCallArgs to ZomeFnCall
@@ -66,9 +57,7 @@ pub fn invoke_call(
 
     // Don't allow recursive calls
     if zome_call.same_fn_as(&runtime.zome_call) {
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::RecursiveCallForbidden as i32,
-        )));
+        return ribosome_return_code!(RecursiveCallForbidden);
     }
 
     // Create Call Action
@@ -76,8 +65,8 @@ pub fn invoke_call(
     // Send Action and block
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
+        &runtime.context.action_channel,
+        &runtime.context.observer_channel,
         action_wrapper.clone(),
         move |state: &::state::State| {
             // Observer waits for a ribosome_call_result
@@ -108,9 +97,7 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
-        Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ReceivedWrongActionResult as i32,
-        ))),
+        Err(_) => ribosome_return_code!(ReceivedWrongActionResult),
     }
 }
 
@@ -123,8 +110,6 @@ pub(crate) fn reduce_call(
     context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
 ) {
     // 1.Checks for correctness of ZomeFnCall
     let fn_call = match action_wrapper.action().clone() {
@@ -181,14 +166,7 @@ pub(crate) fn reduce_call(
     let code =
         maybe_code.expect("zome not found, Should have failed before when getting capability.");
     state.zome_calls.insert(fn_call.clone(), None);
-    launch_zome_fn_call(
-        context,
-        fn_call,
-        action_channel,
-        observer_channel,
-        &code,
-        state.dna.clone().unwrap().name,
-    );
+    launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
 #[cfg(test)]
@@ -200,7 +178,10 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
-    use instance::tests::{test_instance, TestLogger};
+    use instance::{
+        tests::{test_instance, TestLogger},
+        Observer,
+    };
     use nucleus::ribosome::{
         api::{
             tests::{
@@ -217,6 +198,7 @@ pub mod tests {
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeCallArgs {
             zome_name: "zome_name".to_string(),
@@ -229,6 +211,7 @@ pub mod tests {
             .into_bytes()
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeCallArgs {
             zome_name: test_zome_name(),
@@ -241,6 +224,7 @@ pub mod tests {
             .into_bytes()
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         Arc::new(Context::new(
             Agent::from_string("alex".to_string()),
@@ -249,6 +233,7 @@ pub mod tests {
         ))
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
         dna: Dna,
         expected: Result<Result<String, HolochainError>, RecvTimeoutError>,

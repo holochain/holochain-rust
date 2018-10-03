@@ -5,7 +5,7 @@ use context::Context;
 use futures::Future;
 use hash_table::entry::Entry;
 use instance::dispatch_action;
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::{mpsc::SyncSender, Arc};
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
@@ -14,7 +14,7 @@ use std::sync::{mpsc::Sender, Arc};
 /// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
     entry: Entry,
-    action_channel: &Sender<ActionWrapper>,
+    action_channel: &SyncSender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> CommitFuture {
     let action_wrapper = ActionWrapper::new(Action::Commit(entry));

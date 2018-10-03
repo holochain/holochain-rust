@@ -2,11 +2,9 @@ extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
 use hash_table::entry::Entry;
+use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
 use json::ToJson;
-use nucleus::{
-    actions::validate::*,
-    ribosome::api::{HcApiReturnCode, Runtime},
-};
+use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -30,12 +28,7 @@ pub fn invoke_commit_app_entry(
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ArgumentDeserializationFailed as i32,
-            )));
-        }
+        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
@@ -44,31 +37,31 @@ pub fn invoke_commit_app_entry(
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry.clone(), &runtime.action_channel, &runtime.context)
+        validate_entry(entry.clone(), &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry.clone(), &runtime.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let json = match task_result {
+    let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => Ok("Unknown error".to_string()),
+            _ => return ribosome_return_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
-            // TODO - Have Failure write message in wasm memory
-            // so wasm can return custom error message to end-user
-            println!("ERROR: hc_commit_entry() FAILED: {}", error_string);
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(HcApiReturnCode::Failure as i32)));
+            let error_report = ribosome_error_report!(format!(
+                "Call to `hc_commit_entry()` failed: {}",
+                error_string
+            ));
+            Ok(json!(error_report).to_string())
+            // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
+            // Ok(error_string)
         }
     };
 
     // allocate and encode result
-    match json {
-        Ok(j) => runtime.store_utf8(&j),
-        Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ResponseSerializationFailed as i32,
-        ))),
+    match maybe_json {
+        Ok(json) => runtime.store_utf8(&json),
+        Err(_) => ribosome_return_code!(ResponseSerializationFailed),
     }
 
     // @TODO test that failing validation prevents commits happening

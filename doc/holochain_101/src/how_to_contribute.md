@@ -15,6 +15,10 @@ Writing is in classic markdown, so a new page is a new markdown file. These file
 
 The HTML files used in the Book get automatically built from the markdown files. Even though they're auto-generated, static HTML files, one can search within the text.
 
+## What to Contribute
+
+For a current list of open documentation issues, check out the ['documentation' label for github issues](https://github.com/holochain/holochain-rust/issues?q=is%3Aissue+is%3Aopen+label%3Adocumentation).
+
 ## Contributing via GitHub
 
 ### Getting there

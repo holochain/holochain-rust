@@ -1,4 +1,4 @@
-use holochain_wasm_utils::{SinglePageAllocation, SinglePageStack};
+use holochain_wasm_utils::memory_allocation::{SinglePageAllocation, SinglePageStack};
 
 use wasmi::{MemoryRef, ModuleRef};
 

@@ -41,6 +41,7 @@ pub mod agent;
 pub mod cas;
 pub mod chain;
 pub mod context;
+pub mod eav;
 pub mod error;
 pub mod hash;
 pub mod hash_table;

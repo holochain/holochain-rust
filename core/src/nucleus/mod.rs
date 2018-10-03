@@ -12,7 +12,6 @@ use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::{
         api::call::reduce_call,
-        callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
     },
     state::{NucleusState, NucleusStatus},
 };

@@ -1,9 +1,5 @@
-use hash_table::{
-    entry::Entry,
-    sys_entry::{ToEntry},
-    HashString,
-};
 use cas::content::Address;
+use hash_table::{entry::Entry, sys_entry::ToEntry, HashString};
 use serde_json;
 
 //-------------------------------------------------------------------------------------------------
@@ -129,7 +125,7 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use hash_table::sys_entry::{EntryType, ToEntry};
     use instance::{tests::test_context, Instance, Observer};
-    use std::{sync::mpsc::channel};
+    use std::sync::mpsc::channel;
 
     pub fn create_test_link() -> Link {
         Link::new(
@@ -166,7 +162,10 @@ pub mod tests {
         let context = test_context("alex");
         let link = create_test_link();
         let link_list_entry = LinkListEntry::new(&[link]);
-        let commit_action = ActionWrapper::new(Action::Commit(EntryType::LinkList, link_list_entry.to_entry()));
+        let commit_action = ActionWrapper::new(Action::Commit(
+            EntryType::LinkList,
+            link_list_entry.to_entry(),
+        ));
         // Set up instance and process the action
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
@@ -180,10 +179,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
-                    assert_eq!(
-                        entry_type,
-                        &EntryType::LinkList,
-                    );
+                    assert_eq!(entry_type, &EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.to_entry().content());
                     true
                 }
@@ -199,7 +195,10 @@ pub mod tests {
         let link_b = create_test_link_b();
         let link_c = create_test_link_c();
         let link_list_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
-        let commit_action = ActionWrapper::new(Action::Commit(EntryType::LinkList, link_list_entry.to_entry()));
+        let commit_action = ActionWrapper::new(Action::Commit(
+            EntryType::LinkList,
+            link_list_entry.to_entry(),
+        ));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new();
@@ -214,10 +213,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
-                    assert_eq!(
-                        entry_type,
-                        &EntryType::LinkList,
-                    );
+                    assert_eq!(entry_type, &EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.to_entry().content());
                     true
                 }

@@ -10,12 +10,15 @@ use chain::{
 };
 use error::HolochainError;
 use hash::HashString;
-use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
+use hash_table::{
+    entry::Entry,
+    sys_entry::{EntryType, ToEntry},
+    HashTable,
+};
 use json::ToJson;
 use key::Key;
 use riker::actors::*;
 use serde_json;
-use hash_table::sys_entry::EntryType;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -200,7 +203,8 @@ pub trait SourceChain {
     /// The Pair for the new Entry is generated and validated against the current top
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned.
-    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry) -> Result<Pair, HolochainError>;
+    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry)
+        -> Result<Pair, HolochainError>;
     /// get an Entry by Entry key from the HashTable if it exists
     fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
 
@@ -220,7 +224,8 @@ impl SourceChain for Chain {
     }
 
     fn top_pair_of_type(&self, entry_type: &EntryType) -> Option<Pair> {
-        self.iter().find(|pair| pair.header().entry_type() == entry_type)
+        self.iter()
+            .find(|pair| pair.header().entry_type() == entry_type)
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
@@ -235,7 +240,11 @@ impl SourceChain for Chain {
         Ok(pair.clone())
     }
 
-    fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry) -> Result<Pair, HolochainError> {
+    fn push_entry(
+        &mut self,
+        entry_type: &EntryType,
+        entry: &Entry,
+    ) -> Result<Pair, HolochainError> {
         let pair = self.create_next_pair(entry_type, entry);
         self.push_pair(&pair)
     }
@@ -292,13 +301,15 @@ pub mod tests {
     use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
-        entry::tests::{test_entry, test_entry_a, test_entry_b, test_entry_type_a, test_entry_type_b},
+        entry::tests::{
+            test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
+            test_entry_type_b,
+        },
         HashTable,
     };
     use json::ToJson;
     use key::Key;
     use std::thread;
-    use hash_table::entry::tests::test_entry_type;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -751,7 +762,10 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         // into_iter() returns clones of pairs
-        assert_eq!(vec![pair_c, pair_b, pair_a], chain.into_iter().collect::<Vec<Pair>>());
+        assert_eq!(
+            vec![pair_c, pair_b, pair_a],
+            chain.into_iter().collect::<Vec<Pair>>()
+        );
     }
 
     #[test]

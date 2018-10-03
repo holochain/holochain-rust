@@ -640,8 +640,7 @@ pub mod tests {
         ).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_entry_type("test type")
-                .unwrap(),
+            dna.get_zome_name_for_entry_type("test type").unwrap(),
             "test zome".to_string()
         );
         assert!(

@@ -1,14 +1,13 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, sys_entry::EntryType};
 use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use hash_table::sys_entry::EntryType;
 use std::str::FromStr;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -35,7 +34,8 @@ pub fn invoke_commit_app_entry(
 
     // Create Chain Entry
     let entry = Entry::from(input.entry_content);
-    let entry_type = EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+    let entry_type =
+        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
@@ -76,8 +76,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use hash_table::entry::tests::test_entry;
-    use hash_table::entry::tests::test_entry_type;
+    use hash_table::entry::tests::{test_entry, test_entry_type};
     use key::Key;
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},

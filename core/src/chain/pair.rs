@@ -96,12 +96,10 @@ impl RoundTripJson for Pair {}
 pub mod tests {
     use super::Pair;
     use chain::{tests::test_chain, SourceChain};
-    use hash_table::entry::{
-        tests::{test_entry, test_entry_b, test_entry_unique},
+    use hash_table::entry::tests::{
+        test_entry, test_entry_b, test_entry_type, test_entry_type_b, test_entry_unique,
     };
     use json::{FromJson, ToJson};
-    use hash_table::entry::tests::test_entry_type;
-    use hash_table::entry::tests::test_entry_type_b;
 
     /// dummy pair
     pub fn test_pair() -> Pair {

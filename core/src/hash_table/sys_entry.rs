@@ -2,10 +2,10 @@ use hash_table::entry::Entry;
 use holochain_agent::{Agent, Identity};
 use holochain_dna::Dna;
 use serde_json;
-use std::str::FromStr;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Result as FmtResult;
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 
 pub trait ToEntry {
     fn to_entry(&self) -> Entry;
@@ -150,10 +150,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
-                    assert_eq!(
-                        entry_type,
-                        &EntryType::Dna,
-                    );
+                    assert_eq!(entry_type, &EntryType::Dna,);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -167,7 +164,8 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(EntryType::AgentId, agent_entry.clone()));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit(EntryType::AgentId, agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -183,10 +181,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
-                    assert_eq!(
-                        entry_type,
-                        &EntryType::AgentId,
-                    );
+                    assert_eq!(entry_type, &EntryType::AgentId,);
                     assert_eq!(entry.content(), agent_entry.content());
                     true
                 }

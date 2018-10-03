@@ -386,10 +386,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, _) => {
-                    assert_eq!(
-                        entry_type,
-                        &EntryType::Dna
-                    );
+                    assert_eq!(entry_type, &EntryType::Dna);
                     true
                 }
                 _ => false,

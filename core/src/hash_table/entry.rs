@@ -4,9 +4,7 @@ use json::{FromJson, ToJson};
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use std::{
-    hash::{Hash as StdHash, Hasher},
-};
+use std::hash::{Hash as StdHash, Hasher};
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -167,7 +165,6 @@ pub mod tests {
     #[test]
     /// test that the content changes the hash
     fn hash_content() {
-
         let entry_a = test_entry_a();
         let entry_b = test_entry_a();
         let entry_c = test_entry_b();

@@ -1,7 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
 use hash::HashString;
-use hash_table::{entry::Entry, links_entry::Link};
+use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
 use holochain_dna::Dna;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
@@ -13,7 +13,6 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
-use hash_table::sys_entry::EntryType;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -114,7 +113,7 @@ pub mod tests {
 
     use action::{Action, ActionWrapper};
     use hash::tests::test_hash;
-    use hash_table::entry::tests::{test_entry, test_entry_type, test_entry_hash};
+    use hash_table::entry::tests::{test_entry, test_entry_hash, test_entry_type};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 

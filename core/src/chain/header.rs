@@ -1,15 +1,14 @@
+use cas::content::Address;
 use error::HolochainError;
 use hash::HashString;
 use hash_table::{
     entry::Entry,
-    sys_entry::{ToEntry},
+    sys_entry::{EntryType, ToEntry},
 };
 use json::ToJson;
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use hash_table::sys_entry::EntryType;
-use cas::content::Address;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table
@@ -150,9 +149,7 @@ impl ToJson for Header {
 //
 impl ToEntry for Header {
     fn to_entry(&self) -> Entry {
-        Entry::from(
-            self.to_json().expect("entry should be valid"),
-        )
+        Entry::from(self.to_json().expect("entry should be valid"))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -164,14 +161,14 @@ impl ToEntry for Header {
 mod tests {
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash::HashString;
-    use hash_table::{sys_entry::ToEntry};
+    use hash_table::{
+        entry::tests::{
+            test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
+            test_entry_type_b,
+        },
+        sys_entry::ToEntry,
+    };
     use key::Key;
-    use hash_table::entry::tests::test_entry_a;
-    use hash_table::entry::tests::test_entry_b;
-    use hash_table::entry::tests::test_entry_type_a;
-    use hash_table::entry::tests::test_entry_type_b;
-    use hash_table::entry::tests::test_entry_type;
-    use hash_table::entry::tests::test_entry;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
@@ -213,7 +210,10 @@ mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_ne!(chain_a.create_next_header(&entry_type_a, &entry_a), chain_b.create_next_header(&entry_type_a, &entry_a));
+        assert_ne!(
+            chain_a.create_next_header(&entry_type_a, &entry_a),
+            chain_b.create_next_header(&entry_type_a, &entry_a)
+        );
     }
 
     #[test]

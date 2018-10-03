@@ -29,11 +29,9 @@ impl EntityAttributeValueStorage for MemoryStorageEav {
             .eavs
             .iter()
             .cloned()
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Entity>(e.entity(), entity.clone()))
-            .filter(|e| {
-                EntityAttributeValue::filter_on_eav::<Attribute>(e.attribute(), attribute.clone())
-            })
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Value>(e.value(), value.clone()))
+            .filter(|e| EntityAttributeValue::filter_on_eav::<Entity>(e.entity(), &entity))
+            .filter(|e| EntityAttributeValue::filter_on_eav::<Attribute>(e.attribute(), &attribute))
+            .filter(|e| EntityAttributeValue::filter_on_eav::<Value>(e.value(), &value))
             .collect::<HashSet<EntityAttributeValue>>())
     }
 }

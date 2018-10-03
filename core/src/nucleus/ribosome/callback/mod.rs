@@ -25,7 +25,7 @@ use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 // @TODO should each one be an action, e.g. Action::Genesis(Zome)?
 // @see https://github.com/holochain/holochain-rust/issues/200
 
-#[derive(Debug, PartialEq)]
+#[derive(FromPrimitive, Debug, PartialEq)]
 pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,

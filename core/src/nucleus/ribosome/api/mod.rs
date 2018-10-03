@@ -36,7 +36,7 @@ use wasmi::{
 /// Enumeration of all the Zome Functions known and usable in Zomes.
 /// Enumeration can convert to str.
 #[repr(usize)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(FromPrimitive, Debug, PartialEq, Eq)]
 pub enum ZomeApiFunction {
     /// Error index for unimplemented functions
     MissingNo = 0,

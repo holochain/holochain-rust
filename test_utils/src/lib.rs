@@ -120,7 +120,9 @@ pub fn create_test_dna_with_cap(
         &Config::new(),
         &entry_types,
         &capabilities,
-        &DnaWasm { code: wasm.to_owned() },
+        &DnaWasm {
+            code: wasm.to_owned(),
+        },
     );
 
     dna.zomes.insert(zome_name.to_string(), zome);

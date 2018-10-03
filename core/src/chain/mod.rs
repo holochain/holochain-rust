@@ -15,6 +15,7 @@ use cas::content::AddressableContent;
 use hash_table::entry::EntryHeader;
 use chain::header::ChainHeader;
 use hash_table::entry::Entry;
+use cas::content::Address;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -53,7 +54,7 @@ impl Iterator for ChainIterator {
                                     .expect("getting from a table shouldn't fail");
                 // Recreate the Pair from the HeaderEntry
                 let chain_header = ChainHeader::from_entry(header_entry);
-                chain_header
+                Some(chain_header)
             });
         previous
     }
@@ -68,7 +69,7 @@ pub struct Chain {
 impl PartialEq for Chain {
     fn eq(&self, other: &Chain) -> bool {
         // list linking by header addresses ensures that if the tops match the whole chain matches
-        self.top_pair() == other.top_pair()
+        self.top_chain_header() == other.top_chain_header()
     }
 }
 
@@ -104,7 +105,7 @@ impl Chain {
     /// @see chain::entry::Entry
     pub fn create_next_chain_header(&self, entry_header: &EntryHeader) -> ChainHeader {
         ChainHeader::new(
-            entry_header.entry_type(),
+            &entry_header.entry_type(),
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
@@ -129,27 +130,9 @@ impl Chain {
         ChainIterator::new(
             self.table(),
             &self
-                .top_pair()
+                .top_chain_header()
                 .expect("could not get top pair when building iterator"),
         )
-    }
-
-    /// restore canonical JSON chain
-    /// can't implement json::FromJson due to Chain's need for a table actor
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn import_from_json(table: ActorRef<Protocol>, s: &str) -> Self {
-        // @TODO inappropriate unwrap?
-        // @see https://github.com/holochain/holochain-rust/issues/168
-        let mut as_seq: Vec<ChainHeader> = serde_json::from_str(s).expect("argument should be valid json");
-        as_seq.reverse();
-
-        let mut chain = Chain::new(table);
-
-        for chain_header in as_seq {
-            chain.push_chain_header(&chain_header).expect("pair should be valid");
-        }
-        chain
     }
 
     /// table getter
@@ -174,6 +157,8 @@ pub trait SourceChain {
     /// Pair to ensure the chain links up correctly across the underlying table data
     /// the newly created and pushed Pair is returned.
     fn push_entry(&mut self, entry_header: &EntryHeader, entry: &Entry) -> Result<ChainHeader, HolochainError>;
+
+    fn entry(&self, entry_address: &Address) -> Option<Entry>;
 }
 
 impl SourceChain for Chain {
@@ -189,11 +174,11 @@ impl SourceChain for Chain {
         self.iter().find(|chain_header| chain_header.entry_type() == entry_type)
     }
 
-    /// Assumes that the entry is already in the CAS!
-    /// the EntryHeader is simply incorporated into a ChainHeader and set as the top
     fn push_entry(&mut self, entry_header: &EntryHeader, entry: &Entry) -> Result<ChainHeader, HolochainError> {
+        self.table_actor.put_entry(entry)?;
+
         let chain_header = self.create_next_chain_header(entry_header);
-        self.table_actor.put_entry(chain_header)?;
+        self.table_actor.put_entry(&chain_header)?;
 
         // @TODO if top pair set fails but commit succeeds?
         // @see https://github.com/holochain/holochain-rust/issues/259
@@ -202,8 +187,22 @@ impl SourceChain for Chain {
         Ok(chain_header)
     }
 
-    entry(&self, address: &Address) -> Result<Entry, HolochainError> {
+    /// Browse Chain until ChainHeader with entry_hash is found
+    fn entry(&self, entry_address: &Address) -> Option<Entry> {
+        // @TODO - this is a slow way to do a lookup
+        // @see https://github.com/holochain/holochain-rust/issues/50
+        let found = self
+            .iter()
+            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @see https://github.com/holochain/holochain-rust/issues/145
+            .find(|chain_header| {
+                &chain_header.entry_address() == entry_address
+            });
 
+        match found {
+            Some(chain_header) => chain_header.entry_address().clone(),
+            None => None,
+        }
     }
 }
 

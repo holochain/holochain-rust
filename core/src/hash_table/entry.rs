@@ -2,7 +2,6 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::sys_entry::EntryType;
 use json::{FromJson, ToJson};
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::{

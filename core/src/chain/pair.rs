@@ -4,7 +4,6 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
-use key::Key;
 use riker::actors::*;
 use serde_json;
 
@@ -57,13 +56,6 @@ impl Pair {
         self.header().entry_hash() == &self.entry().hash()
         // the entry_type must line up across header and entry
         && self.header().entry_type() == self.entry().entry_type()
-    }
-}
-
-impl Key for Pair {
-    fn key(&self) -> HashString {
-        //        self.header.hash()
-        self.header.to_entry().key()
     }
 }
 

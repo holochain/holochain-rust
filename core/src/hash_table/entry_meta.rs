@@ -1,7 +1,6 @@
 use error::HolochainError;
 use hash::HashString;
 use json::{FromJson, RoundTripJson, ToJson};
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;

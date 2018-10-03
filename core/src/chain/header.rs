@@ -5,7 +5,6 @@ use hash_table::{
     sys_entry::{EntryType, ToEntry},
 };
 use json::ToJson;
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::str::FromStr;
@@ -113,12 +112,6 @@ impl Header {
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
-    }
-}
-
-impl Key for Header {
-    fn key(&self) -> HashString {
-        self.hash()
     }
 }
 

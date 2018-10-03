@@ -1,7 +1,8 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use hash::HashString;
-use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
+use holochain_wasm_utils::error::RibosomeReturnCode;
+use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -31,10 +32,7 @@ pub fn invoke_get_links(
     let res_entry: Result<GetLinksArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ArgumentDeserializationFailed as i32,
-        )));
+        return ribosome_return_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
     // Create GetLinks Action
@@ -73,7 +71,5 @@ pub fn invoke_get_links(
         }
     }
     // Fail
-    Ok(Some(RuntimeValue::I32(
-        HcApiReturnCode::ReceivedWrongActionResult as i32,
-    )))
+    ribosome_return_code!(ReceivedWrongActionResult)
 }

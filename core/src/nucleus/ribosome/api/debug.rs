@@ -1,3 +1,4 @@
+use holochain_wasm_utils::error::RibosomeReturnCode;
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -13,7 +14,7 @@ pub fn invoke_debug(
 
     println!("{}", arg);
     let _ = runtime.context.log(&arg);
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+    ribosome_return_code!(Success)
 }
 
 #[cfg(test)]

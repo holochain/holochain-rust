@@ -83,7 +83,7 @@ impl ToEntry for Dna {
 
     fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
+        return Dna::from_json_str(&entry.value()).expect("entry is not a valid Dna Entry");
     }
 }
 
@@ -99,7 +99,7 @@ impl ToEntry for Agent {
     fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::AgentId);
         let id_content: String =
-            serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
+            serde_json::from_str(&entry.value()).expect("entry is not a valid AgentId Entry");
         Agent::new(Identity::new(id_content))
     }
 }
@@ -146,7 +146,7 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::Dna,
                     );
-                    assert_eq!(entry.content(), dna_entry.content());
+                    assert_eq!(entry.value(), dna_entry.value());
                     true
                 }
                 _ => false,
@@ -179,7 +179,7 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::AgentId,
                     );
-                    assert_eq!(entry.content(), agent_entry.content());
+                    assert_eq!(entry.value(), agent_entry.value());
                     true
                 }
                 _ => false,

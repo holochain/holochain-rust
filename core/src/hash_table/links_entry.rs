@@ -89,7 +89,7 @@ impl ToEntry for LinkEntry {
 
     fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
-        serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
+        serde_json::from_str(&entry.value()).expect("entry is not a valid LinkEntry")
     }
 }
 //-------------------------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ impl ToEntry for LinkListEntry {
 
     fn from_entry(entry: &Entry) -> Self {
         assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
-        serde_json::from_str(&entry.content()).expect("entry failed converting into LinkListEntry")
+        serde_json::from_str(&entry.value()).expect("entry failed converting into LinkListEntry")
     }
 }
 //-------------------------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::LinkList,
                     );
-                    assert_eq!(entry.content(), link_entry.to_entry().content());
+                    assert_eq!(entry.value(), link_entry.to_entry().value());
                     true
                 }
                 _ => false,
@@ -220,7 +220,7 @@ pub mod tests {
                         EntryType::from_str(&entry.entry_type()).unwrap(),
                         EntryType::LinkList,
                     );
-                    assert_eq!(entry.content(), link_entry.to_entry().content());
+                    assert_eq!(entry.value(), link_entry.to_entry().value());
                     true
                 }
                 _ => false,

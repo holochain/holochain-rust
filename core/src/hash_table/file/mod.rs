@@ -9,6 +9,7 @@ use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use json::{FromJson, ToJson};
 use key::Key;
 
+use cas::{content::Address, file::FilesystemStorage, storage::ContentAddressableStorage};
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
@@ -20,7 +21,6 @@ enum Table {
 
 // things that can be serialized and put in a file... wish-it-was-rows
 trait Row: ToJson + Key {}
-impl Row for Entry {}
 impl Row for EntryMeta {}
 
 impl ToString for Table {
@@ -34,6 +34,7 @@ impl ToString for Table {
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct FileTable {
+    entry_storage: FilesystemStorage,
     path: String,
 }
 
@@ -43,16 +44,24 @@ impl FileTable {
     /// can fail if permissions don't allow access to the directory on the filesystem
     pub fn new(path: &str) -> Result<FileTable, HolochainError> {
         let canonical = Path::new(path).canonicalize()?;
+        let canonical_path_string = match canonical.to_str() {
+            Some(p) => p.to_string(),
+            None => {
+                return Err(HolochainError::IoError(
+                    "could not convert path to string".to_string(),
+                ));
+            }
+        };
+
         if canonical.is_dir() {
             Ok(FileTable {
-                path: match canonical.to_str() {
-                    Some(p) => p.to_string(),
-                    None => {
-                        return Err(HolochainError::IoError(
-                            "could not convert path to string".to_string(),
-                        ));
-                    }
-                },
+                entry_storage: FilesystemStorage::new(&format!(
+                    "{}{}{}",
+                    canonical_path_string,
+                    MAIN_SEPARATOR,
+                    Table::Entries.to_string()
+                )),
+                path: canonical_path_string,
             })
         } else {
             Err(HolochainError::IoError(
@@ -95,14 +104,11 @@ impl FileTable {
 
 impl HashTable for FileTable {
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        self.upsert(Table::Entries, entry)
+        self.entry_storage.add(entry)
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        match self.lookup(Table::Entries, key)? {
-            Some(json) => Ok(Some(Entry::from_json(&json)?)),
-            None => Ok(None),
-        }
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        self.entry_storage.fetch(address)
     }
 
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {

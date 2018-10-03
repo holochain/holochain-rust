@@ -1,5 +1,6 @@
 use action::ActionWrapper;
 use agent::state::AgentState;
+use cas::memory::MemoryStorage;
 use chain::Chain;
 use context::Context;
 use hash_table::{actor::HashTableActor, memory::MemTable};
@@ -22,7 +23,7 @@ impl State {
     pub fn new() -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
-        let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
+        let chain = Chain::new(HashTableActor::new_ref(MemTable::new(MemoryStorage::new())));
 
         State {
             nucleus: Arc::new(NucleusState::new()),

@@ -1,3 +1,4 @@
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use hash_table::sys_entry::EntryType;
@@ -14,7 +15,7 @@ use std::{
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
-    content: String,
+    value: String,
 
     // @TODO do NOT serialize entry_type in Entry as it should only be in Header
     // @see https://github.com/holochain/holochain-rust/issues/80
@@ -36,7 +37,7 @@ impl PartialEq for Entry {
 // @see https://github.com/holochain/holochain-rust/issues/85
 impl StdHash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+        self.value.hash(state);
     }
 }
 
@@ -46,10 +47,10 @@ impl Entry {
     /// an entry is not valid until paired with a header and included in a chain.
     /// @see chain::header::Header
     /// @see chain::pair::Pair
-    pub fn new(entry_type: &str, content: &str) -> Entry {
+    pub fn new(entry_type: &str, value: &str) -> Entry {
         Entry {
             entry_type: entry_type.to_string(),
-            content: content.to_string(),
+            value: value.to_string(),
         }
     }
 
@@ -57,16 +58,16 @@ impl Entry {
     pub fn hash(&self) -> HashString {
         // @TODO - this is the wrong string being hashed
         // @see https://github.com/holochain/holochain-rust/issues/103
-        let string_to_hash = &self.content;
+        let string_to_hash = &self.value;
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         HashString::encode_from_str(string_to_hash, Hash::SHA2256)
     }
 
-    /// content getter
-    pub fn content(&self) -> String {
-        self.content.clone()
+    /// value getter
+    pub fn value(&self) -> String {
+        self.value.clone()
     }
 
     /// entry_type getter
@@ -113,8 +114,23 @@ impl FromJson for Entry {
     }
 }
 
+impl AddressableContent for Entry {
+    fn address(&self) -> Address {
+        self.hash()
+    }
+
+    fn content(&self) -> Content {
+        self.to_json().expect("could not serialize entry to JSON")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Self::from_json(content).expect("could not deserialize entry from JSON")
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
+    use cas::content::AddressableContent;
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
@@ -227,7 +243,7 @@ pub mod tests {
         let t = "bar";
         let e = Entry::new(t, c);
 
-        assert_eq!(e.content(), c);
+        assert_eq!(e.value(), c);
         assert_ne!(e.hash(), HashString::new());
         assert!(e.validate());
     }
@@ -270,13 +286,13 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for entry.content()
-    fn content() {
+    /// tests for entry.value()
+    fn value() {
         let c = "baz";
         let t = "foo";
         let e = Entry::new(t, c);
 
-        assert_eq!("baz", e.content());
+        assert_eq!("baz", e.value());
     }
 
     #[test]
@@ -309,10 +325,22 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let e = test_entry_a();
-        let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
+        let expected = r#"{"value":"test entry content","entry_type":"testEntryType"}"#;
         assert_eq!(expected, e.to_json().unwrap());
         assert_eq!(e, Entry::from_json(expected).unwrap());
         assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+    }
+
+    #[test]
+    /// show AddressableContent implementation
+    fn entry_addressable_content_trait() {
+        let entry = test_entry_a();
+
+        assert_eq!(Entry::from_content(&entry.content()), entry);
+        assert_eq!(Entry::from_content(&r#"{"value":"test entry content","entry_type":"testEntryType"}"#.to_string()), entry);
+        assert_eq!(r#"{"value":"test entry content","entry_type":"testEntryType"}"#.to_string(), entry.content());
+        assert_eq!(entry.key(), entry.address());
+        assert_eq!(entry.hash(), entry.address());
     }
 
     #[test]

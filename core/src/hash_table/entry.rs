@@ -5,6 +5,8 @@ use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
+use cas::content::AddressableContent;
+use cas::content::Content;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -36,6 +38,16 @@ impl From<String> for Entry {
     }
 }
 
+impl AddressableContent for Entry {
+    fn content(&self) -> Content {
+        self.0.clone()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Entry::from(content.to_string())
+    }
+}
+
 impl Entry {
     pub fn new() -> Entry {
         Entry(String::new())
@@ -50,11 +62,6 @@ impl Entry {
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         HashString::encode_from_str(string_to_hash, Hash::SHA2256)
-    }
-
-    /// content getter
-    pub fn content(&self) -> String {
-        self.0.clone()
     }
 }
 
@@ -87,6 +94,7 @@ pub mod tests {
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
+    use cas::content::AddressableContent;
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {

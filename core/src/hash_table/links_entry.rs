@@ -5,6 +5,7 @@ use hash_table::{
     HashString,
 };
 use serde_json;
+use cas::content::AddressableContent;
 
 //-------------------------------------------------------------------------------------------------
 // Link

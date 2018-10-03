@@ -67,9 +67,8 @@ mod tests {
             AddressableContent, Content,
         },
         eav::tests::eav_round_trip_test_runner,
-        storage::{tests::ExampleContentAddressableStorage, ContentAddressableStorage},
+        storage::tests::ExampleContentAddressableStorage,
     };
-    use hash::HashString;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -157,52 +156,17 @@ mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let mut content_addressable_storage = ExampleContentAddressableStorage::new();
-        content_addressable_storage
-            .add(&CrudStatus::LIVE)
-            .expect("could not add LIVE");
-        content_addressable_storage
-            .add(&CrudStatus::REJECTED)
-            .expect("could not add REJECTED");
-        content_addressable_storage
-            .add(&CrudStatus::DELETED)
-            .expect("could not add DELETED");
-        content_addressable_storage
-            .add(&CrudStatus::MODIFIED)
-            .expect("could not add MODIFIED");
-        content_addressable_storage
-            .add(&CrudStatus::LOCKED)
-            .expect("could not add LOCKED");
-
-        assert_eq!(
-            Some(CrudStatus::LIVE),
-            content_addressable_storage
-                .fetch(&CrudStatus::LIVE.address())
-                .expect("could not fetch LIVE"),
-        );
-        assert_eq!(
-            Some(CrudStatus::REJECTED),
-            content_addressable_storage
-                .fetch(&CrudStatus::REJECTED.address())
-                .expect("could not fetch REJECTED"),
-        );
-        assert_eq!(
-            Some(CrudStatus::DELETED),
-            content_addressable_storage
-                .fetch(&CrudStatus::DELETED.address())
-                .expect("could not fetch DELETED"),
-        );
-        assert_eq!(
-            Some(CrudStatus::MODIFIED),
-            content_addressable_storage
-                .fetch(&CrudStatus::MODIFIED.address())
-                .expect("could not fetch MODIFIED"),
-        );
-        assert_eq!(
-            Some(CrudStatus::LOCKED),
-            content_addressable_storage
-                .fetch(&CrudStatus::LOCKED.address())
-                .expect("could not fetch LOCKED"),
-        );
+        let content_addressable_storage = ExampleContentAddressableStorage::new();
+        let crud_statuses = vec![
+            CrudStatus::LIVE,
+            CrudStatus::REJECTED,
+            CrudStatus::DELETED,
+            CrudStatus::MODIFIED,
+            CrudStatus::LOCKED,
+        ];
+        AddressableContentTestSuite::addressalbe_content_round_trip::<
+            CrudStatus,
+            ExampleContentAddressableStorage,
+        >(crud_statuses, content_addressable_storage);
     }
 }

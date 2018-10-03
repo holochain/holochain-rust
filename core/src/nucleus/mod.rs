@@ -174,9 +174,8 @@ fn reduce_return_initialization_result(
 }
 
 /// Reduce InitApplication Action
-/// Initialize the Holochain's Nucleus by doing the following:
-/// Send Commit Action for Genesis Entry
-/// Send ExecuteZomeFunction Action of the genesis callback of every zome
+/// Switch status to failed if an initialization is tried for an
+/// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_init_application(

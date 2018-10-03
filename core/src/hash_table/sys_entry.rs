@@ -1,3 +1,4 @@
+use cas::content::AddressableContent;
 use hash_table::entry::Entry;
 use holochain_agent::{Agent, Identity};
 use holochain_dna::Dna;
@@ -6,7 +7,6 @@ use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
-use cas::content::AddressableContent;
 
 pub trait ToEntry {
     fn to_entry(&self) -> (EntryType, Entry);
@@ -125,9 +125,9 @@ pub mod tests {
     use hash_table::sys_entry::{EntryType, ToEntry};
     use std::str::FromStr;
 
+    use cas::content::AddressableContent;
     use instance::{tests::test_context, Instance, Observer};
     use std::sync::mpsc::channel;
-    use cas::content::AddressableContent;
 
     /// Committing a DnaEntry to source chain should work
     #[test]

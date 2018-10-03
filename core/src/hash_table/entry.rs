@@ -1,3 +1,4 @@
+use cas::content::{AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use json::{FromJson, ToJson};
@@ -5,8 +6,6 @@ use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::hash::{Hash as StdHash, Hasher};
-use cas::content::AddressableContent;
-use cas::content::Content;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -89,14 +88,15 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::{
+        content::{tests::AddressableContentTestSuite, AddressableContent},
+        storage::tests::ExampleContentAddressableStorage,
+    };
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
     use key::Key;
     use snowflake;
-    use cas::content::AddressableContent;
-    use cas::content::tests::AddressableContentTestSuite;
-    use cas::storage::tests::ExampleContentAddressableStorage;
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {
@@ -226,9 +226,7 @@ pub mod tests {
     /// show CAS round trip
     fn cas_round_trip_test() {
         let content_addressable_storage = ExampleContentAddressableStorage::new();
-        let entries = vec![
-            test_entry()
-        ];
+        let entries = vec![test_entry()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,
             ExampleContentAddressableStorage,

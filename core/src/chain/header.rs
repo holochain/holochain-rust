@@ -1,4 +1,4 @@
-use cas::content::Address;
+use cas::content::{Address, AddressableContent};
 use error::HolochainError;
 use hash::HashString;
 use hash_table::{
@@ -9,7 +9,6 @@ use json::ToJson;
 use key::Key;
 use multihash::Hash;
 use serde_json;
-use cas::content::AddressableContent;
 
 /// Header of a source chain "Item"
 /// The hash of the Header is used as the Item's key in the source chain hash table

@@ -76,6 +76,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use cas::content::AddressableContent;
     use hash_table::entry::tests::{test_entry, test_entry_type};
     use key::Key;
     use nucleus::ribosome::{
@@ -83,7 +84,6 @@ pub mod tests {
         Defn,
     };
     use serde_json;
-    use cas::content::AddressableContent;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {

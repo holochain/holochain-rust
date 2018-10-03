@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, sys_entry::EntryType};
 use nucleus::ribosome::callback::{
     validate_commit::validate_commit, CallbackParams, CallbackResult,
 };
@@ -16,6 +16,7 @@ use std::{sync::Arc, thread};
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry(
+    entry_type: EntryType,
     entry: Entry,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
@@ -28,12 +29,12 @@ pub fn validate_entry(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry.clone().entry_type())
+        .get_zome_name_for_entry_type(entry_type.as_str())
     {
         None => {
             return Box::new(future::err(format!(
                 "Unknown entry type: '{}'",
-                entry.clone().entry_type()
+                entry_type.as_str()
             )));;
         }
         Some(zome_name) => {
@@ -51,7 +52,7 @@ pub fn validate_entry(
                     CallbackResult::Pass => Ok(()),
                     CallbackResult::NotImplemented => Err(format!(
                         "Validation callback not implemented for {:?}",
-                        entry.entry_type()
+                        entry_type.clone()
                     )),
                 };
                 context

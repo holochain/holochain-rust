@@ -20,6 +20,12 @@ impl From<String> for HashString {
     }
 }
 
+impl From<HashString> for String {
+    fn from(h: HashString) -> String {
+        h.0
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())

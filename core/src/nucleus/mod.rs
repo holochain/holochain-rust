@@ -223,9 +223,9 @@ fn reduce_init_application(
     thread::spawn(move || {
         // Send Commit Action for Genesis Entry
         {
-            // Create Commit Action for Genesis Entry
-            let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
+            // Create Commit Action for Dna Entry
+            let (entry_type, dna_entry) = dna_clone.to_entry();
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(entry_type, dna_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded

@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash::HashString;
+use cas::content::Address;
 use holochain_wasm_utils::error::RibosomeReturnCode;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
@@ -9,13 +9,13 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksArgs {
-    pub entry_hash: HashString,
+    pub entry_address: Address,
     pub tag: String,
 }
 
 impl GetLinksArgs {
     pub fn to_attribute_name(&self) -> String {
-        format!("link:{}:{}", &self.entry_hash, &self.tag)
+        format!("link:{}:{}", &self.entry_address, &self.tag)
     }
 }
 

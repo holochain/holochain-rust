@@ -1,4 +1,5 @@
 use agent::keys::tests::test_keys;
+use cas::content::AddressableContent;
 use hash_table::{
     entry::tests::test_entry_unique,
     entry_meta::{
@@ -10,7 +11,6 @@ use hash_table::{
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };
-use cas::content::AddressableContent;
 
 // standard tests that should pass for every hash table implementation
 
@@ -82,7 +82,10 @@ pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     table
         .assert_meta(&meta)
         .expect("asserting metadata shouldn't fail");
-    assert_eq!(Some(&meta), table.get_meta(&meta.address()).unwrap().as_ref());
+    assert_eq!(
+        Some(&meta),
+        table.get_meta(&meta.address()).unwrap().as_ref()
+    );
 }
 
 /// assert a couple of unique metas against a single entry

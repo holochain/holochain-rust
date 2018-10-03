@@ -1,7 +1,7 @@
 use actor::{AskSelf, Protocol, SYS};
 use agent::keys::Keys;
+use cas::content::Address;
 use error::HolochainError;
-use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
@@ -30,8 +30,8 @@ impl HashTable for ActorRef<Protocol> {
 
     // TODO #358 - Rename entry to something else. Entry is only to be used for a chain.
     // https://github.com/holochain/holochain-rust/pull/340#discussion_r220332130
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetEntry(key.clone()))?;
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetEntry(address.clone()))?;
         unwrap_to!(response => Protocol::GetEntryResult).clone()
     }
 
@@ -62,8 +62,8 @@ impl HashTable for ActorRef<Protocol> {
         unwrap_to!(response => Protocol::AssertMetaResult).clone()
     }
 
-    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        let response = self.block_on_ask(Protocol::GetMeta(key.clone()))?;
+    fn get_meta(&mut self, address: &Address) -> Result<Option<EntryMeta>, HolochainError> {
+        let response = self.block_on_ask(Protocol::GetMeta(address.clone()))?;
         unwrap_to!(response => Protocol::GetMetaResult).clone()
     }
 
@@ -74,11 +74,11 @@ impl HashTable for ActorRef<Protocol> {
 
     fn meta_from_request(
         &mut self,
-        entry_hash: HashString,
+        entry_address: Address,
         attribute_name: &str,
     ) -> Result<Option<EntryMeta>, HolochainError> {
         let response = self.block_on_ask(Protocol::MetaFromRequest {
-            entry_hash: entry_hash,
+            entry_address,
             attribute_name: attribute_name.to_string(),
         })?;
         unwrap_to!(response => Protocol::MetaFromRequestResult).clone()
@@ -158,10 +158,10 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
                     }
 
                     Protocol::MetaFromRequest {
-                        entry_hash,
+                        entry_address,
                         attribute_name,
                     } => Protocol::MetaFromRequestResult(
-                        self.table.meta_from_request(entry_hash, &attribute_name),
+                        self.table.meta_from_request(entry_address, &attribute_name),
                     ),
 
                     _ => unreachable!(),
@@ -174,12 +174,14 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
 #[cfg(test)]
 pub mod tests {
-    use hash_table::entry::tests::test_entry_address;
     use super::HashTableActor;
     use actor::Protocol;
     use cas::content::AddressableContent;
     use hash_table::{
-        entry::tests::test_entry, memory::tests::test_table, test_util::standard_suite, HashTable,
+        entry::tests::{test_entry, test_entry_address},
+        memory::tests::test_table,
+        test_util::standard_suite,
+        HashTable,
     };
     use riker::actors::*;
     use std::{sync::mpsc, thread};
@@ -216,7 +218,10 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.entry(&test_entry_address()).unwrap(), None);
+            assert_eq!(
+                table_actor_thread.entry(&test_entry_address()).unwrap(),
+                None
+            );
             // kick off the next thread
             tx1.send(true).unwrap();
         });

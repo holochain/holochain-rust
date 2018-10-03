@@ -1,12 +1,11 @@
 use actor::Protocol;
+use cas::content::{AddressableContent, Content};
 use chain::header::Header;
 use error::HolochainError;
 use hash_table::{entry::Entry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
 use riker::actors::*;
 use serde_json;
-use cas::content::AddressableContent;
-use cas::content::Content;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
@@ -98,12 +97,12 @@ impl RoundTripJson for Pair {}
 #[cfg(test)]
 pub mod tests {
     use super::Pair;
+    use cas::content::AddressableContent;
     use chain::{tests::test_chain, SourceChain};
     use hash_table::entry::tests::{
         test_entry, test_entry_b, test_entry_type, test_entry_type_b, test_entry_unique,
     };
     use json::{FromJson, ToJson};
-    use cas::content::AddressableContent;
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -183,7 +182,7 @@ pub mod tests {
     #[test]
     /// test JSON roundtrip for pairs
     fn json_roundtrip() {
-        let json = "{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}"
+        let json = "{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}"
         ;
 
         assert_eq!(json, test_pair().to_json().unwrap());

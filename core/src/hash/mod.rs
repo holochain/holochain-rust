@@ -50,9 +50,9 @@ impl HashString {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use cas::content::AddressableContent;
     use hash_table::entry::tests::test_entry;
     use multihash::Hash;
-    use cas::content::AddressableContent;
 
     /// dummy hash based on the key of test_entry()
     pub fn test_hash() -> HashString {

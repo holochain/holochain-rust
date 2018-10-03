@@ -1,10 +1,9 @@
 use error::HolochainError;
 
+use cas::content::{Address, AddressableContent};
 use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use std::collections::HashMap;
-use cas::content::Address;
-use cas::content::AddressableContent;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]

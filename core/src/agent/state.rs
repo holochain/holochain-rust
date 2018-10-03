@@ -1,5 +1,6 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
+use cas::content::AddressableContent;
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
@@ -7,7 +8,6 @@ use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
 use std::{collections::HashMap, sync::Arc};
-use cas::content::AddressableContent;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -166,13 +166,13 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use cas::content::AddressableContent;
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
     use hash_table::entry::tests::test_entry;
     use instance::tests::test_context;
     use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
-    use cas::content::AddressableContent;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -253,7 +253,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::Commit(Ok(test_pair().entry().clone()))
                 .to_json()
                 .unwrap(),
@@ -296,7 +296,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::LinkEntries(Ok(test_entry()))
                 .to_json()
                 .unwrap(),

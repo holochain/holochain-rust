@@ -61,12 +61,11 @@ impl FromJson for Entry {
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{tests::AddressableContentTestSuite, AddressableContent},
+        content::{tests::AddressableContentTestSuite, Address, AddressableContent},
         storage::tests::ExampleContentAddressableStorage,
     };
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
-    use cas::content::Address;
     use snowflake;
 
     /// dummy entry type

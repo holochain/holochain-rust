@@ -1,4 +1,4 @@
-use cas::content::{Address, Content, AddressableContent};
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use hash_table::{
     entry::Entry,
@@ -143,7 +143,8 @@ impl AddressableContent for Header {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use cas::content::{Address, AddressableContent};
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash::HashString;
     use hash_table::{
@@ -153,12 +154,14 @@ mod tests {
         },
         sys_entry::ToEntry,
     };
-    use cas::content::Address;
-    use cas::content::AddressableContent;
 
     /// returns a dummy header for use in tests
     pub fn test_header() -> Header {
         test_pair().header().clone()
+    }
+
+    pub fn test_header_address() -> Address {
+        Address::from("Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd".to_string())
     }
 
     #[test]
@@ -331,7 +334,7 @@ mod tests {
 
     #[test]
     /// test header.address() against a known value
-    fn hash_known() {
+    fn known_address() {
         let chain = test_chain();
         let entry_type = test_entry_type();
         let entry = test_entry();
@@ -339,10 +342,7 @@ mod tests {
         // check a known hash
         let header = chain.create_next_header(&entry_type, &entry);
 
-        assert_eq!(
-            Address::from("QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA".to_string()),
-            header.address()
-        );
+        assert_eq!(test_header_address(), header.address());
     }
 
     #[test]

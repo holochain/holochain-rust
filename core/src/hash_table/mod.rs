@@ -9,11 +9,10 @@ pub mod sys_entry;
 #[cfg(test)]
 pub mod test_util;
 
-use cas::content::Address;
 use agent::keys::Keys;
+use cas::content::{Address, AddressableContent};
 use error::HolochainError;
 use hash::HashString;
-use cas::content::AddressableContent;
 use hash_table::{
     entry::Entry,
     entry_meta::EntryMeta,
@@ -37,7 +36,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     /// Add an Entry to the HashTable, analogous to chain.push() but ordering is not enforced.
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError>;
     /// Lookup an Entry from the HashTable by key.
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError>;
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError>;
 
     /// Modify an existing Entry (by adding a new one and flagging the old one as MODIFIED)
     fn modify_entry(

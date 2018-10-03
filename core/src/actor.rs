@@ -1,4 +1,5 @@
 use agent::keys::Keys;
+use cas::content::Address;
 use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
@@ -78,7 +79,7 @@ pub enum Protocol {
 
     /// HashTable::meta_from_request()
     MetaFromRequest {
-        entry_hash: HashString,
+        entry_address: Address,
         attribute_name: String,
     },
     MetaFromRequestResult(Result<Option<EntryMeta>, HolochainError>),

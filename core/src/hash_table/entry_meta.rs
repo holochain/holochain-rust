@@ -1,12 +1,10 @@
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use json::{FromJson, RoundTripJson, ToJson};
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
-use cas::content::AddressableContent;
-use cas::content::Content;
-use cas::content::Address;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
@@ -129,6 +127,7 @@ impl AddressableContent for EntryMeta {
 pub mod tests {
 
     use agent::keys::tests::test_keys;
+    use cas::content::AddressableContent;
     use hash::HashString;
     use hash_table::{
         entry::{tests::test_entry, Entry},
@@ -136,7 +135,6 @@ pub mod tests {
     };
     use json::{FromJson, ToJson};
     use std::cmp::Ordering;
-    use cas::content::AddressableContent;
 
     /// dummy test attribute name
     pub fn test_attribute() -> String {
@@ -288,7 +286,7 @@ pub mod tests {
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
         let meta = test_meta();
-        let expected = "{\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+        let expected = "{\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
 
         assert_eq!(expected.to_string(), meta.to_json().unwrap());
         assert_eq!(meta, EntryMeta::from_json(&expected).unwrap());

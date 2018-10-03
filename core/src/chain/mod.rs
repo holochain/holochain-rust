@@ -3,6 +3,7 @@ pub mod header;
 pub mod pair;
 
 use actor::Protocol;
+use cas::content::{Address, AddressableContent};
 use chain::{
     actor::{AskChain, ChainActor},
     header::Header,
@@ -17,9 +18,7 @@ use hash_table::{
 };
 use json::ToJson;
 use riker::actors::*;
-use cas::content::AddressableContent;
 use serde_json;
-use cas::content::Address;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -206,8 +205,8 @@ pub trait SourceChain {
     /// the newly created and pushed Pair is returned.
     fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry)
         -> Result<Pair, HolochainError>;
-    /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
+    /// get an Entry by Entry address from the HashTable if it exists
+    fn entry(&self, entry_address: &Address) -> Option<Entry>;
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
@@ -295,6 +294,7 @@ impl ToJson for Chain {
 pub mod tests {
 
     use super::Chain;
+    use cas::content::AddressableContent;
     use chain::{
         pair::{tests::test_pair, Pair},
         SourceChain,
@@ -310,7 +310,6 @@ pub mod tests {
     };
     use json::ToJson;
     use std::thread;
-    use cas::content::AddressableContent;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -520,7 +519,10 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.push_entry(&entry_type, &entry).unwrap();
-                assert_eq!(Some(pair.entry().clone()), chain.entry(&pair.entry().address()),);
+                assert_eq!(
+                    Some(pair.entry().clone()),
+                    chain.entry(&pair.entry().address()),
+                );
             }
         });
         h.join().unwrap();
@@ -790,7 +792,7 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let expected_json = "[{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":\"QmahP5TYeaSUtQJ5PHsQv8C8oMnuf3vkezRLdEGpLUKZ36\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":\"test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryTypeB\"},\"timestamp\":\"\",\"link\":\"QmSnyVckgLvVRtKpVBMRdkUjFMHLpjFA3ZEtVAURX1Hbg8\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"other test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}]"
+        let expected_json = "[{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":\"QmR1XSoMwvjoiLG6NC7Zw3iy6cnfQsxjM5bt32thaCGbNU\",\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd\"},\"entry\":\"test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryTypeB\"},\"timestamp\":\"\",\"link\":\"Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd\",\"entry_address\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"other test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}]"
         ;
         assert_eq!(
             expected_json,

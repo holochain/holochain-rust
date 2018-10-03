@@ -4,11 +4,8 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
-use hash::HashString;
+use cas::content::{Address, AddressableContent};
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
-use json::{FromJson};
-use cas::content::AddressableContent;
-use cas::content::Address;
 
 use walkdir::WalkDir;
 
@@ -66,13 +63,24 @@ impl FileTable {
         Ok(dir_string)
     }
 
-    fn addressable_content_path(&self, table: Table, address: &Address) -> Result<String, HolochainError> {
+    fn addressable_content_path(
+        &self,
+        table: Table,
+        address: &Address,
+    ) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
         Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, address))
     }
 
-    fn upsert<AC: AddressableContent>(&self, table: Table, addressable_content: &AC) -> Result<(), HolochainError> {
-        match fs::write(self.addressable_content_path(table, &addressable_content.address())?, addressable_content.content()) {
+    fn upsert<AC: AddressableContent>(
+        &self,
+        table: Table,
+        addressable_content: &AC,
+    ) -> Result<(), HolochainError> {
+        match fs::write(
+            self.addressable_content_path(table, &addressable_content.address())?,
+            addressable_content.content(),
+        ) {
             Err(e) => Err(HolochainError::from(e)),
             _ => Ok(()),
         }
@@ -94,9 +102,9 @@ impl HashTable for FileTable {
         self.upsert(Table::Entries, entry)
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        match self.lookup(Table::Entries, key)? {
-            Some(json) => Ok(Some(Entry::from_json(&json)?)),
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        match self.lookup(Table::Entries, address)? {
+            Some(content) => Ok(Some(Entry::from_content(&content))),
             None => Ok(None),
         }
     }
@@ -105,9 +113,9 @@ impl HashTable for FileTable {
         self.upsert(Table::Metas, meta)
     }
 
-    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        match self.lookup(Table::Metas, key)? {
-            Some(json) => Ok(Some(EntryMeta::from_json(&json)?)),
+    fn get_meta(&mut self, address: &Address) -> Result<Option<EntryMeta>, HolochainError> {
+        match self.lookup(Table::Metas, address)? {
+            Some(content) => Ok(Some(EntryMeta::from_content(&content))),
             None => Ok(None),
         }
     }
@@ -121,8 +129,8 @@ impl HashTable for FileTable {
             let meta = meta?;
             let path = meta.path();
             if let Some(stem) = path.file_stem() {
-                if let Some(key) = stem.to_str() {
-                    if let Some(meta) = self.get_meta(&HashString::from(key.to_string()))? {
+                if let Some(address_string) = stem.to_str() {
+                    if let Some(meta) = self.get_meta(&Address::from(address_string.to_string()))? {
                         if meta.entry_address() == &entry.address() {
                             metas.push(meta);
                         }
@@ -141,13 +149,8 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
     use super::Table;
-    use hash_table::{
-        file::{FileTable},
-        test_util::standard_suite,
-    };
-    use cas::content::AddressableContent;
-    use cas::content::Content;
-    use cas::content::Address;
+    use cas::content::{Address, AddressableContent, Content};
+    use hash_table::{file::FileTable, test_util::standard_suite};
     use regex::Regex;
     use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};
@@ -250,7 +253,9 @@ pub mod tests {
             }
 
             fn from_content(content: &Content) -> Self {
-                SomeData{data: content.to_string()}
+                SomeData {
+                    data: content.to_string(),
+                }
             }
         }
 

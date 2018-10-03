@@ -118,7 +118,7 @@ In adding significant changes and new features to Holochain, we follow a specifi
 1. Start by creating a branch in the [app-spec-rust](https://github.com/holochain/app-spec-rust) repository which demonstrates an actual implementation of the use of the new feature in the sample application that lives in that repository, including tests that would pass if the feature were actually implemented here in the holochain-rust repo.
 1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail, because they try and run the proposed changes against the `develop` branch of this `holochain-rust` repo.
 1. Do any development necessary in the `holochain-rust` and `hdk-rust` repos to implement the feature demonstrated in `app-spec-rust`
-1. Finally, when the feature is fully implemented, the CI tests should turn green on `app-spec-rust` and the branch can be merged indicating that that feature.
+1. Finally, when the feature is fully implemented, the CI tests should turn green on `app-spec-rust` and the branch can be merged.  This merge in `app-spec-rust` of the feature branch completes the test-driven development loop.
 
 In this way [`app-spec-rust`](https://github.com/holochain/app-spec-rust) works as a living specification with example app to build against.
 

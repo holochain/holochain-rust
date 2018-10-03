@@ -32,14 +32,20 @@ impl StdHash for Entry {
 }
 
 impl From<String> for Entry {
-    fn from(s: String) -> Self {
-        Entry(s)
+    fn from(string: String) -> Self {
+        Entry(string)
+    }
+}
+
+impl From<Entry> for String {
+    fn from(entry: Entry) -> Self {
+        entry.0
     }
 }
 
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        self.0.clone()
+        String::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {

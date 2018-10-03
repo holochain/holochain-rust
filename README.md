@@ -23,7 +23,7 @@ This is the home of the Holochain Rust library, being rewritten from [Go](https:
 
 ## Overview
 
-This `holochain-rust` repo does not contain any end-user executables, rather it delivers the holochain-core libraries in the form of a number of rust cargo crates which other repos use for building utilities or Holochain services that actually run Holochain applications:
+This `holochain-rust` repo does not contain any end-user executables, rather it delivers the holochain-core libraries in the form of a number of rust cargo crates which other repos use for building utilities or Holochain services that run Holochain applications:
 
 - `holochain_core_api`: the primary client wrapper crate used to instantiate and run a Holochain genome.
 - `holochain_core`: the main crate that implements the core Holochain functionality.

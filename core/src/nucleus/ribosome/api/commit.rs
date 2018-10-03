@@ -7,6 +7,8 @@ use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use hash_table::sys_entry::EntryType;
+use std::str::FromStr;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -32,14 +34,15 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry = Entry::new(&input.entry_type_name, &input.entry_content);
+    let entry = Entry::from(input.entry_content);
+    let entry_type = EntryType::from_str(&input.entry_type_name);
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry.clone(), &runtime.context)
+        validate_entry(entry_type.clone(), entry.clone(), &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry_type.clone(), entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let maybe_json = match task_result {

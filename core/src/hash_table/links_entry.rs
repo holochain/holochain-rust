@@ -1,10 +1,9 @@
 use hash_table::{
     entry::Entry,
-    sys_entry::{EntryType, ToEntry},
+    sys_entry::{ToEntry},
     HashString,
 };
 use serde_json;
-use std::str::FromStr;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -84,11 +83,10 @@ impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
         let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        Entry::new(EntryType::Link.as_str(), &json_array)
+        Entry::from(json_array)
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Link);
         serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
     }
 }
@@ -113,11 +111,10 @@ impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
         let json_array = serde_json::to_string(self).expect("LinkListEntry failed to serialize");
-        Entry::new(EntryType::LinkList.as_str(), &json_array)
+        Entry::from(json_array)
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::LinkList);
         serde_json::from_str(&entry.content()).expect("entry failed converting into LinkListEntry")
     }
 }

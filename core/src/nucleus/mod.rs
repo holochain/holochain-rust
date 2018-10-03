@@ -27,6 +27,7 @@ use std::{
     },
     thread,
 };
+use hash_table::sys_entry::EntryType;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -225,9 +226,9 @@ fn reduce_init_application(
     thread::spawn(move || {
         // Send Commit Action for Genesis Entry
         {
-            // Create Commit Action for Genesis Entry
-            let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
+            // Create Commit Action for Dna Entry
+            let dna_entry = dna_clone.to_entry();
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(EntryType::Dna, dna_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
@@ -412,14 +413,18 @@ fn reduce_validate_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::ValidateEntry);
+    let (entry_type, entry) = match action {
+        Action::ValidateEntry(entry_type, entry) => (entry_type, entry),
+        _ => unreachable!(),
+    };
+
     match state
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry.entry_type())
+        .get_zome_name_for_entry_type(entry_type.as_str())
     {
         None => {
-            let error = format!("Unknown entry type: '{}'", entry.entry_type());
+            let error = format!("Unknown entry type: '{:?}'", entry_type);
             state
                 .validation_results
                 .insert(action_wrapper.clone(), Err(error.to_string()));
@@ -439,7 +444,7 @@ fn reduce_validate_entry(
                     CallbackResult::Pass => Ok(()),
                     CallbackResult::NotImplemented => Err(format!(
                         "Validation callback not implemented for {:?}",
-                        entry.entry_type()
+                        entry_type
                     )),
                 };
                 context
@@ -492,7 +497,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::ValidateEntry(_) => Some(reduce_validate_entry),
+        Action::ValidateEntry(_, _) => Some(reduce_validate_entry),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,

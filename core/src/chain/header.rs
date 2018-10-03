@@ -77,6 +77,16 @@ impl Header {
         &self.entry_type
     }
 
+    /// returns true if the entry type is a system entry
+    pub fn is_sys(&self) -> bool {
+        self.entry_type != EntryType::App
+    }
+
+    /// returns true if the entry type is an app entry
+    pub fn is_app(&self) -> bool {
+        self.entry_type == EntryType::App
+    }
+
     /// timestamp getter
     pub fn timestamp(&self) -> &str {
         &self.timestamp

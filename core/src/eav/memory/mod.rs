@@ -15,19 +15,10 @@ impl MemoryStorageEav {
 }
 
 impl EntityAttributeValueStorage for MemoryStorageEav {
-    /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
-    /// append only storage
-    /// eavs are retrieved through constraint based lookups
-    /// @see fetch_eav
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         self.eavs.insert(eav.clone());
         Ok(())
     }
-    /// fetches the set of EntityAttributeValues that match constraints
-    /// None = no constraint
-    /// Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
-    /// Some(Attribute) = requires the given attribute (e.g. all links)
-    /// Some(Value) = requires the given value (e.g. all entities referencing an Address)
     fn fetch_eav(
         &self,
         entity: Option<Entity>,

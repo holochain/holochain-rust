@@ -10,9 +10,7 @@ use error::HolochainError;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::{
-        api::call::reduce_call,
-    },
+    ribosome::api::call::reduce_call,
     state::{NucleusState, NucleusStatus},
 };
 use snowflake;

@@ -76,6 +76,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use cas::content::AddressableContent;
     use hash_table::entry::tests::{test_entry, test_entry_type};
     use key::Key;
     use nucleus::ribosome::{

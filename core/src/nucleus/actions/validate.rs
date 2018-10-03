@@ -2,7 +2,7 @@ extern crate futures;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{Async, Future};
-use hash_table::entry::Entry;
+use hash_table::{entry::Entry, sys_entry::EntryType};
 use instance::dispatch_action;
 use std::sync::Arc;
 
@@ -11,8 +11,12 @@ use std::sync::Arc;
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn validate_entry(entry: Entry, context: &Arc<Context>) -> ValidationFuture {
-    let action_wrapper = ActionWrapper::new(Action::ValidateEntry(entry));
+pub fn validate_entry(
+    entry_type: EntryType,
+    entry: Entry,
+    context: &Arc<Context>,
+) -> ValidationFuture {
+    let action_wrapper = ActionWrapper::new(Action::ValidateEntry(entry_type, entry));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     ValidationFuture {
         context: context.clone(),

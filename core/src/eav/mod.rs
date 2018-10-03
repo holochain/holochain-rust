@@ -1,3 +1,5 @@
+pub mod memory;
+
 use cas::content::Address;
 use error::HolochainError;
 use std::collections::HashSet;
@@ -54,6 +56,17 @@ impl EntityAttributeValue {
     pub fn value(&self) -> Value {
         self.value.clone()
     }
+
+    // this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
+    pub fn filter_on_eav<T>(eav: T, e: &Option<T>) -> bool
+    where
+        T: PartialOrd,
+    {
+        match e {
+            Some(ref a) => &eav == a,
+            None => true,
+        }
+    }
 }
 
 /// eav storage
@@ -81,10 +94,8 @@ pub trait EntityAttributeValueStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::{tests::ExampleAddressableContent, AddressableContent},
-        eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
-    };
+    use cas::content::{tests::ExampleAddressableContent, AddressableContent};
+    use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
     use error::HolochainError;
     use std::collections::HashSet;
 

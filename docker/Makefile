@@ -154,7 +154,7 @@ fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check
 
 clippy: install_rust_tools
-	$(CARGO_TOOLS) clippy -- -A needless_return
+	$(CARGO_TOOLS) clippy -- -A needless_return --A useless_attribute
 
 fmt: install_rust_tools
 	$(CARGO_TOOLS) fmt

@@ -65,6 +65,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
@@ -89,7 +90,8 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
       script:
         - make fmt_check
-        - make clippy
+        # @see #431
+        # - make clippy
       before_cache:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
@@ -102,6 +104,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
@@ -141,6 +144,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json

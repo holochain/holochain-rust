@@ -105,7 +105,7 @@ pub fn create_test_dna_with_cap(
     zome_name: &str,
     cap_name: &str,
     cap: &Capability,
-    wasm: &Vec<u8>,
+    wasm: &[u8],
 ) -> Dna {
     let mut dna = Dna::new();
 
@@ -120,7 +120,7 @@ pub fn create_test_dna_with_cap(
         &Config::new(),
         &entry_types,
         &capabilities,
-        &DnaWasm { code: wasm.clone() },
+        &DnaWasm { code: wasm.to_owned() },
     );
 
     dna.zomes.insert(zome_name.to_string(), zome);

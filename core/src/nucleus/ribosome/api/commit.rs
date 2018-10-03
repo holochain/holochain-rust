@@ -2,7 +2,7 @@ extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
 use hash_table::entry::Entry;
-use holochain_wasm_utils::error::{HcApiReturnCode, RibosomeErrorReport};
+use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
@@ -28,12 +28,7 @@ pub fn invoke_commit_app_entry(
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ArgumentDeserializationFailed as i32,
-            )));
-        }
+        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
@@ -50,14 +45,10 @@ pub fn invoke_commit_app_entry(
     let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => {
-                return Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ReceivedWrongActionResult as i32,
-                )))
-            }
+            _ => return ribosome_return_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
-            let error_report = report_error!(format!(
+            let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
@@ -70,9 +61,7 @@ pub fn invoke_commit_app_entry(
     // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
-        Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ResponseSerializationFailed as i32,
-        ))),
+        Err(_) => ribosome_return_code!(ResponseSerializationFailed),
     }
 
     // @TODO test that failing validation prevents commits happening

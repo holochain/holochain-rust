@@ -74,12 +74,6 @@ impl Entry {
         self.entry_type.clone()
     }
 
-    /// returns true iff the entry is valid
-    pub fn validate(&self) -> bool {
-        // always valid if immutable and new() enforces validity
-        true
-    }
-
     /// returns true if the entry type is a system entry
     pub fn is_sys(&self) -> bool {
         EntryType::from_str(&self.entry_type).unwrap() != EntryType::App
@@ -221,18 +215,6 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for Entry::new()
-    fn new() {
-        let c = "foo";
-        let t = "bar";
-        let e = Entry::new(t, c);
-
-        assert_eq!(e.content(), c);
-        assert_ne!(e.hash(), HashString::new());
-        assert!(e.validate());
-    }
-
-    #[test]
     /// test entry.hash() against a known value
     fn hash_known() {
         assert_eq!(test_entry_hash(), test_entry().hash());
@@ -287,16 +269,6 @@ pub mod tests {
         let e = Entry::new(t, c);
 
         assert_eq!(t, e.entry_type());
-    }
-
-    #[test]
-    /// tests for entry.validate()
-    fn validate() {
-        let t = "";
-        let c = "";
-        let e = Entry::new(t, c);
-
-        assert!(e.validate());
     }
 
     #[test]

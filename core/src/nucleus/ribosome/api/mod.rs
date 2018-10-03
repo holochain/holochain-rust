@@ -9,14 +9,14 @@ pub mod get_links;
 pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{error::HcApiReturnCode, SinglePageAllocation};
+use holochain_wasm_utils::{error::RibosomeReturnCode, memory_allocation::SinglePageAllocation};
 use nucleus::{
-    memory::SinglePageManager,
     ribosome::{
         api::{
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
+        memory::SinglePageManager,
         Defn,
     },
     ZomeFnCall,
@@ -126,7 +126,7 @@ impl ZomeApiFunction {
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-            Ok(Some(RuntimeValue::I32(0 as i32)))
+            ribosome_return_code!(Success)
         }
 
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
@@ -172,7 +172,7 @@ impl Runtime {
         let encoded_allocation: u32 = args.nth(0);
         let allocation = SinglePageAllocation::new(encoded_allocation);
         // Handle empty allocation edge case
-        if let Err(HcApiReturnCode::Success) = allocation {
+        if let Err(RibosomeReturnCode::Success) = allocation {
             return String::new();
         }
         let allocation = allocation

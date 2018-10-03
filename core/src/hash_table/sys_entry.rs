@@ -2,10 +2,13 @@ use hash_table::entry::Entry;
 use holochain_agent::{Agent, Identity};
 use holochain_dna::Dna;
 use serde_json;
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    str::FromStr,
+};
 
 pub trait ToEntry {
-    fn to_entry(&self) -> Entry;
+    fn to_entry(&self) -> (EntryType, Entry);
     fn from_entry(&Entry) -> Self;
 }
 
@@ -22,11 +25,11 @@ macro_rules! sys_prefix {
 
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum EntryType {
     AgentId,
     Deletion,
-    App,
+    App(String),
     Dna,
     Header,
     Key,
@@ -50,15 +53,21 @@ impl FromStr for EntryType {
             sys_prefix!("link") => Ok(EntryType::Link),
             sys_prefix!("link_list") => Ok(EntryType::LinkList),
             sys_prefix!("migration") => Ok(EntryType::Migration),
-            _ => Ok(EntryType::App),
+            _ => Ok(EntryType::App(s.to_string())),
         }
     }
 }
 
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl EntryType {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            EntryType::App => panic!("should not try to convert an app entry type to str"),
+    pub fn as_str(&self) -> &str {
+        let ret = match *self {
+            EntryType::App(ref s) => s,
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
@@ -67,7 +76,8 @@ impl EntryType {
             EntryType::Link => sys_prefix!("link"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
-        }
+        };
+        ret
     }
 }
 
@@ -76,13 +86,12 @@ impl EntryType {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Dna {
-    fn to_entry(&self) -> Entry {
+    fn to_entry(&self) -> (EntryType, Entry) {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(EntryType::Dna.as_str(), &self.to_json())
+        (EntryType::Dna, Entry::from(self.to_json()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::Dna);
         return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
@@ -92,12 +101,11 @@ impl ToEntry for Dna {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Agent {
-    fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::AgentId.as_str(), &self.to_string())
+    fn to_entry(&self) -> (EntryType, Entry) {
+        (EntryType::AgentId, Entry::from(self.to_string()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert!(EntryType::from_str(&entry.entry_type()).unwrap() == EntryType::AgentId);
         let id_content: String =
             serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
         Agent::new(Identity::new(id_content))
@@ -125,8 +133,8 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
+        let (dna_entry_type, dna_entry) = dna.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry_type, dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -141,11 +149,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
-                    assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna,
-                    );
+                Action::Commit(entry_type, entry) => {
+                    assert_eq!(entry_type, &EntryType::Dna,);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -158,8 +163,9 @@ pub mod tests {
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
+        let (agent_entry_type, agent_entry) = context.agent.to_entry();
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit(agent_entry_type, agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -174,11 +180,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
-                    assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::AgentId,
-                    );
+                Action::Commit(entry_type, entry) => {
+                    assert_eq!(entry_type, &EntryType::AgentId,);
                     assert_eq!(entry.content(), agent_entry.content());
                     true
                 }

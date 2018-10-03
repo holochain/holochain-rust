@@ -76,7 +76,8 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
       script:
         - make fmt_check
-        - make clippy
+        # @see #431
+        # - make clippy
       before_cache:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/

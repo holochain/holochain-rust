@@ -28,15 +28,15 @@ This is the home of the Holochain Rust library, being rewritten from [Go](https:
 This `holochain-rust` repo does not contain any end-user executables, rather it delivers the holochain-core libraries in the form of a number of rust cargo crates which other repos use for building utilities or Holochain services that actually run Holochain applications:
 
 - `holochain_core_api`: the primary client wrapper crate used to instantiate and run a Holochain genome.
-- `hoclocian_core`: the main crate that implements the core Holochain functionality.
-- `holochain_dna`: a crate for working with holochain genome from a package file.  Used by both holochain_core the [packager utility](https://github.com/holochain/holochain-cmd)
+- `holochain_core`: the main crate that implements the core Holochain functionality.
+- `holochain_dna`: a crate for working with holochain genome from a package file.  Used by both holochain_core and the [packager utility](https://github.com/holochain/holochain-cmd)
 - `holochain_agent`: a crate for managing holochain agent info, including identities, keys etc..  Used by both holochain_core and other utilities.
 
-We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  [`hdk-rust`](https://github.com/holochain/hdk-rust) and [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and TypeScript compatibility.  We expect many more languages to be added by the community.
+We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  [`hdk-rust`](https://github.com/holochain/hdk-rust) and [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and Assemblyscript compatibility.  We expect many more languages to be added by the community.
 
 ## Documentation: The Book on Holochain
 
-There is a work-in-progress book being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [./doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
+There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 ## Installation & Usage
 **Core Developers Only:**  These instructions are for developers of Holochain Core itself.  If you are developing Holochain applications, you will want to install the [`hcdev` command line tool](https://github.com/holochain/holochain-cmd) to help create Holochain Genome packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install Genome packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.

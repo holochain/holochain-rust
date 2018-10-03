@@ -1,4 +1,4 @@
-use cas::content::Address;
+use cas::content::{Address, AddressableContent};
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},

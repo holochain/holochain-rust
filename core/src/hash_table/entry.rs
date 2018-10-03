@@ -1,3 +1,4 @@
+use cas::content::{AddressableContent, Content};
 use error::HolochainError;
 use hash::HashString;
 use json::{FromJson, ToJson};
@@ -31,8 +32,24 @@ impl StdHash for Entry {
 }
 
 impl From<String> for Entry {
-    fn from(s: String) -> Self {
-        Entry(s)
+    fn from(string: String) -> Self {
+        Entry(string)
+    }
+}
+
+impl From<Entry> for String {
+    fn from(entry: Entry) -> Self {
+        entry.0
+    }
+}
+
+impl AddressableContent for Entry {
+    fn content(&self) -> Content {
+        String::from(self.to_owned())
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Entry::from(content.to_string())
     }
 }
 
@@ -50,11 +67,6 @@ impl Entry {
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
         HashString::encode_from_str(string_to_hash, Hash::SHA2256)
-    }
-
-    /// content getter
-    pub fn content(&self) -> String {
-        self.0.clone()
     }
 }
 
@@ -82,6 +94,10 @@ impl FromJson for Entry {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::{
+        content::{tests::AddressableContentTestSuite, AddressableContent},
+        storage::tests::ExampleContentAddressableStorage,
+    };
     use hash::HashString;
     use hash_table::{entry::Entry, sys_entry::EntryType};
     use json::{FromJson, ToJson};
@@ -104,23 +120,23 @@ pub mod tests {
     }
 
     /// dummy entry content
-    pub fn test_content() -> String {
+    pub fn test_entry_content() -> String {
         "test entry content".into()
     }
 
-    /// dummy entry content, same as test_content()
-    pub fn test_content_a() -> String {
-        test_content()
+    /// dummy entry content, same as test_entry_content()
+    pub fn test_entry_content_a() -> String {
+        test_entry_content()
     }
 
-    /// dummy entry content, differs from test_content()
-    pub fn test_content_b() -> String {
+    /// dummy entry content, differs from test_entry_content()
+    pub fn test_entry_content_b() -> String {
         "other test entry content".into()
     }
 
     /// dummy entry
     pub fn test_entry() -> Entry {
-        Entry::from(test_content())
+        Entry::from(test_entry_content())
     }
 
     /// the correct hash for test_entry()
@@ -135,7 +151,7 @@ pub mod tests {
 
     /// dummy entry, differs from test_entry()
     pub fn test_entry_b() -> Entry {
-        Entry::from(test_content_b())
+        Entry::from(test_entry_content_b())
     }
 
     /// dummy entry with unique string content
@@ -163,6 +179,18 @@ pub mod tests {
     }
 
     #[test]
+    /// show From<Entry> for String
+    fn string_from_entry_test() {
+        assert_eq!(test_entry_content().to_string(), String::from(test_entry()));
+    }
+
+    #[test]
+    /// show From<String> for Entry
+    fn entry_from_string_test() {
+        assert_eq!(test_entry(), Entry::from(test_entry_content().to_string()));
+    }
+
+    #[test]
     /// test that the content changes the hash
     fn hash_content() {
         let entry_a = test_entry_a();
@@ -180,7 +208,7 @@ pub mod tests {
     /// tests for entry.content()
     fn content() {
         let content = "baz";
-        let entry = Entry::from(String::from(content));
+        let entry = Entry::from_content(&String::from(content));
 
         assert_eq!("baz", entry.content());
     }
@@ -201,4 +229,25 @@ pub mod tests {
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
     }
 
+    #[test]
+    /// show AddressableContent implementation
+    fn addressable_content_test() {
+        // from_content()
+        AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
+            test_entry_content(),
+            test_entry(),
+            String::from(test_entry_hash()),
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let content_addressable_storage = ExampleContentAddressableStorage::new();
+        let entries = vec![test_entry()];
+        AddressableContentTestSuite::addressable_content_round_trip::<
+            Entry,
+            ExampleContentAddressableStorage,
+        >(entries, content_addressable_storage);
+    }
 }

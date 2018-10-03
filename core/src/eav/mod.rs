@@ -10,13 +10,13 @@ use std::collections::HashSet;
 /// implemented on top of cas::storage::ContentAddressableStorage
 /// @see https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model
 /// Address of AddressableContent representing the EAV entity
-pub type Entity = Address;
+type Entity = Address;
 
 /// using String for EAV attributes (not e.g. an enum) keeps it simple and open
-pub type Attribute = String;
+type Attribute = String;
 
 /// Address of AddressableContent representing the EAV value
-pub type Value = Address;
+type Value = Address;
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering

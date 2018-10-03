@@ -225,9 +225,9 @@ fn reduce_init_application(
     thread::spawn(move || {
         // Send Commit Action for Genesis Entry
         {
-            // Create Commit Action for Genesis Entry
-            let genesis_entry = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(genesis_entry));
+            // Create Commit Action for Dna Entry
+            let (entry_type, dna_entry) = dna_clone.to_entry();
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(entry_type, dna_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
@@ -412,14 +412,18 @@ fn reduce_validate_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::ValidateEntry);
+    let (entry_type, entry) = match action {
+        Action::ValidateEntry(entry_type, entry) => (entry_type, entry),
+        _ => unreachable!(),
+    };
+
     match state
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry.entry_type())
+        .get_zome_name_for_entry_type(&entry_type.to_string())
     {
         None => {
-            let error = format!("Unknown entry type: '{}'", entry.entry_type());
+            let error = format!("Entry type not found in any zome: '{}'", entry_type);
             state
                 .validation_results
                 .insert(action_wrapper.clone(), Err(error.to_string()));
@@ -429,6 +433,7 @@ fn reduce_validate_entry(
             state.validations_running.push(action_wrapper.clone());
             let action_wrapper = action_wrapper.clone();
             let entry = entry.clone();
+            let entry_type = entry_type.clone();
             thread::spawn(move || {
                 let validation_result = match validate_commit(
                     context.clone(),
@@ -438,8 +443,8 @@ fn reduce_validate_entry(
                     CallbackResult::Fail(error_string) => Err(error_string),
                     CallbackResult::Pass => Ok(()),
                     CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry.entry_type()
+                        "Validation callback not implemented for {}",
+                        entry_type
                     )),
                 };
                 context
@@ -453,6 +458,7 @@ fn reduce_validate_entry(
         }
     };
 }
+
 fn reduce_return_validation_result(
     _context: Arc<Context>,
     state: &mut NucleusState,
@@ -492,7 +498,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::ValidateEntry(_) => Some(reduce_validate_entry),
+        Action::ValidateEntry(_, _) => Some(reduce_validate_entry),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         _ => None,

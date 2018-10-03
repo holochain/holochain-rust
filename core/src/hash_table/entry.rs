@@ -91,18 +91,18 @@ pub mod tests {
     use snowflake;
 
     /// dummy entry type
-    pub fn test_type() -> String {
-        "testEntryType".into()
+    pub fn test_entry_type() -> EntryType {
+        EntryType::App(String::from("testEntryTypeB"))
     }
 
     /// dummy entry type, same as test_type()
-    pub fn test_type_a() -> String {
-        test_type()
+    pub fn test_entry_type_a() -> EntryType {
+        test_entry_type()
     }
 
     /// dummy entry type, differs from test_type()
-    pub fn test_type_b() -> String {
-        "testEntryTypeB".into()
+    pub fn test_entry_type_b() -> EntryType {
+        EntryType::App(String::from("testEntryTypeB"))
     }
 
     /// dummy entry content
@@ -122,7 +122,7 @@ pub mod tests {
 
     /// dummy entry
     pub fn test_entry() -> Entry {
-        Entry::new(&test_type(), &test_content())
+        Entry::from(test_content())
     }
 
     /// the correct hash for test_entry()
@@ -137,56 +137,25 @@ pub mod tests {
 
     /// dummy entry, differs from test_entry()
     pub fn test_entry_b() -> Entry {
-        Entry::new(&test_type_b(), &test_content_b())
+        Entry::from(test_content_b())
     }
 
     /// dummy entry with unique string content
     pub fn test_entry_unique() -> Entry {
-        Entry::new(&test_type(), &snowflake::ProcessUniqueId::new().to_string())
+        Entry::from(snowflake::ProcessUniqueId::new().to_string())
     }
 
     #[test]
     /// tests for PartialEq
     fn eq() {
-        let c1 = "foo";
-        let c2 = "bar";
-        let t1 = "a";
-        let t2 = "b";
+        let entry_a = test_entry_a();
+        let entry_b = test_entry_b();
 
-        // same type and content is equal
-        assert_eq!(Entry::new(t1, c1), Entry::new(t1, c1));
+        // same content is equal
+        assert_eq!(entry_a, entry_a);
 
-        // same type different content is not equal
-        assert_ne!(Entry::new(t1, c1), Entry::new(t1, c2));
-
-        // same content different type is equal
-        // @see https://github.com/holochain/holochain-rust/issues/85
-        assert_eq!(Entry::new(t1, c1), Entry::new(t2, c1));
-
-        // different content different type is not equal
-        assert_ne!(Entry::new(t1, c1), Entry::new(t2, c2));
-    }
-
-    #[test]
-    /// tests that hash equality matches PartialEq
-    fn eq_hash() {
-        let c1 = "foo";
-        let c2 = "bar";
-        let t1 = "a";
-        let t2 = "b";
-
-        // same type and content is equal
-        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t1, c1).hash());
-
-        // same type different content is not equal
-        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t1, c2).hash());
-
-        // same content different type is equal
-        // @see https://github.com/holochain/holochain-rust/issues/85
-        assert_eq!(Entry::new(t1, c1).hash(), Entry::new(t2, c1).hash());
-
-        // different content different type is not equal
-        assert_ne!(Entry::new(t1, c1).hash(), Entry::new(t2, c2).hash());
+        // different content is not equal
+        assert_ne!(entry_a, entry_b);
     }
 
     #[test]
@@ -198,52 +167,25 @@ pub mod tests {
     #[test]
     /// test that the content changes the hash
     fn hash_content() {
-        let t = "bar";
-        let c1 = "baz";
-        let c2 = "foo";
 
-        let e1 = Entry::new(t, c1);
-        let e2 = Entry::new(t, c1);
-        let e3 = Entry::new(t, c2);
+        let entry_a = test_entry_a();
+        let entry_b = test_entry_a();
+        let entry_c = test_entry_b();
 
         // same content same hash
-        assert_eq!(e1.hash(), e2.hash());
+        assert_eq!(entry_a.hash(), entry_b.hash());
 
         // different content, different hash
-        assert_ne!(e1.hash(), e3.hash());
-    }
-
-    #[test]
-    /// test that the entry type does NOT change the hash
-    fn hash_entry_type() {
-        let t1 = "barType";
-        let t2 = "fooo";
-        let c = "barr";
-
-        let e1 = Entry::new(t1, c);
-        let e2 = Entry::new(t2, c);
-
-        assert_eq!(e1.hash(), e2.hash());
+        assert_ne!(entry_a.hash(), entry_c.hash());
     }
 
     #[test]
     /// tests for entry.content()
     fn content() {
-        let c = "baz";
-        let t = "foo";
-        let e = Entry::new(t, c);
+        let content = "baz";
+        let entry = Entry::from(String::from(content));
 
-        assert_eq!("baz", e.content());
-    }
-
-    #[test]
-    /// tests for entry.entry_type()
-    fn entry_type() {
-        let t = "bar";
-        let c = "foo";
-        let e = Entry::new(t, c);
-
-        assert_eq!(t, e.entry_type());
+        assert_eq!("baz", entry.content());
     }
 
     #[test]
@@ -255,36 +197,11 @@ pub mod tests {
     #[test]
     /// test that we can round trip through JSON
     fn json_round_trip() {
-        let e = test_entry_a();
+        let entry = test_entry();
         let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
-        assert_eq!(expected, e.to_json().unwrap());
-        assert_eq!(e, Entry::from_json(expected).unwrap());
-        assert_eq!(e, Entry::from_json(&e.to_json().unwrap()).unwrap());
+        assert_eq!(expected, entry.to_json().unwrap());
+        assert_eq!(entry, Entry::from_json(expected).unwrap());
+        assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
     }
 
-    #[test]
-    /// test that we can detect system entry types
-    fn is_sys() {
-        for sys_type in vec![
-            EntryType::AgentId,
-            EntryType::Deletion,
-            EntryType::Dna,
-            EntryType::Header,
-            EntryType::Key,
-            EntryType::Link,
-            EntryType::Migration,
-        ] {
-            let entry = Entry::new(sys_type.as_str(), "");
-            assert!(entry.is_sys());
-            assert!(!entry.is_app());
-        }
-    }
-
-    #[test]
-    /// test that we can detect app entry types
-    fn is_app() {
-        let entry = Entry::new("foo", "");
-        assert!(entry.is_app());
-        assert!(!entry.is_sys());
-    }
 }

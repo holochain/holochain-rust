@@ -114,7 +114,7 @@ pub mod tests {
 
     use action::{Action, ActionWrapper};
     use hash::tests::test_hash;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use hash_table::entry::tests::{test_entry, test_entry_type, test_entry_hash};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 
@@ -130,7 +130,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry_type(), test_entry()))
     }
 
     /// dummy action for a get of test_hash()

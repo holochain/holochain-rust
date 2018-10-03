@@ -283,7 +283,6 @@ pub mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::{
-        str::FromStr,
         sync::{mpsc::sync_channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
@@ -386,10 +385,10 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit(entry_type, entry) => {
                     assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna
+                        entry_type,
+                        &EntryType::Dna
                     );
                     true
                 }

@@ -35,7 +35,7 @@ pub fn invoke_commit_app_entry(
 
     // Create Chain Entry
     let entry = Entry::from(input.entry_content);
-    let entry_type = EntryType::from_str(&input.entry_type_name);
+    let entry_type = EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
@@ -77,6 +77,7 @@ pub mod tests {
     extern crate wabt;
 
     use hash_table::entry::tests::test_entry;
+    use hash_table::entry::tests::test_entry_type;
     use key::Key;
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
@@ -86,10 +87,12 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let e = test_entry();
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+
         let args = CommitAppEntryArgs {
-            entry_type_name: e.entry_type().into(),
-            entry_content: e.content().into(),
+            entry_type_name: entry_type.to_string(),
+            entry_content: entry.content().into(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

@@ -421,10 +421,10 @@ fn reduce_validate_entry(
     match state
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry_type.as_str())
+        .get_zome_name_for_entry_type(&entry_type.to_string())
     {
         None => {
-            let error = format!("Unknown entry type: '{:?}'", entry_type);
+            let error = format!("Unknown entry type: '{}'", entry_type);
             state
                 .validation_results
                 .insert(action_wrapper.clone(), Err(error.to_string()));
@@ -434,6 +434,7 @@ fn reduce_validate_entry(
             state.validations_running.push(action_wrapper.clone());
             let action_wrapper = action_wrapper.clone();
             let entry = entry.clone();
+            let entry_type = entry_type.clone();
             thread::spawn(move || {
                 let validation_result = match validate_commit(
                     context.clone(),
@@ -443,7 +444,7 @@ fn reduce_validate_entry(
                     CallbackResult::Fail(error_string) => Err(error_string),
                     CallbackResult::Pass => Ok(()),
                     CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
+                        "Validation callback not implemented for {}",
                         entry_type
                     )),
                 };
@@ -458,6 +459,7 @@ fn reduce_validate_entry(
         }
     };
 }
+
 fn reduce_return_validation_result(
     _context: Arc<Context>,
     state: &mut NucleusState,

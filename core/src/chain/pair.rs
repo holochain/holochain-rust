@@ -98,13 +98,14 @@ pub mod tests {
     use chain::{tests::test_chain, SourceChain};
     use hash_table::entry::{
         tests::{test_entry, test_entry_b, test_entry_unique},
-        Entry,
     };
     use json::{FromJson, ToJson};
+    use hash_table::entry::tests::test_entry_type;
+    use hash_table::entry::tests::test_entry_type_b;
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        test_chain().create_next_pair(&test_entry())
+        test_chain().create_next_pair(&test_entry_type(), &test_entry())
     }
 
     /// dummy pair, same as test_pair()
@@ -114,7 +115,7 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        test_chain().create_next_pair(&test_entry_b())
+        test_chain().create_next_pair(&test_entry_type_b(), &test_entry_b())
     }
 
     /// dummy pair, uses test_entry_unique()
@@ -126,54 +127,55 @@ pub mod tests {
     /// tests for Pair::new()
     fn new() {
         let chain = test_chain();
-        let t = "fooType";
-        let e1 = Entry::new(t, "some content");
-        let h1 = chain.create_next_header(&e1);
 
-        assert_eq!(h1.entry_hash(), &e1.hash());
-        assert_eq!(h1.link(), None);
+        let entry_type = test_entry_type();
+        let entry = test_entry();
 
-        let p1 = chain.create_next_pair(&e1.clone());
-        assert_eq!(&e1, p1.entry());
-        assert_eq!(&h1, p1.header());
+        let header = chain.create_next_header(&entry_type, &entry);
+
+        assert_eq!(header.entry_hash(), &entry.hash());
+        assert_eq!(header.link(), None);
+
+        let pair = chain.create_next_pair(&entry_type, &entry);
+        assert_eq!(&entry, pair.entry());
+        assert_eq!(&header, pair.header());
     }
 
     #[test]
     /// tests for pair.header()
     fn header() {
         let chain = test_chain();
-        let t = "foo";
-        let c = "bar";
-        let e = Entry::new(t, c);
-        let h = chain.create_next_header(&e);
-        let p = chain.create_next_pair(&e);
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+        let header = chain.create_next_header(&entry_type, &entry);
+        let pair = chain.create_next_pair(&entry_type, &entry);
 
-        assert_eq!(&h, p.header());
+        assert_eq!(&header, pair.header());
     }
 
     #[test]
     /// tests for pair.entry()
     fn entry() {
         let mut chain = test_chain();
-        let t = "foo";
-        let e = Entry::new(t, "");
-        let p = chain
-            .push_entry(&e)
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+        let pair = chain
+            .push_entry(&entry_type, &entry)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(&e, p.entry());
+        assert_eq!(&entry, pair.entry());
     }
 
     #[test]
     /// tests for pair.validate()
     fn validate() {
         let chain = test_chain();
-        let t = "fooType";
+        let entry_type = test_entry_type();
+        let entry = test_entry();
 
-        let e1 = Entry::new(t, "bar");
-        let p1 = chain.create_next_pair(&e1);
+        let pair = chain.create_next_pair(&entry_type, &entry);
 
-        assert!(p1.validate());
+        assert!(pair.validate());
     }
 
     #[test]

@@ -3,6 +3,9 @@ use holochain_agent::{Agent, Identity};
 use holochain_dna::Dna;
 use serde_json;
 use std::str::FromStr;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::fmt::Result as FmtResult;
 
 pub trait ToEntry {
     fn to_entry(&self) -> Entry;
@@ -26,7 +29,7 @@ macro_rules! sys_prefix {
 pub enum EntryType {
     AgentId,
     Deletion,
-    App,
+    App(String),
     Dna,
     Header,
     Key,
@@ -50,15 +53,21 @@ impl FromStr for EntryType {
             sys_prefix!("link") => Ok(EntryType::Link),
             sys_prefix!("link_list") => Ok(EntryType::LinkList),
             sys_prefix!("migration") => Ok(EntryType::Migration),
-            _ => Ok(EntryType::App),
+            _ => Ok(EntryType::App(s.to_string())),
         }
     }
 }
 
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl EntryType {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            EntryType::App => panic!("should not try to convert an app entry type to str"),
+    pub fn as_str(&self) -> &str {
+        let ret = match *self {
+            EntryType::App(ref s) => s,
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
@@ -67,7 +76,8 @@ impl EntryType {
             EntryType::Link => sys_prefix!("link"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
-        }
+        };
+        ret
     }
 }
 
@@ -124,7 +134,7 @@ pub mod tests {
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
+        let commit_action = ActionWrapper::new(Action::Commit(EntryType::Dna, dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -139,10 +149,10 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit(entry_type, entry) => {
                     assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna,
+                        entry_type,
+                        &EntryType::Dna,
                     );
                     assert_eq!(entry.content(), dna_entry.content());
                     true
@@ -157,7 +167,7 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
+        let commit_agent_action = ActionWrapper::new(Action::Commit(EntryType::AgentId, agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -172,10 +182,10 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit(entry_type, entry) => {
                     assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::AgentId,
+                        entry_type,
+                        &EntryType::AgentId,
                     );
                     assert_eq!(entry.content(), agent_entry.content());
                     true

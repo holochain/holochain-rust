@@ -68,7 +68,7 @@ mod tests {
         },
         storage::tests::ExampleContentAddressableStorage,
     };
-    use eav::eav::tests::eav_round_trip_test_runner;
+    use eav::tests::eav_round_trip_test_runner;
 
     #[test]
     /// test the CrudStatus bit flags as ints

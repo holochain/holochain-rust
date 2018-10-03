@@ -1,17 +1,13 @@
-use cas::{
-    content::{Address, AddressableContent, Content},
-    storage::ContentAddressableStorage,
-};
-use eav::eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
+use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
 use error::HolochainError;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 pub struct MemoryStorageEav {
     eavs: HashSet<EntityAttributeValue>,
 }
 
 impl MemoryStorageEav {
-    fn new() -> MemoryStorageEav {
+    pub fn new() -> MemoryStorageEav {
         MemoryStorageEav {
             eavs: HashSet::new(),
         }
@@ -54,11 +50,7 @@ impl EntityAttributeValueStorage for MemoryStorageEav {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{tests::ExampleAddressableContent, AddressableContent};
-    use eav::{
-        eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
-        memory::MemoryStorageEav,
-    };
-    use error::HolochainError;
+    use eav::{memory::MemoryStorageEav, EntityAttributeValue, EntityAttributeValueStorage};
     use std::collections::HashSet;
 
     #[test]

@@ -3,7 +3,7 @@ use cas::{
     storage::ContentAddressableStorage,
 };
 use error::HolochainError;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub struct MemoryStorage {
     storage: HashMap<Address, Content>,

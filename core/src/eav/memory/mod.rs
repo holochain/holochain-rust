@@ -2,19 +2,19 @@ use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, 
 use error::HolochainError;
 use std::collections::HashSet;
 
-pub struct MemoryStorageEav {
+pub struct EavMemoryStorage {
     eavs: HashSet<EntityAttributeValue>,
 }
 
-impl MemoryStorageEav {
-    pub fn new() -> MemoryStorageEav {
-        MemoryStorageEav {
+impl EavMemoryStorage {
+    pub fn new() -> EavMemoryStorage {
+        EavMemoryStorage {
             eavs: HashSet::new(),
         }
     }
 }
 
-impl EntityAttributeValueStorage for MemoryStorageEav {
+impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         self.eavs.insert(eav.clone());
         Ok(())
@@ -39,7 +39,7 @@ impl EntityAttributeValueStorage for MemoryStorageEav {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{tests::ExampleAddressableContent, AddressableContent};
-    use eav::{memory::MemoryStorageEav, EntityAttributeValue, EntityAttributeValueStorage};
+    use eav::{memory::EavMemoryStorage, EntityAttributeValue, EntityAttributeValueStorage};
     use std::collections::HashSet;
 
     #[test]
@@ -52,7 +52,7 @@ pub mod tests {
             &attribute,
             &value_content.address(),
         );
-        let mut eav_storage = MemoryStorageEav::new();
+        let mut eav_storage = EavMemoryStorage::new();
 
         assert_eq!(
             HashSet::new(),
@@ -110,7 +110,7 @@ pub mod tests {
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "one_to_many".to_string();
 
-        let mut eav_storage = MemoryStorageEav::new();
+        let mut eav_storage = EavMemoryStorage::new();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
@@ -164,7 +164,7 @@ pub mod tests {
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "many_to_one".to_string();
 
-        let mut eav_storage = MemoryStorageEav::new();
+        let mut eav_storage = EavMemoryStorage::new();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());

@@ -1,4 +1,4 @@
-use cas::content::Address;
+use cas::content::{Address, AddressableContent};
 use error::HolochainError;
 use hash::HashString;
 use hash_table::{

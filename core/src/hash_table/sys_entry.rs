@@ -1,3 +1,4 @@
+use cas::content::AddressableContent;
 use hash_table::entry::Entry;
 use holochain_agent::{Agent, Identity};
 use holochain_dna::Dna;
@@ -124,6 +125,7 @@ pub mod tests {
     use hash_table::sys_entry::{EntryType, ToEntry};
     use std::str::FromStr;
 
+    use cas::content::AddressableContent;
     use instance::{tests::test_context, Instance, Observer};
     use std::sync::mpsc::channel;
 

@@ -62,7 +62,7 @@ pub mod tests {
 
         // @TODO how to get fail strings back out?
         // @see https://github.com/holochain/holochain-rust/issues/205
-        assert_eq!(CallbackResult::Fail("{".to_string()), result);
+        assert_eq!(CallbackResult::Fail("\"".to_string()), result);
     }
 
 }

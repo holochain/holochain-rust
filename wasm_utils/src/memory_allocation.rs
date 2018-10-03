@@ -1,4 +1,4 @@
-use error::HcApiReturnCode;
+use error::RibosomeReturnCode;
 
 //--------------------------------------------------------------------------------------------------
 // Helpers
@@ -43,7 +43,7 @@ impl SinglePageAllocation {
     /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
     /// A valid allocation must not have a length of zero
     /// An Encoded Allocation with an offset but no length is actually an encoding of an ErrorCode
-    pub fn new(encoded_allocation: u32) -> Result<Self, HcApiReturnCode> {
+    pub fn new(encoded_allocation: u32) -> Result<Self, RibosomeReturnCode> {
         let (offset, length) = u32_split_bits(encoded_allocation);
         let allocation = SinglePageAllocation { offset, length };
 
@@ -51,13 +51,13 @@ impl SinglePageAllocation {
         if allocation.length == 0 {
             // @TODO is it right to return success as Err for 0? what is a "success" error?
             // @see https://github.com/holochain/holochain-rust/issues/181
-            return Err(HcApiReturnCode::from_offset(allocation.offset));
+            return Err(RibosomeReturnCode::from_offset(allocation.offset));
         }
 
         // should never happen
         // we don't panic because this needs to work with wasm, which doesn't support panic
         if (allocation.offset as u32 + allocation.length as u32) > U16_MAX {
-            return Err(HcApiReturnCode::OutOfMemory);
+            return Err(RibosomeReturnCode::OutOfMemory);
         }
 
         Ok(allocation)
@@ -123,7 +123,7 @@ impl SinglePageStack {
 pub mod tests {
 
     use super::*;
-    use error::HcApiReturnCode;
+    use error::RibosomeReturnCode;
 
     #[test]
     /// tests construction and encoding in a new single page allocation
@@ -143,37 +143,37 @@ pub mod tests {
             // offset 0 = success?
             // @see https://github.com/holochain/holochain-rust/issues/181
             SinglePageAllocation::new(0b0000000000000000_0000000000000000).unwrap_err(),
-            HcApiReturnCode::Success,
+            RibosomeReturnCode::Success,
         );
 
         assert_eq!(
             // offset 1 = generic error
             SinglePageAllocation::new(0b0000000000000001_0000000000000000).unwrap_err(),
-            HcApiReturnCode::Failure,
+            RibosomeReturnCode::Failure,
         );
 
         assert_eq!(
             // offset 2 = serde json error
             SinglePageAllocation::new(0b0000000000000010_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ArgumentDeserializationFailed,
+            RibosomeReturnCode::ArgumentDeserializationFailed,
         );
 
         assert_eq!(
             // offset 3 = page overflow error
             SinglePageAllocation::new(0b0000000000000011_0000000000000000).unwrap_err(),
-            HcApiReturnCode::OutOfMemory,
+            RibosomeReturnCode::OutOfMemory,
         );
 
         assert_eq!(
             // offset 4 = page overflow error
             SinglePageAllocation::new(0b0000000000000100_0000000000000000).unwrap_err(),
-            HcApiReturnCode::ReceivedWrongActionResult,
+            RibosomeReturnCode::ReceivedWrongActionResult,
         );
 
         assert_eq!(
             // nonsense offset = generic error
             SinglePageAllocation::new(0b1010101010101010_0000000000000000).unwrap_err(),
-            HcApiReturnCode::Failure,
+            RibosomeReturnCode::Failure,
         );
     }
 

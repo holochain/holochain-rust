@@ -164,7 +164,7 @@ mod tests {
             CrudStatus::MODIFIED,
             CrudStatus::LOCKED,
         ];
-        AddressableContentTestSuite::addressalbe_content_round_trip::<
+        AddressableContentTestSuite::addressable_content_round_trip::<
             CrudStatus,
             ExampleContentAddressableStorage,
         >(crud_statuses, content_addressable_storage);

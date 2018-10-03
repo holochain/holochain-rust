@@ -5,11 +5,9 @@ pub mod genesis;
 pub mod receive;
 pub mod validate_commit;
 
-use action::ActionWrapper;
 use context::Context;
 use hash_table::entry::Entry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
-use instance::Observer;
 use json::ToJson;
 use nucleus::{
     ribosome::{
@@ -20,12 +18,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{
-    str::FromStr,
-    sync::{mpsc::Sender, Arc},
-    thread::sleep,
-    time::Duration,
-};
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -69,20 +62,8 @@ impl FromStr for Callback {
 impl Callback {
     pub fn as_fn(
         &self,
-    ) -> fn(
-        context: Arc<Context>,
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-        zome: &str,
-        params: &CallbackParams,
-    ) -> CallbackResult {
-        fn noop(
-            _context: Arc<Context>,
-            _action_channel: &Sender<ActionWrapper>,
-            _observer_channel: &Sender<Observer>,
-            _zome: &str,
-            _params: &CallbackParams,
-        ) -> CallbackResult {
+    ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
+        fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
             CallbackResult::Pass
         }
 
@@ -164,16 +145,12 @@ pub enum CallbackResult {
 pub(crate) fn run_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     wasm: &DnaWasm,
     app_name: String,
 ) -> CallbackResult {
     match ribosome::api::call(
         &app_name,
         context,
-        &action_channel,
-        &observer_channel,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
@@ -188,8 +165,6 @@ pub(crate) fn run_callback(
 
 pub fn call(
     context: Arc<Context>,
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,
@@ -237,14 +212,7 @@ pub fn call(
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented
             } else {
-                run_callback(
-                    context.clone(),
-                    zome_call,
-                    action_channel,
-                    observer_channel,
-                    wasm,
-                    dna.name.clone(),
-                )
+                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
             }
         }
     }

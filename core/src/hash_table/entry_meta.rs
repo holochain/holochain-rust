@@ -1,6 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash::HashString;
 use json::{FromJson, RoundTripJson, ToJson};
 use multihash::Hash;
 use serde_json;
@@ -89,7 +88,7 @@ impl EntryMeta {
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        HashString::encode_from_str(&string_to_address, Hash::SHA2256)
+        Address::encode_from_str(&string_to_address, Hash::SHA2256)
     }
 }
 
@@ -127,8 +126,7 @@ impl AddressableContent for EntryMeta {
 pub mod tests {
 
     use agent::keys::tests::test_keys;
-    use cas::content::AddressableContent;
-    use hash::HashString;
+    use cas::content::{Address, AddressableContent};
     use hash_table::{
         entry::{tests::test_entry, Entry},
         entry_meta::EntryMeta,
@@ -231,25 +229,25 @@ pub mod tests {
         // basic ordering
         let m_1ax = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "a",
             "x",
         );
         let m_1ay = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "a",
             "y",
         );
         let m_1bx = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "b",
             "x",
         );
         let m_2ax = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("2".to_string()),
+            &Address::from("2".to_string()),
             "a",
             "x",
         );

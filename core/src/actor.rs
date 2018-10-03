@@ -3,7 +3,6 @@ use cas::content::Address;
 use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash::HashString;
 use hash_table::{
     entry::Entry,
     entry_meta::EntryMeta,
@@ -36,7 +35,7 @@ pub enum Protocol {
     TeardownResult(Result<(), HolochainError>),
 
     /// HashTable::get()
-    GetEntry(HashString),
+    GetEntry(Address),
     GetEntryResult(Result<Option<Entry>, HolochainError>),
 
     /// HashTable::put()
@@ -70,7 +69,7 @@ pub enum Protocol {
     AssertMetaResult(Result<(), HolochainError>),
 
     /// HashTable::get_meta()
-    GetMeta(HashString),
+    GetMeta(Address),
     GetMetaResult(Result<Option<EntryMeta>, HolochainError>),
 
     /// HashTable::metas_from_entry()

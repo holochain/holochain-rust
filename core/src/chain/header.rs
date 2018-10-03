@@ -146,7 +146,6 @@ impl AddressableContent for Header {
 pub mod tests {
     use cas::content::{Address, AddressableContent};
     use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
-    use hash::HashString;
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -216,7 +215,7 @@ pub mod tests {
 
         assert_eq!(header.entry_address(), &entry.address());
         assert_eq!(header.link(), None);
-        assert_ne!(header.address(), HashString::new());
+        assert_ne!(header.address(), Address::new());
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash::HashString;
+use cas::content::Address;
 use holochain_wasm_utils::error::RibosomeReturnCode;
 use json::ToJson;
 use nucleus::ribosome::api::Runtime;
@@ -10,7 +10,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
-    key: HashString,
+    address: Address,
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -30,7 +30,7 @@ pub fn invoke_get_entry(
     }
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.address));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -98,7 +98,7 @@ mod tests {
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetAppEntryArgs {
-            key: test_entry().address().into(),
+            address: test_entry().address().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }

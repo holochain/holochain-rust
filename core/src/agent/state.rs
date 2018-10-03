@@ -1,10 +1,9 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
-use cas::content::AddressableContent;
+use cas::content::{Address, AddressableContent};
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
 use std::{collections::HashMap, sync::Arc};
@@ -57,7 +56,7 @@ impl AgentState {
 pub enum ActionResponse {
     Commit(Result<Entry, HolochainError>),
     GetEntry(Option<Entry>),
-    GetLinks(Result<Vec<HashString>, HolochainError>),
+    GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
 

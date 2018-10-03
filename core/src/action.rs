@@ -1,6 +1,6 @@
 use agent::state::AgentState;
+use cas::content::Address;
 use context::Context;
-use hash::HashString;
 use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
 use holochain_dna::Dna;
 use nucleus::{
@@ -71,12 +71,12 @@ pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(EntryType, Entry),
-    /// GetEntry by hash
-    GetEntry(HashString),
+    /// GetEntry by address
+    GetEntry(Address),
 
     /// link to add
     AddLink(Link),
-    /// get links from entry hash and attribute-name
+    /// get links from entry address and attribute-name
     GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
@@ -98,7 +98,7 @@ pub enum Action {
     /// A validation result that should be stored
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
-    ReturnValidationResult(((snowflake::ProcessUniqueId, HashString), ValidationResult)),
+    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
 }
 
 /// function signature for action handler functions

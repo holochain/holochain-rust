@@ -10,7 +10,6 @@ use chain::{
     pair::Pair,
 };
 use error::HolochainError;
-use hash::HashString;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
@@ -210,8 +209,8 @@ pub trait SourceChain {
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
-    /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, pair_hash: &HashString) -> Option<Pair>;
+    /// get a Pair by Pair/Header address from the HashTable if it exists
+    fn pair(&self, pair_address: &Address) -> Option<Pair>;
 }
 
 impl SourceChain for Chain {
@@ -294,12 +293,11 @@ impl ToJson for Chain {
 pub mod tests {
 
     use super::Chain;
-    use cas::content::AddressableContent;
+    use cas::content::{Address, AddressableContent};
     use chain::{
         pair::{tests::test_pair, Pair},
         SourceChain,
     };
-    use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{
@@ -607,7 +605,7 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(&HashString::new()));
+        assert_eq!(None, chain.entry(&Address::new()));
         assert_eq!(
             pair_c.entry().clone(),
             chain
@@ -667,7 +665,7 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(&HashString::new()));
+        assert_eq!(None, chain.entry(&Address::new()));
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
             pair_c.entry().clone(),

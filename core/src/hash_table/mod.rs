@@ -12,7 +12,6 @@ pub mod test_util;
 use agent::keys::Keys;
 use cas::content::{Address, AddressableContent};
 use error::HolochainError;
-use hash::HashString;
 use hash_table::{
     entry::Entry,
     entry_meta::EntryMeta,

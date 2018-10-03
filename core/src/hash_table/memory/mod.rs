@@ -1,15 +1,14 @@
 use error::HolochainError;
 
 use cas::content::{Address, AddressableContent};
-use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use std::collections::HashMap;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 pub struct MemTable {
-    entries: HashMap<HashString, Entry>,
-    metas: HashMap<HashString, EntryMeta>,
+    entries: HashMap<Address, Entry>,
+    metas: HashMap<Address, EntryMeta>,
 }
 
 impl MemTable {

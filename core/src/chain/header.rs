@@ -354,7 +354,7 @@ mod tests {
         let header = chain.create_next_header(&entry_type, &entry);
 
         assert_eq!(
-            HashString::from("QmSpmouzp7PoTFeEcrG1GWVGVneacJcuwU91wkDCGYvPZ9".to_string()),
+            HashString::from("QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA".to_string()),
             header.hash()
         );
     }

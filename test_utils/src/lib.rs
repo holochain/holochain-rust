@@ -68,7 +68,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     capabilities.insert(cap_name.to_string(), capability);
 
     let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), EntryTypeDef::new());
+    entry_types.insert(String::from("testEntryType"), EntryTypeDef::new());
+    entry_types.insert(String::from("testEntryTypeB"), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",

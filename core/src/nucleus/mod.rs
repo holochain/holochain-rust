@@ -424,7 +424,7 @@ fn reduce_validate_entry(
         .get_zome_name_for_entry_type(&entry_type.to_string())
     {
         None => {
-            let error = format!("Unknown entry type: '{}'", entry_type);
+            let error = format!("Entry type not found in any zome: '{}'", entry_type);
             state
                 .validation_results
                 .insert(action_wrapper.clone(), Err(error.to_string()));

@@ -385,7 +385,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry_type, entry) => {
+                Action::Commit(entry_type, _) => {
                     assert_eq!(
                         entry_type,
                         &EntryType::Dna

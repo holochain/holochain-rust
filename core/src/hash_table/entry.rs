@@ -92,7 +92,7 @@ pub mod tests {
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {
-        EntryType::App(String::from("testEntryTypeB"))
+        EntryType::App(String::from("testEntryType"))
     }
 
     /// dummy entry type, same as test_type()
@@ -198,7 +198,7 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let entry = test_entry();
-        let expected = r#"{"content":"test entry content","entry_type":"testEntryType"}"#;
+        let expected = r#""test entry content""#;
         assert_eq!(expected, entry.to_json().unwrap());
         assert_eq!(entry, Entry::from_json(expected).unwrap());
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());

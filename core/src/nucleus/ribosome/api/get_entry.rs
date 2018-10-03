@@ -226,7 +226,7 @@ mod tests {
 
         let mut expected = "".to_owned();
         expected
-            .push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
+            .push_str("\"test entry content\"\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

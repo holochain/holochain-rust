@@ -8,13 +8,13 @@ use std::collections::HashSet;
 /// implemented on top of cas::storage::ContentAddressableStorage
 /// @see https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model
 /// Address of AddressableContent representing the EAV entity
-type Entity = Address;
+pub type Entity = Address;
 
 /// using String for EAV attributes (not e.g. an enum) keeps it simple and open
-type Attribute = String;
+pub type Attribute = String;
 
 /// Address of AddressableContent representing the EAV value
-type Value = Address;
+pub type Value = Address;
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
@@ -54,6 +54,16 @@ impl EntityAttributeValue {
     pub fn value(&self) -> Value {
         self.value.clone()
     }
+
+    pub fn filter_on_eav<T>(eav: T, e: Option<T>) -> bool
+    where
+        T: PartialOrd,
+    {
+        match e {
+            Some(ref a) => &eav == a,
+            None => true,
+        }
+    }
 }
 
 /// eav storage
@@ -81,10 +91,8 @@ pub trait EntityAttributeValueStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::{tests::ExampleAddressableContent, AddressableContent},
-        eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
-    };
+    use cas::content::{tests::ExampleAddressableContent, AddressableContent};
+    use eav::eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
     use error::HolochainError;
     use std::collections::HashSet;
 

@@ -95,6 +95,8 @@ pub mod tests {
     use key::Key;
     use snowflake;
     use cas::content::AddressableContent;
+    use cas::content::tests::AddressableContentTestSuite;
+    use cas::storage::tests::ExampleContentAddressableStorage;
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {
@@ -112,23 +114,23 @@ pub mod tests {
     }
 
     /// dummy entry content
-    pub fn test_content() -> String {
+    pub fn test_entry_content() -> String {
         "test entry content".into()
     }
 
-    /// dummy entry content, same as test_content()
-    pub fn test_content_a() -> String {
-        test_content()
+    /// dummy entry content, same as test_entry_content()
+    pub fn test_entry_content_a() -> String {
+        test_entry_content()
     }
 
-    /// dummy entry content, differs from test_content()
-    pub fn test_content_b() -> String {
+    /// dummy entry content, differs from test_entry_content()
+    pub fn test_entry_content_b() -> String {
         "other test entry content".into()
     }
 
     /// dummy entry
     pub fn test_entry() -> Entry {
-        Entry::from(test_content())
+        Entry::from(test_entry_content())
     }
 
     /// the correct hash for test_entry()
@@ -143,7 +145,7 @@ pub mod tests {
 
     /// dummy entry, differs from test_entry()
     pub fn test_entry_b() -> Entry {
-        Entry::from(test_content_b())
+        Entry::from(test_entry_content_b())
     }
 
     /// dummy entry with unique string content
@@ -188,7 +190,7 @@ pub mod tests {
     /// tests for entry.content()
     fn content() {
         let content = "baz";
-        let entry = Entry::from(String::from(content));
+        let entry = Entry::from_content(&String::from(content));
 
         assert_eq!("baz", entry.content());
     }
@@ -209,4 +211,27 @@ pub mod tests {
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
     }
 
+    #[test]
+    /// show AddressableContent implementation
+    fn addressable_content_test() {
+        // from_content()
+        AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
+            test_entry_content(),
+            test_entry(),
+            String::from(test_entry_hash()),
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let content_addressable_storage = ExampleContentAddressableStorage::new();
+        let entries = vec![
+            test_entry()
+        ];
+        AddressableContentTestSuite::addressable_content_round_trip::<
+            Entry,
+            ExampleContentAddressableStorage,
+        >(entries, content_addressable_storage);
+    }
 }

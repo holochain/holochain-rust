@@ -174,14 +174,13 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 
 #[cfg(test)]
 pub mod tests {
-
+    use hash_table::entry::tests::test_entry_address;
     use super::HashTableActor;
     use actor::Protocol;
-    use hash::tests::test_hash;
+    use cas::content::AddressableContent;
     use hash_table::{
         entry::tests::test_entry, memory::tests::test_table, test_util::standard_suite, HashTable,
     };
-    use key::Key;
     use riker::actors::*;
     use std::{sync::mpsc, thread};
 
@@ -195,12 +194,12 @@ pub mod tests {
     fn round_trip() {
         let mut table_actor = test_table_actor();
 
-        assert_eq!(table_actor.entry(&test_hash()).unwrap(), None);
+        assert_eq!(table_actor.entry(&test_entry_address()).unwrap(), None);
 
         table_actor.put_entry(&test_entry()).unwrap();
 
         assert_eq!(
-            table_actor.entry(&test_entry().key()).unwrap().unwrap(),
+            table_actor.entry(&test_entry().address()).unwrap().unwrap(),
             test_entry(),
         );
     }
@@ -217,7 +216,7 @@ pub mod tests {
         let table_actor_thread = table_actor.clone();
         let (tx1, rx1) = mpsc::channel();
         thread::spawn(move || {
-            assert_eq!(table_actor_thread.entry(&test_hash()).unwrap(), None);
+            assert_eq!(table_actor_thread.entry(&test_entry_address()).unwrap(), None);
             // kick off the next thread
             tx1.send(true).unwrap();
         });
@@ -239,7 +238,7 @@ pub mod tests {
         let handle = thread::spawn(move || {
             let entry = rx2.recv().unwrap();
             assert_eq!(
-                table_actor_thread.entry(&entry.key()).unwrap().unwrap(),
+                table_actor_thread.entry(&entry.address()).unwrap().unwrap(),
                 test_entry(),
             );
         });

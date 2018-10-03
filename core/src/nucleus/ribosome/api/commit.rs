@@ -78,7 +78,6 @@ pub mod tests {
 
     use cas::content::AddressableContent;
     use hash_table::entry::tests::{test_entry, test_entry_type};
-    use key::Key;
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
@@ -109,7 +108,7 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

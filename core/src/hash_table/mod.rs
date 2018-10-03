@@ -9,15 +9,16 @@ pub mod sys_entry;
 #[cfg(test)]
 pub mod test_util;
 
+use cas::content::Address;
 use agent::keys::Keys;
 use error::HolochainError;
 use hash::HashString;
+use cas::content::AddressableContent;
 use hash_table::{
     entry::Entry,
     entry_meta::EntryMeta,
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
-use key::Key;
 
 /// Trait of the data structure storing the source chain
 /// source chain is stored as a hash table of Headers and Entries.
@@ -53,7 +54,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
         // @see https://github.com/holochain/holochain-rust/issues/142
         self.assert_meta(&EntryMeta::new(
             &keys.node_id(),
-            &old.key(),
+            &old.address(),
             STATUS_NAME,
             &CrudStatus::MODIFIED.bits().to_string(),
         ))?;
@@ -63,9 +64,9 @@ pub trait HashTable: Send + Sync + Clone + 'static {
         // @see https://github.com/holochain/holochain-rust/issues/142
         self.assert_meta(&EntryMeta::new(
             &keys.node_id(),
-            &old.key(),
+            &old.address(),
             LINK_NAME,
-            &new.key().to_string(),
+            &new.address().to_string(),
         ))
     }
 
@@ -74,7 +75,7 @@ pub trait HashTable: Send + Sync + Clone + 'static {
         // Set the crud-status EntryMeta to DELETED
         self.assert_meta(&EntryMeta::new(
             &keys.node_id(),
-            &entry.key(),
+            &entry.address(),
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         ))
@@ -83,18 +84,18 @@ pub trait HashTable: Send + Sync + Clone + 'static {
     // Meta
     /// Assert a given Meta in the HashTable.
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError>;
-    /// Lookup a Meta from the HashTable by key.
-    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError>;
+    /// Lookup a Meta from the HashTable by address.
+    fn get_meta(&mut self, address: &Address) -> Result<Option<EntryMeta>, HolochainError>;
     /// Lookup all Meta for a given Entry.
     fn metas_from_entry(&mut self, entry: &Entry) -> Result<Vec<EntryMeta>, HolochainError>;
     /// Lookup a Meta from a request.
     fn meta_from_request(
         &mut self,
-        entry_hash: HashString,
+        entry_address: Address,
         attribute_name: &str,
     ) -> Result<Option<EntryMeta>, HolochainError> {
-        let key = EntryMeta::make_hash(&entry_hash, attribute_name);
-        self.get_meta(&key)
+        let address = EntryMeta::make_address(&entry_address, attribute_name);
+        self.get_meta(&address)
     }
 
     // query

@@ -16,9 +16,10 @@ use hash_table::{
     HashTable,
 };
 use json::ToJson;
-use key::Key;
 use riker::actors::*;
+use cas::content::AddressableContent;
 use serde_json;
+use cas::content::Address;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -118,8 +119,8 @@ impl Chain {
             self.top_pair()
                 .expect("could not get top pair when building header")
                 .as_ref()
-                .map(|p| p.header().to_entry().1.key()),
-            &entry.hash(),
+                .map(|p| p.header().to_entry().1.address()),
+            &entry.address(),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
@@ -127,7 +128,7 @@ impl Chain {
                 .top_pair_of_type(entry_type)
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
-                .map(|p| p.header().hash()),
+                .map(|p| p.header().address()),
         )
     }
 
@@ -250,28 +251,28 @@ impl SourceChain for Chain {
     }
 
     /// Browse Chain until Pair is found
-    fn pair(&self, pair_hash: &HashString) -> Option<Pair> {
+    fn pair(&self, pair_address: &Address) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self
             .iter()
-            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @TODO entry addresses are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.key() == pair_hash
+            .find(|pair| {
+                &pair.address() == pair_address
             })
     }
 
-    /// Browse Chain until Pair with entry_hash is found
-    fn entry(&self, entry_hash: &HashString) -> Option<Entry> {
+    /// Browse Chain until Pair with entry_address is found
+    fn entry(&self, entry_address: &Address) -> Option<Entry> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self
                 .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                // @TODO entry addresses are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.entry().hash() == entry_hash
+            .find(|pair| {
+                &pair.entry().address() == entry_address
             });
         if pair.is_none() {
             return None;
@@ -308,8 +309,8 @@ pub mod tests {
         HashTable,
     };
     use json::ToJson;
-    use key::Key;
     use std::thread;
+    use cas::content::AddressableContent;
 
     /// builds a dummy chain for testing
     pub fn test_chain() -> Chain {
@@ -434,11 +435,11 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
-            .entry(&pair.entry().key())
+            .entry(&pair.entry().address())
             .expect("getting an entry from a table in a chain shouldn't fail")
             .expect("table should have entry");
         let chain_entry = chain
-            .entry(&pair.entry().key())
+            .entry(&pair.entry().address())
             .expect("getting an entry from a chain shouldn't fail");
 
         assert_eq!(pair.entry(), &table_entry);
@@ -471,7 +472,7 @@ pub mod tests {
                 .as_ref()
         );
         assert_eq!(&entry_a, pair_a.entry());
-        assert_eq!(entry_a.key(), pair_a.entry().key());
+        assert_eq!(entry_a.address(), pair_a.entry().address());
 
         // we should be able to do it again
         let entry_type_b = test_entry_type_b();
@@ -488,7 +489,7 @@ pub mod tests {
                 .as_ref()
         );
         assert_eq!(&entry_b, pair_b.entry());
-        assert_eq!(entry_b.key(), pair_b.entry().key());
+        assert_eq!(entry_b.address(), pair_b.entry().address());
     }
 
     #[test]
@@ -504,7 +505,7 @@ pub mod tests {
         assert_eq!(
             entry,
             chain
-                .entry(&pair.entry().key())
+                .entry(&pair.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }
@@ -519,7 +520,7 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.push_entry(&entry_type, &entry).unwrap();
-                assert_eq!(Some(pair.entry().clone()), chain.entry(&pair.entry().key()),);
+                assert_eq!(Some(pair.entry().clone()), chain.entry(&pair.entry().address()),);
             }
         });
         h.join().unwrap();
@@ -596,7 +597,7 @@ pub mod tests {
         assert_eq!(
             pair_a.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
 
@@ -608,38 +609,38 @@ pub mod tests {
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b.entry().clone(),
             chain
-                .entry(&pair_b.entry().key())
+                .entry(&pair_b.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_c.entry().key())
+                .entry(&pair_c.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
 
         assert_eq!(
             pair_a,
             chain
-                .pair(&pair_a.key())
+                .pair(&pair_a.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b,
             chain
-                .pair(&pair_b.key())
+                .pair(&pair_b.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c,
             chain
-                .pair(&pair_c.key())
+                .pair(&pair_c.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }
@@ -669,19 +670,19 @@ pub mod tests {
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b.entry().clone(),
             chain
-                .entry(&pair_b.entry().key())
+                .entry(&pair_b.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_c.entry().key())
+                .entry(&pair_c.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }

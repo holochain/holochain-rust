@@ -1,12 +1,12 @@
 use actor::Protocol;
 use chain::header::Header;
 use error::HolochainError;
-use hash::HashString;
-use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
+use hash_table::{entry::Entry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
-use key::Key;
 use riker::actors::*;
 use serde_json;
+use cas::content::AddressableContent;
+use cas::content::Content;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
@@ -21,7 +21,7 @@ impl Pair {
     /// Reconstruct Pair from Header stored in a HashTable
     pub fn from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
         let entry = table
-            .entry(&header.entry_hash())
+            .entry(&header.entry_address())
             .expect("should not attempt to create invalid pair");
         if entry.is_none() {
             return None;
@@ -54,13 +54,7 @@ impl Pair {
     /// Return true if the pair is valid
     pub fn validate(&self) -> bool {
         // the header entry hash must be the same as the entry hash
-        self.header().entry_hash() == &self.entry().hash()
-    }
-}
-
-impl Key for Pair {
-    fn key(&self) -> HashString {
-        self.header.to_entry().1.key()
+        self.header().entry_address() == &self.entry().address()
     }
 }
 
@@ -89,6 +83,16 @@ impl FromJson for Pair {
     }
 }
 
+impl AddressableContent for Pair {
+    fn content(&self) -> Content {
+        self.to_json().expect("could not Jsonify Pair as Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Pair::from_json(content).expect("could not parse JSON as Pair Content")
+    }
+}
+
 impl RoundTripJson for Pair {}
 
 #[cfg(test)]
@@ -99,6 +103,7 @@ pub mod tests {
         test_entry, test_entry_b, test_entry_type, test_entry_type_b, test_entry_unique,
     };
     use json::{FromJson, ToJson};
+    use cas::content::AddressableContent;
 
     /// dummy pair
     pub fn test_pair() -> Pair {
@@ -130,7 +135,7 @@ pub mod tests {
 
         let header = chain.create_next_header(&entry_type, &entry);
 
-        assert_eq!(header.entry_hash(), &entry.hash());
+        assert_eq!(header.entry_address(), &entry.address());
         assert_eq!(header.link(), None);
 
         let pair = chain.create_next_pair(&entry_type, &entry);

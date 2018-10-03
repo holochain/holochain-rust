@@ -2,8 +2,9 @@ use error::HolochainError;
 
 use hash::HashString;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
-use key::Key;
 use std::collections::HashMap;
+use cas::content::Address;
+use cas::content::AddressableContent;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
@@ -23,21 +24,21 @@ impl MemTable {
 
 impl HashTable for MemTable {
     fn put_entry(&mut self, entry: &Entry) -> Result<(), HolochainError> {
-        self.entries.insert(entry.key(), entry.clone());
+        self.entries.insert(entry.address(), entry.clone());
         Ok(())
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        Ok(self.entries.get(key).cloned())
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        Ok(self.entries.get(address).cloned())
     }
 
     fn assert_meta(&mut self, meta: &EntryMeta) -> Result<(), HolochainError> {
-        self.metas.insert(meta.key(), meta.clone());
+        self.metas.insert(meta.address(), meta.clone());
         Ok(())
     }
 
-    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        Ok(self.metas.get(key).cloned())
+    fn get_meta(&mut self, address: &Address) -> Result<Option<EntryMeta>, HolochainError> {
+        Ok(self.metas.get(address).cloned())
     }
 
     /// Return all the Metas for an entry
@@ -45,7 +46,7 @@ impl HashTable for MemTable {
         let mut vec_meta = self
             .metas
             .values()
-            .filter(|&m| m.entry_hash() == &entry.key())
+            .filter(|&m| m.entry_address() == &entry.address())
             .cloned()
             .collect::<Vec<EntryMeta>>();
         // @TODO should this be sorted at all at this point?

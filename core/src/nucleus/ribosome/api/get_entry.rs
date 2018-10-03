@@ -78,12 +78,12 @@ mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use cas::content::AddressableContent;
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
     use chain::SourceChain;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
-    use key::Key;
     use nucleus::{
         ribosome::api::{
             call,
@@ -98,7 +98,7 @@ mod tests {
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetAppEntryArgs {
-            key: test_entry().hash().into(),
+            key: test_entry().address().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -188,7 +188,7 @@ mod tests {
                 .top_pair()
                 .expect("could not get top pair")
                 .expect("top pair was None")
-                .key()
+                .address()
         );
 
         let commit_call = ZomeFnCall::new(
@@ -207,7 +207,7 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(

@@ -112,14 +112,13 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use hash::tests::test_hash;
-    use hash_table::entry::tests::{test_entry, test_entry_hash, test_entry_type};
+    use hash_table::entry::tests::{test_entry, test_entry_address, test_entry_type};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(test_entry_hash())
+        Action::GetEntry(test_entry_address())
     }
 
     /// dummy action wrapper with test_action()
@@ -134,7 +133,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(test_hash()))
+        ActionWrapper::new(Action::GetEntry(test_entry_address()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

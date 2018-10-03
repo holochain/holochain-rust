@@ -6,8 +6,8 @@ use error::HolochainError;
 use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
-use key::Key;
 use std::{collections::HashMap, sync::Arc};
+use cas::content::AddressableContent;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -65,7 +65,7 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
@@ -77,7 +77,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::LinkEntries(result) => match result {
-                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
                 Err(err) => Ok((*err).to_json()?),
             },
         }
@@ -171,8 +171,8 @@ pub mod tests {
     use hash_table::entry::tests::test_entry;
     use instance::tests::test_context;
     use json::ToJson;
-    use key::Key;
     use std::{collections::HashMap, sync::Arc};
+    use cas::content::AddressableContent;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -281,7 +281,7 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![test_entry().key()]))
+            ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
                 .to_json()
                 .unwrap(),
         );

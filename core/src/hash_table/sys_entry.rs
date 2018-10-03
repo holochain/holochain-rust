@@ -8,7 +8,7 @@ use std::{
 };
 
 pub trait ToEntry {
-    fn to_entry(&self) -> Entry;
+    fn to_entry(&self) -> (EntryType, Entry);
     fn from_entry(&Entry) -> Self;
 }
 
@@ -86,9 +86,9 @@ impl EntryType {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Dna {
-    fn to_entry(&self) -> Entry {
+    fn to_entry(&self) -> (EntryType, Entry) {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::from(self.to_json())
+        (EntryType::Dna, Entry::from(self.to_json()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -101,8 +101,8 @@ impl ToEntry for Dna {
 //-------------------------------------------------------------------------------------------------
 
 impl ToEntry for Agent {
-    fn to_entry(&self) -> Entry {
-        Entry::from(self.to_string())
+    fn to_entry(&self) -> (EntryType, Entry) {
+        (EntryType::AgentId, Entry::from(self.to_string()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -133,8 +133,8 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let dna_entry = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(EntryType::Dna, dna_entry.clone()));
+        let (dna_entry_type, dna_entry) = dna.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry_type, dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -163,9 +163,9 @@ pub mod tests {
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let agent_entry = context.agent.to_entry();
+        let (agent_entry_type, agent_entry) = context.agent.to_entry();
         let commit_agent_action =
-            ActionWrapper::new(Action::Commit(EntryType::AgentId, agent_entry.clone()));
+            ActionWrapper::new(Action::Commit(agent_entry_type, agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();

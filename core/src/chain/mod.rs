@@ -118,7 +118,7 @@ impl Chain {
             self.top_pair()
                 .expect("could not get top pair when building header")
                 .as_ref()
-                .map(|p| p.header().to_entry().key()),
+                .map(|p| p.header().to_entry().1.key()),
             &entry.hash(),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
@@ -229,7 +229,7 @@ impl SourceChain for Chain {
     }
 
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError> {
-        let header_entry = &pair.clone().header().to_entry();
+        let (_, header_entry) = &pair.clone().header().to_entry();
         self.table_actor.put_entry(header_entry)?;
         self.table_actor.put_entry(&pair.clone().entry())?;
 

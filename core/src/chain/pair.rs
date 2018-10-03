@@ -60,8 +60,7 @@ impl Pair {
 
 impl Key for Pair {
     fn key(&self) -> HashString {
-        //        self.header.hash()
-        self.header.to_entry().key()
+        self.header.to_entry().1.key()
     }
 }
 

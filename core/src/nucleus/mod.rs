@@ -7,7 +7,7 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
-use hash_table::sys_entry::{EntryType, ToEntry};
+use hash_table::sys_entry::ToEntry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
@@ -226,9 +226,8 @@ fn reduce_init_application(
         // Send Commit Action for Genesis Entry
         {
             // Create Commit Action for Dna Entry
-            let dna_entry = dna_clone.to_entry();
-            let commit_genesis_action =
-                ActionWrapper::new(Action::Commit(EntryType::Dna, dna_entry));
+            let (entry_type, dna_entry) = dna_clone.to_entry();
+            let commit_genesis_action = ActionWrapper::new(Action::Commit(entry_type, dna_entry));
 
             // Send Action and wait for it
             // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded

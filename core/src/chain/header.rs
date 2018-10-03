@@ -148,8 +148,11 @@ impl ToJson for Header {
 
 //
 impl ToEntry for Header {
-    fn to_entry(&self) -> Entry {
-        Entry::from(self.to_json().expect("entry should be valid"))
+    fn to_entry(&self) -> (EntryType, Entry) {
+        (
+            EntryType::Header,
+            Entry::from(self.to_json().expect("entry should be valid")),
+        )
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -279,7 +282,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let header_b = pair_b.header();
 
-        assert_eq!(header_b.link(), Some(header_a.to_entry().key()));
+        assert_eq!(header_b.link(), Some(header_a.to_entry().1.key()));
     }
 
     #[test]
@@ -448,7 +451,7 @@ mod tests {
 
         let header = chain.create_next_header(&entry_type, &entry);
 
-        let header_entry = header.to_entry();
+        let header_entry = header.to_entry().1;
         let header_trip = Header::from_entry(&header_entry);
 
         assert_eq!(header, header_trip);

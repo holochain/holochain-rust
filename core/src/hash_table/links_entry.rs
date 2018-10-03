@@ -1,5 +1,9 @@
 use cas::content::Address;
-use hash_table::{entry::Entry, sys_entry::ToEntry, HashString};
+use hash_table::{
+    entry::Entry,
+    sys_entry::{EntryType, ToEntry},
+    HashString,
+};
 use serde_json;
 
 //-------------------------------------------------------------------------------------------------
@@ -78,9 +82,9 @@ impl LinkEntry {
 }
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
-    fn to_entry(&self) -> Entry {
+    fn to_entry(&self) -> (EntryType, Entry) {
         let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        Entry::from(json_array)
+        (EntryType::Link, Entry::from(json_array))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -106,9 +110,9 @@ impl LinkListEntry {
 
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
-    fn to_entry(&self) -> Entry {
+    fn to_entry(&self) -> (EntryType, Entry) {
         let json_array = serde_json::to_string(self).expect("LinkListEntry failed to serialize");
-        Entry::from(json_array)
+        (EntryType::LinkList, Entry::from(json_array))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -162,10 +166,8 @@ pub mod tests {
         let context = test_context("alex");
         let link = create_test_link();
         let link_list_entry = LinkListEntry::new(&[link]);
-        let commit_action = ActionWrapper::new(Action::Commit(
-            EntryType::LinkList,
-            link_list_entry.to_entry(),
-        ));
+        let (entry_type, entry) = link_list_entry.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(entry_type, entry));
         // Set up instance and process the action
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
@@ -180,7 +182,7 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
                     assert_eq!(entry_type, &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.content(), link_list_entry.to_entry().1.content());
                     true
                 }
                 _ => false,
@@ -195,10 +197,8 @@ pub mod tests {
         let link_b = create_test_link_b();
         let link_c = create_test_link_c();
         let link_list_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
-        let commit_action = ActionWrapper::new(Action::Commit(
-            EntryType::LinkList,
-            link_list_entry.to_entry(),
-        ));
+        let (entry_type, entry) = link_list_entry.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(entry_type, entry));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new();
@@ -214,7 +214,7 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
                     assert_eq!(entry_type, &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.content(), link_list_entry.to_entry().1.content());
                     true
                 }
                 _ => false,
@@ -225,7 +225,7 @@ pub mod tests {
     fn can_round_trip_lle() {
         let link = create_test_link();
         let lle = LinkListEntry::new(&[link]);
-        let lle_entry = lle.to_entry();
+        let lle_entry = lle.to_entry().1;
         let lle_trip = LinkListEntry::from_entry(&lle_entry);
         assert_eq!(lle, lle_trip);
     }

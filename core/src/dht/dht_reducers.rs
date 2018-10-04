@@ -82,7 +82,6 @@ where
     if res.is_err() {
         return None;
     }
-
     // ...and publish to the network
     new_store.network_mut().publish(entry);
     Some(new_store)
@@ -101,7 +100,6 @@ where
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-
     // Look in local storage if it already has it
     if old_store.content_storage().contains(address).unwrap() {
         return None;

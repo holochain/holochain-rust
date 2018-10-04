@@ -275,15 +275,18 @@ pub mod tests {
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
+    use futures::executor::block_on;
     use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
-    use nucleus::ribosome::{callback::Callback, Defn};
+    use nucleus::{
+        actions::initialize::initialize_application,
+        ribosome::{callback::Callback, Defn},
+    };
     use persister::SimplePersister;
     use state::State;
     use std::{
-        str::FromStr,
         sync::{mpsc::sync_channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
@@ -349,15 +352,17 @@ pub mod tests {
 
     /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance(dna: Dna) -> Instance {
+    pub fn test_instance(dna: Dna) -> Result<Instance, String> {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
-        instance.start_action_loop(test_context("jane"));
+        let context = test_context("jane");
+        instance.start_action_loop(context.clone());
+        let context = instance.initialize_context(context);
 
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.dispatch_and_wait(action_wrapper);
+        block_on(initialize_application(dna.clone(), context.clone()))?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
+        assert!(instance.state().nucleus().has_initialized());
 
         /// fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
@@ -386,11 +391,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
-                    assert_eq!(
-                        EntryType::from_str(&entry.entry_type()).unwrap(),
-                        EntryType::Dna
-                    );
+                Action::Commit(entry_type, _) => {
+                    assert_eq!(entry_type, &EntryType::Dna);
                     true
                 }
                 _ => false,
@@ -414,7 +416,7 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-        instance
+        Ok(instance)
     }
 
     /// create a test instance with a blank DNA
@@ -423,7 +425,7 @@ pub mod tests {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::default());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
-        test_instance(dna)
+        test_instance(dna).expect("Blank instance could not be initialized!")
     }
 
     #[test]
@@ -524,21 +526,17 @@ pub mod tests {
         instance.start_action_loop(test_context("jane"));
 
         // the initial state is not intialized
-        assert!(instance.state().nucleus().has_initialized() == false);
+        assert_eq!(
+            instance.state().nucleus().status(),
+            ::nucleus::state::NucleusStatus::New
+        );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
-
-        // Wait for Init to finish
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance.state().history.len() < 3 {
-            // @TODO don't use history length in tests
-            // @see https://github.com/holochain/holochain-rust/issues/195
-            println!("Waiting... {}", instance.state().history.len());
-            sleep(Duration::from_millis(10));
-        }
-        assert!(instance.state().nucleus().has_initialized());
+        assert_eq!(
+            instance.state().nucleus().status(),
+            ::nucleus::state::NucleusStatus::Initializing
+        );
     }
 
     #[test]
@@ -554,6 +552,8 @@ pub mod tests {
 
         let instance = test_instance(dna);
 
+        assert!(instance.is_ok());
+        let instance = instance.unwrap();
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -580,7 +580,8 @@ pub mod tests {
         );
 
         let instance = test_instance(dna);
-
+        assert!(instance.is_ok());
+        let instance = instance.unwrap();
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -607,7 +608,7 @@ pub mod tests {
         );
 
         let instance = test_instance(dna);
-
-        assert!(instance.state().nucleus().has_initialized() == false);
+        assert!(instance.is_err());
+        assert_eq!(instance.err().unwrap(), "1337");
     }
 }

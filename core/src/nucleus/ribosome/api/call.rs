@@ -245,7 +245,7 @@ pub mod tests {
 
         // Set up instance and process the action
         // let instance = Instance::new();
-        let instance = test_instance(dna);
+        let instance = test_instance(dna).expect("Could not initialize test instance");
         let (sender, receiver) = channel();
         let closure = move |state: &::state::State| {
             // Observer waits for a ribosome_call_result

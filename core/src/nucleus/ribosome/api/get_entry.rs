@@ -174,7 +174,7 @@ mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
+        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 
@@ -225,8 +225,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected
-            .push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
+        expected.push_str("\"test entry content\"\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

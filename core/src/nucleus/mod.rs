@@ -521,7 +521,7 @@ pub mod tests {
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer);
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
@@ -541,7 +541,7 @@ pub mod tests {
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
@@ -565,7 +565,7 @@ pub mod tests {
             NucleusStatus::InitializationFailed("init failed".to_string())
         );
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
 
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);

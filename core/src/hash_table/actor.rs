@@ -5,14 +5,15 @@ use error::HolochainError;
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
 use riker::actors::*;
 use snowflake;
+use cas::content::AddressableContent;
 
 // anything that can be asked of HashTable and block on responses
 // needed to support implementing ask on upstream ActorRef from riker
 pub trait AskHashTable: HashTable {}
 
-impl AskHashTable for ActorRef<Protocol> {}
+impl AskHashTable for ActorRef<Protocol<AddressableContent>> {}
 
-impl HashTable for ActorRef<Protocol> {
+impl HashTable for ActorRef<Protocol<AddressableContent>> {
     fn setup(&mut self) -> Result<(), HolochainError> {
         let response = self.block_on_ask(Protocol::Setup)?;
         unwrap_to!(response => Protocol::SetupResult).clone()
@@ -98,17 +99,17 @@ impl<HT: HashTable> HashTableActor<HT> {
     }
 
     /// actor() for riker
-    fn actor(table: HT) -> BoxActor<Protocol> {
+    fn actor(table: HT) -> BoxActor<Protocol<AddressableContent>> {
         Box::new(HashTableActor::new(table))
     }
 
     /// props() for riker
-    fn props(table: HT) -> BoxActorProd<Protocol> {
+    fn props(table: HT) -> BoxActorProd<Protocol<AddressableContent>> {
         Props::new_args(Box::new(HashTableActor::actor), table)
     }
 
     /// returns a new actor ref for a new HashTableActor in the main actor system
-    pub fn new_ref(table: HT) -> ActorRef<Protocol> {
+    pub fn new_ref(table: HT) -> ActorRef<Protocol<AddressableContent>> {
         SYS.actor_of(
             HashTableActor::props(table),
             &snowflake::ProcessUniqueId::new().to_string(),
@@ -117,7 +118,7 @@ impl<HT: HashTable> HashTableActor<HT> {
 }
 
 impl<HT: HashTable> Actor for HashTableActor<HT> {
-    type Msg = Protocol;
+    type Msg = Protocol<AddressableContent>;
 
     fn receive(
         &mut self,

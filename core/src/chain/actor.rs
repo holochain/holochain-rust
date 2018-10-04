@@ -3,6 +3,7 @@ use chain::pair::Pair;
 use error::HolochainError;
 use riker::actors::*;
 use snowflake;
+use cas::content::AddressableContent;
 
 /// anything that can be asked of Chain and block on responses
 /// needed to support implementing ask on upstream ActorRef from riker
@@ -13,7 +14,7 @@ pub trait AskChain {
     fn top_pair(&self) -> Result<Option<Pair>, HolochainError>;
 }
 
-impl AskChain for ActorRef<Protocol> {
+impl AskChain for ActorRef<Protocol<AddressableContent>> {
     fn set_top_pair(&self, pair: &Option<Pair>) -> Result<Option<Pair>, HolochainError> {
         let response = self.block_on_ask(Protocol::SetTopPair(pair.clone()))?;
         unwrap_to!(response => Protocol::SetTopPairResult).clone()
@@ -37,17 +38,17 @@ impl ChainActor {
     }
 
     /// actor() for riker
-    fn actor() -> BoxActor<Protocol> {
+    fn actor() -> BoxActor<Protocol<AddressableContent>> {
         Box::new(ChainActor::new())
     }
 
     /// props() for riker
-    fn props() -> BoxActorProd<Protocol> {
+    fn props() -> BoxActorProd<Protocol<AddressableContent>> {
         Props::new(Box::new(ChainActor::actor))
     }
 
     /// returns a new actor ref for a new ChainActor in the main actor system
-    pub fn new_ref() -> ActorRef<Protocol> {
+    pub fn new_ref() -> ActorRef<Protocol<AddressableContent>> {
         SYS.actor_of(
             ChainActor::props(),
             &snowflake::ProcessUniqueId::new().to_string(),
@@ -56,7 +57,7 @@ impl ChainActor {
 }
 
 impl Actor for ChainActor {
-    type Msg = Protocol;
+    type Msg = Protocol<AddressableContent>;
 
     fn receive(
         &mut self,

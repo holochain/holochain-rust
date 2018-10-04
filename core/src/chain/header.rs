@@ -7,14 +7,14 @@ use hash_table::{
 use json::ToJson;
 use serde_json;
 
-/// Header of a source chain "Item"
-/// The hash of the Header is used as the Item's key in the source chain hash table
-/// Headers are linked to next header in chain and next header of same type in chain
-// @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
+/// ChainHeader of a source chain "Item"
+/// The hash of the ChainHeader is used as the Item's key in the source chain hash table
+/// ChainHeaders are linked to next header in chain and next header of same type in chain
+// @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Header {
+pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
     entry_type: EntryType,
@@ -30,15 +30,15 @@ pub struct Header {
     link_same_type: Option<Address>,
 }
 
-impl PartialEq for Header {
-    fn eq(&self, other: &Header) -> bool {
+impl PartialEq for ChainHeader {
+    fn eq(&self, other: &ChainHeader) -> bool {
         self.address() == other.address()
     }
 }
 
-impl Header {
-    /// build a new Header from a chain, entry type and entry.
-    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+impl ChainHeader {
+    /// build a new ChainHeader from a chain, entry type and entry.
+    /// a ChainHeader is immutable, but the chain is mutable if chain.push() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
     /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
@@ -54,7 +54,7 @@ impl Header {
         entry_signature: &str,
         link_same_type: Option<Address>,
     ) -> Self {
-        Header {
+        ChainHeader {
             entry_type: entry_type.to_owned(),
             timestamp: timestamp.to_string(),
             link: link,
@@ -112,40 +112,43 @@ impl Header {
     }
 }
 
-impl ToJson for Header {
+impl ToJson for ChainHeader {
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(serde_json::to_string(self)?)
     }
 }
 
 //
-impl ToEntry for Header {
+impl ToEntry for ChainHeader {
     fn to_entry(&self) -> (EntryType, Entry) {
         (
-            EntryType::Header,
+            EntryType::ChainHeader,
             Entry::from(self.to_json().expect("entry should be valid")),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
+        return ChainHeader::from_json_str(&entry.content())
+            .expect("entry is not a valid ChainHeader Entry");
     }
 }
 
-impl AddressableContent for Header {
+impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        self.to_json().expect("could not Jsonify Header as Content")
+        self.to_json()
+            .expect("could not Jsonify ChainHeader as Content")
     }
 
     fn from_content(content: &Content) -> Self {
-        Header::from_json_str(content).expect("could not read Json as valid Header Content")
+        ChainHeader::from_json_str(content)
+            .expect("could not read Json as valid ChainHeader Content")
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
+    use chain::{header::ChainHeader, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -155,7 +158,7 @@ pub mod tests {
     };
 
     /// returns a dummy header for use in tests
-    pub fn test_header() -> Header {
+    pub fn test_header() -> ChainHeader {
         test_pair().header().clone()
     }
 
@@ -205,7 +208,7 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for Header::new()
+    /// tests for ChainHeader::new()
     fn new() {
         let chain = test_chain();
         let entry_type = test_entry_type();
@@ -428,7 +431,7 @@ pub mod tests {
         let header = chain.create_next_header(&entry_type, &entry);
 
         let header_entry = header.to_entry().1;
-        let header_trip = Header::from_entry(&header_entry);
+        let header_trip = ChainHeader::from_entry(&header_entry);
 
         assert_eq!(header, header_trip);
     }

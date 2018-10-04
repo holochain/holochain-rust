@@ -1,6 +1,6 @@
 use actor::Protocol;
 use cas::content::{AddressableContent, Content};
-use chain::header::Header;
+use chain::header::ChainHeader;
 use error::HolochainError;
 use hash_table::{entry::Entry, HashTable};
 use json::{FromJson, RoundTripJson, ToJson};
@@ -9,16 +9,16 @@ use serde_json;
 
 /// Struct for holding a source chain "Item"
 /// It is like a pair holding the entry and header separately
-/// The source chain being a hash table, the key of a Pair is the hash of its Header
+/// The source chain being a hash table, the key of a Pair is the hash of its ChainHeader
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pair {
-    header: Header,
+    header: ChainHeader,
     entry: Entry,
 }
 
 impl Pair {
-    /// Reconstruct Pair from Header stored in a HashTable
-    pub fn from_header(table: &ActorRef<Protocol>, header: &Header) -> Option<Self> {
+    /// Reconstruct Pair from ChainHeader stored in a HashTable
+    pub fn from_header(table: &ActorRef<Protocol>, header: &ChainHeader) -> Option<Self> {
         let entry = table
             .entry(&header.entry_address())
             .expect("should not attempt to create invalid pair");
@@ -33,7 +33,7 @@ impl Pair {
     }
 
     /// Standard constructor
-    pub fn new(header: &Header, entry: &Entry) -> Self {
+    pub fn new(header: &ChainHeader, entry: &Entry) -> Self {
         Pair {
             header: header.clone(),
             entry: entry.clone(),
@@ -41,7 +41,7 @@ impl Pair {
     }
 
     /// header getter
-    pub fn header(&self) -> &Header {
+    pub fn header(&self) -> &ChainHeader {
         &self.header
     }
 

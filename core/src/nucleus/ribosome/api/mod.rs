@@ -524,7 +524,8 @@ pub mod tests {
         );
         //let instance = test_instance(dna.clone());
         let instance =
-            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0)
+                .expect("Test callback instance could not be initialized");
 
         let (c, logger) = test_context_and_logger("joan");
         let context = instance.initialize_context(c);

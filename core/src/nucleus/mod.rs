@@ -7,14 +7,10 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use error::HolochainError;
-use hash_table::sys_entry::ToEntry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::{
-        api::call::reduce_call,
-        callback::{genesis::genesis, CallbackParams, CallbackResult},
-    },
+    ribosome::api::call::reduce_call,
     state::{NucleusState, NucleusStatus},
 };
 use snowflake;
@@ -174,96 +170,34 @@ fn reduce_return_initialization_result(
     }
 }
 
-/// Helper
-fn return_initialization_result(
-    result: Option<String>,
-    action_channel: &SyncSender<ActionWrapper>,
-) {
-    action_channel
-        .send(ActionWrapper::new(Action::ReturnInitializationResult(
-            result,
-        )))
-        .expect("action channel to be open in reducer");
-}
-
 /// Reduce InitApplication Action
-/// Initialize the Holochain's Nucleus by doing the following:
-/// Send Commit Action for Genesis Entry
-/// Send ExecuteZomeFunction Action of the genesis callback of every zome
+/// Switch status to failed if an initialization is tried for an
+/// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_init_application(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
-    // check pre-condition
-    if state.status() != NucleusStatus::New {
-        // Send bad start state ReturnInitializationResult Action
-        return_initialization_result(
-            Some("Nucleus already initialized or initializing".to_string()),
-            &context.action_channel,
-        );
-        return;
+    match state.status() {
+        NucleusStatus::Initializing => {
+            state.status =
+                NucleusStatus::InitializationFailed("Nucleus already initializing".to_string())
+        }
+        NucleusStatus::Initialized => {
+            state.status =
+                NucleusStatus::InitializationFailed("Nucleus already initialized".to_string())
+        }
+        NucleusStatus::New | NucleusStatus::InitializationFailed(_) => {
+            let ia_action = action_wrapper.action();
+            let dna = unwrap_to!(ia_action => Action::InitApplication);
+            // Update status
+            state.status = NucleusStatus::Initializing;
+            // Set DNA
+            state.dna = Some(dna.clone());
+        }
     }
-
-    let ia_action = action_wrapper.action();
-    let dna = unwrap_to!(ia_action => Action::InitApplication);
-
-    // Update status
-    state.status = NucleusStatus::Initializing;
-
-    // Set DNA
-    state.dna = Some(dna.clone());
-
-    // Create & launch thread
-    let context = context.clone();
-    let dna_clone = dna.clone();
-
-    thread::spawn(move || {
-        // Send Commit Action for Genesis Entry
-        {
-            // Create Commit Action for Dna Entry
-            let (entry_type, dna_entry) = dna_clone.to_entry();
-            let commit_genesis_action = ActionWrapper::new(Action::Commit(entry_type, dna_entry));
-
-            // Send Action and wait for it
-            // TODO #249 - Do `dispatch_action_and_wait` instead to make sure dna commit succeeded
-            ::instance::dispatch_action(&context.action_channel, commit_genesis_action);
-        }
-
-        // map genesis across every zome
-        let mut results: Vec<_> = dna_clone
-            .zomes
-            .keys()
-            .map(|zome_name| genesis(context.clone(), zome_name, &CallbackParams::Genesis))
-            .collect();
-
-        // pad out a single pass if there are no zome results
-        // @TODO #78 - is this really OK?
-        // should we be steamrolling ahead with an instance that has no zomes and no
-        // genesis?
-        // actually this can cause some really nasty edge case bugs for code that assumes
-        // there is a genesis (real example: wait for length 4 in history) in a loop before
-        // moving forward. it will seem to work OK, but then hang if ever hit with an empty
-        // Dna.
-        // on the flip side, code cannot simply wait for 2 items in history, or even the
-        // initialization result on its own, because then it will miss the genesis
-        // sometimes where a genesis does happen.
-        if results.is_empty() {
-            results.push(CallbackResult::Pass);
-        }
-
-        // map the genesis results to initialization result responses
-        for result in results {
-            match result {
-                CallbackResult::Fail(s) => {
-                    return_initialization_result(Some(s.to_string()), &context.action_channel)
-                }
-                _ => return_initialization_result(None, &context.action_channel),
-            }
-        }
-    });
 }
 
 pub(crate) fn launch_zome_fn_call(
@@ -581,19 +515,20 @@ pub mod tests {
     /// smoke test the init of a nucleus reduction
     fn can_reduce_initialize_action() {
         let dna = Dna::new();
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
+        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer);
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("channel failed");
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);
         assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
+        assert!(reduced_nucleus.dna().is_some());
+        assert_eq!(reduced_nucleus.dna().unwrap(), dna);
     }
 
     #[test]
@@ -602,13 +537,12 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, receiver) = sync_channel::<ActionWrapper>(10);
+        let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("receiver fail");
 
         assert_eq!(initializing_nucleus.has_initialized(), false);
         assert_eq!(initializing_nucleus.has_initialization_failed(), false);
@@ -631,14 +565,10 @@ pub mod tests {
             NucleusStatus::InitializationFailed("init failed".to_string())
         );
 
-        // Reduce Init action and block until receiving ReturnInit Action
+        // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), reduced_nucleus.clone(), &action_wrapper);
-        receiver.recv().expect("receiver shouldn't fail");
 
-        assert_eq!(
-            reduced_nucleus.status(),
-            NucleusStatus::InitializationFailed("init failed".to_string())
-        );
+        assert_eq!(reduced_nucleus.status(), NucleusStatus::Initializing);
 
         // Send ReturnInit(None) ActionWrapper
         let return_action_wrapper = ActionWrapper::new(Action::ReturnInitializationResult(None));
@@ -654,6 +584,23 @@ pub mod tests {
     }
 
     #[test]
+    /// tests that calling a valid zome function returns a valid result
+    fn call_zome_function() {
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
+
+        // Create zome function call
+        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
+
+        let result = super::call_and_wait_for_result(zome_call, &mut instance);
+        match result {
+            // Result 1337 from WASM (as string)
+            Ok(val) => assert_eq!(val, "1337"),
+            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
+        }
+    }
+
+    #[test]
     /// smoke test reducing over a nucleus
     fn can_reduce_execfn_action() {
         let call = ZomeFnCall::new("myZome", "public", "bogusfn", "");
@@ -666,23 +613,6 @@ pub mod tests {
 
         let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
-    }
-
-    #[test]
-    /// tests that calling a valid zome function returns a valid result
-    fn call_zome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
-
-        // Create zome function call
-        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
-
-        let result = super::call_and_wait_for_result(zome_call, &mut instance);
-        match result {
-            // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
-            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-        }
     }
 
     #[test]
@@ -705,7 +635,7 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", "test_cap", "xxx", "{}");
@@ -724,7 +654,7 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna);
+        let mut instance = test_instance(dna).expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", "test_cap", "main", "{}");

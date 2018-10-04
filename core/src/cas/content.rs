@@ -51,7 +51,7 @@ pub mod tests {
 
     #[derive(Debug, PartialEq, Clone, Hash, Eq)]
     /// some struct that can be content addressed
-    /// imagine an Entry, Header, Meta Value, etc.
+    /// imagine an Entry, ChainHeader, Meta Value, etc.
     pub struct ExampleAddressableContent {
         content: Content,
     }

@@ -19,7 +19,7 @@ use hash_table::{
 };
 
 /// Trait of the data structure storing the source chain
-/// source chain is stored as a hash table of Headers and Entries.
+/// source chain is stored as a hash table of ChainHeaders and Entries.
 pub trait HashTable: Send + Sync + Clone + 'static {
     // internal state management
     // @TODO does this make sense at the trait level?

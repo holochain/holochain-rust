@@ -6,7 +6,7 @@ use actor::Protocol;
 use cas::content::{Address, AddressableContent};
 use chain::{
     actor::{AskChain, ChainActor},
-    header::Header,
+    header::ChainHeader,
     pair::Pair,
 };
 use error::HolochainError;
@@ -54,8 +54,8 @@ impl Iterator for ChainIterator {
                 let header_entry = &self.table_actor.entry(&h)
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
-                // Recreate the Pair from the HeaderEntry
-                let header = Header::from_entry(header_entry);
+                // Recreate the Pair from the ChainHeaderEntry
+                let header = ChainHeader::from_entry(header_entry);
                 let pair = Pair::from_header(&self.table_actor, &header);
                 pair
             });
@@ -99,8 +99,8 @@ impl Chain {
         }
     }
 
-    /// Create the next commitable Header for the chain.
-    /// a Header is immutable, but the chain is mutable if chain.commit_*() is used.
+    /// Create the next commitable ChainHeader for the chain.
+    /// a ChainHeader is immutable, but the chain is mutable if chain.commit_*() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
     /// the only valid usage of a header is to immediately commit it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
@@ -108,8 +108,8 @@ impl Chain {
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn create_next_header(&self, entry_type: &EntryType, entry: &Entry) -> Header {
-        Header::new(
+    pub fn create_next_header(&self, entry_type: &EntryType, entry: &Entry) -> ChainHeader {
+        ChainHeader::new(
             entry_type,
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
@@ -132,7 +132,7 @@ impl Chain {
 
     /// Create the next commitable Pair for this chain
     ///
-    /// Header is generated
+    /// ChainHeader is generated
     ///
     /// a Pair is immutable, but the chain is mutable if chain.commit_*() is used.
     ///
@@ -146,7 +146,7 @@ impl Chain {
     /// Panics if entry is somehow invalid
     ///
     /// @see chain::entry::Entry
-    /// @see chain::header::Header
+    /// @see chain::header::ChainHeader
     pub fn create_next_pair(&self, entry_type: &EntryType, entry: &Entry) -> Pair {
         let new_pair = Pair::new(&self.create_next_header(entry_type, entry), &entry.clone());
 
@@ -209,7 +209,7 @@ pub trait SourceChain {
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
-    /// get a Pair by Pair/Header address from the HashTable if it exists
+    /// get a Pair by Pair/ChainHeader address from the HashTable if it exists
     fn pair(&self, pair_address: &Address) -> Option<Pair>;
 }
 

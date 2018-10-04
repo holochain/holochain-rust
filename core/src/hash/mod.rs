@@ -20,6 +20,12 @@ impl From<String> for HashString {
     }
 }
 
+impl From<HashString> for String {
+    fn from(h: HashString) -> String {
+        h.0
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
@@ -44,13 +50,13 @@ impl HashString {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use cas::content::AddressableContent;
     use hash_table::entry::tests::test_entry;
-    use key::Key;
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()
     pub fn test_hash() -> HashString {
-        test_entry().key()
+        test_entry().address()
     }
 
     #[test]
@@ -70,7 +76,7 @@ pub mod tests {
 
         assert_eq!(
             test_hash(),
-            HashString::from(test_entry().key().to_string()),
+            HashString::from(test_entry().address().to_string()),
         );
     }
 

@@ -50,21 +50,22 @@
 //!
 //!```
 
+extern crate futures;
 extern crate holochain_core;
 extern crate holochain_dna;
 #[cfg(test)]
 extern crate test_utils;
 
+use futures::executor::block_on;
 use holochain_core::{
-    action::{Action, ActionWrapper},
     context::Context,
     error::HolochainError,
-    instance::{Instance, RECV_DEFAULT_TIMEOUT_MS},
-    nucleus::{call_and_wait_for_result, state::NucleusStatus, ZomeFnCall},
+    instance::Instance,
+    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
 use holochain_dna::Dna;
-use std::sync::{mpsc::channel, Arc};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -79,46 +80,19 @@ impl Holochain {
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut instance = Instance::new();
         let name = dna.name.clone();
-
-        let action = ActionWrapper::new(Action::InitApplication(dna));
         instance.start_action_loop(context.clone());
-
-        let (sender, receiver) = channel();
-
-        instance.dispatch_with_observer(action, move |state: &State| {
-            let nucleus_state = state.nucleus();
-            if nucleus_state.has_initialized() || nucleus_state.has_initialization_failed() {
-                sender
-                    .send(nucleus_state.status())
-                    .expect("test channel must be open");
-                true
-            } else {
-                false
+        let context = instance.initialize_context(context);
+        match block_on(initialize_application(dna, context.clone())) {
+            Ok(_) => {
+                context.log(&format!("{} instantiated", name))?;
+                let app = Holochain {
+                    instance,
+                    context,
+                    active: false,
+                };
+                Ok(app)
             }
-        });
-
-        // TODO: what is the right timeout?
-        // had to increase this number when merging develop into feature branch 221-dna-improvements
-        // https://github.com/holochain/holochain-rust/pull/253
-        // solving ticket https://github.com/holochain/holochain-rust/issues/221
-        match receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS) {
-            Ok(status) => match status {
-                NucleusStatus::InitializationFailed(err) => Err(HolochainError::ErrorGeneric(err)),
-                _ => {
-                    context.log(&format!("{} instantiated", name))?;
-                    let app = Holochain {
-                        instance,
-                        context,
-                        active: false,
-                    };
-                    Ok(app)
-                }
-            },
-            Err(err) => {
-                // TODO: what kind of cleanup to do on an initialization timeout?
-                // see #120:  https://waffle.io/holochain/org/cards/5b43704336bf54001bceeee0
-                Err(HolochainError::ErrorGeneric(err.to_string()))
-            }
+            Err(initialization_error) => Err(HolochainError::ErrorGeneric(initialization_error)),
         }
     }
 
@@ -277,7 +251,7 @@ mod tests {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(
                 err,
-                HolochainError::ErrorGeneric("timed out waiting on channel".to_string())
+                HolochainError::ErrorGeneric("Timeout while initializing".to_string())
             ),
         };
     }
@@ -419,7 +393,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]

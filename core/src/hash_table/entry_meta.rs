@@ -1,7 +1,6 @@
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash::HashString;
 use json::{FromJson, RoundTripJson, ToJson};
-use key::Key;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
@@ -17,7 +16,7 @@ use std::cmp::Ordering;
 /// source = the agent making the meta assertion
 /// signature = the asserting agent's signature of the meta assertion
 pub struct EntryMeta {
-    entry_hash: HashString,
+    entry_address: Address,
     attribute: String,
     value: String,
     // @TODO implement local transaction ordering
@@ -32,7 +31,7 @@ pub struct EntryMeta {
 impl Ord for EntryMeta {
     fn cmp(&self, other: &EntryMeta) -> Ordering {
         // we want to sort by entry hash, then attribute name, then attribute value
-        match self.entry_hash.cmp(&other.entry_hash) {
+        match self.entry_address.cmp(&other.entry_address) {
             Ordering::Equal => match self.attribute.cmp(&other.attribute) {
                 Ordering::Equal => self.value.cmp(&other.value),
                 Ordering::Greater => Ordering::Greater,
@@ -54,9 +53,9 @@ impl EntryMeta {
     /// Builds a new Meta from EAV and agent keys, where E is an existing Entry
     /// @TODO need a `from()` to build a local meta from incoming network messages
     /// @see https://github.com/holochain/holochain-rust/issues/140
-    pub fn new(node_id: &str, hash: &HashString, attribute: &str, value: &str) -> EntryMeta {
+    pub fn new(node_id: &str, address: &Address, attribute: &str, value: &str) -> EntryMeta {
         EntryMeta {
-            entry_hash: hash.clone(),
+            entry_address: address.clone(),
             attribute: attribute.into(),
             value: value.into(),
             source: node_id.to_string(),
@@ -64,8 +63,8 @@ impl EntryMeta {
     }
 
     /// getter for entry
-    pub fn entry_hash(&self) -> &HashString {
-        &self.entry_hash
+    pub fn entry_address(&self) -> &Address {
+        &self.entry_address
     }
 
     /// getter for attribute clone
@@ -83,20 +82,13 @@ impl EntryMeta {
         self.source.clone()
     }
 
-    pub fn make_hash(entry_hash: &HashString, attribute_name: &str) -> HashString {
-        let pieces: [String; 2] = [entry_hash.clone().to_string(), attribute_name.to_string()];
-        let string_to_hash = pieces.concat();
+    pub fn make_address(address: &Address, attribute: &str) -> Address {
+        let pieces: [String; 2] = [address.clone().to_string(), attribute.to_string()];
+        let string_to_address = pieces.concat();
 
         // @TODO the hashing algo should not be hardcoded
         // @see https://github.com/holochain/holochain-rust/issues/104
-        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
-    }
-}
-
-impl Key for EntryMeta {
-    /// the key for HashTable lookups, e.g. table.meta()
-    fn key(&self) -> HashString {
-        HashString::encode_from_serializable(&self, Hash::SHA2256)
+        Address::encode_from_str(&string_to_address, Hash::SHA2256)
     }
 }
 
@@ -116,17 +108,30 @@ impl FromJson for EntryMeta {
 
 impl RoundTripJson for EntryMeta {}
 
+impl AddressableContent for EntryMeta {
+    fn address(&self) -> Address {
+        EntryMeta::make_address(&self.entry_address, &self.attribute)
+    }
+
+    fn content(&self) -> Content {
+        self.to_json().expect("could not Jsonify EntryMeta Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        EntryMeta::from_json(content).expect("could not parse JSON as EntryMeta Content")
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 
     use agent::keys::tests::test_keys;
-    use hash::HashString;
+    use cas::content::{Address, AddressableContent};
     use hash_table::{
         entry::{tests::test_entry, Entry},
         entry_meta::EntryMeta,
     };
     use json::{FromJson, ToJson};
-    use key::Key;
     use std::cmp::Ordering;
 
     /// dummy test attribute name
@@ -160,14 +165,14 @@ pub mod tests {
     }
 
     pub fn test_meta_for(entry: &Entry, attribute: &str, value: &str) -> EntryMeta {
-        EntryMeta::new(&test_keys().node_id(), &entry.key(), attribute, value)
+        EntryMeta::new(&test_keys().node_id(), &entry.address(), attribute, value)
     }
 
     /// returns dummy meta for testing
     pub fn test_meta() -> EntryMeta {
         EntryMeta::new(
             &test_keys().node_id(),
-            &test_entry().key(),
+            &test_entry().address(),
             &test_attribute(),
             &test_value(),
         )
@@ -182,7 +187,7 @@ pub mod tests {
     pub fn test_meta_b() -> EntryMeta {
         EntryMeta::new(
             &test_keys().node_id(),
-            &test_entry().key(),
+            &test_entry().address(),
             &test_attribute_b(),
             &test_value_b(),
         )
@@ -195,9 +200,9 @@ pub mod tests {
     }
 
     #[test]
-    // test meta.entry_hash()
-    fn entry_hash() {
-        assert_eq!(test_meta().entry_hash(), &test_entry().key());
+    // test meta.entry_address()
+    fn entry_address_test() {
+        assert_eq!(test_meta().entry_address(), &test_entry().address());
     }
 
     /// test meta.attribute()
@@ -224,25 +229,25 @@ pub mod tests {
         // basic ordering
         let m_1ax = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "a",
             "x",
         );
         let m_1ay = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "a",
             "y",
         );
         let m_1bx = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("1".to_string()),
+            &Address::from("1".to_string()),
             "b",
             "x",
         );
         let m_2ax = EntryMeta::new(
             &test_keys().node_id(),
-            &HashString::from("2".to_string()),
+            &Address::from("2".to_string()),
             "a",
             "x",
         );
@@ -279,7 +284,7 @@ pub mod tests {
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
         let meta = test_meta();
-        let expected = "{\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+        let expected = "{\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
 
         assert_eq!(expected.to_string(), meta.to_json().unwrap());
         assert_eq!(meta, EntryMeta::from_json(&expected).unwrap());

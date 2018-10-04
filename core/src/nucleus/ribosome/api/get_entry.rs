@@ -1,15 +1,16 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use hash::HashString;
+use cas::content::Address;
+use holochain_wasm_utils::error::RibosomeReturnCode;
 use json::ToJson;
-use nucleus::ribosome::api::{HcApiReturnCode, Runtime};
+use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
-    key: HashString,
+    address: Address,
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -25,14 +26,11 @@ pub fn invoke_get_entry(
     let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        // Return Error code in i32 format
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ArgumentDeserializationFailed as i32,
-        )));
+        return ribosome_return_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.key));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.address));
 
     let (sender, receiver) = channel();
     ::instance::dispatch_action_with_observer(
@@ -68,14 +66,10 @@ pub fn invoke_get_entry(
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ResponseSerializationFailed as i32,
-                ))),
+                Err(_) => ribosome_return_code!(ResponseSerializationFailed),
             }
         }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ReceivedWrongActionResult as i32,
-        ))),
+        _ => ribosome_return_code!(ReceivedWrongActionResult),
     }
 }
 
@@ -86,10 +80,10 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
+    use cas::content::AddressableContent;
     use chain::SourceChain;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
-    use key::Key;
     use nucleus::{
         ribosome::api::{
             call,
@@ -104,7 +98,7 @@ mod tests {
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetAppEntryArgs {
-            key: test_entry().hash().into(),
+            address: test_entry().address().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -180,7 +174,7 @@ mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone());
+        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 
@@ -194,7 +188,7 @@ mod tests {
                 .top_pair()
                 .expect("could not get top pair")
                 .expect("top pair was None")
-                .key()
+                .address()
         );
 
         let commit_call = ZomeFnCall::new(
@@ -213,7 +207,7 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(
@@ -231,8 +225,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected
-            .push_str("{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}\u{0}");
+        expected.push_str("\"test entry content\"\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

@@ -235,7 +235,7 @@ impl Dna {
         Ok(cap.unwrap())
     }
 
-    pub fn get_zome_name_for_entry_type(&self, entry_type: String) -> Option<String> {
+    pub fn get_zome_name_for_entry_type(&self, entry_type: &str) -> Option<String> {
         for (zome_name, zome) in &self.zomes {
             for (entry_type_name, _) in &zome.entry_types {
                 if *entry_type_name == entry_type {
@@ -640,12 +640,11 @@ pub mod tests {
         ).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_entry_type("test type".to_string())
-                .unwrap(),
+            dna.get_zome_name_for_entry_type("test type").unwrap(),
             "test zome".to_string()
         );
         assert!(
-            dna.get_zome_name_for_entry_type("non existant entry type".to_string())
+            dna.get_zome_name_for_entry_type("non existant entry type")
                 .is_none()
         );
     }

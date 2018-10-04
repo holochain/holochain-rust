@@ -12,6 +12,11 @@ jobs:
     - name: "C binding tests"
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -28,11 +33,14 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Standard tests + code coverage"
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
-      # sudo is needed for codecov, which makes things 20-50s slower
+      language: node_js
+      node_js:
+        - "8"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -57,6 +65,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
@@ -65,6 +74,11 @@ jobs:
     - name: "Formatting & clippy"
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -76,7 +90,8 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
       script:
         - make fmt_check
-        - make clippy
+        # @see #431
+        # - make clippy
       before_cache:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
@@ -89,6 +104,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
@@ -100,6 +116,11 @@ jobs:
       env:
         - ENCRYPTION_LABEL: "30dd9296640e"
         - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -123,6 +144,7 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json

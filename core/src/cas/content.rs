@@ -2,7 +2,7 @@ use hash::HashString;
 use multihash::Hash;
 
 /// an Address for some Content
-/// ideally would be the Content but pragmatically must be HashString
+/// ideally would be the Content but pragmatically must be Address
 /// consider what would happen if we had multi GB addresses...
 pub type Address = HashString;
 /// the Content is a String
@@ -20,7 +20,7 @@ pub trait AddressableContent {
     /// it is recommended to implement an "address space" prefix for address algorithms that don't
     /// offer strong cryptographic guarantees like sha et. al.
     fn address(&self) -> Address {
-        HashString::encode_from_str(&self.content(), Hash::SHA2256)
+        Address::encode_from_str(&self.content(), Hash::SHA2256)
     }
     /// the Content that would be stored in a ContentAddressableStorage
     fn content(&self) -> Content;
@@ -42,14 +42,16 @@ impl AddressableContent for Content {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{Address, AddressableContent, Content};
-    use hash::HashString;
+    use cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    };
     use multihash::Hash;
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Write};
 
     #[derive(Debug, PartialEq, Clone, Hash, Eq)]
     /// some struct that can be content addressed
-    /// imagine an Entry, Header, Meta Value, etc.
+    /// imagine an Entry, ChainHeader, Meta Value, etc.
     pub struct ExampleAddressableContent {
         content: Content,
     }
@@ -87,7 +89,7 @@ pub mod tests {
         fn from_content(content: &Content) -> Self {
             OtherExampleAddressableContent {
                 content: content.clone(),
-                address: HashString::encode_from_str(&content, Hash::SHA2256),
+                address: Address::encode_from_str(&content, Hash::SHA2256),
             }
         }
     }
@@ -99,7 +101,7 @@ pub mod tests {
         pub fn addressable_content_trait_test<T>(
             content: Content,
             expected_content: T,
-            hash_string: String,
+            address_string: String,
         ) where
             T: AddressableContent + Debug + PartialEq + Clone,
         {
@@ -107,7 +109,7 @@ pub mod tests {
 
             assert_eq!(addressable_content, expected_content);
             assert_eq!(content, addressable_content.content());
-            assert_eq!(HashString::from(hash_string), addressable_content.address());
+            assert_eq!(Address::from(address_string), addressable_content.address());
         }
 
         /// test that two different addressable contents would give them same thing
@@ -127,6 +129,25 @@ pub mod tests {
                 addressable_content.address(),
                 other_addressable_content.address()
             );
+        }
+
+        pub fn addressable_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
+        where
+            T: AddressableContent + PartialEq + Clone + Debug,
+            K: ContentAddressableStorage,
+        {
+            contents.into_iter().for_each(|f| {
+                let mut add_error_message = String::new();
+                let mut fetch_error_message = String::new();
+                writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
+                writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
+
+                cas.add(&f).expect(&add_error_message);
+                assert_eq!(
+                    Some(f.clone()),
+                    cas.fetch::<T>(&f.address()).expect(&fetch_error_message)
+                );
+            });
         }
     }
 

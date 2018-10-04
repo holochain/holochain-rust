@@ -1,0 +1,9 @@
+[package]
+name = "holochain_net"
+version = "0.1.0"
+authors = ["holochain dev core <devcore@holo.host>"]
+
+[dependencies]
+base64 = "0.9.3"
+failure = "0.1.1"
+serde_json = "1.0"

@@ -1,11 +1,12 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::entry::Entry;
-use holochain_wasm_utils::error::{HcApiReturnCode, RibosomeErrorReport};
+use hash_table::{entry::Entry, sys_entry::EntryType};
+use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
+use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked
@@ -28,36 +29,29 @@ pub fn invoke_commit_app_entry(
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ArgumentDeserializationFailed as i32,
-            )));
-        }
+        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
-    let entry = Entry::new(&input.entry_type_name, &input.entry_content);
+    let entry = Entry::from(input.entry_content);
+    let entry_type =
+        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry.clone(), &runtime.context)
+        validate_entry(entry_type.clone(), entry.clone(), &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry_type.clone(), entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => {
-                return Ok(Some(RuntimeValue::I32(
-                    HcApiReturnCode::ReceivedWrongActionResult as i32,
-                )))
-            }
+            _ => return ribosome_return_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
-            let error_report = report_error!(format!(
+            let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
@@ -70,9 +64,7 @@ pub fn invoke_commit_app_entry(
     // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
-        Err(_) => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ResponseSerializationFailed as i32,
-        ))),
+        Err(_) => ribosome_return_code!(ResponseSerializationFailed),
     }
 
     // @TODO test that failing validation prevents commits happening
@@ -84,8 +76,8 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use hash_table::entry::tests::test_entry;
-    use key::Key;
+    use cas::content::AddressableContent;
+    use hash_table::entry::tests::{test_entry, test_entry_type};
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
@@ -94,10 +86,12 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let e = test_entry();
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+
         let args = CommitAppEntryArgs {
-            entry_type_name: e.entry_type().into(),
-            entry_content: e.content().into(),
+            entry_type_name: entry_type.to_string(),
+            entry_content: entry.content().into(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -114,7 +108,7 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

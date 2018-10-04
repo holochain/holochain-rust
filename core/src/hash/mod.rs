@@ -26,6 +26,12 @@ impl From<HashString> for String {
     }
 }
 
+impl<'a> From<&'a str> for HashString {
+    fn from(s: &str) -> HashString {
+        HashString::from(s.to_string())
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())

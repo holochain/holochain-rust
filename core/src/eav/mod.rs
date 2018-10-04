@@ -1,3 +1,4 @@
+pub mod file;
 pub mod memory;
 
 use cas::content::Address;

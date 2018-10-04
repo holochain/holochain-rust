@@ -69,7 +69,7 @@ where
     };
     // Look in local storage if it already has it
     if old_store
-        .content_storage
+        .content_storage()
         .contains(&entry.address())
         .unwrap()
     {
@@ -78,25 +78,26 @@ where
     }
     // Otherwise add it local storage...
     let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage.add(entry);
+    let res = new_store.content_storage_mut().add(entry);
     if res.is_err() {
         return None;
     }
 
     // ...and publish to the network
-    new_store.network.publish(entry);
+    new_store.network_mut().publish(entry);
     Some(new_store)
 }
 
 //
-pub(crate) fn reduce_get_entry<
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
->(
+pub(crate) fn reduce_get_entry<CAS, EAVS>(
     _context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>> {
+) -> Option<DhtStore<CAS, EAVS>>
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+{
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
@@ -109,7 +110,7 @@ pub(crate) fn reduce_get_entry<
     let entry = Entry::from_content(&old_store.network().clone().get(address));
     let mut new_store = (*old_store).clone();
     // ...and add it to the local storage
-    let res = new_store.content_storage.add(&entry);
+    let res = new_store.content_storage_mut().add(&entry);
     match res {
         Err(_) => None,
         Ok(()) => Some(new_store),
@@ -119,52 +120,27 @@ pub(crate) fn reduce_get_entry<
 //
 pub(crate) fn reduce_add_link<CAS, EAVS>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
-    action_wrapper: &ActionWrapper,
+    _old_store: &DhtStore<CAS, EAVS>,
+    _action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
-    let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::AddLink);
-
-    //    // Look in local storage if it already has it
-    //    if old_store.content_storage().contains(&link.key()).unwrap() {
-    //        // TODO Maybe panic as this should never happen?
-    //        return None;
-    //    }
-
-    // Otherwise add it to the local storage...
-    let mut new_store = (*old_store).clone();
-    // FIXME convert link to meta here
-    let res = new_store.add_link(link);
-    if res.is_err() {
-        return None;
-    }
-    //    let link_meta ;
-    //    // ... and publish to the network
-    //    new_store.network.publish_meta(link_meta);
-    Some(new_store)
+    // FIXME
+    None
 }
 
 //
 pub(crate) fn reduce_get_links<CAS, EAVS>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
-    action_wrapper: &ActionWrapper,
+    _old_store: &DhtStore<CAS, EAVS>,
+    _action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
-    // Get Action's input data
-    let action = action_wrapper.action();
-    let _get_links_args = unwrap_to!(action => Action::GetLinks);
-
-    // retrieve it from the network?
     // FIXME
-    let mut new_store = (*old_store).clone();
-    // ...
-    Some(new_store)
+    None
 }

@@ -40,13 +40,13 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     // storages holding local shard data
-    pub(crate) content_storage: CAS,
-    pub(crate) meta_storage: EAVS,
+    content_storage: CAS,
+    meta_storage: EAVS,
 
     // TODO - Temp storage for things we received from the network but are not validated yet
     // temp_storage: T,
     // Placeholder network module
-    pub(crate) network: Network,
+    network: Network,
 }
 
 impl<CAS, EAVS> DhtStore<CAS, EAVS>
@@ -54,14 +54,6 @@ where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
-    //    pub fn clone(&self) -> Self {
-    //        DhtStore {
-    //            content_storage: self.content_storage.clone(),
-    //            meta_storage: self.meta_storage.clone(),
-    //            network: self.network.clone(),
-    //        }
-    //    }
-
     // LifeCycle
     // ---------
     pub fn new(content_storage: CAS, meta_storage: EAVS) -> Self {
@@ -72,40 +64,7 @@ where
             network,
         }
     }
-//
-//    // ContentAddressableStorage
-//    // -------------------------
-//    fn add_content(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-//        // FIXME publish to network?
-//        self.content_storage.add(content)
-//    }
-//
-//    fn contains_content(&self, address: &Address) -> Result<bool, HolochainError> {
-//        self.content_storage.contains(address)
-//    }
-//
-//    fn fetch_content<C: AddressableContent>(
-//        &self,
-//        address: &Address,
-//    ) -> Result<Option<C>, HolochainError> {
-//        self.content_storage.fetch(address)
-//    }
-//
-//    // EntityAttributeValueStorage
-//    // ---------------------------
-//    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-//        self.meta_storage.add_eav(eav)
-//    }
-//
-//    fn fetch_eav(
-//        &self,
-//        entity: Option<Entity>,
-//        attribute: Option<Attribute>,
-//        value: Option<Value>,
-//    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-//        self.meta_storage.fetch_eav(entity, attribute, value)
-//    }
-//
+
     // Linking
     // -------
     pub fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
@@ -137,11 +96,13 @@ where
     pub(crate) fn content_storage(&self) -> &CAS {
         &self.content_storage
     }
-    pub(crate) fn meta_storage(&self) -> &EAVS {
-        &self.meta_storage
+    pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
+        &mut self.content_storage
     }
-    // pub fn temp_storage(&self) -> &T { &self.temp_storage }
     pub(crate) fn network(&self) -> &Network {
         &self.network
+    }
+    pub(crate) fn network_mut(&mut self) -> &mut Network {
+        &mut self.network
     }
 }

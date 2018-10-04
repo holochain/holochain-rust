@@ -87,6 +87,14 @@ pub mod tests {
     }
 
     #[test]
+    /// show From<&str> implementation
+    fn from_str_test() {
+        assert_eq!(HashString::new(), HashString::from(""));
+
+        assert_eq!(test_hash(), HashString::from(test_entry().address()),);
+    }
+
+    #[test]
     /// mimics tests from legacy golang holochain core hashing bytes
     fn bytes_to_b58_known_golang() {
         assert_eq!(

@@ -48,7 +48,6 @@ pub mod hash;
 pub mod hash_table;
 pub mod instance;
 pub mod json;
-pub mod key;
 pub mod logger;
 pub mod nucleus;
 pub mod persister;

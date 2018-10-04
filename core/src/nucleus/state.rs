@@ -1,5 +1,5 @@
+use cas::content::Address;
 use error::HolochainError;
-use hash::HashString;
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
@@ -32,7 +32,7 @@ pub struct NucleusState {
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_calls: HashMap<ZomeFnCall, Option<Result<String, HolochainError>>>,
-    pub validation_results: HashMap<(snowflake::ProcessUniqueId, HashString), ValidationResult>,
+    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
 }
 
 impl NucleusState {

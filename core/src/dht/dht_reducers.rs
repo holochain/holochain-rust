@@ -59,15 +59,15 @@ pub(crate) fn reduce_commit_entry<CAS: ContentAddressableStorage, EAVS: EntityAt
     let entry = unwrap_to!(action => Action::GetEntry);
 
     // Look in local storage if it already has it
-    if old_store.data_storage().contains(entry.key()).unwrap() {
+    if old_store.content_storage().contains(entry.key()).unwrap() {
         // Maybe panic as this should never happen?
         return None;
     }
     // Otherwise add it local storage...
     let mut new_store = (*old_store).clone();
-    new_store.data_storage().add(entry.content());
+    new_store.content_storage().add(entry);
     // ...and publish to the network
-    new_store.network().publish(entry.content());
+    new_store.network().publish(entry);
     Some(new_store)
 }
 

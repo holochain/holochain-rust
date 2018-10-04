@@ -5,7 +5,10 @@ use context::Context;
 use hash_table::{actor::HashTableActor, memory::MemTable};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
-
+use cas::{
+    memory::MemoryStorage,
+    eav::EavMemoryStorage,
+}
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
@@ -13,6 +16,7 @@ use std::{collections::HashSet, sync::Arc};
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
+    dht: Arc<DhtStore>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -24,9 +28,14 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
         let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
 
+        let content_storage = MemoryStorage::new();
+        let eav_storage = EavMemoryStorage::new();
+
+
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(&chain)),
+            dht: Arc::new(DhtStore::new(&content_storage, &eav_storage)),
             history: HashSet::new(),
         }
     }

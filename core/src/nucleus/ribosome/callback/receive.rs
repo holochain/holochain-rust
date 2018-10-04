@@ -23,17 +23,6 @@ pub mod tests {
     };
 
     #[test]
-    fn pass() {
-        let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0);
-        let context = instance.initialize_context(test_context("test"));
-
-        let result = receive(context, zome, &CallbackParams::Receive);
-
-        assert_eq!(CallbackResult::Pass, result);
-    }
-
-    #[test]
     fn not_implemented() {
         let zome = "test_zome";
         let instance = test_callback_instance(
@@ -41,7 +30,7 @@ pub mod tests {
             // anything other than Genesis is fine here
             Callback::MissingNo.as_str(),
             0,
-        );
+        ).expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = receive(context, zome, &CallbackParams::Receive);
@@ -50,9 +39,22 @@ pub mod tests {
     }
 
     #[test]
+    fn pass() {
+        let zome = "test_zome";
+        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0)
+            .expect("Test callback instance could not be initialized");
+        let context = instance.initialize_context(test_context("test"));
+
+        let result = receive(context, zome, &CallbackParams::Receive);
+
+        assert_eq!(CallbackResult::Pass, result);
+    }
+
+    #[test]
     fn fail() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 1);
+        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 1)
+            .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = receive(context, zome, &CallbackParams::Receive);

@@ -1,5 +1,6 @@
 extern crate futures;
 use action::{Action, ActionWrapper};
+use cas::content::AddressableContent;
 use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
@@ -21,7 +22,7 @@ pub fn validate_entry(
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
     let id = snowflake::ProcessUniqueId::new();
-    let hash = entry.hash();
+    let address = entry.address();
 
     match context
         .state()
@@ -39,7 +40,7 @@ pub fn validate_entry(
         }
         Some(zome_name) => {
             let id = id.clone();
-            let hash = hash.clone();
+            let address = address.clone();
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
@@ -58,7 +59,7 @@ pub fn validate_entry(
                 context
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        (id, hash),
+                        (id, address),
                         validation_result,
                     ))))
                     .expect("action channel to be open in reducer");
@@ -68,7 +69,7 @@ pub fn validate_entry(
 
     Box::new(ValidationFuture {
         context: context.clone(),
-        key: (id, hash),
+        key: (id, address),
     })
 }
 

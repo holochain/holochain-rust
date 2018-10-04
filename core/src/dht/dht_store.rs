@@ -1,17 +1,16 @@
-use hash_table::{
-    sys_entry::ToEntry,
-    links_entry::{Link, LinkEntry, LinkActionKind},
-};
 use cas::{
-    //RelatableContentStorage,
-    content::{Address, Content, AddressableContent},
-    eav::EntityAttributeValue,
+    content::{Address, AddressableContent, Content},
     storage::ContentAddressableStorage,
-    eav::EntityAttributeValueStorage,
 };
-use hash::HashString;
-use std::collections::HashSet;
+use eav::{EntityAttributeValue, EntityAttributeValueStorage};
+// use eav::{Attribute, Entity, Value};
 use error::HolochainError;
+use hash::HashString;
+use hash_table::{
+    links_entry::{Link, LinkActionKind, LinkEntry},
+    sys_entry::ToEntry,
+};
+use std::collections::HashSet;
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -19,95 +18,130 @@ pub struct Network {
     // FIXME
 }
 impl Network {
-    pub fn publish(&mut self, content: &Content) {
+    pub fn publish(&mut self, _content: &AddressableContent) {
         // FIXME
     }
-    pub fn publish_meta(&mut self, meta: &EntityAttributeValue) {
+    pub fn publish_meta(&mut self, _meta: &EntityAttributeValue) {
         // FIXME
+    }
+
+    pub fn get(&mut self, _address: &Address) -> Content {
+        // FIXME
+        AddressableContent::from_content(&"".to_string())
     }
 }
-
-
-//pub type Dht = HolographicStore<HashTable>;
 
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug, PartialEq)]
-pub struct DhtStore<C: ContentAddressableStorage + Sized, M: EntityAttributeValueStorage + Sized> {
+pub struct DhtStore<CAS, EAVS>
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+{
     // storages holding local shard data
-    content_storage: C,
-    meta_storage: M,
+    pub(crate) content_storage: CAS,
+    pub(crate) meta_storage: EAVS,
 
     // TODO - Temp storage for things we received from the network but are not validated yet
     // temp_storage: T,
     // Placeholder network module
-    network: Network,
+    pub(crate) network: Network,
 }
 
-impl<C: ContentAddressableStorage + Sized, M: EntityAttributeValueStorage + Sized> DhtStore<C, M> {
+impl<CAS, EAVS> DhtStore<CAS, EAVS>
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+{
+    //    pub fn clone(&self) -> Self {
+    //        DhtStore {
+    //            content_storage: self.content_storage.clone(),
+    //            meta_storage: self.meta_storage.clone(),
+    //            network: self.network.clone(),
+    //        }
+    //    }
 
-//    pub fn add_content(content: AddressableContent) {
-//        // FIXME publish to network
-//        self.content_storage.add(content);
+    // LifeCycle
+    // ---------
+    pub fn new(content_storage: CAS, meta_storage: EAVS) -> Self {
+        let network = Network {};
+        DhtStore {
+            content_storage,
+            meta_storage,
+            network,
+        }
+    }
+//
+//    // ContentAddressableStorage
+//    // -------------------------
+//    fn add_content(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
+//        // FIXME publish to network?
+//        self.content_storage.add(content)
 //    }
-
-    // ContentAddressableStorage
-    // -------------------------
-    fn add_content(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        self.content_storage.add(content)
-    }
-
-    fn contains_content(&self, address: &Address) -> Result<bool, HolochainError> {
-        self.content_storage.contains(address)
-    }
-
-    fn fetch_content<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-        self.content_storage.fetch(address)
-    }
-
-    pub fn new(content_storage : C, meta_storage: M) {
-        let network = Network{};
-        DhtStore { content_storage, meta_storage, network }
-    }
-
-    // EntityAttributeValueStorage
-    // ---------------------------
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.meta_storage.add_eav(eav)
-    }
-
-    fn fetch_eav(
-        &self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage.fetch_eav(entity, attribute, value)
-    }
-
+//
+//    fn contains_content(&self, address: &Address) -> Result<bool, HolochainError> {
+//        self.content_storage.contains(address)
+//    }
+//
+//    fn fetch_content<C: AddressableContent>(
+//        &self,
+//        address: &Address,
+//    ) -> Result<Option<C>, HolochainError> {
+//        self.content_storage.fetch(address)
+//    }
+//
+//    // EntityAttributeValueStorage
+//    // ---------------------------
+//    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+//        self.meta_storage.add_eav(eav)
+//    }
+//
+//    fn fetch_eav(
+//        &self,
+//        entity: Option<Entity>,
+//        attribute: Option<Attribute>,
+//        value: Option<Value>,
+//    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+//        self.meta_storage.fetch_eav(entity, attribute, value)
+//    }
+//
     // Linking
     // -------
-    pub fn add_link(&mut self, link: &Link) {
+    pub fn add_link(&mut self, link: &Link) -> Result<(), HolochainError> {
         // FIXME
         let link_entry = LinkEntry::from_link(LinkActionKind::ADD, link);
-        self.storage.add(&link_entry.to_entry().content());
-        self.meta_storage.add_eav(&link_entry.to_eav());
+        self.content_storage.add(&link_entry.to_entry().1)
+        // self.meta_storage.add_eav(&link_entry.to_eav());
     }
 
     pub fn remove_link(&mut self) {
         // FIXME
     }
 
-    pub fn get_links(&self, address: HashString, attribute_name: String) -> Result<HashSet<EntityAttributeValue>, HolochainError>{
+    pub fn get_links(
+        &self,
+        address: HashString,
+        attribute_name: String,
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         // FIXME query network?
 
         // FIXME get my own links
-        let qres = self.meta_storage.fetch_eav(Some(address), Some(attribute_name), None);
+        let qres = self
+            .meta_storage
+            .fetch_eav(Some(address), Some(attribute_name), None);
         qres
     }
 
-    // getters
-    pub fn storage(&self) -> &T { &self.storage }
+    // getters (for reducers)
+    pub(crate) fn content_storage(&self) -> &CAS {
+        &self.content_storage
+    }
+    pub(crate) fn meta_storage(&self) -> &EAVS {
+        &self.meta_storage
+    }
     // pub fn temp_storage(&self) -> &T { &self.temp_storage }
-    pub fn network(&self) -> &Network { &self.network }
+    pub(crate) fn network(&self) -> &Network {
+        &self.network
+    }
 }

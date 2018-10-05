@@ -39,6 +39,7 @@ pub mod zome;
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::capabilities::Capability;
+use zome::entry_types::EntryTypeDef;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -235,15 +236,36 @@ impl Dna {
         Ok(cap.unwrap())
     }
 
-    pub fn get_zome_name_for_entry_type(&self, entry_type: &str) -> Option<String> {
+    /// Return the name of the zome holding a specified app_entry_type
+    pub fn get_zome_name_for_entry_type(&self, entry_type_name: &str) -> Option<String> {
+        // pre-condition: must not be a sys_entry_type
+//        if EntryType::has_sys_prefix(entry_type_name) {
+//            return None;
+//        }
+        // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (entry_type_name, _) in &zome.entry_types {
-                if *entry_type_name == entry_type {
+            for (zome_entry_type_name, _) in &zome.entry_types {
+                if *zome_entry_type_name == entry_type_name {
                     return Some(zome_name.clone());
                 }
             }
         }
+        None
+    }
 
+    pub fn get_entry_type_def(&self, entry_type_name: &str) -> Option<&EntryTypeDef> {
+        // pre-condition: must not be a sys_entry_type
+//        if EntryType::has_sys_prefix(entry_type_name) {
+//            return None;
+//        }
+        // Browse through the zomes
+        for (_zome_name, zome) in &self.zomes {
+            for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
+                if *zome_entry_type_name == entry_type_name {
+                    return Some(entry_type_def);
+                }
+            }
+        }
         None
     }
 }

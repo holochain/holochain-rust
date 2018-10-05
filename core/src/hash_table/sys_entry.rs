@@ -24,6 +24,7 @@ macro_rules! sys_prefix {
     };
 }
 
+
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
@@ -39,6 +40,20 @@ pub enum EntryType {
     /// TODO #339 - This is different kind of SystemEntry for the DHT only.
     /// Should be moved into a different enum for DHT entry types.
     LinkList,
+}
+
+impl EntryType {
+    pub fn is_app(self) -> bool {
+        match self  {
+            EntryType::App(_) => true,
+            _ => false,
+        }
+    }
+    pub fn is_sys(self) -> bool { !self.is_app() }
+
+    pub fn has_sys_prefix(entry_type_name: &str) -> bool {
+        &entry_type_name[0..1] == "%"
+    }
 }
 
 impl FromStr for EntryType {

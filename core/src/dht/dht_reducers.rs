@@ -5,7 +5,9 @@ use cas::{content::AddressableContent, storage::ContentAddressableStorage};
 use context::Context;
 use dht::dht_store::DhtStore;
 use eav::EntityAttributeValueStorage;
-use hash_table::entry::Entry;
+use hash_table::{
+    entry::Entry, sys_entry::EntryType,
+};
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
@@ -45,7 +47,7 @@ where
 {
     match action_wrapper.action() {
         Action::Commit(_, _) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
@@ -53,8 +55,64 @@ where
 }
 
 //
+pub(crate) fn commit_sys_entry<CAS, EAVS>(
+    old_store: &DhtStore<CAS, EAVS>,
+    entry: &Entry,
+) -> Option<DhtStore<CAS, EAVS>>
+    where
+        CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+        EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+{
+    // Add it local storage
+    let mut new_store = (*old_store).clone();
+    let res = new_store.content_storage_mut().add(entry);
+    if res.is_err() {
+        // TODO #439 - Log the error. Once we have better logging.
+        return None;
+    }
+    // Note: System entry types are not published to the network
+    Some(new_store)
+}
+
+//
+pub(crate) fn commit_app_entry<CAS, EAVS>(
+    context: Arc<Context>,
+    old_store: &DhtStore<CAS, EAVS>,
+    entry_type: &EntryType,
+    entry: &Entry,
+) -> Option<DhtStore<CAS, EAVS>>
+    where
+        CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+        EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+{
+    // pre-condition: if app entry_type must be valid
+    // get entry_type definition
+    let dna = context.state().unwrap().nucleus().dna().unwrap();
+    let maybe_def = dna.get_entry_type_def(&entry_type.to_string());
+    if maybe_def.is_none() {
+        return None;
+    }
+    let entry_type_def = maybe_def.unwrap();
+
+    // Add it to local storage...
+    let mut new_store = (*old_store).clone();
+    let res = new_store.content_storage_mut().add(entry);
+    if res.is_err() {
+        // TODO #439 - Log the error. Once we have better logging.
+        return None;
+    }
+    // ...and publish to the network if its not private
+    // System entry types are private
+    if entry_type_def.sharing.clone().can_publish()  {
+        new_store.network_mut().publish(entry);
+    }
+    Some(new_store)
+}
+
+
+//
 pub(crate) fn reduce_commit_entry<CAS, EAVS>(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore<CAS, EAVS>>
@@ -63,32 +121,30 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     let action = action_wrapper.action();
-    let (_entry_type, entry) = match action {
+    let (entry_type, entry) = match action {
         Action::Commit(entry_type, entry) => (entry_type, entry),
         _ => unreachable!(),
     };
-    // Look in local storage if it already has it
+
+    // pre-condition: Must not already have entry in local storage
     if old_store
         .content_storage()
         .contains(&entry.address())
         .unwrap()
-    {
-        // Maybe panic as this should never happen?
-        return None;
+        {
+            // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
+            return None;
+        }
+
+    // Handle sys entris and app entries differently
+    if entry_type.clone().is_sys() {
+        return commit_sys_entry(old_store, entry);
     }
-    // Otherwise add it local storage...
-    let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage_mut().add(entry);
-    if res.is_err() {
-        return None;
-    }
-    // ...and publish to the network
-    new_store.network_mut().publish(entry);
-    Some(new_store)
+    return commit_app_entry(context, old_store, entry_type, entry);
 }
 
 //
-pub(crate) fn reduce_get_entry<CAS, EAVS>(
+pub(crate) fn reduce_get_entry_from_network<CAS, EAVS>(
     _context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,

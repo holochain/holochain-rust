@@ -100,11 +100,12 @@ where
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-    // Look in local storage if it already has it
+    // pre-condition check: Look in local storage if it already has it.
     if old_store.content_storage().contains(address).unwrap() {
+        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
-    // Otherwise retrieve it from the network...
+    // Retrieve it from the network...
     let entry = Entry::from_content(&old_store.network().clone().get(address));
     let mut new_store = (*old_store).clone();
     // ...and add it to the local storage

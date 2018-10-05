@@ -7,6 +7,12 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
+const ACTOR_ID_ROOT: &'static str = "filesystem_storage_actor";
+
+fn path_to_actor_id(dir_path: &str) -> String {
+    format!("{}{}{}", ACTOR_ID_ROOT, MAIN_SEPARATOR, dir_path)
+}
+
 pub struct FilesystemStorageActor {
     /// path to the directory where content will be saved to disk
     dir_path: String,
@@ -23,11 +29,14 @@ impl FilesystemStorageActor {
     }
 
     /// props() for riker
-    fn props(dir_path: String) -> BoxActorProd<Protocol> {
-        Props::new_args(Box::new(FilesystemStorageActor::actor), dir_path)
+    fn props(dir_path: &str) -> BoxActorProd<Protocol> {
+        Props::new_args(
+            Box::new(FilesystemStorageActor::actor),
+            dir_path.to_string(),
+        )
     }
 
-    pub fn new_ref(dir_path: String) -> Result<ActorRef<Protocol>, HolochainError> {
+    pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
         let canonical = Path::new(&dir_path).canonicalize()?;
         if !canonical.is_dir() {
             return Err(HolochainError::IoError(
@@ -39,10 +48,10 @@ impl FilesystemStorageActor {
             .ok_or_else(|| HolochainError::IoError("could not convert path to string".to_string()))?
             .to_string();
         Ok(SYS.actor_of(
-            FilesystemStorageActor::props(dir_path.clone()),
+            FilesystemStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
-            &format!("filesystem_storage_actor/{}", dir_path),
+            &path_to_actor_id(&dir_path),
         )?)
     }
 
@@ -103,4 +112,20 @@ impl Actor for FilesystemStorageActor {
             )
             .expect("failed to tell FilesystemStorage sender");
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use cas::file::actor::path_to_actor_id;
+    use std::path::MAIN_SEPARATOR;
+
+    #[test]
+    fn path_to_actor_id_test() {
+        assert_eq!(
+            format!("filesystem_storage_actor{}foo", MAIN_SEPARATOR),
+            path_to_actor_id("foo"),
+        );
+    }
+
 }

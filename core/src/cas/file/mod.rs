@@ -16,7 +16,7 @@ pub struct FilesystemStorage {
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
-            dir_actor: FilesystemStorageActor::new_ref(dir_path.to_string())?,
+            dir_actor: FilesystemStorageActor::new_ref(dir_path)?,
         })
     }
 }

@@ -45,7 +45,7 @@ where
 {
     match action_wrapper.action() {
         Action::Commit(_, _) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
@@ -63,7 +63,7 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     let action = action_wrapper.action();
-    let (_entry_type, entry) = match action {
+    let (entry_type, entry) = match action {
         Action::Commit(entry_type, entry) => (entry_type, entry),
         _ => unreachable!(),
     };
@@ -73,22 +73,24 @@ where
         .contains(&entry.address())
         .unwrap()
     {
-        // Maybe panic as this should never happen?
+        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
     // Otherwise add it local storage...
     let mut new_store = (*old_store).clone();
     let res = new_store.content_storage_mut().add(entry);
     if res.is_err() {
+        // TODO #439 - Log the error. Once we have better logging.
         return None;
     }
     // ...and publish to the network
+    // TODO #440 - Must check if entry is "publishable" (i.e. public)
     new_store.network_mut().publish(entry);
     Some(new_store)
 }
 
 //
-pub(crate) fn reduce_get_entry<CAS, EAVS>(
+pub(crate) fn reduce_get_entry_from_network<CAS, EAVS>(
     _context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
     action_wrapper: &ActionWrapper,
@@ -100,11 +102,12 @@ where
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-    // Look in local storage if it already has it
+    // pre-condition check: Look in local storage if it already has it.
     if old_store.content_storage().contains(address).unwrap() {
+        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
-    // Otherwise retrieve it from the network...
+    // Retrieve it from the network...
     let entry = Entry::from_content(&old_store.network().clone().get(address));
     let mut new_store = (*old_store).clone();
     // ...and add it to the local storage

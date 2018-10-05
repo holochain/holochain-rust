@@ -6,6 +6,7 @@ use cas::file::FilesystemStorage;
 use cas::content::Address;
 use cas::content::Content;
 use std::fs::create_dir_all;
+use std::fs::write;
 
 pub struct FilesystemStorageActor {
     /// path to the directory where content will be saved to disk
@@ -30,7 +31,7 @@ impl FilesystemStorageActor {
         })
     }
 
-    fn unsafe_add(address: &Address, content: &Content) -> Result<(), HolochainError> {
+    fn unsafe_add(&self, address: &Address, content: &Content) -> Result<(), HolochainError> {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;

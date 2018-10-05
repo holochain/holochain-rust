@@ -3,20 +3,19 @@ pub mod header;
 pub mod pair;
 
 use actor::Protocol;
+use cas::content::{Address, AddressableContent};
 use chain::{
     actor::{AskChain, ChainActor},
-    header::Header,
+    header::ChainHeader,
     pair::Pair,
 };
 use error::HolochainError;
-use hash::HashString;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
     HashTable,
 };
 use json::ToJson;
-use key::Key;
 use riker::actors::*;
 use serde_json;
 
@@ -55,8 +54,8 @@ impl Iterator for ChainIterator {
                 let header_entry = &self.table_actor.entry(&h)
                                     .expect("getting from a table shouldn't fail")
                                     .expect("getting from a table shouldn't fail");
-                // Recreate the Pair from the HeaderEntry
-                let header = Header::from_entry(header_entry);
+                // Recreate the Pair from the ChainHeaderEntry
+                let header = ChainHeader::from_entry(header_entry);
                 let pair = Pair::from_header(&self.table_actor, &header);
                 pair
             });
@@ -100,8 +99,8 @@ impl Chain {
         }
     }
 
-    /// Create the next commitable Header for the chain.
-    /// a Header is immutable, but the chain is mutable if chain.commit_*() is used.
+    /// Create the next commitable ChainHeader for the chain.
+    /// a ChainHeader is immutable, but the chain is mutable if chain.commit_*() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
     /// the only valid usage of a header is to immediately commit it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
@@ -109,8 +108,8 @@ impl Chain {
     ///
     /// @see chain::pair::Pair
     /// @see chain::entry::Entry
-    pub fn create_next_header(&self, entry_type: &EntryType, entry: &Entry) -> Header {
-        Header::new(
+    pub fn create_next_header(&self, entry_type: &EntryType, entry: &Entry) -> ChainHeader {
+        ChainHeader::new(
             entry_type,
             // @TODO implement timestamps
             // https://github.com/holochain/holochain-rust/issues/70
@@ -118,8 +117,8 @@ impl Chain {
             self.top_pair()
                 .expect("could not get top pair when building header")
                 .as_ref()
-                .map(|p| p.header().to_entry().1.key()),
-            &entry.hash(),
+                .map(|p| p.header().to_entry().1.address()),
+            &entry.address(),
             // @TODO implement signatures
             // https://github.com/holochain/holochain-rust/issues/71
             &String::new(),
@@ -127,13 +126,13 @@ impl Chain {
                 .top_pair_of_type(entry_type)
                 // @TODO inappropriate expect()?
                 // @see https://github.com/holochain/holochain-rust/issues/147
-                .map(|p| p.header().hash()),
+                .map(|p| p.header().address()),
         )
     }
 
     /// Create the next commitable Pair for this chain
     ///
-    /// Header is generated
+    /// ChainHeader is generated
     ///
     /// a Pair is immutable, but the chain is mutable if chain.commit_*() is used.
     ///
@@ -147,7 +146,7 @@ impl Chain {
     /// Panics if entry is somehow invalid
     ///
     /// @see chain::entry::Entry
-    /// @see chain::header::Header
+    /// @see chain::header::ChainHeader
     pub fn create_next_pair(&self, entry_type: &EntryType, entry: &Entry) -> Pair {
         let new_pair = Pair::new(&self.create_next_header(entry_type, entry), &entry.clone());
 
@@ -205,13 +204,13 @@ pub trait SourceChain {
     /// the newly created and pushed Pair is returned.
     fn push_entry(&mut self, entry_type: &EntryType, entry: &Entry)
         -> Result<Pair, HolochainError>;
-    /// get an Entry by Entry key from the HashTable if it exists
-    fn entry(&self, entry_hash: &HashString) -> Option<Entry>;
+    /// get an Entry by Entry address from the HashTable if it exists
+    fn entry(&self, entry_address: &Address) -> Option<Entry>;
 
     /// pair-oriented version of push_entry()
     fn push_pair(&mut self, pair: &Pair) -> Result<Pair, HolochainError>;
-    /// get a Pair by Pair/Header key from the HashTable if it exists
-    fn pair(&self, pair_hash: &HashString) -> Option<Pair>;
+    /// get a Pair by Pair/ChainHeader address from the HashTable if it exists
+    fn pair(&self, pair_address: &Address) -> Option<Pair>;
 }
 
 impl SourceChain for Chain {
@@ -250,28 +249,28 @@ impl SourceChain for Chain {
     }
 
     /// Browse Chain until Pair is found
-    fn pair(&self, pair_hash: &HashString) -> Option<Pair> {
+    fn pair(&self, pair_address: &Address) -> Option<Pair> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         self
             .iter()
-            // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+            // @TODO entry addresses are NOT unique across pairs so k/v lookups can't be 1:1
             // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.key() == pair_hash
+            .find(|pair| {
+                &pair.address() == pair_address
             })
     }
 
-    /// Browse Chain until Pair with entry_hash is found
-    fn entry(&self, entry_hash: &HashString) -> Option<Entry> {
+    /// Browse Chain until Pair with entry_address is found
+    fn entry(&self, entry_address: &Address) -> Option<Entry> {
         // @TODO - this is a slow way to do a lookup
         // @see https://github.com/holochain/holochain-rust/issues/50
         let pair = self
                 .iter()
-                // @TODO entry hashes are NOT unique across pairs so k/v lookups can't be 1:1
+                // @TODO entry addresses are NOT unique across pairs so k/v lookups can't be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
-            .find(|p| {
-                &p.entry().hash() == entry_hash
+            .find(|pair| {
+                &pair.entry().address() == entry_address
             });
         if pair.is_none() {
             return None;
@@ -294,11 +293,11 @@ impl ToJson for Chain {
 pub mod tests {
 
     use super::Chain;
+    use cas::content::{Address, AddressableContent};
     use chain::{
         pair::{tests::test_pair, Pair},
         SourceChain,
     };
-    use hash::HashString;
     use hash_table::{
         actor::tests::test_table_actor,
         entry::tests::{
@@ -308,7 +307,6 @@ pub mod tests {
         HashTable,
     };
     use json::ToJson;
-    use key::Key;
     use std::thread;
 
     /// builds a dummy chain for testing
@@ -434,11 +432,11 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         let table_entry = table_actor
-            .entry(&pair.entry().key())
+            .entry(&pair.entry().address())
             .expect("getting an entry from a table in a chain shouldn't fail")
             .expect("table should have entry");
         let chain_entry = chain
-            .entry(&pair.entry().key())
+            .entry(&pair.entry().address())
             .expect("getting an entry from a chain shouldn't fail");
 
         assert_eq!(pair.entry(), &table_entry);
@@ -471,7 +469,7 @@ pub mod tests {
                 .as_ref()
         );
         assert_eq!(&entry_a, pair_a.entry());
-        assert_eq!(entry_a.key(), pair_a.entry().key());
+        assert_eq!(entry_a.address(), pair_a.entry().address());
 
         // we should be able to do it again
         let entry_type_b = test_entry_type_b();
@@ -488,7 +486,7 @@ pub mod tests {
                 .as_ref()
         );
         assert_eq!(&entry_b, pair_b.entry());
-        assert_eq!(entry_b.key(), pair_b.entry().key());
+        assert_eq!(entry_b.address(), pair_b.entry().address());
     }
 
     #[test]
@@ -504,7 +502,7 @@ pub mod tests {
         assert_eq!(
             entry,
             chain
-                .entry(&pair.entry().key())
+                .entry(&pair.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }
@@ -519,7 +517,10 @@ pub mod tests {
 
             for _ in 1..100 {
                 let pair = chain.push_entry(&entry_type, &entry).unwrap();
-                assert_eq!(Some(pair.entry().clone()), chain.entry(&pair.entry().key()),);
+                assert_eq!(
+                    Some(pair.entry().clone()),
+                    chain.entry(&pair.entry().address()),
+                );
             }
         });
         h.join().unwrap();
@@ -596,7 +597,7 @@ pub mod tests {
         assert_eq!(
             pair_a.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
 
@@ -604,42 +605,42 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(&HashString::new()));
+        assert_eq!(None, chain.entry(&Address::new()));
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b.entry().clone(),
             chain
-                .entry(&pair_b.entry().key())
+                .entry(&pair_b.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_c.entry().key())
+                .entry(&pair_c.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
 
         assert_eq!(
             pair_a,
             chain
-                .pair(&pair_a.key())
+                .pair(&pair_a.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b,
             chain
-                .pair(&pair_b.key())
+                .pair(&pair_b.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c,
             chain
-                .pair(&pair_c.key())
+                .pair(&pair_c.address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }
@@ -664,24 +665,24 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exclusively owned chain shouldn't fail");
 
-        assert_eq!(None, chain.entry(&HashString::new()));
+        assert_eq!(None, chain.entry(&Address::new()));
         // @TODO at this point we have p3 with the same entry key as p1...
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_a.entry().key())
+                .entry(&pair_a.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_b.entry().clone(),
             chain
-                .entry(&pair_b.entry().key())
+                .entry(&pair_b.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
         assert_eq!(
             pair_c.entry().clone(),
             chain
-                .entry(&pair_c.entry().key())
+                .entry(&pair_c.entry().address())
                 .expect("getting an entry from a chain shouldn't fail"),
         );
     }
@@ -789,7 +790,7 @@ pub mod tests {
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        let expected_json = "[{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":\"QmahP5TYeaSUtQJ5PHsQv8C8oMnuf3vkezRLdEGpLUKZ36\",\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA\"},\"entry\":\"test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryTypeB\"},\"timestamp\":\"\",\"link\":\"QmSnyVckgLvVRtKpVBMRdkUjFMHLpjFA3ZEtVAURX1Hbg8\",\"entry_hash\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"other test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}]"
+        let expected_json = "[{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":\"QmR1XSoMwvjoiLG6NC7Zw3iy6cnfQsxjM5bt32thaCGbNU\",\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":\"Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd\"},\"entry\":\"test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryTypeB\"},\"timestamp\":\"\",\"link\":\"Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd\",\"entry_address\":\"QmPz5jKXsxq7gPVAbPwx5gD2TqHfqB8n25feX5YH18JXrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"other test entry content\"},{\"header\":{\"entry_type\":{\"App\":\"testEntryType\"},\"timestamp\":\"\",\"link\":null,\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_signature\":\"\",\"link_same_type\":null},\"entry\":\"test entry content\"}]"
         ;
         assert_eq!(
             expected_json,

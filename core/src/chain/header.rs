@@ -1,23 +1,20 @@
-use cas::content::{Address, AddressableContent};
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash::HashString;
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
 };
 use json::ToJson;
-use key::Key;
-use multihash::Hash;
 use serde_json;
 
-/// Header of a source chain "Item"
-/// The hash of the Header is used as the Item's key in the source chain hash table
-/// Headers are linked to next header in chain and next header of same type in chain
-// @TODO - serialize properties as defined in HeadersEntrySchema from golang alpha 1
+/// ChainHeader of a source chain "Item"
+/// The hash of the ChainHeader is used as the Item's key in the source chain hash table
+/// ChainHeaders are linked to next header in chain and next header of same type in chain
+// @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Header {
+pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
     entry_type: EntryType,
@@ -26,22 +23,22 @@ pub struct Header {
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
     link: Option<Address>,
     /// Key to the entry of this header
-    entry_hash: Address,
+    entry_address: Address,
     /// agent's cryptographic signature of the entry
     entry_signature: String,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,
 }
 
-impl PartialEq for Header {
-    fn eq(&self, other: &Header) -> bool {
-        self.hash() == other.hash()
+impl PartialEq for ChainHeader {
+    fn eq(&self, other: &ChainHeader) -> bool {
+        self.address() == other.address()
     }
 }
 
-impl Header {
-    /// build a new Header from a chain, entry type and entry.
-    /// a Header is immutable, but the chain is mutable if chain.push() is used.
+impl ChainHeader {
+    /// build a new ChainHeader from a chain, entry type and entry.
+    /// a ChainHeader is immutable, but the chain is mutable if chain.push() is used.
     /// this means that a header becomes invalid and useless as soon as the chain is mutated
     /// the only valid usage of a header is to immediately push it onto a chain in a Pair.
     /// normally (outside unit tests) the generation of valid headers is internal to the
@@ -52,16 +49,16 @@ impl Header {
     pub fn new(
         entry_type: &EntryType,
         timestamp: &str,
-        link: Option<HashString>,
-        entry_hash: &HashString,
+        link: Option<Address>,
+        entry_address: &Address,
         entry_signature: &str,
-        link_same_type: Option<HashString>,
+        link_same_type: Option<Address>,
     ) -> Self {
-        Header {
+        ChainHeader {
             entry_type: entry_type.to_owned(),
             timestamp: timestamp.to_string(),
             link: link,
-            entry_hash: entry_hash.clone(),
+            entry_address: entry_address.clone(),
             entry_signature: entry_signature.to_string(),
             link_same_type: link_same_type,
         }
@@ -95,17 +92,17 @@ impl Header {
     }
 
     /// link getter
-    pub fn link(&self) -> Option<HashString> {
+    pub fn link(&self) -> Option<Address> {
         self.link.clone()
     }
 
-    /// entry_hash getter
-    pub fn entry_hash(&self) -> &HashString {
-        &self.entry_hash
+    /// entry_address getter
+    pub fn entry_address(&self) -> &Address {
+        &self.entry_address
     }
 
     /// link_same_type getter
-    pub fn link_same_type(&self) -> Option<HashString> {
+    pub fn link_same_type(&self) -> Option<Address> {
         self.link_same_type.clone()
     }
 
@@ -113,57 +110,45 @@ impl Header {
     pub fn entry_signature(&self) -> &str {
         &self.entry_signature
     }
-
-    /// hashes the header
-    pub fn hash(&self) -> HashString {
-        // @TODO this is the wrong string being hashed
-        // @see https://github.com/holochain/holochain-rust/issues/103
-        let pieces: [&str; 6] = [
-            &self.entry_type.as_str(),
-            &self.timestamp,
-            &self.link.clone().unwrap_or_default().to_string(),
-            &self.entry_hash.clone().to_string(),
-            &self.link_same_type.clone().unwrap_or_default().to_string(),
-            &self.entry_signature,
-        ];
-        let string_to_hash = pieces.concat();
-
-        // @TODO the hashing algo should not be hardcoded
-        // @see https://github.com/holochain/holochain-rust/issues/104
-        HashString::encode_from_str(&string_to_hash, Hash::SHA2256)
-    }
 }
 
-impl Key for Header {
-    fn key(&self) -> HashString {
-        self.hash()
-    }
-}
-
-impl ToJson for Header {
+impl ToJson for ChainHeader {
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(serde_json::to_string(self)?)
     }
 }
 
 //
-impl ToEntry for Header {
+impl ToEntry for ChainHeader {
     fn to_entry(&self) -> (EntryType, Entry) {
         (
-            EntryType::Header,
+            EntryType::ChainHeader,
             Entry::from(self.to_json().expect("entry should be valid")),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return Header::from_json_str(&entry.content()).expect("entry is not a valid Header Entry");
+        return ChainHeader::from_json_str(&entry.content())
+            .expect("entry is not a valid ChainHeader Entry");
+    }
+}
+
+impl AddressableContent for ChainHeader {
+    fn content(&self) -> Content {
+        self.to_json()
+            .expect("could not Jsonify ChainHeader as Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        ChainHeader::from_json_str(content)
+            .expect("could not read Json as valid ChainHeader Content")
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use chain::{header::Header, pair::tests::test_pair, tests::test_chain, SourceChain};
-    use hash::HashString;
+pub mod tests {
+    use cas::content::{Address, AddressableContent};
+    use chain::{header::ChainHeader, pair::tests::test_pair, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -171,11 +156,14 @@ mod tests {
         },
         sys_entry::ToEntry,
     };
-    use key::Key;
 
     /// returns a dummy header for use in tests
-    pub fn test_header() -> Header {
+    pub fn test_header() -> ChainHeader {
         test_pair().header().clone()
+    }
+
+    pub fn test_header_address() -> Address {
+        Address::from("Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd".to_string())
     }
 
     #[test]
@@ -220,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    /// tests for Header::new()
+    /// tests for ChainHeader::new()
     fn new() {
         let chain = test_chain();
         let entry_type = test_entry_type();
@@ -228,9 +216,9 @@ mod tests {
 
         let header = chain.create_next_header(&entry_type, &entry);
 
-        assert_eq!(header.entry_hash(), &entry.hash());
+        assert_eq!(header.entry_address(), &entry.address());
         assert_eq!(header.link(), None);
-        assert_ne!(header.hash(), HashString::new());
+        assert_ne!(header.address(), Address::new());
     }
 
     #[test]
@@ -282,7 +270,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let header_b = pair_b.header();
 
-        assert_eq!(header_b.link(), Some(header_a.to_entry().1.key()));
+        assert_eq!(header_b.link(), Some(header_a.to_entry().1.address()));
     }
 
     #[test]
@@ -295,7 +283,7 @@ mod tests {
         // header for an entry should contain the entry hash under entry()
         let header = chain.create_next_header(&entry_type, &entry);
 
-        assert_eq!(header.entry_hash(), &entry.hash());
+        assert_eq!(header.entry_address(), &entry.address());
     }
 
     #[test]
@@ -331,7 +319,7 @@ mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         let header_c = pair_c.header();
 
-        assert_eq!(header_c.link_same_type(), Some(header_a.hash()));
+        assert_eq!(header_c.link_same_type(), Some(header_a.address()));
     }
 
     #[test]
@@ -347,8 +335,8 @@ mod tests {
     }
 
     #[test]
-    /// test header.hash() against a known value
-    fn hash_known() {
+    /// test header.address() against a known value
+    fn known_address() {
         let chain = test_chain();
         let entry_type = test_entry_type();
         let entry = test_entry();
@@ -356,15 +344,12 @@ mod tests {
         // check a known hash
         let header = chain.create_next_header(&entry_type, &entry);
 
-        assert_eq!(
-            HashString::from("QmawqBCVVap9KdaakqEHF4JzUjjLhmR7DpM5jgJko8j1rA".to_string()),
-            header.hash()
-        );
+        assert_eq!(test_header_address(), header.address());
     }
 
     #[test]
-    /// test that different entry content returns different hashes
-    fn hash_entry_content() {
+    /// test that different entry content returns different addresses
+    fn address_entry_content() {
         let chain = test_chain();
 
         let entry_type_a = test_entry_type_a();
@@ -378,20 +363,20 @@ mod tests {
 
         let header_b = chain.create_next_header(&entry_type_b, &entry_b);
 
-        assert_ne!(header_a.hash(), header_b.hash());
+        assert_ne!(header_a.address(), header_b.address());
 
         let entry_type_c = test_entry_type_a();
         let entry_c = test_entry_a();
 
-        // same entry must return same hash
+        // same entry must return same address
         let header_c = chain.create_next_header(&entry_type_c, &entry_c);
 
-        assert_eq!(header_a.hash(), header_c.hash());
+        assert_eq!(header_a.address(), header_c.address());
     }
 
     #[test]
-    /// test that different entry types returns different hashes
-    fn hash_entry_type() {
+    /// test that different entry types returns different addresses
+    fn address_entry_type() {
         let chain = test_chain();
 
         let entry_type_a = test_entry_type_a();
@@ -402,14 +387,14 @@ mod tests {
         let header_a = chain.create_next_header(&entry_type_a, &entry);
         let header_b = chain.create_next_header(&entry_type_b, &entry);
 
-        // different types must give different hashes
-        assert_ne!(header_a.hash(), header_b.hash());
+        // different types must give different addresses
+        assert_ne!(header_a.address(), header_b.address());
     }
 
     #[test]
-    /// test that different chain state returns different hashes
-    fn hash_chain_state() {
-        // different chain, different hash
+    /// test that different chain state returns different addresses
+    fn address_chain_state() {
+        // different chain, different address
         let mut chain = test_chain();
 
         let entry_type = test_entry_type();
@@ -420,26 +405,20 @@ mod tests {
         let pair_a = chain
             .push_entry(&entry_type, &entry)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        // p2 will have a different hash to p1 with the same entry as the chain state is different
+        // p2 will have a different address to p1 with the same entry as the chain state is different
         let pair_b = chain
             .push_entry(&entry_type, &entry)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(header.hash(), pair_a.header().hash());
-        assert_ne!(header.hash(), pair_b.header().hash());
+        assert_eq!(header.address(), pair_a.header().address());
+        assert_ne!(header.address(), pair_b.header().address());
     }
 
     #[test]
-    /// test that different type_next returns different hashes
-    fn hash_type_next() {
-        // @TODO is it possible to test that type_next changes the hash in an isolated way?
+    /// test that different type_next returns different addresses
+    fn address_type_next() {
+        // @TODO is it possible to test that type_next changes the address in an isolated way?
         // @see https://github.com/holochain/holochain-rust/issues/76
-    }
-
-    #[test]
-    /// tests for header.key()
-    fn test_key() {
-        assert_eq!(test_header().hash(), test_header().key());
     }
 
     /// Committing a LinkEntry to source chain should work
@@ -452,7 +431,7 @@ mod tests {
         let header = chain.create_next_header(&entry_type, &entry);
 
         let header_entry = header.to_entry().1;
-        let header_trip = Header::from_entry(&header_entry);
+        let header_trip = ChainHeader::from_entry(&header_entry);
 
         assert_eq!(header, header_trip);
     }

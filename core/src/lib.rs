@@ -32,6 +32,7 @@ extern crate walkdir;
 extern crate config;
 extern crate holochain_agent;
 extern crate holochain_dna;
+extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
 
@@ -41,13 +42,13 @@ pub mod agent;
 pub mod cas;
 pub mod chain;
 pub mod context;
+pub mod dht;
 pub mod eav;
 pub mod error;
 pub mod hash;
 pub mod hash_table;
 pub mod instance;
 pub mod json;
-pub mod key;
 pub mod logger;
 pub mod nucleus;
 pub mod persister;

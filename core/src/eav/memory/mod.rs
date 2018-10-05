@@ -2,6 +2,7 @@ use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, 
 use error::HolochainError;
 use std::collections::HashSet;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct EavMemoryStorage {
     eavs: HashSet<EntityAttributeValue>,
 }

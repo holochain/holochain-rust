@@ -4,10 +4,8 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
-use hash::HashString;
+use cas::content::{Address, AddressableContent};
 use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
-use json::{FromJson, ToJson};
-use key::Key;
 
 use walkdir::WalkDir;
 
@@ -17,11 +15,6 @@ enum Table {
     Entries,
     Metas,
 }
-
-// things that can be serialized and put in a file... wish-it-was-rows
-trait Row: ToJson + Key {}
-impl Row for Entry {}
-impl Row for EntryMeta {}
 
 impl ToString for Table {
     fn to_string(&self) -> String {
@@ -70,21 +63,32 @@ impl FileTable {
         Ok(dir_string)
     }
 
-    fn row_path(&self, table: Table, key: &HashString) -> Result<String, HolochainError> {
+    fn addressable_content_path(
+        &self,
+        table: Table,
+        address: &Address,
+    ) -> Result<String, HolochainError> {
         let dir = self.dir(table)?;
-        Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, key))
+        Ok(format!("{}{}{}.json", dir, MAIN_SEPARATOR, address))
     }
 
-    fn upsert<R: Row>(&self, table: Table, row: &R) -> Result<(), HolochainError> {
-        match fs::write(self.row_path(table, &row.key())?, row.to_json()?) {
+    fn upsert<AC: AddressableContent>(
+        &self,
+        table: Table,
+        addressable_content: &AC,
+    ) -> Result<(), HolochainError> {
+        match fs::write(
+            self.addressable_content_path(table, &addressable_content.address())?,
+            addressable_content.content(),
+        ) {
             Err(e) => Err(HolochainError::from(e)),
             _ => Ok(()),
         }
     }
 
     /// Returns a JSON string option for the given key in the given table
-    fn lookup(&self, table: Table, key: &HashString) -> Result<Option<String>, HolochainError> {
-        let path_string = self.row_path(table, key)?;
+    fn lookup(&self, table: Table, address: &Address) -> Result<Option<String>, HolochainError> {
+        let path_string = self.addressable_content_path(table, address)?;
         if Path::new(&path_string).is_file() {
             Ok(Some(fs::read_to_string(path_string)?))
         } else {
@@ -98,9 +102,9 @@ impl HashTable for FileTable {
         self.upsert(Table::Entries, entry)
     }
 
-    fn entry(&self, key: &HashString) -> Result<Option<Entry>, HolochainError> {
-        match self.lookup(Table::Entries, key)? {
-            Some(json) => Ok(Some(Entry::from_json(&json)?)),
+    fn entry(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        match self.lookup(Table::Entries, address)? {
+            Some(content) => Ok(Some(Entry::from_content(&content))),
             None => Ok(None),
         }
     }
@@ -109,9 +113,9 @@ impl HashTable for FileTable {
         self.upsert(Table::Metas, meta)
     }
 
-    fn get_meta(&mut self, key: &HashString) -> Result<Option<EntryMeta>, HolochainError> {
-        match self.lookup(Table::Metas, key)? {
-            Some(json) => Ok(Some(EntryMeta::from_json(&json)?)),
+    fn get_meta(&mut self, address: &Address) -> Result<Option<EntryMeta>, HolochainError> {
+        match self.lookup(Table::Metas, address)? {
+            Some(content) => Ok(Some(EntryMeta::from_content(&content))),
             None => Ok(None),
         }
     }
@@ -125,9 +129,9 @@ impl HashTable for FileTable {
             let meta = meta?;
             let path = meta.path();
             if let Some(stem) = path.file_stem() {
-                if let Some(key) = stem.to_str() {
-                    if let Some(meta) = self.get_meta(&HashString::from(key.to_string()))? {
-                        if meta.entry_hash() == &entry.key() {
+                if let Some(address_string) = stem.to_str() {
+                    if let Some(meta) = self.get_meta(&Address::from(address_string.to_string()))? {
+                        if meta.entry_address() == &entry.address() {
                             metas.push(meta);
                         }
                     }
@@ -145,16 +149,9 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
     use super::Table;
-    use error::HolochainError;
-    use hash::HashString;
-    use hash_table::{
-        file::{FileTable, Row},
-        test_util::standard_suite,
-    };
-    use json::ToJson;
-    use key::Key;
+    use cas::content::{Address, AddressableContent, Content};
+    use hash_table::{file::FileTable, test_util::standard_suite};
     use regex::Regex;
-    use serde_json;
     use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};
 
@@ -234,7 +231,7 @@ pub mod tests {
                 assert!(
                     re(s, k).is_match(
                         &table
-                            .row_path(t.clone(), &HashString::from(k.to_string()))
+                            .addressable_content_path(t.clone(), &Address::from(k.to_string()))
                             .expect(&format!("could not get row path for {:?} in {:?}", k, t)),
                     )
                 );
@@ -250,24 +247,22 @@ pub mod tests {
             data: String,
         }
 
-        impl ToJson for SomeData {
-            fn to_json(&self) -> Result<String, HolochainError> {
-                Ok(serde_json::to_string(&self)?)
+        impl AddressableContent for SomeData {
+            fn content(&self) -> Content {
+                self.data.clone()
+            }
+
+            fn from_content(content: &Content) -> Self {
+                SomeData {
+                    data: content.to_string(),
+                }
             }
         }
-
-        impl Key for SomeData {
-            fn key(&self) -> HashString {
-                HashString::from("bar".to_string())
-            }
-        }
-
-        impl Row for SomeData {}
 
         let data = SomeData {
             data: "foo".to_string(),
         };
-        let s = data.to_json().expect("could not serialize data");
+        let s = data.content();
 
         let (table, _dir) = test_table();
 
@@ -278,7 +273,7 @@ pub mod tests {
         assert_eq!(
             Some(s),
             table
-                .lookup(Table::Entries, &data.key())
+                .lookup(Table::Entries, &data.address())
                 .expect("could not lookup data"),
         );
     }

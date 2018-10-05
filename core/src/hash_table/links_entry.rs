@@ -2,7 +2,6 @@ use cas::content::{Address, AddressableContent};
 use hash_table::{
     entry::Entry,
     sys_entry::{EntryType, ToEntry},
-    HashString,
 };
 use serde_json;
 
@@ -12,8 +11,8 @@ use serde_json;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Link {
-    base: HashString,
-    target: HashString,
+    base: Address,
+    target: Address,
     tag: String,
 }
 
@@ -61,12 +60,7 @@ pub struct LinkEntry {
 }
 
 impl LinkEntry {
-    pub fn new(
-        action_kind: LinkActionKind,
-        base: &HashString,
-        target: &HashString,
-        tag: &str,
-    ) -> Self {
+    pub fn new(action_kind: LinkActionKind, base: &Address, target: &Address, tag: &str) -> Self {
         LinkEntry {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
@@ -133,8 +127,8 @@ pub mod tests {
 
     pub fn create_test_link() -> Link {
         Link::new(
-            &HashString::from("12".to_string()),
-            &HashString::from("34".to_string()),
+            &Address::from("12".to_string()),
+            &Address::from("34".to_string()),
             "fake",
         )
     }
@@ -145,16 +139,16 @@ pub mod tests {
 
     pub fn create_test_link_b() -> Link {
         Link::new(
-            &HashString::from("56".to_string()),
-            &HashString::from("78".to_string()),
+            &Address::from("56".to_string()),
+            &Address::from("78".to_string()),
             "faux",
         )
     }
 
     pub fn create_test_link_c() -> Link {
         Link::new(
-            &HashString::from("90".to_string()),
-            &HashString::from("ab".to_string()),
+            &Address::from("90".to_string()),
+            &Address::from("ab".to_string()),
             "fake",
         )
     }

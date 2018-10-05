@@ -26,6 +26,12 @@ impl From<HashString> for String {
     }
 }
 
+impl<'a> From<&'a str> for HashString {
+    fn from(s: &str) -> HashString {
+        HashString::from(s.to_string())
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
@@ -78,6 +84,14 @@ pub mod tests {
             test_hash(),
             HashString::from(test_entry().address().to_string()),
         );
+    }
+
+    #[test]
+    /// show From<&str> implementation
+    fn from_str_test() {
+        assert_eq!(HashString::new(), HashString::from(""));
+
+        assert_eq!(test_hash(), HashString::from(test_entry().address()),);
     }
 
     #[test]

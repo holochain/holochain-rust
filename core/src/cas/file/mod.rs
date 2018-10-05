@@ -1,3 +1,5 @@
+pub mod actor;
+
 use cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
@@ -7,28 +9,20 @@ use std::{
     fs::{create_dir_all, read_to_string, write},
     path::{Path, MAIN_SEPARATOR},
 };
+use cas::file::actor::FilesystemStorageActor;
+use actor::Protocol;
+use riker::actors::*;
+use cas::content::Content;
 
 pub struct FilesystemStorage {
-    /// path to the directory where content will be saved to disk
-    dir_path: String,
+    dir_actor: ActorRef<Protocol>,
 }
 
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
-        let canonical = Path::new(dir_path).canonicalize()?;
-        if !canonical.is_dir() {
-            return Err(HolochainError::IoError(
-                "path is not a directory or permissions don't allow access".to_string(),
-            ));
+        FilesystemStorage {
+            dir_actor: FilesystemStorageActor::new_ref(dir_path)?,
         }
-        Ok(FilesystemStorage {
-            dir_path: canonical
-                .to_str()
-                .ok_or_else(|| {
-                    HolochainError::IoError("could not convert path to string".to_string())
-                })?
-                .to_string(),
-        })
     }
 
     /// builds an absolute path for an AddressableContent address
@@ -39,29 +33,50 @@ impl FilesystemStorage {
     }
 }
 
+impl Actor for FilesystemStorage {
+    type Msg = Protocol;
+
+    fn receive(
+        &mut self,
+        context: &Context<Self::Msg>,
+        message: Self::Msg,
+        sender: Option<ActorRef<Self::Msg>>,
+    ) {
+        sender
+            .try_tell(
+                match message {
+                    Protocol::CasAdd(address, content) => {
+                        Protocol::CasAddResult(self.unsafe_add(address, content))
+                    },
+                    Protocol::CasContains(address) => {
+                        Protocol::CasContainsResult(self.unsafe_contains(address))
+                    },
+                    Protocol::CasFetch(address) => {
+                        Protocol::CasFetchResult(self.unsafe_fetch(address))
+                    },
+                    _ => unreachable!(),
+                },
+                Some(context.myself()),
+            )
+            .expect("failed to tell FilesystemStorage sender");
+    }
+
+}
+
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        // @TODO be more efficient here
-        // @see https://github.com/holochain/holochain-rust/issues/248
-        create_dir_all(&self.dir_path)?;
-        Ok(write(
-            self.address_to_path(&content.address()),
-            content.content(),
-        )?)
+        let response = self.block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
+        unwrap_to!(response => Protocol::CasAddResult).clone()
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        Ok(Path::new(&self.address_to_path(address)).is_file())
+        let response = self.block_on_ask(Protocol::CasContains(address))?;
+        unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
     fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-        if self.contains(&address)? {
-            Ok(Some(C::from_content(&read_to_string(
-                self.address_to_path(address),
-            )?)))
-        } else {
-            Ok(None)
-        }
+        let response = self.block_on_as(Protocol::CasFetch(address))?;
+        unwrap_to!(response => Protocol::CasFetchResult).clone()
     }
 }
 

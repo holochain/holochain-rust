@@ -2,7 +2,7 @@ use hash::HashString;
 use multihash::Hash;
 
 /// an Address for some Content
-/// ideally would be the Content but pragmatically must be HashString
+/// ideally would be the Content but pragmatically must be Address
 /// consider what would happen if we had multi GB addresses...
 pub type Address = HashString;
 /// the Content is a String
@@ -20,7 +20,7 @@ pub trait AddressableContent {
     /// it is recommended to implement an "address space" prefix for address algorithms that don't
     /// offer strong cryptographic guarantees like sha et. al.
     fn address(&self) -> Address {
-        HashString::encode_from_str(&self.content(), Hash::SHA2256)
+        Address::encode_from_str(&self.content(), Hash::SHA2256)
     }
     /// the Content that would be stored in a ContentAddressableStorage
     fn content(&self) -> Content;
@@ -42,13 +42,16 @@ impl AddressableContent for Content {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{Address, AddressableContent, Content};
-    use hash::HashString;
+    use cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    };
     use multihash::Hash;
+    use std::fmt::{Debug, Write};
 
-    #[derive(Debug, PartialEq, Clone)]
+    #[derive(Debug, PartialEq, Clone, Hash, Eq)]
     /// some struct that can be content addressed
-    /// imagine an Entry, Header, Meta Value, etc.
+    /// imagine an Entry, ChainHeader, Meta Value, etc.
     pub struct ExampleAddressableContent {
         content: Content,
     }
@@ -86,72 +89,95 @@ pub mod tests {
         fn from_content(content: &Content) -> Self {
             OtherExampleAddressableContent {
                 content: content.clone(),
-                address: HashString::encode_from_str(&content, Hash::SHA2256),
+                address: Address::encode_from_str(&content, Hash::SHA2256),
             }
         }
     }
 
-    /// fake content for addressable content examples
-    pub fn test_content() -> Content {
-        "foo".to_string()
-    }
+    pub struct AddressableContentTestSuite;
 
-    /// fake ExampleAddressableContent
-    pub fn test_example_addressable_content() -> ExampleAddressableContent {
-        ExampleAddressableContent::from_content(&test_content())
-    }
+    impl AddressableContentTestSuite {
+        /// test that trait gives the write content
+        pub fn addressable_content_trait_test<T>(
+            content: Content,
+            expected_content: T,
+            address_string: String,
+        ) where
+            T: AddressableContent + Debug + PartialEq + Clone,
+        {
+            let addressable_content = T::from_content(&content);
 
-    /// fake OtherExampleAddressableContent
-    pub fn test_other_example_addressable_content() -> OtherExampleAddressableContent {
-        OtherExampleAddressableContent::from_content(&test_content())
+            assert_eq!(addressable_content, expected_content);
+            assert_eq!(content, addressable_content.content());
+            assert_eq!(Address::from(address_string), addressable_content.address());
+        }
+
+        /// test that two different addressable contents would give them same thing
+        pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
+        where
+            T: AddressableContent + Debug + PartialEq + Clone,
+            K: AddressableContent + Debug + PartialEq + Clone,
+        {
+            let addressable_content = T::from_content(&content);
+            let other_addressable_content = K::from_content(&content);
+
+            assert_eq!(
+                addressable_content.content(),
+                other_addressable_content.content()
+            );
+            assert_eq!(
+                addressable_content.address(),
+                other_addressable_content.address()
+            );
+        }
+
+        pub fn addressable_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
+        where
+            T: AddressableContent + PartialEq + Clone + Debug,
+            K: ContentAddressableStorage,
+        {
+            contents.into_iter().for_each(|f| {
+                let mut add_error_message = String::new();
+                let mut fetch_error_message = String::new();
+                writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
+                writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
+
+                cas.add(&f).expect(&add_error_message);
+                assert_eq!(
+                    Some(f.clone()),
+                    cas.fetch::<T>(&f.address()).expect(&fetch_error_message)
+                );
+            });
+        }
     }
 
     #[test]
     /// test the first example
     fn example_addressable_content_trait_test() {
-        let example_addressable_content = test_example_addressable_content();
-
-        assert_eq!(
-            example_addressable_content,
-            ExampleAddressableContent::from_content(&test_content())
-        );
-        assert_eq!(test_content(), example_addressable_content.content());
-        assert_eq!(
-            HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()),
-            example_addressable_content.address()
+        AddressableContentTestSuite::addressable_content_trait_test::<ExampleAddressableContent>(
+            String::from("foo"),
+            ExampleAddressableContent::from_content(&String::from("foo")),
+            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
         );
     }
 
     #[test]
     /// test the other example
     fn other_example_addressable_content_trait_test() {
-        let other_example_addressable_content = test_other_example_addressable_content();
-
-        assert_eq!(
-            other_example_addressable_content,
-            OtherExampleAddressableContent::from_content(&test_content())
-        );
-        assert_eq!(test_content(), other_example_addressable_content.content());
-        assert_eq!(
-            HashString::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj".to_string()),
-            other_example_addressable_content.address()
+        AddressableContentTestSuite::addressable_content_trait_test::<OtherExampleAddressableContent>(
+            String::from("foo"),
+            OtherExampleAddressableContent::from_content(&String::from("foo")),
+            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
         );
     }
 
     #[test]
     /// test that both implementations do the same thing
     fn example_addressable_contents_are_the_same_test() {
-        let example_addressable_content = test_example_addressable_content();
-        let other_example_addressable_content = test_other_example_addressable_content();
-
-        assert_eq!(
-            example_addressable_content.content(),
-            other_example_addressable_content.content()
-        );
-        assert_eq!(
-            example_addressable_content.address(),
-            other_example_addressable_content.address()
-        );
+        AddressableContentTestSuite::addressable_contents_are_the_same_test::<
+            ExampleAddressableContent,
+            OtherExampleAddressableContent,
+        >(String::from("foo"));
     }
 
 }

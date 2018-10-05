@@ -9,14 +9,14 @@ pub mod get_links;
 pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{HcApiReturnCode, SinglePageAllocation};
+use holochain_wasm_utils::{error::RibosomeReturnCode, memory_allocation::SinglePageAllocation};
 use nucleus::{
-    memory::SinglePageManager,
     ribosome::{
         api::{
             call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
             get_entry::invoke_get_entry, init_globals::invoke_init_globals,
         },
+        memory::SinglePageManager,
         Defn,
     },
     ZomeFnCall,
@@ -126,7 +126,7 @@ impl ZomeApiFunction {
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-            Ok(Some(RuntimeValue::I32(0 as i32)))
+            ribosome_return_code!(Success)
         }
 
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
@@ -172,20 +172,20 @@ impl Runtime {
         let encoded_allocation: u32 = args.nth(0);
         let allocation = SinglePageAllocation::new(encoded_allocation);
         // Handle empty allocation edge case
-        if let Err(HcApiReturnCode::Success) = allocation {
+        if let Err(RibosomeReturnCode::Success) = allocation {
             return String::new();
         }
         let allocation = allocation
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .expect("received error instead of valid encoded allocation");
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .expect("received error instead of valid encoded allocation");
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
         String::from_utf8(bin_arg)
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
     }
 
     /// Store a string in wasm memory.
@@ -202,10 +202,10 @@ impl Runtime {
         }
 
         let encoded_allocation = allocation_of_result
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        .unwrap()
-        .encode();
+            // @TODO don't panic in WASM
+            // @see https://github.com/holochain/holochain-rust/issues/159
+            .unwrap()
+            .encode();
 
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
@@ -524,7 +524,8 @@ pub mod tests {
         );
         //let instance = test_instance(dna.clone());
         let instance =
-            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0);
+            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0)
+                .expect("Test callback instance could not be initialized");
 
         let (c, logger) = test_context_and_logger("joan");
         let context = instance.initialize_context(c);

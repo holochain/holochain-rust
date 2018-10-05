@@ -1,7 +1,7 @@
 use agent::state::AgentState;
+use cas::content::Address;
 use context::Context;
-use hash::HashString;
-use hash_table::{entry::Entry, links_entry::Link};
+use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
 use holochain_dna::Dna;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
@@ -70,13 +70,13 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(Entry),
-    /// GetEntry by hash
-    GetEntry(HashString),
+    Commit(EntryType, Entry),
+    /// GetEntry by address
+    GetEntry(Address),
 
     /// link to add
     AddLink(Link),
-    /// get links from entry hash and attribute-name
+    /// get links from entry address and attribute-name
     GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
@@ -95,10 +95,10 @@ pub enum Action {
     /// Execute a zome function call called by another zome function
     Call(ZomeFnCall),
 
-    /// ???
-    // @TODO how does this relate to validating a commit?
-    ValidateEntry(Entry),
-    ReturnValidationResult((Box<ActionWrapper>, ValidationResult)),
+    /// A validation result that should be stored
+    /// Key is an unique id of the calling context
+    /// and the hash of the entry that was validated
+    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
 }
 
 /// function signature for action handler functions
@@ -112,14 +112,13 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use hash::tests::test_hash;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
+    use hash_table::entry::tests::{test_entry, test_entry_address, test_entry_type};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(test_entry_hash())
+        Action::GetEntry(test_entry_address())
     }
 
     /// dummy action wrapper with test_action()
@@ -129,12 +128,12 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry_type(), test_entry()))
     }
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(test_hash()))
+        ActionWrapper::new(Action::GetEntry(test_entry_address()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

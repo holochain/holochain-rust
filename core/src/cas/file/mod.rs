@@ -14,10 +14,21 @@ pub struct FilesystemStorage {
 }
 
 impl FilesystemStorage {
-    pub fn new(dir_path: &str) -> FilesystemStorage {
-        FilesystemStorage {
-            dir_path: dir_path.to_string(),
+    pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
+        let canonical = Path::new(dir_path).canonicalize()?;
+        if !canonical.is_dir() {
+            return Err(HolochainError::IoError(
+                "path is not a directory or permissions don't allow access".to_string(),
+            ));
         }
+        Ok(FilesystemStorage {
+            dir_path: canonical
+                .to_str()
+                .ok_or_else(|| {
+                    HolochainError::IoError("could not convert path to string".to_string())
+                })?
+                .to_string(),
+        })
     }
 
     /// builds an absolute path for an AddressableContent address
@@ -57,54 +68,29 @@ impl ContentAddressableStorage for FilesystemStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{
-            tests::{ExampleAddressableContent, OtherExampleAddressableContent},
-            AddressableContent,
-        },
+        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
         file::FilesystemStorage,
-        storage::ContentAddressableStorage,
+        storage::tests::StorageTestSuite,
     };
     use tempfile::{tempdir, TempDir};
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();
-        (FilesystemStorage::new(dir.path().to_str().unwrap()), dir)
+        (
+            FilesystemStorage::new(dir.path().to_str().unwrap()).unwrap(),
+            dir,
+        )
     }
 
     #[test]
     /// show that content of different types can round trip through the same storage
     /// this is copied straight from the example with a file CAS
     fn file_content_round_trip_test() {
-        let content = ExampleAddressableContent::from_content(&"foo".to_string());
-        let other_content = OtherExampleAddressableContent::from_content(&"bar".to_string());
-        let (mut cas, _dir) = test_file_cas();
-
-        assert_eq!(Ok(false), cas.contains(&content.address()));
-        assert_eq!(
-            Ok(None),
-            cas.fetch::<ExampleAddressableContent>(&content.address())
-        );
-        assert_eq!(Ok(false), cas.contains(&other_content.address()));
-        assert_eq!(
-            Ok(None),
-            cas.fetch::<OtherExampleAddressableContent>(&other_content.address())
-        );
-
-        // round trip some AddressableContent through the FilesystemStorage
-        assert_eq!(Ok(()), cas.add(&content));
-        assert_eq!(Ok(true), cas.contains(&content.address()));
-        assert_eq!(Ok(false), cas.contains(&other_content.address()));
-        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-
-        // multiple types of AddressableContent can sit in a single FilesystemStorage
-        // the safety of this is only as good as the hashing algorithm(s) used
-        assert_eq!(Ok(()), cas.add(&other_content));
-        assert_eq!(Ok(true), cas.contains(&content.address()));
-        assert_eq!(Ok(true), cas.contains(&other_content.address()));
-        assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
-        assert_eq!(
-            Ok(Some(other_content.clone())),
-            cas.fetch(&other_content.address())
+        let (cas, _dir) = test_file_cas();
+        let test_suite = StorageTestSuite::new(cas);
+        test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
+            String::from("foo"),
+            String::from("bar"),
         );
     }
 

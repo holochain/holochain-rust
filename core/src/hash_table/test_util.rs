@@ -1,4 +1,5 @@
 use agent::keys::tests::test_keys;
+use cas::content::AddressableContent;
 use hash_table::{
     entry::tests::test_entry_unique,
     entry_meta::{
@@ -10,7 +11,6 @@ use hash_table::{
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };
-use key::Key;
 
 // standard tests that should pass for every hash table implementation
 
@@ -19,7 +19,7 @@ pub fn test_round_trip<HT: HashTable>(table: &mut HT) {
     table
         .put_entry(&entry)
         .expect("should be able to commit valid entry");
-    assert_eq!(table.entry(&entry.key()), Ok(Some(entry)));
+    assert_eq!(table.entry(&entry.address()), Ok(Some(entry)));
 }
 
 pub fn test_modify<HT: HashTable>(table: &mut HT) {
@@ -35,13 +35,13 @@ pub fn test_modify<HT: HashTable>(table: &mut HT) {
         vec![
             EntryMeta::new(
                 &test_keys().node_id(),
-                &entry_1.key(),
+                &entry_1.address(),
                 LINK_NAME,
-                &entry_2.key().to_string(),
+                &entry_2.address().to_string(),
             ),
             EntryMeta::new(
                 &test_keys().node_id(),
-                &entry_1.key(),
+                &entry_1.address(),
                 STATUS_NAME,
                 &CrudStatus::MODIFIED.bits().to_string(),
             ),
@@ -66,7 +66,7 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
     assert_eq!(
         vec![EntryMeta::new(
             &test_keys().node_id(),
-            &entry.key(),
+            &entry.address(),
             STATUS_NAME,
             &CrudStatus::DELETED.bits().to_string(),
         )],
@@ -77,12 +77,15 @@ pub fn test_retract<HT: HashTable>(table: &mut HT) {
 pub fn test_meta_round_trip<HT: HashTable>(table: &mut HT) {
     let meta = test_meta();
 
-    assert_eq!(None, table.get_meta(&meta.key()).unwrap());
+    assert_eq!(None, table.get_meta(&meta.address()).unwrap());
 
     table
         .assert_meta(&meta)
         .expect("asserting metadata shouldn't fail");
-    assert_eq!(Some(&meta), table.get_meta(&meta.key()).unwrap().as_ref());
+    assert_eq!(
+        Some(&meta),
+        table.get_meta(&meta.address()).unwrap().as_ref()
+    );
 }
 
 /// assert a couple of unique metas against a single entry

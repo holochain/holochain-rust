@@ -8,10 +8,10 @@ In your terminal, change directories to one where you wish to initialize a new H
 
 Come up with a name for your application, or at least for your project folder.
 
-Copy or type everything after the `$` sign below into your terminal, except replace `your_app_name` with the name you came up with. Press `Enter` to execute the command.
+Copy or type the command below into your terminal, except replace `your_app_name` with the name you came up with. Press `Enter` to execute the command.
 
 ```shell
-$ hcdev init your_app_name
+hcdev init your_app_name
 ```
 
 `hcdev` specifies that you wish to use the Holochain command line tools. `init` specifies to use the command for initializing a new project folder. `your_app_name` is an argument you supply as the app, and folder name.

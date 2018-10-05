@@ -1,0 +1,3 @@
+[submodule "net_ipc/tests/node-p2p-ipc"]
+	path = net_ipc/tests/node-p2p-ipc
+	url = https://github.com/holochain/node-p2p-ipc.git

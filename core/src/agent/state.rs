@@ -1,12 +1,11 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::keys::Keys;
+use cas::content::{Address, AddressableContent};
 use chain::{Chain, SourceChain};
 use context::Context;
 use error::HolochainError;
-use hash::HashString;
 use hash_table::entry::Entry;
 use json::ToJson;
-use key::Key;
 use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
@@ -57,7 +56,7 @@ impl AgentState {
 pub enum ActionResponse {
     Commit(Result<Entry, HolochainError>),
     GetEntry(Option<Entry>),
-    GetLinks(Result<Vec<HashString>, HolochainError>),
+    GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
 
@@ -65,7 +64,7 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
@@ -77,7 +76,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::LinkEntries(result) => match result {
-                Ok(entry) => Ok(format!("{{\"hash\":\"{}\"}}", entry.key())),
+                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
                 Err(err) => Ok((*err).to_json()?),
             },
         }
@@ -96,12 +95,15 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
+    let (entry_type, entry) = match action {
+        Action::Commit(entry_type, entry) => (entry_type, entry),
+        _ => unreachable!(),
+    };
 
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let res = state.chain.push_entry(&entry);
+    let res = state.chain.push_entry(&entry_type, &entry);
     let response = match res {
         Ok(pair) => Ok(pair.entry().clone()),
         Err(e) => Err(e),
@@ -136,7 +138,7 @@ fn reduce_get_entry(
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Commit(_, _) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
@@ -163,12 +165,12 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use cas::content::AddressableContent;
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
     use hash_table::entry::tests::test_entry;
     use instance::tests::test_context;
     use json::ToJson;
-    use key::Key;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -250,7 +252,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::Commit(Ok(test_pair().entry().clone()))
                 .to_json()
                 .unwrap(),
@@ -266,7 +268,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "{\"content\":\"test entry content\",\"entry_type\":\"testEntryType\"}",
+            "\"test entry content\"",
             ActionResponse::GetEntry(Some(test_pair().entry().clone()))
                 .to_json()
                 .unwrap(),
@@ -278,7 +280,7 @@ pub mod tests {
     fn test_get_links_response_to_json() {
         assert_eq!(
             "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
-            ActionResponse::GetLinks(Ok(vec![test_entry().key()]))
+            ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
                 .to_json()
                 .unwrap(),
         );
@@ -293,7 +295,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            "{\"hash\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
             ActionResponse::LinkEntries(Ok(test_entry()))
                 .to_json()
                 .unwrap(),

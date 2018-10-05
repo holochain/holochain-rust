@@ -303,7 +303,11 @@ pub mod tests {
             .to_vec()
     }
 
-    pub fn test_callback_instance(zome: &str, canonical_name: &str, result: i32) -> Instance {
+    pub fn test_callback_instance(
+        zome: &str,
+        canonical_name: &str,
+        result: i32,
+    ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
             Callback::from_str(canonical_name)

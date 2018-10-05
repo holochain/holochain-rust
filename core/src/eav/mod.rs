@@ -1,7 +1,8 @@
 pub mod memory;
 
-use cas::content::Address;
+use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
+use serde_json;
 use std::collections::HashSet;
 
 /// EAV (entity-attribute-value) data
@@ -27,13 +28,25 @@ type Value = Address;
 // source agent asserting the meta
 // type Source ...
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
     value: Value,
     // index: Index,
     // source: Source,
+}
+
+impl AddressableContent for EntityAttributeValue {
+    fn content(&self) -> Content {
+        serde_json::to_string(self)
+            .expect("could not serialize EntityAttributeValue to Json Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        serde_json::from_str(content)
+            .expect("could not deserialize Json Content to EntityAttributeValue")
+    }
 }
 
 impl EntityAttributeValue {
@@ -94,9 +107,19 @@ pub trait EntityAttributeValueStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{tests::ExampleAddressableContent, AddressableContent};
+    use cas::{
+        content::{
+            tests::{AddressableContentTestSuite, ExampleAddressableContent},
+            Address, AddressableContent, Content,
+        },
+        storage::tests::ExampleContentAddressableStorage,
+    };
     use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
     use error::HolochainError;
+    use hash_table::entry::{
+        tests::{test_entry_a, test_entry_b},
+        Entry,
+    };
     use std::collections::HashSet;
 
     pub struct ExampleEntityAttributeValueStorage {
@@ -142,6 +165,34 @@ pub mod tests {
                 .collect::<HashSet<EntityAttributeValue>>();
             Ok(filtered)
         }
+    }
+
+    pub fn test_eav_entity() -> Entry {
+        test_entry_a()
+    }
+
+    pub fn test_eav_attribute() -> String {
+        "foo:attribute".to_string()
+    }
+
+    pub fn test_eav_value() -> Entry {
+        test_entry_b()
+    }
+
+    pub fn test_eav() -> EntityAttributeValue {
+        EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &test_eav_attribute(),
+            &test_eav_value().address(),
+        )
+    }
+
+    pub fn test_eav_content() -> Content {
+        test_eav().content()
+    }
+
+    pub fn test_eav_address() -> Address {
+        test_eav().address()
     }
 
     pub fn eav_round_trip_test_runner(
@@ -318,6 +369,28 @@ pub mod tests {
                     .expect("could not fetch eav"),
             );
         }
+    }
+
+    #[test]
+    /// show AddressableContent implementation
+    fn addressable_content_test() {
+        // from_content()
+        AddressableContentTestSuite::addressable_content_trait_test::<EntityAttributeValue>(
+            test_eav_content(),
+            test_eav(),
+            String::from(test_eav_address()),
+        );
+    }
+
+    #[test]
+    /// show CAS round trip
+    fn cas_round_trip_test() {
+        let content_addressable_storage = ExampleContentAddressableStorage::new();
+        let addressable_contents = vec![test_eav()];
+        AddressableContentTestSuite::addressable_content_round_trip::<
+            EntityAttributeValue,
+            ExampleContentAddressableStorage,
+        >(addressable_contents, content_addressable_storage);
     }
 
 }

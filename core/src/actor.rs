@@ -13,12 +13,13 @@ use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
 use cas::content::AddressableContent;
+use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
 /// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
 /// @see https://github.com/riker-rs/riker/issues/17
-pub enum Protocol<AC: AddressableContent> where AC: Send + Clone {
+pub enum Protocol<AC> where AC: AddressableContent {
     // ContentAddressableStorage
     Add(AC),
     AddResult(Result<(), HolochainError>),
@@ -107,8 +108,8 @@ lazy_static! {
 }
 
 /// required by riker
-impl Into<ActorMsg<Protocol<AddressableContent + Send + Clone>>> for Protocol<AddressableContent> {
-    fn into(self) -> ActorMsg<Protocol<AddressableContent>> {
+impl<AC: 'static> Into<ActorMsg<Protocol<AC>>> for Protocol<AC> where AC: AddressableContent + Send + Clone + Debug {
+    fn into(self) -> ActorMsg<Protocol<AC>> {
         ActorMsg::User(self)
     }
 }

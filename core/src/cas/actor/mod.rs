@@ -5,11 +5,11 @@ use riker::actors::*;
 use error::HolochainError;
 use cas::content::Address;
 
-pub struct StorageActor {
+pub struct StorageActor<AC> where AC: AddressableContent {
     inner: ContentAddressableStorage + Send,
 }
 
-impl StorageActor {
+impl<AC> StorageActor<AC> where AC: AddressableContent {
     pub fn new<CAS: ContentAddressableStorage>(inner: CAS) {
         StorageActor {
             inner
@@ -50,8 +50,8 @@ impl ContentAddressableStorage for ActorRef<Protocol<AddressableContent>> {
     }
 }
 
-impl Actor for StorageActor {
-    type Msg = Protocol<AddressableContent>;
+impl<AC> Actor for StorageActor<AC> where AC: AddressableContent {
+    type Msg = Protocol<AC>;
 
     fn receive(
         &mut self,

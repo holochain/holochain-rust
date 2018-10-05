@@ -1,4 +1,7 @@
-use holochain_wasm_utils::memory_allocation::{SinglePageAllocation, SinglePageStack};
+use holochain_wasm_utils::{
+    memory_allocation::{SinglePageAllocation, SinglePageStack, U16_MAX},
+    error::RibosomeErrorCode,
+};
 
 use wasmi::{MemoryRef, ModuleRef};
 
@@ -42,20 +45,19 @@ impl SinglePageManager {
     }
 
     /// Allocate on stack without writing in it
-    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, &str> {
-        if self.stack.top() as u32 + length as u32 >= 65536 {
-            return Err("Out of memory");
+    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+        if self.stack.top() as u32 + length as u32 > U16_MAX {
+            return Err(RibosomeErrorCode::OutOfMemory);
         }
         let offset = self.stack.allocate(length);
-        let allocation = SinglePageAllocation { offset, length };
-        Ok(allocation)
+        SinglePageAllocation::new(offset, length)
     }
 
     /// Write data on top of stack
-    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, &str> {
+    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, RibosomeErrorCode> {
         let data_len = data.len();
         if data_len > 65536 {
-            return Err("data length provided is bigger than 64KiB");
+            return Err(RibosomeErrorCode::OutOfMemory);
         }
 
         // scope for mutable borrow of self
@@ -63,13 +65,13 @@ impl SinglePageManager {
         {
             let res = self.allocate(data_len as u16);
             if res.is_err() {
-                return Err("Not enough free memory available");
+                return Err(RibosomeErrorCode::OutOfMemory);
             }
             mem_buf = res.unwrap();
         }
 
         self.wasm_memory
-            .set(mem_buf.offset as u32, &data)
+            .set(mem_buf.offset() as u32, &data)
             .expect("memory should be writable");
         Ok(mem_buf)
     }
@@ -78,7 +80,7 @@ impl SinglePageManager {
     pub fn read(&self, allocation: SinglePageAllocation) -> Vec<u8> {
         return self
             .wasm_memory
-            .get(allocation.offset as u32, allocation.length as usize)
+            .get(allocation.offset() as u32, allocation.length() as usize)
             .expect("Successfully retrieve the result");
     }
 }

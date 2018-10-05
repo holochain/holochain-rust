@@ -1,19 +1,26 @@
 use self::RibosomeReturnCode::*;
+use self::RibosomeErrorCode::*;
 use std::fmt;
 
-// Macro for creating a RibosomeReturnCode as a RuntimeValue Result-Option on the spot
+// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
 macro_rules! ribosome_return_code {
     ($s:ident) => {
-        Ok(Some(RuntimeValue::I32(RibosomeReturnCode::$s as i32)))
+        Ok(Some(RuntimeValue::I32(::holochain_wasm_utils::error::RibosomeErrorCode::$s as i32)))
     };
 }
+//#[macro_export]
+//macro_rules! ribosome_success_code {
+//($s:ident = Success) => {
+//Ok(Some(RuntimeValue::I32(0 as i32)))
+//};
+//}
 
 // Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
 #[macro_export]
 macro_rules! ribosome_error_report {
     ($s:expr) => {
-        RibosomeErrorReport {
+        ::holochain_wasm_utils::error::RibosomeErrorReport {
             description: $s.to_string(),
             file_name: file!().to_string(),
             line: line!().to_string(),
@@ -40,67 +47,117 @@ impl fmt::Display for RibosomeErrorReport {
     }
 }
 
-/// Enum of all possible return codes that a Zome API Function could return.
+
+
+/// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation
 #[repr(u32)]
 #[derive(Debug, PartialEq)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum RibosomeReturnCode {
-    Success                         = 0,
-    Failure                         = 1 << 16,
+    Success,
+    Failure(RibosomeErrorCode),
+}
+
+/// Enum of all possible ERROR codes that a Zome API Function could return.
+#[repr(u32)]
+#[derive(Debug, PartialEq)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+pub enum RibosomeErrorCode {
+    Unspecified                     = 1 << 16,
     ArgumentDeserializationFailed   = 2 << 16,
     OutOfMemory                     = 3 << 16,
     ReceivedWrongActionResult       = 4 << 16,
     CallbackFailed                  = 5 << 16,
     RecursiveCallForbidden          = 6 << 16,
     ResponseSerializationFailed     = 7 << 16,
+    NotAnAllocation                 = 8 << 16,
+    ZeroSizedAllocation             = 9 << 16,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+//impl RibosomeReturnCode {
+//    pub fn is_err(self) -> bool { self != Success }
+//    pub fn is_ok(self) -> bool { self == Success }
+//}
+
 impl ToString for RibosomeReturnCode {
     fn to_string(&self) -> String {
         match self {
-            Success                         => "Success",
-            Failure                         => "Failure",
+            Success => "Success".to_string(),
+            Failure(code) => code.to_string(),
+        }
+    }
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+impl ToString for RibosomeErrorCode {
+    fn to_string(&self) -> String {
+        match self {
+            Unspecified                     => "Unspecified",
             ArgumentDeserializationFailed   => "Argument deserialization failed",
             OutOfMemory                     => "Out of memory",
             ReceivedWrongActionResult       => "Received wrong action result",
             CallbackFailed                  => "Callback failed",
             RecursiveCallForbidden          => "Recursive call forbidden",
             ResponseSerializationFailed     => "Response serialization failed",
+            NotAnAllocation                 => "Not an allocation",
+            ZeroSizedAllocation             =>  "Zero-sized allocation",
         }.to_string()
     }
 }
 
 impl RibosomeReturnCode {
+    pub fn from_error(err_code: RibosomeErrorCode) -> RibosomeReturnCode {
+        Failure(err_code)
+    }
+
     pub fn from_offset(offset: u16) -> RibosomeReturnCode {
         match offset {
-            // @TODO what is a success error?
-            // @see https://github.com/holochain/holochain-rust/issues/181
             0 => Success,
+            _ => Failure(RibosomeErrorCode::from_offset(offset)),
+        }
+    }
+}
+
+impl RibosomeErrorCode {
+    pub fn from_offset(offset: u16) -> RibosomeErrorCode {
+        match offset {
+            0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,
             4 => ReceivedWrongActionResult,
             5 => CallbackFailed,
             6 => RecursiveCallForbidden,
             7 => ResponseSerializationFailed,
-            1 | _ => Failure,
+            8 => NotAnAllocation,
+            9 => ZeroSizedAllocation,
+            1 | _ => Unspecified,
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    //extern crate holochain_wasm_utils;
+
     use super::*;
 
     #[test]
-    fn hc_api_return_code_round_trip() {
+    fn ribosome_return_code_round_trip() {
         let oom = RibosomeReturnCode::from_offset(
-            ((RibosomeReturnCode::OutOfMemory as u32) >> 16) as u16,
+            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
         );
-        assert_eq!(RibosomeReturnCode::OutOfMemory, oom);
-        assert_eq!(RibosomeReturnCode::OutOfMemory.to_string(), oom.to_string());
+        assert_eq!(Failure(RibosomeErrorCode::OutOfMemory), oom);
+        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+    }
+
+    #[test]
+    fn ribosome_error_code_round_trip() {
+        let oom = RibosomeErrorCode::from_offset(
+            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
+        );
+        assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
+        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
 
     #[test]
@@ -114,7 +171,11 @@ pub mod tests {
 
         assert_ne!(
             report.to_string(),
-            ribosome_error_report!(description).to_string()
+            RibosomeErrorReport {
+                description: description.to_string(),
+                file_name: file!().to_string(),
+                line: line!().to_string(),
+             }.to_string(),
         );
     }
 }

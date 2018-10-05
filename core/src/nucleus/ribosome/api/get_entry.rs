@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use cas::content::Address;
-use holochain_wasm_utils::error::RibosomeReturnCode;
 use json::ToJson;
 use nucleus::ribosome::api::Runtime;
 use serde_json;

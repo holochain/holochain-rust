@@ -2,7 +2,6 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
-use holochain_wasm_utils::error::RibosomeReturnCode;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,

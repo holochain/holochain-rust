@@ -1,19 +1,21 @@
-use error::RibosomeReturnCode;
+use error::{
+    RibosomeReturnCode, RibosomeErrorCode,
+};
 
 //--------------------------------------------------------------------------------------------------
 // Helpers
 //--------------------------------------------------------------------------------------------------
 
-const U16_MAX: u32 = <u16>::max_value() as u32;
+pub const U16_MAX: u32 = <u16>::max_value() as u32;
 
 /// returns the u16 high bits from a u32
 pub fn u32_high_bits(i: u32) -> u16 {
     (i >> 16) as u16
 }
 
-/// returns the u16 low bits from a u32
+/// returns the u16 low bits from a u32 by doing a lossy cast
 pub fn u32_low_bits(i: u32) -> u16 {
-    (i as u16 % <u16>::max_value())
+    (i as u16)
 }
 
 /// splits the high and low bits of u32 into a tuple of u16, for destructuring convenience
@@ -26,6 +28,20 @@ pub fn u32_merge_bits(high: u16, low: u16) -> u32 {
     (u32::from(high) << 16) | u32::from(low)
 }
 
+
+pub fn decode_encoded_allocation(encoded_allocation: u32) -> Result<SinglePageAllocation, RibosomeReturnCode> {
+    let (offset, length) = u32_split_bits(encoded_allocation);
+    // zero length allocation = RibosomeReturnCode
+    if length == 0 {
+        return Err(RibosomeReturnCode::from_offset(offset));
+    }
+    let res = SinglePageAllocation::new(offset, length);
+    match res {
+        Ok(alloc) => Ok(alloc),
+        Err(err_code) => Err(RibosomeReturnCode::Failure(err_code)),
+    }
+}
+
 //--------------------------------------------------------------------------------------------------
 // Single Page Memory Allocation
 //--------------------------------------------------------------------------------------------------
@@ -33,40 +49,45 @@ pub fn u32_merge_bits(high: u16, low: u16) -> u32 {
 #[derive(Copy, Clone, Debug)]
 /// SinglePageAllocation is a memory allocation garanteed to fit in a WASM 64KiB Memory Page
 pub struct SinglePageAllocation {
-    pub offset: u16,
-    pub length: u16,
+    offset: u16,
+    length: u16,
 }
 
 #[allow(unknown_lints)]
 #[allow(cast_lossless)]
 impl SinglePageAllocation {
+    pub fn new(offset: u16, length: u16) -> Result<Self, RibosomeErrorCode> {
+        if (offset as u32 + length as u32) > U16_MAX {
+            return Err(RibosomeErrorCode::OutOfMemory);
+        }
+        if (offset + length) == 0 {
+            return Err(RibosomeErrorCode::ZeroSizedAllocation);
+        }
+        if length == 0 {
+            return Err(RibosomeErrorCode::NotAnAllocation);
+        }
+        Ok(SinglePageAllocation { offset, length })
+    }
+
     /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
     /// A valid allocation must not have a length of zero
     /// An Encoded Allocation with an offset but no length is actually an encoding of an ErrorCode
-    pub fn new(encoded_allocation: u32) -> Result<Self, RibosomeReturnCode> {
-        let (offset, length) = u32_split_bits(encoded_allocation);
-        let allocation = SinglePageAllocation { offset, length };
-
-        // zero length allocation = encoding an error api return code
-        if allocation.length == 0 {
-            // @TODO is it right to return success as Err for 0? what is a "success" error?
-            // @see https://github.com/holochain/holochain-rust/issues/181
-            return Err(RibosomeReturnCode::from_offset(allocation.offset));
+    pub fn from_encoded_allocation(encoded_allocation: u32) -> Result<Self, RibosomeErrorCode> {
+        let maybe_allocation = decode_encoded_allocation(encoded_allocation);
+        match maybe_allocation {
+            Err(_) => Err(RibosomeErrorCode::NotAnAllocation),
+            Ok(allocation) => Ok(allocation),
         }
-
-        // should never happen
-        // we don't panic because this needs to work with wasm, which doesn't support panic
-        if (allocation.offset as u32 + allocation.length as u32) > U16_MAX {
-            return Err(RibosomeReturnCode::OutOfMemory);
-        }
-
-        Ok(allocation)
     }
 
     /// returns a single u32 value encoding both the u16 offset and length values
     pub fn encode(self) -> u32 {
         u32_merge_bits(self.offset, self.length)
     }
+
+    // getters
+    pub fn offset(self) -> u16 { self.offset }
+    pub fn length(self) -> u16 { self.length }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -91,10 +112,9 @@ impl SinglePageStack {
     }
 
     pub fn from_encoded(encoded_last_allocation: u32) -> Self {
-        let last_allocation = SinglePageAllocation::new(encoded_last_allocation as u32);
+        let maybe_allocation = decode_encoded_allocation(encoded_last_allocation as u32);
         let last_allocation =
-            last_allocation.expect("received error instead of valid encoded allocation");
-        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX);
+            maybe_allocation.expect("received error instead of valid encoded allocation");
         return SinglePageStack::new(last_allocation);
     }
 
@@ -127,63 +147,106 @@ pub mod tests {
 
     #[test]
     /// tests construction and encoding in a new single page allocation
-    fn new_spa() {
+    fn new_single_page_allocation() {
         let i = 0b1010101010101010_0101010101010101;
-        let spa = SinglePageAllocation::new(i).unwrap();
+        let spa = SinglePageAllocation::from_encoded_allocation(i).unwrap();
 
         assert_eq!(0b1010101010101010, spa.offset);
-
         assert_eq!(0b0101010101010101, spa.length);
     }
 
     #[test]
     /// tests that we can encode error return codes (zero length allocation)
-    fn new_spa_error() {
+    fn can_decode_encoded_allocation() {
         assert_eq!(
-            // offset 0 = success?
-            // @see https://github.com/holochain/holochain-rust/issues/181
-            SinglePageAllocation::new(0b0000000000000000_0000000000000000).unwrap_err(),
+            // offset 0 = Success
+            decode_encoded_allocation(0b0000000000000000_0000000000000000).unwrap_err(),
             RibosomeReturnCode::Success,
         );
-
         assert_eq!(
             // offset 1 = generic error
-            SinglePageAllocation::new(0b0000000000000001_0000000000000000).unwrap_err(),
-            RibosomeReturnCode::Failure,
+            decode_encoded_allocation(0b0000000000000001_0000000000000000).unwrap_err(),
+            RibosomeReturnCode::Failure(RibosomeErrorCode::Unspecified),
         );
-
         assert_eq!(
             // offset 2 = serde json error
-            SinglePageAllocation::new(0b0000000000000010_0000000000000000).unwrap_err(),
-            RibosomeReturnCode::ArgumentDeserializationFailed,
+            decode_encoded_allocation(0b0000000000000010_0000000000000000).unwrap_err(),
+            RibosomeReturnCode::Failure(RibosomeErrorCode::ArgumentDeserializationFailed),
         );
-
         assert_eq!(
             // offset 3 = page overflow error
-            SinglePageAllocation::new(0b0000000000000011_0000000000000000).unwrap_err(),
-            RibosomeReturnCode::OutOfMemory,
+            decode_encoded_allocation(0b0000000000000011_0000000000000000).unwrap_err(),
+            RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory),
         );
-
         assert_eq!(
             // offset 4 = page overflow error
-            SinglePageAllocation::new(0b0000000000000100_0000000000000000).unwrap_err(),
-            RibosomeReturnCode::ReceivedWrongActionResult,
+            decode_encoded_allocation(0b0000000000000100_0000000000000000).unwrap_err(),
+            RibosomeReturnCode::Failure(RibosomeErrorCode::ReceivedWrongActionResult),
         );
 
         assert_eq!(
             // nonsense offset = generic error
-            SinglePageAllocation::new(0b1010101010101010_0000000000000000).unwrap_err(),
-            RibosomeReturnCode::Failure,
+            decode_encoded_allocation(0b1010101010101010_0000000000000000).unwrap_err(),
+            RibosomeReturnCode::Failure(RibosomeErrorCode::Unspecified),
         );
     }
 
     #[test]
     /// tests that a SinglePageAllocation returns its encoded offset/length pair as u32
-    fn spa_encode() {
+    fn can_single_page_allocation_encode() {
         let i = 0b1010101010101010_0101010101010101;
-        let spa = SinglePageAllocation::new(i).unwrap();
+        let spa = SinglePageAllocation::from_encoded_allocation(i).unwrap();
 
         assert_eq!(i, spa.encode());
+    }
+
+    #[test]
+    fn can_single_page_allocation_new_fail() {
+        assert_eq!(
+            RibosomeErrorCode::ZeroSizedAllocation,
+            SinglePageAllocation::new(0b0000000000000000, 0000000000000000).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            SinglePageAllocation::new(0b0000000000000100, 0000000000000000).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::OutOfMemory,
+            SinglePageAllocation::new(<u16>::max_value(), <u16>::max_value()).err().unwrap());
+    }
+
+    #[test]
+    /// tests that a SinglePageAllocation returns its encoded offset/length pair as u32
+    fn can_single_page_allocation_from_fail() {
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            SinglePageAllocation::from_encoded_allocation(0b0000000000000000_0000000000000000).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            SinglePageAllocation::from_encoded_allocation(0b0000000000000100_0000000000000000).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            SinglePageAllocation::from_encoded_allocation(<u32>::max_value()).err().unwrap());
+    }
+
+    #[test]
+    fn test_u32_max_bits() {
+        assert_eq!(
+            <u16>::max_value(),
+            super::u32_high_bits(<u32>::max_value()),
+        );
+        assert_eq!(
+            <u16>::max_value(),
+            super::u32_low_bits(<u32>::max_value()),
+        );
+        let upper_16: u32 = u32::from(<u16>::max_value());
+        let upper_16 = upper_16 << 16;
+        assert_eq!(
+            <u16>::max_value(),
+            super::u32_high_bits(upper_16),
+        );
+        assert_eq!(
+            0,
+            super::u32_low_bits(upper_16),
+        );
     }
 
     #[test]

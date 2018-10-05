@@ -2,7 +2,7 @@ extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
 use hash_table::{entry::Entry, sys_entry::EntryType};
-use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
+//use holochain_wasm_utils::error::RibosomeErrorReport;
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;

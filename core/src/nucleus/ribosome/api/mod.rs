@@ -9,7 +9,7 @@ pub mod get_links;
 pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{error::RibosomeReturnCode, memory_allocation::SinglePageAllocation};
+use holochain_wasm_utils::{error::RibosomeReturnCode, memory_allocation::decode_encoded_allocation};
 use nucleus::{
     ribosome::{
         api::{
@@ -126,7 +126,8 @@ impl ZomeApiFunction {
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-            ribosome_return_code!(Success)
+            //ribosome_return_code!(Success)
+            Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
@@ -170,15 +171,15 @@ impl Runtime {
 
         // Read complex argument serialized in memory
         let encoded_allocation: u32 = args.nth(0);
-        let allocation = SinglePageAllocation::new(encoded_allocation);
-        // Handle empty allocation edge case
-        if let Err(RibosomeReturnCode::Success) = allocation {
-            return String::new();
-        }
-        let allocation = allocation
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .expect("received error instead of valid encoded allocation");
+        let maybe_allocation = decode_encoded_allocation(encoded_allocation);
+        let allocation = match maybe_allocation {
+            // Handle empty allocation edge case
+            Err(RibosomeReturnCode::Success) => return String::new(),
+            // Handle error code
+            Err(_) => panic!("received error code instead of valid encoded allocation"),
+            // Handle normal allocation
+            Ok(allocation) => allocation,
+        };
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
@@ -319,14 +320,14 @@ pub fn call(
     }
 
     // scope for mutable borrow of runtime
-    let encoded_allocation_of_output: i32;
+    let returned_encoded_allocation: u32;
     {
         let mut_runtime = &mut runtime;
 
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        encoded_allocation_of_output = wasm_instance
+        returned_encoded_allocation = wasm_instance
             .invoke_export(
                 zome_call.fn_name.clone().as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
@@ -337,14 +338,19 @@ pub fn call(
             .unwrap();
     }
 
-    let allocation_of_output = SinglePageAllocation::new(encoded_allocation_of_output as u32);
-
-    // retrieve invoked wasm function's result that got written in memory
-    if let Ok(valid_allocation) = allocation_of_output {
-        let result = runtime.memory_manager.read(valid_allocation);
-        runtime.result = String::from_utf8(result).unwrap();
+    // Handle result returned by invoked function
+    let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
+    match maybe_allocation {
+        // Nothing in memory, log return code
+        Err(return_code) => {
+            runtime.context.log(&format!("Zome Function '{}' returned: {}", zome_call.fn_name, return_code.to_string())).expect("Logger should work");
+        },
+        // Something in memory, try to read it
+        Ok(valid_allocation) => {
+            let result = runtime.memory_manager.read(valid_allocation);
+            runtime.result = String::from_utf8(result).unwrap();
+        }
     }
-
     Ok(runtime.clone())
 }
 

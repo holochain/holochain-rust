@@ -87,7 +87,7 @@ pub(crate) fn commit_app_entry<CAS, EAVS>(
 {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
-    let dna = context.state().unwrap().nucleus().dna().unwrap();
+    let dna = context.state().unwrap().nucleus().dna().expect("Must have DNA to commit an entry.");
     let maybe_def = dna.get_entry_type_def(&entry_type.to_string());
     if maybe_def.is_none() {
         return None;

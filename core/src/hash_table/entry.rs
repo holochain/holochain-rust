@@ -2,6 +2,7 @@ use cas::content::{AddressableContent, Content};
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
+use std::ops::Deref;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -55,6 +56,13 @@ impl FromJson for Entry {
     /// @see https://github.com/holochain/holochain-rust/issues/75
     fn from_json(s: &str) -> Result<Self, HolochainError> {
         Ok(serde_json::from_str(s)?)
+    }
+}
+
+impl Deref for Entry {
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

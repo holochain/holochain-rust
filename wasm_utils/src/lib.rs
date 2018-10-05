@@ -9,3 +9,4 @@ extern crate serde_derive;
 pub mod error;
 pub mod memory_allocation;
 pub mod memory_serialization;
+pub mod validation;

@@ -1,4 +1,5 @@
 extern crate futures;
+extern crate serde_json;
 use action::{Action, ActionWrapper};
 use cas::content::AddressableContent;
 use context::Context;
@@ -6,7 +7,7 @@ use futures::{future, Async, Future};
 use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::EntryType};
 use nucleus::ribosome::callback::{
-    validate_commit::validate_commit, CallbackParams, CallbackResult,
+    self, CallbackResult,
 };
 use snowflake;
 use std::{sync::Arc, thread};
@@ -24,6 +25,8 @@ pub fn validate_entry(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
+    println!("VALIDATE_ENTRY");
+
     match context
         .state()
         .unwrap()
@@ -33,23 +36,28 @@ pub fn validate_entry(
         .get_zome_name_for_entry_type(entry_type.as_str())
     {
         None => {
+            println!("VALIDATE_ENTRY: unknown {}", entry_type.as_str());
             return Box::new(future::err(format!(
                 "Unknown entry type: '{}'",
                 entry_type.as_str()
             )));;
         }
-        Some(zome_name) => {
+        Some(_zome_name) => {
             let id = id.clone();
             let address = address.clone();
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
-                let validation_result = match validate_commit(
+                let validation_result = match callback::validate_entry::validate_entry(
+                    entry.clone(),
+                    entry_type.clone(),
                     context.clone(),
-                    &zome_name,
-                    &CallbackParams::ValidateCommit(entry.clone()),
                 ) {
-                    CallbackResult::Fail(error_string) => Err(error_string),
+                    CallbackResult::Fail(error_string) => {
+                        let error_object : serde_json::Value = serde_json::from_str(&error_string).unwrap();
+                        //.trim_matches(|c| c == '\\' || c == '"')
+                        Err(error_object["Err"].to_string())
+                    },
                     CallbackResult::Pass => Ok(()),
                     CallbackResult::NotImplemented => Err(format!(
                         "Validation callback not implemented for {:?}",

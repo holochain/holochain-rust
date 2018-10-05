@@ -4,6 +4,7 @@
 pub mod genesis;
 pub mod receive;
 pub mod validate_commit;
+pub mod validate_entry;
 
 use context::Context;
 use hash_table::entry::Entry;

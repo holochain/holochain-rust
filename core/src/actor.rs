@@ -1,5 +1,5 @@
 use agent::keys::Keys;
-use cas::content::Address;
+use cas::content::{Address, Content};
 use chain::pair::Pair;
 use error::HolochainError;
 use futures::executor::block_on;
@@ -18,6 +18,15 @@ use riker_patterns::ask::ask;
 /// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
 /// @see https://github.com/riker-rs/riker/issues/17
 pub enum Protocol {
+    CasAdd(Address, Content),
+    CasAddResult(Result<(), HolochainError>),
+
+    CasFetch(Address),
+    CasFetchResult(Result<Option<Content>, HolochainError>),
+
+    CasContains(Address),
+    CasContainsResult(Result<bool, HolochainError>),
+
     /// Chain::set_top_pair()
     SetTopPair(Option<Pair>),
     SetTopPairResult(Result<Option<Pair>, HolochainError>),

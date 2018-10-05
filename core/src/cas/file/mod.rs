@@ -1,18 +1,13 @@
 pub mod actor;
 
+use actor::{AskSelf, Protocol};
 use cas::{
     content::{Address, AddressableContent},
+    file::actor::FilesystemStorageActor,
     storage::ContentAddressableStorage,
 };
 use error::HolochainError;
-use std::{
-    fs::{create_dir_all, read_to_string, write},
-    path::{Path, MAIN_SEPARATOR},
-};
-use cas::file::actor::FilesystemStorageActor;
-use actor::Protocol;
 use riker::actors::*;
-use cas::content::Content;
 
 pub struct FilesystemStorage {
     dir_actor: ActorRef<Protocol>,
@@ -20,63 +15,39 @@ pub struct FilesystemStorage {
 
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
-        FilesystemStorage {
-            dir_actor: FilesystemStorageActor::new_ref(dir_path)?,
-        }
+        Ok(FilesystemStorage {
+            dir_actor: FilesystemStorageActor::new_ref(dir_path.to_string())?,
+        })
     }
-
-    /// builds an absolute path for an AddressableContent address
-    fn address_to_path(&self, address: &Address) -> String {
-        // using .txt extension because content is arbitrary and controlled by the
-        // AddressableContent trait implementation
-        format!("{}{}{}.txt", self.dir_path, MAIN_SEPARATOR, address)
-    }
-}
-
-impl Actor for FilesystemStorage {
-    type Msg = Protocol;
-
-    fn receive(
-        &mut self,
-        context: &Context<Self::Msg>,
-        message: Self::Msg,
-        sender: Option<ActorRef<Self::Msg>>,
-    ) {
-        sender
-            .try_tell(
-                match message {
-                    Protocol::CasAdd(address, content) => {
-                        Protocol::CasAddResult(self.unsafe_add(address, content))
-                    },
-                    Protocol::CasContains(address) => {
-                        Protocol::CasContainsResult(self.unsafe_contains(address))
-                    },
-                    Protocol::CasFetch(address) => {
-                        Protocol::CasFetchResult(self.unsafe_fetch(address))
-                    },
-                    _ => unreachable!(),
-                },
-                Some(context.myself()),
-            )
-            .expect("failed to tell FilesystemStorage sender");
-    }
-
 }
 
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        let response = self.block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
         unwrap_to!(response => Protocol::CasAddResult).clone()
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        let response = self.block_on_ask(Protocol::CasContains(address))?;
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasContains(address.clone()))?;
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-        let response = self.block_on_as(Protocol::CasFetch(address))?;
-        unwrap_to!(response => Protocol::CasFetchResult).clone()
+    fn fetch<AC: AddressableContent>(
+        &self,
+        address: &Address,
+    ) -> Result<Option<AC>, HolochainError> {
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasFetch(address.clone()))?;
+        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        Ok(match content {
+            Some(c) => Some(AC::from_content(&c)),
+            None => None,
+        })
     }
 }
 

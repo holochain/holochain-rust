@@ -12,12 +12,24 @@ use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
+use cas::content::AddressableContent;
+use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
 /// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
 /// @see https://github.com/riker-rs/riker/issues/17
-pub enum Protocol {
+pub enum Protocol<AC> where AC: AddressableContent {
+    // ContentAddressableStorage
+    Add(AC),
+    AddResult(Result<(), HolochainError>),
+
+    Contains(Address),
+    ContainsResult(Result<bool, HolochainError>),
+
+    Fetch(Address),
+    FetchResult(Result<Option<AC>, HolochainError>),
+
     /// Chain::set_top_pair()
     SetTopPair(Option<Pair>),
     SetTopPairResult(Result<Option<Pair>, HolochainError>),
@@ -89,15 +101,15 @@ pub enum Protocol {
 /// @see https://github.com/riker-rs/riker/issues/17
 /// @see http://riker.rs/actors/#creating-actors
 lazy_static! {
-    pub static ref SYS: ActorSystem<Protocol> = {
+    pub static ref SYS: ActorSystem<Protocol<AddressableContent>> = {
         let model: DefaultModel<Protocol> = DefaultModel::new();
         ActorSystem::new(&model).unwrap()
     };
 }
 
 /// required by riker
-impl Into<ActorMsg<Protocol>> for Protocol {
-    fn into(self) -> ActorMsg<Protocol> {
+impl<AC: 'static> Into<ActorMsg<Protocol<AC>>> for Protocol<AC> where AC: AddressableContent + Send + Clone + Debug {
+    fn into(self) -> ActorMsg<Protocol<AC>> {
         ActorMsg::User(self)
     }
 }
@@ -108,11 +120,11 @@ pub trait AskSelf {
     /// uses the ask() fn from riker patterns under the hood to create a future then block on it
     /// handles passing the actor system through to ask() to hide that implementation detail
     /// @see http://riker.rs/patterns/#ask
-    fn block_on_ask(&self, message: Protocol) -> Result<Protocol, HolochainError>;
+    fn block_on_ask(&self, message: Protocol<AddressableContent>) -> Result<Protocol<AddressableContent>, HolochainError>;
 }
 
-impl AskSelf for ActorRef<Protocol> {
-    fn block_on_ask(&self, message: Protocol) -> Result<Protocol, HolochainError> {
+impl AskSelf for ActorRef<Protocol<AddressableContent>> {
+    fn block_on_ask(&self, message: Protocol<AddressableContent>) -> Result<Protocol<AddressableContent>, HolochainError> {
         let a = ask(&(*SYS), self, message);
         Ok(block_on(a)?)
     }

@@ -23,14 +23,14 @@ use serde_json;
 /// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator {
-    table_actor: ActorRef<Protocol>,
+    table_actor: ActorRef<Protocol<AddressableContent>>,
     current: Option<Pair>,
 }
 
 impl ChainIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(table_actor: ActorRef<Protocol>, pair: &Option<Pair>) -> ChainIterator {
+    pub fn new(table_actor: ActorRef<Protocol<AddressableContent>>, pair: &Option<Pair>) -> ChainIterator {
         ChainIterator {
             current: pair.clone(),
             table_actor: table_actor.clone(),
@@ -65,8 +65,8 @@ impl Iterator for ChainIterator {
 
 #[derive(Clone, Debug)]
 pub struct Chain {
-    chain_actor: ActorRef<Protocol>,
-    table_actor: ActorRef<Protocol>,
+    chain_actor: ActorRef<Protocol<AddressableContent>>,
+    table_actor: ActorRef<Protocol<AddressableContent>>,
 }
 
 impl PartialEq for Chain {
@@ -92,7 +92,7 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-    pub fn new(table: ActorRef<Protocol>) -> Chain {
+    pub fn new(table: ActorRef<Protocol<AddressableContent>>) -> Chain {
         Chain {
             chain_actor: ChainActor::new_ref(),
             table_actor: table.clone(),
@@ -167,7 +167,7 @@ impl Chain {
     /// can't implement json::FromJson due to Chain's need for a table actor
     /// @TODO accept canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
-    pub fn from_json(table: ActorRef<Protocol>, s: &str) -> Self {
+    pub fn from_json(table: ActorRef<Protocol<AddressableContent>>, s: &str) -> Self {
         // @TODO inappropriate unwrap?
         // @see https://github.com/holochain/holochain-rust/issues/168
         let mut as_seq: Vec<Pair> = serde_json::from_str(s).expect("argument should be valid json");
@@ -183,7 +183,7 @@ impl Chain {
 
     /// table getter
     /// returns a reference to the underlying HashTable
-    pub fn table(&self) -> ActorRef<Protocol> {
+    pub fn table(&self) -> ActorRef<Protocol<AddressableContent>> {
         self.table_actor.clone()
     }
 }

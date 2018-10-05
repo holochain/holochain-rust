@@ -7,7 +7,7 @@ pub mod validate_commit;
 
 use context::Context;
 use hash_table::entry::Entry;
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
+use holochain_dna::{Dna, wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
 use json::ToJson;
 use nucleus::{
     ribosome::{
@@ -163,19 +163,7 @@ pub(crate) fn run_callback(
     }
 }
 
-pub fn call(
-    context: Arc<Context>,
-    zome: &str,
-    function: &Callback,
-    params: &CallbackParams,
-) -> CallbackResult {
-    let zome_call = ZomeFnCall::new(
-        zome,
-        &function.capability().as_str().to_string(),
-        &function.as_str().to_string(),
-        &params.to_string(),
-    );
-
+pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
     // In the case of genesis we encounter race conditions with regards to setting the DNA.
     // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
     // the state, which can result in this code being executed first.
@@ -203,8 +191,23 @@ pub fn call(
             }
         }
     }
+    dna
+}
 
-    let dna = dna.expect("Callback called without DNA set!");
+pub fn call(
+    context: Arc<Context>,
+    zome: &str,
+    function: &Callback,
+    params: &CallbackParams,
+) -> CallbackResult {
+    let zome_call = ZomeFnCall::new(
+        zome,
+        &function.capability().as_str().to_string(),
+        &function.as_str().to_string(),
+        &params.to_string(),
+    );
+
+    let dna = get_dna(&context).expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented,

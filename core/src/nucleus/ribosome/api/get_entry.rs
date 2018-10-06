@@ -178,16 +178,16 @@ mod tests {
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 
-        println!("{:?}", instance.state().agent().chain().top_pair());
+        println!("{:?}", instance.state().agent().chain().top_chain_header());
         println!(
             "{:?}",
             instance
                 .state()
                 .agent()
                 .chain()
-                .top_pair()
-                .expect("could not get top pair")
-                .expect("top pair was None")
+                .top_chain_header()
+                .expect("could not get top chain_header")
+                .expect("top chain_header was None")
                 .address()
         );
 

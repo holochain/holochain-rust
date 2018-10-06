@@ -19,7 +19,6 @@ pub fn validate_entry(
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    println!("VALIDATE_ENTRY match: {}", entry_type.as_str());
     match entry_type {
         EntryType::App(app_entry_type) => Ok(validate_app_entry(
             entry,
@@ -38,21 +37,15 @@ fn validate_app_entry(
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    println!("VALIDATE_APP_ENTRY");
     let dna = get_dna(&context).expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
     if zome_name.is_none() {
-        println!(
-            "VALIDATE_APP_ENTRY: no zome for entry type {}",
-            app_entry_type
-        );
         return Ok(CallbackResult::NotImplemented);
     }
 
     let zome_name = zome_name.unwrap();
     match get_wasm(&context, &zome_name) {
         Some(wasm) => {
-            println!("VALIDATE_APP_ENTRY: wasm found!");
             let validation_call =
                 build_validation_call(entry, app_entry_type, zome_name, validation_data)?;
             Ok(run_validation_callback(
@@ -62,10 +55,7 @@ fn validate_app_entry(
                 dna.name.clone(),
             ))
         }
-        None => {
-            println!("VALIDATE_APP_ENTRY: no wasm found for zome {}!", zome_name);
-            Ok(CallbackResult::NotImplemented)
-        }
+        None => Ok(CallbackResult::NotImplemented)
     }
 }
 
@@ -120,19 +110,10 @@ fn run_validation_callback(
         Some(fc.clone().parameters.into_bytes()),
     ) {
         Ok(runtime) => match runtime.result.is_empty() {
-            true => {
-                println!("VALIDATION PASSED");
-                CallbackResult::Pass
-            }
-            false => {
-                println!("VALIDATION FAILED: {}", runtime.result);
-                CallbackResult::Fail(runtime.result)
-            }
+            true => CallbackResult::Pass,
+            false => CallbackResult::Fail(runtime.result),
         },
-        Err(err) => {
-            println!("VALIDATION ERROR: {}", err);
-            CallbackResult::NotImplemented
-        }
+        Err(err) => CallbackResult::NotImplemented,
     }
 }
 

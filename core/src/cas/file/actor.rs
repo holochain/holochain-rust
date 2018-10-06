@@ -63,7 +63,7 @@ impl FilesystemStorageActor {
     }
 
     /// filesystem CAS add. NOT thread safe.
-    fn unsafe_add(&self, address: &Address, content: &Content) -> Result<(), HolochainError> {
+    fn unthreadable_add(&self, address: &Address, content: &Content) -> Result<(), HolochainError> {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;
@@ -71,13 +71,13 @@ impl FilesystemStorageActor {
     }
 
     /// filesystem CAS contains. NOT thread safe.
-    fn unsafe_contains(&self, address: &Address) -> Result<bool, HolochainError> {
+    fn unthreadable_contains(&self, address: &Address) -> Result<bool, HolochainError> {
         Ok(Path::new(&self.address_to_path(address)).is_file())
     }
 
     /// filesystem CAS fetch. NOT thread safe.
-    fn unsafe_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-        if self.unsafe_contains(&address)? {
+    fn unthreadable_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+        if self.unthreadable_contains(&address)? {
             Ok(Some(read_to_string(self.address_to_path(address))?))
         } else {
             Ok(None)
@@ -98,13 +98,13 @@ impl Actor for FilesystemStorageActor {
             .try_tell(
                 match message {
                     Protocol::CasAdd(address, content) => {
-                        Protocol::CasAddResult(self.unsafe_add(&address, &content))
+                        Protocol::CasAddResult(self.unthreadable_add(&address, &content))
                     }
                     Protocol::CasContains(address) => {
-                        Protocol::CasContainsResult(self.unsafe_contains(&address))
+                        Protocol::CasContainsResult(self.unthreadable_contains(&address))
                     }
                     Protocol::CasFetch(address) => {
-                        Protocol::CasFetchResult(self.unsafe_fetch(&address))
+                        Protocol::CasFetchResult(self.unthreadable_fetch(&address))
                     }
                     _ => unreachable!(),
                 },

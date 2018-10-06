@@ -151,7 +151,7 @@ mod tests {
     )
 
     (func
-        (export "validate_commit")
+        (export "validate_testEntryType")
         (param $allocation i32)
         (result i32)
 

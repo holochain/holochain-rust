@@ -48,7 +48,7 @@ pub fn invoke_commit_app_entry(
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
+        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
@@ -76,7 +76,7 @@ pub fn invoke_commit_app_entry(
     let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => return ribosome_return_code!(ReceivedWrongActionResult),
+            _ => return ribosome_error_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
@@ -92,7 +92,7 @@ pub fn invoke_commit_app_entry(
     // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
-        Err(_) => ribosome_return_code!(ResponseSerializationFailed),
+        Err(_) => ribosome_error_code!(ResponseSerializationFailed),
     }
 
     // @TODO test that failing validation prevents commits happening

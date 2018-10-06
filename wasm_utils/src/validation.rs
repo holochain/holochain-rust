@@ -1,3 +1,19 @@
+// ================================
+// This file is an interim solution
+// ================================
+//
+// Will be replaced by a new crate 'core_types'.
+//
+// These are copies of the same types else where.
+// We need to make these types available to the HDK
+// without having the HDK depend on the whole Holochain
+// library.
+// The same is true for many more types going forward.
+// I wanted to keep the PR small and have us merge
+// the basic validation code first.
+// I will post another PR soon that moves all needed types
+// into a new crate and will like remove this file again.
+
 extern crate serde_json;
 
 // Enum for listing all System Entry Types

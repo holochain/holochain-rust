@@ -63,7 +63,7 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     let action = action_wrapper.action();
-    let (entry_type, entry) = match action {
+    let (_, entry) = match action {
         Action::Commit(entry_type, entry) => (entry_type, entry),
         _ => unreachable!(),
     };

@@ -54,7 +54,7 @@ impl AgentState {
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
-    Commit(Result<Entry, HolochainError>),
+    Commit(Result<Address, HolochainError>),
     GetEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
@@ -64,7 +64,7 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
+                Ok(entry_address) => Ok(format!("{{\"address\":\"{}\"}}", entry_address)),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
@@ -105,7 +105,7 @@ fn reduce_commit_entry(
 
     let res = state.chain.push_entry(&entry_type, &entry);
     let response = match res {
-        Ok(pair) => Ok(pair.entry().clone()),
+        Ok(chain_header) => Ok(chain_header.entry_address().clone()),
         Err(e) => Err(e),
     };
 
@@ -168,7 +168,7 @@ pub mod tests {
     use cas::content::AddressableContent;
     use chain::{pair::tests::test_pair, tests::test_chain};
     use error::HolochainError;
-    use hash_table::entry::tests::test_entry;
+    use hash_table::entry::tests::{test_entry, test_entry_address};
     use instance::tests::test_context;
     use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
@@ -180,12 +180,12 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_pair()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_pair().entry().clone()))
+        ActionResponse::Commit(Ok(test_entry_address()))
     }
 
     /// dummy action response for a successful get as test_pair()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+        ActionResponse::GetEntry(Some(test_entry()))
     }
 
     #[test]
@@ -253,7 +253,7 @@ pub mod tests {
     fn test_commit_response_to_json() {
         assert_eq!(
             "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::Commit(Ok(test_pair().entry().clone()))
+            ActionResponse::Commit(Ok(test_entry_address()))
                 .to_json()
                 .unwrap(),
         );

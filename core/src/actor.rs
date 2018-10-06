@@ -1,7 +1,6 @@
 use agent::keys::Keys;
-use cas::content::Address;
-use chain::header::ChainHeader;
 use cas::content::{Address, Content};
+use chain::header::ChainHeader;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash_table::{

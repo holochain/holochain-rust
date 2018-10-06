@@ -1,6 +1,5 @@
 use agent::keys::Keys;
 use cas::content::{Address, Content};
-// use chain::header::ChainHeader;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash_table::{
@@ -26,14 +25,6 @@ pub enum Protocol {
 
     CasContains(Address),
     CasContainsResult(Result<bool, HolochainError>),
-
-    /// Chain::set_top_chain_header()
-    // SetTopChainHeader(Option<ChainHeader>),
-    // SetTopChainHeaderResult(Result<Option<ChainHeader>, HolochainError>),
-
-    /// Chain::top_chain_header()
-    // GetTopChainHeader,
-    // GetTopChainHeaderResult(Option<ChainHeader>),
 
     /// HashTable::setup()
     Setup,

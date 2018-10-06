@@ -166,7 +166,7 @@ pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use cas::content::AddressableContent;
-    use chain::{pair::tests::test_pair, tests::test_chain};
+    use chain::tests::test_chain;
     use error::HolochainError;
     use hash_table::entry::tests::{test_entry, test_entry_address};
     use instance::tests::test_context;
@@ -178,12 +178,12 @@ pub mod tests {
         AgentState::new(&test_chain())
     }
 
-    /// dummy action response for a successful commit as test_pair()
+    /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
         ActionResponse::Commit(Ok(test_entry_address()))
     }
 
-    /// dummy action response for a successful get as test_pair()
+    /// dummy action response for a successful get as test_entry()
     pub fn test_action_response_get() -> ActionResponse {
         ActionResponse::GetEntry(Some(test_entry()))
     }
@@ -269,7 +269,7 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             "\"test entry content\"",
-            ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+            ActionResponse::GetEntry(Some(test_entry().clone()))
                 .to_json()
                 .unwrap(),
         );

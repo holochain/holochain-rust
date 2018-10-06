@@ -44,7 +44,6 @@ impl ChainHeader {
     /// normally (outside unit tests) the generation of valid headers is internal to the
     /// chain::SourceChain trait and should not need to be handled manually
     ///
-    /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new(
         entry_type: &EntryType,
@@ -148,12 +147,7 @@ impl AddressableContent for ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{
-        header::ChainHeader,
-        pair::tests::{test_pair, test_pair_b},
-        tests::test_chain,
-        SourceChain,
-    };
+    use chain::{header::ChainHeader, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -164,7 +158,7 @@ pub mod tests {
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header() -> ChainHeader {
-        test_pair().header().clone()
+        test_chain().create_next_chain_header(&test_entry_type(), &test_entry())
     }
 
     /// returns a dummy header for use in tests
@@ -174,7 +168,7 @@ pub mod tests {
 
     /// returns a dummy header for use in tests. different from test_chain_header_a.
     pub fn test_chain_header_b() -> ChainHeader {
-        test_pair_b().header().clone()
+        test_chain().create_next_chain_header(&test_entry_type_b(), &test_entry_b())
     }
 
     pub fn test_header_address() -> Address {

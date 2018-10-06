@@ -75,13 +75,13 @@ impl Actor for ChainActor {
         sender
             .try_tell(
                 match message {
-                    // set the top pair to the value passed
+                    // set the top chain header to the value passed
                     Protocol::SetTopChainHeader(chain_header) => {
                         self.top_chain_header = chain_header;
                         Protocol::SetTopChainHeaderResult(Ok(self.top_chain_header.clone()))
                     }
 
-                    // evaluates to the current top pair
+                    // evaluates to the current top chain header
                     Protocol::GetTopChainHeader => {
                         let ret = self.top_chain_header.clone();
                         Protocol::GetTopChainHeaderResult(ret)
@@ -116,7 +116,7 @@ pub mod tests {
     }
 
     #[test]
-    /// can set and get top pairs through the chain actor
+    /// can set and get top chain headers through the chain actor
     fn test_round_trip() {
         let chain_actor = test_chain_actor();
 
@@ -124,7 +124,7 @@ pub mod tests {
             None,
             chain_actor
                 .top_chain_header()
-                .expect("could not get top pair from chain actor")
+                .expect("could not get top chain header from chain actor")
         );
 
         let chain_header_a = test_chain_header_a();

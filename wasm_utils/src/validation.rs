@@ -42,7 +42,7 @@ pub struct ChainHeader {
     link_same_type: Option<Address>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ValidationData {
     pub chain_header: Option<ChainHeader>,
     pub sources : Vec<HashString>,
@@ -53,21 +53,21 @@ pub struct ValidationData {
     pub action : HcEntryAction,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum HcEntryLifecycle {
     Chain,
     Dht,
     Meta,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum HcEntryAction {
     Commit,
     Modify,
     Delete,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum HcLinkAction {
     Commit,
     Delete,

@@ -19,11 +19,12 @@ use hash_table::{entry::Entry, sys_entry::EntryType};
 pub fn validate_entry(
     entry: Entry,
     entry_type: EntryType,
+    validation_data: ValidationData,
     context: Arc<Context>,
 ) -> CallbackResult {
     println!("VALIDATE_ENTRY match: {}", entry_type.as_str());
     match entry_type {
-        EntryType::App(app_entry_type) => validate_app_entry(entry, app_entry_type, context),
+        EntryType::App(app_entry_type) => validate_app_entry(entry, app_entry_type, validation_data, context),
         EntryType::Dna => CallbackResult::Pass,
         _ => CallbackResult::NotImplemented
     }
@@ -32,6 +33,7 @@ pub fn validate_entry(
 fn validate_app_entry(
     entry: Entry,
     app_entry_type: String,
+    validation_data: ValidationData,
     context: Arc<Context>,
 ) -> CallbackResult {
     println!("VALIDATE_APP_ENTRY");
@@ -46,7 +48,7 @@ fn validate_app_entry(
     match get_wasm(&context, &zome_name) {
         Some(wasm) => {
             println!("VALIDATE_APP_ENTRY: wasm found!");
-            let validation_call = build_validation_call(entry, app_entry_type, zome_name);
+            let validation_call = build_validation_call(entry, app_entry_type, zome_name, validation_data);
             run_validation_callback(context.clone(), validation_call, &wasm, dna.name.clone())
         },
         None => {
@@ -56,20 +58,18 @@ fn validate_app_entry(
     }
 }
 
-fn build_validation_call(entry : Entry, entry_type: String, zome_name: String) -> ZomeFnCall {
+fn build_validation_call(entry : Entry, entry_type: String, zome_name: String, validation_data: ValidationData) -> ZomeFnCall {
     let function_name = format!("validate_{}", entry_type.to_string());
 
-    //let entry_json = serde_json::to_value(&entry).expect("Entry could not be turned into JSON?!");
     let validation_data_json = serde_json::to_value(
-        &build_validation_data(entry.clone(), EntryType::App(entry_type))
+        &validation_data
     ).expect("ValidationData could not be turned into JSON?!");
-    println!("ENTRY: {}", &*entry);
+
     let entry_json: serde_json::Value = serde_json::from_str(&*entry).unwrap();
-    println!("ENTRY...");
     let params = serde_json::to_string(&json!({
         "entry": entry_json,
         "ctx": validation_data_json,
-    })).expect("Vector could not be turned into JSON?!");
+    })).expect("Params object could not be turned into JSON?!");
 
     ZomeFnCall::new(
         &zome_name,
@@ -79,24 +79,7 @@ fn build_validation_call(entry : Entry, entry_type: String, zome_name: String) -
     )
 }
 
-fn build_validation_data(_entry : Entry, _entry_type: EntryType) -> ValidationData {
-    ValidationData {
-        chain_header: None, /*ChainHeader {
-            entry_type: holochain_wasm_utils::validation::EntryType::AgentId,
-            timestamp: "now".to_string(),
-            link: None,
-            entry_address: "address".to_string(),
-            entry_signature: "signature".to_string(),
-            link_same_type: None,
-        },*/
-        sources: Vec::new(),
-        source_chain_entries: None,
-        source_chain_headers: None,
-        custom: None,
-        lifecycle: HcEntryLifecycle::Chain,
-        action: HcEntryAction::Commit,
-    }
-}
+
 
 fn run_validation_callback(
     context: Arc<Context>,

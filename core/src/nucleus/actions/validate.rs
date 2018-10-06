@@ -11,6 +11,7 @@ use nucleus::ribosome::callback::{
 };
 use snowflake;
 use std::{sync::Arc, thread};
+use holochain_wasm_utils::validation::{HcEntryLifecycle, ValidationData};
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -20,12 +21,11 @@ use std::{sync::Arc, thread};
 pub fn validate_entry(
     entry_type: EntryType,
     entry: Entry,
+    validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
-
-    println!("VALIDATE_ENTRY");
 
     match context
         .state()
@@ -36,7 +36,6 @@ pub fn validate_entry(
         .get_zome_name_for_entry_type(entry_type.as_str())
     {
         None => {
-            println!("VALIDATE_ENTRY: unknown {}", entry_type.as_str());
             return Box::new(future::err(format!(
                 "Unknown entry type: '{}'",
                 entry_type.as_str()
@@ -51,6 +50,7 @@ pub fn validate_entry(
                 let validation_result = match callback::validate_entry::validate_entry(
                     entry.clone(),
                     entry_type.clone(),
+                    validation_data.clone(),
                     context.clone(),
                 ) {
                     CallbackResult::Fail(error_string) => {

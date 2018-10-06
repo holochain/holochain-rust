@@ -1,8 +1,13 @@
 extern crate futures;
-use agent::{actions::commit::*, state::ActionResponse};
+use agent::{actions::commit::*, state::{AgentState, ActionResponse}};
 use futures::{executor::block_on, FutureExt};
 use hash_table::{entry::Entry, sys_entry::EntryType};
-use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
+use holochain_wasm_utils::{
+    error::{RibosomeErrorReport, RibosomeReturnCode},
+    validation::{
+        HcEntryAction, HcEntryLifecycle, ValidationData,
+    },
+};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
@@ -14,6 +19,20 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 struct CommitAppEntryArgs {
     entry_type_name: String,
     entry_content: String,
+}
+
+fn build_validation_data_commit(_entry : Entry, _entry_type: EntryType, _state: &AgentState) -> ValidationData {
+    //let new_header = state.chain().create_next_header(entry_type, entry);
+    //let agent_key = state.keys().expect("Can't commit entry without agent key");
+    ValidationData {
+        chain_header: None, //Some(new_header),
+        sources: vec!["<insert your agent key here>".to_string()],
+        source_chain_entries: None,
+        source_chain_headers: None,
+        custom: None,
+        lifecycle: HcEntryLifecycle::Chain,
+        action: HcEntryAction::Commit,
+    }
 }
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -36,11 +55,20 @@ pub fn invoke_commit_app_entry(
     let entry = Entry::from(input.entry_content);
     let entry_type =
         EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+    let validation_data = build_validation_data_commit(
+        entry.clone(),
+        entry_type.clone(),
+        &runtime.context.state().unwrap().agent()
+    );
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
-        validate_entry(entry_type.clone(), entry.clone(), &runtime.context)
+        validate_entry(
+            entry_type.clone(),
+            entry.clone(),
+            validation_data,
+            &runtime.context)
             // if successful, commit entry:
             .and_then(|_| commit_entry(entry_type.clone(), entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );

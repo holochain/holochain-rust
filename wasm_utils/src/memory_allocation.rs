@@ -147,7 +147,7 @@ pub mod tests {
 
     #[test]
     /// tests construction and encoding in a new single page allocation
-    fn new_single_page_allocation() {
+    fn single_page_allocation_from_encoded_allocation() {
         let i = 0b1010101010101010_0101010101010101;
         let spa = SinglePageAllocation::from_encoded_allocation(i).unwrap();
 
@@ -204,13 +204,23 @@ pub mod tests {
     fn can_single_page_allocation_new_fail() {
         assert_eq!(
             RibosomeErrorCode::ZeroSizedAllocation,
-            SinglePageAllocation::new(0b0000000000000000, 0000000000000000).err().unwrap());
+            SinglePageAllocation::new(0, 0).err().unwrap());
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::new(0b0000000000000100, 0000000000000000).err().unwrap());
+            SinglePageAllocation::new(1, 0).err().unwrap());
         assert_eq!(
             RibosomeErrorCode::OutOfMemory,
             SinglePageAllocation::new(<u16>::max_value(), <u16>::max_value()).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::OutOfMemory,
+            SinglePageAllocation::new(<u16>::max_value(), 1).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            SinglePageAllocation::new(<u16>::max_value(), 0).err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::OutOfMemory,
+            SinglePageAllocation::new(1, <u16>::max_value()).err().unwrap());
+        assert!(SinglePageAllocation::new(0, <u16>::max_value()).is_ok());
     }
 
     #[test]

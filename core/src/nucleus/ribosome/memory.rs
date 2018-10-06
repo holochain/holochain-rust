@@ -56,16 +56,18 @@ impl SinglePageManager {
     /// Write data on top of stack
     pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, RibosomeErrorCode> {
         let data_len = data.len();
-        if data_len > 65536 {
+        if data_len > <u16>::max_value() as usize {
             return Err(RibosomeErrorCode::OutOfMemory);
         }
-
+        if data_len == 0 {
+            return Err(RibosomeErrorCode::ZeroSizedAllocation);
+        }
         // scope for mutable borrow of self
         let mem_buf: SinglePageAllocation;
         {
             let res = self.allocate(data_len as u16);
-            if res.is_err() {
-                return Err(RibosomeErrorCode::OutOfMemory);
+            if let Err(err_code) = res {
+                return Err(err_code);
             }
             mem_buf = res.unwrap();
         }

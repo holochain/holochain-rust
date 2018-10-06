@@ -35,11 +35,13 @@ use std::{
 };
 pub mod wasm;
 pub mod zome;
+pub mod entry_type;
 
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::capabilities::Capability;
 use zome::entry_types::EntryTypeDef;
+use entry_type::EntryType;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -236,12 +238,10 @@ impl Dna {
         Ok(cap.unwrap())
     }
 
-    /// Return the name of the zome holding a specified app_entry_type
+    /// Return the name of the zome holding a specified app entry_type
     pub fn get_zome_name_for_entry_type(&self, entry_type_name: &str) -> Option<String> {
-        // pre-condition: must not be a sys_entry_type
-//        if EntryType::has_sys_prefix(entry_type_name) {
-//            return None;
-//        }
+        // pre-condition: must be a valid app entry_type name
+        assert!(EntryType::has_valid_app_name(entry_type_name));
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, _) in &zome.entry_types {
@@ -253,11 +253,10 @@ impl Dna {
         None
     }
 
+    /// Return the entry_type definition of a specified app entry_type
     pub fn get_entry_type_def(&self, entry_type_name: &str) -> Option<&EntryTypeDef> {
-        // pre-condition: must not be a sys_entry_type
-//        if EntryType::has_sys_prefix(entry_type_name) {
-//            return None;
-//        }
+        // pre-condition: must be a valid app entry_type name
+        assert!(EntryType::has_valid_app_name(entry_type_name));
         // Browse through the zomes
         for (_zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {

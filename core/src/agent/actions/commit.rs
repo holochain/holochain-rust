@@ -3,9 +3,10 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use context::Context;
 use futures::Future;
-use hash_table::{entry::Entry, sys_entry::EntryType};
+use hash_table::entry::Entry;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
+use holochain_dna::entry_type::EntryType;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should

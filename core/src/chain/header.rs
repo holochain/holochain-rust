@@ -2,10 +2,11 @@ use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use hash_table::{
     entry::Entry,
-    sys_entry::{EntryType, ToEntry},
+    sys_entry::ToEntry,
 };
 use json::ToJson;
 use serde_json;
+use holochain_dna::entry_type::EntryType;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table

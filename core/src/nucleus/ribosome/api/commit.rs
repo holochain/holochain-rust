@@ -1,13 +1,14 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::{entry::Entry, sys_entry::EntryType};
+use hash_table::entry::Entry;
 use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_dna::entry_type::EntryType;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]

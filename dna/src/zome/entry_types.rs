@@ -133,6 +133,12 @@ mod tests {
     use serde_json;
 
     #[test]
+    fn can_publish() {
+        assert!(Sharing::Public.can_publish());
+        assert!(!Sharing::Private.can_publish());
+    }
+
+    #[test]
     fn build_and_compare() {
         let fixture: EntryTypeDef = serde_json::from_str(
             r#"{

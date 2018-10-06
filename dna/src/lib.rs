@@ -33,15 +33,14 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
 };
+pub mod entry_type;
 pub mod wasm;
 pub mod zome;
-pub mod entry_type;
 
+use entry_type::EntryType;
 use std::collections::HashMap;
 use uuid::Uuid;
-use zome::capabilities::Capability;
-use zome::entry_types::EntryTypeDef;
-use entry_type::EntryType;
+use zome::{capabilities::Capability, entry_types::EntryTypeDef};
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {

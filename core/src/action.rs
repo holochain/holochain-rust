@@ -2,8 +2,7 @@ use agent::state::AgentState;
 use cas::content::Address;
 use context::Context;
 use hash_table::{entry::Entry, links_entry::Link};
-use holochain_dna::Dna;
-use holochain_dna::entry_type::EntryType;
+use holochain_dna::{entry_type::EntryType, Dna};
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,
     state::{NucleusState, ValidationResult},

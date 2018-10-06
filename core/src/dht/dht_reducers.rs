@@ -6,8 +6,8 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use eav::EntityAttributeValueStorage;
 use hash_table::entry::Entry;
-use std::sync::Arc;
 use holochain_dna::entry_type::EntryType;
+use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
 type DhtReducer<CAS, EAVS> =
@@ -58,9 +58,9 @@ pub(crate) fn commit_sys_entry<CAS, EAVS>(
     old_store: &DhtStore<CAS, EAVS>,
     entry: &Entry,
 ) -> Option<DhtStore<CAS, EAVS>>
-    where
-        CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-        EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     // Add it local storage
     let mut new_store = (*old_store).clone();
@@ -80,13 +80,18 @@ pub(crate) fn commit_app_entry<CAS, EAVS>(
     entry_type: &EntryType,
     entry: &Entry,
 ) -> Option<DhtStore<CAS, EAVS>>
-    where
-        CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-        EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
-    let dna = context.state().unwrap().nucleus().dna().expect("Must have DNA to commit an app entry.");
+    let dna = context
+        .state()
+        .unwrap()
+        .nucleus()
+        .dna()
+        .expect("Must have DNA to commit an app entry.");
     let maybe_def = dna.get_entry_type_def(&entry_type.to_string());
     if maybe_def.is_none() {
         return None;
@@ -101,12 +106,11 @@ pub(crate) fn commit_app_entry<CAS, EAVS>(
         return None;
     }
     // ...and publish to the network if its not private
-    if entry_type_def.sharing.clone().can_publish()  {
+    if entry_type_def.sharing.clone().can_publish() {
         new_store.network_mut().publish(entry);
     }
     Some(new_store)
 }
-
 
 //
 pub(crate) fn reduce_commit_entry<CAS, EAVS>(
@@ -129,10 +133,10 @@ where
         .content_storage()
         .contains(&entry.address())
         .unwrap()
-        {
-            // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
-            return None;
-        }
+    {
+        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
+        return None;
+    }
 
     // Handle sys entris and app entries differently
     if entry_type.clone().is_sys() {

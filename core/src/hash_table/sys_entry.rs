@@ -1,7 +1,7 @@
 use cas::content::AddressableContent;
 use hash_table::entry::Entry;
 use holochain_agent::{Agent, Identity};
-use holochain_dna::{Dna, entry_type::EntryType};
+use holochain_dna::{entry_type::EntryType, Dna};
 use serde_json;
 
 pub trait ToEntry {

@@ -276,9 +276,8 @@ pub mod tests {
     use agent::state::ActionResponse;
     use context::Context;
     use futures::executor::block_on;
-    use holochain_dna::entry_type::EntryType;
     use holochain_agent::Agent;
-    use holochain_dna::{zome::Zome, Dna};
+    use holochain_dna::{entry_type::EntryType, zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,

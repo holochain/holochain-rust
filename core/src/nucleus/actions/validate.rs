@@ -5,12 +5,12 @@ use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
 use hash_table::entry::Entry;
+use holochain_dna::entry_type::EntryType;
 use nucleus::ribosome::callback::{
     validate_commit::validate_commit, CallbackParams, CallbackResult,
 };
 use snowflake;
 use std::{sync::Arc, thread};
-use holochain_dna::entry_type::EntryType;
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should

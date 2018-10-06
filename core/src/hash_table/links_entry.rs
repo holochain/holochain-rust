@@ -1,8 +1,5 @@
 use cas::content::{Address, AddressableContent};
-use hash_table::{
-    entry::Entry,
-    sys_entry::ToEntry,
-};
+use hash_table::{entry::Entry, sys_entry::ToEntry};
 use holochain_dna::entry_type::EntryType;
 use serde_json;
 

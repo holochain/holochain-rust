@@ -10,11 +10,7 @@ use chain::{
     pair::Pair,
 };
 use error::HolochainError;
-use hash_table::{
-    entry::Entry,
-    sys_entry::ToEntry,
-    HashTable,
-};
+use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
 use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use riker::actors::*;

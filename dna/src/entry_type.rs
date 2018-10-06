@@ -1,4 +1,3 @@
-
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
@@ -10,7 +9,6 @@ macro_rules! sys_prefix {
         concat!("%", $s)
     };
 }
-
 
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
@@ -31,12 +29,14 @@ pub enum EntryType {
 
 impl EntryType {
     pub fn is_app(self) -> bool {
-        match self  {
+        match self {
             EntryType::App(_) => true,
             _ => false,
         }
     }
-    pub fn is_sys(self) -> bool { !self.is_app() }
+    pub fn is_sys(self) -> bool {
+        !self.is_app()
+    }
 
     /// Checks entry_type_name is valid
     pub fn has_valid_app_name(entry_type_name: &str) -> bool {
@@ -89,7 +89,6 @@ impl EntryType {
     }
 }
 
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -101,7 +100,6 @@ pub mod tests {
         assert!(EntryType::AgentId.is_sys());
         assert!(!EntryType::AgentId.is_app());
     }
-
 
     #[test]
     fn entry_type_valid_app_name() {

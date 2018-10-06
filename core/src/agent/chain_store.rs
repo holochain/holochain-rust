@@ -65,8 +65,40 @@ pub mod tests {
 
     use agent::chain_store::ChainStore;
     use cas::memory::MemoryStorage;
+    use agent::chain_header::tests::test_chain_header;
+    use agent::chain_header::ChainHeader;
+    use hash_table::entry::tests::test_entry_type;
+    use hash_table::entry::tests::test_entry;
+    use cas::content::AddressableContent;
+    use cas::storage::ContentAddressableStorage;
 
     pub fn test_chain_store() -> ChainStore<MemoryStorage> {
+        ChainStore::new(MemoryStorage::new())
+    }
 
+    #[test]
+    /// show Iterator implementation for chain store
+    fn iterator() {
+        let mut chain_store = test_chain_store();
+
+        let chain_header_a = test_chain_header();
+        let chain_header_b = ChainHeader::new(
+            &test_entry_type(),
+            &String::new(),
+            Some(chain_header_a.address()),
+            &test_entry().address(),
+            &String::new(),
+            None,
+        );
+
+        chain_store.content_storage().add(&chain_header_a).expect("could not add header to cas");
+        chain_store.content_storage().add(&chain_header_b).expect("could not add header to cas");
+
+        let expected = vec![chain_header_b.address(), chain_header_a.address()];
+        let mut found = vec![];
+        for chain_header in chain_store {
+            found.push(chain_header);
+        }
+        assert_eq!(expected, found);
     }
 }

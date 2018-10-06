@@ -188,7 +188,7 @@ pub mod tests {
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new(&test_chain_store())
+        AgentState::new(test_chain_store())
     }
 
     /// dummy action response for a successful commit as test_entry()

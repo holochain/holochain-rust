@@ -40,10 +40,10 @@ impl EntryType {
 
     /// Checks entry_type_name is valid
     pub fn has_valid_app_name(entry_type_name: &str) -> bool {
-        // TODO #441 - do a real regex test instead
+        // TODO #445 - do a real regex test instead
         // must not be empty
         entry_type_name.len() > 0
-            // Must not have sys_prefix
+        // Must not have sys_prefix
             && &entry_type_name[0..1] != "%"
     }
 }
@@ -109,7 +109,7 @@ pub mod tests {
         assert!(!EntryType::has_valid_app_name(&String::new()));
         assert!(EntryType::has_valid_app_name("toto"));
         assert!(!EntryType::has_valid_app_name("%%"));
-        // TODO #441 - do a real regex test in has_valid_app_name()
+        // TODO #445 - do a real regex test in has_valid_app_name()
         // assert!(EntryType::has_valid_app_name("\n"));
     }
 

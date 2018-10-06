@@ -1,6 +1,5 @@
 pub mod actor;
 pub mod header;
-pub mod pair;
 
 use actor::Protocol;
 use cas::content::{Address, AddressableContent};

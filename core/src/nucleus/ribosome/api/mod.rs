@@ -385,13 +385,13 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_instance, test_context_and_logger, TestLogger},
+        tests::{test_context_and_logger, test_instance, TestLogger},
         Instance,
     };
     use nucleus::{
         ribosome::{
             api::{call, Runtime},
-            callback::{tests::test_callback_instance},
+            callback::tests::test_callback_instance,
         },
         ZomeFnCall,
     };
@@ -564,14 +564,7 @@ pub mod tests {
         let (c, logger) = test_context_and_logger("joan");
         let context = instance.initialize_context(c);
 
-        test_zome_api_function_call(
-            &app_name,
-            context,
-            logger,
-            &instance,
-            &wasm,
-            args_bytes,
-        )
+        test_zome_api_function_call(&app_name, context, logger, &instance, &wasm, args_bytes)
     }
 
     #[test]

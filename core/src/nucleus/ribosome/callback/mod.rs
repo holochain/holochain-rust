@@ -8,7 +8,7 @@ pub mod validate_entry;
 
 use context::Context;
 use hash_table::entry::Entry;
-use holochain_dna::{Dna, wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use json::ToJson;
 use nucleus::{
     ribosome::{

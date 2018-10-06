@@ -6,12 +6,10 @@ use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
 use hash_table::{entry::Entry, sys_entry::EntryType};
-use nucleus::ribosome::callback::{
-    self, CallbackResult,
-};
+use holochain_wasm_utils::validation::ValidationData;
+use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
 use std::{sync::Arc, thread};
-use holochain_wasm_utils::validation::ValidationData;
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -58,18 +56,19 @@ pub fn validate_entry(
                     Ok(validation_result) => {
                         match validation_result {
                             CallbackResult::Fail(error_string) => {
-                                let error_object : serde_json::Value = serde_json::from_str(&error_string).unwrap();
+                                let error_object: serde_json::Value =
+                                    serde_json::from_str(&error_string).unwrap();
                                 //.trim_matches(|c| c == '\\' || c == '"')
                                 Err(error_object["Err"].to_string())
-                            },
+                            }
                             CallbackResult::Pass => Ok(()),
                             CallbackResult::NotImplemented => Err(format!(
                                 "Validation callback not implemented for {:?}",
                                 entry_type.clone()
                             )),
                         }
-                    },
-                    Err(error) => Err(error.to_string())
+                    }
+                    Err(error) => Err(error.to_string()),
                 };
 
                 context

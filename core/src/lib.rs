@@ -40,7 +40,6 @@ pub mod action;
 pub mod actor;
 pub mod agent;
 pub mod cas;
-pub mod chain;
 pub mod context;
 pub mod dht;
 pub mod eav;

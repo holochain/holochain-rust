@@ -148,12 +148,6 @@ impl AddressableContent for ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{
-        header::ChainHeader,
-        pair::tests::{test_pair, test_pair_b},
-        tests::test_chain,
-        SourceChain,
-    };
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -161,6 +155,7 @@ pub mod tests {
         },
         sys_entry::ToEntry,
     };
+    use agent::chain_header::ChainHeader;
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header() -> ChainHeader {

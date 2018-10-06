@@ -17,6 +17,7 @@ use hash_table::{
 use json::ToJson;
 use riker::actors::*;
 use serde_json;
+use cas::storage::ContentAddressableStorage;
 
 /// Iterator type for pairs in a chain
 /// next method may panic if there is an error in the underlying table
@@ -65,7 +66,7 @@ impl Iterator for ChainIterator {
 #[derive(Clone, Debug)]
 pub struct Chain {
     chain_actor: ActorRef<Protocol>,
-    table_actor: ActorRef<Protocol>,
+    cas: ContentAddressableStorage,
 }
 
 impl PartialEq for Chain {
@@ -91,10 +92,10 @@ impl IntoIterator for Chain {
 }
 
 impl Chain {
-    pub fn new(table: ActorRef<Protocol>) -> Chain {
+    pub fn new<CAS: ContentAddressableStorage>(content_addressable_storage: &CAS) -> Chain {
         Chain {
             chain_actor: ChainActor::new_ref(),
-            table_actor: table.clone(),
+            cas: content_addressable_storage.clone(),
         }
     }
 

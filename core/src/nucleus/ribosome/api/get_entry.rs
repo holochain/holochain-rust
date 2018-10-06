@@ -81,7 +81,6 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
     use cas::content::AddressableContent;
-    use chain::SourceChain;
     use hash_table::entry::tests::test_entry;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{

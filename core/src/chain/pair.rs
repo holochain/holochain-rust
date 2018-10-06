@@ -98,7 +98,7 @@ impl RoundTripJson for Pair {}
 pub mod tests {
     use super::Pair;
     use cas::content::AddressableContent;
-    use chain::{tests::test_chain, SourceChain};
+    use chain::{header::tests::test_chain_header, tests::test_chain, SourceChain};
     use hash_table::entry::tests::{
         test_entry, test_entry_b, test_entry_type, test_entry_type_b, test_entry_unique,
     };
@@ -106,7 +106,13 @@ pub mod tests {
 
     /// dummy pair
     pub fn test_pair() -> Pair {
-        test_chain().create_next_pair(&test_entry_type(), &test_entry())
+        let mut chain = test_chain();
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+        let header = chain
+            .push_entry(&entry_type, &entry)
+            .expect("could not push entry");
+        Pair::from_header(&chain.table(), &header).unwrap()
     }
 
     /// dummy pair, same as test_pair()
@@ -116,7 +122,13 @@ pub mod tests {
 
     /// dummy pair, differs from test_pair()
     pub fn test_pair_b() -> Pair {
-        test_chain().create_next_pair(&test_entry_type_b(), &test_entry_b())
+        let mut chain = test_chain();
+        let entry_type = test_entry_type_b();
+        let entry = test_entry_b();
+        let header = chain
+            .push_entry(&entry_type, &entry)
+            .expect("could not push entry");
+        Pair::from_header(&chain.table(), &header).unwrap()
     }
 
     /// dummy pair, uses test_entry_unique()
@@ -132,37 +144,32 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let chain_header_a = chain.create_next_chain_header(&entry_type, &entry);
 
-        assert_eq!(header.entry_address(), &entry.address());
-        assert_eq!(header.link(), None);
+        assert_eq!(chain_header_a.entry_address(), &entry.address());
+        assert_eq!(chain_header_a.link(), None);
 
-        let pair = chain.create_next_pair(&entry_type, &entry);
-        assert_eq!(&entry, pair.entry());
-        assert_eq!(&header, pair.header());
+        // same chain = same header
+        let chain_header_b = chain.create_next_chain_header(&entry_type, &entry);
+        assert_eq!(&entry.address(), chain_header_b.entry_address());
+        assert_eq!(chain_header_a, chain_header_b);
+        assert_eq!(chain_header_b.link(), None);
     }
 
     #[test]
     /// tests for pair.header()
     fn header() {
-        let chain = test_chain();
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-        let header = chain.create_next_header(&entry_type, &entry);
-        let pair = chain.create_next_pair(&entry_type, &entry);
+        let chain_header = test_chain_header();
+        let pair = test_pair();
 
-        assert_eq!(&header, pair.header());
+        assert_eq!(&chain_header, pair.header());
     }
 
     #[test]
     /// tests for pair.entry()
     fn entry() {
-        let mut chain = test_chain();
-        let entry_type = test_entry_type();
         let entry = test_entry();
-        let pair = chain
-            .push_entry(&entry_type, &entry)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
+        let pair = test_pair();
 
         assert_eq!(&entry, pair.entry());
     }
@@ -170,11 +177,7 @@ pub mod tests {
     #[test]
     /// tests for pair.validate()
     fn validate() {
-        let chain = test_chain();
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let pair = chain.create_next_pair(&entry_type, &entry);
+        let pair = test_pair();
 
         assert!(pair.validate());
     }

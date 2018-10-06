@@ -1,6 +1,6 @@
 use agent::keys::Keys;
 use cas::content::Address;
-use chain::pair::Pair;
+use chain::header::ChainHeader;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash_table::{
@@ -18,13 +18,13 @@ use riker_patterns::ask::ask;
 /// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
 /// @see https://github.com/riker-rs/riker/issues/17
 pub enum Protocol {
-    /// Chain::set_top_pair()
-    SetTopPair(Option<Pair>),
-    SetTopPairResult(Result<Option<Pair>, HolochainError>),
+    /// Chain::set_top_chain_header()
+    SetTopChainHeader(Option<ChainHeader>),
+    SetTopChainHeaderResult(Result<Option<ChainHeader>, HolochainError>),
 
-    /// Chain::top_pair()
-    GetTopPair,
-    GetTopPairResult(Option<Pair>),
+    /// Chain::top_chain_header()
+    GetTopChainHeader,
+    GetTopChainHeaderResult(Option<ChainHeader>),
 
     /// HashTable::setup()
     Setup,

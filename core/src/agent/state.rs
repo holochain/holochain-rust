@@ -103,7 +103,6 @@ fn reduce_commit_entry(
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
-    let res = state.chain.content_storage().add(entry);
     let chain_header = ChainHeader::new(
         &entry_type,
         &String::new(),
@@ -113,16 +112,19 @@ fn reduce_commit_entry(
         // BAD, must be top of type
         state.top_chain_header.clone().and_then(|chain_header| Some(chain_header.address())),
     );
-    state.top_chain_header = Some(chain_header);
 
-    let response = match res {
-        Ok(_) => Ok(entry.address()),
-        Err(e) => Err(e),
-    };
+    // @TODO adding the entry to the CAS should happen elsewhere.
+    fn response(state: &mut AgentState, entry: &Entry, chain_header: &ChainHeader) -> Result<Address, HolochainError> {
+        state.chain.content_storage().add(entry)?;
+        state.chain.content_storage().add(chain_header)?;
+        Ok(chain_header.address())
+    }
+    let res = response(state, &entry, &chain_header);
+    state.top_chain_header = Some(chain_header);
 
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(response));
+        .insert(action_wrapper.clone(), ActionResponse::Commit(res));
 }
 
 /// do a get action against an agent state
@@ -177,7 +179,6 @@ pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use cas::content::AddressableContent;
-    use chain::tests::test_chain;
     use error::HolochainError;
     use hash_table::entry::tests::{test_entry, test_entry_address};
     use instance::tests::test_context;

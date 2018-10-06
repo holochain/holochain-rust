@@ -63,6 +63,9 @@ impl<CAS> Iterator for ChainStoreIterator<CAS> where CAS: ContentAddressableStor
 #[cfg(test)]
 pub mod tests {
 
+    use agent::chain_store::ChainStore;
+    use cas::memory::MemoryStorage;
+
     pub fn test_chain_store() -> ChainStore<MemoryStorage> {
 
     }

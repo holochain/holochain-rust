@@ -147,7 +147,6 @@ impl AddressableContent for ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{header::ChainHeader, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -159,7 +158,14 @@ pub mod tests {
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header() -> ChainHeader {
-        test_chain().create_next_chain_header(&test_entry_type(), &test_entry())
+        ChainHeader::new(
+            &test_entry_type(),
+            &String::new(),
+            None,
+            &test_entry().address(),
+            &String::new(),
+            None,
+        )
     }
 
     /// returns a dummy header for use in tests
@@ -169,7 +175,14 @@ pub mod tests {
 
     /// returns a dummy header for use in tests. different from test_chain_header_a.
     pub fn test_chain_header_b() -> ChainHeader {
-        test_chain().create_next_chain_header(&test_entry_type_b(), &test_entry_b())
+        ChainHeader::new(
+            &test_entry_type_b(),
+            &String::new(),
+            None,
+            &test_entry_b().address(),
+            &String::new(),
+            None,
+        )
     }
 
     pub fn test_header_address() -> Address {
@@ -179,80 +192,45 @@ pub mod tests {
     #[test]
     /// tests for PartialEq
     fn eq() {
-        let chain_a = test_chain();
-
-        let entry_type_a = test_entry_type_a();
-        let entry_type_b = test_entry_type_b();
-
-        let entry_a = test_entry_a();
-        let entry_b = test_entry_b();
-
-        // same content + chain state is equal
-        assert_eq!(
-            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
-            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
-        );
+        // basic equality
+        assert_eq!(test_chain_header(), test_chain_header());
 
         // different content is different
-        assert_ne!(
-            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
-            chain_a.create_next_chain_header(&entry_type_a, &entry_b),
-        );
+        assert_ne!(test_chain_header_a(), test_chain_header_b());
 
         // different type is different
         assert_ne!(
-            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
-            chain_a.create_next_chain_header(&entry_type_b, &entry_a),
+            ChainHeader::new(&test_entry_type_a(), &String::new(), None, &test_entry().address(), &String::new(), None),
+            ChainHeader::new(&test_entry_type_b(), &String::new(), None, &test_entry().address(), &String::new(), None),
         );
 
-        // different state is different with same entry
-        let mut chain_b = test_chain();
-        chain_b
-            .push_entry(&entry_type_a, &entry_a)
-            .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-
+        // different previous header is different
         assert_ne!(
-            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
-            chain_b.create_next_chain_header(&entry_type_a, &entry_a)
+            ChainHeader::new(&test_entry_type(), &String::new(), None, &test_entry().address(), &String::new(), None),
+            ChainHeader::new(&test_entry_type(), &String::new(), Some(test_chain_header()), &test_entry().address(), &String::new(), None),
         );
     }
 
     #[test]
     /// tests for ChainHeader::new()
     fn new() {
-        let chain = test_chain();
-        let entry_type = test_entry_type();
-        let entry = test_entry();
+        let chain_header = test_chain_header();
 
-        let header = chain.create_next_chain_header(&entry_type, &entry);
-
-        assert_eq!(header.entry_address(), &entry.address());
-        assert_eq!(header.link(), None);
-        assert_ne!(header.address(), Address::new());
+        assert_eq!(chain_header.entry_address(), &test_entry().address());
+        assert_eq!(chain_header.link(), None);
+        assert_ne!(chain_header.address(), Address::new());
     }
 
     #[test]
     /// tests for header.entry_type()
     fn entry_type() {
-        let chain = test_chain();
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let header = chain.create_next_chain_header(&entry_type, &entry);
-
-        assert_eq!(header.entry_type(), &entry_type);
+        assert_eq!(test_chain_header().entry_type(), &test_entry_type());
     }
 
     #[test]
     /// tests for header.time()
     fn time() {
-        let chain = test_chain();
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let header = chain.create_next_chain_header(&entry_type, &entry);
-
-        assert_eq!(header.timestamp(), "");
+        assert_eq!(test_chain_header().timestamp(), "");
     }
 
     #[test]

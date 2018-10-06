@@ -14,7 +14,11 @@ extern {
 /// return error code
 fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
   // Write input string on stack
-  let allocation_of_input =  serialize(mem_stack, s);
+  let maybe_allocation =  serialize(mem_stack, s);
+  if let Err(_) = maybe_allocation {
+    return;
+  }
+  let allocation_of_input = maybe_allocation.unwrap();
   // Call WASMI-able DEBUG
   unsafe {
     hc_debug(allocation_of_input.encode() as i32);

@@ -1,6 +1,5 @@
 pub mod actor;
 pub mod header;
-pub mod pair;
 
 use actor::Protocol;
 use cas::content::{Address, AddressableContent};
@@ -19,7 +18,7 @@ use riker::actors::*;
 use serde_json;
 use cas::storage::ContentAddressableStorage;
 
-/// Iterator type for pairs in a chain
+/// Iterator type for chain headers in a chain
 /// next method may panic if there is an error in the underlying table
 #[derive(Clone)]
 pub struct ChainIterator {
@@ -115,7 +114,7 @@ impl Chain {
             // https://github.com/holochain/holochain-rust/issues/70
             &String::new(),
             self.top_chain_header()
-                .expect("could not get top pair when building header")
+                .expect("could not get top chain header when building new header")
                 .as_ref()
                 .map(|chain_header| chain_header.to_entry().1.address()),
             &entry.address(),
@@ -133,7 +132,7 @@ impl Chain {
             self.table(),
             &self
                 .top_chain_header()
-                .expect("could not get top pair when building iterator"),
+                .expect("could not get top chain header when building iterator"),
         )
     }
 
@@ -208,7 +207,8 @@ impl SourceChain for Chain {
         // @see https://github.com/holochain/holochain-rust/issues/50
         let maybe_chain_header = self
                 .iter()
-                // @TODO entry addresses are NOT unique across pairs so k/v lookups can't be 1:1
+                // @TODO entry addresses are NOT unique across chain headers so k/v lookups can't
+                // be 1:1
                 // @see https://github.com/holochain/holochain-rust/issues/145
             .find(|chain_header| {
                 &chain_header.entry_address() == &entry_address
@@ -222,7 +222,7 @@ impl SourceChain for Chain {
 }
 
 impl ToJson for Chain {
-    /// get the entire chain, top to bottom as a JSON array or canonical pairs
+    /// get the entire chain, top to bottom as a JSON array or canonical chain headers
     /// @TODO return canonical JSON
     /// @see https://github.com/holochain/holochain-rust/issues/75
     fn to_json(&self) -> Result<String, HolochainError> {
@@ -297,7 +297,7 @@ pub mod tests {
             None,
             chain
                 .top_chain_header()
-                .expect("could not get top pair from test chain")
+                .expect("could not get top chain header from test chain")
         );
 
         let entry_type_a = test_entry_type_a();
@@ -352,15 +352,15 @@ pub mod tests {
             Some(chain_header.clone()),
             chain_2
                 .top_chain_header()
-                .expect("could not get top pair after pushing to chain 2")
+                .expect("could not get top chain header after pushing to chain 2")
         );
         assert_eq!(
             chain_1
                 .top_chain_header()
-                .expect("could not get top pair for comparing chain 1"),
+                .expect("could not get top chain header for comparing chain 1"),
             chain_2
                 .top_chain_header()
-                .expect("could not get top pair when comparing chain 2")
+                .expect("could not get top chain header when comparing chain 2")
         );
     }
 
@@ -394,7 +394,7 @@ pub mod tests {
             None,
             chain
                 .top_chain_header()
-                .expect("could not get top pair for test chain")
+                .expect("could not get top chain header for test chain")
         );
 
         // chain top, chain header entry and headers should all line up after a push
@@ -408,7 +408,7 @@ pub mod tests {
             Some(&chain_header_a),
             chain
                 .top_chain_header()
-                .expect("could not get top pair for pair a")
+                .expect("could not get top chain header as chain header a")
                 .as_ref()
         );
         assert_eq!(&entry_a.address(), chain_header_a.entry_address());
@@ -620,7 +620,7 @@ pub mod tests {
     }
 
     #[test]
-    fn top_pair_of_type() {
+    fn top_chain_header_of_type_test() {
         let mut chain = test_chain();
 
         assert_eq!(None, chain.top_chain_header_of_type(&test_entry_type_a()));

@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use cas::content::Address;
-use holochain_wasm_utils::error::RibosomeReturnCode;
 use json::ToJson;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
@@ -26,7 +25,7 @@ pub fn invoke_get_entry(
     let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        return ribosome_return_code!(ArgumentDeserializationFailed);
+        return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
 
@@ -66,10 +65,10 @@ pub fn invoke_get_entry(
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => ribosome_return_code!(ResponseSerializationFailed),
+                Err(_) => ribosome_error_code!(ResponseSerializationFailed),
             }
         }
-        _ => ribosome_return_code!(ReceivedWrongActionResult),
+        _ => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 

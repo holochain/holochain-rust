@@ -1,12 +1,13 @@
-use self::RibosomeReturnCode::*;
-use self::RibosomeErrorCode::*;
+use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use std::fmt;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
 macro_rules! ribosome_return_code {
     ($s:ident) => {
-        Ok(Some(RuntimeValue::I32(::holochain_wasm_utils::error::RibosomeErrorCode::$s as i32)))
+        Ok(Some(RuntimeValue::I32(
+            ::holochain_wasm_utils::error::RibosomeErrorCode::$s as i32,
+        )))
     };
 }
 //#[macro_export]
@@ -46,8 +47,6 @@ impl fmt::Display for RibosomeErrorReport {
         )
     }
 }
-
-
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
@@ -144,18 +143,16 @@ pub mod tests {
 
     #[test]
     fn ribosome_return_code_round_trip() {
-        let oom = RibosomeReturnCode::from_offset(
-            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
-        );
+        let oom =
+            RibosomeReturnCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
         assert_eq!(Failure(RibosomeErrorCode::OutOfMemory), oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
 
     #[test]
     fn ribosome_error_code_round_trip() {
-        let oom = RibosomeErrorCode::from_offset(
-            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
-        );
+        let oom =
+            RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
@@ -175,7 +172,7 @@ pub mod tests {
                 description: description.to_string(),
                 file_name: file!().to_string(),
                 line: line!().to_string(),
-             }.to_string(),
+            }.to_string(),
         );
     }
 }

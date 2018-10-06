@@ -10,7 +10,7 @@ pub mod init_globals;
 use context::Context;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use holochain_wasm_utils::{
-    error::RibosomeReturnCode, error::RibosomeErrorCode,
+    error::{RibosomeErrorCode, RibosomeReturnCode},
     memory_allocation::decode_encoded_allocation,
 };
 use nucleus::{
@@ -322,7 +322,11 @@ pub fn call(
         let maybe_allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
         encoded_allocation_of_input = match maybe_allocation_of_input {
             Err(RibosomeErrorCode::ZeroSizedAllocation) => 0,
-            Err(_) => return Err(InterpreterError::Trap(Trap::new(TrapKind::MemoryAccessOutOfBounds))),
+            Err(_) => {
+                return Err(InterpreterError::Trap(Trap::new(
+                    TrapKind::MemoryAccessOutOfBounds,
+                )))
+            }
             Ok(allocation_of_input) => allocation_of_input.encode(),
         }
     }
@@ -351,8 +355,15 @@ pub fn call(
     match maybe_allocation {
         // Nothing in memory, log return code
         Err(return_code) => {
-            runtime.context.log(&format!("Zome Function '{}' returned: {}", zome_call.fn_name, return_code.to_string())).expect("Logger should work");
-        },
+            runtime
+                .context
+                .log(&format!(
+                    "Zome Function '{}' returned: {}",
+                    zome_call.fn_name,
+                    return_code.to_string()
+                ))
+                .expect("Logger should work");
+        }
         // Something in memory, try to read it
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);

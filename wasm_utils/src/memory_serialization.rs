@@ -1,5 +1,5 @@
-use error::{RibosomeErrorReport, RibosomeErrorCode};
-use memory_allocation::{SinglePageAllocation, SinglePageStack, decode_encoded_allocation};
+use error::{RibosomeErrorCode, RibosomeErrorReport};
+use memory_allocation::{decode_encoded_allocation, SinglePageAllocation, SinglePageStack};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
@@ -46,8 +46,10 @@ pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
 }
 
 // Write a data struct into a memory buffer as json string
-pub fn serialize<T: Serialize>(stack: &mut SinglePageStack, internal: T)
-    -> Result<SinglePageAllocation, RibosomeErrorCode> {
+pub fn serialize<T: Serialize>(
+    stack: &mut SinglePageStack,
+    internal: T,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
     assert!(json_bytes_len < <u16>::max_value() as usize);
@@ -60,10 +62,7 @@ pub fn serialize<T: Serialize>(stack: &mut SinglePageStack, internal: T)
         ptr_safe[i] = *byte as i8;
     }
 
-    SinglePageAllocation::new(
-        ptr as u16,
-        json_bytes_len as u16,
-    )
+    SinglePageAllocation::new(ptr as u16, json_bytes_len as u16)
 }
 
 // Helper

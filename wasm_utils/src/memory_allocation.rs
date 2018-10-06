@@ -1,6 +1,4 @@
-use error::{
-    RibosomeReturnCode, RibosomeErrorCode,
-};
+use error::{RibosomeErrorCode, RibosomeReturnCode};
 
 //--------------------------------------------------------------------------------------------------
 // Helpers
@@ -28,8 +26,9 @@ pub fn u32_merge_bits(high: u16, low: u16) -> u32 {
     (u32::from(high) << 16) | u32::from(low)
 }
 
-
-pub fn decode_encoded_allocation(encoded_allocation: u32) -> Result<SinglePageAllocation, RibosomeReturnCode> {
+pub fn decode_encoded_allocation(
+    encoded_allocation: u32,
+) -> Result<SinglePageAllocation, RibosomeReturnCode> {
     let (offset, length) = u32_split_bits(encoded_allocation);
     // zero length allocation = RibosomeReturnCode
     if length == 0 {
@@ -86,8 +85,12 @@ impl SinglePageAllocation {
     }
 
     // getters
-    pub fn offset(self) -> u16 { self.offset }
-    pub fn length(self) -> u16 { self.length }
+    pub fn offset(self) -> u16 {
+        self.offset
+    }
+    pub fn length(self) -> u16 {
+        self.length
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -204,22 +207,36 @@ pub mod tests {
     fn can_single_page_allocation_new_fail() {
         assert_eq!(
             RibosomeErrorCode::ZeroSizedAllocation,
-            SinglePageAllocation::new(0, 0).err().unwrap());
+            SinglePageAllocation::new(0, 0).err().unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::new(1, 0).err().unwrap());
+            SinglePageAllocation::new(1, 0).err().unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::OutOfMemory,
-            SinglePageAllocation::new(<u16>::max_value(), <u16>::max_value()).err().unwrap());
+            SinglePageAllocation::new(<u16>::max_value(), <u16>::max_value())
+                .err()
+                .unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::OutOfMemory,
-            SinglePageAllocation::new(<u16>::max_value(), 1).err().unwrap());
+            SinglePageAllocation::new(<u16>::max_value(), 1)
+                .err()
+                .unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::new(<u16>::max_value(), 0).err().unwrap());
+            SinglePageAllocation::new(<u16>::max_value(), 0)
+                .err()
+                .unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::OutOfMemory,
-            SinglePageAllocation::new(1, <u16>::max_value()).err().unwrap());
+            SinglePageAllocation::new(1, <u16>::max_value())
+                .err()
+                .unwrap()
+        );
         assert!(SinglePageAllocation::new(0, <u16>::max_value()).is_ok());
     }
 
@@ -228,35 +245,32 @@ pub mod tests {
     fn can_single_page_allocation_from_fail() {
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::from_encoded_allocation(0b0000000000000000_0000000000000000).err().unwrap());
+            SinglePageAllocation::from_encoded_allocation(0b0000000000000000_0000000000000000)
+                .err()
+                .unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::from_encoded_allocation(0b0000000000000100_0000000000000000).err().unwrap());
+            SinglePageAllocation::from_encoded_allocation(0b0000000000000100_0000000000000000)
+                .err()
+                .unwrap()
+        );
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            SinglePageAllocation::from_encoded_allocation(<u32>::max_value()).err().unwrap());
+            SinglePageAllocation::from_encoded_allocation(<u32>::max_value())
+                .err()
+                .unwrap()
+        );
     }
 
     #[test]
     fn test_u32_max_bits() {
-        assert_eq!(
-            <u16>::max_value(),
-            super::u32_high_bits(<u32>::max_value()),
-        );
-        assert_eq!(
-            <u16>::max_value(),
-            super::u32_low_bits(<u32>::max_value()),
-        );
+        assert_eq!(<u16>::max_value(), super::u32_high_bits(<u32>::max_value()),);
+        assert_eq!(<u16>::max_value(), super::u32_low_bits(<u32>::max_value()),);
         let upper_16: u32 = u32::from(<u16>::max_value());
         let upper_16 = upper_16 << 16;
-        assert_eq!(
-            <u16>::max_value(),
-            super::u32_high_bits(upper_16),
-        );
-        assert_eq!(
-            0,
-            super::u32_low_bits(upper_16),
-        );
+        assert_eq!(<u16>::max_value(), super::u32_high_bits(upper_16),);
+        assert_eq!(0, super::u32_low_bits(upper_16),);
     }
 
     #[test]

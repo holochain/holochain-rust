@@ -44,7 +44,6 @@ impl ChainHeader {
     /// normally (outside unit tests) the generation of valid headers is internal to the
     /// chain::SourceChain trait and should not need to be handled manually
     ///
-    /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new(
         entry_type: &EntryType,

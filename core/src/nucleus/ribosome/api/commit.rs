@@ -27,6 +27,16 @@ fn build_validation_data_commit(
     _entry_type: EntryType,
     _state: &AgentState,
 ) -> ValidationData {
+    //
+    // TODO: populate validation data with with chain content
+    // I have left this out because filling the valiation data with
+    // chain headers and entries does not work as long as ValidationData
+    // is defined with the type copies i've put in wasm_utils/src/validation.rs.
+    // Doing this right requires a refactoring in which I extract all these types
+    // into a separate create ("core_types") that can be used from holochain core
+    // and the HDK.
+    // 
+
     //let new_header = state.chain().create_next_header(entry_type, entry);
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {

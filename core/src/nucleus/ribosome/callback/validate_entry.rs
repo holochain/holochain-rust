@@ -1,5 +1,6 @@
 extern crate serde_json;
 use context::Context;
+use error::HolochainError;
 use holochain_dna::wasm::DnaWasm;
 use nucleus::{
     ribosome::{
@@ -11,7 +12,7 @@ use nucleus::{
 use std::sync::Arc;
 use holochain_wasm_utils::{
     validation::{
-        ValidationData, HcEntryLifecycle, HcEntryAction
+        ValidationData
     }
 };
 use hash_table::{entry::Entry, sys_entry::EntryType};
@@ -21,12 +22,12 @@ pub fn validate_entry(
     entry_type: EntryType,
     validation_data: ValidationData,
     context: Arc<Context>,
-) -> CallbackResult {
+) -> Result<CallbackResult, HolochainError> {
     println!("VALIDATE_ENTRY match: {}", entry_type.as_str());
     match entry_type {
-        EntryType::App(app_entry_type) => validate_app_entry(entry, app_entry_type, validation_data, context),
-        EntryType::Dna => CallbackResult::Pass,
-        _ => CallbackResult::NotImplemented
+        EntryType::App(app_entry_type) => Ok(validate_app_entry(entry, app_entry_type, validation_data, context)?),
+        EntryType::Dna => Ok(CallbackResult::Pass),
+        _ => Ok(CallbackResult::NotImplemented)
     }
 }
 
@@ -35,48 +36,60 @@ fn validate_app_entry(
     app_entry_type: String,
     validation_data: ValidationData,
     context: Arc<Context>,
-) -> CallbackResult {
+) -> Result<CallbackResult, HolochainError> {
     println!("VALIDATE_APP_ENTRY");
     let dna = get_dna(&context).expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
     if zome_name.is_none() {
         println!("VALIDATE_APP_ENTRY: no zome for entry type {}", app_entry_type);
-        return CallbackResult::NotImplemented
+        return Ok(CallbackResult::NotImplemented)
     }
 
     let zome_name = zome_name.unwrap();
     match get_wasm(&context, &zome_name) {
         Some(wasm) => {
             println!("VALIDATE_APP_ENTRY: wasm found!");
-            let validation_call = build_validation_call(entry, app_entry_type, zome_name, validation_data);
-            run_validation_callback(context.clone(), validation_call, &wasm, dna.name.clone())
+            let validation_call = build_validation_call(entry, app_entry_type, zome_name, validation_data)?;
+            Ok(run_validation_callback(context.clone(), validation_call, &wasm, dna.name.clone()))
         },
         None => {
             println!("VALIDATE_APP_ENTRY: no wasm found for zome {}!", zome_name);
-            CallbackResult::NotImplemented
+            Ok(CallbackResult::NotImplemented)
         },
     }
 }
 
-fn build_validation_call(entry : Entry, entry_type: String, zome_name: String, validation_data: ValidationData) -> ZomeFnCall {
+fn build_validation_call(entry : Entry, entry_type: String, zome_name: String, validation_data: ValidationData) -> Result<ZomeFnCall, HolochainError> {
     let function_name = format!("validate_{}", entry_type.to_string());
 
     let validation_data_json = serde_json::to_value(
         &validation_data
     ).expect("ValidationData could not be turned into JSON?!");
 
-    let entry_json: serde_json::Value = serde_json::from_str(&*entry).unwrap();
-    let params = serde_json::to_string(&json!({
-        "entry": entry_json,
-        "ctx": validation_data_json,
-    })).expect("Params object could not be turned into JSON?!");
+    // Trying to interpret entry as json object
+    let serialization_result : Result<serde_json::Value, _> = serde_json::from_str(&*entry)
+        .or_else(|_| {
+            // If it can't be parsed as object, treat it as a string by adding quotation marks:
+            serde_json::from_str(&format!("\"{}\"", &*entry))
+        })
+        .or_else(|error| {
+            let msg = format!("Error trying to serialize entry '{}', {:?}", *entry, error);
+            Err(HolochainError::new(&msg))
+        });
 
-    ZomeFnCall::new(
-        &zome_name,
-        "no capability, since this is an entry validation call",
-        &function_name,
-        &params,
-    )
+    serialization_result.and_then(|entry_json|{
+        let params = serde_json::to_string(&json!({
+            "entry": entry_json,
+            "ctx": validation_data_json,
+        })).expect("Params object could not be turned into JSON?!");
+
+        Ok(ZomeFnCall::new(
+            &zome_name,
+            "no capability, since this is an entry validation call",
+            &function_name,
+            &params,
+        ))
+    })
 }
 
 

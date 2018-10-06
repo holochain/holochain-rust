@@ -11,7 +11,7 @@ use nucleus::ribosome::callback::{
 };
 use snowflake;
 use std::{sync::Arc, thread};
-use holochain_wasm_utils::validation::{HcEntryLifecycle, ValidationData};
+use holochain_wasm_utils::validation::ValidationData;
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -47,28 +47,36 @@ pub fn validate_entry(
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
-                let validation_result = match callback::validate_entry::validate_entry(
+                let maybe_validation_result = callback::validate_entry::validate_entry(
                     entry.clone(),
                     entry_type.clone(),
                     validation_data.clone(),
                     context.clone(),
-                ) {
-                    CallbackResult::Fail(error_string) => {
-                        let error_object : serde_json::Value = serde_json::from_str(&error_string).unwrap();
-                        //.trim_matches(|c| c == '\\' || c == '"')
-                        Err(error_object["Err"].to_string())
+                );
+
+                let result = match maybe_validation_result {
+                    Ok(validation_result) => {
+                        match validation_result {
+                            CallbackResult::Fail(error_string) => {
+                                let error_object : serde_json::Value = serde_json::from_str(&error_string).unwrap();
+                                //.trim_matches(|c| c == '\\' || c == '"')
+                                Err(error_object["Err"].to_string())
+                            },
+                            CallbackResult::Pass => Ok(()),
+                            CallbackResult::NotImplemented => Err(format!(
+                                "Validation callback not implemented for {:?}",
+                                entry_type.clone()
+                            )),
+                        }
                     },
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry_type.clone()
-                    )),
+                    Err(error) => Err(error.to_string())
                 };
+
                 context
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
                         (id, address),
-                        validation_result,
+                        result,
                     ))))
                     .expect("action channel to be open in reducer");
             });

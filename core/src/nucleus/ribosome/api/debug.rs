@@ -11,7 +11,7 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     runtime.result = runtime.load_utf8_from_args(args);
     println!("{}", runtime.result);
-    //ribosome_return_code!(Success)
+    // Return Ribosome Success Code
     Ok(Some(RuntimeValue::I32(0 as i32)))
 }
 

@@ -129,7 +129,7 @@ impl ZomeApiFunction {
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
         fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-            //ribosome_return_code!(Success)
+            // Return Ribosome Success Code
             Ok(Some(RuntimeValue::I32(0 as i32)))
         }
 
@@ -321,12 +321,15 @@ pub fn call(
         let mut_runtime = &mut runtime;
         let maybe_allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
         encoded_allocation_of_input = match maybe_allocation_of_input {
+            // No allocation to write is ok
             Err(RibosomeErrorCode::ZeroSizedAllocation) => 0,
+            // Any other error is memory related
             Err(_) => {
                 return Err(InterpreterError::Trap(Trap::new(
                     TrapKind::MemoryAccessOutOfBounds,
                 )))
             }
+            // Write successful, encode allocation
             Ok(allocation_of_input) => allocation_of_input.encode(),
         }
     }

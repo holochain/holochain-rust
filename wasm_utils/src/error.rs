@@ -3,19 +3,13 @@ use std::fmt;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
-macro_rules! ribosome_return_code {
+macro_rules! ribosome_error_code {
     ($s:ident) => {
         Ok(Some(RuntimeValue::I32(
             ::holochain_wasm_utils::error::RibosomeErrorCode::$s as i32,
         )))
     };
 }
-//#[macro_export]
-//macro_rules! ribosome_success_code {
-//($s:ident = Success) => {
-//Ok(Some(RuntimeValue::I32(0 as i32)))
-//};
-//}
 
 // Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
 #[macro_export]
@@ -74,11 +68,6 @@ pub enum RibosomeErrorCode {
     ZeroSizedAllocation             = 9 << 16,
 }
 
-//impl RibosomeReturnCode {
-//    pub fn is_err(self) -> bool { self != Success }
-//    pub fn is_ok(self) -> bool { self == Success }
-//}
-
 impl ToString for RibosomeReturnCode {
     fn to_string(&self) -> String {
         match self {
@@ -100,7 +89,7 @@ impl ToString for RibosomeErrorCode {
             RecursiveCallForbidden          => "Recursive call forbidden",
             ResponseSerializationFailed     => "Response serialization failed",
             NotAnAllocation                 => "Not an allocation",
-            ZeroSizedAllocation             =>  "Zero-sized allocation",
+            ZeroSizedAllocation             => "Zero-sized allocation",
         }.to_string()
     }
 }
@@ -137,8 +126,6 @@ impl RibosomeErrorCode {
 
 #[cfg(test)]
 pub mod tests {
-    //extern crate holochain_wasm_utils;
-
     use super::*;
 
     #[test]

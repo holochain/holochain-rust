@@ -48,7 +48,7 @@ pub fn invoke_call(
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
+        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // ZomeCallArgs to ZomeFnCall
@@ -56,7 +56,7 @@ pub fn invoke_call(
 
     // Don't allow recursive calls
     if zome_call.same_fn_as(&runtime.zome_call) {
-        return ribosome_return_code!(RecursiveCallForbidden);
+        return ribosome_error_code!(RecursiveCallForbidden);
     }
 
     // Create Call Action
@@ -96,7 +96,7 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
-        Err(_) => ribosome_return_code!(ReceivedWrongActionResult),
+        Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 

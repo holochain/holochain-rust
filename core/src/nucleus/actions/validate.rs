@@ -39,7 +39,7 @@ pub fn validate_entry(
                 entry_type.as_str()
             )));;
         }
-        Some(_zome_name) => {
+        Some(_) => {
             let id = id.clone();
             let address = address.clone();
             let entry = entry.clone();
@@ -58,7 +58,6 @@ pub fn validate_entry(
                             CallbackResult::Fail(error_string) => {
                                 let error_object: serde_json::Value =
                                     serde_json::from_str(&error_string).unwrap();
-                                //.trim_matches(|c| c == '\\' || c == '"')
                                 Err(error_object["Err"].to_string())
                             }
                             CallbackResult::Pass => Ok(()),

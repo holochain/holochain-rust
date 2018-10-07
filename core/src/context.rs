@@ -1,5 +1,5 @@
 use action::ActionWrapper;
-use error::HolochainError;
+use holochain_core_types::error::HolochainError;
 use holochain_agent::Agent;
 use instance::Observer;
 use logger::Logger;

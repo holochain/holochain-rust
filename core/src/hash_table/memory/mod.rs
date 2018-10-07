@@ -1,7 +1,10 @@
-use error::HolochainError;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    entry::Entry, entry_meta::EntryMeta,
+    error::HolochainError,
+};
 
-use cas::content::{Address, AddressableContent};
-use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
+use hash_table::HashTable;
 use std::collections::HashMap;
 
 /// Struct implementing the HashTable Trait by storing the HashTable in memory

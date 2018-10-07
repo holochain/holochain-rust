@@ -1,22 +1,10 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use cas::content::Address;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
-pub struct GetLinksArgs {
-    pub entry_address: Address,
-    pub tag: String,
-}
-
-impl GetLinksArgs {
-    pub fn to_attribute_name(&self) -> String {
-        format!("link:{}:{}", &self.entry_address, &self.tag)
-    }
-}
+use holochain_core_types::get_links_args::GetLinksArgs;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32

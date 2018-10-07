@@ -1,15 +1,19 @@
 pub mod actor;
 
-use actor::Protocol;
-use cas::content::{Address, AddressableContent};
+use holochain_cas_implementations::actor::Protocol;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    chain_header::ChainHeader,
+    entry::Entry,
+    entry_type::EntryType,
+    error::HolochainError,
+    json::ToJson,
+    to_entry::ToEntry,
+};
 use chain::{
     actor::{AskChain, ChainActor},
-    header::ChainHeader,
 };
-use error::HolochainError;
-use hash_table::{entry::Entry, sys_entry::ToEntry, HashTable};
-use holochain_dna::entry_type::EntryType;
-use json::ToJson;
+use hash_table::HashTable;
 use riker::actors::*;
 use serde_json;
 
@@ -230,14 +234,17 @@ impl ToJson for Chain {
 pub mod tests {
 
     use super::Chain;
-    use cas::content::{Address, AddressableContent};
-    use chain::{header::ChainHeader, SourceChain};
-    use hash_table::{
-        actor::tests::test_table_actor,
-        entry::tests::{
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        chain_header::ChainHeader,
+        entry::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
             test_entry_type_b,
         },
+    };
+    use chain::{SourceChain};
+    use hash_table::{
+        actor::tests::test_table_actor,
         HashTable,
     };
     use std::thread;

@@ -1,4 +1,12 @@
 //! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
+extern crate holochain_core_types;
+extern crate serde_json;
+
+use holochain_core_types::{
+    cas::content::AddressableContent,
+    entry::Entry, entry_type::EntryType,
+    to_entry::ToEntry,
+};
 
 /// Object holding an Agent's identity.
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +39,19 @@ impl Agent {
         self.identity.content.clone()
     }
 }
+
+impl ToEntry for Agent {
+    fn to_entry(&self) -> (EntryType, Entry) {
+        (EntryType::AgentId, Entry::from(self.to_string()))
+    }
+
+    fn from_entry(entry: &Entry) -> Self {
+        let id_content: String =
+            serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
+        Agent::new(Identity::new(id_content))
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

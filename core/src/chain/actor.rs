@@ -1,6 +1,8 @@
-use actor::{AskSelf, Protocol, SYS};
-use chain::header::ChainHeader;
-use error::HolochainError;
+use holochain_cas_implementations::actor::{AskSelf, Protocol, SYS};
+use holochain_core_types::{
+    chain_header::ChainHeader,
+    error::HolochainError
+};
 use riker::actors::*;
 use snowflake;
 
@@ -94,13 +96,13 @@ impl Actor for ChainActor {
             .expect("failed to tell ChainActor sender");
     }
 }
-
+/*
 #[cfg(test)]
 pub mod tests {
-    use actor::Protocol;
+    use holochain_cas_implementations::actor::Protocol;
     use chain::{
         actor::{AskChain, ChainActor},
-        header::tests::{test_chain_header_a, test_chain_header_b},
+        chain_header::tests::{test_chain_header_a, test_chain_header_b},
     };
     use riker::actors::*;
 
@@ -153,3 +155,4 @@ pub mod tests {
     }
 
 }
+*/

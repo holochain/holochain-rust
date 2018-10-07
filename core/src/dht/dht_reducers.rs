@@ -1,12 +1,13 @@
 //! all DHT reducers
 
 use action::{Action, ActionWrapper};
-use cas::{content::AddressableContent, storage::ContentAddressableStorage};
+use holochain_core_types::{
+    cas::{content::AddressableContent, storage::ContentAddressableStorage},
+    eav::EntityAttributeValueStorage,
+    entry::Entry, entry_type::EntryType
+};
 use context::Context;
 use dht::dht_store::DhtStore;
-use eav::EntityAttributeValueStorage;
-use hash_table::entry::Entry;
-use holochain_dna::entry_type::EntryType;
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore

@@ -15,7 +15,7 @@ pub fn validate_commit(
 pub mod tests {
 
     use super::validate_commit;
-    use hash_table::entry::tests::test_entry;
+    use holochain_core_types::entry::test_entry;
     use instance::tests::test_context;
     use nucleus::ribosome::{
         callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},

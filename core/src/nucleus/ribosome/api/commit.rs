@@ -1,9 +1,10 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::entry::Entry;
-use holochain_dna::entry_type::EntryType;
-use json::ToJson;
+use holochain_core_types::{
+    entry::Entry, entry_type::EntryType,
+    json::ToJson,
+};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
@@ -76,8 +77,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use cas::content::AddressableContent;
-    use hash_table::entry::tests::{test_entry, test_entry_type};
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, test_entry_type}
+    };
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,

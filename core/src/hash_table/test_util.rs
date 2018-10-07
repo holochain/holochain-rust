@@ -1,13 +1,13 @@
-use agent::keys::tests::test_keys;
-use cas::content::AddressableContent;
-use hash_table::{
-    entry::tests::test_entry_unique,
+use holochain_core_types::{
+    keys::test_keys,
+    cas::content::AddressableContent,
+    entry::test_entry_unique,
     entry_meta::{
-        tests::{
-            test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
-        },
+        test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
         EntryMeta,
     },
+};
+use hash_table::{
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
     HashTable,
 };

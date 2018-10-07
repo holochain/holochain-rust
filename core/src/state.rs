@@ -1,10 +1,12 @@
 use action::ActionWrapper;
 use agent::state::AgentState;
-use cas::memory::MemoryStorage;
+use holochain_cas_implementations::{
+    cas::memory::MemoryStorage,
+    eav::memory::EavMemoryStorage,
+};
 use chain::Chain;
 use context::Context;
 use dht::dht_store::DhtStore;
-use eav::memory::EavMemoryStorage;
 use hash_table::{actor::HashTableActor, memory::MemTable};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};

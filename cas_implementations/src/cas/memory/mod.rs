@@ -1,8 +1,10 @@
-use cas::{
-    content::{Address, AddressableContent, Content},
-    storage::ContentAddressableStorage,
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    },
+    error::HolochainError,
 };
-use error::HolochainError;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -38,10 +40,12 @@ impl ContentAddressableStorage for MemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
+    use holochain_core_types::cas::{
+        content::{ExampleAddressableContent, OtherExampleAddressableContent},
+        storage::StorageTestSuite,
+    };
     use cas::{
-        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
         memory::MemoryStorage,
-        storage::tests::StorageTestSuite,
     };
 
     #[test]

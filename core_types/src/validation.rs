@@ -1,4 +1,6 @@
 extern crate serde_json;
+use chain_header::ChainHeader;
+use hash::HashString;
 
 #[derive(Serialize, Deserialize)]
 pub struct ValidationData {

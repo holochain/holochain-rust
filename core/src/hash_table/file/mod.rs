@@ -1,12 +1,14 @@
-use error::HolochainError;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    error::HolochainError,
+    entry::Entry, entry_meta::EntryMeta,
+};
 use std::{
     fs::{self, create_dir_all},
     path::{Path, MAIN_SEPARATOR},
 };
 
-use cas::content::{Address, AddressableContent};
-use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
-
+use hash_table::HashTable;
 use walkdir::WalkDir;
 
 // folders actually... wish-it-was-tables
@@ -149,7 +151,7 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
     use super::Table;
-    use cas::content::{Address, AddressableContent, Content};
+    use holochain_core_types::cas::content::{Address, AddressableContent, Content};
     use hash_table::{file::FileTable, test_util::standard_suite};
     use regex::Regex;
     use std::path::MAIN_SEPARATOR;

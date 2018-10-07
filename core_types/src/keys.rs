@@ -46,35 +46,36 @@ impl Keys {
     }
 }
 
+/// generates a new key suitable for testing
+pub fn test_key() -> Key {
+    Key::new()
+}
+
+/// dummy public key
+pub fn test_public_key() -> Key {
+    test_key()
+}
+
+/// dummy private key
+pub fn test_private_key() -> Key {
+    test_key()
+}
+
+/// generates a new node id suitable for testing
+pub fn test_node_id() -> String {
+    "test node id".into()
+}
+
+/// generates new id/pub/priv keys suitable for testing
+pub fn test_keys() -> Keys {
+    Keys::new(&test_key(), &test_key(), test_node_id())
+}
+
+
 #[cfg(test)]
 pub mod tests {
 
-    use super::{Key, Keys};
-
-    /// generates a new key suitable for testing
-    pub fn test_key() -> Key {
-        Key::new()
-    }
-
-    /// dummy public key
-    pub fn test_public_key() -> Key {
-        test_key()
-    }
-
-    /// dummy private key
-    pub fn test_private_key() -> Key {
-        test_key()
-    }
-
-    /// generates a new node id suitable for testing
-    pub fn test_node_id() -> String {
-        "test node id".into()
-    }
-
-    /// generates new id/pub/priv keys suitable for testing
-    pub fn test_keys() -> Keys {
-        Keys::new(&test_key(), &test_key(), test_node_id())
-    }
+    use super::*;
 
     #[test]
     /// smoke test new key

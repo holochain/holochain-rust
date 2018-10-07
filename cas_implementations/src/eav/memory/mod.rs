@@ -1,5 +1,7 @@
-use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
-use error::HolochainError;
+use holochain_core_types::{
+    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    error::HolochainError,
+};
 use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -39,8 +41,9 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{tests::ExampleAddressableContent, AddressableContent};
-    use eav::{memory::EavMemoryStorage, EntityAttributeValue, EntityAttributeValueStorage};
+    use holochain_core_types::cas::content::{ExampleAddressableContent, AddressableContent};
+    use holochain_core_types::eav::{EntityAttributeValue, EntityAttributeValueStorage};
+    use eav::memory::EavMemoryStorage;
     use std::collections::HashSet;
 
     #[test]

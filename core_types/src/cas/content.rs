@@ -1,5 +1,7 @@
 use hash::HashString;
 use multihash::Hash;
+use std::fmt::{Debug, Write};
+use cas::storage::ContentAddressableStorage;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -40,116 +42,113 @@ impl AddressableContent for Content {
     }
 }
 
-#[cfg(test)]
-pub mod tests {
-    use cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    };
-    use multihash::Hash;
-    use std::fmt::{Debug, Write};
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
+/// some struct that can be content addressed
+/// imagine an Entry, ChainHeader, Meta Value, etc.
+pub struct ExampleAddressableContent {
+    content: Content,
+}
 
-    #[derive(Debug, PartialEq, Clone, Hash, Eq)]
-    /// some struct that can be content addressed
-    /// imagine an Entry, ChainHeader, Meta Value, etc.
-    pub struct ExampleAddressableContent {
+impl AddressableContent for ExampleAddressableContent {
+    fn content(&self) -> Content {
+        self.content.clone()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        ExampleAddressableContent {
+            content: content.clone(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// another struct that can be content addressed
+/// used to show ExampleCas storing multiple types
+pub struct OtherExampleAddressableContent {
+    content: Content,
+    address: Address,
+}
+
+/// address is calculated eagerly rather than on call
+impl AddressableContent for OtherExampleAddressableContent {
+    fn address(&self) -> Address {
+        self.address.clone()
+    }
+
+    fn content(&self) -> Content {
+        self.content.clone()
+    }
+
+    fn from_content(content: &Content) -> Self {
+        OtherExampleAddressableContent {
+            content: content.clone(),
+            address: Address::encode_from_str(&content, Hash::SHA2256),
+        }
+    }
+}
+
+pub struct AddressableContentTestSuite;
+
+impl AddressableContentTestSuite {
+    /// test that trait gives the write content
+    pub fn addressable_content_trait_test<T>(
         content: Content,
+        expected_content: T,
+        address_string: String,
+    ) where
+        T: AddressableContent + Debug + PartialEq + Clone,
+    {
+        let addressable_content = T::from_content(&content);
+
+        assert_eq!(addressable_content, expected_content);
+        assert_eq!(content, addressable_content.content());
+        assert_eq!(Address::from(address_string), addressable_content.address());
     }
 
-    impl AddressableContent for ExampleAddressableContent {
-        fn content(&self) -> Content {
-            self.content.clone()
-        }
-
-        fn from_content(content: &Content) -> Self {
-            ExampleAddressableContent {
-                content: content.clone(),
-            }
-        }
-    }
-
-    #[derive(Debug, PartialEq, Clone)]
-    /// another struct that can be content addressed
-    /// used to show ExampleCas storing multiple types
-    pub struct OtherExampleAddressableContent {
-        content: Content,
-        address: Address,
-    }
-
-    /// address is calculated eagerly rather than on call
-    impl AddressableContent for OtherExampleAddressableContent {
-        fn address(&self) -> Address {
-            self.address.clone()
-        }
-
-        fn content(&self) -> Content {
-            self.content.clone()
-        }
-
-        fn from_content(content: &Content) -> Self {
-            OtherExampleAddressableContent {
-                content: content.clone(),
-                address: Address::encode_from_str(&content, Hash::SHA2256),
-            }
-        }
-    }
-
-    pub struct AddressableContentTestSuite;
-
-    impl AddressableContentTestSuite {
-        /// test that trait gives the write content
-        pub fn addressable_content_trait_test<T>(
-            content: Content,
-            expected_content: T,
-            address_string: String,
-        ) where
-            T: AddressableContent + Debug + PartialEq + Clone,
-        {
-            let addressable_content = T::from_content(&content);
-
-            assert_eq!(addressable_content, expected_content);
-            assert_eq!(content, addressable_content.content());
-            assert_eq!(Address::from(address_string), addressable_content.address());
-        }
-
-        /// test that two different addressable contents would give them same thing
-        pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
+    /// test that two different addressable contents would give them same thing
+    pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
         where
             T: AddressableContent + Debug + PartialEq + Clone,
             K: AddressableContent + Debug + PartialEq + Clone,
-        {
-            let addressable_content = T::from_content(&content);
-            let other_addressable_content = K::from_content(&content);
+    {
+        let addressable_content = T::from_content(&content);
+        let other_addressable_content = K::from_content(&content);
 
-            assert_eq!(
-                addressable_content.content(),
-                other_addressable_content.content()
-            );
-            assert_eq!(
-                addressable_content.address(),
-                other_addressable_content.address()
-            );
-        }
+        assert_eq!(
+            addressable_content.content(),
+            other_addressable_content.content()
+        );
+        assert_eq!(
+            addressable_content.address(),
+            other_addressable_content.address()
+        );
+    }
 
-        pub fn addressable_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
+    pub fn addressable_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
         where
             T: AddressableContent + PartialEq + Clone + Debug,
             K: ContentAddressableStorage,
-        {
-            contents.into_iter().for_each(|f| {
-                let mut add_error_message = String::new();
-                let mut fetch_error_message = String::new();
-                writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
-                writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
+    {
+        contents.into_iter().for_each(|f| {
+            let mut add_error_message = String::new();
+            let mut fetch_error_message = String::new();
+            writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
+            writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
 
-                cas.add(&f).expect(&add_error_message);
-                assert_eq!(
-                    Some(f.clone()),
-                    cas.fetch::<T>(&f.address()).expect(&fetch_error_message)
-                );
-            });
-        }
+            cas.add(&f).expect(&add_error_message);
+            assert_eq!(
+                Some(f.clone()),
+                cas.fetch::<T>(&f.address()).expect(&fetch_error_message)
+            );
+        });
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use cas::{
+        content::{AddressableContent , ExampleAddressableContent, OtherExampleAddressableContent, AddressableContentTestSuite},
+    };
 
     #[test]
     /// test the first example

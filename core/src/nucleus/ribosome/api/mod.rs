@@ -389,9 +389,7 @@ pub mod tests {
         Instance,
     };
     use nucleus::{
-        ribosome::{
-            api::{call, Runtime},
-        },
+        ribosome::api::{call, Runtime},
         ZomeFnCall,
     };
     use std::{

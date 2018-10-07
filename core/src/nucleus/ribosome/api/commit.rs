@@ -5,9 +5,7 @@ use agent::{
 };
 use futures::{executor::block_on, FutureExt};
 use hash_table::{entry::Entry, sys_entry::EntryType};
-use holochain_wasm_utils::{
-    validation::{HcEntryAction, HcEntryLifecycle, ValidationData},
-};
+use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;

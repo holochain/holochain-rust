@@ -55,7 +55,7 @@ fn validate_app_entry(
                 dna.name.clone(),
             ))
         }
-        None => Ok(CallbackResult::NotImplemented)
+        None => Ok(CallbackResult::NotImplemented),
     }
 }
 
@@ -113,7 +113,7 @@ fn run_validation_callback(
             true => CallbackResult::Pass,
             false => CallbackResult::Fail(runtime.result),
         },
-        Err(err) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented,
     }
 }
 

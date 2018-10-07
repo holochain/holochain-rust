@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use entry::Entry;
+use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use serde_json;
 

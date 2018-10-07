@@ -4,7 +4,8 @@ use cas::content::AddressableContent;
 use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
-use hash_table::{entry::Entry, sys_entry::EntryType};
+use hash_table::entry::Entry;
+use holochain_dna::entry_type::EntryType;
 use nucleus::ribosome::callback::{
     validate_commit::validate_commit, CallbackParams, CallbackResult,
 };

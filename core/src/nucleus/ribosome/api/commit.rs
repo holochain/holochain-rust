@@ -1,7 +1,8 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::{entry::Entry, sys_entry::EntryType};
+use hash_table::entry::Entry;
+use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;

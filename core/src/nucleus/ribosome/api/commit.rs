@@ -6,7 +6,6 @@ use agent::{
 use futures::{executor::block_on, FutureExt};
 use hash_table::{entry::Entry, sys_entry::EntryType};
 use holochain_wasm_utils::{
-    error::{RibosomeErrorReport, RibosomeReturnCode},
     validation::{HcEntryAction, HcEntryLifecycle, ValidationData},
 };
 use json::ToJson;
@@ -35,7 +34,7 @@ fn build_validation_data_commit(
     // Doing this right requires a refactoring in which I extract all these types
     // into a separate create ("core_types") that can be used from holochain core
     // and the HDK.
-    // 
+    //
 
     //let new_header = state.chain().create_next_header(entry_type, entry);
     //let agent_key = state.keys().expect("Can't commit entry without agent key");

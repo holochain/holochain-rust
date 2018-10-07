@@ -391,7 +391,6 @@ pub mod tests {
     use nucleus::{
         ribosome::{
             api::{call, Runtime},
-            callback::tests::test_callback_instance,
         },
         ZomeFnCall,
     };

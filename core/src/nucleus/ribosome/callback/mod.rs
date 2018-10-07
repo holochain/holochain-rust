@@ -3,7 +3,6 @@
 
 pub mod genesis;
 pub mod receive;
-pub mod validate_commit;
 pub mod validate_entry;
 
 use context::Context;
@@ -13,7 +12,7 @@ use json::ToJson;
 use nucleus::{
     ribosome::{
         self,
-        callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
+        callback::{genesis::genesis, receive::receive},
         Defn,
     },
     ZomeFnCall,
@@ -33,9 +32,6 @@ pub enum Callback {
 
     /// MissingNo Capability
 
-    /// validate_commit() -> bool
-    ValidateCommit,
-
     /// LifeCycle Capability
 
     /// genesis() -> bool
@@ -52,7 +48,6 @@ impl FromStr for Callback {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "genesis" => Ok(Callback::Genesis),
-            "validate_commit" => Ok(Callback::ValidateCommit),
             "receive" => Ok(Callback::Receive),
             "" => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
@@ -71,7 +66,6 @@ impl Callback {
         match *self {
             Callback::MissingNo => noop,
             Callback::Genesis => genesis,
-            Callback::ValidateCommit => validate_commit,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => receive,
@@ -84,7 +78,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => "",
             Callback::Genesis => "genesis",
-            Callback::ValidateCommit => "validate_commit",
             Callback::Receive => "receive",
         }
     }
@@ -107,9 +100,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => ReservedCapabilityNames::MissingNo,
             Callback::Genesis => ReservedCapabilityNames::LifeCycle,
-            // @TODO needs a sensible capability
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            Callback::ValidateCommit => ReservedCapabilityNames::MissingNo,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => ReservedCapabilityNames::Communication,
@@ -330,10 +320,6 @@ pub mod tests {
         assert_eq!(
             Callback::Genesis,
             Callback::from_str("genesis").expect("string literal should be valid callback")
-        );
-        assert_eq!(
-            Callback::ValidateCommit,
-            Callback::from_str("validate_commit").expect("string literal should be valid callback"),
         );
         assert_eq!(
             Callback::Receive,

@@ -57,9 +57,6 @@ where
 
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
-        println!("foo");
-        println!("{:?}", self.current);
-
         let previous = self.current.take();
 
         self.current = previous
@@ -69,11 +66,8 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                println!("{:?}", linked_chain_header_address);
                 self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
             });
-        println!("{:?}", self.current);
-        println!("bar");
         previous
     }
 }
@@ -121,7 +115,6 @@ pub mod tests {
         let expected = vec![chain_header_b.clone(), chain_header_a.clone()];
         let mut found = vec![];
         for chain_header in chain_store.iter(&chain_header_b) {
-            println!("{:?}", chain_header);
             found.push(chain_header);
         }
         assert_eq!(expected, found);

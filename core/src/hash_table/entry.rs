@@ -189,7 +189,6 @@ pub mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let content_addressable_storage = ExampleContentAddressableStorage::new();
         let entries = vec![test_entry()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,

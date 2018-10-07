@@ -56,12 +56,17 @@ where
 //
 pub(crate) fn commit_sys_entry<CAS, EAVS>(
     old_store: &DhtStore<CAS, EAVS>,
+    entry_type: &EntryType,
     entry: &Entry,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
+    // system entry type must be publishable
+    if !entry_type.clone().can_publish() {
+        return None;
+    }
     // Add it local storage
     let mut new_store = (*old_store).clone();
     let res = new_store.content_storage_mut().add(entry);
@@ -88,15 +93,21 @@ where
     // get entry_type definition
     let dna = context
         .state()
-        .unwrap()
+        .expect("context must have a State.")
         .nucleus()
         .dna()
-        .expect("Must have DNA to commit an app entry.");
+        .expect("context.state must hold DNA in order to commit an app entry.");
     let maybe_def = dna.get_entry_type_def(&entry_type.to_string());
     if maybe_def.is_none() {
+        // TODO #439 - Log the error. Once we have better logging.
         return None;
     }
     let entry_type_def = maybe_def.unwrap();
+
+    // app entry type must be publishable
+    if !entry_type_def.sharing.clone().can_publish() {
+        return None;
+    }
 
     // Add it to local storage...
     let mut new_store = (*old_store).clone();
@@ -106,9 +117,8 @@ where
         return None;
     }
     // ...and publish to the network if its not private
-    if entry_type_def.sharing.clone().can_publish() {
-        new_store.network_mut().publish(entry);
-    }
+    new_store.network_mut().publish(entry);
+    // Done
     Some(new_store)
 }
 
@@ -138,9 +148,9 @@ where
         return None;
     }
 
-    // Handle sys entris and app entries differently
+    // Handle sys entries and app entries differently
     if entry_type.clone().is_sys() {
-        return commit_sys_entry(old_store, entry);
+        return commit_sys_entry(old_store, entry_type, entry);
     }
     return commit_app_entry(context, old_store, entry_type, entry);
 }

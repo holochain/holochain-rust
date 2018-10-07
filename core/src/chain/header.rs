@@ -1,9 +1,7 @@
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash_table::{
-    entry::Entry,
-    sys_entry::{EntryType, ToEntry},
-};
+use hash_table::{entry::Entry, sys_entry::ToEntry};
+use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use serde_json;
 

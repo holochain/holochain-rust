@@ -11,6 +11,17 @@ pub enum Sharing {
     Encrypted,
 }
 
+impl Sharing {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn can_publish(self) -> bool {
+       match self {
+           Sharing::Public    => true,
+           Sharing::Private   => false,
+           Sharing::Encrypted => true,
+       }
+    }
+}
+
 impl Default for Sharing {
     /// Default zome entry_type sharing is "public"
     fn default() -> Self {
@@ -120,6 +131,12 @@ impl EntryTypeDef {
 mod tests {
     use super::*;
     use serde_json;
+
+    #[test]
+    fn can_publish() {
+        assert!(Sharing::Public.can_publish());
+        assert!(!Sharing::Private.can_publish());
+    }
 
     #[test]
     fn build_and_compare() {

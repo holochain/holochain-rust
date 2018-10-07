@@ -9,6 +9,7 @@ use cas::{
 use error::HolochainError;
 use riker::actors::*;
 
+#[derive(Clone)]
 pub struct FilesystemStorage {
     dir_actor: ActorRef<Protocol>,
 }

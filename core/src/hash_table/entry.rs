@@ -68,6 +68,7 @@ pub mod tests {
     use holochain_dna::entry_type::EntryType;
     use json::{FromJson, ToJson};
     use snowflake;
+    use cas::storage::tests::test_content_addressable_storage;
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {
@@ -193,6 +194,6 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,
             ExampleContentAddressableStorage,
-        >(entries, content_addressable_storage);
+        >(entries, test_content_addressable_storage());
     }
 }

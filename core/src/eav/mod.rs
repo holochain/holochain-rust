@@ -121,6 +121,7 @@ pub mod tests {
         Entry,
     };
     use std::collections::HashSet;
+    use cas::storage::tests::test_content_addressable_storage;
 
     pub struct ExampleEntityAttributeValueStorage {
         eavs: HashSet<EntityAttributeValue>,
@@ -390,7 +391,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_round_trip::<
             EntityAttributeValue,
             ExampleContentAddressableStorage,
-        >(addressable_contents, content_addressable_storage);
+        >(addressable_contents, test_content_addressable_storage());
     }
 
 }

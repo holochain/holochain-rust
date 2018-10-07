@@ -19,6 +19,7 @@ pub trait ContentAddressableStorage: Clone {
 
 #[cfg(test)]
 pub mod tests {
+    use actor::{AskSelf, Protocol, SYS};
     use cas::{
         content::{
             tests::{ExampleAddressableContent, OtherExampleAddressableContent},
@@ -27,12 +28,9 @@ pub mod tests {
         storage::ContentAddressableStorage,
     };
     use error::HolochainError;
-    use std::{collections::HashMap, fmt::Debug};
     use riker::actors::*;
-    use actor::Protocol;
-    use actor::SYS;
     use snowflake;
-    use actor::AskSelf;
+    use std::{collections::HashMap, fmt::Debug};
 
     #[derive(Clone)]
     /// some struct to show an example ContentAddressableStorage implementation
@@ -225,10 +223,7 @@ pub mod tests {
             for cas in both_cas.iter() {
                 assert_eq!(Ok(true), cas.contains(&content.address()));
                 assert_eq!(Ok(false), cas.contains(&other_content.address()));
-                assert_eq!(
-                    Ok(Some(content.clone())),
-                    cas.fetch(&content.address())
-                );
+                assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
             }
 
             // multiple types of AddressableContent can sit in a single ContentAddressableStorage
@@ -238,10 +233,7 @@ pub mod tests {
             for cas in both_cas.iter() {
                 assert_eq!(Ok(true), cas.contains(&content.address()));
                 assert_eq!(Ok(true), cas.contains(&other_content.address()));
-                assert_eq!(
-                    Ok(Some(content.clone())),
-                    cas.fetch(&content.address())
-                );
+                assert_eq!(Ok(Some(content.clone())), cas.fetch(&content.address()));
                 assert_eq!(
                     Ok(Some(other_content.clone())),
                     cas.fetch(&other_content.address())

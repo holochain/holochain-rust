@@ -62,13 +62,12 @@ impl FromJson for Entry {
 pub mod tests {
     use cas::{
         content::{tests::AddressableContentTestSuite, Address, AddressableContent},
-        storage::tests::ExampleContentAddressableStorage,
+        storage::tests::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use hash_table::entry::Entry;
     use holochain_dna::entry_type::EntryType;
     use json::{FromJson, ToJson};
     use snowflake;
-    use cas::storage::tests::test_content_addressable_storage;
 
     /// dummy entry type
     pub fn test_entry_type() -> EntryType {

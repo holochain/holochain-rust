@@ -112,7 +112,7 @@ pub mod tests {
             tests::{AddressableContentTestSuite, ExampleAddressableContent},
             Address, AddressableContent, Content,
         },
-        storage::tests::ExampleContentAddressableStorage,
+        storage::tests::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
     use error::HolochainError;
@@ -121,7 +121,6 @@ pub mod tests {
         Entry,
     };
     use std::collections::HashSet;
-    use cas::storage::tests::test_content_addressable_storage;
 
     pub struct ExampleEntityAttributeValueStorage {
         eavs: HashSet<EntityAttributeValue>,

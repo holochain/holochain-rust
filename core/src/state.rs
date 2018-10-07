@@ -28,7 +28,7 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
         let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
 
-        let content_storage = MemoryStorage::new();
+        let content_storage = MemoryStorage::new().expect("could not create new memory storage");
         let eav_storage = EavMemoryStorage::new();
 
         State {

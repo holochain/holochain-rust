@@ -7,10 +7,10 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
-const ACTOR_ID_ROOT: &'static str = "filesystem_storage_actor";
+const ACTOR_ID_ROOT: &'static str = "/filesystem_storage_actor/";
 
-fn path_to_actor_id(dir_path: &str) -> String {
-    format!("{}{}{}", ACTOR_ID_ROOT, MAIN_SEPARATOR, dir_path)
+fn actor_id(dir_path: &str) -> String {
+    format!("{}{}", ACTOR_ID_ROOT, dir_path)
 }
 
 pub struct FilesystemStorageActor {
@@ -51,7 +51,7 @@ impl FilesystemStorageActor {
             FilesystemStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
-            &path_to_actor_id(&dir_path),
+            &actor_id(&dir_path),
         )?)
     }
 
@@ -117,14 +117,13 @@ impl Actor for FilesystemStorageActor {
 #[cfg(test)]
 pub mod tests {
 
-    use cas::file::actor::path_to_actor_id;
-    use std::path::MAIN_SEPARATOR;
+    use cas::file::actor::actor_id;
 
     #[test]
     fn path_to_actor_id_test() {
         assert_eq!(
-            format!("filesystem_storage_actor{}foo", MAIN_SEPARATOR),
-            path_to_actor_id("foo"),
+            String::from("/filesystem_storage_actor/foo"),
+            actor_id("foo"),
         );
     }
 

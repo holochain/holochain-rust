@@ -108,8 +108,8 @@ impl From<FutureCanceled> for HolochainError {
 }
 
 impl From<RikerCreateError> for HolochainError {
-    fn from(_: RikerCreateError) -> Self {
-        HolochainError::ErrorGeneric(String::from("Failed to create actor in system"))
+    fn from(e: RikerCreateError) -> Self {
+        HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", e))
     }
 }
 

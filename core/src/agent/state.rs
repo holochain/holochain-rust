@@ -1,15 +1,15 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::keys::Keys;
-use cas::content::{Address, AddressableContent};
-use agent::chain_store::ChainStore;
+use agent::{chain_header::ChainHeader, chain_store::ChainStore, keys::Keys};
+use cas::{
+    content::{Address, AddressableContent},
+    memory::MemoryStorage,
+    storage::ContentAddressableStorage,
+};
 use context::Context;
 use error::HolochainError;
 use hash_table::entry::Entry;
 use json::ToJson;
 use std::{collections::HashMap, sync::Arc};
-use cas::memory::MemoryStorage;
-use agent::chain_header::ChainHeader;
-use cas::storage::ContentAddressableStorage;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -44,6 +44,14 @@ impl AgentState {
     /// uniquely maps action executions to the result of the action
     pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
         self.actions.clone()
+    }
+
+    pub fn chain(&self) -> ChainStore<MemoryStorage> {
+        self.chain.clone()
+    }
+
+    pub fn top_chain_header(&self) -> Option<ChainHeader> {
+        self.top_chain_header.clone()
     }
 }
 
@@ -106,18 +114,28 @@ fn reduce_commit_entry(
     let chain_header = ChainHeader::new(
         &entry_type,
         &String::new(),
-        state.top_chain_header.clone().and_then(|chain_header| Some(chain_header.address())),
+        state
+            .top_chain_header
+            .clone()
+            .and_then(|chain_header| Some(chain_header.address())),
         &entry.address(),
         &String::new(),
         // BAD, must be top of type
-        state.top_chain_header.clone().and_then(|chain_header| Some(chain_header.address())),
+        state
+            .top_chain_header
+            .clone()
+            .and_then(|chain_header| Some(chain_header.address())),
     );
 
     // @TODO adding the entry to the CAS should happen elsewhere.
-    fn response(state: &mut AgentState, entry: &Entry, chain_header: &ChainHeader) -> Result<Address, HolochainError> {
+    fn response(
+        state: &mut AgentState,
+        entry: &Entry,
+        chain_header: &ChainHeader,
+    ) -> Result<Address, HolochainError> {
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
-        Ok(chain_header.address())
+        Ok(entry.address())
     }
     let res = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
@@ -137,7 +155,11 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
 
-    let result = state.chain.content_storage().fetch(&address).expect("could not fetch from CAS");
+    let result = state
+        .chain
+        .content_storage()
+        .fetch(&address)
+        .expect("could not fetch from CAS");
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
@@ -178,13 +200,13 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use agent::chain_store::tests::test_chain_store;
     use cas::content::AddressableContent;
     use error::HolochainError;
     use hash_table::entry::tests::{test_entry, test_entry_address};
     use instance::tests::test_context;
     use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
-    use agent::chain_store::tests::test_chain_store;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {

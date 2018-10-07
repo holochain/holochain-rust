@@ -146,15 +146,14 @@ impl AddressableContent for ChainHeader {
 
 #[cfg(test)]
 pub mod tests {
+    use agent::chain_header::ChainHeader;
     use cas::content::{Address, AddressableContent};
     use hash_table::{
         entry::tests::{
-            test_entry, test_entry_b, test_entry_type, test_entry_type_a,
-            test_entry_type_b,
+            test_entry, test_entry_b, test_entry_type, test_entry_type_a, test_entry_type_b,
         },
         sys_entry::ToEntry,
     };
-    use agent::chain_header::ChainHeader;
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header() -> ChainHeader {
@@ -200,14 +199,42 @@ pub mod tests {
 
         // different type is different
         assert_ne!(
-            ChainHeader::new(&test_entry_type_a(), &String::new(), None, &test_entry().address(), &String::new(), None),
-            ChainHeader::new(&test_entry_type_b(), &String::new(), None, &test_entry().address(), &String::new(), None),
+            ChainHeader::new(
+                &test_entry_type_a(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                None
+            ),
+            ChainHeader::new(
+                &test_entry_type_b(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                None
+            ),
         );
 
         // different previous header is different
         assert_ne!(
-            ChainHeader::new(&test_entry_type(), &String::new(), None, &test_entry().address(), &String::new(), None),
-            ChainHeader::new(&test_entry_type(), &String::new(), Some(test_chain_header()), &test_entry().address(), &String::new(), None),
+            ChainHeader::new(
+                &test_entry_type(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                None
+            ),
+            ChainHeader::new(
+                &test_entry_type(),
+                &String::new(),
+                Some(test_chain_header().address()),
+                &test_entry().address(),
+                &String::new(),
+                None
+            ),
         );
     }
 
@@ -239,12 +266,13 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &test_entry_type(),
             &String::new(),
-            Some(chain_header_a),
+            Some(chain_header_a.address()),
             &test_entry().address(),
+            &String::new(),
             None,
         );
         assert_eq!(None, chain_header_a.link());
-        assert_eq!(chain_header_a.address(), chain_header_b.link());
+        assert_eq!(Some(chain_header_a.address()), chain_header_b.link());
     }
 
     #[test]
@@ -252,7 +280,7 @@ pub mod tests {
         assert_eq!(test_chain_header().entry_address(), &test_entry().address());
     }
 
-    #[test]
+    // #[test]
     /// tests for header.type_next()
     // fn type_next() {
     //     let mut chain = test_chain();
@@ -299,21 +327,41 @@ pub mod tests {
     #[test]
     /// test header.address() against a known value
     fn known_address() {
-        assert_eq!(test_chain_header_a().address(), test_chain_header().address());
+        assert_eq!(
+            test_chain_header_a().address(),
+            test_chain_header().address()
+        );
     }
 
     #[test]
     /// test that different entry content returns different addresses
     fn address_entry_content() {
-        assert_ne!(test_chain_header_a().address(), test_chain_header_b().address());
+        assert_ne!(
+            test_chain_header_a().address(),
+            test_chain_header_b().address()
+        );
     }
 
     #[test]
     /// test that different entry types returns different addresses
     fn address_entry_type() {
         assert_ne!(
-            ChainHeader::new(&test_entry_type_a(), &String::new(), None, &test_entry().address(), &String::new(), None).address(),
-            ChainHeader::new(&test_entry_type_b(), &String::new(), None, &test_entry().address(), &String::new(), None).address(),
+            ChainHeader::new(
+                &test_entry_type_a(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                None
+            ).address(),
+            ChainHeader::new(
+                &test_entry_type_b(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                None
+            ).address(),
         );
     }
 
@@ -321,8 +369,15 @@ pub mod tests {
     /// test that different chain state returns different addresses
     fn address_chain_state() {
         assert_ne!(
-            test_chain_header(),
-            ChainHeader::new(&test_entry_type_a(), &String::new(), Some(test_chain_header()), &test_entry().address(), &String::new(), None).address(),
+            test_chain_header().address(),
+            ChainHeader::new(
+                &test_entry_type_a(),
+                &String::new(),
+                Some(test_chain_header().address()),
+                &test_entry().address(),
+                &String::new(),
+                None
+            ).address(),
         );
     }
 
@@ -330,14 +385,24 @@ pub mod tests {
     /// test that different type_next returns different addresses
     fn address_type_next() {
         assert_ne!(
-            test_chain_header(),
-            ChainHeader::new(&test_entry_type_a(), &String::new(), None, &test_entry().address(), &String::new(), Some(test_chain_header())).address(),
+            test_chain_header().address(),
+            ChainHeader::new(
+                &test_entry_type_a(),
+                &String::new(),
+                None,
+                &test_entry().address(),
+                &String::new(),
+                Some(test_chain_header().address())
+            ).address(),
         );
     }
 
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_round_trip_header_entry() {
-        assert_eq!(test_chain_header(), ChainHeader::from_entry(&test_chain_header().to_entry().1));
+        assert_eq!(
+            test_chain_header(),
+            ChainHeader::from_entry(&test_chain_header().to_entry().1)
+        );
     }
 }

@@ -1,10 +1,10 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
+use holochain_core_types::get_links_args::GetLinksArgs;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::get_links_args::GetLinksArgs;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32

@@ -1,5 +1,5 @@
-extern crate holochain_core_types;
 extern crate futures;
+extern crate holochain_core_types;
 extern crate riker;
 extern crate riker_default;
 extern crate riker_patterns;

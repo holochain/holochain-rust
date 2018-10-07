@@ -29,17 +29,13 @@ extern crate base64;
 extern crate uuid;
 
 use serde_json::Value;
-use std::{
-    hash::{Hash, Hasher},
-};
+use std::hash::{Hash, Hasher};
 
 pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry, entry_type::EntryType,
-    error::DnaError,
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::DnaError,
     to_entry::ToEntry,
 };
 use std::collections::HashMap;

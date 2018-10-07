@@ -1,11 +1,11 @@
-extern crate multihash;
-extern crate serde_json;
 extern crate futures;
+extern crate multihash;
 extern crate riker;
-extern crate walkdir;
 extern crate rust_base58;
 extern crate serde;
+extern crate serde_json;
 extern crate snowflake;
+extern crate walkdir;
 
 #[macro_use]
 extern crate serde_derive;

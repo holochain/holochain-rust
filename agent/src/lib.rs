@@ -3,9 +3,7 @@ extern crate holochain_core_types;
 extern crate serde_json;
 
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry, entry_type::EntryType,
-    to_entry::ToEntry,
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, to_entry::ToEntry,
 };
 
 /// Object holding an Agent's identity.
@@ -51,7 +49,6 @@ impl ToEntry for Agent {
         Agent::new(Identity::new(id_content))
     }
 }
-
 
 #[cfg(test)]
 mod tests {

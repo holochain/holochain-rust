@@ -1,6 +1,7 @@
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::Entry, entry_meta::EntryMeta,
+    entry::Entry,
+    entry_meta::EntryMeta,
     error::HolochainError,
 };
 

@@ -1,7 +1,7 @@
+use cas::storage::ContentAddressableStorage;
 use hash::HashString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
-use cas::storage::ContentAddressableStorage;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -107,9 +107,9 @@ impl AddressableContentTestSuite {
 
     /// test that two different addressable contents would give them same thing
     pub fn addressable_contents_are_the_same_test<T, K>(content: Content)
-        where
-            T: AddressableContent + Debug + PartialEq + Clone,
-            K: AddressableContent + Debug + PartialEq + Clone,
+    where
+        T: AddressableContent + Debug + PartialEq + Clone,
+        K: AddressableContent + Debug + PartialEq + Clone,
     {
         let addressable_content = T::from_content(&content);
         let other_addressable_content = K::from_content(&content);
@@ -125,9 +125,9 @@ impl AddressableContentTestSuite {
     }
 
     pub fn addressable_content_round_trip<T, K>(contents: Vec<T>, mut cas: K)
-        where
-            T: AddressableContent + PartialEq + Clone + Debug,
-            K: ContentAddressableStorage,
+    where
+        T: AddressableContent + PartialEq + Clone + Debug,
+        K: ContentAddressableStorage,
     {
         contents.into_iter().for_each(|f| {
             let mut add_error_message = String::new();
@@ -146,8 +146,9 @@ impl AddressableContentTestSuite {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::{AddressableContent , ExampleAddressableContent, OtherExampleAddressableContent, AddressableContentTestSuite},
+    use cas::content::{
+        AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
+        OtherExampleAddressableContent,
     };
 
     #[test]

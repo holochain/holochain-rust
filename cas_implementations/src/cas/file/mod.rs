@@ -55,12 +55,10 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::file::FilesystemStorage;
     use holochain_core_types::cas::{
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
-    };
-    use cas::{
-        file::FilesystemStorage,
     };
     use tempfile::{tempdir, TempDir};
 

@@ -119,7 +119,7 @@ pub fn test_entry_unique() -> Entry {
 pub mod tests {
     use super::*;
     use cas::{
-        content::{AddressableContentTestSuite, AddressableContent},
+        content::{AddressableContent, AddressableContentTestSuite},
         storage::ExampleContentAddressableStorage,
     };
     use entry::Entry;

@@ -1,5 +1,7 @@
 pub mod actor;
 
+use chain::actor::{AskChain, ChainActor};
+use hash_table::HashTable;
 use holochain_cas_implementations::actor::Protocol;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -10,10 +12,6 @@ use holochain_core_types::{
     json::ToJson,
     to_entry::ToEntry,
 };
-use chain::{
-    actor::{AskChain, ChainActor},
-};
-use hash_table::HashTable;
 use riker::actors::*;
 use serde_json;
 
@@ -234,6 +232,8 @@ impl ToJson for Chain {
 pub mod tests {
 
     use super::Chain;
+    use chain::SourceChain;
+    use hash_table::{actor::tests::test_table_actor, HashTable};
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         chain_header::ChainHeader,
@@ -241,11 +241,6 @@ pub mod tests {
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
             test_entry_type_b,
         },
-    };
-    use chain::{SourceChain};
-    use hash_table::{
-        actor::tests::test_table_actor,
-        HashTable,
     };
     use std::thread;
 

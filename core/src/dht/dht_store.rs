@@ -1,4 +1,4 @@
-use holochain_core_types:: {
+use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,

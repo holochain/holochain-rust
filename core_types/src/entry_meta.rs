@@ -1,11 +1,11 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry::{test_entry, Entry};
 use error::HolochainError;
 use json::{FromJson, RoundTripJson, ToJson};
+use keys::test_keys;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
-use keys::test_keys;
-use entry::{test_entry, Entry};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
@@ -186,10 +186,10 @@ pub fn test_meta_b() -> EntryMeta {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use keys::test_keys;
     use cas::content::{Address, AddressableContent};
     use entry::test_entry;
     use json::{FromJson, ToJson};
+    use keys::test_keys;
     use std::cmp::Ordering;
 
     #[test]

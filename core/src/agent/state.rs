@@ -1,13 +1,13 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
+use chain::{Chain, SourceChain};
+use context::Context;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    error::HolochainError,
     entry::Entry,
+    error::HolochainError,
     json::ToJson,
     keys::Keys,
 };
-use chain::{Chain, SourceChain};
-use context::Context;
 use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
@@ -167,13 +167,13 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use chain::tests::test_chain;
     use holochain_core_types::{
         cas::content::AddressableContent,
         entry::{test_entry, test_entry_address},
         error::HolochainError,
         json::ToJson,
     };
-    use chain::tests::test_chain;
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
 

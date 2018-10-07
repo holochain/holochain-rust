@@ -40,12 +40,10 @@ impl ContentAddressableStorage for MemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
+    use cas::memory::MemoryStorage;
     use holochain_core_types::cas::{
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
-    };
-    use cas::{
-        memory::MemoryStorage,
     };
 
     #[test]

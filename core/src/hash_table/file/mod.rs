@@ -1,7 +1,8 @@
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    entry::Entry,
+    entry_meta::EntryMeta,
     error::HolochainError,
-    entry::Entry, entry_meta::EntryMeta,
 };
 use std::{
     fs::{self, create_dir_all},
@@ -151,8 +152,8 @@ impl HashTable for FileTable {
 #[cfg(test)]
 pub mod tests {
     use super::Table;
-    use holochain_core_types::cas::content::{Address, AddressableContent, Content};
     use hash_table::{file::FileTable, test_util::standard_suite};
+    use holochain_core_types::cas::content::{Address, AddressableContent, Content};
     use regex::Regex;
     use std::path::MAIN_SEPARATOR;
     use tempfile::{tempdir, TempDir};

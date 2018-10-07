@@ -1,6 +1,6 @@
 use action::ActionWrapper;
-use holochain_core_types::error::HolochainError;
 use holochain_agent::Agent;
+use holochain_core_types::error::HolochainError;
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;

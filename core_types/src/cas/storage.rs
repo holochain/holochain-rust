@@ -17,7 +17,6 @@ pub trait ContentAddressableStorage {
     fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError>;
 }
 
-
 /// some struct to show an example ContentAddressableStorage implementation
 /// there is no persistence or concurrency in this example so use a raw HashMap
 pub struct ExampleContentAddressableStorage {
@@ -42,10 +41,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         Ok(self.storage.contains_key(address))
     }
 
-    fn fetch<C: AddressableContent>(
-        &self,
-        address: &Address,
-    ) -> Result<Option<C>, HolochainError> {
+    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
         Ok(self
             .storage
             .get(address)
@@ -55,15 +51,15 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
 
 //A struct for our test suite that infers a type of ContentAddressableStorage
 pub struct StorageTestSuite<T>
-    where
-        T: ContentAddressableStorage,
+where
+    T: ContentAddressableStorage,
 {
     cas: T,
 }
 
 impl<T> StorageTestSuite<T>
-    where
-        T: ContentAddressableStorage,
+where
+    T: ContentAddressableStorage,
 {
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite { cas: cas }
@@ -127,13 +123,8 @@ impl<T> StorageTestSuite<T>
 #[cfg(test)]
 pub mod tests {
     use cas::{
-        content::{
-            ExampleAddressableContent, OtherExampleAddressableContent,
-        },
-        storage::{
-            StorageTestSuite,
-            ExampleContentAddressableStorage,
-        },
+        content::{ExampleAddressableContent, OtherExampleAddressableContent},
+        storage::{ExampleContentAddressableStorage, StorageTestSuite},
     };
 
     /// show that content of different types can round trip through the same storage

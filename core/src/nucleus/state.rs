@@ -1,7 +1,4 @@
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;

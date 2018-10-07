@@ -6,10 +6,7 @@ pub mod receive;
 pub mod validate_commit;
 
 use context::Context;
-use holochain_core_types::{
-    entry::Entry,
-    json::ToJson,
-};
+use holochain_core_types::{entry::Entry, json::ToJson};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
 use nucleus::{
     ribosome::{

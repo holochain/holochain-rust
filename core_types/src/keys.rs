@@ -71,7 +71,6 @@ pub fn test_keys() -> Keys {
     Keys::new(&test_key(), &test_key(), test_node_id())
 }
 
-
 #[cfg(test)]
 pub mod tests {
 

@@ -1,11 +1,10 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::Entry;
-use error::HolochainError;
 use entry_type::EntryType;
+use error::HolochainError;
 use json::ToJson;
-use to_entry::ToEntry;
 use serde_json;
-
+use to_entry::ToEntry;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table

@@ -1,11 +1,8 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry::{test_entry_a, test_entry_b, Entry};
 use error::HolochainError;
 use serde_json;
 use std::collections::HashSet;
-use entry::{
-    test_entry_a, test_entry_b,
-    Entry,
-};
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -106,7 +103,6 @@ pub trait EntityAttributeValueStorage {
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
-
 
 pub struct ExampleEntityAttributeValueStorage {
     eavs: HashSet<EntityAttributeValue>,
@@ -244,10 +240,7 @@ pub fn eav_round_trip_test_runner(
 pub mod tests {
     use super::*;
     use cas::{
-        content::{
-            AddressableContentTestSuite, ExampleAddressableContent,
-            AddressableContent,
-        },
+        content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
         storage::ExampleContentAddressableStorage,
     };
     use eav::{EntityAttributeValue, EntityAttributeValueStorage};

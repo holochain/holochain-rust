@@ -6,9 +6,7 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use holochain_core_types::error::{
-    HolochainError, DnaError,
-};
+use holochain_core_types::error::{DnaError, HolochainError};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{

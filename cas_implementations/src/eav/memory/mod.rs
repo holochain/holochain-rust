@@ -41,9 +41,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::cas::content::{ExampleAddressableContent, AddressableContent};
-    use holochain_core_types::eav::{EntityAttributeValue, EntityAttributeValueStorage};
     use eav::memory::EavMemoryStorage;
+    use holochain_core_types::{
+        cas::content::{AddressableContent, ExampleAddressableContent},
+        eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    };
     use std::collections::HashSet;
 
     #[test]

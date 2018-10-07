@@ -64,8 +64,7 @@ mod tests {
     use holochain_core_types::{
         cas::{
             content::{
-                AddressableContentTestSuite, ExampleAddressableContent,
-                AddressableContent, Content,
+                AddressableContent, AddressableContentTestSuite, Content, ExampleAddressableContent,
             },
             storage::ExampleContentAddressableStorage,
         },

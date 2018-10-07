@@ -6,14 +6,13 @@ pub mod sys_entry;
 #[cfg(test)]
 pub mod test_util;
 
+use hash_table::status::{CrudStatus, LINK_NAME, STATUS_NAME};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::Entry, entry_meta::EntryMeta,
+    entry::Entry,
+    entry_meta::EntryMeta,
     error::HolochainError,
     keys::Keys,
-};
-use hash_table::{
-    status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 
 /// Trait of the data structure storing the source chain

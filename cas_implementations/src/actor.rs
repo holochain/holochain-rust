@@ -1,13 +1,14 @@
+use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::{Address, Content},
     chain_header::ChainHeader,
-    entry::Entry, entry_meta::EntryMeta,
+    entry::Entry,
+    entry_meta::EntryMeta,
     error::HolochainError,
     get_links_args::GetLinksArgs,
     keys::Keys,
     links_entry::{Link, LinkListEntry},
 };
-use futures::executor::block_on;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;

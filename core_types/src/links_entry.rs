@@ -1,8 +1,8 @@
 use cas::content::{Address, AddressableContent};
 use entry::Entry;
 use entry_type::EntryType;
-use to_entry::ToEntry;
 use serde_json;
+use to_entry::ToEntry;
 
 //-------------------------------------------------------------------------------------------------
 // Link

@@ -1,13 +1,10 @@
 extern crate futures;
 use action::{Action, ActionWrapper};
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry, entry_type::EntryType,
-    hash::HashString,
-
-};
 use context::Context;
 use futures::{future, Async, Future};
+use holochain_core_types::{
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, hash::HashString,
+};
 use nucleus::ribosome::callback::{
     validate_commit::validate_commit, CallbackParams, CallbackResult,
 };

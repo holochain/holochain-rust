@@ -34,8 +34,6 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use action::tests::test_action_wrapper_commit;
-    use instance::tests::test_context;
 
     #[test]
     fn can_instantiate() {
@@ -44,16 +42,5 @@ mod tests {
         assert_eq!(store.load(), Ok(None));
     }
 
-    #[test]
-    fn can_roundtrip() {
-        let mut store = SimplePersister::new();
-        let state = State::new();
-        let action_wrapper = test_action_wrapper_commit();
-
-        let new_state = state.reduce(test_context("jane"), action_wrapper.clone());
-
-        store.save(new_state.clone());
-
-        assert_eq!(store.load(), Ok(Some(new_state)));
-    }
+    // TODO write a persister.save() test
 }

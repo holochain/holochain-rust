@@ -1,8 +1,6 @@
 use cas::content::{Address, AddressableContent};
-use hash_table::{
-    entry::Entry,
-    sys_entry::{EntryType, ToEntry},
-};
+use hash_table::{entry::Entry, sys_entry::ToEntry};
+use holochain_dna::entry_type::EntryType;
 use serde_json;
 
 //-------------------------------------------------------------------------------------------------
@@ -121,7 +119,8 @@ pub mod tests {
     extern crate test_utils;
     use super::*;
     use action::{Action, ActionWrapper};
-    use hash_table::sys_entry::{EntryType, ToEntry};
+    use hash_table::sys_entry::ToEntry;
+    use holochain_dna::entry_type::EntryType;
     use instance::{tests::test_context, Instance, Observer};
     use std::sync::mpsc::channel;
 

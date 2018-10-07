@@ -1,9 +1,7 @@
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash_table::{
-    entry::Entry,
-    sys_entry::{EntryType, ToEntry},
-};
+use hash_table::{entry::Entry, sys_entry::ToEntry};
+use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use serde_json;
 
@@ -70,19 +68,6 @@ impl ChainHeader {
     /// entry_type getter
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
-    }
-
-    /// returns true if the entry type is a system entry
-    pub fn is_sys(&self) -> bool {
-        match self.entry_type {
-            EntryType::App(_) => true,
-            _ => false,
-        }
-    }
-
-    /// returns true if the entry type is an app entry
-    pub fn is_app(&self) -> bool {
-        !self.is_sys()
     }
 
     /// timestamp getter

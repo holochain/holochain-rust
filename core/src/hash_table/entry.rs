@@ -64,7 +64,8 @@ pub mod tests {
         content::{tests::AddressableContentTestSuite, Address, AddressableContent},
         storage::tests::ExampleContentAddressableStorage,
     };
-    use hash_table::{entry::Entry, sys_entry::EntryType};
+    use hash_table::entry::Entry;
+    use holochain_dna::entry_type::EntryType;
     use json::{FromJson, ToJson};
     use snowflake;
 

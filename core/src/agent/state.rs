@@ -120,10 +120,10 @@ fn reduce_commit_entry(
             .and_then(|chain_header| Some(chain_header.address())),
         &entry.address(),
         &String::new(),
-        // BAD, must be top of type
         state
-            .top_chain_header
-            .clone()
+            .chain()
+            .iter_type(&state.top_chain_header, &entry_type)
+            .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
     );
 

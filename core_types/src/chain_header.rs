@@ -1,9 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
-use hash_table::{
-    entry::Entry,
-    sys_entry::{EntryType, ToEntry},
-};
+use entry::Entry;
 use json::ToJson;
 use serde_json;
 
@@ -143,11 +140,11 @@ impl AddressableContent for ChainHeader {
             .expect("could not read Json as valid ChainHeader Content")
     }
 }
-
+/*
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{header::ChainHeader, tests::test_chain, SourceChain};
+    use chain_header::{header::ChainHeader, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -448,3 +445,4 @@ pub mod tests {
         assert_eq!(header, header_trip);
     }
 }
+*/

@@ -4,10 +4,10 @@ use chain::header::ChainHeader;
 use error::HolochainError;
 use futures::executor::block_on;
 use hash_table::{
-    entry::Entry,
     entry_meta::EntryMeta,
     links_entry::{Link, LinkListEntry},
 };
+use holochain_core_types::entry::Entry;
 use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;

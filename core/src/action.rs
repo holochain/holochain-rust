@@ -1,7 +1,8 @@
 use agent::state::AgentState;
 use cas::content::Address;
 use context::Context;
-use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
+use hash_table::{links_entry::Link, sys_entry::EntryType};
+use holochain_core_types::entry::Entry;
 use holochain_dna::Dna;
 use nucleus::{
     ribosome::api::get_links::GetLinksArgs,

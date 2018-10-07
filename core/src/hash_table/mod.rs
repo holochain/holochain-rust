@@ -1,5 +1,4 @@
 pub mod actor;
-pub mod entry;
 pub mod entry_meta;
 pub mod file;
 pub mod links_entry;

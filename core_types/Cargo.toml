@@ -1,0 +1,15 @@
+[package]
+name = "holochain_core_types"
+version = "0.1.0"
+authors = ["Holochain Core Dev Team <dev.support@holo.host>"]
+
+[dependencies]
+serde="1"
+serde_derive="1"
+serde_json="1"
+multihash = "0.8.0"
+futures-preview = "0.2.2"
+holochain_dna = { path = "../dna" }
+riker = "0.1.7"
+walkdir = "2"
+rust-base58 = "0.0.4"

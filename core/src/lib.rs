@@ -35,6 +35,7 @@ extern crate holochain_dna;
 extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
+extern crate holochain_core_types;
 
 pub mod action;
 pub mod actor;

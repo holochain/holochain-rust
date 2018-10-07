@@ -1,5 +1,3 @@
-pub mod memory;
-
 use cas::content::{Address, AddressableContent, Content};
 use error::HolochainError;
 use serde_json;

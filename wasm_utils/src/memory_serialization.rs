@@ -75,6 +75,7 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
 }
 
 /*
+TODO: figure out a way to get tests to work for serialization, see #451
 #[cfg(test)]
 pub mod tests {
     use super::*;

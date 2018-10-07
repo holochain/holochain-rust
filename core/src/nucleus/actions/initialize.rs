@@ -14,7 +14,7 @@ use std::{sync::Arc, thread, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
-const INITIALIZATION_TIMEOUT: u64 = 10;
+const INITIALIZATION_TIMEOUT: u64 = 30;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an

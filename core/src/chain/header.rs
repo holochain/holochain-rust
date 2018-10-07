@@ -42,7 +42,6 @@ impl ChainHeader {
     /// normally (outside unit tests) the generation of valid headers is internal to the
     /// chain::SourceChain trait and should not need to be handled manually
     ///
-    /// @see chain::pair::Pair
     /// @see chain::entry::Entry
     pub fn new(
         entry_type: &EntryType,
@@ -146,7 +145,7 @@ impl AddressableContent for ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{header::ChainHeader, pair::tests::test_pair, tests::test_chain, SourceChain};
+    use chain::{header::ChainHeader, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -156,8 +155,18 @@ pub mod tests {
     };
 
     /// returns a dummy header for use in tests
-    pub fn test_header() -> ChainHeader {
-        test_pair().header().clone()
+    pub fn test_chain_header() -> ChainHeader {
+        test_chain().create_next_chain_header(&test_entry_type(), &test_entry())
+    }
+
+    /// returns a dummy header for use in tests
+    pub fn test_chain_header_a() -> ChainHeader {
+        test_chain_header()
+    }
+
+    /// returns a dummy header for use in tests. different from test_chain_header_a.
+    pub fn test_chain_header_b() -> ChainHeader {
+        test_chain().create_next_chain_header(&test_entry_type_b(), &test_entry_b())
     }
 
     pub fn test_header_address() -> Address {
@@ -177,20 +186,20 @@ pub mod tests {
 
         // same content + chain state is equal
         assert_eq!(
-            chain_a.create_next_header(&entry_type_a, &entry_a),
-            chain_a.create_next_header(&entry_type_a, &entry_a),
+            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
+            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
         );
 
         // different content is different
         assert_ne!(
-            chain_a.create_next_header(&entry_type_a, &entry_a),
-            chain_a.create_next_header(&entry_type_a, &entry_b),
+            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
+            chain_a.create_next_chain_header(&entry_type_a, &entry_b),
         );
 
         // different type is different
         assert_ne!(
-            chain_a.create_next_header(&entry_type_a, &entry_a),
-            chain_a.create_next_header(&entry_type_b, &entry_a),
+            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
+            chain_a.create_next_chain_header(&entry_type_b, &entry_a),
         );
 
         // different state is different with same entry
@@ -200,8 +209,8 @@ pub mod tests {
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
         assert_ne!(
-            chain_a.create_next_header(&entry_type_a, &entry_a),
-            chain_b.create_next_header(&entry_type_a, &entry_a)
+            chain_a.create_next_chain_header(&entry_type_a, &entry_a),
+            chain_b.create_next_chain_header(&entry_type_a, &entry_a)
         );
     }
 
@@ -212,7 +221,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!(header.entry_address(), &entry.address());
         assert_eq!(header.link(), None);
@@ -226,7 +235,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!(header.entry_type(), &entry_type);
     }
@@ -238,7 +247,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!(header.timestamp(), "");
     }
@@ -255,20 +264,21 @@ pub mod tests {
         let entry_b = test_entry_b();
 
         // first header is genesis so next should be None
-        let pair_a = chain
+        let chain_header_a = chain
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        let header_a = pair_a.header();
 
-        assert_eq!(header_a.link(), None);
+        assert_eq!(chain_header_a.link(), None);
 
         // second header next should be first header hash
-        let pair_b = chain
+        let chain_header_b = chain
             .push_entry(&entry_type_b, &entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        let header_b = pair_b.header();
 
-        assert_eq!(header_b.link(), Some(header_a.to_entry().1.address()));
+        assert_eq!(
+            chain_header_b.link(),
+            Some(chain_header_a.to_entry().1.address())
+        );
     }
 
     #[test]
@@ -279,7 +289,7 @@ pub mod tests {
         let entry = test_entry();
 
         // header for an entry should contain the entry hash under entry()
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!(header.entry_address(), &entry.address());
     }
@@ -291,33 +301,35 @@ pub mod tests {
 
         let entry_type_a = test_entry_type_a();
         let entry_type_b = test_entry_type_b();
+        let entry_type_c = test_entry_type_a();
 
         let entry_a = test_entry_a();
         let entry_b = test_entry_b();
+        let entry_c = test_entry_b();
 
         // first header is genesis so next should be None
-        let pair_a = chain
+        let chain_header_a = chain
             .push_entry(&entry_type_a, &entry_a)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        let header_a = pair_a.header();
 
-        assert_eq!(header_a.link_same_type(), None);
+        assert_eq!(chain_header_a.link_same_type(), None);
 
         // second header is a different type so next should be None
-        let pair_b = chain
+        let chain_header_b = chain
             .push_entry(&entry_type_b, &entry_b)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        let header_b = pair_b.header();
 
-        assert_eq!(header_b.link_same_type(), None);
+        assert_eq!(chain_header_b.link_same_type(), None);
 
         // third header is same type as first header so next should be first header hash
-        let pair_c = chain
-            .push_entry(&entry_type_a, &entry_b)
+        let chain_header_c = chain
+            .push_entry(&entry_type_c, &entry_c)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-        let header_c = pair_c.header();
 
-        assert_eq!(header_c.link_same_type(), Some(header_a.address()));
+        assert_eq!(
+            chain_header_c.link_same_type(),
+            Some(chain_header_a.address())
+        );
     }
 
     #[test]
@@ -327,7 +339,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!("", header.entry_signature());
     }
@@ -340,7 +352,7 @@ pub mod tests {
         let entry = test_entry();
 
         // check a known hash
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         assert_eq!(test_header_address(), header.address());
     }
@@ -357,9 +369,9 @@ pub mod tests {
         let entry_b = test_entry_b();
 
         // different entries must return different hashes
-        let header_a = chain.create_next_header(&entry_type_a, &entry_a);
+        let header_a = chain.create_next_chain_header(&entry_type_a, &entry_a);
 
-        let header_b = chain.create_next_header(&entry_type_b, &entry_b);
+        let header_b = chain.create_next_chain_header(&entry_type_b, &entry_b);
 
         assert_ne!(header_a.address(), header_b.address());
 
@@ -367,7 +379,7 @@ pub mod tests {
         let entry_c = test_entry_a();
 
         // same entry must return same address
-        let header_c = chain.create_next_header(&entry_type_c, &entry_c);
+        let header_c = chain.create_next_chain_header(&entry_type_c, &entry_c);
 
         assert_eq!(header_a.address(), header_c.address());
     }
@@ -382,8 +394,8 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let header_a = chain.create_next_header(&entry_type_a, &entry);
-        let header_b = chain.create_next_header(&entry_type_b, &entry);
+        let header_a = chain.create_next_chain_header(&entry_type_a, &entry);
+        let header_b = chain.create_next_chain_header(&entry_type_b, &entry);
 
         // different types must give different addresses
         assert_ne!(header_a.address(), header_b.address());
@@ -398,18 +410,18 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let chain_header_control = chain.create_next_chain_header(&entry_type, &entry);
 
-        let pair_a = chain
+        let chain_header_a = chain
             .push_entry(&entry_type, &entry)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
         // p2 will have a different address to p1 with the same entry as the chain state is different
-        let pair_b = chain
+        let chain_header_b = chain
             .push_entry(&entry_type, &entry)
             .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
 
-        assert_eq!(header.address(), pair_a.header().address());
-        assert_ne!(header.address(), pair_b.header().address());
+        assert_eq!(chain_header_control.address(), chain_header_a.address());
+        assert_ne!(chain_header_control.address(), chain_header_b.address());
     }
 
     #[test]
@@ -426,7 +438,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let header = chain.create_next_header(&entry_type, &entry);
+        let header = chain.create_next_chain_header(&entry_type, &entry);
 
         let header_entry = header.to_entry().1;
         let header_trip = ChainHeader::from_entry(&header_entry);

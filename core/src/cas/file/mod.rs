@@ -1,67 +1,53 @@
+pub mod actor;
+
+use actor::{AskSelf, Protocol};
 use cas::{
     content::{Address, AddressableContent},
+    file::actor::FilesystemStorageActor,
     storage::ContentAddressableStorage,
 };
 use error::HolochainError;
-use std::{
-    fs::{create_dir_all, read_to_string, write},
-    path::{Path, MAIN_SEPARATOR},
-};
+use riker::actors::*;
 
 pub struct FilesystemStorage {
-    /// path to the directory where content will be saved to disk
-    dir_path: String,
+    dir_actor: ActorRef<Protocol>,
 }
 
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
-        let canonical = Path::new(dir_path).canonicalize()?;
-        if !canonical.is_dir() {
-            return Err(HolochainError::IoError(
-                "path is not a directory or permissions don't allow access".to_string(),
-            ));
-        }
         Ok(FilesystemStorage {
-            dir_path: canonical
-                .to_str()
-                .ok_or_else(|| {
-                    HolochainError::IoError("could not convert path to string".to_string())
-                })?
-                .to_string(),
+            dir_actor: FilesystemStorageActor::new_ref(dir_path)?,
         })
-    }
-
-    /// builds an absolute path for an AddressableContent address
-    fn address_to_path(&self, address: &Address) -> String {
-        // using .txt extension because content is arbitrary and controlled by the
-        // AddressableContent trait implementation
-        format!("{}{}{}.txt", self.dir_path, MAIN_SEPARATOR, address)
     }
 }
 
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        // @TODO be more efficient here
-        // @see https://github.com/holochain/holochain-rust/issues/248
-        create_dir_all(&self.dir_path)?;
-        Ok(write(
-            self.address_to_path(&content.address()),
-            content.content(),
-        )?)
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
+        unwrap_to!(response => Protocol::CasAddResult).clone()
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        Ok(Path::new(&self.address_to_path(address)).is_file())
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasContains(address.clone()))?;
+        unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-        if self.contains(&address)? {
-            Ok(Some(C::from_content(&read_to_string(
-                self.address_to_path(address),
-            )?)))
-        } else {
-            Ok(None)
-        }
+    fn fetch<AC: AddressableContent>(
+        &self,
+        address: &Address,
+    ) -> Result<Option<AC>, HolochainError> {
+        let response = self
+            .dir_actor
+            .block_on_ask(Protocol::CasFetch(address.clone()))?;
+        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        Ok(match content {
+            Some(c) => Some(AC::from_content(&c)),
+            None => None,
+        })
     }
 }
 

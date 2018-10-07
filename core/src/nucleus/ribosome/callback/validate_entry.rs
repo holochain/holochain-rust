@@ -1,8 +1,8 @@
 extern crate serde_json;
 use context::Context;
 use error::HolochainError;
-use hash_table::{entry::Entry, sys_entry::EntryType};
-use holochain_dna::wasm::DnaWasm;
+use hash_table::entry::Entry;
+use holochain_dna::{entry_type::EntryType, wasm::DnaWasm};
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::{
     ribosome::{

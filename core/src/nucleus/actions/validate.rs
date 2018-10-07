@@ -5,7 +5,8 @@ use cas::content::AddressableContent;
 use context::Context;
 use futures::{future, Async, Future};
 use hash::HashString;
-use hash_table::{entry::Entry, sys_entry::EntryType};
+use hash_table::entry::Entry;
+use holochain_dna::entry_type::EntryType;
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
@@ -53,20 +54,18 @@ pub fn validate_entry(
                 );
 
                 let result = match maybe_validation_result {
-                    Ok(validation_result) => {
-                        match validation_result {
-                            CallbackResult::Fail(error_string) => {
-                                let error_object: serde_json::Value =
-                                    serde_json::from_str(&error_string).unwrap();
-                                Err(error_object["Err"].to_string())
-                            }
-                            CallbackResult::Pass => Ok(()),
-                            CallbackResult::NotImplemented => Err(format!(
-                                "Validation callback not implemented for {:?}",
-                                entry_type.clone()
-                            )),
+                    Ok(validation_result) => match validation_result {
+                        CallbackResult::Fail(error_string) => {
+                            let error_object: serde_json::Value =
+                                serde_json::from_str(&error_string).unwrap();
+                            Err(error_object["Err"].to_string())
                         }
-                    }
+                        CallbackResult::Pass => Ok(()),
+                        CallbackResult::NotImplemented => Err(format!(
+                            "Validation callback not implemented for {:?}",
+                            entry_type.clone()
+                        )),
+                    },
                     Err(error) => Err(error.to_string()),
                 };
 

@@ -1,12 +1,14 @@
 pub mod actor;
 
 use actor::{AskSelf, Protocol};
-use cas::{
-    content::{Address, AddressableContent},
-    file::actor::FilesystemStorageActor,
-    storage::ContentAddressableStorage,
+use cas::file::actor::FilesystemStorageActor;
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    error::HolochainError,
 };
-use error::HolochainError;
 use riker::actors::*;
 
 pub struct FilesystemStorage {
@@ -53,10 +55,10 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
-        file::FilesystemStorage,
-        storage::tests::StorageTestSuite,
+    use cas::file::FilesystemStorage;
+    use holochain_core_types::cas::{
+        content::{ExampleAddressableContent, OtherExampleAddressableContent},
+        storage::StorageTestSuite,
     };
     use tempfile::{tempdir, TempDir};
 

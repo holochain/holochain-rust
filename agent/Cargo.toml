@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 
 [dependencies]
+holochain_core_types = { path = "../core_types" }
+serde = "1.0.79"
+serde_json = "1.0.32"

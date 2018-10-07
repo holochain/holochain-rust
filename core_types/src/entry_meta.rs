@@ -1,6 +1,8 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry::{test_entry, Entry};
 use error::HolochainError;
 use json::{FromJson, RoundTripJson, ToJson};
+use keys::test_keys;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
@@ -122,76 +124,73 @@ impl AddressableContent for EntryMeta {
     }
 }
 
+/// dummy test attribute name
+pub fn test_attribute() -> String {
+    "meta-attribute".into()
+}
+
+/// dummy test attribute name, same as test_attribute()
+pub fn test_attribute_a() -> String {
+    test_attribute()
+}
+
+/// dummy test attribute name, differs from test_attribute()
+pub fn test_attribute_b() -> String {
+    "another-attribute".into()
+}
+
+/// dummy test attribute value
+pub fn test_value() -> String {
+    "meta value".into()
+}
+
+/// dummy test attribute value, same as test_value()
+pub fn test_value_a() -> String {
+    test_value()
+}
+
+/// dummy test attribute value, differs from test_value()
+pub fn test_value_b() -> String {
+    "another value".into()
+}
+
+pub fn test_meta_for(entry: &Entry, attribute: &str, value: &str) -> EntryMeta {
+    EntryMeta::new(&test_keys().node_id(), &entry.address(), attribute, value)
+}
+
+/// returns dummy meta for testing
+pub fn test_meta() -> EntryMeta {
+    EntryMeta::new(
+        &test_keys().node_id(),
+        &test_entry().address(),
+        &test_attribute(),
+        &test_value(),
+    )
+}
+
+/// dummy meta, same as test_meta()
+pub fn test_meta_a() -> EntryMeta {
+    test_meta()
+}
+
+/// returns dummy meta for testing against the same entry as test_meta_a
+pub fn test_meta_b() -> EntryMeta {
+    EntryMeta::new(
+        &test_keys().node_id(),
+        &test_entry().address(),
+        &test_attribute_b(),
+        &test_value_b(),
+    )
+}
+
 #[cfg(test)]
 pub mod tests {
-
-    use agent::keys::tests::test_keys;
+    use super::*;
     use cas::content::{Address, AddressableContent};
-    use hash_table::{
-        entry::{tests::test_entry, Entry},
-        entry_meta::EntryMeta,
-    };
+    use entry::test_entry;
     use json::{FromJson, ToJson};
+    use keys::test_keys;
     use std::cmp::Ordering;
-
-    /// dummy test attribute name
-    pub fn test_attribute() -> String {
-        "meta-attribute".into()
-    }
-
-    /// dummy test attribute name, same as test_attribute()
-    pub fn test_attribute_a() -> String {
-        test_attribute()
-    }
-
-    /// dummy test attribute name, differs from test_attribute()
-    pub fn test_attribute_b() -> String {
-        "another-attribute".into()
-    }
-
-    /// dummy test attribute value
-    pub fn test_value() -> String {
-        "meta value".into()
-    }
-
-    /// dummy test attribute value, same as test_value()
-    pub fn test_value_a() -> String {
-        test_value()
-    }
-
-    /// dummy test attribute value, differs from test_value()
-    pub fn test_value_b() -> String {
-        "another value".into()
-    }
-
-    pub fn test_meta_for(entry: &Entry, attribute: &str, value: &str) -> EntryMeta {
-        EntryMeta::new(&test_keys().node_id(), &entry.address(), attribute, value)
-    }
-
-    /// returns dummy meta for testing
-    pub fn test_meta() -> EntryMeta {
-        EntryMeta::new(
-            &test_keys().node_id(),
-            &test_entry().address(),
-            &test_attribute(),
-            &test_value(),
-        )
-    }
-
-    /// dummy meta, same as test_meta()
-    pub fn test_meta_a() -> EntryMeta {
-        test_meta()
-    }
-
-    /// returns dummy meta for testing against the same entry as test_meta_a
-    pub fn test_meta_b() -> EntryMeta {
-        EntryMeta::new(
-            &test_keys().node_id(),
-            &test_entry().address(),
-            &test_attribute_b(),
-            &test_value_b(),
-        )
-    }
 
     #[test]
     /// smoke test EntryMeta::new()

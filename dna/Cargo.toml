@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["neonphog <neonphog@gmail.com>"]
 
 [dependencies]
+holochain_core_types = { path = "../core_types" }
 base64 = "0.9.2"
 serde = "1.0"
 serde_derive = "1.0"

@@ -1,14 +1,14 @@
-use agent::keys::Keys;
-use cas::content::{Address, Content};
-use chain::header::ChainHeader;
-use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{
+use holochain_core_types::{
+    cas::content::{Address, Content},
+    chain_header::ChainHeader,
     entry::Entry,
     entry_meta::EntryMeta,
+    error::HolochainError,
+    get_links_args::GetLinksArgs,
+    keys::Keys,
     links_entry::{Link, LinkListEntry},
 };
-use nucleus::ribosome::api::get_links::GetLinksArgs;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;

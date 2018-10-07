@@ -1,8 +1,8 @@
-use actor::{AskSelf, Protocol, SYS};
-use agent::keys::Keys;
-use cas::content::Address;
-use error::HolochainError;
-use hash_table::{entry::Entry, entry_meta::EntryMeta, HashTable};
+use hash_table::HashTable;
+use holochain_cas_implementations::actor::{AskSelf, Protocol, SYS};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, entry_meta::EntryMeta, error::HolochainError, keys::Keys,
+};
 use riker::actors::*;
 use snowflake;
 
@@ -175,13 +175,11 @@ impl<HT: HashTable> Actor for HashTableActor<HT> {
 #[cfg(test)]
 pub mod tests {
     use super::HashTableActor;
-    use actor::Protocol;
-    use cas::content::AddressableContent;
-    use hash_table::{
-        entry::tests::{test_entry, test_entry_address},
-        memory::tests::test_table,
-        test_util::standard_suite,
-        HashTable,
+    use hash_table::{memory::tests::test_table, test_util::standard_suite, HashTable};
+    use holochain_cas_implementations::actor::Protocol;
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, test_entry_address},
     };
     use riker::actors::*;
     use std::{sync::mpsc, thread};

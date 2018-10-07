@@ -19,6 +19,7 @@
 //! assert_eq!(name, dna2.name);
 //! ```
 
+extern crate holochain_core_types;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -28,16 +29,15 @@ extern crate base64;
 extern crate uuid;
 
 use serde_json::Value;
-use std::{
-    error::Error,
-    fmt,
-    hash::{Hash, Hasher},
-};
-pub mod entry_type;
+use std::hash::{Hash, Hasher};
+
 pub mod wasm;
 pub mod zome;
 
-use entry_type::EntryType;
+use holochain_core_types::{
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::DnaError,
+    to_entry::ToEntry,
+};
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
@@ -50,33 +50,6 @@ fn empty_object() -> Value {
 /// serde helper, provides a default newly generated v4 uuid
 fn new_uuid() -> String {
     Uuid::new_v4().to_string()
-}
-
-#[derive(Clone, Debug, PartialEq, Hash)]
-pub enum DnaError {
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
-}
-
-impl Error for DnaError {
-    fn description(&self) -> &str {
-        match self {
-            DnaError::ZomeNotFound(err_msg) => &err_msg,
-            DnaError::CapabilityNotFound(err_msg) => &err_msg,
-            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
-        }
-    }
-}
-
-impl fmt::Display for DnaError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
-    }
 }
 
 /// Represents the top-level holochain dna object.
@@ -279,6 +252,17 @@ impl PartialEq for Dna {
     fn eq(&self, other: &Dna) -> bool {
         // need to guarantee that PartialEq and Hash always agree
         self.to_json() == other.to_json()
+    }
+}
+
+impl ToEntry for Dna {
+    fn to_entry(&self) -> (EntryType, Entry) {
+        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
+        (EntryType::Dna, Entry::from(self.to_json()))
+    }
+
+    fn from_entry(entry: &Entry) -> Self {
+        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
 

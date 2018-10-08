@@ -50,7 +50,7 @@ fn new_uuid() -> String {
     Uuid::new_v4().to_string()
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

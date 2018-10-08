@@ -4,27 +4,19 @@ use error::HolochainError;
 use hash::HashString;
 use std::{
     collections::HashSet,
-    fs::{create_dir_all, read_to_string, write, File,OpenOptions},
+    fs::{create_dir_all, read_dir, read_to_string, write, File, OpenOptions},
     io::prelude::*,
     path::{Path, MAIN_SEPARATOR},
 };
 
-pub struct EavFileStorage<T>
-where
-    T: AddressableContent,
-{
-    addressable_content: T,
+use walkdir::WalkDir;
+
+pub struct EavFileStorage {
     dir_path: String,
 }
 
-impl<T> EavFileStorage<T>
-where
-    T: AddressableContent,
-{
-    pub fn new(
-        dir_path: String,
-        addressable_content: T,
-    ) -> Result<EavFileStorage<T>, HolochainError> {
+impl EavFileStorage {
+    pub fn new(dir_path: String) -> Result<EavFileStorage, HolochainError> {
         let canonical = Path::new(&dir_path).canonicalize()?;
         if !canonical.is_dir() {
             return Err(HolochainError::IoError(
@@ -38,103 +30,141 @@ where
                     HolochainError::IoError("could not convert path to string".to_string())
                 })?
                 .to_string(),
-            addressable_content: addressable_content,
         })
     }
 
     fn write_to_file(
         &self,
         subscript: String,
-        file_contents_to_write: String,
+        eav: &EntityAttributeValue,
     ) -> Result<(), HolochainError> {
-        let path = vec![self.dir_path.clone(),subscript].join(&MAIN_SEPARATOR.to_string());
+        let address: String = match &*subscript {
+            "e" => eav.entity().to_string(),
+            "a" => eav.attribute(),
+            "v" => eav.value().to_string(),
+            _ => String::new(),
+        };
+        let path =
+            vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
         let mut f = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(vec![path,self.addressable_content.address().to_string()].join(&MAIN_SEPARATOR.to_string()))?;
-        writeln!(f,"{}",file_contents_to_write)?;
+            .open(vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string()))?;
+        writeln!(f, "{}", eav.content())?;
         Ok(())
     }
 
-    fn read_from_file(&self, subscript: String) -> Result<String, HolochainError> {
-        let filename = vec![
-            self.dir_path.clone(),
-            subscript,
-            self.addressable_content.address().to_string(),
-        ].join(&MAIN_SEPARATOR.to_string());
-        let mut content = String::new();
-        File::open(filename).and_then(|mut file| file.read_to_string(&mut content))?;
-        Ok(content)
+    fn read_from_dir<T>(
+        &self,
+        subscript: String,
+        obj: Option<T>,
+    ) -> HashSet<Result<String, HolochainError>>
+    where
+        T: ToString,
+    {
+        let eav_directory = match obj {
+            Some(a) => a.to_string(),
+            None => String::new(),
+        };
+        let full_path =
+            vec![self.dir_path.clone(), subscript, eav_directory].join(&MAIN_SEPARATOR.to_string());
+        println!("full path {:?}", full_path);
+        let mut set = HashSet::new();
+        WalkDir::new(full_path)
+            .into_iter()
+            .map(|dir_entry| match dir_entry {
+                Ok(entry) => match OpenOptions::new().read(true).open(entry.path()) {
+                    Ok(mut file) => {
+                        let mut content = String::new();
+                        match file.read_to_string(&mut content) {
+                            Ok(taught) => {
+                                content
+                                    .lines()
+                                    .map(|e| set.insert(Ok(e.to_string())))
+                                    .collect::<HashSet<_>>();
+                            }
+                            Err(_) => {
+                                set.insert(Err(HolochainError::ErrorGeneric(
+                                    "issue here".to_string(),
+                                )));
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        set.insert(Err(HolochainError::ErrorGeneric("issue here".to_string())));
+                    }
+                },
+                Err(_) => {
+                    set.insert(Err(HolochainError::ErrorGeneric("issue here".to_string())));
+                }
+            })
+            .collect::<HashSet<_>>();
+
+        set
     }
 }
 
-impl<T> EntityAttributeValueStorage for EavFileStorage<T>
-where
-    T: AddressableContent,
-{
+impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         create_dir_all(self.dir_path.clone())?;
-        self.write_to_file(String::from("e".to_string()), eav.entity().to_string())
-        .and_then(|_|self.write_to_file(String::from("a".to_string()), eav.attribute()))
-        .and_then(|_|self.write_to_file(String::from("v".to_string()), eav.value().to_string()))
+        self.write_to_file(String::from("e".to_string()), eav)
+            .and_then(|_| self.write_to_file(String::from("a".to_string()), eav))
+            .and_then(|_| self.write_to_file(String::from("v".to_string()), eav))
     }
     fn fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> 
-    {
-        let entitySet = self.read_from_file("e".to_string()).unwrap_or_else(|_|String::new());
-        let attributeSet = self.read_from_file("a".to_string()).unwrap_or_else(|_|String::new());
-        let valueSet = self.read_from_file("v".to_string()).unwrap_or_else(|_|String::new());
-        let eavs = entitySet
-            .lines()
-            .zip(attributeSet.lines().zip(valueSet.lines()))
-            .map(|f| {
-                EntityAttributeValue::new(
-                    &HashString::from(f.0.to_string()),
-                    &(f.1).0.to_string(),
-                    &HashString::from((f.1).1.to_string()),
-                )
-            })
-            .collect::<HashSet<EntityAttributeValue>>();
-        Ok(eavs
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        let entity_set = self.read_from_dir::<Entity>("e".to_string(), entity);
+        let attribute_set = self
+            .read_from_dir::<Attribute>("a".to_string(), attribute)
+            .clone();
+        let value_set = self.read_from_dir::<Value>("v".to_string(), value);
+        let attribute_value_inter = attribute_set.intersection(&value_set).cloned().collect();
+        let entity_attribute_value_inter: HashSet<Result<String, HolochainError>> = entity_set
+            .intersection(&attribute_value_inter)
+            .cloned()
+            .collect();
+        Ok(entity_attribute_value_inter
             .into_iter()
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Entity>(e.entity(), &entity))
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Attribute>(e.attribute(), &attribute))
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Value>(e.value(), &value))
-            .collect::<HashSet<EntityAttributeValue>>())
+            .filter(|e| e.is_ok())
+            .map(|e| EntityAttributeValue::from_content(&e.unwrap()))
+            .collect())
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{content::{tests::ExampleAddressableContent, AddressableContent},memory::MemoryStorage};
+    use cas::{
+        content::{tests::ExampleAddressableContent, AddressableContent},
+        memory::MemoryStorage,
+    };
     use eav::{file::EavFileStorage, EntityAttributeValue, EntityAttributeValueStorage};
-    use std::collections::HashSet;
     use error::HolochainError;
-    use std::fs;
-    use std::{fs::{create_dir_all, read_to_string, write, File,OpenOptions},path::{Path, MAIN_SEPARATOR}};
+    use std::{
+        collections::HashSet,
+        fs::{self, create_dir_all, read_to_string, write, File, OpenOptions},
+        path::{Path, MAIN_SEPARATOR},
+    };
+    use tempfile::{tempdir, TempDir};
 
-    fn deleteFolders(path:String) -> Result<(),HolochainError>
-    {
-       if Path::new(&path).exists()
-       {
-           fs::remove_dir_all(path)?;
-           Ok(())
-       }
-       else 
-       {
+    fn delete_folders(path: String) -> Result<(), HolochainError> {
+        if Path::new(&path).exists() {
+            fs::remove_dir_all(path)?;
             Ok(())
-       }
+        } else {
+            Ok(())
+        }
     }
 
     #[test]
-    fn file_eav_round_trip() 
-    {
-        deleteFolders(String::from("holo_round_trip")).expect("was supposed to clean up folder before test");
+    fn file_eav_round_trip() {
+        let test_folder = "holo_round_trip";
+        delete_folders(String::from("holo_round_trip"))
+            .expect("was supposed to clean up folder before test");
         create_dir_all(String::from("holo_round_trip")).expect("create holo directory");
         let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
@@ -144,8 +174,8 @@ pub mod tests {
             &attribute,
             &value_content.address(),
         );
-        let memory_content = String::from("try this");
-        let mut eav_storage = EavFileStorage::new("holo_round_trip".to_string(),memory_content).expect("should find holo file");;
+        let mut eav_storage =
+            EavFileStorage::new("holo_round_trip".to_string()).expect("should find holo file");;
 
         assert_eq!(
             HashSet::new(),
@@ -187,6 +217,7 @@ pub mod tests {
             // open
             (None, None, None),
         ] {
+            println!("fetch");
             assert_eq!(
                 expected,
                 eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
@@ -195,9 +226,9 @@ pub mod tests {
     }
 
     #[test]
-    fn file_eav_one_to_many() 
-    {
-        deleteFolders(String::from("holo_one_to_many")).expect("was supposed to clean up folder before test");
+    fn file_eav_one_to_many() {
+        delete_folders(String::from("holo_one_to_many"))
+            .expect("was supposed to clean up folder before test");
         create_dir_all(String::from("holo_one_to_many")).expect("create holo directory");
         let one = ExampleAddressableContent::from_content(&"foo".to_string());
         // it can reference itself, why not?
@@ -205,9 +236,7 @@ pub mod tests {
         let many_two = ExampleAddressableContent::from_content(&"bar".to_string());
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "one_to_many".to_string();
-
-        let memory_content = String::from("try this");
-        let mut eav_storage = EavFileStorage::new("holo_one_to_many".to_string(),memory_content).unwrap();
+        let mut eav_storage = EavFileStorage::new("holo_one_to_many".to_string()).unwrap();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
@@ -254,7 +283,8 @@ pub mod tests {
 
     #[test]
     fn file_eav_many_to_one() {
-        deleteFolders(String::from("holo_many_to_one")).expect("was supposed to clean up folder before test");
+        delete_folders(String::from("holo_many_to_one"))
+            .expect("was supposed to clean up folder before test");
         create_dir_all(String::from("holo_many_to_one")).expect("create holo directory");
         let one = ExampleAddressableContent::from_content(&"foo".to_string());
         // it can reference itself, why not?
@@ -263,8 +293,7 @@ pub mod tests {
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "many_to_one".to_string();
 
-        let memory_content = String::from("try this");
-        let mut eav_storage = EavFileStorage::new("holo_many_to_one".to_string(),memory_content).unwrap();
+        let mut eav_storage = EavFileStorage::new("holo_many_to_one".to_string()).unwrap();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());
@@ -300,6 +329,7 @@ pub mod tests {
                 &attribute.clone(),
                 &one.address(),
             ));
+            println!("fetch");
             assert_eq!(
                 expected_one,
                 eav_storage

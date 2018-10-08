@@ -47,10 +47,8 @@ impl EavFileStorage {
         let path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
-        let mut f = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string()))?;
+        let mut f =
+            File::create(vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string()))?;
         writeln!(f, "{}", eav.content())?;
         Ok(())
     }
@@ -119,8 +117,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
     }
 }
 
-fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, HolochainError>>) 
-{
+fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, HolochainError>>) {
     OpenOptions::new()
         .read(true)
         .open(entry.path())

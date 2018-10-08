@@ -9,7 +9,7 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 pub struct EavFileStorage {
     dir_path: String,
@@ -69,34 +69,17 @@ impl EavFileStorage {
         };
         let full_path =
             vec![self.dir_path.clone(), subscript, eav_directory].join(&MAIN_SEPARATOR.to_string());
-        println!("full path {:?}", full_path);
         let mut set = HashSet::new();
         WalkDir::new(full_path)
             .into_iter()
             .map(|dir_entry| match dir_entry {
-                Ok(entry) => match OpenOptions::new().read(true).open(entry.path()) {
-                    Ok(mut file) => {
-                        let mut content = String::new();
-                        match file.read_to_string(&mut content) {
-                            Ok(taught) => {
-                                content
-                                    .lines()
-                                    .map(|e| set.insert(Ok(e.to_string())))
-                                    .collect::<HashSet<_>>();
-                            }
-                            Err(_) => {
-                                set.insert(Err(HolochainError::ErrorGeneric(
-                                    "issue here".to_string(),
-                                )));
-                            }
-                        }
-                    }
-                    Err(_) => {
-                        set.insert(Err(HolochainError::ErrorGeneric("issue here".to_string())));
-                    }
-                },
+                Ok(entry) => {
+                    add_eav_to_hashset(entry, &mut set);
+                }
                 Err(_) => {
-                    set.insert(Err(HolochainError::ErrorGeneric("issue here".to_string())));
+                    set.insert(Err(HolochainError::ErrorGeneric(
+                        "Could not read from file".to_string(),
+                    )));
                 }
             })
             .collect::<HashSet<_>>();
@@ -134,6 +117,23 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .map(|e| EntityAttributeValue::from_content(&e.unwrap()))
             .collect())
     }
+}
+
+fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, HolochainError>>) 
+{
+    OpenOptions::new()
+        .read(true)
+        .open(entry.path())
+        .and_then(|mut file| {
+            let mut content = String::new();
+            file.read_to_string(&mut content).and_then(|f| {
+                content
+                    .lines()
+                    .map(|e| set.insert(Ok(e.to_string())))
+                    .collect::<HashSet<_>>();
+                Ok(())
+            })
+        });
 }
 
 #[cfg(test)]

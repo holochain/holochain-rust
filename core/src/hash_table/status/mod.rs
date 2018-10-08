@@ -66,7 +66,7 @@ mod tests {
             content::{
                 AddressableContent, AddressableContentTestSuite, Content, ExampleAddressableContent,
             },
-            storage::ExampleContentAddressableStorage,
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
         eav::eav_round_trip_test_runner,
     };
@@ -157,7 +157,6 @@ mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let content_addressable_storage = ExampleContentAddressableStorage::new();
         let crud_statuses = vec![
             CrudStatus::LIVE,
             CrudStatus::REJECTED,
@@ -168,6 +167,6 @@ mod tests {
         AddressableContentTestSuite::addressable_content_round_trip::<
             CrudStatus,
             ExampleContentAddressableStorage,
-        >(crud_statuses, content_addressable_storage);
+        >(crud_statuses, test_content_addressable_storage());
     }
 }

@@ -16,9 +16,16 @@ extern crate serde;
 extern crate serde_json;
 extern crate snowflake;
 extern crate walkdir;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate unwrap_to;
+extern crate riker_default;
+extern crate riker_patterns;
 
 #[macro_use]
 extern crate serde_derive;
+pub mod actor;
 pub mod cas;
 pub mod chain_header;
 pub mod eav;

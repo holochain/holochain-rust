@@ -241,7 +241,7 @@ pub mod tests {
     use super::*;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-        storage::ExampleContentAddressableStorage,
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use eav::{EntityAttributeValue, EntityAttributeValueStorage};
     use std::collections::HashSet;
@@ -377,12 +377,11 @@ pub mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let content_addressable_storage = ExampleContentAddressableStorage::new();
         let addressable_contents = vec![test_eav()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             EntityAttributeValue,
             ExampleContentAddressableStorage,
-        >(addressable_contents, content_addressable_storage);
+        >(addressable_contents, test_content_addressable_storage());
     }
 
 }

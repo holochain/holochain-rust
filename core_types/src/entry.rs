@@ -120,7 +120,7 @@ pub mod tests {
     use super::*;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite},
-        storage::ExampleContentAddressableStorage,
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use entry::Entry;
     use json::{FromJson, ToJson};
@@ -189,11 +189,10 @@ pub mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let content_addressable_storage = ExampleContentAddressableStorage::new();
         let entries = vec![test_entry()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,
             ExampleContentAddressableStorage,
-        >(entries, content_addressable_storage);
+        >(entries, test_content_addressable_storage());
     }
 }

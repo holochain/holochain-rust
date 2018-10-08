@@ -1,6 +1,8 @@
-use actor::{Protocol, SYS};
-use cas::content::{Address, Content};
-use error::HolochainError;
+use holochain_core_types::{
+    actor::{Protocol, SYS},
+    cas::content::{Address, Content},
+    error::HolochainError,
+};
 use riker::actors::*;
 use snowflake;
 use std::collections::HashMap;

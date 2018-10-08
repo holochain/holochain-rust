@@ -1,9 +1,10 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry::Entry;
+use entry_type::EntryType;
 use error::HolochainError;
-use hash_table::{entry::Entry, sys_entry::ToEntry};
-use holochain_dna::entry_type::EntryType;
 use json::ToJson;
 use serde_json;
+use to_entry::ToEntry;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table
@@ -141,11 +142,11 @@ impl AddressableContent for ChainHeader {
             .expect("could not read Json as valid ChainHeader Content")
     }
 }
-
+/*
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain::{header::ChainHeader, tests::test_chain, SourceChain};
+    use chain_header::{header::ChainHeader, tests::test_chain, SourceChain};
     use hash_table::{
         entry::tests::{
             test_entry, test_entry_a, test_entry_b, test_entry_type, test_entry_type_a,
@@ -446,3 +447,4 @@ pub mod tests {
         assert_eq!(header, header_trip);
     }
 }
+*/

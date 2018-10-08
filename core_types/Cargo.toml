@@ -1,0 +1,23 @@
+[package]
+name = "holochain_core_types"
+version = "0.1.0"
+authors = ["Holochain Core Dev Team <dev.support@holo.host>"]
+
+[dependencies]
+serde="1"
+serde_derive="1"
+serde_json="1"
+multihash = "0.8.0"
+futures-preview = "0.2.2"
+riker = "0.1.7"
+walkdir = "2"
+rust-base58 = "0.0.4"
+snowflake = "1.2"
+unwrap_to = "0.1.0"
+lazy_static = "1.1.0"
+riker-patterns = "0.1.7"
+riker-default = "0.1.7"
+
+[dev-dependencies]
+test_utils = { path = "../test_utils"}
+holochain_core = { path = "../core"}

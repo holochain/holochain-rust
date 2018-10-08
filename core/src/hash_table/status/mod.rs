@@ -1,4 +1,4 @@
-use cas::content::{AddressableContent, Content};
+use holochain_core_types::cas::content::{AddressableContent, Content};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -61,14 +61,15 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use cas::{
-        content::{
-            tests::{AddressableContentTestSuite, ExampleAddressableContent},
-            AddressableContent, Content,
+    use holochain_core_types::{
+        cas::{
+            content::{
+                AddressableContent, AddressableContentTestSuite, Content, ExampleAddressableContent,
+            },
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        storage::tests::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        eav::eav_round_trip_test_runner,
     };
-    use eav::tests::eav_round_trip_test_runner;
 
     #[test]
     /// test the CrudStatus bit flags as ints

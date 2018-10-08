@@ -52,6 +52,7 @@
 
 extern crate futures;
 extern crate holochain_core;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 #[cfg(test)]
 extern crate test_utils;
@@ -59,11 +60,11 @@ extern crate test_utils;
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,
-    error::HolochainError,
     instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
+use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
 

@@ -1,11 +1,13 @@
-use cas::{
-    content::{Address, AddressableContent},
-    storage::ContentAddressableStorage,
-};
-use error::HolochainError;
 mod actor;
-use actor::{AskSelf, Protocol};
 use cas::memory::actor::MemoryStorageActor;
+use holochain_core_types::{
+    actor::{AskSelf, Protocol},
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    error::HolochainError,
+};
 use riker::actors::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -53,10 +55,10 @@ impl ContentAddressableStorage for MemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
-        memory::MemoryStorage,
-        storage::tests::StorageTestSuite,
+    use cas::memory::MemoryStorage;
+    use holochain_core_types::cas::{
+        content::{ExampleAddressableContent, OtherExampleAddressableContent},
+        storage::StorageTestSuite,
     };
 
     pub fn test_memory_storage() -> MemoryStorage {

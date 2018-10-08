@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use context::Context;
-use error::HolochainError;
+use holochain_core_types::error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
@@ -176,7 +176,8 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
+    use holochain_core_types::error::DnaError;
+    use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,

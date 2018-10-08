@@ -7,7 +7,7 @@ use snowflake;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
-#[derive(Clone, Debug, Serialize, Deserialize, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry(String);
 
 impl PartialEq for Entry {

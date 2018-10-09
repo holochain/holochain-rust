@@ -74,7 +74,7 @@ impl EavFileStorage {
         let mut set = HashSet::new();
         WalkDir::new(full_path)
             .into_iter()
-            .map(|dir_entry| match dir_entry {
+            .for_each(|dir_entry| match dir_entry {
                 Ok(entry) => {
                     add_eav_to_hashset(entry, &mut set);
                 }
@@ -83,8 +83,7 @@ impl EavFileStorage {
                         "Could not read from file".to_string(),
                     )));
                 }
-            })
-            .collect::<HashSet<_>>();
+            });
 
         set
     }
@@ -125,15 +124,20 @@ fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, Holochai
     match OpenOptions::new().read(true).open(entry.path()) {
         Ok(mut file) => {
             let mut content: String = String::new();
-            let read = file.read_to_string(&mut content).map(|e| {
-                if e > 0 {
-                    Ok(content)
-                } else {
-                    Err(HolochainError::IoError("Could not add file or file is empty".to_string()))
-                }
-            }).map(|e|{
-                set.insert(e);
-            });
+            let read = file
+                .read_to_string(&mut content)
+                .map(|e| {
+                    if e > 0 {
+                        Ok(content)
+                    } else {
+                        Err(HolochainError::IoError(
+                            "Could not add file or file is empty".to_string(),
+                        ))
+                    }
+                })
+                .map(|e| {
+                    set.insert(e);
+                });
         }
         Err(_) => {
             set.insert(Err(HolochainError::IoError(

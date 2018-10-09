@@ -61,19 +61,19 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn read_from_dir<T>(&self, subscript: String, eav: Option<T>) -> HashSet<HcResult<String>>
+    fn read_from_dir<T>(&self, subscript: String, eav_constraint: Option<T>) -> HashSet<HcResult<String>>
     where
         T: ToString,
     {
-        let address = eav.map(|e| e.to_string()).unwrap_or(String::new());
+        let address = eav_constraint.map(|e| Address:from(e).unwrap_or(String::new());
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();
         WalkDir::new(full_path.clone())
             .into_iter()
             .for_each(|dir_entry| match dir_entry {
-                Ok(entry) => {
-                    add_eav_to_hashset(entry, &mut set);
+                Ok(eav_content) => {
+                    add_eav_to_hashset(eav_content, &mut set);
                 }
                 Err(_) => {
                     set.insert(Err(HolochainError::IoError(format!(
@@ -113,13 +113,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
         Ok(entity_attribute_value_inter
             .into_iter()
             .filter(|e| e.is_ok())
-            .map(|e| EntityAttributeValue::from_content(&e.unwrap()))
+            .map(|eav_content| EntityAttributeValue::from_content(&eav_content.unwrap()))
             .collect())
     }
 }
 
-fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<HcResult<String>>) {
-    let path = entry.path();
+fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) {
+    let path = dir_entry.path();
     match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();

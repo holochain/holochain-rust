@@ -103,11 +103,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        let entity_set = self.read_from_dir::<Entity>("e".to_string(), entity);
+        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
         let attribute_set = self
-            .read_from_dir::<Attribute>("a".to_string(), attribute)
+            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)
             .clone();
-        let value_set = self.read_from_dir::<Value>("v".to_string(), value);
+        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value);
         let attribute_value_inter = attribute_set.intersection(&value_set).cloned().collect();
         let entity_attribute_value_inter: HashSet<Result<String, HolochainError>> = entity_set
             .intersection(&attribute_value_inter)
@@ -129,17 +129,11 @@ fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, Holochai
                 if e > 0 {
                     Ok(content)
                 } else {
-                    Err(HolochainError::IoError("Could not add file".to_string()))
+                    Err(HolochainError::IoError("Could not add file or file is empty".to_string()))
                 }
+            }).map(|e|{
+                set.insert(e);
             });
-            match read {
-                Ok(e) => {
-                    set.insert(e);
-                }
-                Err(_e) => {
-                    ();
-                }
-            }
         }
         Err(_) => {
             set.insert(Err(HolochainError::IoError(

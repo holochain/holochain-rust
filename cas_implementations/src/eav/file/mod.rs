@@ -1,7 +1,9 @@
-use cas::content::AddressableContent;
-use eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value};
-use error::HolochainError;
-use hash::HashString;
+use holochain_core_types::{
+    cas::content::AddressableContent,
+    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    error::HolochainError,
+    hash::HashString,
+};
 use std::{
     collections::HashSet,
     fs::{create_dir_all, read_dir, read_to_string, write, File, OpenOptions},
@@ -10,6 +12,8 @@ use std::{
 };
 
 use walkdir::{DirEntry, WalkDir};
+
+type HcResult<T> = Result<T, HolochainError>;
 
 pub struct EavFileStorage {
     dir_path: String,
@@ -20,7 +24,7 @@ const ATTRIBUTE_DIR: &str = "a";
 const VALUE_DIR: &str = "v";
 
 impl EavFileStorage {
-    pub fn new(dir_path: String) -> Result<EavFileStorage, HolochainError> {
+    pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
         let canonical = Path::new(&dir_path).canonicalize()?;
         if !canonical.is_dir() {
             return Err(HolochainError::IoError(
@@ -57,11 +61,7 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn read_from_dir<T>(
-        &self,
-        subscript: String,
-        eav: Option<T>,
-    ) -> HashSet<Result<String, HolochainError>>
+    fn read_from_dir<T>(&self, subscript: String, eav: Option<T>) -> HashSet<HcResult<String>>
     where
         T: ToString,
     {
@@ -69,16 +69,17 @@ impl EavFileStorage {
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();
-        WalkDir::new(full_path)
+        WalkDir::new(full_path.clone())
             .into_iter()
             .for_each(|dir_entry| match dir_entry {
                 Ok(entry) => {
                     add_eav_to_hashset(entry, &mut set);
                 }
                 Err(_) => {
-                    set.insert(Err(HolochainError::ErrorGeneric(
-                        "Could not read from file".to_string(),
-                    )));
+                    set.insert(Err(HolochainError::IoError(format!(
+                        "Could not obtain directory{:?}",
+                        full_path
+                    ))));
                 }
             });
 
@@ -117,8 +118,9 @@ impl EntityAttributeValueStorage for EavFileStorage {
     }
 }
 
-fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, HolochainError>>) {
-    match OpenOptions::new().read(true).open(entry.path()) {
+fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<HcResult<String>>) {
+    let path = entry.path();
+    match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
             let read = file
@@ -127,9 +129,10 @@ fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, Holochai
                     if e > 0 {
                         Ok(content)
                     } else {
-                        Err(HolochainError::IoError(
-                            "Could not add file or file is empty".to_string(),
-                        ))
+                        Err(HolochainError::IoError(format!(
+                            "Could not read from path {:?}",
+                            path
+                        )))
                     }
                 })
                 .map(|e| {
@@ -137,21 +140,23 @@ fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, Holochai
                 });
         }
         Err(_) => {
-            set.insert(Err(HolochainError::IoError(
-                "Could not add file".to_string(),
-            )));
+            set.insert(Err(HolochainError::IoError(format!(
+                "Could not read from path {:?}",
+                path
+            ))));
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::{tests::ExampleAddressableContent, AddressableContent},
-        memory::MemoryStorage,
+
+    use eav::file::EavFileStorage;
+    use holochain_core_types::{
+        cas::content::{AddressableContent, ExampleAddressableContent},
+        eav::{EntityAttributeValue, EntityAttributeValueStorage},
+        error::HolochainError,
     };
-    use eav::{file::EavFileStorage, EntityAttributeValue, EntityAttributeValueStorage};
-    use error::HolochainError;
     use std::{
         collections::HashSet,
         fs::{self, create_dir_all, read_to_string, write, File, OpenOptions},

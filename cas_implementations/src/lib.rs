@@ -14,6 +14,7 @@ extern crate riker_patterns;
 extern crate unwrap_to;
 extern crate snowflake;
 extern crate tempfile;
+extern crate walkdir;
 
 pub mod cas;
 pub mod eav;

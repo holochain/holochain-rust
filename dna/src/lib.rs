@@ -270,11 +270,27 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
+    use zome::tests::test_zome;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
     pub fn test_dna() -> Dna {
         Dna::new()
+    }
+
+    #[test]
+    fn get_entry_type_def_test() {
+        let mut dna = test_dna();
+        let mut zome = test_zome();
+        let entry_type = EntryType::App("bar".to_string());
+        let entry_type_def = EntryTypeDef::new();
+
+        zome.entry_types
+            .insert(entry_type.to_string(), entry_type_def.clone());
+        dna.zomes.insert("zome".to_string(), zome);
+
+        assert_eq!(None, dna.get_entry_type_def("foo"));
+        assert_eq!(Some(&entry_type_def), dna.get_entry_type_def("bar"));
     }
 
     #[test]

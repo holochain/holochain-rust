@@ -8,8 +8,7 @@ use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, hash::HashString,
 };
 use nucleus::ribosome::callback::{
-    self,
-    validate_commit::validate_commit, CallbackParams, CallbackResult,
+    self, CallbackResult,
 };
 use snowflake;
 use std::{sync::Arc, thread};

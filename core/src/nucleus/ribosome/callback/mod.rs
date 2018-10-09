@@ -6,7 +6,6 @@ pub mod receive;
 pub mod validate_entry;
 
 use context::Context;
-use hash_table::entry::Entry;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use holochain_core_types::{entry::Entry, json::ToJson};
 use nucleus::{

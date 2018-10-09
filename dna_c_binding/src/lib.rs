@@ -17,6 +17,7 @@ use std::{
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
     match catch_unwind(|| Box::into_raw(Box::new(Dna::new()))) {
         Ok(r) => r,
+        #[cfg_attr(tarpaulin, skip)]
         Err(_) => std::ptr::null_mut(),
     }
 }

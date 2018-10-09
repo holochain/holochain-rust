@@ -69,7 +69,9 @@ impl EavFileStorage {
     where
         T: ToString,
     {
-        let address = eav_constraint.map(|e| Address::from(e).unwrap_or(String::new()));
+        let address = eav_constraint
+            .map(|e| e.to_string())
+            .unwrap_or(String::new());
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();

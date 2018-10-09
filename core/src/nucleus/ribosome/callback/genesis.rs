@@ -40,7 +40,7 @@ pub mod tests {
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here
-            Callback::ValidateCommit.as_str(),
+            Callback::Receive.as_str(),
             0,
         ).expect("Test callback instance could not be initialized");
 

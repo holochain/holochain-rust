@@ -97,6 +97,20 @@ impl EntryType {
 pub mod tests {
     use super::*;
 
+    pub fn test_types() -> Vec<EntryType> {
+        vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::App(String::from("foo")),
+            EntryType::Dna,
+            EntryType::ChainHeader,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+            EntryType::LinkList,
+        ]
+    }
+
     #[test]
     fn entry_type_kind() {
         assert!(EntryType::App(String::new()).is_app());
@@ -134,6 +148,16 @@ pub mod tests {
             );
 
             assert_eq!(type_str, variant.as_str(),);
+        }
+    }
+
+    #[test]
+    fn can_publish_test() {
+        for t in test_types() {
+            match t {
+                EntryType::Dna => assert!(!t.can_publish()),
+                _ => assert!(t.can_publish()),
+            }
         }
     }
 }

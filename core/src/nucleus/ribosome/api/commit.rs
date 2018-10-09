@@ -1,9 +1,7 @@
 extern crate futures;
 use agent::{actions::commit::*, state::ActionResponse};
 use futures::{executor::block_on, FutureExt};
-use hash_table::{entry::Entry, sys_entry::EntryType};
-use holochain_wasm_utils::error::{RibosomeErrorReport, RibosomeReturnCode};
-use json::ToJson;
+use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
@@ -29,7 +27,7 @@ pub fn invoke_commit_app_entry(
     let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
+        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
@@ -48,7 +46,7 @@ pub fn invoke_commit_app_entry(
     let maybe_json = match task_result {
         Ok(action_response) => match action_response {
             ActionResponse::Commit(_) => action_response.to_json(),
-            _ => return ribosome_return_code!(ReceivedWrongActionResult),
+            _ => return ribosome_error_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
@@ -64,7 +62,7 @@ pub fn invoke_commit_app_entry(
     // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
-        Err(_) => ribosome_return_code!(ResponseSerializationFailed),
+        Err(_) => ribosome_error_code!(ResponseSerializationFailed),
     }
 
     // @TODO test that failing validation prevents commits happening
@@ -76,8 +74,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use cas::content::AddressableContent;
-    use hash_table::entry::tests::{test_entry, test_entry_type};
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, test_entry_type},
+    };
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,

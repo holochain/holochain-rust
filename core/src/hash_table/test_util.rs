@@ -1,15 +1,15 @@
-use agent::keys::tests::test_keys;
-use cas::content::AddressableContent;
 use hash_table::{
-    entry::tests::test_entry_unique,
-    entry_meta::{
-        tests::{
-            test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
-        },
-        EntryMeta,
-    },
     status::{CrudStatus, LINK_NAME, STATUS_NAME},
     HashTable,
+};
+use holochain_core_types::{
+    cas::content::AddressableContent,
+    entry::test_entry_unique,
+    entry_meta::{
+        test_attribute, test_attribute_b, test_meta, test_meta_for, test_value, test_value_b,
+        EntryMeta,
+    },
+    keys::test_keys,
 };
 
 // standard tests that should pass for every hash table implementation

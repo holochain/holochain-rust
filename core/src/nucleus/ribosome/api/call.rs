@@ -1,8 +1,7 @@
 use action::{Action, ActionWrapper};
 use context::Context;
-use error::HolochainError;
+use holochain_core_types::error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
-use holochain_wasm_utils::error::RibosomeReturnCode;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,
@@ -49,7 +48,7 @@ pub fn invoke_call(
     let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => return ribosome_return_code!(ArgumentDeserializationFailed),
+        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // ZomeCallArgs to ZomeFnCall
@@ -57,7 +56,7 @@ pub fn invoke_call(
 
     // Don't allow recursive calls
     if zome_call.same_fn_as(&runtime.zome_call) {
-        return ribosome_return_code!(RecursiveCallForbidden);
+        return ribosome_error_code!(RecursiveCallForbidden);
     }
 
     // Create Call Action
@@ -97,7 +96,7 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
-        Err(_) => ribosome_return_code!(ReceivedWrongActionResult),
+        Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 
@@ -177,7 +176,8 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
-    use holochain_dna::{zome::capabilities::Capability, Dna, DnaError};
+    use holochain_core_types::error::DnaError;
+    use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,

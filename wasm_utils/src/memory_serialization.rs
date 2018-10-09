@@ -1,5 +1,5 @@
-use error::RibosomeErrorReport;
-use memory_allocation::{SinglePageAllocation, SinglePageStack};
+use error::{RibosomeErrorCode, RibosomeErrorReport};
+use memory_allocation::{decode_encoded_allocation, SinglePageAllocation, SinglePageStack};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
@@ -19,7 +19,7 @@ pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, S
             let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
                 serde_json::from_str(actual_str);
             match maybe_error_report {
-                Err(_) => Err(actual_str.to_string()),
+                Err(err) => Err(err.to_string()),
                 Ok(error_report) => Err(error_report.description),
             }
         }
@@ -27,26 +27,29 @@ pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, S
     }
 }
 
-// Helper for retrieving struct from encoded allocation
+// Expecting to retrieve a struct from a valid encoded allocation
 pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> T {
-    let allocation = SinglePageAllocation::new(encoded_allocation);
+    let allocation = SinglePageAllocation::from_encoded_allocation(encoded_allocation);
     let allocation = allocation.expect("received error instead of valid encoded allocation");
-    return deserialize(allocation.offset as *mut c_char).unwrap();
+    return deserialize(allocation.offset() as *mut c_char).unwrap();
 }
 
-// Helper for retrieving struct or ERROR from encoded allocation
+// Expecting to retrieve a struct from an encoded allocation, but return error string in case of error
 pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
     encoded_allocation: u32,
 ) -> Result<T, String> {
-    let maybe_allocation = SinglePageAllocation::new(encoded_allocation);
+    let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
         Err(return_code) => Err(return_code.to_string()),
-        Ok(allocation) => deserialize(allocation.offset as *mut c_char),
+        Ok(allocation) => deserialize(allocation.offset() as *mut c_char),
     }
 }
 
 // Write a data struct into a memory buffer as json string
-pub fn serialize<T: Serialize>(stack: &mut SinglePageStack, internal: T) -> SinglePageAllocation {
+pub fn serialize<T: Serialize>(
+    stack: &mut SinglePageStack,
+    internal: T,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
     assert!(json_bytes_len < <u16>::max_value() as usize);
@@ -59,10 +62,7 @@ pub fn serialize<T: Serialize>(stack: &mut SinglePageStack, internal: T) -> Sing
         ptr_safe[i] = *byte as i8;
     }
 
-    SinglePageAllocation {
-        offset: ptr as u16,
-        length: json_bytes_len as u16,
-    }
+    SinglePageAllocation::new(ptr as u16, json_bytes_len as u16)
 }
 
 // Helper
@@ -70,6 +70,34 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,
 ) -> i32 {
-    let allocation_of_output = serialize(stack, internal);
+    let allocation_of_output = serialize(stack, internal).unwrap();
     return allocation_of_output.encode() as i32;
 }
+
+/*
+TODO: figure out a way to get tests to work for serialization, see #451
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[derive(Deserialize, Serialize, Default,Debug,PartialEq)]
+    struct TestStruct {
+        value: String,
+    }
+
+    #[test]
+    fn can_round_trip_allocation() {
+
+        let mut mem_stack = SinglePageStack::default();
+
+        let test_value = TestStruct{value:"fish".to_string()};
+
+        let encoded_allocation = serialize_into_encoded_allocation(&mut mem_stack,test_value);
+
+        assert_eq!(format!("{:?}", mem_stack),"dog");
+
+        let result : Result<TestStruct,String> = try_deserialize_allocation(encoded_allocation as u32);
+        assert_eq!(result.unwrap(),TestStruct{value:"fish".to_string()});
+    }
+}
+*/

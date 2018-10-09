@@ -1,10 +1,11 @@
 use agent::state::AgentState;
-use cas::content::Address;
 use context::Context;
-use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, entry_type::EntryType, get_links_args::GetLinksArgs,
+    links_entry::Link,
+};
 use holochain_dna::Dna;
 use nucleus::{
-    ribosome::api::get_links::GetLinksArgs,
     state::{NucleusState, ValidationResult},
     ZomeFnCall, ZomeFnResult,
 };
@@ -112,7 +113,7 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use hash_table::entry::tests::{test_entry, test_entry_address, test_entry_type};
+    use holochain_core_types::entry::{test_entry, test_entry_address, test_entry_type};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 

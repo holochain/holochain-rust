@@ -1,118 +1,3 @@
-use cas::content::AddressableContent;
-use hash_table::entry::Entry;
-use holochain_agent::{Agent, Identity};
-use holochain_dna::Dna;
-use serde_json;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    str::FromStr,
-};
-
-pub trait ToEntry {
-    fn to_entry(&self) -> (EntryType, Entry);
-    fn from_entry(&Entry) -> Self;
-}
-
-//-------------------------------------------------------------------------------------------------
-// Entry Type
-//-------------------------------------------------------------------------------------------------
-
-// Macro for statically concatanating the system entry prefix for entry types of system entries
-macro_rules! sys_prefix {
-    ($s:expr) => {
-        concat!("%", $s)
-    };
-}
-
-// Enum for listing all System Entry Types
-// Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
-pub enum EntryType {
-    AgentId,
-    Deletion,
-    App(String),
-    Dna,
-    ChainHeader,
-    Key,
-    Link,
-    Migration,
-    /// TODO #339 - This is different kind of SystemEntry for the DHT only.
-    /// Should be moved into a different enum for DHT entry types.
-    LinkList,
-}
-
-impl FromStr for EntryType {
-    type Err = usize;
-    // Note: Function always return Ok()
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            sys_prefix!("agent_id") => Ok(EntryType::AgentId),
-            sys_prefix!("deletion") => Ok(EntryType::Deletion),
-            sys_prefix!("dna") => Ok(EntryType::Dna),
-            sys_prefix!("chain_header") => Ok(EntryType::ChainHeader),
-            sys_prefix!("key") => Ok(EntryType::Key),
-            sys_prefix!("link") => Ok(EntryType::Link),
-            sys_prefix!("link_list") => Ok(EntryType::LinkList),
-            sys_prefix!("migration") => Ok(EntryType::Migration),
-            _ => Ok(EntryType::App(s.to_string())),
-        }
-    }
-}
-
-impl Display for EntryType {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl EntryType {
-    pub fn as_str(&self) -> &str {
-        let ret = match *self {
-            EntryType::App(ref s) => s,
-            EntryType::AgentId => sys_prefix!("agent_id"),
-            EntryType::Deletion => sys_prefix!("deletion"),
-            EntryType::Dna => sys_prefix!("dna"),
-            EntryType::ChainHeader => sys_prefix!("chain_header"),
-            EntryType::Key => sys_prefix!("key"),
-            EntryType::Link => sys_prefix!("link"),
-            EntryType::LinkList => sys_prefix!("link_list"),
-            EntryType::Migration => sys_prefix!("migration"),
-        };
-        ret
-    }
-}
-
-//-------------------------------------------------------------------------------------------------
-// Dna Entry
-//-------------------------------------------------------------------------------------------------
-
-impl ToEntry for Dna {
-    fn to_entry(&self) -> (EntryType, Entry) {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        (EntryType::Dna, Entry::from(self.to_json()))
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
-    }
-}
-
-//-------------------------------------------------------------------------------------------------
-// Agent Entry
-//-------------------------------------------------------------------------------------------------
-
-impl ToEntry for Agent {
-    fn to_entry(&self) -> (EntryType, Entry) {
-        (EntryType::AgentId, Entry::from(self.to_string()))
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        let id_content: String =
-            serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
-        Agent::new(Identity::new(id_content))
-    }
-}
-
 //-------------------------------------------------------------------------------------------------
 // UNIT TESTS
 //-------------------------------------------------------------------------------------------------
@@ -122,10 +7,10 @@ pub mod tests {
     extern crate test_utils;
 
     use action::{Action, ActionWrapper};
-    use hash_table::sys_entry::{EntryType, ToEntry};
-    use std::str::FromStr;
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry_type::EntryType, to_entry::ToEntry,
+    };
 
-    use cas::content::AddressableContent;
     use instance::{tests::test_context, Instance, Observer};
     use std::sync::mpsc::channel;
 
@@ -152,7 +37,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry_type, entry) => {
-                    assert_eq!(entry_type, &EntryType::Dna,);
+                    assert_eq!(entry_type, &EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -190,26 +75,4 @@ pub mod tests {
                 _ => false,
             });
     }
-
-    #[test]
-    /// converting a str to an EntryType and back
-    fn test_from_as_str() {
-        for (type_str, variant) in vec![
-            (sys_prefix!("agent_id"), EntryType::AgentId),
-            (sys_prefix!("deletion"), EntryType::Deletion),
-            (sys_prefix!("dna"), EntryType::Dna),
-            (sys_prefix!("chain_header"), EntryType::ChainHeader),
-            (sys_prefix!("key"), EntryType::Key),
-            (sys_prefix!("link"), EntryType::Link),
-            (sys_prefix!("migration"), EntryType::Migration),
-        ] {
-            assert_eq!(
-                variant,
-                EntryType::from_str(type_str).expect("could not convert str to EntryType")
-            );
-
-            assert_eq!(type_str, variant.as_str(),);
-        }
-    }
-
 }

@@ -35,7 +35,11 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
     entry_type_name: entry_type_name.to_string(),
     entry_content: entry_content.to_string(),
   };
-  let allocation_of_input =  serialize(mem_stack, input);
+  let maybe_allocation =  serialize(mem_stack, input);
+  if let Err(return_code) = maybe_allocation {
+    return Err(return_code.to_string());
+  }
+  let allocation_of_input = maybe_allocation.unwrap();
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
@@ -65,7 +69,11 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   let input = CommitOutputStruct {
     hash: "whatever".to_string(),
   };
-  let allocation_of_input =  serialize(mem_stack, input);
+  let maybe_allocation =  serialize(mem_stack, input);
+  if let Err(return_code) = maybe_allocation {
+    return Err(return_code.to_string());
+  }
+  let allocation_of_input = maybe_allocation.unwrap();
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;

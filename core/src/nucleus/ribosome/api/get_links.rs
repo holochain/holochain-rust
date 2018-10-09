@@ -1,23 +1,10 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use cas::content::Address;
-use holochain_wasm_utils::error::RibosomeReturnCode;
+use holochain_core_types::get_links_args::GetLinksArgs;
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
-pub struct GetLinksArgs {
-    pub entry_address: Address,
-    pub tag: String,
-}
-
-impl GetLinksArgs {
-    pub fn to_attribute_name(&self) -> String {
-        format!("link:{}:{}", &self.entry_address, &self.tag)
-    }
-}
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -32,7 +19,7 @@ pub fn invoke_get_links(
     let res_entry: Result<GetLinksArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        return ribosome_return_code!(ArgumentDeserializationFailed);
+        return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
     // Create GetLinks Action
@@ -71,5 +58,5 @@ pub fn invoke_get_links(
         }
     }
     // Fail
-    ribosome_return_code!(ReceivedWrongActionResult)
+    ribosome_error_code!(ReceivedWrongActionResult)
 }

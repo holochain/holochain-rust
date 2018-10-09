@@ -1,14 +1,12 @@
-use agent::keys::Keys;
-use cas::content::Address;
-use chain::pair::Pair;
+use cas::content::{Address, Content};
+use chain_header::ChainHeader;
+use entry::Entry;
+use entry_meta::EntryMeta;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{
-    entry::Entry,
-    entry_meta::EntryMeta,
-    links_entry::{Link, LinkListEntry},
-};
-use nucleus::ribosome::api::get_links::GetLinksArgs;
+use get_links_args::GetLinksArgs;
+use keys::Keys;
+use links_entry::{Link, LinkListEntry};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
@@ -18,13 +16,22 @@ use riker_patterns::ask::ask;
 /// currently this is flat but may be nested/namespaced in the future or multi-protocol riker
 /// @see https://github.com/riker-rs/riker/issues/17
 pub enum Protocol {
-    /// Chain::set_top_pair()
-    SetTopPair(Option<Pair>),
-    SetTopPairResult(Result<Option<Pair>, HolochainError>),
+    CasAdd(Address, Content),
+    CasAddResult(Result<(), HolochainError>),
 
-    /// Chain::top_pair()
-    GetTopPair,
-    GetTopPairResult(Option<Pair>),
+    CasFetch(Address),
+    CasFetchResult(Result<Option<Content>, HolochainError>),
+
+    CasContains(Address),
+    CasContainsResult(Result<bool, HolochainError>),
+
+    /// Chain::set_top_chain_header()
+    SetTopChainHeader(Option<ChainHeader>),
+    SetTopChainHeaderResult(Result<Option<ChainHeader>, HolochainError>),
+
+    /// Chain::top_chain_header()
+    GetTopChainHeader,
+    GetTopChainHeaderResult(Option<ChainHeader>),
 
     /// HashTable::setup()
     Setup,
@@ -84,6 +91,13 @@ pub enum Protocol {
     MetaFromRequestResult(Result<Option<EntryMeta>, HolochainError>),
 }
 
+/// required by riker
+impl Into<ActorMsg<Protocol>> for Protocol {
+    fn into(self) -> ActorMsg<Protocol> {
+        ActorMsg::User(self)
+    }
+}
+
 /// this is the global state that manages every actor
 /// to be thread/concurrency safe there must only ever be one actor system
 /// @see https://github.com/riker-rs/riker/issues/17
@@ -93,13 +107,6 @@ lazy_static! {
         let model: DefaultModel<Protocol> = DefaultModel::new();
         ActorSystem::new(&model).unwrap()
     };
-}
-
-/// required by riker
-impl Into<ActorMsg<Protocol>> for Protocol {
-    fn into(self) -> ActorMsg<Protocol> {
-        ActorMsg::User(self)
-    }
 }
 
 /// convenience trait to build fake synchronous facades for actors

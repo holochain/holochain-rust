@@ -57,7 +57,7 @@ impl HashString {
 pub mod tests {
     use super::*;
     use cas::content::AddressableContent;
-    use hash_table::entry::tests::test_entry;
+    use entry::test_entry;
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()

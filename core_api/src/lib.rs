@@ -52,6 +52,7 @@
 
 extern crate futures;
 extern crate holochain_core;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 #[cfg(test)]
 extern crate test_utils;
@@ -59,11 +60,11 @@ extern crate test_utils;
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,
-    error::HolochainError,
     instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
+use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
 
@@ -451,12 +452,12 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-        assert!(result.unwrap().is_empty());
+        assert_eq!("\"Hello world!\"", result.unwrap());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
             format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"\\\"Hello world!\\\"\"]"
+            "[\"TestApp instantiated\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
         );
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
@@ -474,7 +475,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, _) = test_context("alex");
+        let (context, test_logger) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -486,9 +487,15 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
-        // TODO #165 - check runtime.print_output instead
-        // Expect empty OK result
-        assert!(result.unwrap().is_empty());
+        // Expect a string as result
+        println!("result = {:?}", result);
+        assert_eq!("\"!\"", result.unwrap());
+
+        let test_logger = test_logger.lock().unwrap();
+        assert_eq!(
+            format!("{:?}", *test_logger),
+            "[\"TestApp instantiated\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
+        );
 
         // Check in holochain instance's history that the deb event has been processed
         // @TODO don't use history length in tests

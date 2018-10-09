@@ -6,8 +6,8 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use error::HolochainError;
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna, DnaError};
+use holochain_core_types::error::{DnaError, HolochainError};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::api::call::reduce_call,

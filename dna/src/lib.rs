@@ -19,6 +19,7 @@
 //! assert_eq!(name, dna2.name);
 //! ```
 
+extern crate holochain_core_types;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -28,17 +29,18 @@ extern crate base64;
 extern crate uuid;
 
 use serde_json::Value;
-use std::{
-    error::Error,
-    fmt,
-    hash::{Hash, Hasher},
-};
+use std::hash::{Hash, Hasher};
+
 pub mod wasm;
 pub mod zome;
 
+use holochain_core_types::{
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::DnaError,
+    to_entry::ToEntry,
+};
 use std::collections::HashMap;
 use uuid::Uuid;
-use zome::capabilities::Capability;
+use zome::{capabilities::Capability, entry_types::EntryTypeDef};
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -48,33 +50,6 @@ fn empty_object() -> Value {
 /// serde helper, provides a default newly generated v4 uuid
 fn new_uuid() -> String {
     Uuid::new_v4().to_string()
-}
-
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
-pub enum DnaError {
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
-}
-
-impl Error for DnaError {
-    fn description(&self) -> &str {
-        match self {
-            DnaError::ZomeNotFound(err_msg) => &err_msg,
-            DnaError::CapabilityNotFound(err_msg) => &err_msg,
-            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
-        }
-    }
-}
-
-impl fmt::Display for DnaError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
-    }
 }
 
 /// Represents the top-level holochain dna object.
@@ -235,15 +210,33 @@ impl Dna {
         Ok(cap.unwrap())
     }
 
-    pub fn get_zome_name_for_entry_type(&self, entry_type: &str) -> Option<String> {
+    /// Return the name of the zome holding a specified app entry_type
+    pub fn get_zome_name_for_entry_type(&self, entry_type_name: &str) -> Option<String> {
+        // pre-condition: must be a valid app entry_type name
+        assert!(EntryType::has_valid_app_name(entry_type_name));
+        // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (entry_type_name, _) in &zome.entry_types {
-                if *entry_type_name == entry_type {
+            for (zome_entry_type_name, _) in &zome.entry_types {
+                if *zome_entry_type_name == entry_type_name {
                     return Some(zome_name.clone());
                 }
             }
         }
+        None
+    }
 
+    /// Return the entry_type definition of a specified app entry_type
+    pub fn get_entry_type_def(&self, entry_type_name: &str) -> Option<&EntryTypeDef> {
+        // pre-condition: must be a valid app entry_type name
+        assert!(EntryType::has_valid_app_name(entry_type_name));
+        // Browse through the zomes
+        for (_zome_name, zome) in &self.zomes {
+            for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
+                if *zome_entry_type_name == entry_type_name {
+                    return Some(entry_type_def);
+                }
+            }
+        }
         None
     }
 }
@@ -259,6 +252,17 @@ impl PartialEq for Dna {
     fn eq(&self, other: &Dna) -> bool {
         // need to guarantee that PartialEq and Hash always agree
         self.to_json() == other.to_json()
+    }
+}
+
+impl ToEntry for Dna {
+    fn to_entry(&self) -> (EntryType, Entry) {
+        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
+        (EntryType::Dna, Entry::from(self.to_json()))
+    }
+
+    fn from_entry(entry: &Entry) -> Self {
+        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
     }
 }
 

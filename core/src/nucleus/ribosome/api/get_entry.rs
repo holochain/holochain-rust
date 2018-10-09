@@ -1,8 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use cas::content::Address;
-use holochain_wasm_utils::error::RibosomeReturnCode;
-use json::ToJson;
+use holochain_core_types::{cas::content::Address, json::ToJson};
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
@@ -26,7 +24,7 @@ pub fn invoke_get_entry(
     let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
-        return ribosome_return_code!(ArgumentDeserializationFailed);
+        return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
 
@@ -66,10 +64,10 @@ pub fn invoke_get_entry(
             let json_str = maybe_entry.expect("should be valid json entry").to_json();
             match json_str {
                 Ok(json) => runtime.store_utf8(&json),
-                Err(_) => ribosome_return_code!(ResponseSerializationFailed),
+                Err(_) => ribosome_error_code!(ResponseSerializationFailed),
             }
         }
-        _ => ribosome_return_code!(ReceivedWrongActionResult),
+        _ => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 
@@ -80,9 +78,8 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
-    use cas::content::AddressableContent;
     use chain::SourceChain;
-    use hash_table::entry::tests::test_entry;
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::api::{
@@ -178,16 +175,16 @@ mod tests {
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 
-        println!("{:?}", instance.state().agent().chain().top_pair());
+        println!("{:?}", instance.state().agent().chain().top_chain_header());
         println!(
             "{:?}",
             instance
                 .state()
                 .agent()
                 .chain()
-                .top_pair()
-                .expect("could not get top pair")
-                .expect("top pair was None")
+                .top_chain_header()
+                .expect("could not get top chain_header")
+                .expect("top chain_header was None")
                 .address()
         );
 

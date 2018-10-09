@@ -3,15 +3,15 @@
 
 pub mod genesis;
 pub mod receive;
-pub mod validate_commit;
+pub mod validate_entry;
 
 use context::Context;
 use holochain_core_types::{entry::Entry, json::ToJson};
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
         self,
-        callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
+        callback::{genesis::genesis, receive::receive},
         Defn,
     },
     ZomeFnCall,
@@ -31,9 +31,6 @@ pub enum Callback {
 
     /// MissingNo Capability
 
-    /// validate_commit() -> bool
-    ValidateCommit,
-
     /// LifeCycle Capability
 
     /// genesis() -> bool
@@ -50,7 +47,6 @@ impl FromStr for Callback {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "genesis" => Ok(Callback::Genesis),
-            "validate_commit" => Ok(Callback::ValidateCommit),
             "receive" => Ok(Callback::Receive),
             "" => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
@@ -69,7 +65,6 @@ impl Callback {
         match *self {
             Callback::MissingNo => noop,
             Callback::Genesis => genesis,
-            Callback::ValidateCommit => validate_commit,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => receive,
@@ -82,7 +77,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => "",
             Callback::Genesis => "genesis",
-            Callback::ValidateCommit => "validate_commit",
             Callback::Receive => "receive",
         }
     }
@@ -105,9 +99,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => ReservedCapabilityNames::MissingNo,
             Callback::Genesis => ReservedCapabilityNames::LifeCycle,
-            // @TODO needs a sensible capability
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            Callback::ValidateCommit => ReservedCapabilityNames::MissingNo,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => ReservedCapabilityNames::Communication,
@@ -162,19 +153,7 @@ pub(crate) fn run_callback(
     }
 }
 
-pub fn call(
-    context: Arc<Context>,
-    zome: &str,
-    function: &Callback,
-    params: &CallbackParams,
-) -> CallbackResult {
-    let zome_call = ZomeFnCall::new(
-        zome,
-        &function.capability().as_str().to_string(),
-        &function.as_str().to_string(),
-        &params.to_string(),
-    );
-
+pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
     // In the case of genesis we encounter race conditions with regards to setting the DNA.
     // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
     // the state, which can result in this code being executed first.
@@ -202,8 +181,23 @@ pub fn call(
             }
         }
     }
+    dna
+}
 
-    let dna = dna.expect("Callback called without DNA set!");
+pub fn call(
+    context: Arc<Context>,
+    zome: &str,
+    function: &Callback,
+    params: &CallbackParams,
+) -> CallbackResult {
+    let zome_call = ZomeFnCall::new(
+        zome,
+        &function.capability().as_str().to_string(),
+        &function.as_str().to_string(),
+        &params.to_string(),
+    );
+
+    let dna = get_dna(&context).expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented,
@@ -325,10 +319,6 @@ pub mod tests {
         assert_eq!(
             Callback::Genesis,
             Callback::from_str("genesis").expect("string literal should be valid callback")
-        );
-        assert_eq!(
-            Callback::ValidateCommit,
-            Callback::from_str("validate_commit").expect("string literal should be valid callback"),
         );
         assert_eq!(
             Callback::Receive,

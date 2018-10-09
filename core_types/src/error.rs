@@ -12,7 +12,7 @@ use std::{
 use walkdir::Error as WalkdirError;
 
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum HolochainError {
     ErrorGeneric(String),
     InstanceNotActive,
@@ -112,7 +112,7 @@ impl From<RikerCreateError> for HolochainError {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

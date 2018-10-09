@@ -1,4 +1,3 @@
-pub mod file;
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::HolochainError;

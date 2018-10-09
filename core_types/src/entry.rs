@@ -3,6 +3,7 @@ use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
+use std::ops::Deref;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -57,6 +58,28 @@ impl FromJson for Entry {
     fn from_json(s: &str) -> Result<Self, HolochainError> {
         Ok(serde_json::from_str(s)?)
     }
+}
+
+impl Deref for Entry {
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// dummy entry type
+pub fn test_entry_type() -> EntryType {
+    EntryType::App(String::from("testEntryType"))
+}
+
+/// dummy entry type, same as test_type()
+pub fn test_entry_type_a() -> EntryType {
+    test_entry_type()
+}
+
+/// dummy entry type, differs from test_type()
+pub fn test_entry_type_b() -> EntryType {
+    EntryType::App(String::from("testEntryTypeB"))
 }
 
 /// dummy entry content

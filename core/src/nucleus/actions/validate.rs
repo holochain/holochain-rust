@@ -1,13 +1,13 @@
 extern crate futures;
+extern crate serde_json;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, hash::HashString,
 };
-use nucleus::ribosome::callback::{
-    validate_commit::validate_commit, CallbackParams, CallbackResult,
-};
+use holochain_wasm_utils::validation::ValidationData;
+use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
 use std::{sync::Arc, thread};
 
@@ -19,6 +19,7 @@ use std::{sync::Arc, thread};
 pub fn validate_entry(
     entry_type: EntryType,
     entry: Entry,
+    validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
     let id = snowflake::ProcessUniqueId::new();
@@ -38,29 +39,40 @@ pub fn validate_entry(
                 entry_type.as_str()
             )));;
         }
-        Some(zome_name) => {
+        Some(_) => {
             let id = id.clone();
             let address = address.clone();
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
-                let validation_result = match validate_commit(
+                let maybe_validation_result = callback::validate_entry::validate_entry(
+                    entry.clone(),
+                    entry_type.clone(),
+                    validation_data.clone(),
                     context.clone(),
-                    &zome_name,
-                    &CallbackParams::ValidateCommit(entry.clone()),
-                ) {
-                    CallbackResult::Fail(error_string) => Err(error_string),
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry_type.clone()
-                    )),
+                );
+
+                let result = match maybe_validation_result {
+                    Ok(validation_result) => match validation_result {
+                        CallbackResult::Fail(error_string) => {
+                            let error_object: serde_json::Value =
+                                serde_json::from_str(&error_string).unwrap();
+                            Err(error_object["Err"].to_string())
+                        }
+                        CallbackResult::Pass => Ok(()),
+                        CallbackResult::NotImplemented => Err(format!(
+                            "Validation callback not implemented for {:?}",
+                            entry_type.clone()
+                        )),
+                    },
+                    Err(error) => Err(error.to_string()),
                 };
+
                 context
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
                         (id, address),
-                        validation_result,
+                        result,
                     ))))
                     .expect("action channel to be open in reducer");
             });

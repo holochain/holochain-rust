@@ -385,15 +385,11 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, TestLogger},
+        tests::{test_context_and_logger, test_instance, TestLogger},
         Instance,
     };
     use nucleus::{
-        ribosome::{
-            api::{call, Runtime},
-            callback::{tests::test_callback_instance, Callback},
-            Defn,
-        },
+        ribosome::api::{call, Runtime},
         ZomeFnCall,
     };
     use std::{
@@ -477,6 +473,14 @@ pub mod tests {
             (get_local $allocation)
         )
     )
+
+    (func
+        (export "validate_testEntryType")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
                     canonical_name
@@ -550,21 +554,14 @@ pub mod tests {
             &test_capability(),
             wasm.clone(),
         );
-        let instance =
-            test_callback_instance(&test_zome_name(), Callback::ValidateCommit.as_str(), 0)
-                .expect("Test callback instance could not be initialized");
+
+        let app_name = &dna.name.to_string().clone();
+        let instance = test_instance(dna).expect("Could not create test instance");
 
         let (c, logger) = test_context_and_logger("joan");
         let context = instance.initialize_context(c);
 
-        test_zome_api_function_call(
-            &dna.name.to_string(),
-            context,
-            logger,
-            &instance,
-            &wasm,
-            args_bytes,
-        )
+        test_zome_api_function_call(&app_name, context, logger, &instance, &wasm, args_bytes)
     }
 
     #[test]

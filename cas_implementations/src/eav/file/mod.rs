@@ -2,11 +2,10 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
-    hash::HashString,
 };
 use std::{
     collections::HashSet,
-    fs::{create_dir_all, read_dir, read_to_string, write, File, OpenOptions},
+    fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::{Path, MAIN_SEPARATOR},
 };
@@ -161,14 +160,9 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{AddressableContent, ExampleAddressableContent},
         eav::{EntityAttributeValue, EntityAttributeValueStorage},
-        error::HolochainError,
     };
-    use std::{
-        collections::HashSet,
-        fs::{self, create_dir_all, read_to_string, write, File, OpenOptions},
-        path::{Path, MAIN_SEPARATOR},
-    };
-    use tempfile::{tempdir, TempDir};
+    use std::collections::HashSet;
+    use tempfile::tempdir;
 
     #[test]
     fn file_eav_round_trip() {

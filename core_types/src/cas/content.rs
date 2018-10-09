@@ -132,8 +132,10 @@ impl AddressableContentTestSuite {
         contents.into_iter().for_each(|f| {
             let mut add_error_message = String::new();
             let mut fetch_error_message = String::new();
-            writeln!(&mut add_error_message, "Could not add {:?}", f.clone());
-            writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone());
+            writeln!(&mut add_error_message, "Could not add {:?}", f.clone())
+                .expect("could not write");
+            writeln!(&mut fetch_error_message, "Could not fetch {:?}", f.clone())
+                .expect("could not write");
 
             cas.add(&f).expect(&add_error_message);
             assert_eq!(

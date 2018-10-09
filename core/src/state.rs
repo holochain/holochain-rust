@@ -1,11 +1,10 @@
 use action::ActionWrapper;
 use agent::state::AgentState;
-use cas::memory::MemoryStorage;
 use chain::Chain;
 use context::Context;
 use dht::dht_store::DhtStore;
-use eav::memory::EavMemoryStorage;
 use hash_table::{actor::HashTableActor, memory::MemTable};
+use holochain_cas_implementations::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
 
@@ -28,7 +27,7 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
         let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
 
-        let content_storage = MemoryStorage::new();
+        let content_storage = MemoryStorage::new().expect("could not create new memory storage");
         let eav_storage = EavMemoryStorage::new();
 
         State {

@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use cas::content::Address;
-use json::ToJson;
+use holochain_core_types::{cas::content::Address, json::ToJson};
 use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
@@ -79,9 +78,8 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
-    use cas::content::AddressableContent;
     use chain::SourceChain;
-    use hash_table::entry::tests::test_entry;
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::api::{

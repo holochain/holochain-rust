@@ -1,14 +1,12 @@
-use agent::keys::Keys;
 use cas::content::{Address, Content};
-use chain::header::ChainHeader;
+use chain_header::ChainHeader;
+use entry::Entry;
+use entry_meta::EntryMeta;
 use error::HolochainError;
 use futures::executor::block_on;
-use hash_table::{
-    entry::Entry,
-    entry_meta::EntryMeta,
-    links_entry::{Link, LinkListEntry},
-};
-use nucleus::ribosome::api::get_links::GetLinksArgs;
+use get_links_args::GetLinksArgs;
+use keys::Keys;
+use links_entry::{Link, LinkListEntry};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
@@ -93,6 +91,13 @@ pub enum Protocol {
     MetaFromRequestResult(Result<Option<EntryMeta>, HolochainError>),
 }
 
+/// required by riker
+impl Into<ActorMsg<Protocol>> for Protocol {
+    fn into(self) -> ActorMsg<Protocol> {
+        ActorMsg::User(self)
+    }
+}
+
 /// this is the global state that manages every actor
 /// to be thread/concurrency safe there must only ever be one actor system
 /// @see https://github.com/riker-rs/riker/issues/17
@@ -102,13 +107,6 @@ lazy_static! {
         let model: DefaultModel<Protocol> = DefaultModel::new();
         ActorSystem::new(&model).unwrap()
     };
-}
-
-/// required by riker
-impl Into<ActorMsg<Protocol>> for Protocol {
-    fn into(self) -> ActorMsg<Protocol> {
-        ActorMsg::User(self)
-    }
 }
 
 /// convenience trait to build fake synchronous facades for actors

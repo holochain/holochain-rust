@@ -1,21 +1,18 @@
 pub mod actor;
-pub mod entry;
-pub mod entry_meta;
 pub mod file;
-pub mod links_entry;
 pub mod memory;
 pub mod status;
 pub mod sys_entry;
 #[cfg(test)]
 pub mod test_util;
 
-use agent::keys::Keys;
-use cas::content::{Address, AddressableContent};
-use error::HolochainError;
-use hash_table::{
+use hash_table::status::{CrudStatus, LINK_NAME, STATUS_NAME};
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
     entry::Entry,
     entry_meta::EntryMeta,
-    status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    error::HolochainError,
+    keys::Keys,
 };
 
 /// Trait of the data structure storing the source chain

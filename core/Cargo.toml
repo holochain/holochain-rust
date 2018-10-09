@@ -11,11 +11,11 @@ holochain_net = { path = "../net" }
 chrono = "0.4"
 wasmi = "0.3"
 snowflake = "1.2"
+rust-base58 = "0.0.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 multihash = "0.8.0"
-rust-base58 = "0.0.4"
 bitflags = "1.0"
 holochain_wasm_utils = { path = "../wasm_utils"}
 riker = "0.1.7"
@@ -30,7 +30,8 @@ walkdir = "2"
 tempfile = "3"
 config = "0.8"
 regex = "1"
-
+holochain_core_types = { path = "../core_types" }
+holochain_cas_implementations = { path = "../cas_implementations" }
 [dev-dependencies]
 wabt = "0.4"
 test_utils = { path = "../test_utils"}

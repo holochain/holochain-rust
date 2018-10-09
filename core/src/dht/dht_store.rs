@@ -1,11 +1,13 @@
-use cas::{
-    content::{Address, AddressableContent, Content},
-    storage::ContentAddressableStorage,
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    },
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    error::HolochainError,
+    hash::HashString,
+    links_entry::Link,
 };
-use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use error::HolochainError;
-use hash::HashString;
-use hash_table::links_entry::Link;
 use std::collections::HashSet;
 
 // Placeholder network module

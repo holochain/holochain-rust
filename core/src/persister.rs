@@ -1,4 +1,4 @@
-use error::HolochainError;
+use holochain_core_types::error::HolochainError;
 use state::State;
 
 /// trait that defines the persistence functionality that holochain_core requires

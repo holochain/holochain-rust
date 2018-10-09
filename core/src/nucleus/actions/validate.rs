@@ -3,13 +3,11 @@ extern crate serde_json;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
-use holochain_wasm_utils::validation::ValidationData;
 use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, hash::HashString,
 };
-use nucleus::ribosome::callback::{
-    self, CallbackResult,
-};
+use holochain_wasm_utils::validation::ValidationData;
+use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
 use std::{sync::Arc, thread};
 

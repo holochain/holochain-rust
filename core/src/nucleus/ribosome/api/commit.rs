@@ -4,8 +4,8 @@ use agent::{
     state::{ActionResponse, AgentState},
 };
 use futures::{executor::block_on, FutureExt};
-use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
+use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;

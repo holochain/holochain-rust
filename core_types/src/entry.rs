@@ -3,8 +3,8 @@ use entry_type::EntryType;
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
-use std::ops::Deref;
 use snowflake;
+use std::ops::Deref;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string

@@ -1,9 +1,6 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{
-    entry::Entry, entry_type::EntryType,
-    error::HolochainError,
-};
+use holochain_core_types::{entry::Entry, entry_type::EntryType, error::HolochainError};
 use holochain_dna::wasm::DnaWasm;
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::{

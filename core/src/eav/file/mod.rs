@@ -15,6 +15,10 @@ pub struct EavFileStorage {
     dir_path: String,
 }
 
+const ENTITY_DIR: &str = "e";
+const ATTRIBUTE_DIR: &str = "a";
+const VALUE_DIR: &str = "v";
+
 impl EavFileStorage {
     pub fn new(dir_path: String) -> Result<EavFileStorage, HolochainError> {
         let canonical = Path::new(&dir_path).canonicalize()?;
@@ -39,9 +43,9 @@ impl EavFileStorage {
         eav: &EntityAttributeValue,
     ) -> Result<(), HolochainError> {
         let address: String = match &*subscript {
-            "e" => eav.entity().to_string(),
-            "a" => eav.attribute(),
-            "v" => eav.value().to_string(),
+            ENTITY_DIR => eav.entity().to_string(),
+            ATTRIBUTE_DIR => eav.attribute(),
+            VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };
         let path =
@@ -89,9 +93,9 @@ impl EavFileStorage {
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         create_dir_all(self.dir_path.clone())?;
-        self.write_to_file(String::from("e".to_string()), eav)
-            .and_then(|_| self.write_to_file(String::from("a".to_string()), eav))
-            .and_then(|_| self.write_to_file(String::from("v".to_string()), eav))
+        self.write_to_file(ENTITY_DIR.to_string(), eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))
     }
     fn fetch_eav(
         &self,
@@ -118,19 +122,31 @@ impl EntityAttributeValueStorage for EavFileStorage {
 }
 
 fn add_eav_to_hashset(entry: DirEntry, set: &mut HashSet<Result<String, HolochainError>>) {
-    OpenOptions::new()
-        .read(true)
-        .open(entry.path())
-        .and_then(|mut file| {
-            let mut content = String::new();
-            file.read_to_string(&mut content).and_then(|f| {
-                content
-                    .lines()
-                    .map(|e| set.insert(Ok(e.to_string())))
-                    .collect::<HashSet<_>>();
-                Ok(())
-            })
-        });
+    match OpenOptions::new().read(true).open(entry.path()) {
+        Ok(mut file) => {
+            let mut content: String = String::new();
+            let read = file.read_to_string(&mut content).map(|e| {
+                if e > 0 {
+                    Ok(content)
+                } else {
+                    Err(HolochainError::IoError("Could not add file".to_string()))
+                }
+            });
+            match read {
+                Ok(e) => {
+                    set.insert(e);
+                }
+                Err(_e) => {
+                    ();
+                }
+            }
+        }
+        Err(_) => {
+            set.insert(Err(HolochainError::IoError(
+                "Could not add file".to_string(),
+            )));
+        }
+    }
 }
 
 #[cfg(test)]

@@ -112,7 +112,7 @@ impl From<RikerCreateError> for HolochainError {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

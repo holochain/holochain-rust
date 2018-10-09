@@ -1,8 +1,11 @@
-use cas::content::{Address, AddressableContent, Content};
-use error::HolochainError;
-use hash_table::{entry::Entry, sys_entry::ToEntry};
-use holochain_dna::entry_type::EntryType;
-use json::ToJson;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::Entry,
+    entry_type::EntryType,
+    error::HolochainError,
+    json::ToJson,
+    to_entry::ToEntry,
+};
 use serde_json;
 
 /// ChainHeader of a source chain "Item"
@@ -132,12 +135,10 @@ impl AddressableContent for ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use agent::chain_header::ChainHeader;
-    use cas::content::{Address, AddressableContent};
-    use hash_table::{
-        entry::tests::{
-            test_entry, test_entry_b, test_entry_type, test_entry_type_a, test_entry_type_b,
-        },
-        sys_entry::ToEntry,
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        entry::{test_entry, test_entry_b, test_entry_type, test_entry_type_a, test_entry_type_b},
+        to_entry::ToEntry,
     };
 
     /// returns a dummy header for use in tests

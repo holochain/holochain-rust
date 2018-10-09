@@ -1,45 +1,3 @@
-use cas::content::AddressableContent;
-use hash_table::entry::Entry;
-use holochain_agent::{Agent, Identity};
-use holochain_dna::{entry_type::EntryType, Dna};
-use serde_json;
-
-pub trait ToEntry {
-    fn to_entry(&self) -> (EntryType, Entry);
-    fn from_entry(&Entry) -> Self;
-}
-
-//-------------------------------------------------------------------------------------------------
-// Dna Entry
-//-------------------------------------------------------------------------------------------------
-
-impl ToEntry for Dna {
-    fn to_entry(&self) -> (EntryType, Entry) {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        (EntryType::Dna, Entry::from(self.to_json()))
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
-    }
-}
-
-//-------------------------------------------------------------------------------------------------
-// Agent Entry
-//-------------------------------------------------------------------------------------------------
-
-impl ToEntry for Agent {
-    fn to_entry(&self) -> (EntryType, Entry) {
-        (EntryType::AgentId, Entry::from(self.to_string()))
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        let id_content: String =
-            serde_json::from_str(&entry.content()).expect("entry is not a valid AgentId Entry");
-        Agent::new(Identity::new(id_content))
-    }
-}
-
 //-------------------------------------------------------------------------------------------------
 // UNIT TESTS
 //-------------------------------------------------------------------------------------------------
@@ -49,10 +7,10 @@ pub mod tests {
     extern crate test_utils;
 
     use action::{Action, ActionWrapper};
-    use hash_table::sys_entry::ToEntry;
-    use holochain_dna::entry_type::EntryType;
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry_type::EntryType, to_entry::ToEntry,
+    };
 
-    use cas::content::AddressableContent;
     use instance::{tests::test_context, Instance, Observer};
     use std::sync::mpsc::channel;
 

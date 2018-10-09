@@ -1,9 +1,8 @@
 use action::ActionWrapper;
 use agent::{chain_store::ChainStore, state::AgentState};
-use cas::memory::MemoryStorage;
 use context::Context;
 use dht::dht_store::DhtStore;
-use eav::memory::EavMemoryStorage;
+use holochain_cas_implementations::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
 

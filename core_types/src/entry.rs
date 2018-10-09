@@ -1,7 +1,9 @@
-use cas::content::{AddressableContent, Content};
+use cas::content::{Address, AddressableContent, Content};
+use entry_type::EntryType;
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
+use snowflake;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
@@ -58,71 +60,70 @@ impl FromJson for Entry {
     }
 }
 
+/// dummy entry type
+pub fn test_entry_type() -> EntryType {
+    EntryType::App(String::from("testEntryType"))
+}
+
+/// dummy entry type, same as test_type()
+pub fn test_entry_type_a() -> EntryType {
+    test_entry_type()
+}
+
+/// dummy entry type, differs from test_type()
+pub fn test_entry_type_b() -> EntryType {
+    EntryType::App(String::from("testEntryTypeB"))
+}
+
+/// dummy entry content
+pub fn test_entry_content() -> String {
+    "test entry content".into()
+}
+
+/// dummy entry content, same as test_entry_content()
+pub fn test_entry_content_a() -> String {
+    test_entry_content()
+}
+
+/// dummy entry content, differs from test_entry_content()
+pub fn test_entry_content_b() -> String {
+    "other test entry content".into()
+}
+
+/// dummy entry
+pub fn test_entry() -> Entry {
+    Entry::from(test_entry_content())
+}
+
+/// the correct hash for test_entry()
+pub fn test_entry_address() -> Address {
+    Address::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
+}
+
+/// dummy entry, same as test_entry()
+pub fn test_entry_a() -> Entry {
+    test_entry()
+}
+
+/// dummy entry, differs from test_entry()
+pub fn test_entry_b() -> Entry {
+    Entry::from(test_entry_content_b())
+}
+
+/// dummy entry with unique string content
+pub fn test_entry_unique() -> Entry {
+    Entry::from(snowflake::ProcessUniqueId::new().to_string())
+}
+
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use cas::{
-        content::{tests::AddressableContentTestSuite, Address, AddressableContent},
-        storage::tests::ExampleContentAddressableStorage,
+        content::{AddressableContent, AddressableContentTestSuite},
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use hash_table::entry::Entry;
-    use holochain_dna::entry_type::EntryType;
+    use entry::Entry;
     use json::{FromJson, ToJson};
-    use snowflake;
-
-    /// dummy entry type
-    pub fn test_entry_type() -> EntryType {
-        EntryType::App(String::from("testEntryType"))
-    }
-
-    /// dummy entry type, same as test_type()
-    pub fn test_entry_type_a() -> EntryType {
-        test_entry_type()
-    }
-
-    /// dummy entry type, differs from test_type()
-    pub fn test_entry_type_b() -> EntryType {
-        EntryType::App(String::from("testEntryTypeB"))
-    }
-
-    /// dummy entry content
-    pub fn test_entry_content() -> String {
-        "test entry content".into()
-    }
-
-    /// dummy entry content, same as test_entry_content()
-    pub fn test_entry_content_a() -> String {
-        test_entry_content()
-    }
-
-    /// dummy entry content, differs from test_entry_content()
-    pub fn test_entry_content_b() -> String {
-        "other test entry content".into()
-    }
-
-    /// dummy entry
-    pub fn test_entry() -> Entry {
-        Entry::from(test_entry_content())
-    }
-
-    /// the correct hash for test_entry()
-    pub fn test_entry_address() -> Address {
-        Address::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
-    }
-
-    /// dummy entry, same as test_entry()
-    pub fn test_entry_a() -> Entry {
-        test_entry()
-    }
-
-    /// dummy entry, differs from test_entry()
-    pub fn test_entry_b() -> Entry {
-        Entry::from(test_entry_content_b())
-    }
-
-    /// dummy entry with unique string content
-    pub fn test_entry_unique() -> Entry {
-        Entry::from(snowflake::ProcessUniqueId::new().to_string())
-    }
 
     #[test]
     /// tests for PartialEq
@@ -188,11 +189,10 @@ pub mod tests {
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let content_addressable_storage = ExampleContentAddressableStorage::new();
         let entries = vec![test_entry()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,
             ExampleContentAddressableStorage,
-        >(entries, content_addressable_storage);
+        >(entries, test_content_addressable_storage());
     }
 }

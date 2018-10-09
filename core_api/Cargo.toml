@@ -5,6 +5,7 @@ authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 
 [dependencies]
 holochain_core = { path = "../core" }
+holochain_core_types = { path = "../core_types" }
 holochain_dna = { path = "../dna" }
 holochain_agent = { path = "../agent" }
 futures-preview = "0.2.2"

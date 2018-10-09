@@ -1,27 +1,29 @@
-pub mod actor;
-
-use actor::{AskSelf, Protocol};
-use cas::{
-    content::{Address, AddressableContent},
-    file::actor::FilesystemStorageActor,
-    storage::ContentAddressableStorage,
+mod actor;
+use cas::memory::actor::MemoryStorageActor;
+use holochain_core_types::{
+    actor::{AskSelf, Protocol},
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    error::HolochainError,
 };
-use error::HolochainError;
 use riker::actors::*;
 
-pub struct FilesystemStorage {
+#[derive(Clone, Debug, PartialEq)]
+pub struct MemoryStorage {
     actor: ActorRef<Protocol>,
 }
 
-impl FilesystemStorage {
-    pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
-        Ok(FilesystemStorage {
-            actor: FilesystemStorageActor::new_ref(dir_path)?,
+impl MemoryStorage {
+    pub fn new() -> Result<MemoryStorage, HolochainError> {
+        Ok(MemoryStorage {
+            actor: MemoryStorageActor::new_ref()?,
         })
     }
 }
 
-impl ContentAddressableStorage for FilesystemStorage {
+impl ContentAddressableStorage for MemoryStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
         let response = self
             .actor
@@ -53,27 +55,19 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::tests::{ExampleAddressableContent, OtherExampleAddressableContent},
-        file::FilesystemStorage,
-        storage::tests::StorageTestSuite,
+    use cas::memory::MemoryStorage;
+    use holochain_core_types::cas::{
+        content::{ExampleAddressableContent, OtherExampleAddressableContent},
+        storage::StorageTestSuite,
     };
-    use tempfile::{tempdir, TempDir};
 
-    pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
-        let dir = tempdir().unwrap();
-        (
-            FilesystemStorage::new(dir.path().to_str().unwrap()).unwrap(),
-            dir,
-        )
+    pub fn test_memory_storage() -> MemoryStorage {
+        MemoryStorage::new().expect("could not create memory storage")
     }
 
     #[test]
-    /// show that content of different types can round trip through the same storage
-    /// this is copied straight from the example with a file CAS
-    fn file_content_round_trip_test() {
-        let (cas, _dir) = test_file_cas();
-        let test_suite = StorageTestSuite::new(cas);
+    fn memory_round_trip() {
+        let test_suite = StorageTestSuite::new(test_memory_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
             String::from("foo"),
             String::from("bar"),

@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use hash_table::sys_entry::ToEntry;
+use holochain_core_types::to_entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
 use nucleus::{

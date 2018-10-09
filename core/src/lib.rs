@@ -19,8 +19,6 @@ extern crate riker;
 extern crate riker_default;
 extern crate riker_patterns;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
@@ -35,19 +33,15 @@ extern crate holochain_dna;
 extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
+extern crate holochain_cas_implementations;
+extern crate holochain_core_types;
 
 pub mod action;
-pub mod actor;
 pub mod agent;
-pub mod cas;
 pub mod context;
 pub mod dht;
-pub mod eav;
-pub mod error;
-pub mod hash;
 pub mod hash_table;
 pub mod instance;
-pub mod json;
 pub mod logger;
 pub mod nucleus;
 pub mod persister;

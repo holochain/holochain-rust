@@ -1,14 +1,17 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::{chain_header::ChainHeader, chain_store::ChainStore, keys::Keys};
-use cas::{
-    content::{Address, AddressableContent},
-    memory::MemoryStorage,
-    storage::ContentAddressableStorage,
-};
+use agent::{chain_header::ChainHeader, chain_store::ChainStore};
 use context::Context;
-use error::HolochainError;
-use hash_table::entry::Entry;
-use json::ToJson;
+use holochain_cas_implementations::cas::memory::MemoryStorage;
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    entry::Entry,
+    error::HolochainError,
+    json::ToJson,
+    keys::Keys,
+};
 use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
@@ -201,11 +204,13 @@ pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use agent::chain_store::tests::test_chain_store;
-    use cas::content::AddressableContent;
-    use error::HolochainError;
-    use hash_table::entry::tests::{test_entry, test_entry_address};
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, test_entry_address},
+        error::HolochainError,
+        json::ToJson,
+    };
     use instance::tests::test_context;
-    use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state

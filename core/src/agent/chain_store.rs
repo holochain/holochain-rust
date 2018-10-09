@@ -1,6 +1,5 @@
 use agent::chain_header::ChainHeader;
-use cas::storage::ContentAddressableStorage;
-use holochain_dna::entry_type::EntryType;
+use holochain_core_types::{cas::storage::ContentAddressableStorage, entry_type::EntryType};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ChainStore<CAS>
@@ -137,11 +136,10 @@ pub mod tests {
         chain_header::{tests::test_chain_header, ChainHeader},
         chain_store::ChainStore,
     };
-    use cas::{
-        content::AddressableContent, memory::MemoryStorage, storage::ContentAddressableStorage,
-    };
-    use hash_table::entry::tests::{
-        test_entry, test_entry_type, test_entry_type_a, test_entry_type_b,
+    use holochain_cas_implementations::cas::memory::MemoryStorage;
+    use holochain_core_types::{
+        cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        entry::{test_entry, test_entry_type, test_entry_type_a, test_entry_type_b},
     };
 
     pub fn test_chain_store() -> ChainStore<MemoryStorage> {

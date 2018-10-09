@@ -1,40 +1,55 @@
+mod actor;
+use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
+    actor::{AskSelf, Protocol},
     cas::{
-        content::{Address, AddressableContent, Content},
+        content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
 };
-use std::collections::HashMap;
+use riker::actors::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryStorage {
-    storage: HashMap<Address, Content>,
+    actor: ActorRef<Protocol>,
 }
 
 impl MemoryStorage {
-    pub fn new() -> MemoryStorage {
-        MemoryStorage {
-            storage: HashMap::new(),
-        }
+    pub fn new() -> Result<MemoryStorage, HolochainError> {
+        Ok(MemoryStorage {
+            actor: MemoryStorageActor::new_ref()?,
+        })
     }
 }
 
 impl ContentAddressableStorage for MemoryStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        self.storage.insert(content.address(), content.content());
-        Ok(())
+        let response = self
+            .actor
+            .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
+        unwrap_to!(response => Protocol::CasAddResult).clone()
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        Ok(self.storage.contains_key(address))
+        let response = self
+            .actor
+            .block_on_ask(Protocol::CasContains(address.clone()))?;
+        unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError> {
-        Ok(self
-            .storage
-            .get(address)
-            .and_then(|c| Some(C::from_content(c))))
+    fn fetch<AC: AddressableContent>(
+        &self,
+        address: &Address,
+    ) -> Result<Option<AC>, HolochainError> {
+        let response = self
+            .actor
+            .block_on_ask(Protocol::CasFetch(address.clone()))?;
+        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        Ok(match content {
+            Some(c) => Some(AC::from_content(&c)),
+            None => None,
+        })
     }
 }
 
@@ -46,9 +61,13 @@ pub mod tests {
         storage::StorageTestSuite,
     };
 
+    pub fn test_memory_storage() -> MemoryStorage {
+        MemoryStorage::new().expect("could not create memory storage")
+    }
+
     #[test]
     fn memory_round_trip() {
-        let test_suite = StorageTestSuite::new(MemoryStorage::new());
+        let test_suite = StorageTestSuite::new(test_memory_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
             String::from("foo"),
             String::from("bar"),

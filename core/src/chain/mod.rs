@@ -2,8 +2,8 @@ pub mod actor;
 
 use chain::actor::{AskChain, ChainActor};
 use hash_table::HashTable;
-use holochain_cas_implementations::actor::Protocol;
 use holochain_core_types::{
+    actor::Protocol,
     cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
     entry::Entry,

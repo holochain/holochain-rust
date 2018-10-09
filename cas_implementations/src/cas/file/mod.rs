@@ -1,8 +1,8 @@
 pub mod actor;
 
-use actor::{AskSelf, Protocol};
 use cas::file::actor::FilesystemStorageActor;
 use holochain_core_types::{
+    actor::{AskSelf, Protocol},
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
@@ -11,6 +11,7 @@ use holochain_core_types::{
 };
 use riker::actors::*;
 
+#[derive(Clone)]
 pub struct FilesystemStorage {
     dir_actor: ActorRef<Protocol>,
 }

@@ -1,5 +1,8 @@
-use holochain_cas_implementations::actor::{AskSelf, Protocol, SYS};
-use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
+use holochain_core_types::{
+    actor::{AskSelf, Protocol, SYS},
+    chain_header::ChainHeader,
+    error::HolochainError,
+};
 use riker::actors::*;
 use snowflake;
 

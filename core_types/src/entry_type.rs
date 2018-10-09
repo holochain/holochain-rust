@@ -93,6 +93,25 @@ impl EntryType {
     }
 }
 
+/// dummy entry type
+pub fn test_entry_type() -> EntryType {
+    EntryType::App(String::from("testEntryType"))
+}
+
+/// dummy entry type, same as test_type()
+pub fn test_entry_type_a() -> EntryType {
+    test_entry_type()
+}
+
+/// dummy entry type, differs from test_type()
+pub fn test_entry_type_b() -> EntryType {
+    EntryType::App(String::from("testEntryTypeB"))
+}
+
+pub fn test_sys_entry_type() -> EntryType {
+    EntryType::AgentId
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

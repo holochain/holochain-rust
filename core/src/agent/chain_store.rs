@@ -138,7 +138,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         chain_header::{test_chain_header, ChainHeader},
-        entry::{test_entry, test_entry_type, test_entry_type_a, test_entry_type_b},
+        entry::test_entry,
+        entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
     };
 
     pub fn test_chain_store() -> ChainStore<MemoryStorage> {

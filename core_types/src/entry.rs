@@ -1,5 +1,4 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry_type::EntryType;
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
@@ -60,21 +59,6 @@ impl FromJson for Entry {
     }
 }
 
-/// dummy entry type
-pub fn test_entry_type() -> EntryType {
-    EntryType::App(String::from("testEntryType"))
-}
-
-/// dummy entry type, same as test_type()
-pub fn test_entry_type_a() -> EntryType {
-    test_entry_type()
-}
-
-/// dummy entry type, differs from test_type()
-pub fn test_entry_type_b() -> EntryType {
-    EntryType::App(String::from("testEntryTypeB"))
-}
-
 /// dummy entry content
 pub fn test_entry_content() -> String {
     "test entry content".into()
@@ -90,9 +74,15 @@ pub fn test_entry_content_b() -> String {
     "other test entry content".into()
 }
 
+pub fn test_sys_entry_content() -> String {
+    // looks like a believable hash
+    // sys entries are hashy right?
+    test_entry_content().address().into()
+}
+
 /// dummy entry
 pub fn test_entry() -> Entry {
-    Entry::from(test_entry_content())
+    Entry::from_content(&test_entry_content())
 }
 
 /// the correct hash for test_entry()
@@ -107,12 +97,16 @@ pub fn test_entry_a() -> Entry {
 
 /// dummy entry, differs from test_entry()
 pub fn test_entry_b() -> Entry {
-    Entry::from(test_entry_content_b())
+    Entry::from_content(&test_entry_content_b())
 }
 
 /// dummy entry with unique string content
 pub fn test_entry_unique() -> Entry {
-    Entry::from(snowflake::ProcessUniqueId::new().to_string())
+    Entry::from_content(&snowflake::ProcessUniqueId::new().to_string())
+}
+
+pub fn test_sys_entry() -> Entry {
+    Entry::from_content(&test_sys_entry_content())
 }
 
 #[cfg(test)]

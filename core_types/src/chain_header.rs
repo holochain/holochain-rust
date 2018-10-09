@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry, test_entry_type, Entry};
-use entry_type::EntryType;
+use entry::{test_entry, Entry};
+use entry_type::{test_entry_type, EntryType};
 use error::HolochainError;
 use json::ToJson;
 use serde_json;
@@ -146,7 +146,8 @@ pub fn test_chain_header() -> ChainHeader {
 pub mod tests {
     use cas::content::{Address, AddressableContent};
     use chain_header::{test_chain_header, ChainHeader};
-    use entry::{test_entry, test_entry_b, test_entry_type, test_entry_type_a, test_entry_type_b};
+    use entry::{test_entry, test_entry_b};
+    use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
     use to_entry::ToEntry;
 
     /// returns a dummy header for use in tests

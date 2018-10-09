@@ -71,3 +71,7 @@ impl State {
         Arc::clone(&self.dht)
     }
 }
+
+pub fn test_store() -> State {
+    State::new()
+}

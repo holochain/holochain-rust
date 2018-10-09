@@ -57,6 +57,7 @@ where
 
 //
 pub(crate) fn commit_sys_entry<CAS, EAVS>(
+    _context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
     entry_type: &EntryType,
     entry: &Entry,
@@ -152,7 +153,7 @@ where
 
     // Handle sys entries and app entries differently
     if entry_type.clone().is_sys() {
-        return commit_sys_entry(old_store, entry_type, entry);
+        return commit_sys_entry(context, old_store, entry_type, entry);
     }
     return commit_app_entry(context, old_store, entry_type, entry);
 }
@@ -212,4 +213,23 @@ where
 {
     // FIXME
     None
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use dht::dht_reducers::commit_sys_entry;
+    use holochain_core_types::entry::{test_entry, test_entry_type};
+    use instance::tests::test_context;
+    use state::test_store;
+
+    fn commit_sys_entry_test() {
+        let context = test_context("bob");
+        let store = test_store();
+        let entry_type = test_entry_type();
+        let entry = test_entry();
+
+        let new_store = commit_sys_entry(context, &store.dht(), &entry_type, &entry);
+    }
+
 }

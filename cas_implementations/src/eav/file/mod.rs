@@ -2,11 +2,10 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
-    hash::HashString,
 };
 use std::{
     collections::HashSet,
-    fs::{create_dir_all, read_dir, read_to_string, write, File, OpenOptions},
+    fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::{Path, MAIN_SEPARATOR},
 };
@@ -61,11 +60,17 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn read_from_dir<T>(&self, subscript: String, eav_constraint: Option<T>) -> HashSet<HcResult<String>>
+    fn read_from_dir<T>(
+        &self,
+        subscript: String,
+        eav_constraint: Option<T>,
+    ) -> HashSet<HcResult<String>>
     where
         T: ToString,
     {
-        let address = eav_constraint.map(|e| Address:from(e).unwrap_or(String::new());
+        let address = eav_constraint
+            .map(|e| e.to_string())
+            .unwrap_or(String::new());
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();
@@ -155,14 +160,9 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{AddressableContent, ExampleAddressableContent},
         eav::{EntityAttributeValue, EntityAttributeValueStorage},
-        error::HolochainError,
     };
-    use std::{
-        collections::HashSet,
-        fs::{self, create_dir_all, read_to_string, write, File, OpenOptions},
-        path::{Path, MAIN_SEPARATOR},
-    };
-    use tempfile::{tempdir, TempDir};
+    use std::collections::HashSet;
+    use tempfile::tempdir;
 
     #[test]
     fn file_eav_round_trip() {

@@ -51,8 +51,8 @@ impl EavFileStorage {
         let path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
-        let mut f =
-            File::create(vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string()))?;
+        let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
+        let mut f = File::create(address_path)?;
         writeln!(f, "{}", eav.content())?;
         Ok(())
     }
@@ -60,17 +60,14 @@ impl EavFileStorage {
     fn read_from_dir<T>(
         &self,
         subscript: String,
-        obj: Option<T>,
+        eav: Option<T>,
     ) -> HashSet<Result<String, HolochainError>>
     where
         T: ToString,
     {
-        let eav_directory = match obj {
-            Some(a) => a.to_string(),
-            None => String::new(),
-        };
+        let address = eav.map(|e| e.to_string()).unwrap_or(String::new());
         let full_path =
-            vec![self.dir_path.clone(), subscript, eav_directory].join(&MAIN_SEPARATOR.to_string());
+            vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();
         WalkDir::new(full_path)
             .into_iter()
@@ -162,21 +159,10 @@ pub mod tests {
     };
     use tempfile::{tempdir, TempDir};
 
-    fn delete_folders(path: String) -> Result<(), HolochainError> {
-        if Path::new(&path).exists() {
-            fs::remove_dir_all(path)?;
-            Ok(())
-        } else {
-            Ok(())
-        }
-    }
-
     #[test]
     fn file_eav_round_trip() {
-        let test_folder = "holo_round_trip";
-        delete_folders(String::from("holo_round_trip"))
-            .expect("was supposed to clean up folder before test");
-        create_dir_all(String::from("holo_round_trip")).expect("create holo directory");
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value_content = ExampleAddressableContent::from_content(&"blue".to_string());
@@ -185,8 +171,7 @@ pub mod tests {
             &attribute,
             &value_content.address(),
         );
-        let mut eav_storage =
-            EavFileStorage::new("holo_round_trip".to_string()).expect("should find holo file");;
+        let mut eav_storage = EavFileStorage::new(temp_path).expect("should find holo file");;
 
         assert_eq!(
             HashSet::new(),
@@ -238,16 +223,15 @@ pub mod tests {
 
     #[test]
     fn file_eav_one_to_many() {
-        delete_folders(String::from("holo_one_to_many"))
-            .expect("was supposed to clean up folder before test");
-        create_dir_all(String::from("holo_one_to_many")).expect("create holo directory");
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let one = ExampleAddressableContent::from_content(&"foo".to_string());
         // it can reference itself, why not?
         let many_one = ExampleAddressableContent::from_content(&"foo".to_string());
         let many_two = ExampleAddressableContent::from_content(&"bar".to_string());
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "one_to_many".to_string();
-        let mut eav_storage = EavFileStorage::new("holo_one_to_many".to_string()).unwrap();
+        let mut eav_storage = EavFileStorage::new(temp_path).unwrap();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
@@ -294,9 +278,8 @@ pub mod tests {
 
     #[test]
     fn file_eav_many_to_one() {
-        delete_folders(String::from("holo_many_to_one"))
-            .expect("was supposed to clean up folder before test");
-        create_dir_all(String::from("holo_many_to_one")).expect("create holo directory");
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let one = ExampleAddressableContent::from_content(&"foo".to_string());
         // it can reference itself, why not?
         let many_one = ExampleAddressableContent::from_content(&"foo".to_string());
@@ -304,7 +287,7 @@ pub mod tests {
         let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
         let attribute = "many_to_one".to_string();
 
-        let mut eav_storage = EavFileStorage::new("holo_many_to_one".to_string()).unwrap();
+        let mut eav_storage = EavFileStorage::new(temp_path).unwrap();
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());

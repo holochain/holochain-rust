@@ -1,4 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry_type::EntryType;
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;

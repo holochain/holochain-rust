@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
 };
@@ -128,8 +128,7 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
     match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
-            let read = file
-                .read_to_string(&mut content)
+            file.read_to_string(&mut content)
                 .map(|e| {
                     if e > 0 {
                         Ok(content)

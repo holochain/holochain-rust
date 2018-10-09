@@ -1,5 +1,6 @@
-use agent::chain_header::ChainHeader;
-use holochain_core_types::{cas::storage::ContentAddressableStorage, entry_type::EntryType};
+use holochain_core_types::{
+    cas::storage::ContentAddressableStorage, chain_header::ChainHeader, entry_type::EntryType,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ChainStore<CAS>
@@ -132,13 +133,11 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use agent::{
-        chain_header::{tests::test_chain_header, ChainHeader},
-        chain_store::ChainStore,
-    };
+    use agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::memory::MemoryStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        chain_header::{test_chain_header, ChainHeader},
         entry::{test_entry, test_entry_type, test_entry_type_a, test_entry_type_b},
     };
 

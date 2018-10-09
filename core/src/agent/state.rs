@@ -1,5 +1,5 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::{chain_header::ChainHeader, chain_store::ChainStore};
+use agent::chain_store::ChainStore;
 use context::Context;
 use holochain_cas_implementations::cas::memory::MemoryStorage;
 use holochain_core_types::{
@@ -7,6 +7,7 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
+    chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
     json::ToJson,

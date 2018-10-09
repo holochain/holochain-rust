@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::AddressableContent,
+    cas::content::{Address, AddressableContent},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
     hash::HashString,
@@ -61,11 +61,15 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn read_from_dir<T>(&self, subscript: String, eav_constraint: Option<T>) -> HashSet<HcResult<String>>
+    fn read_from_dir<T>(
+        &self,
+        subscript: String,
+        eav_constraint: Option<T>,
+    ) -> HashSet<HcResult<String>>
     where
         T: ToString,
     {
-        let address = eav_constraint.map(|e| Address:from(e).unwrap_or(String::new());
+        let address = eav_constraint.map(|e| Address::from(e).unwrap_or(String::new()));
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let mut set = HashSet::new();

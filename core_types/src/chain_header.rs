@@ -262,43 +262,33 @@ pub mod tests {
         assert_eq!(test_chain_header().entry_address(), &test_entry().address());
     }
 
-    // #[test]
-    /// tests for header.type_next()
-    // fn type_next() {
-    //     let mut chain = test_chain();
-    //
-    //     let entry_type_a = test_entry_type_a();
-    //     let entry_type_b = test_entry_type_b();
-    //     let entry_type_c = test_entry_type_a();
-    //
-    //     let entry_a = test_entry_a();
-    //     let entry_b = test_entry_b();
-    //     let entry_c = test_entry_b();
-    //
-    //     // first header is genesis so next should be None
-    //     let chain_header_a = chain
-    //         .push_entry(&entry_type_a, &entry_a)
-    //         .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-    //
-    //     assert_eq!(chain_header_a.link_same_type(), None);
-    //
-    //     // second header is a different type so next should be None
-    //     let chain_header_b = chain
-    //         .push_entry(&entry_type_b, &entry_b)
-    //         .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-    //
-    //     assert_eq!(chain_header_b.link_same_type(), None);
-    //
-    //     // third header is same type as first header so next should be first header hash
-    //     let chain_header_c = chain
-    //         .push_entry(&entry_type_c, &entry_c)
-    //         .expect("pushing a valid entry to an exlusively owned chain shouldn't fail");
-    //
-    //     assert_eq!(
-    //         chain_header_c.link_same_type(),
-    //         Some(chain_header_a.address())
-    //     );
-    // }
+    #[test]
+    fn link_same_type_test() {
+        let chain_header_a = test_chain_header();
+        let chain_header_b = ChainHeader::new(
+            &test_entry_type_b(),
+            &String::new(),
+            Some(chain_header_a.address()),
+            &test_entry().address(),
+            &String::new(),
+            None,
+        );
+        let chain_header_c = ChainHeader::new(
+            &test_entry_type(),
+            &String::new(),
+            Some(chain_header_b.address()),
+            &test_entry().address(),
+            &String::new(),
+            Some(chain_header_a.address()),
+        );
+
+        assert_eq!(None, chain_header_a.link_same_type());
+        assert_eq!(None, chain_header_b.link_same_type());
+        assert_eq!(
+            Some(chain_header_a.address()),
+            chain_header_c.link_same_type()
+        );
+    }
 
     #[test]
     /// tests for chain_header.signature()

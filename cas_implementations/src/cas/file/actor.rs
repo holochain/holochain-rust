@@ -2,6 +2,7 @@ use holochain_core_types::{
     actor::{Protocol, SYS},
     cas::content::{Address, Content},
     error::HolochainError,
+    file_validation,
 };
 use riker::actors::*;
 use std::{
@@ -39,16 +40,7 @@ impl FilesystemStorageActor {
     }
 
     pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
-        let canonical = Path::new(&dir_path).canonicalize()?;
-        if !canonical.is_dir() {
-            return Err(HolochainError::IoError(
-                "path is not a directory or permissions don't allow access".to_string(),
-            ));
-        }
-        let dir_path = canonical
-            .to_str()
-            .ok_or_else(|| HolochainError::IoError("could not convert path to string".to_string()))?
-            .to_string();
+        let dir_path = file_validation::validate_canonical_path(dir_path)?;
         Ok(SYS.actor_of(
             FilesystemStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path

@@ -8,7 +8,7 @@ use std::{
     collections::HashSet,
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
-    path::{MAIN_SEPARATOR},
+    path::MAIN_SEPARATOR,
 };
 
 use walkdir::{DirEntry, WalkDir};

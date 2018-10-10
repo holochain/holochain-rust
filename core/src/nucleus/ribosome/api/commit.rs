@@ -116,8 +116,7 @@ pub mod tests {
     extern crate wabt;
 
     use holochain_core_types::{
-        cas::content::AddressableContent,
-        entry::{test_entry, test_entry_type},
+        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},

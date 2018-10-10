@@ -78,7 +78,6 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
-    use chain::SourceChain;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -175,15 +174,13 @@ mod tests {
         let (context, _) = test_context_and_logger("joan");
         let context = instance.initialize_context(context);
 
-        println!("{:?}", instance.state().agent().chain().top_chain_header());
+        println!("{:?}", instance.state().agent().top_chain_header());
         println!(
             "{:?}",
             instance
                 .state()
                 .agent()
-                .chain()
                 .top_chain_header()
-                .expect("could not get top chain_header")
                 .expect("top chain_header was None")
                 .address()
         );

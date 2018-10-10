@@ -1,9 +1,7 @@
 use action::ActionWrapper;
-use agent::state::AgentState;
-use chain::Chain;
+use agent::{chain_store::ChainStore, state::AgentState};
 use context::Context;
 use dht::dht_store::DhtStore;
-use hash_table::{actor::HashTableActor, memory::MemTable};
 use holochain_cas_implementations::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
@@ -25,15 +23,14 @@ impl State {
     pub fn new() -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
-        let chain = Chain::new(HashTableActor::new_ref(MemTable::new()));
 
         let content_storage = MemoryStorage::new().expect("could not create new memory storage");
         let eav_storage = EavMemoryStorage::new();
 
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(&chain)),
-            dht: Arc::new(DhtStore::new(content_storage, eav_storage)),
+            agent: Arc::new(AgentState::new(ChainStore::new(content_storage.clone()))),
+            dht: Arc::new(DhtStore::new(content_storage.clone(), eav_storage)),
             history: HashSet::new(),
         }
     }
@@ -73,4 +70,8 @@ impl State {
     pub fn dht(&self) -> Arc<DhtStore<MemoryStorage, EavMemoryStorage>> {
         Arc::clone(&self.dht)
     }
+}
+
+pub fn test_store() -> State {
+    State::new()
 }

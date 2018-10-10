@@ -1,5 +1,4 @@
 use cas::content::{Address, Content};
-use chain_header::ChainHeader;
 use entry::Entry;
 use entry_meta::EntryMeta;
 use error::HolochainError;
@@ -24,14 +23,6 @@ pub enum Protocol {
 
     CasContains(Address),
     CasContainsResult(Result<bool, HolochainError>),
-
-    /// Chain::set_top_chain_header()
-    SetTopChainHeader(Option<ChainHeader>),
-    SetTopChainHeaderResult(Result<Option<ChainHeader>, HolochainError>),
-
-    /// Chain::top_chain_header()
-    GetTopChainHeader,
-    GetTopChainHeaderResult(Option<ChainHeader>),
 
     /// HashTable::setup()
     Setup,

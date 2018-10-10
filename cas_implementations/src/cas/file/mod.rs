@@ -13,13 +13,13 @@ use riker::actors::*;
 
 #[derive(Clone)]
 pub struct FilesystemStorage {
-    dir_actor: ActorRef<Protocol>,
+    actor: ActorRef<Protocol>,
 }
 
 impl FilesystemStorage {
     pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
-            dir_actor: FilesystemStorageActor::new_ref(dir_path)?,
+            actor: FilesystemStorageActor::new_ref(dir_path)?,
         })
     }
 }
@@ -27,14 +27,14 @@ impl FilesystemStorage {
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
         let response = self
-            .dir_actor
+            .actor
             .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
         unwrap_to!(response => Protocol::CasAddResult).clone()
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
         let response = self
-            .dir_actor
+            .actor
             .block_on_ask(Protocol::CasContains(address.clone()))?;
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
@@ -44,7 +44,7 @@ impl ContentAddressableStorage for FilesystemStorage {
         address: &Address,
     ) -> Result<Option<AC>, HolochainError> {
         let response = self
-            .dir_actor
+            .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
         let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
         Ok(match content {

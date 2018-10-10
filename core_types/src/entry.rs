@@ -98,9 +98,15 @@ pub fn test_entry_content_b() -> String {
     "other test entry content".into()
 }
 
+pub fn test_sys_entry_content() -> String {
+    // looks like a believable hash
+    // sys entries are hashy right?
+    test_entry_content().address().into()
+}
+
 /// dummy entry
 pub fn test_entry() -> Entry {
-    Entry::from(test_entry_content())
+    Entry::from_content(&test_entry_content())
 }
 
 /// the correct hash for test_entry()
@@ -115,12 +121,16 @@ pub fn test_entry_a() -> Entry {
 
 /// dummy entry, differs from test_entry()
 pub fn test_entry_b() -> Entry {
-    Entry::from(test_entry_content_b())
+    Entry::from_content(&test_entry_content_b())
 }
 
 /// dummy entry with unique string content
 pub fn test_entry_unique() -> Entry {
-    Entry::from(snowflake::ProcessUniqueId::new().to_string())
+    Entry::from_content(&snowflake::ProcessUniqueId::new().to_string())
+}
+
+pub fn test_sys_entry() -> Entry {
+    Entry::from_content(&test_sys_entry_content())
 }
 
 #[cfg(test)]

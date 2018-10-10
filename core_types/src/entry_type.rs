@@ -93,9 +93,47 @@ impl EntryType {
     }
 }
 
+/// dummy entry type
+pub fn test_entry_type() -> EntryType {
+    EntryType::App(String::from("testEntryType"))
+}
+
+/// dummy entry type, same as test_type()
+pub fn test_entry_type_a() -> EntryType {
+    test_entry_type()
+}
+
+/// dummy entry type, differs from test_type()
+pub fn test_entry_type_b() -> EntryType {
+    EntryType::App(String::from("testEntryTypeB"))
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_sys_entry_type() -> EntryType {
+    EntryType::AgentId
+}
+
+pub fn test_unpublishable_entry_type() -> EntryType {
+    EntryType::Dna
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
+
+    pub fn test_types() -> Vec<EntryType> {
+        vec![
+            EntryType::AgentId,
+            EntryType::Deletion,
+            EntryType::App(String::from("foo")),
+            EntryType::Dna,
+            EntryType::ChainHeader,
+            EntryType::Key,
+            EntryType::Link,
+            EntryType::Migration,
+            EntryType::LinkList,
+        ]
+    }
 
     #[test]
     fn entry_type_kind() {
@@ -134,6 +172,16 @@ pub mod tests {
             );
 
             assert_eq!(type_str, variant.as_str(),);
+        }
+    }
+
+    #[test]
+    fn can_publish_test() {
+        for t in test_types() {
+            match t {
+                EntryType::Dna => assert!(!t.can_publish()),
+                _ => assert!(t.can_publish()),
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 use error::HolochainError;
 use std::path::Path;
 
-pub fn validate_canoncical_path(dir_path: &str) -> Result<String, HolochainError> {
+pub fn validate_canonical_path(dir_path: &str) -> Result<String, HolochainError> {
     let canonical = Path::new(&dir_path).canonicalize()?;
     if !canonical.is_dir() {
         return Err(HolochainError::IoError(

@@ -22,12 +22,15 @@ extern crate lazy_static;
 extern crate unwrap_to;
 extern crate riker_default;
 extern crate riker_patterns;
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 extern crate serde_derive;
 pub mod actor;
 pub mod cas;
 pub mod chain_header;
+pub mod crud_status;
 pub mod eav;
 pub mod entry;
 pub mod entry_meta;

@@ -113,6 +113,10 @@ pub fn test_sys_entry_type() -> EntryType {
     EntryType::AgentId
 }
 
+pub fn test_unpublishable_entry_type() -> EntryType {
+    EntryType::Dna
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

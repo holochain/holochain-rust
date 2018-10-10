@@ -222,21 +222,26 @@ pub mod tests {
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         entry::{test_entry, test_sys_entry, Entry},
-        entry_type::{test_entry_type, test_sys_entry_type},
-        error::HolochainError,
+        entry_type::{test_sys_entry_type, test_unpublishable_entry_type},
     };
     use instance::tests::test_context;
     use state::test_store;
     use std::sync::Arc;
 
+    #[test]
     fn commit_sys_entry_test() {
         let context = test_context("bob");
         let store = test_store();
-        let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let new_dht_store =
-            commit_sys_entry(Arc::clone(&context), &store.dht(), &entry_type, &entry);
+        let unpublishable_entry_type = test_unpublishable_entry_type();
+
+        let new_dht_store = commit_sys_entry(
+            Arc::clone(&context),
+            &store.dht(),
+            &unpublishable_entry_type,
+            &entry,
+        );
 
         // test_entry is not sys so should do nothing
         assert_eq!(None, new_dht_store);

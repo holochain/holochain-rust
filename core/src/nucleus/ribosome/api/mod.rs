@@ -567,18 +567,16 @@ pub mod tests {
     #[test]
     /// test the FromStr implementation for ZomeApiFunction
     fn test_from_str() {
-        assert_eq!(
-            ZomeApiFunction::Debug,
-            ZomeApiFunction::from_str("hc_debug").unwrap(),
-        );
-        assert_eq!(
-            ZomeApiFunction::CommitAppEntry,
-            ZomeApiFunction::from_str("hc_commit_entry").unwrap(),
-        );
-        assert_eq!(
-            ZomeApiFunction::GetAppEntry,
-            ZomeApiFunction::from_str("hc_get_entry").unwrap(),
-        );
+        for (input, output) in vec![
+            ("abort", ZomeApiFunction::Abort),
+            ("hc_debug", ZomeApiFunction::Debug),
+            ("hc_commit_entry", ZomeApiFunction::CommitAppEntry),
+            ("hc_get_entry", ZomeApiFunction::GetAppEntry),
+            ("hc_init_globals", ZomeApiFunction::InitGlobals),
+            ("hc_call", ZomeApiFunction::Call),
+        ] {
+            assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
+        }
 
         assert_eq!(
             "Cannot convert string to ZomeApiFunction",

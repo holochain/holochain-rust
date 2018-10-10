@@ -128,7 +128,8 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
     match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
-            file.read_to_string(&mut content)
+            let _result = file
+                .read_to_string(&mut content)
                 .map(|e| {
                     if e > 0 {
                         Ok(content)
@@ -139,7 +140,6 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
                         )))
                     }
                 })
-                .expect("could not read file")
                 .map(|e| {
                     set.insert(e);
                 });

@@ -1,5 +1,4 @@
 use cas::content::{Address, Content};
-use entry_meta::EntryMeta;
 use error::HolochainError;
 use futures::executor::block_on;
 use riker::actors::*;

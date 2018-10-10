@@ -148,7 +148,7 @@ pub mod tests {
     use eav::file::EavFileStorage;
     use holochain_core_types::cas::{
         content::{AddressableContent, ExampleAddressableContent},
-        storage::EAVTestSuite,
+        storage::EavTestSuite,
     };
     use tempfile::tempdir;
 
@@ -159,7 +159,7 @@ pub mod tests {
         let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value_content = ExampleAddressableContent::from_content(&"blue".to_string());
-        EAVTestSuite::test_round_trip_test(
+        EavTestSuite::test_round_trip_test(
             EavFileStorage::new(temp_path).unwrap(),
             entity_content,
             attribute,
@@ -172,7 +172,7 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EAVTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }
 
     #[test]
@@ -180,7 +180,7 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EAVTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }
 
 }

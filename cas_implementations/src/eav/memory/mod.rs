@@ -52,7 +52,7 @@ pub mod tests {
         let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value_content = ExampleAddressableContent::from_content(&"blue".to_string());
-        EavTestSuite::test_round_trip_test(
+        EavTestSuite::test_round_trip(
             EavMemoryStorage::new(),
             entity_content,
             attribute,

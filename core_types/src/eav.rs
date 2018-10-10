@@ -254,7 +254,7 @@ pub mod tests {
         let attribute = "favourite-color".to_string();
         let value = ExampleAddressableContent::from_content(&"blue".to_string());
 
-        EavTestSuite::test_round_trip_test(eav_storage, entity, attribute, value)
+        EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }
 
     #[test]

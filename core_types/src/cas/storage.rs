@@ -285,7 +285,7 @@ where
 pub struct EavTestSuite;
 
 impl EavTestSuite {
-    pub fn test_round_trip_test(
+    pub fn test_round_trip(
         mut eav_storage: impl EntityAttributeValueStorage,
         entity_content: impl AddressableContent,
         attribute: String,

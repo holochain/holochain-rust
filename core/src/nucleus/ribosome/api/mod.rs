@@ -396,6 +396,7 @@ pub mod tests {
         str::FromStr,
         sync::{Arc, Mutex},
     };
+    use nucleus::ribosome::Defn;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -582,6 +583,48 @@ pub mod tests {
             "Cannot convert string to ZomeApiFunction",
             ZomeApiFunction::from_str("foo").unwrap_err(),
         );
+    }
+
+    #[test]
+    /// Show Defn implementation
+    fn defn_test() {
+        // as_str()
+        for (input, output) in vec![(ZomeApiFunction::MissingNo, ""),
+                                    (ZomeApiFunction::Abort, "abort"),
+                                    (ZomeApiFunction::Debug, "hc_debug"),
+                                    (ZomeApiFunction::CommitAppEntry, "hc_commit_entry"),
+                                    (ZomeApiFunction::GetAppEntry, "hc_get_entry"),
+                                    (ZomeApiFunction::InitGlobals, "hc_init_globals"),
+                                    (ZomeApiFunction::Call, "hc_call"),
+                                    ] {
+            assert_eq!(output, input.as_str());
+        }
+
+        // str_to_index()
+        for (input, output) in vec![
+            ("", 0),
+            ("abort", 1),
+            ("hc_debug", 2),
+            ("hc_commit_entry", 3),
+            ("hc_get_entry", 4),
+            ("hc_init_globals", 5),
+            ("hc_call", 6),
+        ] {
+            assert_eq!(output, ZomeApiFunction::str_to_index(input));
+        }
+
+        // from_index()
+        for (input, output) in vec![
+            (0, ZomeApiFunction::MissingNo),
+            (1, ZomeApiFunction::Abort),
+            (2, ZomeApiFunction::Debug),
+            (3, ZomeApiFunction::CommitAppEntry),
+            (4, ZomeApiFunction::GetAppEntry),
+            (5, ZomeApiFunction::InitGlobals),
+            (6, ZomeApiFunction::Call),
+        ] {
+            assert_eq!(output, ZomeApiFunction::from_index(input));
+        }
     }
 
 }

@@ -55,6 +55,8 @@ impl FromStr for Callback {
 }
 
 impl Callback {
+    // cannot test this because PartialEq is not implemented for fns
+    #[cfg_attr(tarpaulin, skip)]
     pub fn as_fn(
         &self,
     ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
@@ -329,6 +331,32 @@ pub mod tests {
             "Cannot convert string to Callback",
             Callback::from_str("foo").expect_err("string literal shouldn't be valid callback"),
         );
+    }
+
+    #[test]
+    fn defn_test() {
+        // as_str()
+        for (input, output) in vec![
+            (Callback::MissingNo, ""),
+            (Callback::Genesis, "genesis"),
+            (Callback::Receive, "receive"),
+        ] {
+            assert_eq!(output, input.as_str());
+        }
+
+        // str_to_index()
+        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2)] {
+            assert_eq!(output, Callback::str_to_index(input));
+        }
+
+        // from_index()
+        for (input, output) in vec![
+            (0, Callback::MissingNo),
+            (1, Callback::Genesis),
+            (2, Callback::Receive),
+        ] {
+            assert_eq!(output, Callback::from_index(input));
+        }
     }
 
 }

@@ -191,4 +191,47 @@ mod tests {
 
         assert!(result.is_ok());
     }
+
+    #[test]
+    /// show Error implementation for HolochainError
+    fn error_test() {
+        for (input, output) in vec![
+            (HolochainError::ErrorGeneric(String::from("foo")), "foo"),
+            (HolochainError::NotImplemented, "not implemented"),
+            (
+                HolochainError::InstanceNotActive,
+                "the instance is not active",
+            ),
+            (HolochainError::InstanceActive, "the instance is active"),
+            (HolochainError::LoggingError, "logging failed"),
+            (HolochainError::DnaMissing, "DNA is missing"),
+            (
+                HolochainError::DnaError(DnaError::ZomeNotFound(String::from("foo"))),
+                "foo",
+            ),
+            (
+                HolochainError::DnaError(DnaError::CapabilityNotFound(String::from("foo"))),
+                "foo",
+            ),
+            (
+                HolochainError::DnaError(DnaError::ZomeFunctionNotFound(String::from("foo"))),
+                "foo",
+            ),
+            (HolochainError::IoError(String::from("foo")), "foo"),
+            (
+                HolochainError::SerializationError(String::from("foo")),
+                "foo",
+            ),
+            (
+                HolochainError::InvalidOperationOnSysEntry,
+                "operation cannot be done on a system entry type",
+            ),
+            (
+                HolochainError::DoesNotHaveCapabilityToken,
+                "Caller does not have Capability to make that call",
+            ),
+        ] {
+            assert_eq!(output, input.description());
+        }
+    }
 }

@@ -5,7 +5,12 @@ use entry::{test_entry_unique, Entry};
 use error::HolochainError;
 use riker::actors::*;
 use snowflake;
-use std::{collections::HashMap, collections::HashSet, fmt::Debug, sync::mpsc::channel, thread};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    sync::mpsc::channel,
+    thread,
+};
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently

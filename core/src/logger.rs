@@ -14,6 +14,7 @@ pub struct SimpleLogger {
     // log: Vec<String>,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
         let date = Local::now();

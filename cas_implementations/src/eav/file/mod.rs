@@ -139,6 +139,7 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
                         )))
                     }
                 })
+                .expect("could not read file")
                 .map(|e| {
                     set.insert(e);
                 });

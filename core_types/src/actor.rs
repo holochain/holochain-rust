@@ -1,11 +1,7 @@
 use cas::content::{Address, Content};
-use entry::Entry;
 use entry_meta::EntryMeta;
 use error::HolochainError;
 use futures::executor::block_on;
-use get_links_args::GetLinksArgs;
-use keys::Keys;
-use links_entry::{Link, LinkListEntry};
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
@@ -23,63 +19,6 @@ pub enum Protocol {
 
     CasContains(Address),
     CasContainsResult(Result<bool, HolochainError>),
-
-    /// HashTable::setup()
-    Setup,
-    SetupResult(Result<(), HolochainError>),
-
-    /// HashTable::teardown()
-    Teardown,
-    TeardownResult(Result<(), HolochainError>),
-
-    /// HashTable::get()
-    GetEntry(Address),
-    GetEntryResult(Result<Option<Entry>, HolochainError>),
-
-    /// HashTable::put()
-    PutEntry(Entry),
-    PutEntryResult(Result<(), HolochainError>),
-
-    /// HashTable::modify_entry()
-    ModifyEntry {
-        keys: Keys,
-        old: Entry,
-        new: Entry,
-    },
-    ModifyEntryResult(Result<(), HolochainError>),
-
-    /// HashTable::retract_entry()
-    RetractEntry {
-        keys: Keys,
-        entry: Entry,
-    },
-    RetractEntryResult(Result<(), HolochainError>),
-
-    /// HashTable::add_link()
-    AddLink(Link),
-    AddLinkResult(Result<(), HolochainError>),
-    /// HashTable::get_links()
-    GetLinks(GetLinksArgs),
-    GetLinksResult(Result<Option<LinkListEntry>, HolochainError>),
-
-    /// HashTable::assert_meta()
-    AssertMeta(EntryMeta),
-    AssertMetaResult(Result<(), HolochainError>),
-
-    /// HashTable::get_meta()
-    GetMeta(Address),
-    GetMetaResult(Result<Option<EntryMeta>, HolochainError>),
-
-    /// HashTable::metas_from_entry()
-    MetasFromEntry(Entry),
-    MetasFromEntryResult(Result<Vec<EntryMeta>, HolochainError>),
-
-    /// HashTable::meta_from_request()
-    MetaFromRequest {
-        entry_address: Address,
-        attribute_name: String,
-    },
-    MetaFromRequestResult(Result<Option<EntryMeta>, HolochainError>),
 }
 
 /// required by riker

@@ -125,14 +125,16 @@ impl FromStr for ZomeApiFunction {
     }
 }
 
-impl ZomeApiFunction {
-    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
-        /// does nothing, escape hatch so the compiler can enforce exhaustive matching below
-        fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-            // Return Ribosome Success Code
-            Ok(Some(RuntimeValue::I32(0 as i32)))
-        }
+/// does nothing, escape hatch so the compiler can enforce exhaustive matching in as_fn
+fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
+    // Return Ribosome Success Code
+    Ok(Some(RuntimeValue::I32(0 as i32)))
+}
 
+impl ZomeApiFunction {
+    // cannot test this because PartialEq is not implemented for fns
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
         // @see: https://github.com/holochain/holochain-rust/issues/324
 
@@ -389,14 +391,16 @@ pub mod tests {
         Instance,
     };
     use nucleus::{
-        ribosome::api::{call, Runtime},
+        ribosome::{
+            api::{call, Runtime},
+            Defn,
+        },
         ZomeFnCall,
     };
     use std::{
         str::FromStr,
         sync::{Arc, Mutex},
     };
-    use nucleus::ribosome::Defn;
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -589,14 +593,15 @@ pub mod tests {
     /// Show Defn implementation
     fn defn_test() {
         // as_str()
-        for (input, output) in vec![(ZomeApiFunction::MissingNo, ""),
-                                    (ZomeApiFunction::Abort, "abort"),
-                                    (ZomeApiFunction::Debug, "hc_debug"),
-                                    (ZomeApiFunction::CommitAppEntry, "hc_commit_entry"),
-                                    (ZomeApiFunction::GetAppEntry, "hc_get_entry"),
-                                    (ZomeApiFunction::InitGlobals, "hc_init_globals"),
-                                    (ZomeApiFunction::Call, "hc_call"),
-                                    ] {
+        for (input, output) in vec![
+            (ZomeApiFunction::MissingNo, ""),
+            (ZomeApiFunction::Abort, "abort"),
+            (ZomeApiFunction::Debug, "hc_debug"),
+            (ZomeApiFunction::CommitAppEntry, "hc_commit_entry"),
+            (ZomeApiFunction::GetAppEntry, "hc_get_entry"),
+            (ZomeApiFunction::InitGlobals, "hc_init_globals"),
+            (ZomeApiFunction::Call, "hc_call"),
+        ] {
             assert_eq!(output, input.as_str());
         }
 

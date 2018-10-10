@@ -8,7 +8,7 @@ use std::{
     collections::HashSet,
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
-    path::{Path, MAIN_SEPARATOR},
+    path::{MAIN_SEPARATOR},
 };
 
 use walkdir::{DirEntry, WalkDir};
@@ -118,7 +118,7 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
     match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
-            file.read_to_string(&mut content)
+            let _result = file.read_to_string(&mut content)
                 .map(|e| {
                     if e > 0 {
                         Ok(content)

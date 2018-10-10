@@ -1,5 +1,6 @@
 use actor::{AskSelf, Protocol, SYS};
 use cas::content::{Address, AddressableContent, Content};
+<<<<<<< HEAD
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use error::HolochainError;
 use riker::actors::*;
@@ -8,12 +9,19 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
 };
+=======
+use entry::{test_entry_unique, Entry};
+use error::HolochainError;
+use riker::actors::*;
+use snowflake;
+use std::{collections::HashMap, fmt::Debug, sync::mpsc::channel, thread};
+>>>>>>> cac65e65a143e1499a84f266e9fc022dd8ca16c4
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
 /// anything implementing AddressableContent can be added and fetched by address
 /// CAS is append only
-pub trait ContentAddressableStorage: Clone {
+pub trait ContentAddressableStorage: Clone + Send + Sync {
     /// adds AddressableContent to the ContentAddressableStorage by its Address as Content
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError>;
     /// true if the Address is in the Store, false otherwise.
@@ -169,7 +177,7 @@ where
 
 impl<T> StorageTestSuite<T>
 where
-    T: ContentAddressableStorage,
+    T: ContentAddressableStorage + 'static,
 {
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite {
@@ -232,6 +240,50 @@ where
                 cas.fetch(&other_content.address())
             );
         }
+
+        // show consistent view on data across threads
+
+        let entry = test_entry_unique();
+
+        // initially should not find entry
+        let thread_cas = self.cas.clone();
+        let thread_entry = entry.clone();
+        let (tx1, rx1) = channel();
+        thread::spawn(move || {
+            assert_eq!(
+                None,
+                thread_cas
+                    .fetch::<Entry>(&thread_entry.address())
+                    .expect("could not fetch from cas")
+            );
+            tx1.send(true).unwrap();
+        });
+
+        // should be able to add an entry found in the next channel
+        let mut thread_cas = self.cas.clone();
+        let thread_entry = entry.clone();
+        let (tx2, rx2) = channel();
+        thread::spawn(move || {
+            rx1.recv().unwrap();
+            thread_cas
+                .add(&thread_entry)
+                .expect("could not add entry to cas");
+            tx2.send(true).expect("could not kick off next thread");
+        });
+
+        let thread_cas = self.cas.clone();
+        let thread_entry = entry.clone();
+        let handle = thread::spawn(move || {
+            rx2.recv().unwrap();
+            assert_eq!(
+                Some(thread_entry.clone()),
+                thread_cas
+                    .fetch(&thread_entry.address())
+                    .expect("could not fetch from cas")
+            )
+        });
+
+        handle.join().unwrap();
     }
 }
 

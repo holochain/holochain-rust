@@ -148,14 +148,43 @@ pub mod tests {
     use super::*;
     use error::RibosomeReturnCode;
 
+    pub fn test_single_page_allocation() -> SinglePageAllocation {
+        SinglePageAllocation::new(0, 20).expect("could not create test SinglePageAllocation")
+    }
+
+    pub fn test_single_page_stack() -> SinglePageStack {
+        SinglePageStack::new(test_single_page_allocation())
+    }
+
+    #[test]
+    /// smoke test single_page_allocation
+    fn single_page_allocation_smoke_test() {
+        test_single_page_allocation();
+    }
+
+    #[test]
+    /// smoke test single_page_stack
+    fn single_page_stack_smoke_test() {
+        test_single_page_stack();
+    }
+
     #[test]
     /// tests construction and encoding in a new single page allocation
     fn single_page_allocation_from_encoded_allocation() {
         let i = 0b1010101010101010_0101010101010101;
-        let spa = SinglePageAllocation::from_encoded_allocation(i).unwrap();
+        let single_page_allocation = SinglePageAllocation::from_encoded_allocation(i).unwrap();
 
-        assert_eq!(0b1010101010101010, spa.offset);
-        assert_eq!(0b0101010101010101, spa.length);
+        assert_eq!(0b1010101010101010, single_page_allocation.offset);
+        assert_eq!(0b0101010101010101, single_page_allocation.length);
+    }
+
+    #[test]
+    fn single_page_stack_from_encoded_test() {
+        let i = 0b1010101010101010_0101010101010101;
+        let single_page_stack = SinglePageStack::from_encoded(i);
+
+        // stack top is offset + length
+        assert_eq!(0b1111111111111111, single_page_stack.top());
     }
 
     #[test]

@@ -36,6 +36,7 @@ pub mod entry;
 pub mod entry_meta;
 pub mod entry_type;
 pub mod error;
+pub mod file_validation;
 pub mod get_links_args;
 pub mod hash;
 pub mod json;

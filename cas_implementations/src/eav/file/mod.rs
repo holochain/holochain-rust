@@ -25,7 +25,7 @@ const VALUE_DIR: &str = "v";
 
 impl EavFileStorage {
     pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
-        let dir_path = file_validation::validate_canoncical_path(&*dir_path)?;
+        let dir_path = file_validation::validate_canonical_path(&*dir_path)?;
         Ok(EavFileStorage { dir_path: dir_path })
     }
 

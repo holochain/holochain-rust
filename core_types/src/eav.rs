@@ -241,11 +241,12 @@ pub mod tests {
     use super::*;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        storage::{
+            test_content_addressable_storage, EAVTestSuite, ExampleContentAddressableStorage,
+        },
     };
     use eav::{EntityAttributeValue, EntityAttributeValueStorage};
     use std::collections::HashSet;
-    pub struct EAVTestSuite;
 
     #[test]
     fn example_eav_round_trip() {
@@ -254,179 +255,7 @@ pub mod tests {
         let attribute = "favourite-color".to_string();
         let value = ExampleAddressableContent::from_content(&"blue".to_string());
 
-        EAVTestSuite::test_round_trip_test_runner(eav_storage, entity, attribute, value)
-    }
-
-    impl EAVTestSuite {
-        fn test_round_trip_test_runner(
-            mut eav_storage: impl EntityAttributeValueStorage,
-            entity_content: impl AddressableContent,
-            attribute: String,
-            value_content: impl AddressableContent,
-        ) {
-            let eav = EntityAttributeValue::new(
-                &entity_content.address(),
-                &"favourite-color".to_string(),
-                &value_content.address(),
-            );
-
-            assert_eq!(
-                HashSet::new(),
-                eav_storage
-                    .fetch_eav(
-                        Some(entity_content.address()),
-                        Some(attribute.clone()),
-                        Some(value_content.address())
-                    )
-                    .expect("could not fetch eav"),
-            );
-
-            eav_storage.add_eav(&eav).expect("could not add eav");
-
-            let mut expected = HashSet::new();
-            expected.insert(eav.clone());
-            // some examples of constraints that should all return the eav
-            for (e, a, v) in vec![
-                // constrain all
-                (
-                    Some(entity_content.address()),
-                    Some(attribute.clone()),
-                    Some(value_content.address()),
-                ),
-                // open entity
-                (None, Some(attribute.clone()), Some(value_content.address())),
-                // open attribute
-                (
-                    Some(entity_content.address()),
-                    None,
-                    Some(value_content.address()),
-                ),
-                // open value
-                (
-                    Some(entity_content.address()),
-                    Some(attribute.clone()),
-                    None,
-                ),
-                // open
-                (None, None, None),
-            ] {
-                assert_eq!(
-                    expected,
-                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
-                );
-            }
-        }
-        fn test_one_to_many<A, S>(mut eav_storage: S)
-        where
-            A: AddressableContent + Clone,
-            S: EntityAttributeValueStorage,
-        {
-            let one = A::from_content(&"foo".to_string());
-            // it can reference itself, why not?
-            let many_one = A::from_content(&"foo".to_string());
-            let many_two = A::from_content(&"bar".to_string());
-            let many_three = A::from_content(&"baz".to_string());
-            let attribute = "one_to_many".to_string();
-
-            let mut expected = HashSet::new();
-            for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-                let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
-                eav_storage.add_eav(&eav).expect("could not add eav");
-                expected.insert(eav);
-            }
-
-            // throw an extra thing referencing many to show fetch ignores it
-            let two = A::from_content(&"foo".to_string());
-            for many in vec![many_one.clone(), many_three.clone()] {
-                eav_storage
-                    .add_eav(&EntityAttributeValue::new(
-                        &two.address(),
-                        &attribute,
-                        &many.address(),
-                    ))
-                    .expect("could not add eav");
-            }
-
-            // show the many results for one
-            assert_eq!(
-                expected,
-                eav_storage
-                    .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav"),
-            );
-
-            // show one for the many results
-            for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-                let mut expected_one = HashSet::new();
-                expected_one.insert(EntityAttributeValue::new(
-                    &one.address(),
-                    &attribute.clone(),
-                    &many.address(),
-                ));
-                assert_eq!(
-                    expected_one,
-                    eav_storage
-                        .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
-                        .expect("could not fetch eav"),
-                );
-            }
-        }
-
-        fn test_many_to_one<A, S>(mut eav_storage: S)
-        where
-            A: AddressableContent + Clone,
-            S: EntityAttributeValueStorage,
-        {
-            let one = A::from_content(&"foo".to_string());
-            // it can reference itself, why not?
-            let many_one = A::from_content(&"foo".to_string());
-            let many_two = A::from_content(&"bar".to_string());
-            let many_three = A::from_content(&"baz".to_string());
-            let attribute = "many_to_one".to_string();
-
-            let mut expected = HashSet::new();
-            for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-                let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());
-                eav_storage.add_eav(&eav).expect("could not add eav");
-                expected.insert(eav);
-            }
-
-            // throw an extra thing referenced by many to show fetch ignores it
-            let two = A::from_content(&"foo".to_string());
-            for many in vec![many_one.clone(), many_three.clone()] {
-                eav_storage
-                    .add_eav(&EntityAttributeValue::new(
-                        &many.address(),
-                        &attribute,
-                        &two.address(),
-                    ))
-                    .expect("could not add eav");
-            }
-
-            // show the many referencing one
-            assert_eq!(
-                expected,
-                eav_storage
-                    .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                    .expect("could not fetch eav"),
-            );
-
-            // show one for the many results
-            for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-                let mut expected_one = HashSet::new();
-                expected_one.insert(EntityAttributeValue::new(
-                    &many.address(),
-                    &attribute.clone(),
-                    &one.address(),
-                ));
-                assert_eq!(
-                    expected_one,
-                    eav_storage
-                        .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                        .expect("could not fetch eav"),
-                );
-            }
-        }
+        EAVTestSuite::test_round_trip_test(eav_storage, entity, attribute, value)
     }
 
     #[test]

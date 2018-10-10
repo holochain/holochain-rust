@@ -1,21 +1,11 @@
 use actor::{AskSelf, Protocol, SYS};
 use cas::content::{Address, AddressableContent, Content};
-<<<<<<< HEAD
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use error::HolochainError;
-use riker::actors::*;
-use snowflake;
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-};
-=======
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
 use riker::actors::*;
 use snowflake;
-use std::{collections::HashMap, fmt::Debug, sync::mpsc::channel, thread};
->>>>>>> cac65e65a143e1499a84f266e9fc022dd8ca16c4
+use std::{collections::HashMap, collections::HashSet, fmt::Debug, sync::mpsc::channel, thread};
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently

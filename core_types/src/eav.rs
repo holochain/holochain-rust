@@ -242,7 +242,7 @@ pub mod tests {
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
         storage::{
-            test_content_addressable_storage, EAVTestSuite, ExampleContentAddressableStorage,
+            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
         },
     };
     use eav::EntityAttributeValue;
@@ -254,12 +254,12 @@ pub mod tests {
         let attribute = "favourite-color".to_string();
         let value = ExampleAddressableContent::from_content(&"blue".to_string());
 
-        EAVTestSuite::test_round_trip_test(eav_storage, entity, attribute, value)
+        EavTestSuite::test_round_trip_test(eav_storage, entity, attribute, value)
     }
 
     #[test]
     fn example_eav_one_to_many() {
-        EAVTestSuite::test_one_to_many::<
+        EavTestSuite::test_one_to_many::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
         >(ExampleEntityAttributeValueStorage::new());
@@ -267,7 +267,7 @@ pub mod tests {
 
     #[test]
     fn example_eav_many_to_one() {
-        EAVTestSuite::test_many_to_one::<
+        EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
         >(ExampleEntityAttributeValueStorage::new());

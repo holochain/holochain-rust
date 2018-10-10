@@ -44,7 +44,7 @@ pub mod tests {
     use eav::memory::EavMemoryStorage;
     use holochain_core_types::cas::{
         content::{AddressableContent, ExampleAddressableContent},
-        storage::EAVTestSuite,
+        storage::EavTestSuite,
     };
 
     #[test]
@@ -52,7 +52,7 @@ pub mod tests {
         let entity_content = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value_content = ExampleAddressableContent::from_content(&"blue".to_string());
-        EAVTestSuite::test_round_trip_test(
+        EavTestSuite::test_round_trip_test(
             EavMemoryStorage::new(),
             entity_content,
             attribute,
@@ -63,13 +63,13 @@ pub mod tests {
     #[test]
     fn memory_eav_one_to_many() {
         let eav_storage = EavMemoryStorage::new();
-        EAVTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
     #[test]
     fn memory_eav_many_to_one() {
         let eav_storage = EavMemoryStorage::new();
-        EAVTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
 }

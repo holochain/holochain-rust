@@ -235,9 +235,9 @@ where
     }
 }
 
-pub struct EAVTestSuite;
+pub struct EavTestSuite;
 
-impl EAVTestSuite {
+impl EavTestSuite {
     pub fn test_round_trip_test(
         mut eav_storage: impl EntityAttributeValueStorage,
         entity_content: impl AddressableContent,

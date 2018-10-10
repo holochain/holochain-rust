@@ -2,6 +2,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
+    file_validation,
 };
 use std::{
     collections::HashSet,
@@ -24,20 +25,8 @@ const VALUE_DIR: &str = "v";
 
 impl EavFileStorage {
     pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
-        let canonical = Path::new(&dir_path).canonicalize()?;
-        if !canonical.is_dir() {
-            return Err(HolochainError::IoError(
-                "path is not a directory or permissions don't allow access".to_string(),
-            ));
-        }
-        Ok(EavFileStorage {
-            dir_path: canonical
-                .to_str()
-                .ok_or_else(|| {
-                    HolochainError::IoError("could not convert path to string".to_string())
-                })?
-                .to_string(),
-        })
+        let dir_path = file_validation::validate_canonical_path(&*dir_path)?;
+        Ok(EavFileStorage { dir_path: dir_path })
     }
 
     fn write_to_file(

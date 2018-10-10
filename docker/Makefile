@@ -71,7 +71,6 @@ install_system_libzmq:
 			fi; \
 		fi; \
 	fi; \
-fi
 
 # idempotent install of any required system libraries
 .PHONY: install_system_libs

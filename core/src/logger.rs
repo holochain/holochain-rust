@@ -14,6 +14,8 @@ pub struct SimpleLogger {
     // log: Vec<String>,
 }
 
+// ignore this in test coverage as it is only side effects
+#[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
         let date = Local::now();

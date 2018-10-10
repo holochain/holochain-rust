@@ -1,5 +1,4 @@
 pub mod actor;
-pub mod file;
 pub mod memory;
 pub mod status;
 pub mod sys_entry;

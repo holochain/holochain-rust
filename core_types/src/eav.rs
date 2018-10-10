@@ -245,8 +245,7 @@ pub mod tests {
             test_content_addressable_storage, EAVTestSuite, ExampleContentAddressableStorage,
         },
     };
-    use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-    use std::collections::HashSet;
+    use eav::EntityAttributeValue;
 
     #[test]
     fn example_eav_round_trip() {

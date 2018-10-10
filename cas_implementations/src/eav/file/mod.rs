@@ -123,6 +123,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
     }
 }
 
+#[warn(unused_must_use)]
 fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) {
     let path = dir_entry.path();
     match OpenOptions::new().read(true).open(path) {
@@ -156,14 +157,10 @@ fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) 
 pub mod tests {
 
     use eav::file::EavFileStorage;
-    use holochain_core_types::{
-        cas::{
-            content::{AddressableContent, ExampleAddressableContent},
-            storage::EAVTestSuite,
-        },
-        eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    use holochain_core_types::cas::{
+        content::{AddressableContent, ExampleAddressableContent},
+        storage::EAVTestSuite,
     };
-    use std::collections::HashSet;
     use tempfile::tempdir;
 
     #[test]
@@ -185,7 +182,7 @@ pub mod tests {
     fn file_eav_one_to_many() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
-        let mut eav_storage = EavFileStorage::new(temp_path).unwrap();
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EAVTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }
 
@@ -193,8 +190,8 @@ pub mod tests {
     fn file_eav_many_to_one() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
-        let mut eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EAVTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EAVTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }
 
 }

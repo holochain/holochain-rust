@@ -40,7 +40,7 @@ impl FilesystemStorageActor {
     }
 
     pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
-        let dir_path = file_validation::validate_canoncical_path(dir_path)?;
+        let dir_path = file_validation::validate_canonical_path(dir_path)?;
         Ok(SYS.actor_of(
             FilesystemStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path

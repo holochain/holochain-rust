@@ -27,6 +27,8 @@ pub enum HolochainError {
     DoesNotHaveCapabilityToken,
 }
 
+pub type HcResult<T> = Result<T, HolochainError>;
+
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())

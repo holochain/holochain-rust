@@ -297,50 +297,57 @@ impl EavTestSuite {
             &value_content.address(),
         );
 
-        assert_eq!(
-            HashSet::new(),
-            eav_storage
-                .fetch_eav(
-                    Some(entity_content.address()),
-                    Some(attribute.clone()),
-                    Some(value_content.address())
-                )
-                .expect("could not fetch eav"),
-        );
+        let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
+
+        for eav_storage in two_stores.iter() {
+            assert_eq!(
+                HashSet::new(),
+                eav_storage
+                    .fetch_eav(
+                        Some(entity_content.address()),
+                        Some(attribute.clone()),
+                        Some(value_content.address())
+                    )
+                    .expect("could not fetch eav"),
+            );
+        }
 
         eav_storage.add_eav(&eav).expect("could not add eav");
 
         let mut expected = HashSet::new();
         expected.insert(eav.clone());
-        // some examples of constraints that should all return the eav
-        for (e, a, v) in vec![
-            // constrain all
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                Some(value_content.address()),
-            ),
-            // open entity
-            (None, Some(attribute.clone()), Some(value_content.address())),
-            // open attribute
-            (
-                Some(entity_content.address()),
-                None,
-                Some(value_content.address()),
-            ),
-            // open value
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                None,
-            ),
-            // open
-            (None, None, None),
-        ] {
-            assert_eq!(
-                expected,
-                eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
-            );
+
+        for eav_storage in two_stores.iter() {
+            // some examples of constraints that should all return the eav
+            for (e, a, v) in vec![
+                // constrain all
+                (
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    Some(value_content.address()),
+                ),
+                // open entity
+                (None, Some(attribute.clone()), Some(value_content.address())),
+                // open attribute
+                (
+                    Some(entity_content.address()),
+                    None,
+                    Some(value_content.address()),
+                ),
+                // open value
+                (
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    None,
+                ),
+                // open
+                (None, None, None),
+            ] {
+                assert_eq!(
+                    expected,
+                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
+                );
+            }
         }
     }
     pub fn test_one_to_many<A, S>(mut eav_storage: S)

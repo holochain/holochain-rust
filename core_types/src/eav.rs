@@ -5,6 +5,7 @@ use error::{HcResult, HolochainError};
 use riker::actors::*;
 use serde_json;
 use std::collections::HashSet;
+use snowflake;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -132,7 +133,7 @@ impl ExampleEntityAttributeValueStorageActor {
             ExampleEntityAttributeValueStorageActor::props(),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
-            &"ExampleEntityAttributeValueStorageActor".to_string(),
+            &snowflake::ProcessUniqueId::new().to_string(),
         )?)
     }
 

@@ -1,26 +1,32 @@
+pub mod actor;
+
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
 };
 use std::collections::HashSet;
+use riker::actors::*;
+use holochain_core_types::actor::Protocol;
+use eav::memory::actor::EavMemoryStorageActor;
+use holochain_core_types::actor::AskSelf;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EavMemoryStorage {
-    eavs: HashSet<EntityAttributeValue>,
+    actor: ActorRef<Protocol>,
 }
 
 impl EavMemoryStorage {
-    pub fn new() -> EavMemoryStorage {
-        EavMemoryStorage {
-            eavs: HashSet::new(),
-        }
+    pub fn new() -> Result<EavMemoryStorage, HolochainError> {
+        Ok(EavMemoryStorage {
+            actor: EavMemoryStorageActor::new_ref()?,
+        })
     }
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.eavs.insert(eav.clone());
-        Ok(())
+        let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
+        unwrap_to!(response => Protocol::EavAddResult).clone()
     }
     fn fetch_eav(
         &self,
@@ -28,14 +34,10 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        Ok(self
-            .eavs
-            .iter()
-            .cloned()
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Entity>(e.entity(), &entity))
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Attribute>(e.attribute(), &attribute))
-            .filter(|e| EntityAttributeValue::filter_on_eav::<Value>(e.value(), &value))
-            .collect::<HashSet<EntityAttributeValue>>())
+        let response = self
+            .actor
+            .block_on_ask(Protocol::EavFetch(entity, attribute, value))?;
+        unwrap_to!(response => Protocol::EavFetchResult).clone()
     }
 }
 
@@ -53,7 +55,7 @@ pub mod tests {
         let attribute = "favourite-color".to_string();
         let value_content = ExampleAddressableContent::from_content(&"blue".to_string());
         EavTestSuite::test_round_trip(
-            EavMemoryStorage::new(),
+            EavMemoryStorage::new().expect("could not construct new eav memory storage"),
             entity_content,
             attribute,
             value_content,
@@ -62,13 +64,13 @@ pub mod tests {
 
     #[test]
     fn memory_eav_one_to_many() {
-        let eav_storage = EavMemoryStorage::new();
+        let eav_storage = EavMemoryStorage::new().expect("could not construct new eav memory storage");
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
     #[test]
     fn memory_eav_many_to_one() {
-        let eav_storage = EavMemoryStorage::new();
+        let eav_storage = EavMemoryStorage::new().expect("could not construct new eav memory storage");
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 

@@ -8,8 +8,7 @@ use holochain_core_types::{
 };
 use riker::actors::*;
 use std::collections::HashSet;
-
-type HcResult<T> = Result<T, HolochainError>;
+use holochain_core_types::error::HcResult;
 
 #[derive(Clone)]
 pub struct EavFileStorage {

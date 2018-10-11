@@ -350,6 +350,17 @@ pub mod tests {
         ))
     }
 
+    pub fn test_context_with_state() -> Arc<Context> {
+        let mut context = Context::new(
+            holochain_agent::Agent::from_string("Florence".to_string()),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+        );
+        let global_state = Arc::new(RwLock::new(State::new()));
+        context.set_state(global_state.clone());
+        Arc::new(context)
+    }
+
     #[test]
     fn default_buffer_size_test() {
         assert_eq!(Context::default_channel_buffer_size(), 100);

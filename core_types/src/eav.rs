@@ -4,8 +4,8 @@ use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
 use riker::actors::*;
 use serde_json;
-use std::collections::HashSet;
 use snowflake;
+use std::collections::HashSet;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT

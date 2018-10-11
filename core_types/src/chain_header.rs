@@ -5,9 +5,9 @@ use error::HolochainError;
 use json::ToJson;
 use serde_json;
 use entry::ToEntry;
-use timestamp::Timestamp;
+use time::Iso8601;
 use signature::Signature;
-use timestamp::test_timestamp;
+use time::test_iso_8601;
 use signature::test_signature;
 
 /// ChainHeader of a source chain "Item"
@@ -30,7 +30,7 @@ pub struct ChainHeader {
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,
     /// ISO8601 time stamp
-    timestamp: Timestamp,
+    timestamp: Iso8601,
 }
 
 impl PartialEq for ChainHeader {
@@ -54,7 +54,7 @@ impl ChainHeader {
         entry_signature: &Signature,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
-        timestamp: &Timestamp,
+        timestamp: &Iso8601,
     ) -> Self {
         ChainHeader {
             entry_type: entry_type.to_owned(),
@@ -76,7 +76,7 @@ impl ChainHeader {
     }
 
     /// timestamp getter
-    pub fn timestamp(&self) -> &Timestamp {
+    pub fn timestamp(&self) -> &Iso8601 {
         &self.timestamp
     }
 
@@ -142,7 +142,7 @@ pub fn test_chain_header() -> ChainHeader {
         &test_signature(),
         &None,
         &None,
-        &test_timestamp(),
+        &test_iso_8601(),
     )
 }
 
@@ -154,7 +154,7 @@ pub mod tests {
     use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
     use entry::ToEntry;
     use signature::test_signature_b;
-    use timestamp::test_timestamp;
+    use time::test_iso_8601;
     use entry::test_entry_a;
     use signature::test_signature;
 
@@ -171,7 +171,7 @@ pub mod tests {
             &test_signature_b(),
             &None,
             &None,
-            &test_timestamp(),
+            &test_iso_8601(),
         )
     }
 
@@ -198,7 +198,7 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
-                &test_timestamp(),
+                &test_iso_8601(),
             ),
             ChainHeader::new(
                 &entry_b.entry_type(),
@@ -206,7 +206,7 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
-                &test_timestamp(),
+                &test_iso_8601(),
             ),
         );
 
@@ -219,7 +219,7 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
-                &test_timestamp(),
+                &test_iso_8601(),
             ),
             ChainHeader::new(
                 &entry.entry_type(),
@@ -227,7 +227,7 @@ pub mod tests {
                 &test_signature(),
                 &Some(test_chain_header().address()),
                 &None,
-                &test_timestamp(),
+                &test_iso_8601(),
             ),
         );
     }
@@ -250,20 +250,21 @@ pub mod tests {
 
     #[test]
     /// tests for header.time()
-    fn time() {
-        assert_eq!(test_chain_header().timestamp(), test_timestamp());
+    fn timestamp_test() {
+        assert_eq!(test_chain_header().timestamp(), &test_iso_8601());
     }
 
     #[test]
     fn link_test() {
         let chain_header_a = test_chain_header();
+        let entry_b = test_entry();
         let chain_header_b = ChainHeader::new(
-            &test_entry_type(),
-            &String::new(),
-            Some(chain_header_a.address()),
-            &test_entry().address(),
-            &String::new(),
-            None,
+            &entry_b.entry_type(),
+            &entry_b.address(),
+            &test_signature(),
+            &Some(chain_header_a.address()),
+            &None,
+            &test_iso_8601(),
         );
         assert_eq!(None, chain_header_a.link());
         assert_eq!(Some(chain_header_a.address()), chain_header_b.link());
@@ -277,21 +278,23 @@ pub mod tests {
     #[test]
     fn link_same_type_test() {
         let chain_header_a = test_chain_header();
+        let entry_b = test_entry_b();
         let chain_header_b = ChainHeader::new(
-            &test_entry_type_b(),
-            &String::new(),
-            Some(chain_header_a.address()),
-            &test_entry().address(),
-            &String::new(),
-            None,
+            &entry_b.entry_type(),
+            &entry_b.address(),
+            &test_signature_b(),
+            &Some(chain_header_a.address()),
+            &None,
+            &test_iso_8601(),
         );
+        let entry_c = test_entry_a();
         let chain_header_c = ChainHeader::new(
-            &test_entry_type(),
-            &String::new(),
-            Some(chain_header_b.address()),
-            &test_entry().address(),
-            &String::new(),
-            Some(chain_header_a.address()),
+            &entry_c.entry_type(),
+            &entry_c.address(),
+            &test_signature(),
+            &Some(chain_header_b.address()),
+            &Some(chain_header_a.address()),
+            &test_iso_8601(),
         );
 
         assert_eq!(None, chain_header_a.link_same_type());
@@ -303,9 +306,9 @@ pub mod tests {
     }
 
     #[test]
-    /// tests for chain_header.signature()
+    /// tests for chain_header.entry_signature()
     fn signature() {
-        assert_eq!("", test_chain_header().entry_signature());
+        assert_eq!(&test_signature(), test_chain_header().entry_signature());
     }
 
     #[test]
@@ -332,19 +335,19 @@ pub mod tests {
         assert_ne!(
             ChainHeader::new(
                 &test_entry_type_a(),
-                &String::new(),
-                None,
                 &test_entry().address(),
-                &String::new(),
-                None
+                &test_signature(),
+                &None,
+                &None,
+                &test_iso_8601(),
             ).address(),
             ChainHeader::new(
                 &test_entry_type_b(),
-                &String::new(),
-                None,
                 &test_entry().address(),
-                &String::new(),
-                None
+                &test_signature(),
+                &None,
+                &None,
+                &test_iso_8601(),
             ).address(),
         );
     }
@@ -352,15 +355,16 @@ pub mod tests {
     #[test]
     /// test that different chain state returns different addresses
     fn address_chain_state() {
+        let entry = test_entry();
         assert_ne!(
             test_chain_header().address(),
             ChainHeader::new(
-                &test_entry_type_a(),
-                &String::new(),
-                Some(test_chain_header().address()),
-                &test_entry().address(),
-                &String::new(),
-                None
+                &entry.entry_type(),
+                &entry.address(),
+                &test_signature(),
+                &Some(test_chain_header().address()),
+                &None,
+                &test_iso_8601(),
             ).address(),
         );
     }
@@ -368,25 +372,25 @@ pub mod tests {
     #[test]
     /// test that different type_next returns different addresses
     fn address_type_next() {
+        let entry = test_entry();
         assert_ne!(
             test_chain_header().address(),
             ChainHeader::new(
-                &test_entry_type_a(),
-                &String::new(),
-                None,
-                &test_entry().address(),
-                &String::new(),
-                Some(test_chain_header().address())
+                &entry.entry_type(),
+                &entry.address(),
+                &test_signature(),
+                &None,
+                &Some(test_chain_header().address()),
+                &test_iso_8601(),
             ).address(),
         );
     }
 
-    /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_round_trip_header_entry() {
         assert_eq!(
             test_chain_header(),
-            ChainHeader::from_entry(&test_chain_header().to_entry().1)
+            ChainHeader::from_entry(&test_chain_header().to_entry())
         );
     }
 }

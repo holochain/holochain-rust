@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Signature(String);
 
 impl From<&'static str> for Signature {

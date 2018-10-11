@@ -43,5 +43,5 @@ pub mod json;
 pub mod keys;
 pub mod links_entry;
 pub mod validation;
-pub mod timestamp;
+pub mod time;
 pub mod signature;

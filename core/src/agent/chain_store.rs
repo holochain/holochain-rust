@@ -141,7 +141,7 @@ pub mod tests {
         entry::test_entry,
     };
     use holochain_core_types::signature::test_signature_b;
-    use holochain_core_types::timestamp::test_timestamp;
+    use holochain_core_types::time::test_iso_8601;
     use holochain_core_types::entry::test_entry_b;
     use holochain_core_types::signature::test_signature;
 
@@ -162,7 +162,7 @@ pub mod tests {
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
-            &test_timestamp(),
+            &test_iso_8601(),
         );
 
         chain_store
@@ -203,7 +203,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_a.address()),
             &None,
-            &test_timestamp(),
+            &test_iso_8601(),
         );
         // c has same type as a
         let entry_c = test_entry();
@@ -213,7 +213,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
-            &test_timestamp(),
+            &test_iso_8601(),
         );
 
         for chain_header in vec![&chain_header_a, &chain_header_b, &chain_header_c] {

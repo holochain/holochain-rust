@@ -13,7 +13,7 @@ use holochain_core_types::{
     json::ToJson,
     keys::Keys,
     signature::Signature,
-    timestamp::Timestamp,
+    time::Iso8601,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -129,7 +129,7 @@ fn reduce_commit_entry(
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
         // @TODO timestamp
-        &Timestamp::from(""),
+        &Iso8601::from(""),
     );
 
     // @TODO adding the entry to the CAS should happen elsewhere.

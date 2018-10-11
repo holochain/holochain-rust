@@ -4,11 +4,10 @@ use eav::file::actor::EavFileStorageActor;
 use holochain_core_types::{
     actor::{AskSelf, Protocol},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
-    error::HolochainError,
+    error::{HcResult, HolochainError},
 };
 use riker::actors::*;
 use std::collections::HashSet;
-use holochain_core_types::error::HcResult;
 
 #[derive(Clone)]
 pub struct EavFileStorage {

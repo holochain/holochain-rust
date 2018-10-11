@@ -1,14 +1,11 @@
-use snowflake;
-use holochain_core_types::error::HcResult;
 use holochain_core_types::{
     actor::{Protocol, SYS},
     eav::{Attribute, Entity, EntityAttributeValue, Value},
-    error::HolochainError,
+    error::{HcResult, HolochainError},
 };
 use riker::actors::*;
-use std::{
-    collections::HashSet,
-};
+use snowflake;
+use std::collections::HashSet;
 
 const ACTOR_ID_ROOT: &'static str = "/eav_memory_actor/";
 
@@ -26,7 +23,9 @@ pub struct EavMemoryStorageActor {
 
 impl EavMemoryStorageActor {
     pub fn new() -> EavMemoryStorageActor {
-        EavMemoryStorageActor { storage: HashSet::new() }
+        EavMemoryStorageActor {
+            storage: HashSet::new(),
+        }
     }
 
     /// actor() for riker

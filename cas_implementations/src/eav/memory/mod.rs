@@ -1,14 +1,13 @@
 pub mod actor;
 
+use eav::memory::actor::EavMemoryStorageActor;
 use holochain_core_types::{
+    actor::{AskSelf, Protocol},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
 };
-use std::collections::HashSet;
 use riker::actors::*;
-use holochain_core_types::actor::Protocol;
-use eav::memory::actor::EavMemoryStorageActor;
-use holochain_core_types::actor::AskSelf;
+use std::collections::HashSet;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct EavMemoryStorage {
@@ -64,13 +63,15 @@ pub mod tests {
 
     #[test]
     fn memory_eav_one_to_many() {
-        let eav_storage = EavMemoryStorage::new().expect("could not construct new eav memory storage");
+        let eav_storage =
+            EavMemoryStorage::new().expect("could not construct new eav memory storage");
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
     #[test]
     fn memory_eav_many_to_one() {
-        let eav_storage = EavMemoryStorage::new().expect("could not construct new eav memory storage");
+        let eav_storage =
+            EavMemoryStorage::new().expect("could not construct new eav memory storage");
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 

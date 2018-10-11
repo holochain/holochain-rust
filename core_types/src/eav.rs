@@ -1,6 +1,8 @@
+use actor::{AskSelf, Protocol, SYS};
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
-use error::HolochainError;
+use error::{HcResult, HolochainError};
+use riker::actors::*;
 use serde_json;
 use std::collections::HashSet;
 
@@ -104,33 +106,49 @@ pub trait EntityAttributeValueStorage: Clone {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
-#[derive(Clone)]
-pub struct ExampleEntityAttributeValueStorage {
-    eavs: HashSet<EntityAttributeValue>,
+pub struct ExampleEntityAttributeValueStorageActor {
+    storage: HashSet<EntityAttributeValue>,
 }
 
-impl ExampleEntityAttributeValueStorage {
-    pub fn new() -> ExampleEntityAttributeValueStorage {
-        ExampleEntityAttributeValueStorage {
-            eavs: HashSet::new(),
+impl ExampleEntityAttributeValueStorageActor {
+    pub fn new() -> ExampleEntityAttributeValueStorageActor {
+        ExampleEntityAttributeValueStorageActor {
+            storage: HashSet::new(),
         }
     }
-}
 
-impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.eavs.insert(eav.clone());
+    /// actor() for riker
+    fn actor() -> BoxActor<Protocol> {
+        Box::new(ExampleEntityAttributeValueStorageActor::new())
+    }
+
+    /// props() for riker
+    fn props() -> BoxActorProd<Protocol> {
+        Props::new(Box::new(ExampleEntityAttributeValueStorageActor::actor))
+    }
+
+    pub fn new_ref() -> HcResult<ActorRef<Protocol>> {
+        Ok(SYS.actor_of(
+            ExampleEntityAttributeValueStorageActor::props(),
+            // always return the same reference to the same actor for the same path
+            // consistency here provides safety for CAS methods
+            &"ExampleEntityAttributeValueStorageActor".to_string(),
+        )?)
+    }
+
+    fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+        self.storage.insert(eav.clone());
         Ok(())
     }
 
-    fn fetch_eav(
+    fn unthreadable_fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         let filtered = self
-            .eavs
+            .storage
             .iter()
             .cloned()
             .filter(|eav| match entity {
@@ -147,6 +165,63 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .collect::<HashSet<EntityAttributeValue>>();
         Ok(filtered)
+    }
+}
+
+impl Actor for ExampleEntityAttributeValueStorageActor {
+    type Msg = Protocol;
+
+    fn receive(
+        &mut self,
+        context: &Context<Self::Msg>,
+        message: Self::Msg,
+        sender: Option<ActorRef<Self::Msg>>,
+    ) {
+        sender
+            .try_tell(
+                match message {
+                    Protocol::EavAdd(eav) => {
+                        Protocol::EavAddResult(self.unthreadable_add_eav(&eav))
+                    }
+                    Protocol::EavFetch(e, a, v) => {
+                        Protocol::EavFetchResult(self.unthreadable_fetch_eav(e, a, v))
+                    }
+                    _ => unreachable!(),
+                },
+                Some(context.myself()),
+            )
+            .expect("failed to tell FilesystemStorage sender");
+    }
+}
+
+#[derive(Clone)]
+pub struct ExampleEntityAttributeValueStorage {
+    actor: ActorRef<Protocol>,
+}
+
+impl ExampleEntityAttributeValueStorage {
+    pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
+        Ok(ExampleEntityAttributeValueStorage {
+            actor: ExampleEntityAttributeValueStorageActor::new_ref()?,
+        })
+    }
+}
+
+impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
+        let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
+        unwrap_to!(response => Protocol::EavAddResult).clone()
+    }
+    fn fetch_eav(
+        &self,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        let response = self
+            .actor
+            .block_on_ask(Protocol::EavFetch(entity, attribute, value))?;
+        unwrap_to!(response => Protocol::EavFetchResult).clone()
     }
 }
 
@@ -188,7 +263,8 @@ pub fn eav_round_trip_test_runner(
         &attribute,
         &value_content.address(),
     );
-    let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+    let mut eav_storage =
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
         HashSet::new(),
@@ -248,9 +324,13 @@ pub mod tests {
     };
     use eav::EntityAttributeValue;
 
+    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
+    }
+
     #[test]
     fn example_eav_round_trip() {
-        let eav_storage = ExampleEntityAttributeValueStorage::new();
+        let eav_storage = test_eav_storage();
         let entity = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value = ExampleAddressableContent::from_content(&"blue".to_string());
@@ -263,7 +343,7 @@ pub mod tests {
         EavTestSuite::test_one_to_many::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
-        >(ExampleEntityAttributeValueStorage::new());
+        >(test_eav_storage());
     }
 
     #[test]
@@ -271,7 +351,7 @@ pub mod tests {
         EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
-        >(ExampleEntityAttributeValueStorage::new());
+        >(test_eav_storage());
     }
 
     #[test]

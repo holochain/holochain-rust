@@ -2,7 +2,7 @@ use holochain_core_types::{
     actor::{Protocol, SYS},
     cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, Value},
-    error::HolochainError,
+    error::{HcResult, HolochainError},
     file_validation,
 };
 use riker::actors::*;
@@ -13,7 +13,6 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 use walkdir::{DirEntry, WalkDir};
-use holochain_core_types::error::HcResult;
 
 const ACTOR_ID_ROOT: &'static str = "/eav_file_actor/";
 

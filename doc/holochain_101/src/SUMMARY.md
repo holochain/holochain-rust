@@ -12,6 +12,7 @@
   - [Create A New Project](./new_project.md)
   - [(E) Configuring an App](./configuring_an_app.md)
   - [(E) Updating to Alpha 2](./alpha_migrate.md)
+  - [Built With Holochain](./built_with_holochain.md)
 - [(E) Building Holochain Apps: Zome Code](./zome/welcome.md)
   - [(E) Adding a Zome](./zome/adding_a_zome.md)
   - [(E) Capabilities](./zome/capabilities.md)

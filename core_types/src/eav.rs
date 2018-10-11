@@ -1,7 +1,10 @@
+use actor::{AskSelf, Protocol, SYS};
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
-use error::HolochainError;
+use error::{HcResult, HolochainError};
+use riker::actors::*;
 use serde_json;
+use snowflake;
 use std::collections::HashSet;
 
 /// EAV (entity-attribute-value) data
@@ -85,7 +88,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage {
+pub trait EntityAttributeValueStorage: Clone {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -104,32 +107,49 @@ pub trait EntityAttributeValueStorage {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
-pub struct ExampleEntityAttributeValueStorage {
-    eavs: HashSet<EntityAttributeValue>,
+pub struct ExampleEntityAttributeValueStorageActor {
+    storage: HashSet<EntityAttributeValue>,
 }
 
-impl ExampleEntityAttributeValueStorage {
-    pub fn new() -> ExampleEntityAttributeValueStorage {
-        ExampleEntityAttributeValueStorage {
-            eavs: HashSet::new(),
+impl ExampleEntityAttributeValueStorageActor {
+    pub fn new() -> ExampleEntityAttributeValueStorageActor {
+        ExampleEntityAttributeValueStorageActor {
+            storage: HashSet::new(),
         }
     }
-}
 
-impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.eavs.insert(eav.clone());
+    /// actor() for riker
+    fn actor() -> BoxActor<Protocol> {
+        Box::new(ExampleEntityAttributeValueStorageActor::new())
+    }
+
+    /// props() for riker
+    fn props() -> BoxActorProd<Protocol> {
+        Props::new(Box::new(ExampleEntityAttributeValueStorageActor::actor))
+    }
+
+    pub fn new_ref() -> HcResult<ActorRef<Protocol>> {
+        Ok(SYS.actor_of(
+            ExampleEntityAttributeValueStorageActor::props(),
+            // always return the same reference to the same actor for the same path
+            // consistency here provides safety for CAS methods
+            &snowflake::ProcessUniqueId::new().to_string(),
+        )?)
+    }
+
+    fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+        self.storage.insert(eav.clone());
         Ok(())
     }
 
-    fn fetch_eav(
+    fn unthreadable_fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         let filtered = self
-            .eavs
+            .storage
             .iter()
             .cloned()
             .filter(|eav| match entity {
@@ -146,6 +166,63 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .collect::<HashSet<EntityAttributeValue>>();
         Ok(filtered)
+    }
+}
+
+impl Actor for ExampleEntityAttributeValueStorageActor {
+    type Msg = Protocol;
+
+    fn receive(
+        &mut self,
+        context: &Context<Self::Msg>,
+        message: Self::Msg,
+        sender: Option<ActorRef<Self::Msg>>,
+    ) {
+        sender
+            .try_tell(
+                match message {
+                    Protocol::EavAdd(eav) => {
+                        Protocol::EavAddResult(self.unthreadable_add_eav(&eav))
+                    }
+                    Protocol::EavFetch(e, a, v) => {
+                        Protocol::EavFetchResult(self.unthreadable_fetch_eav(e, a, v))
+                    }
+                    _ => unreachable!(),
+                },
+                Some(context.myself()),
+            )
+            .expect("failed to tell FilesystemStorage sender");
+    }
+}
+
+#[derive(Clone)]
+pub struct ExampleEntityAttributeValueStorage {
+    actor: ActorRef<Protocol>,
+}
+
+impl ExampleEntityAttributeValueStorage {
+    pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
+        Ok(ExampleEntityAttributeValueStorage {
+            actor: ExampleEntityAttributeValueStorageActor::new_ref()?,
+        })
+    }
+}
+
+impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
+        let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
+        unwrap_to!(response => Protocol::EavAddResult).clone()
+    }
+    fn fetch_eav(
+        &self,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        let response = self
+            .actor
+            .block_on_ask(Protocol::EavFetch(entity, attribute, value))?;
+        unwrap_to!(response => Protocol::EavFetchResult).clone()
     }
 }
 
@@ -187,7 +264,8 @@ pub fn eav_round_trip_test_runner(
         &attribute,
         &value_content.address(),
     );
-    let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+    let mut eav_storage =
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
         HashSet::new(),
@@ -241,126 +319,40 @@ pub mod tests {
     use super::*;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        storage::{
+            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
+        },
     };
-    use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-    use std::collections::HashSet;
+    use eav::EntityAttributeValue;
+
+    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
+    }
 
     #[test]
     fn example_eav_round_trip() {
-        eav_round_trip_test_runner(
-            ExampleAddressableContent::from_content(&"foo".to_string()),
-            "favourite-color".to_string(),
-            ExampleAddressableContent::from_content(&"blue".to_string()),
-        );
+        let eav_storage = test_eav_storage();
+        let entity = ExampleAddressableContent::from_content(&"foo".to_string());
+        let attribute = "favourite-color".to_string();
+        let value = ExampleAddressableContent::from_content(&"blue".to_string());
+
+        EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }
 
     #[test]
     fn example_eav_one_to_many() {
-        let one = ExampleAddressableContent::from_content(&"foo".to_string());
-        // it can reference itself, why not?
-        let many_one = ExampleAddressableContent::from_content(&"foo".to_string());
-        let many_two = ExampleAddressableContent::from_content(&"bar".to_string());
-        let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
-        let attribute = "one_to_many".to_string();
-
-        let mut eav_storage = ExampleEntityAttributeValueStorage::new();
-        let mut expected = HashSet::new();
-        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
-            eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
-        }
-
-        // throw an extra thing referencing many to show fetch ignores it
-        let two = ExampleAddressableContent::from_content(&"foo".to_string());
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
-                .add_eav(&EntityAttributeValue::new(
-                    &two.address(),
-                    &attribute,
-                    &many.address(),
-                ))
-                .expect("could not add eav");
-        }
-
-        // show the many results for one
-        assert_eq!(
-            expected,
-            eav_storage
-                .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                .expect("could not fetch eav"),
-        );
-
-        // show one for the many results
-        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
-            expected_one.insert(EntityAttributeValue::new(
-                &one.address(),
-                &attribute.clone(),
-                &many.address(),
-            ));
-            assert_eq!(
-                expected_one,
-                eav_storage
-                    .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
-                    .expect("could not fetch eav"),
-            );
-        }
+        EavTestSuite::test_one_to_many::<
+            ExampleAddressableContent,
+            ExampleEntityAttributeValueStorage,
+        >(test_eav_storage());
     }
 
     #[test]
     fn example_eav_many_to_one() {
-        let one = ExampleAddressableContent::from_content(&"foo".to_string());
-        // it can reference itself, why not?
-        let many_one = ExampleAddressableContent::from_content(&"foo".to_string());
-        let many_two = ExampleAddressableContent::from_content(&"bar".to_string());
-        let many_three = ExampleAddressableContent::from_content(&"baz".to_string());
-        let attribute = "many_to_one".to_string();
-
-        let mut eav_storage = ExampleEntityAttributeValueStorage::new();
-        let mut expected = HashSet::new();
-        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());
-            eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
-        }
-
-        // throw an extra thing referenced by many to show fetch ignores it
-        let two = ExampleAddressableContent::from_content(&"foo".to_string());
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
-                .add_eav(&EntityAttributeValue::new(
-                    &many.address(),
-                    &attribute,
-                    &two.address(),
-                ))
-                .expect("could not add eav");
-        }
-
-        // show the many referencing one
-        assert_eq!(
-            expected,
-            eav_storage
-                .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                .expect("could not fetch eav"),
-        );
-
-        // show one for the many results
-        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
-            expected_one.insert(EntityAttributeValue::new(
-                &many.address(),
-                &attribute.clone(),
-                &one.address(),
-            ));
-            assert_eq!(
-                expected_one,
-                eav_storage
-                    .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav"),
-            );
-        }
+        EavTestSuite::test_many_to_one::<
+            ExampleAddressableContent,
+            ExampleEntityAttributeValueStorage,
+        >(test_eav_storage());
     }
 
     #[test]

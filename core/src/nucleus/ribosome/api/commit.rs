@@ -63,9 +63,9 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry = Entry::from(input.entry_content);
     let entry_type =
-        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+    EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+    let entry = Entry::new(&entry_type, &input.entry_content);
     let validation_data = build_validation_data_commit(
         entry.clone(),
         entry_type.clone(),
@@ -81,7 +81,7 @@ pub fn invoke_commit_app_entry(
             validation_data,
             &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry_type.clone(), entry.clone(), &runtime.context.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let maybe_json = match task_result {

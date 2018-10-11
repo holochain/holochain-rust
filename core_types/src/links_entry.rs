@@ -2,7 +2,7 @@ use cas::content::{Address, AddressableContent};
 use entry::Entry;
 use entry_type::EntryType;
 use serde_json;
-use to_entry::ToEntry;
+use entry::ToEntry;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -75,9 +75,9 @@ impl LinkEntry {
 }
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
-    fn to_entry(&self) -> (EntryType, Entry) {
+    fn to_entry(&self) -> Entry {
         let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        (EntryType::Link, Entry::from(json_array))
+        Entry::new(&EntryType::Link, &Entry::from(json_array))
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -103,9 +103,9 @@ impl LinkListEntry {
 
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
-    fn to_entry(&self) -> (EntryType, Entry) {
+    fn to_entry(&self) -> Entry {
         let json_array = serde_json::to_string(self).expect("LinkListEntry failed to serialize");
-        (EntryType::LinkList, Entry::from(json_array))
+        Entry::new(&EntryType::LinkList, &Entry::from(json_array))
     }
 
     fn from_entry(entry: &Entry) -> Self {

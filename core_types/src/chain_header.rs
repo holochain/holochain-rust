@@ -4,7 +4,11 @@ use entry_type::{test_entry_type, EntryType};
 use error::HolochainError;
 use json::ToJson;
 use serde_json;
-use to_entry::ToEntry;
+use entry::ToEntry;
+use timestamp::Timestamp;
+use signature::Signature;
+use timestamp::test_timestamp;
+use signature::test_signature;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table
@@ -17,16 +21,16 @@ pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
     entry_type: EntryType,
-    /// ISO8601 time stamp
-    timestamp: String,
-    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
-    link: Option<Address>,
     /// Key to the entry of this header
     entry_address: Address,
     /// agent's cryptographic signature of the entry
-    entry_signature: String,
+    entry_signature: Signature,
+    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
+    link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,
+    /// ISO8601 time stamp
+    timestamp: Timestamp,
 }
 
 impl PartialEq for ChainHeader {
@@ -46,19 +50,19 @@ impl ChainHeader {
     /// @see chain::entry::Entry
     pub fn new(
         entry_type: &EntryType,
-        timestamp: &str,
-        link: Option<Address>,
         entry_address: &Address,
-        entry_signature: &str,
-        link_same_type: Option<Address>,
+        entry_signature: &Signature,
+        link: &Option<Address>,
+        link_same_type: &Option<Address>,
+        timestamp: &Timestamp,
     ) -> Self {
         ChainHeader {
             entry_type: entry_type.to_owned(),
-            timestamp: timestamp.to_string(),
-            link: link,
-            entry_address: entry_address.clone(),
-            entry_signature: entry_signature.to_string(),
-            link_same_type: link_same_type,
+            entry_address: entry_address.to_owned(),
+            entry_signature: entry_signature.to_owned(),
+            link: link.to_owned(),
+            link_same_type: link_same_type.to_owned(),
+            timestamp: timestamp.to_owned(),
         }
     }
 
@@ -72,7 +76,7 @@ impl ChainHeader {
     }
 
     /// timestamp getter
-    pub fn timestamp(&self) -> &str {
+    pub fn timestamp(&self) -> &Timestamp {
         &self.timestamp
     }
 
@@ -92,7 +96,7 @@ impl ChainHeader {
     }
 
     /// entry_signature getter
-    pub fn entry_signature(&self) -> &str {
+    pub fn entry_signature(&self) -> &Signature {
         &self.entry_signature
     }
 }
@@ -105,10 +109,10 @@ impl ToJson for ChainHeader {
 
 //
 impl ToEntry for ChainHeader {
-    fn to_entry(&self) -> (EntryType, Entry) {
-        (
-            EntryType::ChainHeader,
-            Entry::from(self.to_json().expect("entry should be valid")),
+    fn to_entry(&self) -> Entry {
+        Entry::new(
+            &EntryType::ChainHeader,
+            &Entry::from(self.to_json().expect("entry should be valid")),
         )
     }
 
@@ -134,11 +138,11 @@ impl AddressableContent for ChainHeader {
 pub fn test_chain_header() -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
-        &String::new(),
-        None,
         &test_entry().address(),
-        &String::new(),
-        None,
+        &test_signature(),
+        &None,
+        &None,
+        &test_timestamp(),
     )
 }
 
@@ -148,7 +152,11 @@ pub mod tests {
     use chain_header::{test_chain_header, ChainHeader};
     use entry::{test_entry, test_entry_b};
     use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
-    use to_entry::ToEntry;
+    use entry::ToEntry;
+    use signature::test_signature_b;
+    use timestamp::test_timestamp;
+    use entry::test_entry_a;
+    use signature::test_signature;
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {
@@ -159,11 +167,11 @@ pub mod tests {
     pub fn test_chain_header_b() -> ChainHeader {
         ChainHeader::new(
             &test_entry_type_b(),
-            &String::new(),
-            None,
             &test_entry_b().address(),
-            &String::new(),
-            None,
+            &test_signature_b(),
+            &None,
+            &None,
+            &test_timestamp(),
         )
     }
 
@@ -181,42 +189,45 @@ pub mod tests {
         assert_ne!(test_chain_header_a(), test_chain_header_b());
 
         // different type is different
+        let entry_a = test_entry_a();
+        let entry_b = test_entry_b();
         assert_ne!(
             ChainHeader::new(
-                &test_entry_type_a(),
-                &String::new(),
-                None,
-                &test_entry().address(),
-                &String::new(),
-                None
+                &entry_a.entry_type(),
+                &entry_a.address(),
+                &test_signature(),
+                &None,
+                &None,
+                &test_timestamp(),
             ),
             ChainHeader::new(
-                &test_entry_type_b(),
-                &String::new(),
-                None,
-                &test_entry().address(),
-                &String::new(),
-                None
+                &entry_b.entry_type(),
+                &entry_a.address(),
+                &test_signature(),
+                &None,
+                &None,
+                &test_timestamp(),
             ),
         );
 
         // different previous header is different
+        let entry = test_entry();
         assert_ne!(
             ChainHeader::new(
-                &test_entry_type(),
-                &String::new(),
-                None,
-                &test_entry().address(),
-                &String::new(),
-                None
+                &entry.entry_type(),
+                &entry.address(),
+                &test_signature(),
+                &None,
+                &None,
+                &test_timestamp(),
             ),
             ChainHeader::new(
-                &test_entry_type(),
-                &String::new(),
-                Some(test_chain_header().address()),
-                &test_entry().address(),
-                &String::new(),
-                None
+                &entry.entry_type(),
+                &entry.address(),
+                &test_signature(),
+                &Some(test_chain_header().address()),
+                &None,
+                &test_timestamp(),
             ),
         );
     }
@@ -240,7 +251,7 @@ pub mod tests {
     #[test]
     /// tests for header.time()
     fn time() {
-        assert_eq!(test_chain_header().timestamp(), "");
+        assert_eq!(test_chain_header().timestamp(), test_timestamp());
     }
 
     #[test]

@@ -278,7 +278,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_agent::Agent;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry_type::EntryType, to_entry::ToEntry,
+        cas::content::AddressableContent, entry_type::EntryType, entry::ToEntry,
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -396,8 +396,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry_type, _) => {
-                    assert_eq!(entry_type, &EntryType::Dna);
+                Action::Commit(entry) => {
+                    assert_eq!(entry.entry_type(), &EntryType::Dna);
                     true
                 }
                 _ => false,
@@ -623,8 +623,8 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (dna_entry_type, dna_entry) = dna.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry_type, dna_entry.clone()));
+        let dna_entry = dna.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -639,8 +639,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry_type, entry) => {
-                    assert_eq!(entry_type, &EntryType::Dna);
+                Action::Commit(entry) => {
+                    assert_eq!(entry.entry_type(), &EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -653,9 +653,9 @@ pub mod tests {
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let (agent_entry_type, agent_entry) = context.agent.to_entry();
+        let agent_entry = context.agent.to_entry();
         let commit_agent_action =
-            ActionWrapper::new(Action::Commit(agent_entry_type, agent_entry.clone()));
+            ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -670,8 +670,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry_type, entry) => {
-                    assert_eq!(entry_type, &EntryType::AgentId,);
+                Action::Commit(entry) => {
+                    assert_eq!(entry.entry_type(), &EntryType::AgentId,);
                     assert_eq!(entry.content(), agent_entry.content());
                     true
                 }

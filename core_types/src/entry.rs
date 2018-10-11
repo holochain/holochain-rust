@@ -5,11 +5,30 @@ use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
+use entry_type::test_unpublishable_entry_type;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Entry(String);
+pub struct Entry{
+    value: Content,
+    entry_type: EntryType,
+}
+
+impl Entry {
+    pub fn value(&self) -> &Content {
+        &self.value
+    }
+
+    pub fn entry_type(&self) -> &EntryType {
+        &self.entry_type
+    }
+}
+
+pub trait ToEntry {
+    fn to_entry(&self) -> Entry;
+    fn from_entry(&Entry) -> Self;
+}
 
 impl PartialEq for Entry {
     fn eq(&self, other: &Entry) -> bool {
@@ -19,29 +38,32 @@ impl PartialEq for Entry {
 
 impl From<String> for Entry {
     fn from(string: String) -> Self {
-        Entry(string)
+        Entry::from_content(&string)
     }
 }
 
 impl From<Entry> for String {
     fn from(entry: Entry) -> Self {
-        entry.0
+        entry.content()
     }
 }
 
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        String::from(self.to_owned())
+        self.to_json().expect("could not convert Entry to Json Content")
     }
 
     fn from_content(content: &Content) -> Self {
-        Entry::from(content.to_string())
+        Entry::from_json(&content.to_string()).expect("could not convert Json Content to Entry")
     }
 }
 
 impl Entry {
-    pub fn new() -> Entry {
-        Entry(String::new())
+    pub fn new(entry_type: &EntryType, value: &Content) -> Entry {
+        Entry{
+            entry_type: entry_type.to_owned(),
+            value: value.to_owned(),
+        }
     }
 }
 
@@ -62,42 +84,32 @@ impl FromJson for Entry {
 }
 
 impl Deref for Entry {
-    type Target = String;
+    type Target = Content;
+
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.value()
     }
 }
 
-/// dummy entry type
-pub fn test_entry_type() -> EntryType {
-    EntryType::App(String::from("testEntryType"))
-}
-
-/// dummy entry type, same as test_type()
-pub fn test_entry_type_a() -> EntryType {
-    test_entry_type()
-}
-
-/// dummy entry type, differs from test_type()
-pub fn test_entry_type_b() -> EntryType {
-    EntryType::App(String::from("testEntryTypeB"))
-}
-
 /// dummy entry content
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_content() -> String {
     "test entry content".into()
 }
 
 /// dummy entry content, same as test_entry_content()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_content_a() -> String {
     test_entry_content()
 }
 
 /// dummy entry content, differs from test_entry_content()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_content_b() -> String {
     "other test entry content".into()
 }
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry_content() -> String {
     // looks like a believable hash
     // sys entries are hashy right?
@@ -105,32 +117,43 @@ pub fn test_sys_entry_content() -> String {
 }
 
 /// dummy entry
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
     Entry::from_content(&test_entry_content())
 }
 
 /// the correct hash for test_entry()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_address() -> Address {
     Address::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
 }
 
 /// dummy entry, same as test_entry()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_a() -> Entry {
     test_entry()
 }
 
 /// dummy entry, differs from test_entry()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
     Entry::from_content(&test_entry_content_b())
 }
 
 /// dummy entry with unique string content
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
     Entry::from_content(&snowflake::ProcessUniqueId::new().to_string())
 }
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
     Entry::from_content(&test_sys_entry_content())
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_unpublishable_entry() -> Entry {
+    Entry::new(&test_unpublishable_entry_type(), &test_entry().value())
 }
 
 #[cfg(test)]

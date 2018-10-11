@@ -36,7 +36,7 @@ pub mod zome;
 
 use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::DnaError,
-    to_entry::ToEntry,
+    entry::ToEntry,
 };
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -256,9 +256,9 @@ impl PartialEq for Dna {
 }
 
 impl ToEntry for Dna {
-    fn to_entry(&self) -> (EntryType, Entry) {
+    fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        (EntryType::Dna, Entry::from(self.to_json()))
+        Entry::new(&EntryType::Dna, &self.to_json())
     }
 
     fn from_entry(entry: &Entry) -> Self {

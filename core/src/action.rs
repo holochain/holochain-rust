@@ -1,7 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, entry_type::EntryType, get_links_args::GetLinksArgs,
+    cas::content::Address, entry::Entry, get_links_args::GetLinksArgs,
     links_entry::Link,
 };
 use holochain_dna::Dna;
@@ -71,7 +71,7 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(EntryType, Entry),
+    Commit(Entry),
     /// GetEntry by address
     GetEntry(Address),
 
@@ -115,7 +115,6 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use holochain_core_types::{
         entry::{test_entry, test_entry_address},
-        entry_type::test_entry_type,
     };
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
@@ -132,7 +131,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry_type(), test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry()))
     }
 
     /// dummy action for a get of test_hash()

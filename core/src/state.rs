@@ -24,13 +24,14 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let content_storage = MemoryStorage::new().expect("could not create new memory storage");
-        let eav_storage = EavMemoryStorage::new();
+        let content_storage =
+            MemoryStorage::new().expect("could not create new cas memory storage");
+        let eav_storage = EavMemoryStorage::new().expect("could not create new eav memory storage");
 
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(content_storage.clone()))),
-            dht: Arc::new(DhtStore::new(content_storage.clone(), eav_storage)),
+            dht: Arc::new(DhtStore::new(content_storage.clone(), eav_storage.clone())),
             history: HashSet::new(),
         }
     }

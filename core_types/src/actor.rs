@@ -1,9 +1,11 @@
 use cas::content::{Address, Content};
+use eav::{Attribute, Entity, EntityAttributeValue, Value};
 use error::HolochainError;
 use futures::executor::block_on;
 use riker::actors::*;
 use riker_default::DefaultModel;
 use riker_patterns::ask::ask;
+use std::collections::HashSet;
 
 #[derive(Clone, Debug)]
 /// riker protocol for all our actors
@@ -18,6 +20,12 @@ pub enum Protocol {
 
     CasContains(Address),
     CasContainsResult(Result<bool, HolochainError>),
+
+    EavAdd(EntityAttributeValue),
+    EavAddResult(Result<(), HolochainError>),
+
+    EavFetch(Option<Entity>, Option<Attribute>, Option<Value>),
+    EavFetchResult(Result<HashSet<EntityAttributeValue>, HolochainError>),
 }
 
 /// required by riker

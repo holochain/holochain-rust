@@ -11,6 +11,7 @@ use std::collections::HashSet;
 
 type HcResult<T> = Result<T, HolochainError>;
 
+#[derive(Clone)]
 pub struct EavFileStorage {
     actor: ActorRef<Protocol>,
 }

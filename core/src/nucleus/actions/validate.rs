@@ -54,11 +54,7 @@ pub fn validate_entry(
 
                 let result = match maybe_validation_result {
                     Ok(validation_result) => match validation_result {
-                        CallbackResult::Fail(error_string) => {
-                            let error_object: serde_json::Value =
-                                serde_json::from_str(&error_string).unwrap();
-                            Err(error_object["Err"].to_string())
-                        }
+                        CallbackResult::Fail(error_string) => Err(error_string),
                         CallbackResult::Pass => Ok(()),
                         CallbackResult::NotImplemented => Err(format!(
                             "Validation callback not implemented for {:?}",

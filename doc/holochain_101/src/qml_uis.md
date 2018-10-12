@@ -1,1 +1,1 @@
-# (E) QML based UIs
+# QML based UIs

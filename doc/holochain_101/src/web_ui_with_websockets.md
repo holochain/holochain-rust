@@ -1,1 +1,1 @@
-# (E) Web UIs with Websockets
+# Web UIs with Websockets

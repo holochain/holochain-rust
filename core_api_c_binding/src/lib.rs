@@ -103,7 +103,7 @@ pub unsafe extern "C" fn holochain_call(
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         Err(holochain_error) => match CString::new(format!(
             "Error calling zome function: {:?}",
             holochain_error

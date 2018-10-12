@@ -1,14 +1,78 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
-use holochain_core_types::{cas::content::Address, json::ToJson};
-use nucleus::ribosome::api::Runtime;
+use context::Context;
+use futures::executor::block_on;
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, json::ToJson,
+};
+use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
-use std::sync::mpsc::channel;
+use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
     address: Address,
+}
+
+pub struct RibosomeResult(String);
+//{
+//    Result: {entry: "blah"} | {entry: null}
+//     Error: {code: message:}
+//}
+
+//"{\"error\": {\"message\": \"asdfasdf\"}}"
+//"{\"ok\": {\"entry\": {\"value\": \"asdfasdf\"}}}"
+
+impl From<String> for RibosomeResult {
+    fn from(s: String) -> RibosomeResult {
+        RibosomeResult(s)
+    }
+}
+
+impl From<RibosomeResult> for String {
+    fn from(r: RibosomeResult) -> String {
+        r.0
+    }
+}
+
+impl From<HolochainError> for RibosomeResult {
+    fn from(err: HolochainError) -> RibosomeResult {
+        RibosomeResult::from(json!(err.to_string()).to_string())
+    }
+}
+
+impl From<Entry> for RibosomeResult {
+    fn from(e: Entry) -> RibosomeResult {
+        RibosomeResult::from(e.to_json().expect("should unserialize"))
+    }
+}
+
+impl From<Option<Entry>> for RibosomeResult {
+    fn from(o: Option<Entry>) -> RibosomeResult {
+        fn wrapper(result: String) -> RibosomeResult {
+            RibosomeResult(format!("{{\"entry\":{}}}", result))
+        }
+        match o {
+            Some(entry) => wrapper(String::from(RibosomeResult::from(entry))),
+            None => wrapper(String::from("null")),
+        }
+    }
+}
+
+impl From<Result<Option<Entry>, HolochainError>> for RibosomeResult {
+    fn from(r: Result<Option<Entry>, HolochainError>) -> RibosomeResult {
+        match r {
+            Ok(o) => RibosomeResult(format!(
+                "{{\"ok\": {}}}",
+                String::from(RibosomeResult::from(o))
+            )),
+            Err(err) => RibosomeResult(format!(
+                "{{\"error\": {}}}",
+                String::from(RibosomeResult::from(err))
+            )),
+        }
+    }
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -28,46 +92,14 @@ pub fn invoke_get_entry(
     }
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.address));
-
-    let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
-        &runtime.context.action_channel,
-        &runtime.context.observer_channel,
-        action_wrapper.clone(),
-        move |state: &::state::State| {
-            let mut actions_copy = state.agent().actions();
-            match actions_copy.remove(&action_wrapper) {
-                Some(v) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(v)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
-            }
-        },
-    );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
-
-    let action_result = receiver.recv().expect("observer dropped before done");
-
-    match action_result {
-        ActionResponse::GetEntry(maybe_entry) => {
-            // serialize, allocate and encode result
-            let json_str = maybe_entry.expect("should be valid json entry").to_json();
-            match json_str {
-                Ok(json) => runtime.store_utf8(&json),
-                Err(_) => ribosome_error_code!(ResponseSerializationFailed),
-            }
+    let future = get_entry(&runtime.context, input.address);
+    let result = block_on(future);
+    match result {
+        Err(_) => ribosome_error_code!(Unspecified),
+        Ok(maybe_entry) => {
+            let json = json!(maybe_entry);
+            runtime.store_utf8(&json.to_string())
         }
-        _ => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 

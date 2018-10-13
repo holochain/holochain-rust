@@ -1,8 +1,5 @@
 use futures::executor::block_on;
-use holochain_core_types::{
-    cas::content::Address,
-    json::ToJson,
-};
+use holochain_core_types::cas::content::Address;
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -47,22 +44,24 @@ pub fn invoke_get_entry(
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(maybe_entry) => match maybe_entry {
             Some(entry) => {
-                let result = GetAppEntryResult{
+                let result = GetAppEntryResult {
                     status: GetResultStatus::Found,
                     entry: entry.to_string(),
                 };
-                let result_string = serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                let result_string =
+                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
                 runtime.store_utf8(&result_string)
-            },
+            }
             None => {
-                let result = GetAppEntryResult{
+                let result = GetAppEntryResult {
                     status: GetResultStatus::NotFound,
                     entry: String::from(""),
                 };
-                let result_string = serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                let result_string =
+                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
                 runtime.store_utf8(&result_string)
             }
-        }
+        },
     }
 }
 
@@ -74,8 +73,7 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry,
-        hash::HashString,
+        cas::content::AddressableContent, entry::test_entry, hash::HashString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -225,11 +223,10 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"Found\",\"entry\":\"\\\"test entry content\\\"\"}\u{0}");
+        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry content\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }
-
 
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm

@@ -1,4 +1,4 @@
-# DNA Manifest Specification v0.2.2
+# DNA Manifest Specification v0.2.1
 
 ## Some notes
 - The DNA Manifest specification does not include zome references, because those would happen as macros in the development environment.
@@ -16,7 +16,7 @@ It's not allways clear what goes in which level. For example, schema used to liv
 Function declarations (i.e. names and signatures) are shown outside of WASM in the manifest, kind of like C header files, because they are used for validating function calls according to capability membranes at the Holochain Core library level, not the WASM level.
 
 ### WASM
-One WASM module per zome: All different Capability code and validation code is to be be compiled into one WASM module.
+One WASM module per zome: All different Capability zome code and validation zome code is to be be compiled into one WASM module.
 
 ### No more links as entry-types
 

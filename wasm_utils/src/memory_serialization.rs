@@ -73,31 +73,3 @@ pub fn serialize_into_encoded_allocation<T: Serialize>(
     let allocation_of_output = serialize(stack, internal).unwrap();
     return allocation_of_output.encode() as i32;
 }
-
-/*
-TODO: figure out a way to get tests to work for serialization, see #451
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    #[derive(Deserialize, Serialize, Default,Debug,PartialEq)]
-    struct TestStruct {
-        value: String,
-    }
-
-    #[test]
-    fn can_round_trip_allocation() {
-
-        let mut mem_stack = SinglePageStack::default();
-
-        let test_value = TestStruct{value:"fish".to_string()};
-
-        let encoded_allocation = serialize_into_encoded_allocation(&mut mem_stack,test_value);
-
-        assert_eq!(format!("{:?}", mem_stack),"dog");
-
-        let result : Result<TestStruct,String> = try_deserialize_allocation(encoded_allocation as u32);
-        assert_eq!(result.unwrap(),TestStruct{value:"fish".to_string()});
-    }
-}
-*/

@@ -3,6 +3,18 @@ use std::fmt;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
+macro_rules! dna_assert {
+    ($stack:ident, $cond:expr) => {
+        if !$cond {
+            let error_report = ribosome_error_report!(format!(r#"DNA assertion failed: `{}`"#, stringify!($cond)));
+            let res = serialize(&mut $stack, error_report);
+            return res.unwrap().encode();
+        }
+    };
+}
+
+// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
+#[macro_export]
 macro_rules! ribosome_error_code {
     ($s:ident) => {
         Ok(Some(RuntimeValue::I32(

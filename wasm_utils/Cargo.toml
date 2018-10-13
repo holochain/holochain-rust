@@ -8,3 +8,9 @@ serde="1"
 serde_derive="1"
 serde_json="1"
 
+[dev-dependencies]
+test_utils = { path = "../test_utils"}
+holochain_core = { path = "../core" }
+holochain_core_types = { path = "../core_types" }
+holochain_core_api = { path = "../core_api" }
+holochain_agent = { path = "../agent" }

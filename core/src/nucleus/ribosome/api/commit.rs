@@ -64,7 +64,7 @@ pub fn invoke_commit_app_entry(
 
     // Create Chain Entry
     let entry_type =
-    EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
     let entry = Entry::new(&entry_type, &input.entry_value);
     let validation_data = build_validation_data_commit(
         entry.clone(),

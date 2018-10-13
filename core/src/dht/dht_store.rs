@@ -23,9 +23,9 @@ impl Network {
         // FIXME
     }
 
-    pub fn get(&mut self, _address: &Address) -> Content {
+    pub fn get(&mut self, _address: &Address) -> Option<Content> {
         // FIXME
-        AddressableContent::from_content(&"".to_string())
+        None
     }
 }
 

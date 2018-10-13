@@ -1,8 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, get_links_args::GetLinksArgs,
-    links_entry::Link,
+    cas::content::Address, entry::Entry, get_links_args::GetLinksArgs, links_entry::Link,
 };
 use holochain_dna::Dna;
 use nucleus::{
@@ -113,9 +112,7 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use holochain_core_types::{
-        entry::{test_entry, test_entry_address},
-    };
+    use holochain_core_types::entry::{test_entry, test_entry_address};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 

@@ -1,19 +1,18 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry_type::EntryType;
-use entry_type::test_entry_type;
-use entry_type::test_entry_type_b;
-use entry_type::test_sys_entry_type;
+use entry_type::{
+    test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
+    EntryType,
+};
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
-use entry_type::test_unpublishable_entry_type;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Entry{
+pub struct Entry {
     value: Content,
     entry_type: EntryType,
 }
@@ -53,7 +52,8 @@ impl From<Entry> for String {
 
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        self.to_json().expect("could not convert Entry to Json Content")
+        self.to_json()
+            .expect("could not convert Entry to Json Content")
     }
 
     fn from_content(content: &Content) -> Self {
@@ -63,7 +63,7 @@ impl AddressableContent for Entry {
 
 impl Entry {
     pub fn new(entry_type: &EntryType, value: &Content) -> Entry {
-        Entry{
+        Entry {
             entry_type: entry_type.to_owned(),
             value: value.to_owned(),
         }
@@ -94,41 +94,45 @@ impl Deref for Entry {
     }
 }
 
-/// dummy entry content
+/// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_content() -> String {
-    "test entry content".into()
+pub fn test_entry_value() -> String {
+    "test entry value".into()
+}
+
+pub fn test_entry_content() -> Content {
+    Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
 }
 
 /// dummy entry content, same as test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_content_a() -> String {
-    test_entry_content()
+pub fn test_entry_value_a() -> String {
+    test_entry_value()
 }
 
 /// dummy entry content, differs from test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_content_b() -> String {
-    "other test entry content".into()
+pub fn test_entry_value_b() -> String {
+    "other test entry value".into()
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_content() -> String {
+pub fn test_sys_entry_value() -> String {
     // looks like a believable hash
     // sys entries are hashy right?
-    test_entry_content().address().into()
+    test_entry_value().address().into()
 }
 
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
-    Entry::new(&test_entry_type(), &test_entry_content())
+    Entry::new(&test_entry_type(), &test_entry_value())
 }
 
 /// the correct hash for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_address() -> Address {
-    Address::from("QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT".to_string())
+    Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
 }
 
 /// dummy entry, same as test_entry()
@@ -140,18 +144,25 @@ pub fn test_entry_a() -> Entry {
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_content_b())
+    Entry::new(&test_entry_type_b(), &test_entry_value_b())
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
-    Entry::new(&test_entry_type(), &snowflake::ProcessUniqueId::new().to_string())
+    Entry::new(
+        &test_entry_type(),
+        &snowflake::ProcessUniqueId::new().to_string(),
+    )
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
-    Entry::new(&test_sys_entry_type(), &test_sys_entry_content())
+    Entry::new(&test_sys_entry_type(), &test_sys_entry_value())
+}
+
+pub fn test_sys_entry_address() -> Address {
+    Address::from("QmWePdZYQrYFBUkBy1GPyCCUf8UmkmptsjtcVqZJ9Tzdse".to_string())
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -166,7 +177,7 @@ pub mod tests {
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::Entry;
+    use entry::{test_entry_address, Entry};
     use json::{FromJson, ToJson};
 
     #[test]
@@ -191,38 +202,44 @@ pub mod tests {
     #[test]
     /// show From<Entry> for String
     fn string_from_entry_test() {
-        assert_eq!(test_entry_content().to_string(), String::from(test_entry()));
+        assert_eq!(test_entry().content(), String::from(test_entry()));
     }
 
     #[test]
     /// show From<String> for Entry
     fn entry_from_string_test() {
-        assert_eq!(test_entry(), Entry::from(test_entry_content().to_string()));
+        assert_eq!(test_entry(), Entry::from(test_entry().content()));
     }
 
     #[test]
     /// tests for entry.content()
-    fn content() {
-        let content = "baz";
-        let entry = Entry::from_content(&String::from(content));
+    fn content_test() {
+        let content = test_entry_content();
+        let entry = Entry::from_content(&content);
 
-        assert_eq!("baz", entry.content());
+        assert_eq!(content, entry.content());
     }
 
     #[test]
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let entry = test_entry();
-        let expected = "{\"value\":\"test entry content\",\"entry_type\":{\"App\":\"testEntryType\"}}";
+        let expected = test_entry_content();
         assert_eq!(expected, entry.to_json().unwrap());
-        assert_eq!(entry, Entry::from_json(expected).unwrap());
+        assert_eq!(entry, Entry::from_json(&expected).unwrap());
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
 
         let sys_entry = test_sys_entry();
-        let expected = "{\"value\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_type\":\"AgentId\"}";
+        let expected = format!(
+            "{{\"value\":\"{}\",\"entry_type\":\"AgentId\"}}",
+            test_sys_entry_address(),
+        );
         assert_eq!(expected, sys_entry.to_json().unwrap());
-        assert_eq!(sys_entry, Entry::from_json(expected).unwrap());
-        assert_eq!(sys_entry, Entry::from_json(&sys_entry.to_json().unwrap()).unwrap());
+        assert_eq!(sys_entry, Entry::from_json(&expected).unwrap());
+        assert_eq!(
+            sys_entry,
+            Entry::from_json(&sys_entry.to_json().unwrap()).unwrap()
+        );
     }
 
     #[test]

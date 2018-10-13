@@ -42,6 +42,6 @@ pub mod hash;
 pub mod json;
 pub mod keys;
 pub mod links_entry;
-pub mod validation;
-pub mod time;
 pub mod signature;
+pub mod time;
+pub mod validation;

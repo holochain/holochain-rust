@@ -278,7 +278,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_agent::Agent;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry_type::EntryType, entry::ToEntry,
+        cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -315,7 +315,7 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
         (
             Arc::new(Context::new(
@@ -339,7 +339,7 @@ pub mod tests {
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
         Arc::new(Context::new_with_channels(
             agent,
@@ -456,9 +456,9 @@ pub mod tests {
         let context = test_context("jane");
         let (rx_action, rx_observer) = instance.initialize_channels();
 
-        let aw = test_action_wrapper_get();
+        let action_wrapper = test_action_wrapper_get();
         let new_observers = instance.process_action(
-            aw.clone(),
+            action_wrapper.clone(),
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -484,7 +484,7 @@ pub mod tests {
         // Clone the agent Arc
         let actions = state.agent().actions();
         let response = actions
-            .get(&aw)
+            .get(&action_wrapper)
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(response, &ActionResponse::GetEntry(None));
@@ -665,8 +665,7 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = context.agent.to_entry();
-        let commit_agent_action =
-            ActionWrapper::new(Action::Commit(agent_entry.clone()));
+        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();

@@ -187,7 +187,7 @@ pub fn test_meta_b() -> EntryMeta {
 pub mod tests {
     use super::*;
     use cas::content::{Address, AddressableContent};
-    use entry::test_entry;
+    use entry::{test_entry, test_entry_address};
     use json::{FromJson, ToJson};
     use keys::test_keys;
     use std::cmp::Ordering;
@@ -283,7 +283,10 @@ pub mod tests {
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
         let meta = test_meta();
-        let expected = "{\"entry_address\":\"QmXQHdpqWprfcC5uXSWmd5hfz6bpz8ccU8fMHb9XFmp865\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+        let expected = format!(
+            "{{\"entry_address\":\"{}\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}}",
+            test_entry_address(),
+        );
 
         assert_eq!(expected.to_string(), meta.to_json().unwrap());
         assert_eq!(meta, EntryMeta::from_json(&expected).unwrap());

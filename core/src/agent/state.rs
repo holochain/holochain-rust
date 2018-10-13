@@ -294,7 +294,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
             ActionResponse::Commit(Ok(test_entry_address()))
                 .to_json()
                 .unwrap(),
@@ -310,7 +310,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "{\"value\":\"test entry content\",\"entry_type\":{\"App\":\"testEntryType\"}}",
+            "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}",
             ActionResponse::GetEntry(Some(test_entry().clone()))
                 .to_json()
                 .unwrap(),
@@ -321,7 +321,7 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
+            format!("[\"{}\"]", test_entry_address()),
             ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
                 .to_json()
                 .unwrap(),
@@ -337,7 +337,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
             ActionResponse::LinkEntries(Ok(test_entry()))
                 .to_json()
                 .unwrap(),

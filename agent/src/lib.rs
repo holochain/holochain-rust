@@ -1,14 +1,18 @@
 //! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
 extern crate holochain_core_types;
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
 
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, entry::ToEntry,
+    cas::content::{AddressableContent, Content},
+    entry::{Entry, ToEntry},
+    entry_type::EntryType,
 };
-use holochain_core_types::cas::content::Content;
 
 /// Object holding an Agent's identity.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Identity(Content);
 
 impl Identity {
@@ -30,7 +34,7 @@ impl From<String> for Identity {
 }
 
 /// Object holding all Agent's data.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Agent(Identity);
 
 impl Agent {
@@ -53,7 +57,7 @@ impl From<String> for Agent {
 
 impl ToEntry for Agent {
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::AgentId, &self.content())
+        Entry::new(&EntryType::AgentId, &self.to_string())
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -64,11 +68,11 @@ impl ToEntry for Agent {
 
 impl AddressableContent for Agent {
     fn content(&self) -> Content {
-        self.to_string()
+        self.to_entry().content()
     }
 
     fn from_content(content: &Content) -> Self {
-        Agent::from(content.to_owned())
+        Agent::from_entry(&Entry::from_content(content))
     }
 }
 
@@ -104,19 +108,13 @@ mod tests {
     #[test]
     /// show ToString implementation for Identity
     fn identity_to_string_test() {
-        assert_eq!(
-            test_identity_content(),
-            test_identity().to_string(),
-        );
+        assert_eq!(test_identity_content(), test_identity().to_string(),);
     }
 
     #[test]
     /// show ToString implementation for Agent
     fn agent_to_string_test() {
-        assert_eq!(
-            test_identity_content(),
-            test_agent().to_string(),
-        )
+        assert_eq!(test_identity_content(), test_agent().to_string(),)
     }
 
     #[test]
@@ -138,16 +136,11 @@ mod tests {
     #[test]
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
+        let expected_content = String::from("{\"value\":\"bob\",\"entry_type\":\"AgentId\"}");
         // content()
-        assert_eq!(
-            test_identity_content(),
-            test_agent().content(),
-        );
+        assert_eq!(expected_content, test_agent().content(),);
 
         // from_content()
-        assert_eq!(
-            test_agent(),
-            Agent::from_content(&test_identity_content()),
-        );
+        assert_eq!(test_agent(), Agent::from_content(&expected_content),);
     }
 }

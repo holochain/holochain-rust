@@ -23,7 +23,7 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::from_string("bob".to_string());
+//! let agent = Agent::from("bob".to_string());
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
@@ -394,7 +394,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 6);
+        assert_eq!(hc.state().unwrap().history.len(), 5);
     }
 
     #[test]

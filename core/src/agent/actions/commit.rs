@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use context::Context;
 use futures::Future;
-use holochain_core_types::{entry::Entry};
+use holochain_core_types::entry::Entry;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 

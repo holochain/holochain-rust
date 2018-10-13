@@ -1,14 +1,11 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry, Entry};
+use entry::{test_entry, Entry, ToEntry};
 use entry_type::{test_entry_type, EntryType};
 use error::HolochainError;
 use json::ToJson;
 use serde_json;
-use entry::ToEntry;
-use time::Iso8601;
-use signature::Signature;
-use time::test_iso_8601;
-use signature::test_signature;
+use signature::{test_signature, Signature};
+use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table
@@ -112,12 +109,12 @@ impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
         Entry::new(
             &EntryType::ChainHeader,
-            &Entry::from(self.to_json().expect("entry should be valid")),
+            &self.to_json().expect("entry should be valid"),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return ChainHeader::from_json_str(&entry.content())
+        return ChainHeader::from_json_str(&entry.value())
             .expect("entry is not a valid ChainHeader Entry");
     }
 }
@@ -150,13 +147,10 @@ pub fn test_chain_header() -> ChainHeader {
 pub mod tests {
     use cas::content::{Address, AddressableContent};
     use chain_header::{test_chain_header, ChainHeader};
-    use entry::{test_entry, test_entry_b};
+    use entry::{test_entry, test_entry_a, test_entry_b, ToEntry};
     use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
-    use entry::ToEntry;
-    use signature::test_signature_b;
+    use signature::{test_signature, test_signature_b};
     use time::test_iso_8601;
-    use entry::test_entry_a;
-    use signature::test_signature;
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {

@@ -17,8 +17,6 @@ extern crate serde_json;
 extern crate snowflake;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate unwrap_to;
 extern crate riker_default;
 extern crate riker_patterns;
 #[macro_use]

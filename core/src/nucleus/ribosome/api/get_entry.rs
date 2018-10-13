@@ -1,13 +1,9 @@
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
-use context::Context;
 use futures::executor::block_on;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, json::ToJson,
+    cas::content::Address,
 };
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
-use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Deserialize, Default, Debug, Serialize)]

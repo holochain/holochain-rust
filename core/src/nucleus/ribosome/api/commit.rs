@@ -3,13 +3,12 @@ use agent::{
     actions::commit::*,
     state::{ActionResponse, AgentState},
 };
-use context::Context;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// Struct for input data received when Commit API function is invoked

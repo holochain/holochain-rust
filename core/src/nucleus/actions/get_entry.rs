@@ -1,20 +1,15 @@
 extern crate serde_json;
-use action::{Action, ActionWrapper};
 use context::Context;
-use futures::{future, Async, Future};
+use futures::{future, Future};
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::Address,
         storage::ContentAddressableStorage,
     },
     entry::Entry,
-    entry_type::EntryType,
     error::HolochainError,
 };
-use holochain_wasm_utils::validation::ValidationData;
-use nucleus::ribosome::callback::{self, CallbackResult};
-use snowflake;
-use std::{sync::Arc, thread};
+use std::{sync::Arc};
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,

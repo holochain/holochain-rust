@@ -37,7 +37,7 @@ We have designed Holochain applications to consist at the low-level of WebAssemb
 There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 ## Installation & Usage
-**Core Developers Only:**  These instructions are for developers of Holochain Core itself.  If you are developing Holochain applications, you will want to install the [`hcdev` command line tool](https://github.com/holochain/holochain-cmd) to help create Holochain Genome packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install Genome packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.
+**Core Developers Only:**  These instructions are for developers of Holochain Core itself.  If you are developing Holochain applications, you will want to install the [`hc` command line tool](https://github.com/holochain/holochain-cmd) to help create Holochain Genome packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install Genome packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.
 
 There are two approaches to building and testing Holochain, using `make` or using `docker`:
 

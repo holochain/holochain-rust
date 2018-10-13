@@ -1,5 +1,8 @@
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{
+    cas::content::Address,
+    json::ToJson,
+};
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -7,6 +10,18 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
     address: Address,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+enum GetResultStatus {
+    Found,
+    NotFound,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct GetAppEntryResult {
+    status: GetResultStatus,
+    entry: String,
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -30,9 +45,23 @@ pub fn invoke_get_entry(
     let result = block_on(future);
     match result {
         Err(_) => ribosome_error_code!(Unspecified),
-        Ok(maybe_entry) => {
-            let json = json!(maybe_entry);
-            runtime.store_utf8(&json.to_string())
+        Ok(maybe_entry) => match maybe_entry {
+            Some(entry) => {
+                let result = GetAppEntryResult{
+                    status: GetResultStatus::Found,
+                    entry: entry.to_json().expect("Could not serialize entry"),
+                };
+                let result_string = serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                runtime.store_utf8(&result_string)
+            },
+            None => {
+                let result = GetAppEntryResult{
+                    status: GetResultStatus::NotFound,
+                    entry: String::from(""),
+                };
+                let result_string = serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                runtime.store_utf8(&result_string)
+            }
         }
     }
 }
@@ -44,7 +73,10 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry,
+        hash::HashString,
+    };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::api::{
@@ -61,6 +93,14 @@ mod tests {
     pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetAppEntryArgs {
             address: test_entry().address().into(),
+        };
+        serde_json::to_string(&args).unwrap().into_bytes()
+    }
+
+    /// dummy get args from standard test entry
+    pub fn test_get_args_unknown() -> Vec<u8> {
+        let args = GetAppEntryArgs {
+            address: HashString::from(String::from("xxxxxxxxx")),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -185,7 +225,52 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("\"test entry content\"\u{0}");
+        expected.push_str("{\"status\":\"Found\",\"entry\":\"\\\"test entry content\\\"\"}\u{0}");
+
+        assert_eq!(expected, get_runtime.result);
+    }
+
+
+    #[test]
+    /// test that we can round trip bytes through a get action and it comes back from wasm
+    fn test_get_not_found() {
+        let wasm = test_get_round_trip_wat();
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
+        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
+        let (context, _) = test_context_and_logger("joan");
+        let context = instance.initialize_context(context);
+
+        println!("{:?}", instance.state().agent().top_chain_header());
+        println!(
+            "{:?}",
+            instance
+                .state()
+                .agent()
+                .top_chain_header()
+                .expect("top chain_header was None")
+                .address()
+        );
+
+        let get_call = ZomeFnCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            "get_dispatch",
+            &test_parameters(),
+        );
+        let get_runtime = call(
+            &dna.name.to_string(),
+            Arc::clone(&context),
+            wasm.clone(),
+            &get_call,
+            Some(test_get_args_unknown()),
+        ).expect("test should be callable");
+
+        let mut expected = "".to_owned();
+        expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

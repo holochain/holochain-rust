@@ -49,7 +49,7 @@ pub fn invoke_get_entry(
             Some(entry) => {
                 let result = GetAppEntryResult{
                     status: GetResultStatus::Found,
-                    entry: entry.to_json().expect("Could not serialize entry"),
+                    entry: entry.to_string(),
                 };
                 let result_string = serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
                 runtime.store_utf8(&result_string)

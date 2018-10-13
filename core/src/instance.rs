@@ -315,7 +315,7 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from_string(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_string());
         let logger = test_logger();
         (
             Arc::new(Context::new(
@@ -339,7 +339,7 @@ pub mod tests {
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from_string(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_string());
         let logger = test_logger();
         Arc::new(Context::new_with_channels(
             agent,
@@ -352,7 +352,7 @@ pub mod tests {
 
     pub fn test_context_with_state() -> Arc<Context> {
         let mut context = Context::new(
-            Agent::from_string("Florence".to_string()),
+            Agent::from("Florence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );

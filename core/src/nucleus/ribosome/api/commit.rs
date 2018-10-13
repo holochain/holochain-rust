@@ -65,7 +65,7 @@ pub fn invoke_commit_app_entry(
     // Create Chain Entry
     let entry_type =
     EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
-    let entry = Entry::new(&entry_type, &input.entry_content);
+    let entry = Entry::new(&entry_type, &input.entry_value);
     let validation_data = build_validation_data_commit(
         entry.clone(),
         entry_type.clone(),
@@ -131,7 +131,7 @@ pub mod tests {
 
         let args = CommitAppEntryArgs {
             entry_type_name: entry_type.to_string(),
-            entry_content: entry.value().into(),
+            entry_value: entry.value().to_owned(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

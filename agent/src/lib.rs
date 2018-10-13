@@ -53,13 +53,12 @@ impl From<String> for Agent {
 
 impl ToEntry for Agent {
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::AgentId, &self.to_string())
+        Entry::new(&EntryType::AgentId, &self.content())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        let id_content: String =
-            serde_json::from_str(&entry.value()).expect("entry is not a valid AgentId Entry");
-        Agent::new(Identity::new(id_content))
+        assert_eq!(&EntryType::AgentId, entry.entry_type());
+        Agent::from(entry.value().to_owned())
     }
 }
 

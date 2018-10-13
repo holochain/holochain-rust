@@ -63,7 +63,7 @@ pub enum ZomeApiFunction {
     CommitAppEntry,
 
     /// Get an app entry from source chain by key (header hash)
-    /// get_entry(key: String) -> Pair
+    /// get_entry(address: Address) -> Entry
     GetAppEntry,
 
     /// Init App Globals

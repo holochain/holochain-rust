@@ -82,8 +82,8 @@ where
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> &CAS {
-        &self.content_storage
+    pub(crate) fn content_storage(&self) -> CAS {
+        self.content_storage.clone()
     }
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage

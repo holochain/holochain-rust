@@ -1,7 +1,8 @@
-use cas::content::{Address, AddressableContent};
+use cas::content::{Address};
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use serde_json;
+use std::string::ToString;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -50,7 +51,7 @@ pub enum LinkActionKind {
     DELETE,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct LinkEntry {
     action_kind: LinkActionKind,
     link: Link,
@@ -80,6 +81,18 @@ impl LinkEntry {
     }
 }
 
+impl ToString for LinkEntry {
+    fn to_string(&self) -> String {
+        serde_json::to_string(self).expect("LinkEntry failed to serialize")
+    }
+}
+
+impl From<String> for LinkEntry {
+    fn from(s: String) -> LinkEntry {
+        serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
+    }
+}
+
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
@@ -88,7 +101,8 @@ impl ToEntry for LinkEntry {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        serde_json::from_str(&entry.content()).expect("entry is not a valid LinkEntry")
+        assert_eq!(&EntryType::Link, entry.entry_type());
+        serde_json::from_str(&entry.value().to_owned()).expect("entry is not a valid LinkEntry")
     }
 }
 
@@ -98,7 +112,7 @@ impl ToEntry for LinkEntry {
 //
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct LinkListEntry {
-    pub links: Vec<Link>,
+    links: Vec<Link>,
 }
 
 impl LinkListEntry {
@@ -107,17 +121,33 @@ impl LinkListEntry {
             links: links.to_vec(),
         }
     }
+
+    pub fn links(&self) -> &Vec<Link> {
+        &self.links
+    }
+}
+
+impl ToString for LinkListEntry {
+    fn to_string(&self) -> String {
+        serde_json::to_string(self).expect("LinkEntry failed to serialize")
+    }
+}
+
+impl From<String> for LinkListEntry {
+    fn from(s: String) -> LinkListEntry {
+        serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
+    }
 }
 
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        let json_array = serde_json::to_string(self).expect("LinkListEntry failed to serialize");
-        Entry::new(&EntryType::LinkList, &Entry::from(json_array))
+        Entry::new(&EntryType::LinkList, &self.to_string())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        serde_json::from_str(&entry.content()).expect("entry failed converting into LinkListEntry")
+        assert_eq!(&EntryType::LinkList, entry.entry_type());
+        LinkListEntry::from(entry.value().to_owned())
     }
 }
 
@@ -131,6 +161,7 @@ pub mod tests {
     use entry::test_entry_b;
     use cas::content::AddressableContent;
     use links_entry::LinkActionKind;
+    use std::string::ToString;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -147,6 +178,14 @@ pub mod tests {
     pub fn test_link_entry() -> LinkEntry {
         let link = test_link();
         LinkEntry::new(test_link_entry_action_kind(), link.base(), link.target(), link.tag())
+    }
+
+    pub fn test_link_entry_string() -> String {
+        format!(
+            "{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}",
+            test_entry_a().address(),
+            test_entry_b().address(),
+        )
     }
 
     #[test]
@@ -198,4 +237,31 @@ pub mod tests {
             test_link_entry().link(),
         );
     }
+
+    #[test]
+    /// show ToString for LinkEntry
+    fn link_entry_to_string_test() {
+        assert_eq!(
+            test_link_entry_string(),
+            test_link_entry().to_string(),
+        );
+    }
+
+    #[test]
+    /// show From<String> for LinkEntry
+    fn link_entry_from_string_test() {
+        assert_eq!(
+            LinkEntry::from(test_link_entry_string()),
+            test_link_entry(),
+        );
+    }
+
+    // #[test]
+    // /// show ToEntry implementation for Link
+    // fn link_entry_to_entry_test() {
+    //     // to_entry()
+    //     assert_eq!(
+    //         Entry::new(&EntryType::Link, &test_identity_value()),
+    //     )
+    // }
 }

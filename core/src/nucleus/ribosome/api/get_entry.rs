@@ -1,7 +1,5 @@
 use futures::executor::block_on;
-use holochain_core_types::{
-    cas::content::Address,
-};
+use holochain_core_types::cas::content::Address;
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};

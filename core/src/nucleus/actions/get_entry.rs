@@ -2,14 +2,11 @@ extern crate serde_json;
 use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
-    cas::{
-        content::Address,
-        storage::ContentAddressableStorage,
-    },
+    cas::{content::Address, storage::ContentAddressableStorage},
     entry::Entry,
     error::HolochainError,
 };
-use std::{sync::Arc};
+use std::sync::Arc;
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,

@@ -232,7 +232,7 @@ mod tests {
 
 
     #[test]
-    /// test that we can round trip bytes through a get action and it comes back from wasm
+    /// test that we get status NotFound on an obviously broken hash
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(

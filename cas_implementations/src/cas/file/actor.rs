@@ -1,5 +1,5 @@
+use super::super::super::actor::{Protocol, SYS};
 use holochain_core_types::{
-    actor::{Protocol, SYS},
     cas::content::{Address, Content},
     error::HolochainError,
     file_validation,
@@ -41,12 +41,13 @@ impl FilesystemStorageActor {
 
     pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
         let dir_path = file_validation::validate_canonical_path(dir_path)?;
-        Ok(SYS.actor_of(
+        SYS.actor_of(
             FilesystemStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
             &actor_id(&dir_path),
-        )?)
+        )
+            .map_err(|actor_create_error| HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", actor_create_error)))
     }
 
     /// builds an absolute path for an AddressableContent address

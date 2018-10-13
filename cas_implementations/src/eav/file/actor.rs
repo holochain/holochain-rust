@@ -1,5 +1,5 @@
+use actor::{Protocol, SYS};
 use holochain_core_types::{
-    actor::{Protocol, SYS},
     cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
@@ -76,12 +76,13 @@ impl EavFileStorageActor {
 
     pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
         let dir_path = file_validation::validate_canonical_path(dir_path)?;
-        Ok(SYS.actor_of(
+        SYS.actor_of(
             EavFileStorageActor::props(&dir_path),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
             &actor_id(&dir_path),
-        )?)
+        )
+            .map_err(|actor_create_error| HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", actor_create_error)))
     }
 
     fn write_to_file(

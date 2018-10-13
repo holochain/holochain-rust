@@ -1,7 +1,6 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
-use riker::actor::CreateError as RikerCreateError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -91,12 +90,6 @@ impl From<SerdeError> for HolochainError {
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
-    }
-}
-
-impl From<RikerCreateError> for HolochainError {
-    fn from(e: RikerCreateError) -> Self {
-        HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", e))
     }
 }
 

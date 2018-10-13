@@ -1,6 +1,8 @@
-use cas::content::{Address, Content};
-use eav::{Attribute, Entity, EntityAttributeValue, Value};
-use error::HolochainError;
+use holochain_core_types::{
+    cas::content::{Address, Content},
+    eav::{Attribute, Entity, EntityAttributeValue, Value},
+    error::HolochainError,
+};
 use futures::executor::block_on;
 use riker::actors::*;
 use riker_default::DefaultModel;

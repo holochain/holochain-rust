@@ -1,8 +1,7 @@
 pub mod actor;
-
+use actor::{AskSelf, Protocol};
 use eav::file::actor::EavFileStorageActor;
 use holochain_core_types::{
-    actor::{AskSelf, Protocol},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::{HcResult, HolochainError},
 };

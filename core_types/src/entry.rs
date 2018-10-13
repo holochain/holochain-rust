@@ -1,5 +1,8 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry_type::EntryType;
+use entry_type::test_entry_type;
+use entry_type::test_entry_type_b;
+use entry_type::test_sys_entry_type;
 use error::HolochainError;
 use json::{FromJson, ToJson};
 use serde_json;
@@ -119,7 +122,7 @@ pub fn test_sys_entry_content() -> String {
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
-    Entry::from_content(&test_entry_content())
+    Entry::new(&test_entry_type(), &test_entry_content())
 }
 
 /// the correct hash for test_entry()
@@ -137,18 +140,18 @@ pub fn test_entry_a() -> Entry {
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
-    Entry::from_content(&test_entry_content_b())
+    Entry::new(&test_entry_type_b(), &test_entry_content_b())
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
-    Entry::from_content(&snowflake::ProcessUniqueId::new().to_string())
+    Entry::new(&test_entry_type(), &snowflake::ProcessUniqueId::new().to_string())
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
-    Entry::from_content(&test_sys_entry_content())
+    Entry::new(&test_sys_entry_type(), &test_sys_entry_content())
 }
 
 #[cfg_attr(tarpaulin, skip)]

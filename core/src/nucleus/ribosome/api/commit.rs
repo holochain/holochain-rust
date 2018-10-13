@@ -15,7 +15,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
     entry_type_name: String,
-    entry_content: String,
+    entry_value: String,
 }
 
 fn build_validation_data_commit(
@@ -131,7 +131,7 @@ pub mod tests {
 
         let args = CommitAppEntryArgs {
             entry_type_name: entry_type.to_string(),
-            entry_content: entry.content().into(),
+            entry_content: entry.value().into(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

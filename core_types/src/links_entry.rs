@@ -44,7 +44,7 @@ impl Link {
 //-------------------------------------------------------------------------------------------------
 
 // HC.LinkAction sync with hdk-rust
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum LinkActionKind {
     ADD,
     DELETE,
@@ -62,6 +62,14 @@ impl LinkEntry {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
         }
+    }
+
+    pub fn action_kind(&self) -> &LinkActionKind {
+        &self.action_kind
+    }
+
+    pub fn link(&self) -> &Link {
+        &self.link
     }
 
     pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
@@ -118,9 +126,11 @@ pub mod tests {
 
     use links_entry::LinkTag;
     use links_entry::Link;
+    use links_entry::LinkEntry;
     use entry::test_entry_a;
     use entry::test_entry_b;
     use cas::content::AddressableContent;
+    use links_entry::LinkActionKind;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -128,6 +138,15 @@ pub mod tests {
 
     pub fn test_link() -> Link {
         Link::new(&test_entry_a().address(), &test_entry_b().address(), &test_link_tag())
+    }
+
+    pub fn test_link_entry_action_kind() -> LinkActionKind {
+        LinkActionKind::ADD
+    }
+
+    pub fn test_link_entry() -> LinkEntry {
+        let link = test_link();
+        LinkEntry::new(test_link_entry_action_kind(), link.base(), link.target(), link.tag())
     }
 
     #[test]
@@ -156,6 +175,27 @@ pub mod tests {
         assert_eq!(
             &test_link_tag(),
             test_link().tag(),
+        );
+    }
+
+    #[test]
+    fn link_entry_smoke_test() {
+        test_link_entry();
+    }
+
+    #[test]
+    fn link_entry_action_kind_test() {
+        assert_eq!(
+            &test_link_entry_action_kind(),
+            test_link_entry().action_kind(),
+        );
+    }
+
+    #[test]
+    fn link_entry_link_test() {
+        assert_eq!(
+            &test_link(),
+            test_link_entry().link(),
         );
     }
 }

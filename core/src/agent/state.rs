@@ -310,7 +310,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "\"test entry content\"",
+            "{\"value\":\"test entry content\",\"entry_type\":{\"App\":\"testEntryType\"}}",
             ActionResponse::GetEntry(Some(test_entry().clone()))
                 .to_json()
                 .unwrap(),

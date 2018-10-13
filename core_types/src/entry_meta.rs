@@ -283,7 +283,7 @@ pub mod tests {
     /// test the RoundTripJson implementation
     fn test_json_round_trip() {
         let meta = test_meta();
-        let expected = "{\"entry_address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
+        let expected = "{\"entry_address\":\"QmXQHdpqWprfcC5uXSWmd5hfz6bpz8ccU8fMHb9XFmp865\",\"attribute\":\"meta-attribute\",\"value\":\"meta value\",\"source\":\"test node id\"}";
 
         assert_eq!(expected.to_string(), meta.to_json().unwrap());
         assert_eq!(meta, EntryMeta::from_json(&expected).unwrap());

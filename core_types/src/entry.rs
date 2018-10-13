@@ -213,10 +213,16 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let entry = test_entry();
-        let expected = r#""test entry content""#;
+        let expected = "{\"value\":\"test entry content\",\"entry_type\":{\"App\":\"testEntryType\"}}";
         assert_eq!(expected, entry.to_json().unwrap());
         assert_eq!(entry, Entry::from_json(expected).unwrap());
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
+
+        let sys_entry = test_sys_entry();
+        let expected = "{\"value\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\",\"entry_type\":\"AgentId\"}";
+        assert_eq!(expected, sys_entry.to_json().unwrap());
+        assert_eq!(sys_entry, Entry::from_json(expected).unwrap());
+        assert_eq!(sys_entry, Entry::from_json(&sys_entry.to_json().unwrap()).unwrap());
     }
 
     #[test]

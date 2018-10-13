@@ -81,12 +81,12 @@ mod tests {
     use super::*;
     use holochain_core_types::cas::content::Content;
 
-    pub fn test_identity_content() -> Content {
+    pub fn test_identity_value() -> Content {
         "bob".to_string()
     }
 
     pub fn test_identity() -> Identity {
-        Identity(test_identity_content())
+        Identity(test_identity_value())
     }
 
     pub fn test_agent() -> Agent {
@@ -108,13 +108,13 @@ mod tests {
     #[test]
     /// show ToString implementation for Identity
     fn identity_to_string_test() {
-        assert_eq!(test_identity_content(), test_identity().to_string(),);
+        assert_eq!(test_identity_value(), test_identity().to_string(),);
     }
 
     #[test]
     /// show ToString implementation for Agent
     fn agent_to_string_test() {
-        assert_eq!(test_identity_content(), test_agent().to_string(),)
+        assert_eq!(test_identity_value(), test_agent().to_string(),)
     }
 
     #[test]
@@ -122,14 +122,14 @@ mod tests {
     fn agent_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::AgentId, &test_identity_content()),
+            Entry::new(&EntryType::AgentId, &test_identity_value()),
             test_agent().to_entry(),
         );
 
         // from_entry()
         assert_eq!(
             test_agent(),
-            Agent::from_entry(&Entry::new(&EntryType::AgentId, &test_identity_content())),
+            Agent::from_entry(&Entry::new(&EntryType::AgentId, &test_identity_value())),
         );
     }
 

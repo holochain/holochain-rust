@@ -15,7 +15,6 @@ extern crate rust_base58;
 extern crate serde;
 extern crate serde_json;
 extern crate snowflake;
-extern crate walkdir;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]

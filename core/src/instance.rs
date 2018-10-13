@@ -352,7 +352,7 @@ pub mod tests {
 
     pub fn test_context_with_state() -> Arc<Context> {
         let mut context = Context::new(
-            holochain_agent::Agent::from_string("Florence".to_string()),
+            Agent::from_string("Florence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );

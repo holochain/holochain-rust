@@ -5,7 +5,7 @@ use error::HolochainError;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
-    sync::{Arc, mpsc::channel, RwLock},
+    sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
 
@@ -47,7 +47,10 @@ pub fn test_content_addressable_storage() -> ExampleContentAddressableStorage {
 
 impl ContentAddressableStorage for ExampleContentAddressableStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        self.content.write().unwrap().unthreadable_add(&content.address(), &content.content())
+        self.content
+            .write()
+            .unwrap()
+            .unthreadable_add(&content.address(), &content.content())
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
@@ -63,7 +66,6 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
             Some(c) => Some(AC::from_content(&c)),
             None => None,
         })
-
     }
 }
 

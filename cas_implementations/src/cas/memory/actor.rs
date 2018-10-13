@@ -1,4 +1,4 @@
-use ::actor::{Protocol, SYS};
+use actor::{Protocol, SYS};
 use holochain_core_types::{
     cas::content::{Address, Content},
     error::HolochainError,
@@ -41,8 +41,12 @@ impl MemoryStorageActor {
             MemoryStorageActor::props(),
             // all actors have the same ID to allow round trip across clones
             &actor_id(),
-        )
-            .map_err(|actor_create_error| HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", actor_create_error)))
+        ).map_err(|actor_create_error| {
+            HolochainError::ErrorGeneric(format!(
+                "Failed to create actor in system: {:?}",
+                actor_create_error
+            ))
+        })
     }
 
     fn unthreadable_add(

@@ -150,10 +150,9 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 }
 
-
 #[derive(Clone)]
 pub struct ExampleEntityAttributeValueStorage {
-    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>
+    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }
 
 impl ExampleEntityAttributeValueStorage {
@@ -174,7 +173,10 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.content.read().unwrap().unthreadable_fetch_eav(entity, attribute, value)
+        self.content
+            .read()
+            .unwrap()
+            .unthreadable_fetch_eav(entity, attribute, value)
     }
 }
 

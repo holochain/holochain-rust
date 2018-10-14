@@ -1,8 +1,7 @@
 pub mod actor;
-
+use actor::{AskSelf, Protocol};
 use cas::file::actor::FilesystemStorageActor;
 use holochain_core_types::{
-    actor::{AskSelf, Protocol},
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,

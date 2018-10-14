@@ -24,7 +24,6 @@ pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
 pub mod entry;
-pub mod entry_meta;
 pub mod error;
 pub mod file_validation;
 pub mod get_links_args;

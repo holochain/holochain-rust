@@ -12,7 +12,7 @@ extern {
 #[derive(Serialize, Default)]
 struct CommitInputStruct {
   entry_type_name: String,
-  entry_content: String,
+  entry_value: String,
 }
 
 #[derive(Deserialize, Serialize, Default)]
@@ -27,13 +27,13 @@ struct CommitOutputStruct {
 
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
-fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content: &str)
+fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_value: &str)
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
   let input = CommitInputStruct {
-    entry_type_name: entry_type_name.to_string(),
-    entry_content: entry_content.to_string(),
+    entry_type_name: entry_type_name.to_owned(),
+    entry_value: entry_value.to_owned(),
   };
   let maybe_allocation =  serialize(mem_stack, input);
   if let Err(return_code) = maybe_allocation {

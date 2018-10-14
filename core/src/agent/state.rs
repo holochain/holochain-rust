@@ -12,6 +12,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::ToJson,
     keys::Keys,
+    signature::Signature,
+    time::Iso8601,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -107,28 +109,27 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry_type, entry) = match action {
-        Action::Commit(entry_type, entry) => (entry_type, entry),
-        _ => unreachable!(),
-    };
+    let entry = unwrap_to!(action => Action::Commit);
 
     // @TODO validation dispatch should go here rather than upstream in invoke_commit
     // @see https://github.com/holochain/holochain-rust/issues/256
 
     let chain_header = ChainHeader::new(
-        &entry_type,
-        &String::new(),
-        state
+        &entry.entry_type(),
+        &entry.address(),
+        // @TODO signatures
+        &Signature::from(""),
+        &state
             .top_chain_header
             .clone()
             .and_then(|chain_header| Some(chain_header.address())),
-        &entry.address(),
-        &String::new(),
-        state
+        &state
             .chain()
-            .iter_type(&state.top_chain_header, &entry_type)
+            .iter_type(&state.top_chain_header, &entry.entry_type())
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
+        // @TODO timestamp
+        &Iso8601::from(""),
     );
 
     // @TODO adding the entry to the CAS should happen elsewhere.
@@ -177,7 +178,7 @@ fn reduce_get_entry(
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_, _) => Some(reduce_commit_entry),
+        Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
@@ -293,7 +294,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
             ActionResponse::Commit(Ok(test_entry_address()))
                 .to_json()
                 .unwrap(),
@@ -309,7 +310,7 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "\"test entry content\"",
+            "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}",
             ActionResponse::GetEntry(Some(test_entry().clone()))
                 .to_json()
                 .unwrap(),
@@ -320,7 +321,7 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
+            format!("[\"{}\"]", test_entry_address()),
             ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
                 .to_json()
                 .unwrap(),
@@ -336,7 +337,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
             ActionResponse::LinkEntries(Ok(test_entry()))
                 .to_json()
                 .unwrap(),

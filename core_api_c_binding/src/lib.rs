@@ -25,7 +25,7 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let agent = Agent::from_string("c_bob".to_string());
+    let agent = Agent::from("c_bob".to_string());
 
     let context = Arc::new(Context::new(
         agent,
@@ -97,10 +97,13 @@ pub unsafe extern "C" fn holochain_call(
         function.as_str(),
         parameters.as_str(),
     ) {
-        Ok(string_result) => match CString::new(string_result) {
-            Ok(s) => s.into_raw(),
-            Err(_) => std::ptr::null_mut(),
-        },
+        Ok(string_result) => {
+            let string_trim = string_result.trim_right_matches(char::from(0));
+            match CString::new(string_trim) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
         Err(holochain_error) => match CString::new(format!(
             "Error calling zome function: {:?}",
             holochain_error

@@ -25,7 +25,7 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let agent = Agent::from_string("c_bob".to_string());
+    let agent = Agent::from("c_bob".to_string());
 
     let context = Arc::new(Context::new(
         agent,

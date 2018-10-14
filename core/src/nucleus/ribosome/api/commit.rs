@@ -15,7 +15,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
     entry_type_name: String,
-    entry_content: String,
+    entry_value: String,
 }
 
 fn build_validation_data_commit(
@@ -31,9 +31,7 @@ fn build_validation_data_commit(
     // Doing this right requires a refactoring in which I extract all these types
     // into a separate create ("core_types") that can be used from holochain core
     // and the HDK.
-    //
 
-    //let new_header = state.chain().create_next_header(entry_type, entry);
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {
         chain_header: None, //Some(new_header),
@@ -63,9 +61,9 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry = Entry::from(input.entry_content);
     let entry_type =
         EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
+    let entry = Entry::new(&entry_type, &input.entry_value);
     let validation_data = build_validation_data_commit(
         entry.clone(),
         entry_type.clone(),
@@ -81,7 +79,7 @@ pub fn invoke_commit_app_entry(
             validation_data,
             &runtime.context)
             // if successful, commit entry:
-            .and_then(|_| commit_entry(entry_type.clone(), entry.clone(), &runtime.context.action_channel, &runtime.context)),
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
     let maybe_json = match task_result {
@@ -131,7 +129,7 @@ pub mod tests {
 
         let args = CommitAppEntryArgs {
             entry_type_name: entry_type.to_string(),
-            entry_content: entry.content().into(),
+            entry_value: entry.value().to_owned(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

@@ -227,7 +227,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         Arc::new(Context::new(
-            Agent::from_string("alex".to_string()),
+            Agent::from("alex".to_string()),
             Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
             Arc::new(Mutex::new(SimplePersister::new())),
         ))

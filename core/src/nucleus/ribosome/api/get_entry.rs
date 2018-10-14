@@ -223,7 +223,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry content\"}\u{0}");
+        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

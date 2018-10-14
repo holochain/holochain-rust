@@ -5,5 +5,6 @@ authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
-serde = "1.0.79"
-serde_json = "1.0.32"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }

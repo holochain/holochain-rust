@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use context::Context;
 use futures::Future;
-use holochain_core_types::{entry::Entry, entry_type::EntryType};
+use holochain_core_types::entry::Entry;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 
@@ -13,12 +13,11 @@ use std::sync::{mpsc::SyncSender, Arc};
 ///
 /// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
-    entry_type: EntryType,
     entry: Entry,
     action_channel: &SyncSender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> CommitFuture {
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry_type, entry));
+    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
     dispatch_action(action_channel, action_wrapper.clone());
     CommitFuture {
         context: context.clone(),

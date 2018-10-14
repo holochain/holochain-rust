@@ -23,7 +23,7 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::from_string("bob".to_string());
+//! let agent = Agent::from("bob".to_string());
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
@@ -164,7 +164,7 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = holochain_agent::Agent::from_string(agent_name.to_string());
+        let agent = holochain_agent::Agent::from(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
             Arc::new(Context::new(
@@ -390,6 +390,10 @@ mod tests {
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
+        assert_ne!(
+            result.clone().ok().unwrap(),
+            "{\"Err\":\"Argument deserialization failed\"}"
+        );
 
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests

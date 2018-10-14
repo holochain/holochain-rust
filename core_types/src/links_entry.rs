@@ -162,6 +162,9 @@ pub mod tests {
     use cas::content::AddressableContent;
     use links_entry::LinkActionKind;
     use std::string::ToString;
+    use entry::ToEntry;
+    use entry::Entry;
+    use entry_type::EntryType;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -256,12 +259,19 @@ pub mod tests {
         );
     }
 
-    // #[test]
-    // /// show ToEntry implementation for Link
-    // fn link_entry_to_entry_test() {
-    //     // to_entry()
-    //     assert_eq!(
-    //         Entry::new(&EntryType::Link, &test_identity_value()),
-    //     )
-    // }
+    #[test]
+    /// show ToEntry implementation for Link
+    fn link_entry_to_entry_test() {
+        // to_entry()
+        assert_eq!(
+            Entry::new(&EntryType::Link, &test_link_entry_string()),
+            test_link_entry().to_entry(),
+        );
+
+        // from_entry()
+        assert_eq!(
+            test_link_entry(),
+            LinkEntry::from_entry(&test_link_entry().to_entry()),
+        );
+    }
 }

@@ -3,6 +3,8 @@ use holochain_core_types::{
     hash::HashString,
 };
 
+extern crate serde_json;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ValidationData {
     pub chain_header: Option<ChainHeader>,

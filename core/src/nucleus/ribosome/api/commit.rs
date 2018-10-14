@@ -6,20 +6,17 @@ use agent::{
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     entry::Entry, entry_type::EntryType,
-    hash::HashString, json::ToJson
+    error::HolochainError,
+    hash::HashString
 };
-use holochain_wasm_utils::api_serialization::validation::{EntryAction, EntryLifecycle, ValidationData};
+use holochain_wasm_utils::api_serialization::{
+    commit::{CommitEntryArgs, CommitOutputStruct},
+    validation::{EntryAction, EntryLifecycle, ValidationData}
+};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-/// Struct for input data received when Commit API function is invoked
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct CommitAppEntryArgs {
-    entry_type_name: String,
-    entry_value: String,
-}
 
 fn build_validation_data_commit(
     _entry: Entry,
@@ -57,7 +54,7 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
+    let input: CommitEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
@@ -85,27 +82,37 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let maybe_json = match task_result {
+    let maybe_address = match task_result {
         Ok(action_response) => match action_response {
-            ActionResponse::Commit(_) => action_response.to_json(),
-            _ => return ribosome_error_code!(ReceivedWrongActionResult),
+            ActionResponse::Commit(result) => result,
+            _ => unreachable!(),
         },
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
-            Ok(json!(error_report).to_string())
+
+            Err(HolochainError::ErrorGeneric(
+                serde_json::to_string(&error_report)
+                    .expect("Could not serialize error report")
+            ))
+
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
 
-    // allocate and encode result
-    match maybe_json {
-        Ok(json) => runtime.store_utf8(&json),
-        Err(_) => ribosome_error_code!(ResponseSerializationFailed),
+    let mut output = CommitOutputStruct::new();
+    match maybe_address {
+        Ok(address) => output.address = address,
+        Err(error) => output.error = error.to_string(),
     }
+
+    let json = serde_json::to_string(&output)
+        .expect("Could not serialize CommitOutputStruct");
+
+    runtime.store_utf8(&json)
 
     // @TODO test that failing validation prevents commits happening
     // @see https://github.com/holochain/holochain-rust/issues/206
@@ -120,7 +127,7 @@ pub mod tests {
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -130,7 +137,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let args = CommitAppEntryArgs {
+        let args = CommitEntryArgs {
             entry_type_name: entry_type.to_string(),
             entry_value: entry.value().to_owned(),
         };
@@ -149,7 +156,7 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(r#"{{"address":"{}","error":""}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

@@ -5,14 +5,13 @@
 pub mod tests {
     extern crate test_utils;
     use action::{Action, ActionWrapper};
-    use instance::{tests::test_context, Instance, Observer};
     use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
         entry::ToEntry,
         entry_type::EntryType,
         links_entry::*,
-        cas::content::Address,
     };
-    use holochain_core_types::cas::content::AddressableContent;
+    use instance::{tests::test_context, Instance, Observer};
 
     use std::sync::mpsc::channel;
 

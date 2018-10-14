@@ -1,4 +1,4 @@
-use cas::content::{Address};
+use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use serde_json;
@@ -154,24 +154,22 @@ impl ToEntry for LinkListEntry {
 #[cfg(test)]
 pub mod tests {
 
-    use links_entry::LinkTag;
-    use links_entry::Link;
-    use links_entry::LinkEntry;
-    use entry::test_entry_a;
-    use entry::test_entry_b;
     use cas::content::AddressableContent;
-    use links_entry::LinkActionKind;
-    use std::string::ToString;
-    use entry::ToEntry;
-    use entry::Entry;
+    use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
     use entry_type::EntryType;
+    use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
+    use std::string::ToString;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
     }
 
     pub fn test_link() -> Link {
-        Link::new(&test_entry_a().address(), &test_entry_b().address(), &test_link_tag())
+        Link::new(
+            &test_entry_a().address(),
+            &test_entry_b().address(),
+            &test_link_tag(),
+        )
     }
 
     pub fn test_link_entry_action_kind() -> LinkActionKind {
@@ -180,7 +178,12 @@ pub mod tests {
 
     pub fn test_link_entry() -> LinkEntry {
         let link = test_link();
-        LinkEntry::new(test_link_entry_action_kind(), link.base(), link.target(), link.tag())
+        LinkEntry::new(
+            test_link_entry_action_kind(),
+            link.base(),
+            link.target(),
+            link.tag(),
+        )
     }
 
     pub fn test_link_entry_string() -> String {
@@ -198,26 +201,17 @@ pub mod tests {
 
     #[test]
     fn link_base_test() {
-        assert_eq!(
-            &test_entry_a().address(),
-            test_link().base(),
-        );
+        assert_eq!(&test_entry_a().address(), test_link().base(),);
     }
 
     #[test]
     fn link_target_test() {
-        assert_eq!(
-            &test_entry_b().address(),
-            test_link().target(),
-        );
+        assert_eq!(&test_entry_b().address(), test_link().target(),);
     }
 
     #[test]
     fn link_tag_test() {
-        assert_eq!(
-            &test_link_tag(),
-            test_link().tag(),
-        );
+        assert_eq!(&test_link_tag(), test_link().tag(),);
     }
 
     #[test]
@@ -235,28 +229,19 @@ pub mod tests {
 
     #[test]
     fn link_entry_link_test() {
-        assert_eq!(
-            &test_link(),
-            test_link_entry().link(),
-        );
+        assert_eq!(&test_link(), test_link_entry().link(),);
     }
 
     #[test]
     /// show ToString for LinkEntry
     fn link_entry_to_string_test() {
-        assert_eq!(
-            test_link_entry_string(),
-            test_link_entry().to_string(),
-        );
+        assert_eq!(test_link_entry_string(), test_link_entry().to_string(),);
     }
 
     #[test]
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
-        assert_eq!(
-            LinkEntry::from(test_link_entry_string()),
-            test_link_entry(),
-        );
+        assert_eq!(LinkEntry::from(test_link_entry_string()), test_link_entry(),);
     }
 
     #[test]

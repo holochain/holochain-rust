@@ -13,7 +13,7 @@ use std::ops::Deref;
 /// data is stored as a JSON string
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
-    value: Content,
+    value: String,
     entry_type: EntryType,
 }
 

@@ -1,7 +1,7 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{
     entry_type::{test_entry_type, EntryType},
-    test_entry, Entry, ToEntry,
+    test_entry, Entry,
 };
 use error::HolochainError;
 use json::ToJson;
@@ -106,21 +106,6 @@ impl ToJson for ChainHeader {
     }
 }
 
-//
-impl ToEntry for ChainHeader {
-    fn to_entry(&self) -> Entry {
-        Entry::new(
-            &EntryType::ChainHeader,
-            &self.to_json().expect("entry should be valid"),
-        )
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        return ChainHeader::from_json_str(&entry.value())
-            .expect("entry is not a valid ChainHeader Entry");
-    }
-}
-
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
         self.to_json()
@@ -130,6 +115,12 @@ impl AddressableContent for ChainHeader {
     fn from_content(content: &Content) -> Self {
         ChainHeader::from_json_str(content)
             .expect("could not read Json as valid ChainHeader Content")
+    }
+}
+
+impl Entry for ChainHeader {
+    fn entry_type(&self) -> &EntryType {
+        &EntryType::ChainHeader
     }
 }
 

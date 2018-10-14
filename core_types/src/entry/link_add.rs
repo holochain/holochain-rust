@@ -1,5 +1,5 @@
 use cas::content::Address;
-use entry::{entry_type::EntryType, Entry, ToEntry};
+use entry::{entry_type::EntryType, Entry};
 use serde_json;
 
 //-------------------------------------------------------------------------------------------------

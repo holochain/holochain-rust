@@ -129,13 +129,13 @@ impl LinkListEntry {
 
 impl ToString for LinkListEntry {
     fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("LinkEntry failed to serialize")
+        serde_json::to_string(self).expect("LinkListEntry failed to serialize")
     }
 }
 
 impl From<String> for LinkListEntry {
     fn from(s: String) -> LinkListEntry {
-        serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
+        serde_json::from_str(&s).expect("LinkListEntry failed to deserialize")
     }
 }
 

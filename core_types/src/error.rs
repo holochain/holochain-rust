@@ -1,15 +1,12 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
-use riker::actor::CreateError as RikerCreateError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
-    path::Path,
 };
-use walkdir::Error as WalkdirError;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq)]
@@ -78,18 +75,6 @@ fn reason_for_io_error(error: &IoError) -> String {
     }
 }
 
-impl From<WalkdirError> for HolochainError {
-    fn from(error: WalkdirError) -> Self {
-        // adapted from https://docs.rs/walkdir/2.2.5/walkdir/struct.Error.html#example
-        let path = error.path().unwrap_or(Path::new("")).display();
-        let reason = match error.io_error() {
-            Some(inner) => reason_for_io_error(inner),
-            None => String::new(),
-        };
-        HolochainError::IoError(format!("error at path: {}, reason: {}", path, reason))
-    }
-}
-
 impl From<IoError> for HolochainError {
     fn from(error: IoError) -> Self {
         HolochainError::IoError(reason_for_io_error(&error))
@@ -105,12 +90,6 @@ impl From<SerdeError> for HolochainError {
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
-    }
-}
-
-impl From<RikerCreateError> for HolochainError {
-    fn from(e: RikerCreateError) -> Self {
-        HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", e))
     }
 }
 

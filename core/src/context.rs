@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn test_state() {
         let mut context = Context::new(
-            holochain_agent::Agent::from_string("Terence".to_string()),
+            holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );
@@ -119,7 +119,7 @@ mod tests {
     #[should_panic]
     fn test_deadlock() {
         let mut context = Context::new(
-            holochain_agent::Agent::from_string("Terence".to_string()),
+            holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );

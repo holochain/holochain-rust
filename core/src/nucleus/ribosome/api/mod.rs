@@ -59,7 +59,7 @@ pub enum ZomeApiFunction {
     Debug,
 
     /// Commit an app entry to source chain
-    /// commit_entry(entry_type: String, entry_content: String) -> Hash
+    /// commit_entry(entry_type: String, entry_value: String) -> Hash
     CommitAppEntry,
 
     /// Get an app entry from source chain by key (header hash)

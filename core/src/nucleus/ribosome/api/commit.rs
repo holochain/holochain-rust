@@ -4,7 +4,10 @@ use agent::{
     state::{ActionResponse, AgentState},
 };
 use futures::{executor::block_on, FutureExt};
-use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
+use holochain_core_types::{
+    entry::{entry_type::EntryType, Entry},
+    json::ToJson,
+};
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
@@ -114,7 +117,8 @@ pub mod tests {
     extern crate wabt;
 
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        cas::content::AddressableContent,
+        entry::{entry_type::test_entry_type, test_entry},
     };
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},

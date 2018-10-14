@@ -7,8 +7,7 @@ extern crate serde;
 
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
-    entry::{Entry, ToEntry},
-    entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry, ToEntry},
 };
 
 /// Object holding an Agent's identity.

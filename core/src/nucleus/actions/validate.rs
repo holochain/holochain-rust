@@ -4,7 +4,9 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, hash::HashString,
+    cas::content::AddressableContent,
+    entry::{entry_type::EntryType, Entry},
+    hash::HashString,
 };
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::ribosome::callback::{self, CallbackResult};

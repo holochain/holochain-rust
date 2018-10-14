@@ -1,5 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry_type::{
+use entry::entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
@@ -8,6 +8,9 @@ use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
+pub mod entry_type;
+pub mod link;
+pub mod link_list;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JSON string

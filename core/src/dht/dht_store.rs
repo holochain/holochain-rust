@@ -4,9 +4,9 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    entry::link::Link,
     error::HolochainError,
     hash::HashString,
-    links_entry::Link,
 };
 use std::collections::HashSet;
 

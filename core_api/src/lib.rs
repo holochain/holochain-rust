@@ -390,11 +390,15 @@ mod tests {
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
+        assert_ne!(
+            result.clone().ok().unwrap(),
+            "{\"Err\":\"Argument deserialization failed\"}"
+        );
 
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]

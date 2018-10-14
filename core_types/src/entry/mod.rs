@@ -8,31 +8,19 @@ use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
+
+pub mod agent;
+pub mod app;
+pub mod chain_header;
+pub mod chain_migrate;
+pub mod delete;
+pub mod dna;
 pub mod entry_type;
-pub mod link;
-pub mod link_list;
+pub mod link_add;
+pub mod link_remove;
 
-/// Structure holding actual data in a source chain "Item"
-/// data is stored as a JSON string
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Entry {
-    value: String,
-    entry_type: EntryType,
-}
-
-impl Entry {
-    pub fn value(&self) -> &Content {
-        &self.value
-    }
-
-    pub fn entry_type(&self) -> &EntryType {
-        &self.entry_type
-    }
-}
-
-pub trait ToEntry {
-    fn to_entry(&self) -> Entry;
-    fn from_entry(&Entry) -> Self;
+pub trait Entry: AddressableContent {
+    fn entry_type(&self) -> &EntryType;
 }
 
 impl PartialEq for Entry {
@@ -50,50 +38,6 @@ impl From<String> for Entry {
 impl From<Entry> for String {
     fn from(entry: Entry) -> Self {
         entry.content()
-    }
-}
-
-impl AddressableContent for Entry {
-    fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not convert Entry to Json Content")
-    }
-
-    fn from_content(content: &Content) -> Self {
-        Entry::from_json(&content.to_string()).expect("could not convert Json Content to Entry")
-    }
-}
-
-impl Entry {
-    pub fn new(entry_type: &EntryType, value: &Content) -> Entry {
-        Entry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
-        }
-    }
-}
-
-impl ToJson for Entry {
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
-    }
-}
-
-impl FromJson for Entry {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
-    }
-}
-
-impl Deref for Entry {
-    type Target = Content;
-
-    fn deref(&self) -> &Self::Target {
-        self.value()
     }
 }
 

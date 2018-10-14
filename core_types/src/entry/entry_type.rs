@@ -14,17 +14,18 @@ macro_rules! sys_prefix {
 // Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum EntryType {
-    AgentId,
-    Deletion,
-    App(String),
     Dna,
+
+    Agent,
+
+    App(String),
+    Delete,
+
+    LinkAdd,
+    LinkRemove,
+
     ChainHeader,
-    Key,
-    Link,
-    Migration,
-    /// TODO #339 - This is different kind of SystemEntry for the DHT only.
-    /// Should be moved into a different enum for DHT entry types.
-    LinkList,
+    ChainMigrate,
 }
 
 impl EntryType {

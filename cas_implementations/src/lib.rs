@@ -7,6 +7,8 @@
 
 extern crate futures;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate lazy_static;
 extern crate riker;
 extern crate riker_default;
 extern crate riker_patterns;
@@ -16,5 +18,6 @@ extern crate snowflake;
 extern crate tempfile;
 extern crate walkdir;
 
+pub mod actor;
 pub mod cas;
 pub mod eav;

@@ -1,5 +1,5 @@
+use actor::{Protocol, SYS};
 use holochain_core_types::{
-    actor::{Protocol, SYS},
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
 };
@@ -39,12 +39,17 @@ impl EavMemoryStorageActor {
     }
 
     pub fn new_ref() -> HcResult<ActorRef<Protocol>> {
-        Ok(SYS.actor_of(
+        SYS.actor_of(
             EavMemoryStorageActor::props(),
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
             &actor_id(),
-        )?)
+        ).map_err(|actor_create_error| {
+            HolochainError::ErrorGeneric(format!(
+                "Failed to create actor in system: {:?}",
+                actor_create_error
+            ))
+        })
     }
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {

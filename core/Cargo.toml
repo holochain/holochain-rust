@@ -18,16 +18,11 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 multihash = "0.8.0"
 bitflags = "1.0"
 holochain_wasm_utils = { path = "../wasm_utils"}
-riker = "0.1.7"
-riker-default = "0.1.7"
-riker-patterns = "0.1.7"
 futures-preview = "0.2.2"
 lazy_static = "1.1.0"
 unwrap_to = "0.1.0"
 num-traits = "0.2"
 num-derive = "0.2"
-walkdir = "2"
-tempfile = "3"
 config = "0.8"
 regex = "1"
 holochain_core_types = { path = "../core_types" }

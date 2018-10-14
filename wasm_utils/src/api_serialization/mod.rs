@@ -1,0 +1,12 @@
+/// This module holds structs for all arguments and return types
+/// that get serialized and deserialized between core native and
+/// the WASM based ribosome.
+///
+/// When these types get changed their counter parts in all HDKs
+/// have to change with them! Otherwise we get deserialization
+/// errors in the ribosome.
+///
+/// For the case of HDK-rust we can use the exact same types by
+/// importing this module.
+
+pub mod validation;

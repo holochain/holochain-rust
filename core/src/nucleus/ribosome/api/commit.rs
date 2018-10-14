@@ -4,8 +4,11 @@ use agent::{
     state::{ActionResponse, AgentState},
 };
 use futures::{executor::block_on, FutureExt};
-use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
-use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
+use holochain_core_types::{
+    entry::Entry, entry_type::EntryType,
+    hash::HashString, json::ToJson
+};
+use holochain_wasm_utils::api_serialization::validation::{EntryAction, EntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
@@ -27,7 +30,7 @@ fn build_validation_data_commit(
     // TODO: populate validation data with with chain content
     // I have left this out because filling the valiation data with
     // chain headers and entries does not work as long as ValidationData
-    // is defined with the type copies i've put in wasm_utils/src/validation.rs.
+    // is defined with the type copies i've put in wasm_utils/src/api_serialization/validation.rs.
     // Doing this right requires a refactoring in which I extract all these types
     // into a separate create ("core_types") that can be used from holochain core
     // and the HDK.
@@ -35,12 +38,12 @@ fn build_validation_data_commit(
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {
         chain_header: None, //Some(new_header),
-        sources: vec!["<insert your agent key here>".to_string()],
+        sources: vec![HashString::from("<insert your agent key here>")],
         source_chain_entries: None,
         source_chain_headers: None,
         custom: None,
-        lifecycle: HcEntryLifecycle::Chain,
-        action: HcEntryAction::Commit,
+        lifecycle: EntryLifecycle::Chain,
+        action: EntryAction::Commit,
     }
 }
 

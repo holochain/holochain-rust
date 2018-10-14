@@ -31,9 +31,7 @@ fn build_validation_data_commit(
     // Doing this right requires a refactoring in which I extract all these types
     // into a separate create ("core_types") that can be used from holochain core
     // and the HDK.
-    //
 
-    //let new_header = state.chain().create_next_header(entry_type, entry);
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {
         chain_header: None, //Some(new_header),

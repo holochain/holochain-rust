@@ -1,16 +1,7 @@
-use error::HolochainError;
+pub struct JsonString(String);
 
-pub trait ToJson {
-    /// serialize self to a canonical JSON string
-    fn to_json(&self) -> Result<String, HolochainError>;
+impl From<String> for JsonString {
+    fn from(s: String) -> JsonString {
+        JsonString(s)
+    }
 }
-
-pub trait FromJson
-where
-    Self: Sized,
-{
-    /// deserialize a Pair from a canonical JSON string
-    fn from_json(s: &str) -> Result<Self, HolochainError>;
-}
-
-pub trait RoundTripJson: ToJson + FromJson {}

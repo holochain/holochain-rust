@@ -2,6 +2,7 @@ use cas::storage::ContentAddressableStorage;
 use hash::HashString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
+use json::JsonString;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -39,6 +40,12 @@ impl AddressableContent for Content {
 
     fn from_content(content: &Content) -> Self {
         content.clone()
+    }
+}
+
+impl From<Address> for JsonString {
+    fn from(address: Address) -> JsonString {
+        JsonString::from(format!("{{\"address\":\"{}\"}}", address))
     }
 }
 

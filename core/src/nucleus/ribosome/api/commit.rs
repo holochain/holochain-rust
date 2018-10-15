@@ -6,7 +6,6 @@ use agent::{
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     entry::{Entry},
-    json::ToJson,
 };
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};

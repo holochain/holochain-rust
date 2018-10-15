@@ -12,6 +12,7 @@ use keys::test_key;
 use serde_json;
 use snowflake;
 use std::fmt::{Display, Formatter, Result};
+use json::JsonString;
 
 pub mod agent;
 pub mod app;
@@ -149,6 +150,12 @@ impl AddressableContent for Entry {
 
     fn from_content(content: &Content) -> Entry {
         serde_json::from_str(content).expect("could not read Json as valid Entry")
+    }
+}
+
+impl From<Entry> for JsonString {
+    fn from(entry: Entry) -> JsonString {
+        JsonString::from(entry.content())
     }
 }
 

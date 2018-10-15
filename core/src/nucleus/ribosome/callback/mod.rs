@@ -11,7 +11,6 @@ use holochain_core_types::{
         dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
         Entry,
     },
-    json::ToJson,
 };
 use nucleus::{
     ribosome::{
@@ -125,9 +124,9 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
-            CallbackParams::Receive => "".to_string(),
+            CallbackParams::Genesis => String::new(),
+            CallbackParams::ValidateCommit(entry) => entry.content(),
+            CallbackParams::Receive => String::new(),
         }
     }
 }

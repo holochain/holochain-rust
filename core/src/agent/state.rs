@@ -9,12 +9,12 @@ use holochain_core_types::{
     },
     entry::{chain_header::ChainHeader, Entry},
     error::HolochainError,
-    json::ToJson,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
 use std::{collections::HashMap, sync::Arc};
+use holochain_core_types::json::JsonString;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -73,24 +73,24 @@ pub enum ActionResponse {
     LinkEntries(Result<Entry, HolochainError>),
 }
 
-impl ToJson for ActionResponse {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        match self {
+impl From<ActionResponse> for JsonString {
+    fn from(action_response: ActionResponse) -> JsonString {
+        match action_response {
             ActionResponse::Commit(result) => match result {
-                Ok(entry_address) => Ok(format!("{{\"address\":\"{}\"}}", entry_address)),
-                Err(err) => Ok((*err).to_json()?),
+                Ok(entry_address) => JsonString::from(entry_address),
+                Err(err) => JsonString::from(err),
             },
             ActionResponse::GetEntry(result) => match result {
-                Some(entry) => Ok(entry.content()),
-                None => Ok("".to_string()),
+                Some(entry) => JsonString::from(entry),
+                None => JsonString::from(None),
             },
             ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => Ok(json!(hash_list).to_string()),
-                Err(err) => Ok((*err).to_json()?),
+                Ok(hash_list) => JsonString::from(hash_list),
+                Err(err) => JsonString::from(err),
             },
             ActionResponse::LinkEntries(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
-                Err(err) => Ok((*err).to_json()?),
+                Ok(entry) => JsonString::from(entry.address()),
+                Err(err) => JsonString::from(err),
             },
         }
     }

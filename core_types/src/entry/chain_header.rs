@@ -1,7 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_app_entry, test_app_entry_type, EntryType};
-use error::HolochainError;
-use json::ToJson;
 use serde_json;
 use signature::{test_signature, Signature};
 use time::{test_iso_8601, Iso8601};
@@ -97,15 +95,9 @@ impl ChainHeader {
     }
 }
 
-impl ToJson for ChainHeader {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(self)?)
-    }
-}
-
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        self.to_json()
+        serde_json::to_string(self)
             .expect("could not Jsonify ChainHeader as Content")
     }
 

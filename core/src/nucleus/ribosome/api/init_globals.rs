@@ -1,6 +1,7 @@
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use holochain_core_types::cas::content::Content;
+use holochain_core_types::cas::content::AddressableContent;
 
 use serde_json;
 
@@ -8,7 +9,7 @@ use serde_json;
 struct InitGlobalsOutput {
     app_name: String,
     app_dna_hash: String,
-    app_agent_id_content: Content,
+    app_agent_id_entry_content: Content,
     app_agent_key_hash: String,
     app_agent_initial_hash: String,
     app_agent_latest_hash: String,
@@ -28,7 +29,7 @@ pub fn invoke_init_globals(
         // TODO #232 - Implement Dna hash
         app_dna_hash: "FIXME-app_dna_hash".to_string(),
 
-        app_agent_id_content: runtime.context.agent_id().content(),
+        app_agent_id_entry_content: runtime.context.agent_id_entry().content(),
 
         // TODO #233 - Implement agent pub key hash
         app_agent_key_hash: "FIXME-app_agent_key_hash".to_string(),

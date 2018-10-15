@@ -1,5 +1,5 @@
 use action::ActionWrapper;
-use holochain_core_types::{entry::agent::AgentId, error::HolochainError, entry::Entry};
+use holochain_core_types::{error::HolochainError, entry::Entry};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -8,6 +8,7 @@ use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
+use holochain_core_types::entry::EntryType;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -33,6 +34,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
+        assert_eq!(EntryType::AgentId, agent_id_entry.entry_type());
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Context {
@@ -46,12 +48,13 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent_id_entry: AgentId,
+        agent_id_entry: Entry,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
     ) -> Context {
+        assert_eq!(EntryType::AgentId, agent_id_entry.entry_type());
         Context {
             agent_id_entry,
             logger,
@@ -62,8 +65,8 @@ impl Context {
         }
     }
 
-    pub fn agent_id(&self) -> &AgentId {
-        &self.agent_id
+    pub fn agent_id_entry(&self) -> &Entry {
+        &self.agent_id_entry
     }
 
     // helper function to make it easier to call the logger

@@ -18,7 +18,7 @@ pub struct GetEntryResult {
 }
 
 impl GetEntryResult {
-    pub fn found(entry: String) -> GetEntryResult{
+    pub fn found(entry: String) -> GetEntryResult {
         GetEntryResult {
             status: GetResultStatus::Found,
             entry,

@@ -1,7 +1,5 @@
 use futures::executor::block_on;
-use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryArgs, GetEntryResult,
-};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};

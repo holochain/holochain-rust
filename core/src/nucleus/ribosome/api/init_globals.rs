@@ -1,4 +1,8 @@
 use nucleus::ribosome::api::Runtime;
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;
@@ -24,8 +28,14 @@ pub fn invoke_init_globals(
     let globals = InitGlobalsOutput {
         app_name: runtime.app_name.to_string(),
 
-        // TODO #232 - Implement Dna hash
-        app_dna_hash: "FIXME-app_dna_hash".to_string(),
+        app_dna_hash: match runtime.context.state() {
+            Some(state) => {
+                let mut s = DefaultHasher::new();
+                state.nucleus().dna().hash(&mut s);
+                String::from(s.finish().to_string())
+            }
+            None => String::from(""),
+        },
 
         app_agent_id_str: runtime.context.agent.to_string(),
 

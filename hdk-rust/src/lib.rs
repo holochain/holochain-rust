@@ -22,7 +22,6 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
-        validation::*,
     },
     holochain_core_types::hash::HashString,
     memory_serialization::*, memory_allocation::*,
@@ -82,11 +81,11 @@ lazy_static! {
 //--------------------------------------------------------------------------------------------------
 // SYSTEM CONSTS
 //--------------------------------------------------------------------------------------------------
-
+/*
 // HC.Version
 const VERSION: u16 = 1;
 const VERSION_STR: &'static str = "1";
-
+*/
 // HC.HashNotFound
 #[derive(Debug)]
 pub enum RibosomeError {
@@ -133,7 +132,7 @@ impl Default for GetEntryMask {
         GetEntryMask::ENTRY
     }
 }
-
+/*
 // HC.LinkAction
 pub enum LinkAction {
     Add,
@@ -183,7 +182,7 @@ mod bundle_cancel {
         Commit,
     }
 }
-
+*/
 /// Allowed input for close_bundle()
 pub enum BundleOnClose {
     Commit,

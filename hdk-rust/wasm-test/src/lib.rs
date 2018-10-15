@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate hdk;
+extern crate holochain_wasm_utils;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
@@ -12,7 +13,6 @@ use hdk::globals::G_MEM_STACK;
 use holochain_wasm_utils::{
     error::RibosomeErrorCode,
     holochain_core_types::hash::HashString,
-    holochain_wasm_utils::*,
     memory_serialization::*, memory_allocation::*
 };
 use hdk::RibosomeError;
@@ -22,13 +22,16 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     unsafe {
         G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
     }
+    #[allow(unused_must_use)]
+    {
+        hdk::debug(&hdk::APP_NAME);
+        hdk::debug(&hdk::APP_DNA_HASH.to_string());
+        hdk::debug(&hdk::APP_AGENT_ID_STR);
+        hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
+        hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
+        hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
+    }
 
-    hdk::debug(&hdk::APP_NAME);
-    hdk::debug(&hdk::APP_DNA_HASH.to_string());
-    hdk::debug(&hdk::APP_AGENT_ID_STR);
-    hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
-    hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
-    hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
 
     return 0;
 }
@@ -55,7 +58,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     // Deserialize and check for an encoded error
     let result = try_deserialize_allocation(encoded_allocation_of_input as u32);
     if let Err(e) = result {
-        hdk::debug(&format!("ERROR: {:?}", e));
+        hdk::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 

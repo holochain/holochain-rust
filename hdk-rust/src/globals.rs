@@ -14,6 +14,7 @@ lazy_static! {
 
 // Invokable functions in the ribosome
 // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
+#[allow(dead_code)]
 extern "C" {
     pub(crate) fn hc_property(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_make_hash(encoded_allocation_of_input: u32) -> u32;

@@ -9,4 +9,5 @@
 /// For the case of HDK-rust we can use the exact same types by
 /// importing this module.
 pub mod commit;
+pub mod get_entry;
 pub mod validation;

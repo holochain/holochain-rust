@@ -1,7 +1,5 @@
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate serde_derive;
 
 use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::{
@@ -74,7 +72,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct  = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+  let output: CommitEntryResult = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");

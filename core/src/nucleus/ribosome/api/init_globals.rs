@@ -1,8 +1,6 @@
 use nucleus::ribosome::api::Runtime;
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
+use holochain_core_types::hash::HashString;
+use multihash::Hash as Multihash;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;
@@ -29,11 +27,10 @@ pub fn invoke_init_globals(
         app_name: runtime.app_name.to_string(),
 
         app_dna_hash: match runtime.context.state() {
-            Some(state) => {
-                let mut s = DefaultHasher::new();
-                state.nucleus().dna().hash(&mut s);
-                String::from(s.finish().to_string())
-            }
+            Some(state) => match state.nucleus().dna() {
+                Some(dna) => HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256).to_string(),
+                None => String::from(""),
+            },
             None => String::from(""),
         },
 

@@ -62,7 +62,7 @@ pub fn initialize_application(
                 context_clone
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.err().unwrap()),
+                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
                 return;

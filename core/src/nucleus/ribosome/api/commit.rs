@@ -1,10 +1,11 @@
 extern crate futures;
 use agent::{
     actions::commit::*,
-    state::{ActionResponse, AgentState},
+    state::AgentState,
 };
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
+    cas::content::Address,
     entry::Entry, entry_type::EntryType,
     error::HolochainError,
     hash::HashString
@@ -71,7 +72,7 @@ pub fn invoke_commit_app_entry(
     );
 
     // Wait for future to be resolved
-    let task_result: Result<ActionResponse, String> = block_on(
+    let task_result: Result<Address, HolochainError> = block_on(
         // First validate entry:
         validate_entry(
             entry_type.clone(),
@@ -82,40 +83,25 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let maybe_address = match task_result {
-        Ok(action_response) => match action_response {
-            ActionResponse::Commit(result) => result,
-            _ => unreachable!(),
-        },
+    let maybe_json = match task_result {
+        Ok(address) => serde_json::to_string(&CommitOutputStruct::success(address)),
+        Err(HolochainError::ValidationFailed(fail_string)) => serde_json::to_string(&CommitOutputStruct::failure(fail_string)),
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
 
-            Err(HolochainError::ErrorGeneric(
-                serde_json::to_string(&error_report)
-                    .expect("Could not serialize error report")
-            ))
-
+            serde_json::to_string(&error_report.to_string())
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
-
-    let mut output = CommitOutputStruct::new();
-    match maybe_address {
-        Ok(address) => output.address = address,
-        Err(error) => output.error = error.to_string(),
+    
+    match maybe_json {
+        Ok(json) => runtime.store_utf8(&json),
+        Err(_) => ribosome_error_code!(ResponseSerializationFailed),
     }
-
-    let json = serde_json::to_string(&output)
-        .expect("Could not serialize CommitOutputStruct");
-
-    runtime.store_utf8(&json)
-
-    // @TODO test that failing validation prevents commits happening
-    // @see https://github.com/holochain/holochain-rust/issues/206
 }
 
 #[cfg(test)]
@@ -156,7 +142,7 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"address":"{}","error":""}}"#, test_entry().address()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

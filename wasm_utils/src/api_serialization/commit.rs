@@ -12,14 +12,21 @@ pub struct CommitEntryArgs {
 #[derive(Deserialize, Serialize, Default,Debug)]
 pub struct CommitOutputStruct {
     pub address: Address,
-    pub error: String,
+    pub validation_failure: String,
 }
 
 impl CommitOutputStruct {
-    pub fn new() -> CommitOutputStruct {
+    pub fn success(address: Address) -> CommitOutputStruct {
+        CommitOutputStruct {
+            address,
+            validation_failure: String::from(""),
+        }
+    }
+
+    pub fn failure(validation_failure: String) -> CommitOutputStruct {
         CommitOutputStruct {
             address: HashString::from(""),
-            error: String::from(""),
+            validation_failure,
         }
     }
 }

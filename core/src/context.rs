@@ -15,7 +15,7 @@ use std::sync::{
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    agent_entry: Entry,
+    agent_id_entry: Entry,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
@@ -29,14 +29,14 @@ impl Context {
     }
 
     pub fn new(
-        agent_entry: Entry,
+        agent_id_entry: Entry,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Context {
-            agent_entry,
+            agent_id_entry,
             logger,
             persister,
             state: None,
@@ -46,14 +46,14 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent_entry: AgentId,
+        agent_id_entry: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
     ) -> Context {
         Context {
-            agent_id,
+            agent_id_entry,
             logger,
             persister,
             state: None,

@@ -1,4 +1,3 @@
-extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
@@ -8,7 +7,6 @@ use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;
 
-use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{
     ffi::{CStr, CString},

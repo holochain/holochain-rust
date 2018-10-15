@@ -1,13 +1,14 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{
-    entry_type::{test_entry_type, EntryType},
-    test_entry, Entry,
+    EntryType,
 };
 use error::HolochainError;
 use json::ToJson;
 use serde_json;
 use signature::{test_signature, Signature};
 use time::{test_iso_8601, Iso8601};
+use entry::test_app_entry_type;
+use entry::test_app_entry;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table
@@ -118,17 +119,11 @@ impl AddressableContent for ChainHeader {
     }
 }
 
-impl Entry for ChainHeader {
-    fn entry_type(&self) -> &EntryType {
-        &EntryType::ChainHeader
-    }
-}
-
 /// returns a dummy header for use in tests
 pub fn test_chain_header() -> ChainHeader {
     ChainHeader::new(
-        &test_entry_type(),
-        &test_entry().address(),
+        &EntryType::App(test_app_entry_type()),
+        &test_app_entry().address(),
         &test_signature(),
         &None,
         &None,

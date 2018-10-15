@@ -1,11 +1,12 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry_a, test_entry_b, Entry};
+use entry::{test_app_entry_b};
 use error::{HcResult, HolochainError};
 use serde_json;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
 };
+use entry::test_app_entry_a;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -180,23 +181,23 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     }
 }
 
-pub fn test_eav_entity() -> Entry {
-    test_entry_a()
+pub fn test_eav_entity() -> Entity {
+    test_app_entry_a().address()
 }
 
-pub fn test_eav_attribute() -> String {
+pub fn test_eav_attribute() -> Attribute {
     "foo:attribute".to_string()
 }
 
-pub fn test_eav_value() -> Entry {
-    test_entry_b()
+pub fn test_eav_value() -> Value {
+    test_app_entry_b().address()
 }
 
 pub fn test_eav() -> EntityAttributeValue {
     EntityAttributeValue::new(
-        &test_eav_entity().address(),
+        &test_eav_entity(),
         &test_eav_attribute(),
-        &test_eav_value().address(),
+        &test_eav_value(),
     )
 }
 

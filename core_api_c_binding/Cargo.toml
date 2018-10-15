@@ -12,4 +12,3 @@ crate-type = ["staticlib"]
 holochain_core = { path = "../core" }
 holochain_core_api = { path = "../core_api" }
 holochain_dna = { path = "../dna" }
-holochain_agent = { path = "../agent" }

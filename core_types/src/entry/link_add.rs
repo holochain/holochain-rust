@@ -1,5 +1,4 @@
 use cas::content::Address;
-use entry::{entry_type::EntryType, Entry};
 use serde_json;
 
 //-------------------------------------------------------------------------------------------------
@@ -9,15 +8,15 @@ use serde_json;
 pub type LinkTag = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Link {
+pub struct LinkAdd {
     base: Address,
     target: Address,
     tag: LinkTag,
 }
 
-impl Link {
+impl LinkAdd {
     pub fn new(base: &Address, target: &Address, tag: &str) -> Self {
-        Link {
+        LinkAdd {
             base: base.to_owned(),
             target: target.to_owned(),
             tag: tag.to_owned(),
@@ -52,14 +51,14 @@ pub enum LinkActionKind {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct LinkEntry {
     action_kind: LinkActionKind,
-    link: Link,
+    link: LinkAdd,
 }
 
 impl LinkEntry {
     pub fn new(action_kind: LinkActionKind, base: &Address, target: &Address, tag: &str) -> Self {
         LinkEntry {
             action_kind: action_kind,
-            link: Link::new(base, target, tag),
+            link: LinkAdd::new(base, target, tag),
         }
     }
 
@@ -67,11 +66,11 @@ impl LinkEntry {
         &self.action_kind
     }
 
-    pub fn link(&self) -> &Link {
+    pub fn link(&self) -> &LinkAdd {
         &self.link
     }
 
-    pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
+    pub fn from_link(action_kind: LinkActionKind, link: &LinkAdd) -> Self {
         LinkEntry {
             action_kind: action_kind,
             link: link.clone(),
@@ -88,19 +87,6 @@ impl ToString for LinkEntry {
 impl From<String> for LinkEntry {
     fn from(s: String) -> LinkEntry {
         serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
-    }
-}
-
-impl ToEntry for LinkEntry {
-    // Convert a LinkEntry into a JSON array of Links
-    fn to_entry(&self) -> Entry {
-        let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        Entry::new(&EntryType::Link, &json_array)
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        assert_eq!(&EntryType::Link, entry.entry_type());
-        serde_json::from_str(&entry.value().to_owned()).expect("entry is not a valid LinkEntry")
     }
 }
 

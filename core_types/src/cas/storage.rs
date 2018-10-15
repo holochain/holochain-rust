@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, Entry};
+use entry::{test_app_entry_unique, Entry};
 use error::HolochainError;
 use std::{
     collections::{HashMap, HashSet},
@@ -177,7 +177,7 @@ where
 
         // show consistent view on data across threads
 
-        let entry = test_entry_unique();
+        let entry = test_app_entry_unique();
 
         // initially should not find entry
         let thread_cas = self.cas.clone();

@@ -6,11 +6,11 @@
 //! extern crate holochain_core;
 //! extern crate holochain_core_api;
 //! extern crate holochain_dna;
-//! extern crate holochain_agent;
+//! extern crate holochain_core_types;
 //!
 //! use holochain_core_api::*;
 //! use holochain_dna::Dna;
-//! use holochain_agent::Agent;
+//! use holochain_core_types::entry::agent::AgentId;
 //! use std::sync::{Arc, Mutex};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -145,7 +145,6 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_agent;
     use super::*;
     use holochain_core::{
         context::Context,
@@ -158,13 +157,14 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
+    holochain_core_types::entry::agent::AgentId;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = holochain_agent::Agent::from(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
             Arc::new(Context::new(

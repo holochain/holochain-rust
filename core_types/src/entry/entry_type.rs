@@ -3,31 +3,6 @@ use std::{
     str::FromStr,
 };
 
-// Macro for statically concatanating the system entry prefix for entry types of system entries
-macro_rules! sys_prefix {
-    ($s:expr) => {
-        concat!("%", $s)
-    };
-}
-
-// Enum for listing all System Entry Types
-// Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
-pub enum EntryType {
-    Dna,
-
-    Agent,
-
-    App(String),
-    Delete,
-
-    LinkAdd,
-    LinkRemove,
-
-    ChainHeader,
-    ChainMigrate,
-}
-
 impl EntryType {
     pub fn is_app(self) -> bool {
         match self {
@@ -92,34 +67,6 @@ impl EntryType {
         };
         ret
     }
-}
-
-/// dummy entry type
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_type() -> EntryType {
-    EntryType::App(String::from("testEntryType"))
-}
-
-/// dummy entry type, same as test_type()
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_type_a() -> EntryType {
-    test_entry_type()
-}
-
-/// dummy entry type, differs from test_type()
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_type_b() -> EntryType {
-    EntryType::App(String::from("testEntryTypeB"))
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_type() -> EntryType {
-    EntryType::AgentId
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_unpublishable_entry_type() -> EntryType {
-    EntryType::Dna
 }
 
 #[cfg(test)]

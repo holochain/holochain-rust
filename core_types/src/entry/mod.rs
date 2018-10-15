@@ -1,13 +1,15 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::entry_type::{
-    test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
-    EntryType,
-};
-use error::HolochainError;
-use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
-use std::ops::Deref;
+use entry::dna::Dna;
+use entry::chain_header::ChainHeader;
+use entry::agent::AgentId;
+use entry::delete::Delete;
+use entry::link_add::LinkAdd;
+use entry::link_remove::LinkRemove;
+use entry::chain_migrate::ChainMigrate;
+use entry::dna::test_dna;
+use keys::test_key;
 
 pub mod agent;
 pub mod app;
@@ -15,12 +17,60 @@ pub mod chain_header;
 pub mod chain_migrate;
 pub mod delete;
 pub mod dna;
-pub mod entry_type;
+// pub mod entry_type;
 pub mod link_add;
 pub mod link_remove;
 
-pub trait Entry: AddressableContent {
-    fn entry_type(&self) -> &EntryType;
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppEntryType(String);
+
+impl From<&'static str> for AppEntryType {
+    fn from(s: &str) -> AppEntryType {
+        AppEntryType(String::from(s))
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum EntryType {
+    App(AppEntryType),
+    Dna,
+    AgentId,
+    Delete,
+    LinkAdd,
+    LinkRemove,
+    ChainHeader,
+    ChainMigrate,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Entry {
+    Dna(Dna),
+
+    AgentId(AgentId),
+
+    App(AppEntryType, serde_json::Value),
+    Delete(Delete),
+
+    LinkAdd(LinkAdd),
+    LinkRemove(LinkRemove),
+
+    ChainHeader(ChainHeader),
+    ChainMigrate(ChainMigrate),
+}
+
+impl Entry {
+    pub fn entry_type(&self) -> EntryType {
+        match self {
+            Entry::Dna(_) => EntryType::Dna,
+            Entry::AgentId(_) => EntryType::AgentId,
+            Entry::App(app_entry_type, _) => EntryType::App(app_entry_type.to_owned()),
+            Entry::Delete(_) => EntryType::Delete,
+            Entry::LinkAdd(_) => EntryType::LinkAdd,
+            Entry::LinkRemove(_) => EntryType::LinkRemove,
+            Entry::ChainHeader(_) => EntryType::ChainHeader,
+            Entry::ChainMigrate(_) => EntryType::ChainMigrate,
+        }
+    }
 }
 
 impl PartialEq for Entry {
@@ -41,80 +91,133 @@ impl From<Entry> for String {
     }
 }
 
-/// dummy entry value
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value() -> String {
-    "test entry value".into()
+impl AddressableContent for Entry {
+    fn content(&self) -> Content {
+        serde_json::to_string(self).expect("could not Jsonify Entry as Content")
+    }
+
+    fn from_content(content: &Content) -> Entry {
+        serde_json::from_str(content).expect("could not read Json as valid Entry")
+    }
 }
 
-pub fn test_entry_content() -> Content {
+/// dummy entry type
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type() -> AppEntryType {
+    AppEntryType::from("testEntryType")
+}
+
+/// dummy entry type, same as test_type()
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type_a() -> AppEntryType {
+    test_app_entry_type()
+}
+
+/// dummy entry type, differs from test_type()
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type_b() -> AppEntryType {
+    AppEntryType::from("testEntryTypeB")
+}
+
+/// dummy entry value
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_value() -> serde_json::Value {
+    #[derive(Serialize)]
+    struct A {
+        foo: String,
+        bar: Vec<String>,
+    }
+    let a = A{
+        foo: "test entry value".to_owned(),
+        bar: vec!["bing".to_owned(), "baz".to_owned()],
+    };
+    let json = serde_json::to_string(&a).expect("could not serialize test entry value");
+    serde_json::from_str(&json).expect("could not deserialize test entry value")
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn expected_app_entry_content() -> Content {
     Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
 }
 
 /// dummy entry content, same as test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_a() -> String {
-    test_entry_value()
+pub fn test_app_entry_value_a() -> serde_json::Value {
+    test_app_entry_value()
 }
 
 /// dummy entry content, differs from test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_b() -> String {
-    "other test entry value".into()
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_value() -> String {
-    // looks like a believable hash
-    // sys entries are hashy right?
-    test_entry_value().address().into()
+pub fn test_app_entry_value_b() -> serde_json::Value {
+    #[derive(Serialize)]
+    struct B {
+        x: i32,
+        y: i32,
+    }
+    let b = B{x: 10, y: 200};
+    let json = serde_json::to_string(&b).expect("could not serialize test entry value");
+    serde_json::from_str(&json).expect("could not deserialize test entry value")
 }
 
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry() -> Entry {
-    Entry::new(&test_entry_type(), &test_entry_value())
+pub fn test_app_entry() -> Entry {
+    Entry::App(test_app_entry_type(), test_app_entry_value())
 }
 
-/// the correct hash for test_entry()
+/// the correct hash for test_app_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_address() -> Address {
+pub fn expected_add_entry_address() -> Address {
     Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
 }
 
 /// dummy entry, same as test_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_a() -> Entry {
-    test_entry()
+pub fn test_app_entry_a() -> Entry {
+    test_app_entry()
 }
 
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_b() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_value_b())
+pub fn test_app_entry_b() -> Entry {
+    Entry::App(test_app_entry_type_b(), test_app_entry_value_b())
+}
+
+pub fn test_app_entry_value_unique() -> serde_json::Value {
+    #[derive(Serialize)]
+    struct Unique {id: String}
+    let unique = Unique{id: snowflake::ProcessUniqueId::new().to_string()};
+    let json = serde_json::to_string(&unique).expect("could not serialize test entry value");
+    serde_json::from_str(&json).expect("could not deserialize test entry value")
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_unique() -> Entry {
-    Entry::new(
-        &test_entry_type(),
-        &snowflake::ProcessUniqueId::new().to_string(),
+pub fn test_app_entry_unique() -> Entry {
+    Entry::App(
+        test_app_entry_type(),
+        test_app_entry_value_unique(),
     )
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry() -> Entry {
-    Entry::new(&test_sys_entry_type(), &test_sys_entry_value())
+pub fn test_sys_entry_value() -> AgentId {
+    AgentId::new(&test_key(), &test_key(), &test_key())
 }
 
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_sys_entry() -> Entry {
+    Entry::AgentId(test_sys_entry_value())
+}
+
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry_address() -> Address {
     Address::from("QmWePdZYQrYFBUkBy1GPyCCUf8UmkmptsjtcVqZJ9Tzdse".to_string())
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::new(&test_unpublishable_entry_type(), &test_entry().value())
+    Entry::Dna(test_dna())
 }
 
 #[cfg(test)]

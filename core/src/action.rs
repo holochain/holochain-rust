@@ -2,7 +2,7 @@ use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{link::Link, Entry},
+    entry::{link_add::LinkAdd, Entry},
     get_links_args::GetLinksArgs,
 };
 use holochain_dna::Dna;
@@ -77,7 +77,7 @@ pub enum Action {
     GetEntry(Address),
 
     /// link to add
-    AddLink(Link),
+    LinkAdd(LinkAdd),
     /// get links from entry address and attribute-name
     GetLinks(GetLinksArgs),
 

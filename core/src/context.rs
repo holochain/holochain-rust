@@ -1,5 +1,4 @@
 use action::ActionWrapper;
-use holochain_agent::Agent;
 use holochain_core_types::error::HolochainError;
 use instance::Observer;
 use logger::Logger;
@@ -9,6 +8,7 @@ use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
+use holochain_core_types::entry::agent::AgentId;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -16,7 +16,7 @@ use std::sync::{
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub agent: Agent,
+    agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
@@ -30,14 +30,14 @@ impl Context {
     }
 
     pub fn new(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
@@ -47,14 +47,14 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
     ) -> Context {
         Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
@@ -62,6 +62,11 @@ impl Context {
             observer_channel,
         }
     }
+
+    pub fn agent_id(&self) -> &AgentId {
+        &self.agent_id
+    }
+
     // helper function to make it easier to call the logger
     pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
         let mut logger = self.logger.lock().or(Err(HolochainError::LoggingError))?;

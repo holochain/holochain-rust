@@ -1,7 +1,7 @@
 extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
-    entry::{entry_type::EntryType, Entry},
+    entry::{EntryType, Entry},
     error::HolochainError,
 };
 use holochain_dna::wasm::DnaWasm;

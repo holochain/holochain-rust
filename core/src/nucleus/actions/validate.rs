@@ -5,7 +5,7 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
-    entry::{entry_type::EntryType, Entry},
+    entry::{EntryType, Entry},
     hash::HashString,
 };
 use holochain_wasm_utils::validation::ValidationData;

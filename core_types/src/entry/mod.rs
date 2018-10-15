@@ -21,8 +21,10 @@ pub mod dna;
 pub mod link_add;
 pub mod link_remove;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash)]
 pub struct AppEntryType(String);
+
+impl Eq for AppEntryType {}
 
 impl From<&'static str> for AppEntryType {
     fn from(s: &str) -> AppEntryType {
@@ -30,7 +32,19 @@ impl From<&'static str> for AppEntryType {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+impl From<AppEntryType> for String {
+    fn from(app_entry_type: AppEntryType) -> String {
+        app_entry_type.0
+    }
+}
+
+impl ToString for AppEntryType {
+    fn to_string(&self) -> String {
+        self.0.to_owned()
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum EntryType {
     App(AppEntryType),
     Dna,
@@ -40,6 +54,21 @@ pub enum EntryType {
     LinkRemove,
     ChainHeader,
     ChainMigrate,
+}
+
+impl EntryType {
+    pub fn can_publish(&self) -> bool {
+        match self {
+            EntryType::App(_) => true,
+            EntryType::Dna => false,
+            EntryType::AgentId => true,
+            EntryType::Delete => true,
+            EntryType::LinkAdd => true,
+            EntryType::LinkRemove => true,
+            EntryType::ChainHeader => true,
+            EntryType::ChainMigrate => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

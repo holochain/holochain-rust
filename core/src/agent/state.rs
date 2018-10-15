@@ -7,7 +7,7 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
+    entry::chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
     json::ToJson,
@@ -82,7 +82,7 @@ impl ToJson for ActionResponse {
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
-                Some(entry) => Ok(entry.to_json()?),
+                Some(entry) => Ok(entry.content()),
                 None => Ok("".to_string()),
             },
             ActionResponse::GetLinks(result) => match result {

@@ -5,6 +5,10 @@ pub mod entry_types;
 
 use std::collections::HashMap;
 use wasm::DnaWasm;
+use holochain_core_types::entry::AppEntryType;
+
+pub type ZomeName = String;
+pub type ZomeDescription = String;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -44,12 +48,16 @@ impl Config {
     }
 }
 
+pub type AppEntryTypes = HashMap<AppEntryType, entry_types::EntryTypeDef>;
+
+pub type Capabilities = HashMap<String, capabilities::Capability>;
+
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Zome {
     /// A description of this zome.
     #[serde(default)]
-    pub description: String,
+    pub description: ZomeDescription,
 
     /// Configuration associated with this zome.
     /// Note, this should perhaps be a more free-form serde_json::Value,
@@ -59,11 +67,11 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: HashMap<String, entry_types::EntryTypeDef>,
+    app_entry_types: AppEntryTypes,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: HashMap<String, capabilities::Capability>,
+    pub capabilities: Capabilities,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -76,10 +84,10 @@ impl Default for Zome {
     /// Provide defaults for an individual "zome".
     fn default() -> Self {
         Zome {
-            description: String::new(),
+            description: ZomeDescription::new(),
             config: Config::new(),
-            entry_types: HashMap::new(),
-            capabilities: HashMap::new(),
+            app_entry_types: AppEntryTypes::new(),
+            capabilities: Capabilities::new(),
             code: DnaWasm::new(),
         }
     }
@@ -90,17 +98,21 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &HashMap<String, entry_types::EntryTypeDef>,
-        capabilities: &HashMap<String, capabilities::Capability>,
+        app_entry_types: &AppEntryTypes,
+        capabilities: &Capabilities,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
             description: description.into(),
             config: config.clone(),
-            entry_types: entry_types.to_owned(),
+            app_entry_types: app_entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
         }
+    }
+
+    pub fn app_entry_types(&self) -> &HashMap<AppEntryType, entry_types::EntryTypeDef> {
+        &self.app_entry_types
     }
 }
 

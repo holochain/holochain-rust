@@ -5,7 +5,7 @@ use agent::{
 };
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    entry::{entry_type::EntryType, Entry},
+    entry::{EntryType, Entry},
     json::ToJson,
 };
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};

@@ -28,20 +28,22 @@ extern crate serde_json;
 extern crate base64;
 extern crate uuid;
 
+use holochain_core_types::entry::AppEntryType;
 use serde_json::Value;
 use std::hash::{Hash, Hasher};
 
 pub mod wasm;
 pub mod zome;
 
+use zome::Zome;
+
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::{entry_type::EntryType, Entry, ToEntry},
     error::DnaError,
 };
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
+use zome::ZomeName;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -52,6 +54,8 @@ fn empty_object() -> Value {
 fn new_uuid() -> String {
     Uuid::new_v4().to_string()
 }
+
+pub type Zomes = HashMap<ZomeName, Zome>;
 
 /// Represents the top-level holochain dna object.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -82,7 +86,7 @@ pub struct Dna {
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
-    pub zomes: HashMap<String, zome::Zome>,
+    pub zomes: Zomes,
 }
 
 impl Default for Dna {
@@ -212,13 +216,11 @@ impl Dna {
     }
 
     /// Return the name of the zome holding a specified app entry_type
-    pub fn get_zome_name_for_entry_type(&self, entry_type_name: &str) -> Option<String> {
-        // pre-condition: must be a valid app entry_type name
-        assert!(EntryType::has_valid_app_name(entry_type_name));
+    pub fn get_zome_name_for_entry_type(&self, app_entry_type: &AppEntryType) -> Option<String> {
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (zome_entry_type_name, _) in &zome.entry_types {
-                if *zome_entry_type_name == entry_type_name {
+            for (zome_entry_type_name, _) in zome.app_entry_types() {
+                if zome_entry_type_name == app_entry_type {
                     return Some(zome_name.clone());
                 }
             }
@@ -227,13 +229,11 @@ impl Dna {
     }
 
     /// Return the entry_type definition of a specified app entry_type
-    pub fn get_entry_type_def(&self, entry_type_name: &str) -> Option<&EntryTypeDef> {
-        // pre-condition: must be a valid app entry_type name
-        assert!(EntryType::has_valid_app_name(entry_type_name));
+    pub fn get_entry_type_def(&self, app_entry_type: &AppEntryType) -> Option<&EntryTypeDef> {
         // Browse through the zomes
         for (_zome_name, zome) in &self.zomes {
-            for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
-                if *zome_entry_type_name == entry_type_name {
+            for (zome_entry_type_name, entry_type_def) in zome.app_entry_types() {
+                if zome_entry_type_name == app_entry_type {
                     return Some(entry_type_def);
                 }
             }
@@ -256,22 +256,16 @@ impl PartialEq for Dna {
     }
 }
 
-impl ToEntry for Dna {
-    fn to_entry(&self) -> Entry {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(&EntryType::Dna, &self.to_json())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
     extern crate base64;
-    use zome::tests::test_zome;
+    use zome::AppEntryTypes;
+    use zome::Zome;
+    use zome::ZomeDescription;
+    use zome::Capabilities;
+    use zome::Config;
+    use wasm::DnaWasm;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
@@ -282,16 +276,27 @@ pub mod tests {
     #[test]
     fn get_entry_type_def_test() {
         let mut dna = test_dna();
-        let mut zome = test_zome();
-        let entry_type = EntryType::App("bar".to_string());
+
+        let mut app_entry_types = AppEntryTypes::new();
+        let app_entry_type = AppEntryType::from("bar");
+
         let entry_type_def = EntryTypeDef::new();
 
-        zome.entry_types
-            .insert(entry_type.to_string(), entry_type_def.clone());
+        app_entry_types.insert(app_entry_type, entry_type_def.clone());
+
+
+        let mut zome = Zome::new(
+            &ZomeDescription::new(),
+            &Config::new(),
+            &app_entry_types,
+            &Capabilities::new(),
+            &DnaWasm::new(),
+        );
+
         dna.zomes.insert("zome".to_string(), zome);
 
-        assert_eq!(None, dna.get_entry_type_def("foo"));
-        assert_eq!(Some(&entry_type_def), dna.get_entry_type_def("bar"));
+        assert_eq!(None, dna.get_entry_type_def(&AppEntryType::from("foo")));
+        assert_eq!(Some(&entry_type_def), dna.get_entry_type_def(&app_entry_type));
     }
 
     #[test]
@@ -380,14 +385,15 @@ pub mod tests {
 
     #[test]
     fn default_value_test() {
-        let mut dna = Dna {
-            uuid: String::from(UNIT_UUID),
-            ..Default::default()
-        };
         let mut zome = zome::Zome::default();
         zome.entry_types
             .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
+        let dna = Dna {
+            uuid: String::from(UNIT_UUID),
+            zomes:
+            ..Default::default()
+        };
 
         let fixture = Dna::from_json_str(
             r#"{

@@ -4,7 +4,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::link::Link,
+    entry::link_add::LinkAdd,
     error::HolochainError,
     hash::HashString,
 };
@@ -62,12 +62,12 @@ where
 
     // Linking
     // =======
-    pub fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
+    pub fn link_add(&mut self, _link_add: &LinkAdd) -> Result<(), HolochainError> {
         // FIXME
         Err(HolochainError::NotImplemented)
     }
 
-    pub fn remove_link(&mut self) {
+    pub fn link_remove(&mut self) {
         // FIXME
     }
 

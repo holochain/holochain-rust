@@ -6,7 +6,7 @@ use holochain_core_types::{
     hash::HashString,
 };
 use holochain_wasm_utils::api_serialization::{
-    commit::{CommitEntryArgs, CommitOutputStruct},
+    commit::{CommitEntryArgs, CommitEntryResult},
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
@@ -79,9 +79,9 @@ pub fn invoke_commit_app_entry(
     );
 
     let maybe_json = match task_result {
-        Ok(address) => serde_json::to_string(&CommitOutputStruct::success(address)),
+        Ok(address) => serde_json::to_string(&CommitEntryResult::success(address)),
         Err(HolochainError::ValidationFailed(fail_string)) => {
-            serde_json::to_string(&CommitOutputStruct::failure(fail_string))
+            serde_json::to_string(&CommitEntryResult::failure(fail_string))
         }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(

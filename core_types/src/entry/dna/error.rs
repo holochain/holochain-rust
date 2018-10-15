@@ -3,7 +3,7 @@ use std::{
     fmt::{Display, Formatter, Result},
 };
 
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

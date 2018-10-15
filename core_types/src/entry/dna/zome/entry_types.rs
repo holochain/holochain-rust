@@ -97,7 +97,7 @@ pub struct EntryTypeDef {
 
     /// The sharing model of this entry type (public, private, encrypted).
     #[serde(default)]
-    pub sharing: Sharing,
+    sharing: Sharing,
 
     /// An array of link definitions associated with this entry type
     #[serde(default)]
@@ -124,6 +124,10 @@ impl EntryTypeDef {
     /// Allow sane defaults for `EntryType::new()`.
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn sharing(&self) -> Sharing {
+        self.sharing.clone()
     }
 }
 

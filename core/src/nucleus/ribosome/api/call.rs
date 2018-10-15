@@ -9,6 +9,7 @@ use nucleus::{
 use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::json::JsonString;
 
 /// Struct for input data received when Call API function is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -94,7 +95,7 @@ pub fn invoke_call(
 
     // action_result should be a json str of the result of the zome function called
     match action_result {
-        Ok(json_str) => runtime.store_utf8(&json_str),
+        Ok(result) => runtime.store_utf8(JsonString::from(result)),
         Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }

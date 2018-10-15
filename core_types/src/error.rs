@@ -10,7 +10,7 @@ use std::{
 use json::JsonString;
 
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
 pub enum HolochainError {
     ErrorGeneric(String),
     InstanceNotActive,

@@ -13,10 +13,12 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
+use holochain_core_types::entry::dna::zome::ZomeName;
+use holochain_core_types::cas::content::AddressableContent;
 
 pub fn validate_entry(
-    entry: Entry,
-    validation_data: ValidationData,
+    entry: &Entry,
+    validation_data: &ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     match entry {
@@ -31,11 +33,11 @@ pub fn validate_entry(
 }
 
 fn validate_app_entry(
-    entry: Entry,
-    validation_data: ValidationData,
+    app_entry: &Entry,
+    validation_data: &ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    match entry {
+    match app_entry {
         Entry::App(app_entry_type, _) => {
             let dna = get_dna(&context).expect("Callback called without DNA set!");
             let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
@@ -46,7 +48,7 @@ fn validate_app_entry(
             let zome_name = zome_name.unwrap();
             match get_wasm(&context, &zome_name) {
                 Some(wasm) => {
-                    let validation_call = build_validation_call(entry, zome_name, validation_data)?;
+                    let validation_call = build_validation_call(zome_name, app_entry, validation_data)?;
                     Ok(run_validation_callback(
                         context.clone(),
                         validation_call,
@@ -62,24 +64,25 @@ fn validate_app_entry(
 }
 
 fn build_validation_call(
-    entry: Entry,
-    entry_type: String,
-    zome_name: String,
-    validation_data: ValidationData,
+    zome_name: ZomeName,
+    entry: &Entry,
+    validation_data: &ValidationData,
 ) -> Result<ZomeFnCall, HolochainError> {
-    let function_name = format!("validate_{}", entry_type.to_string());
+    let function_name = format!("validate_{}", entry.entry_type());
 
     let validation_data_json = serde_json::to_value(&validation_data)
         .expect("ValidationData could not be turned into JSON?!");
 
+    let entry_content = entry.content();
+
     // Trying to interpret entry as json object
-    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&*entry)
+    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&entry_content)
         .or_else(|_| {
             // If it can't be parsed as object, treat it as a string by adding quotation marks:
-            serde_json::from_str(&format!("\"{}\"", &*entry))
+            serde_json::from_str(&format!("\"{}\"", &entry_content))
         })
         .or_else(|error| {
-            let msg = format!("Error trying to serialize entry '{}', {:?}", *entry, error);
+            let msg = format!("Error trying to serialize entry '{}', {:?}", entry_content, error);
             Err(HolochainError::new(&msg))
         });
 

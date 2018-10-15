@@ -31,6 +31,7 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
+use holochain_core_types::json::JsonString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -197,9 +198,9 @@ impl Runtime {
     /// Store a string in wasm memory.
     /// Input should be a a json string.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
+    pub fn store_utf8(&mut self, json: JsonString) -> Result<Option<RuntimeValue>, Trap> {
         // write str to runtime memory
-        let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
+        let mut s_bytes: Vec<_> = json.to_string().into_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
         let allocation_of_result = self.memory_manager.write(&s_bytes);

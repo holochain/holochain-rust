@@ -44,7 +44,7 @@ pub fn initialize_application(
         );
 
         // Commit DNA to chain
-        let dna_entry = Entry::Dna(dna);
+        let dna_entry = Entry::Dna(dna.clone());
         let dna_commit = block_on(commit_entry(
             dna_entry,
             &context_clone.action_channel.clone(),

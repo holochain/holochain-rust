@@ -3,6 +3,7 @@ use hash::HashString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
 use json::JsonString;
+use serde_json;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -45,7 +46,13 @@ impl AddressableContent for Content {
 
 impl From<Address> for JsonString {
     fn from(address: Address) -> JsonString {
-        JsonString::from(format!("{{\"address\":\"{}\"}}", address))
+        JsonString::from(serde_json::to_string(&address).expect("could not Json serialize address"))
+    }
+}
+
+impl From<Vec<Address>> for JsonString {
+    fn from(address_list: Vec<Address>) -> JsonString {
+        JsonString::from(serde_json::to_string(&address_list).expect("could not Json serialize address list"))
     }
 }
 

@@ -94,6 +94,12 @@ impl EntryType {
     }
 }
 
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Entry {
     Dna(Dna),
@@ -156,6 +162,16 @@ impl AddressableContent for Entry {
 impl From<Entry> for JsonString {
     fn from(entry: Entry) -> JsonString {
         JsonString::from(entry.content())
+    }
+}
+
+impl From<Option<Entry>> for JsonString {
+    fn from (maybe_entry: Option<Entry>) -> JsonString {
+        let inner = match maybe_entry {
+            Some(entry) => JsonString::from(entry),
+            None => JsonString::none(),
+        };
+        JsonString::from(format!("{{\"entry\": {}}}", inner))
     }
 }
 

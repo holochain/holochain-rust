@@ -13,6 +13,8 @@ use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use holochain_core_types::entry::AppEntryType;
 use holochain_core_types::entry::AppEntryValue;
+use holochain_core_types::json::JsonString;
+use holochain_core_types::error::HolochainError;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -73,16 +75,17 @@ pub fn invoke_commit_app_entry(
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
         validate_entry(
-            entry.clone(),
-            validation_data,
+            &entry,
+            &validation_data,
             &runtime.context)
             // if successful, commit entry:
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let maybe_json = match task_result {
+    // error result returns early
+    let ok_result: Result<JsonString, HolochainError> = match task_result {
         Ok(action_response) => match action_response {
-            ActionResponse::Commit(_) => action_response.to_json(),
+            ActionResponse::Commit(_) => Ok(JsonString::from(action_response)),
             _ => return ribosome_error_code!(ReceivedWrongActionResult),
         },
         Err(error_string) => {
@@ -90,15 +93,16 @@ pub fn invoke_commit_app_entry(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
-            Ok(json!(error_report).to_string())
+            Ok(JsonString::from(error_report))
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
 
     // allocate and encode result
-    match maybe_json {
-        Ok(json) => runtime.store_utf8(&json),
+    match ok_result {
+        Ok(report) => runtime.store_utf8(JsonString::from(report)),
+        // should never happen
         Err(_) => ribosome_error_code!(ResponseSerializationFailed),
     }
 

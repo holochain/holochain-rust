@@ -15,8 +15,8 @@ use std::{sync::Arc, thread};
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry(
-    entry: Entry,
-    validation_data: ValidationData,
+    entry: &Entry,
+    validation_data: &ValidationData,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
     let id = snowflake::ProcessUniqueId::new();
@@ -33,9 +33,9 @@ pub fn validate_entry(
         let thread_validation_data = validation_data.clone();
         let handle = thread::spawn(move || {
             let maybe_validation_result = callback::validate_entry::validate_entry(
-                thread_entry.clone(),
-                thread_validation_data.clone(),
-                thread_context.clone(),
+                &thread_entry,
+                &thread_validation_data,
+                thread_context,
             );
 
             let result = match maybe_validation_result {
@@ -65,7 +65,7 @@ pub fn validate_entry(
 
     match entry {
         // app entries validate through zome. lookup said zome.
-        Entry::App(app_entry_type, json_value) => {
+        Entry::App(app_entry_type, _) => {
             match context
                 .state()
                 .unwrap()

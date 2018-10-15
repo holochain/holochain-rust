@@ -22,6 +22,7 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use holochain_core_types::cas::content::AddressableContent;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str

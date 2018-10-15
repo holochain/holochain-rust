@@ -4,6 +4,7 @@ use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use holochain_core_types::cas::content::AddressableContent;
+use holochain_core_types::json::JsonString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
@@ -20,6 +21,12 @@ enum GetResultStatus {
 struct GetAppEntryResult {
     status: GetResultStatus,
     entry_content: String,
+}
+
+impl From<GetAppEntryResult> for JsonString {
+    fn from(get_app_entry_result: GetAppEntryResult) -> JsonString {
+        JsonString::from(serde_json::to_string(&get_app_entry_result).expect("could not serialize app entry result"))
+    }
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -49,18 +56,14 @@ pub fn invoke_get_entry(
                     status: GetResultStatus::Found,
                     entry_content: entry.content(),
                 };
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
+                runtime.store_utf8(JsonString::from(result))
             }
             None => {
                 let result = GetAppEntryResult {
                     status: GetResultStatus::NotFound,
                     entry_content: String::new(),
                 };
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
+                runtime.store_utf8(JsonString::from(result))
             }
         },
     }

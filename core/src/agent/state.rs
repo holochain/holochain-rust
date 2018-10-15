@@ -85,7 +85,7 @@ impl From<ActionResponse> for JsonString {
                 None => JsonString::from(None),
             },
             ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => JsonString::from(hash_list),
+                Ok(address_list) => JsonString::from(address_list),
                 Err(err) => JsonString::from(err),
             },
             ActionResponse::LinkEntries(result) => match result {

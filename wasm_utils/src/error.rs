@@ -1,5 +1,6 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use std::fmt;
+use holochain_core_types::json::JsonString;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
@@ -30,6 +31,12 @@ pub struct RibosomeErrorReport {
     pub line: String,
     // TODO #395 - Add advance error debugging info
     // pub stack_trace: Backtrace
+}
+
+impl From<RibosomeErrorReport> for JsonString {
+    fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
+        JsonString::from(ribosome_error_report.to_string())
+    }
 }
 
 impl fmt::Display for RibosomeErrorReport {

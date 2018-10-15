@@ -101,7 +101,7 @@ where
                 .expect("context.state must hold DNA in order to commit an app entry.");
 
             dna.get_entry_type_def(app_entry_type).and_then(|def| {
-                if def.sharing.can_publish() {
+                if def.sharing().can_publish() {
                     let mut new_store = (*old_store).clone();
                     let res = new_store.content_storage_mut().add(entry);
 

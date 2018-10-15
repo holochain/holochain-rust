@@ -205,7 +205,7 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(r#"{{"address":"{}","validation_failure":""}}"#, test_entry().address()) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(

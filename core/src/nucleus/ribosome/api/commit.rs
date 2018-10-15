@@ -142,7 +142,7 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(r#"{{"address":"{}","validation_failure":""}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

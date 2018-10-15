@@ -18,3 +18,4 @@ members = []
 serde="1"
 serde_derive="1"
 holochain_wasm_utils = { path = "../../../wasm_utils"}
+holochain_core_types = { path = "../../../core_types"}

@@ -3,9 +3,8 @@
 pub mod capabilities;
 pub mod entry_types;
 
+use entry::{dna::wasm::DnaWasm, AppEntryType};
 use std::collections::HashMap;
-use wasm::DnaWasm;
-use holochain_core_types::entry::AppEntryType;
 
 pub type ZomeName = String;
 pub type ZomeDescription = String;

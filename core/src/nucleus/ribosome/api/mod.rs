@@ -8,7 +8,7 @@ pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
 use context::Context;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::entry::dna::zome::capabilities::ReservedCapabilityNames;
 use holochain_wasm_utils::{
     error::{RibosomeErrorCode, RibosomeReturnCode},
     memory_allocation::decode_encoded_allocation,

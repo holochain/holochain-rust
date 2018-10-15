@@ -5,14 +5,15 @@ use agent::{
 };
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    entry::{EntryType, Entry},
+    entry::{Entry},
     json::ToJson,
 };
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
-use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::entry::AppEntryType;
+use holochain_core_types::entry::AppEntryValue;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -23,7 +24,6 @@ struct CommitAppEntryArgs {
 
 fn build_validation_data_commit(
     _entry: Entry,
-    _entry_type: EntryType,
     _state: &AgentState,
 ) -> ValidationData {
     //
@@ -64,12 +64,9 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry_type =
-        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
-    let entry = Entry::new(&entry_type, &input.entry_value);
+    let entry = Entry::App(AppEntryType::from(input.entry_type_name), AppEntryValue::from(input.entry_value));
     let validation_data = build_validation_data_commit(
         entry.clone(),
-        entry_type.clone(),
         &runtime.context.state().unwrap().agent(),
     );
 
@@ -77,7 +74,6 @@ pub fn invoke_commit_app_entry(
     let task_result: Result<ActionResponse, String> = block_on(
         // First validate entry:
         validate_entry(
-            entry_type.clone(),
             entry.clone(),
             validation_data,
             &runtime.context)

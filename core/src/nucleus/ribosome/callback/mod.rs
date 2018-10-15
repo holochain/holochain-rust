@@ -6,8 +6,13 @@ pub mod receive;
 pub mod validate_entry;
 
 use context::Context;
-use holochain_core_types::{entry::Entry, json::ToJson};
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
+use holochain_core_types::{
+    entry::{
+        dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
+        Entry,
+    },
+    json::ToJson,
+};
 use nucleus::{
     ribosome::{
         self,

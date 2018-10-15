@@ -1,15 +1,17 @@
 use cas::content::{Address, AddressableContent, Content};
+use entry::{
+    agent::AgentId,
+    chain_header::ChainHeader,
+    chain_migrate::ChainMigrate,
+    delete::Delete,
+    dna::{test_dna, Dna},
+    link_add::LinkAdd,
+    link_remove::LinkRemove,
+};
+use keys::test_key;
 use serde_json;
 use snowflake;
-use entry::dna::Dna;
-use entry::chain_header::ChainHeader;
-use entry::agent::AgentId;
-use entry::delete::Delete;
-use entry::link_add::LinkAdd;
-use entry::link_remove::LinkRemove;
-use entry::chain_migrate::ChainMigrate;
-use entry::dna::test_dna;
-use keys::test_key;
+use std::fmt::{Display, Formatter, Result};
 
 pub mod agent;
 pub mod app;
@@ -32,15 +34,30 @@ impl From<&'static str> for AppEntryType {
     }
 }
 
+impl From<String> for AppEntryType {
+    fn from(s: String) -> AppEntryType {
+        AppEntryType(s)
+    }
+}
+
 impl From<AppEntryType> for String {
     fn from(app_entry_type: AppEntryType) -> String {
         app_entry_type.0
     }
 }
 
-impl ToString for AppEntryType {
-    fn to_string(&self) -> String {
-        self.0.to_owned()
+impl Display for AppEntryType {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppEntryValue(serde_json::Value);
+
+impl From<String> for AppEntryValue {
+    fn from(json: String) -> AppEntryValue {
+        AppEntryValue(serde_json::from_str(&json).expect("could not deserialize test entry value"))
     }
 }
 
@@ -82,7 +99,7 @@ pub enum Entry {
 
     AgentId(AgentId),
 
-    App(AppEntryType, serde_json::Value),
+    App(AppEntryType, AppEntryValue),
     Delete(Delete),
 
     LinkAdd(LinkAdd),
@@ -155,18 +172,18 @@ pub fn test_app_entry_type_b() -> AppEntryType {
 
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_app_entry_value() -> serde_json::Value {
+pub fn test_app_entry_value() -> AppEntryValue {
     #[derive(Serialize)]
     struct A {
         foo: String,
         bar: Vec<String>,
     }
-    let a = A{
+    let a = A {
         foo: "test entry value".to_owned(),
         bar: vec!["bing".to_owned(), "baz".to_owned()],
     };
     let json = serde_json::to_string(&a).expect("could not serialize test entry value");
-    serde_json::from_str(&json).expect("could not deserialize test entry value")
+    AppEntryValue::from(json)
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -176,21 +193,21 @@ pub fn expected_app_entry_content() -> Content {
 
 /// dummy entry content, same as test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_app_entry_value_a() -> serde_json::Value {
+pub fn test_app_entry_value_a() -> AppEntryValue {
     test_app_entry_value()
 }
 
 /// dummy entry content, differs from test_entry_content()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_app_entry_value_b() -> serde_json::Value {
+pub fn test_app_entry_value_b() -> AppEntryValue {
     #[derive(Serialize)]
     struct B {
         x: i32,
         y: i32,
     }
-    let b = B{x: 10, y: 200};
+    let b = B { x: 10, y: 200 };
     let json = serde_json::to_string(&b).expect("could not serialize test entry value");
-    serde_json::from_str(&json).expect("could not deserialize test entry value")
+    AppEntryValue::from(json)
 }
 
 /// dummy entry
@@ -217,21 +234,22 @@ pub fn test_app_entry_b() -> Entry {
     Entry::App(test_app_entry_type_b(), test_app_entry_value_b())
 }
 
-pub fn test_app_entry_value_unique() -> serde_json::Value {
+pub fn test_app_entry_value_unique() -> AppEntryValue {
     #[derive(Serialize)]
-    struct Unique {id: String}
-    let unique = Unique{id: snowflake::ProcessUniqueId::new().to_string()};
+    struct Unique {
+        id: String,
+    }
+    let unique = Unique {
+        id: snowflake::ProcessUniqueId::new().to_string(),
+    };
     let json = serde_json::to_string(&unique).expect("could not serialize test entry value");
-    serde_json::from_str(&json).expect("could not deserialize test entry value")
+    AppEntryValue::from(json)
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_app_entry_unique() -> Entry {
-    Entry::App(
-        test_app_entry_type(),
-        test_app_entry_value_unique(),
-    )
+    Entry::App(test_app_entry_type(), test_app_entry_value_unique())
 }
 
 #[cfg_attr(tarpaulin, skip)]

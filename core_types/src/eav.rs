@@ -1,12 +1,11 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_app_entry_b};
+use entry::{test_app_entry_a, test_app_entry_b};
 use error::{HcResult, HolochainError};
 use serde_json;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
 };
-use entry::test_app_entry_a;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -194,11 +193,7 @@ pub fn test_eav_value() -> Value {
 }
 
 pub fn test_eav() -> EntityAttributeValue {
-    EntityAttributeValue::new(
-        &test_eav_entity(),
-        &test_eav_attribute(),
-        &test_eav_value(),
-    )
+    EntityAttributeValue::new(&test_eav_entity(), &test_eav_attribute(), &test_eav_value())
 }
 
 pub fn test_eav_content() -> Content {

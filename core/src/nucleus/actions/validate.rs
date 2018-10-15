@@ -3,11 +3,7 @@ extern crate serde_json;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::{EntryType, Entry},
-    hash::HashString,
-};
+use holochain_core_types::{cas::content::AddressableContent, entry::Entry, hash::HashString};
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
@@ -19,67 +15,86 @@ use std::{sync::Arc, thread};
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry(
-    entry_type: EntryType,
     entry: Entry,
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = HashString, Error = String>> {
     let id = snowflake::ProcessUniqueId::new();
-    let address = entry.address();
 
-    match context
-        .state()
-        .unwrap()
-        .nucleus()
-        .dna()
-        .unwrap()
-        .get_zome_name_for_entry_type(entry_type.as_str())
-    {
-        None => {
-            return Box::new(future::err(format!(
-                "Unknown entry type: '{}'",
-                entry_type.as_str()
-            )));;
-        }
-        Some(_) => {
-            let id = id.clone();
-            let address = address.clone();
-            let entry = entry.clone();
-            let context = context.clone();
-            thread::spawn(move || {
-                let maybe_validation_result = callback::validate_entry::validate_entry(
-                    entry.clone(),
-                    entry_type.clone(),
-                    validation_data.clone(),
-                    context.clone(),
-                );
+    fn threaded_process_validation(
+        id: &snowflake::ProcessUniqueId,
+        entry: &Entry,
+        context: Arc<Context>,
+        validation_data: &ValidationData,
+    ) {
+        let thread_id = id.clone();
+        let thread_entry = entry.clone();
+        let thread_context = Arc::clone(&context);
+        let thread_validation_data = validation_data.clone();
+        let handle = thread::spawn(move || {
+            let maybe_validation_result = callback::validate_entry::validate_entry(
+                thread_entry.clone(),
+                thread_validation_data.clone(),
+                thread_context.clone(),
+            );
 
-                let result = match maybe_validation_result {
-                    Ok(validation_result) => match validation_result {
-                        CallbackResult::Fail(error_string) => Err(error_string),
-                        CallbackResult::Pass => Ok(()),
-                        CallbackResult::NotImplemented => Err(format!(
+            let result = match maybe_validation_result {
+                Ok(validation_result) => match validation_result {
+                    CallbackResult::Fail(error_string) => Err(error_string),
+                    CallbackResult::Pass => Ok(()),
+                    CallbackResult::NotImplemented => {
+                        Err(format!(
                             "Validation callback not implemented for {:?}",
-                            entry_type.clone()
-                        )),
-                    },
-                    Err(error) => Err(error.to_string()),
-                };
+                            thread_entry.entry_type(),
+                        ))
+                    }
+                },
+                Err(error) => Err(error.to_string()),
+            };
 
-                context
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        (id, address),
-                        result,
-                    ))))
-                    .expect("action channel to be open in reducer");
-            });
+            context
+                .action_channel
+                .send(ActionWrapper::new(Action::ReturnValidationResult((
+                    (thread_id, thread_entry.address()),
+                    result,
+                ))))
+                .expect("action channel to be open in reducer");
+        });
+        handle.join().expect("validation thread panicked")
+    }
+
+    match entry {
+        // app entries validate through zome. lookup said zome.
+        Entry::App(app_entry_type, json_value) => {
+            match context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_entry_type(&app_entry_type)
+            {
+                // failed to lookup zome
+                None => {
+                    return Box::new(future::err(format!(
+                        "Unknown entry type: '{}'",
+                        app_entry_type
+                    )));
+                }
+                Some(_) => {
+                    threaded_process_validation(&id, &entry, Arc::clone(context), &validation_data);
+                }
+            };
         }
-    };
+        // validate system entries
+        _ => {
+            threaded_process_validation(&id, &entry, Arc::clone(context), &validation_data);
+        }
+    }
 
     Box::new(ValidationFuture {
         context: context.clone(),
-        key: (id, address),
+        key: (id, entry.address()),
     })
 }
 

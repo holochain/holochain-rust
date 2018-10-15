@@ -2,10 +2,9 @@ use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{link_add::LinkAdd, Entry},
+    entry::{dna::Dna, link_add::LinkAdd, Entry},
     get_links_args::GetLinksArgs,
 };
-use holochain_dna::Dna;
 use nucleus::{
     state::{NucleusState, ValidationResult},
     ZomeFnCall, ZomeFnResult,

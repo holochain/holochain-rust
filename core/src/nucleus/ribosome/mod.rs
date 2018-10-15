@@ -4,7 +4,7 @@ pub mod api;
 pub mod callback;
 pub mod memory;
 
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::entry::dna::zome::capabilities::ReservedCapabilityNames;
 
 use std::str::FromStr;
 

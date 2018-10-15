@@ -1,10 +1,9 @@
 extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
-    entry::{EntryType, Entry},
+    entry::{dna::wasm::DnaWasm, Entry},
     error::HolochainError,
 };
-use holochain_dna::wasm::DnaWasm;
 use holochain_wasm_utils::validation::ValidationData;
 use nucleus::{
     ribosome::{
@@ -17,47 +16,48 @@ use std::sync::Arc;
 
 pub fn validate_entry(
     entry: Entry,
-    entry_type: EntryType,
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    match entry_type {
-        EntryType::App(app_entry_type) => Ok(validate_app_entry(
+    match entry {
+        Entry::App(_, _) => Ok(validate_app_entry(
             entry,
-            app_entry_type,
             validation_data,
             context,
         )?),
-        EntryType::Dna => Ok(CallbackResult::Pass),
+        Entry::Dna(_) => Ok(CallbackResult::Pass),
         _ => Ok(CallbackResult::NotImplemented),
     }
 }
 
 fn validate_app_entry(
     entry: Entry,
-    app_entry_type: String,
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    let dna = get_dna(&context).expect("Callback called without DNA set!");
-    let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
-    if zome_name.is_none() {
-        return Ok(CallbackResult::NotImplemented);
-    }
+    match entry {
+        Entry::App(app_entry_type, _) => {
+            let dna = get_dna(&context).expect("Callback called without DNA set!");
+            let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
+            if zome_name.is_none() {
+                return Ok(CallbackResult::NotImplemented);
+            }
 
-    let zome_name = zome_name.unwrap();
-    match get_wasm(&context, &zome_name) {
-        Some(wasm) => {
-            let validation_call =
-                build_validation_call(entry, app_entry_type, zome_name, validation_data)?;
-            Ok(run_validation_callback(
-                context.clone(),
-                validation_call,
-                &wasm,
-                dna.name.clone(),
-            ))
+            let zome_name = zome_name.unwrap();
+            match get_wasm(&context, &zome_name) {
+                Some(wasm) => {
+                    let validation_call = build_validation_call(entry, zome_name, validation_data)?;
+                    Ok(run_validation_callback(
+                        context.clone(),
+                        validation_call,
+                        &wasm,
+                        dna.name.clone(),
+                    ))
+                }
+                None => Ok(CallbackResult::NotImplemented),
+            }
         }
-        None => Ok(CallbackResult::NotImplemented),
+        _ => unreachable!(),
     }
 }
 

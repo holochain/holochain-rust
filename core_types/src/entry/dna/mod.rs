@@ -19,31 +19,22 @@
 //! assert_eq!(name, dna2.name);
 //! ```
 
-extern crate holochain_core_types;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-#[macro_use]
-extern crate serde_json;
-extern crate base64;
-extern crate uuid;
-
-use holochain_core_types::entry::AppEntryType;
-use serde_json::Value;
+use entry::AppEntryType;
+use serde_json::{self, Value};
 use std::hash::{Hash, Hasher};
 
+pub mod error;
 pub mod wasm;
 pub mod zome;
 
-use zome::Zome;
+use entry::dna::zome::Zome;
 
-use holochain_core_types::{
+use entry::dna::{
     error::DnaError,
+    zome::{capabilities::Capability, entry_types::EntryTypeDef, ZomeName},
 };
 use std::collections::HashMap;
 use uuid::Uuid;
-use zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use zome::ZomeName;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -256,16 +247,16 @@ impl PartialEq for Dna {
     }
 }
 
+pub fn test_dna() -> Dna {
+    Dna::new()
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
     extern crate base64;
-    use zome::AppEntryTypes;
-    use zome::Zome;
-    use zome::ZomeDescription;
-    use zome::Capabilities;
-    use zome::Config;
     use wasm::DnaWasm;
+    use zome::{AppEntryTypes, Capabilities, Config, Zome, ZomeDescription};
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
@@ -295,7 +286,10 @@ pub mod tests {
         dna.zomes.insert("zome".to_string(), zome);
 
         assert_eq!(None, dna.get_entry_type_def(&AppEntryType::from("foo")));
-        assert_eq!(Some(&entry_type_def), dna.get_entry_type_def(&app_entry_type));
+        assert_eq!(
+            Some(&entry_type_def),
+            dna.get_entry_type_def(&app_entry_type)
+        );
     }
 
     #[test]
@@ -676,7 +670,8 @@ pub mod tests {
         ).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_entry_type(&AppEntryType::from("test type")).unwrap(),
+            dna.get_zome_name_for_entry_type(&AppEntryType::from("test type"))
+                .unwrap(),
             "test zome".to_string()
         );
         assert!(

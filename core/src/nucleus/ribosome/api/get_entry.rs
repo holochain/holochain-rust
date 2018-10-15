@@ -3,6 +3,7 @@ use holochain_core_types::cas::content::Address;
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::cas::content::AddressableContent;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
@@ -18,7 +19,7 @@ enum GetResultStatus {
 #[derive(Deserialize, Debug, Serialize)]
 struct GetAppEntryResult {
     status: GetResultStatus,
-    entry: String,
+    entry_content: String,
 }
 
 /// ZomeApiFunction::GetAppEntry function code
@@ -46,7 +47,7 @@ pub fn invoke_get_entry(
             Some(entry) => {
                 let result = GetAppEntryResult {
                     status: GetResultStatus::Found,
-                    entry: entry.to_string(),
+                    entry_content: entry.content(),
                 };
                 let result_string =
                     serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
@@ -55,7 +56,7 @@ pub fn invoke_get_entry(
             None => {
                 let result = GetAppEntryResult {
                     status: GetResultStatus::NotFound,
-                    entry: String::from(""),
+                    entry_content: String::new(),
                 };
                 let result_string =
                     serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");

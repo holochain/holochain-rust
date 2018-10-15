@@ -11,11 +11,15 @@
 extern crate futures;
 extern crate multihash;
 extern crate rust_base58;
-extern crate serde;
-extern crate serde_json;
 extern crate snowflake;
 #[macro_use]
 extern crate bitflags;
+
+extern crate serde;
+#[macro_use]
+extern crate serde_json;
+extern crate base64;
+extern crate uuid;
 
 #[macro_use]
 extern crate serde_derive;

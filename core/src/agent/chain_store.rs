@@ -1,6 +1,6 @@
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage, entry::chain_header::ChainHeader,
-    entry::EntryType,
+    cas::storage::ContentAddressableStorage,
+    entry::{chain_header::ChainHeader, EntryType},
 };
 
 #[derive(Debug, PartialEq, Clone)]

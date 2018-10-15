@@ -151,13 +151,13 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
+    use holochain_core_types::entry::agent::AgentId;
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
-    holochain_core_types::entry::agent::AgentId;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};

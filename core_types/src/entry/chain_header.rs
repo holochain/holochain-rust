@@ -1,14 +1,10 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{
-    EntryType,
-};
+use entry::{test_app_entry, test_app_entry_type, EntryType};
 use error::HolochainError;
 use json::ToJson;
 use serde_json;
 use signature::{test_signature, Signature};
 use time::{test_iso_8601, Iso8601};
-use entry::test_app_entry_type;
-use entry::test_app_entry;
 
 /// ChainHeader of a source chain "Item"
 /// The hash of the ChainHeader is used as the Item's key in the source chain hash table

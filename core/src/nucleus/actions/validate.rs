@@ -4,8 +4,8 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::Entry, entry_type::EntryType,
-    error::HolochainError, hash::HashString,
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::HolochainError,
+    hash::HashString,
 };
 use holochain_wasm_utils::api_serialization::validation::ValidationData;
 use nucleus::ribosome::callback::{self, CallbackResult};

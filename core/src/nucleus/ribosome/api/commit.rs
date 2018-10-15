@@ -1,18 +1,13 @@
 extern crate futures;
-use agent::{
-    actions::commit::*,
-    state::AgentState,
-};
+use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address,
-    entry::Entry, entry_type::EntryType,
-    error::HolochainError,
-    hash::HashString
+    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
+    hash::HashString,
 };
 use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryArgs, CommitOutputStruct},
-    validation::{EntryAction, EntryLifecycle, ValidationData}
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
@@ -85,7 +80,9 @@ pub fn invoke_commit_app_entry(
 
     let maybe_json = match task_result {
         Ok(address) => serde_json::to_string(&CommitOutputStruct::success(address)),
-        Err(HolochainError::ValidationFailed(fail_string)) => serde_json::to_string(&CommitOutputStruct::failure(fail_string)),
+        Err(HolochainError::ValidationFailed(fail_string)) => {
+            serde_json::to_string(&CommitOutputStruct::failure(fail_string))
+        }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
@@ -97,7 +94,7 @@ pub fn invoke_commit_app_entry(
             // Ok(error_string)
         }
     };
-    
+
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
         Err(_) => ribosome_error_code!(ResponseSerializationFailed),
@@ -142,7 +139,10 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"address":"{}","validation_failure":""}}"#, test_entry().address()) + "\u{0}",
+            format!(
+                r#"{{"address":"{}","validation_failure":""}}"#,
+                test_entry().address()
+            ) + "\u{0}",
         );
     }
 

@@ -1,7 +1,4 @@
-use holochain_core_types::{
-    chain_header::ChainHeader,
-    hash::HashString,
-};
+use holochain_core_types::{chain_header::ChainHeader, hash::HashString};
 
 extern crate serde_json;
 

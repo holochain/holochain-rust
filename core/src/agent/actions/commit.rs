@@ -3,11 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use context::Context;
 use futures::Future;
-use holochain_core_types::{
-    cas::content::Address,
-    entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 
@@ -57,11 +53,9 @@ impl Future for CommitFuture {
             .actions()
             .get(&self.action)
         {
-            Some(ActionResponse::Commit(result)) => {
-                match result {
-                    Ok(address) => Ok(futures::Async::Ready(address.clone())),
-                    Err(error) => Err(error.clone()),
-                }
+            Some(ActionResponse::Commit(result)) => match result {
+                Ok(address) => Ok(futures::Async::Ready(address.clone())),
+                Err(error) => Err(error.clone()),
             },
             Some(_) => unreachable!(),
             None => Ok(futures::Async::Pending),

@@ -10,6 +10,7 @@ use nucleus::{
     state::NucleusStatus,
 };
 use std::{sync::Arc, thread, time::*};
+use holochain_core_types::entry::Entry;
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -44,7 +45,7 @@ pub fn initialize_application(
         );
 
         // Commit DNA to chain
-        let dna_entry = dna.to_entry();
+        let dna_entry = Entry::Dna(dna);
         let dna_commit = block_on(commit_entry(
             dna_entry,
             &context_clone.action_channel.clone(),

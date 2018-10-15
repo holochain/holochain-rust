@@ -59,15 +59,20 @@ pub enum EntryType {
 impl EntryType {
     pub fn can_publish(&self) -> bool {
         match self {
-            EntryType::App(_) => true,
             EntryType::Dna => false,
-            EntryType::AgentId => true,
-            EntryType::Delete => true,
-            EntryType::LinkAdd => true,
-            EntryType::LinkRemove => true,
-            EntryType::ChainHeader => true,
-            EntryType::ChainMigrate => true,
+            _ => true,
         }
+    }
+
+    pub fn is_sys(&self) -> bool {
+        match self {
+            EntryType::App(_) => false,
+            _ => true,
+        }
+    }
+
+    pub fn is_app(&self) -> bool {
+        !self.is_sys()
     }
 }
 

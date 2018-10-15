@@ -282,8 +282,7 @@ pub mod tests {
 
         let entry_type_def = EntryTypeDef::new();
 
-        app_entry_types.insert(app_entry_type, entry_type_def.clone());
-
+        app_entry_types.insert(app_entry_type.clone(), entry_type_def.clone());
 
         let mut zome = Zome::new(
             &ZomeDescription::new(),
@@ -385,13 +384,23 @@ pub mod tests {
 
     #[test]
     fn default_value_test() {
-        let mut zome = zome::Zome::default();
-        zome.entry_types
-            .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
-        dna.zomes.insert("".to_string(), zome);
+        let mut app_entry_types = AppEntryTypes::new();
+        app_entry_types.insert(AppEntryType::from(""), EntryTypeDef::new());
+
+        let zome = Zome::new(
+            &ZomeDescription::new(),
+            &Config::new(),
+            &app_entry_types,
+            &Capabilities::new(),
+            &DnaWasm::new(),
+        );
+
+        let mut zomes = Zomes::new();
+        zomes.insert(ZomeName::new(), zome);
+
         let dna = Dna {
             uuid: String::from(UNIT_UUID),
-            zomes:
+            zomes,
             ..Default::default()
         };
 
@@ -467,8 +476,8 @@ pub mod tests {
             dna.zomes
                 .get("zome1")
                 .unwrap()
-                .entry_types
-                .get("type1")
+                .app_entry_types()
+                .get(&AppEntryType::from("type1"))
                 .unwrap()
                 .sharing,
             zome::entry_types::Sharing::Public
@@ -667,11 +676,11 @@ pub mod tests {
         ).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_entry_type("test type").unwrap(),
+            dna.get_zome_name_for_entry_type(&AppEntryType::from("test type")).unwrap(),
             "test zome".to_string()
         );
         assert!(
-            dna.get_zome_name_for_entry_type("non existant entry type")
+            dna.get_zome_name_for_entry_type(&AppEntryType::from("non existant entry type"))
                 .is_none()
         );
     }

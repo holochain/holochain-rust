@@ -107,6 +107,9 @@ If your changes do not break the current environment, you can submit a separate 
 
 Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
 
+### Building for Android
+Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/holochain_across_platforms.md).
+
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 

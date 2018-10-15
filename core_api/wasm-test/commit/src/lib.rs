@@ -1,25 +1,15 @@
+extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate serde_derive;
 
-use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
+use holochain_core_types::hash::HashString;
+use holochain_wasm_utils::{
+  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
+  memory_allocation::*, memory_serialization::*
+};
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
 }
-
-
-#[derive(Serialize, Default)]
-struct CommitInputStruct {
-  entry_type_name: String,
-  entry_value: String,
-}
-
-#[derive(Deserialize, Serialize, Default)]
-struct CommitOutputStruct {
-  hash: String,
-}
-
 
 //-------------------------------------------------------------------------------------------------
 // HC Commit Function Call - Succesful
@@ -31,7 +21,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitInputStruct {
+  let input = CommitEntryArgs {
     entry_type_name: entry_type_name.to_owned(),
     entry_value: entry_value.to_owned(),
   };
@@ -47,13 +37,13 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+  let output: CommitEntryResult = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
-  Ok(output.hash.to_string())
+  Ok(output.address.to_string())
 }
 
 
@@ -66,8 +56,9 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitOutputStruct {
-    hash: "whatever".to_string(),
+  let input = CommitEntryResult {
+    address: HashString::from("whatever"),
+    validation_failure: String::from("")
   };
   let maybe_allocation =  serialize(mem_stack, input);
   if let Err(return_code) = maybe_allocation {
@@ -81,13 +72,13 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct  = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+  let output: CommitEntryResult = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
-  Ok(output.hash.to_string())
+  Ok(output.address.to_string())
 }
 
 

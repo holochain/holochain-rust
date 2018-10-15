@@ -1,22 +1,18 @@
 extern crate futures;
-use agent::{
-    actions::commit::*,
-    state::{ActionResponse, AgentState},
-};
+use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
-use holochain_core_types::{entry::Entry, entry_type::EntryType, json::ToJson};
-use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
+    hash::HashString,
+};
+use holochain_wasm_utils::api_serialization::{
+    commit::{CommitEntryArgs, CommitEntryResult},
+    validation::{EntryAction, EntryLifecycle, ValidationData},
+};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-/// Struct for input data received when Commit API function is invoked
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct CommitAppEntryArgs {
-    entry_type_name: String,
-    entry_value: String,
-}
 
 fn build_validation_data_commit(
     _entry: Entry,
@@ -27,7 +23,7 @@ fn build_validation_data_commit(
     // TODO: populate validation data with with chain content
     // I have left this out because filling the valiation data with
     // chain headers and entries does not work as long as ValidationData
-    // is defined with the type copies i've put in wasm_utils/src/validation.rs.
+    // is defined with the type copies i've put in wasm_utils/src/api_serialization/validation.rs.
     // Doing this right requires a refactoring in which I extract all these types
     // into a separate create ("core_types") that can be used from holochain core
     // and the HDK.
@@ -35,12 +31,12 @@ fn build_validation_data_commit(
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {
         chain_header: None, //Some(new_header),
-        sources: vec!["<insert your agent key here>".to_string()],
+        sources: vec![HashString::from("<insert your agent key here>")],
         source_chain_entries: None,
         source_chain_headers: None,
         custom: None,
-        lifecycle: HcEntryLifecycle::Chain,
-        action: HcEntryAction::Commit,
+        lifecycle: EntryLifecycle::Chain,
+        action: EntryAction::Commit,
     }
 }
 
@@ -54,7 +50,7 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: CommitAppEntryArgs = match serde_json::from_str(&args_str) {
+    let input: CommitEntryArgs = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
@@ -71,7 +67,7 @@ pub fn invoke_commit_app_entry(
     );
 
     // Wait for future to be resolved
-    let task_result: Result<ActionResponse, String> = block_on(
+    let task_result: Result<Address, HolochainError> = block_on(
         // First validate entry:
         validate_entry(
             entry_type.clone(),
@@ -83,29 +79,26 @@ pub fn invoke_commit_app_entry(
     );
 
     let maybe_json = match task_result {
-        Ok(action_response) => match action_response {
-            ActionResponse::Commit(_) => action_response.to_json(),
-            _ => return ribosome_error_code!(ReceivedWrongActionResult),
-        },
+        Ok(address) => serde_json::to_string(&CommitEntryResult::success(address)),
+        Err(HolochainError::ValidationFailed(fail_string)) => {
+            serde_json::to_string(&CommitEntryResult::failure(fail_string))
+        }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
                 "Call to `hc_commit_entry()` failed: {}",
                 error_string
             ));
-            Ok(json!(error_report).to_string())
+
+            serde_json::to_string(&error_report.to_string())
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
 
-    // allocate and encode result
     match maybe_json {
         Ok(json) => runtime.store_utf8(&json),
         Err(_) => ribosome_error_code!(ResponseSerializationFailed),
     }
-
-    // @TODO test that failing validation prevents commits happening
-    // @see https://github.com/holochain/holochain-rust/issues/206
 }
 
 #[cfg(test)]
@@ -117,7 +110,7 @@ pub mod tests {
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -127,7 +120,7 @@ pub mod tests {
         let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let args = CommitAppEntryArgs {
+        let args = CommitEntryArgs {
             entry_type_name: entry_type.to_string(),
             entry_value: entry.value().to_owned(),
         };
@@ -146,7 +139,10 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(
+                r#"{{"address":"{}","validation_failure":""}}"#,
+                test_entry().address()
+            ) + "\u{0}",
         );
     }
 

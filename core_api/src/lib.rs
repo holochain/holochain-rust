@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = create_wasm_from_file(
-            "wasm-test/round_trip/target/wasm32-unknown-unknown/debug/round_trip.wasm",
+            "wasm-test/round_trip/target/wasm32-unknown-unknown/release/round_trip.wasm",
         );
         let capability = create_test_cap_with_fn_name("test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -372,7 +372,7 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
+            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
         );
         let capability = create_test_cap_with_fn_name("test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -406,7 +406,7 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm",
+            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
         );
         let capability = create_test_cap_with_fn_name("test_fail");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -440,7 +440,7 @@ mod tests {
     fn can_call_debug() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
         );
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -474,7 +474,7 @@ mod tests {
     fn can_call_debug_multiple() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/debug/debug.wasm",
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
         );
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);

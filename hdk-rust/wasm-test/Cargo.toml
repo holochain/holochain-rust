@@ -15,7 +15,6 @@ opt-level = 'z'
 members = []
 
 [dependencies]
-holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust" , branch = "develop" }
 hdk = { path = ".." }
 serde = "1.0"
 serde_json = "1.0"

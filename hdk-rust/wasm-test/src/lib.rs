@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate hdk;
-extern crate holochain_wasm_utils;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
@@ -13,6 +12,7 @@ use hdk::globals::G_MEM_STACK;
 use holochain_wasm_utils::{
     error::RibosomeErrorCode,
     holochain_core_types::hash::HashString,
+    holochain_wasm_utils::*,
     memory_serialization::*, memory_allocation::*
 };
 use hdk::RibosomeError;

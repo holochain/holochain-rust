@@ -1,15 +1,12 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
-use riker::actor::CreateError as RikerCreateError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
-    path::Path,
 };
-use walkdir::Error as WalkdirError;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq)]
@@ -25,6 +22,7 @@ pub enum HolochainError {
     SerializationError(String),
     InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
+    ValidationFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -65,6 +63,7 @@ impl Error for HolochainError {
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
+            ValidationFailed(fail_msg) => &fail_msg,
         }
     }
 }
@@ -75,18 +74,6 @@ fn reason_for_io_error(error: &IoError) -> String {
         io::ErrorKind::InvalidData => format!("contains invalid data: {}", error),
         io::ErrorKind::PermissionDenied => format!("missing permissions to read: {}", error),
         _ => format!("unexpected error: {}", error),
-    }
-}
-
-impl From<WalkdirError> for HolochainError {
-    fn from(error: WalkdirError) -> Self {
-        // adapted from https://docs.rs/walkdir/2.2.5/walkdir/struct.Error.html#example
-        let path = error.path().unwrap_or(Path::new("")).display();
-        let reason = match error.io_error() {
-            Some(inner) => reason_for_io_error(inner),
-            None => String::new(),
-        };
-        HolochainError::IoError(format!("error at path: {}, reason: {}", path, reason))
     }
 }
 
@@ -105,12 +92,6 @@ impl From<SerdeError> for HolochainError {
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
-    }
-}
-
-impl From<RikerCreateError> for HolochainError {
-    fn from(e: RikerCreateError) -> Self {
-        HolochainError::ErrorGeneric(format!("Failed to create actor in system: {:?}", e))
     }
 }
 

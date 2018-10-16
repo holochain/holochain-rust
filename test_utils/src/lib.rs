@@ -159,7 +159,6 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let tempdir = tempdir().unwrap();
-    let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
         Arc::new(

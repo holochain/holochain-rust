@@ -9,9 +9,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_json;
 extern crate futures;
-extern crate riker;
-extern crate riker_default;
-extern crate riker_patterns;
 extern crate snowflake;
 #[cfg(test)]
 extern crate test_utils;
@@ -22,8 +19,6 @@ extern crate unwrap_to;
 extern crate num_derive;
 extern crate num_traits;
 extern crate regex;
-extern crate tempfile;
-extern crate walkdir;
 
 extern crate config;
 extern crate holochain_agent;
@@ -39,6 +34,8 @@ pub mod agent;
 pub mod context;
 pub mod dht;
 pub mod instance;
+#[cfg(test)]
+pub mod link_tests;
 pub mod logger;
 pub mod nucleus;
 pub mod persister;

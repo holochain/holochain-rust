@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::to_entry::ToEntry;
+use holochain_core_types::entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
 use nucleus::{
@@ -45,9 +45,8 @@ pub fn initialize_application(
         );
 
         // Commit DNA to chain
-        let (dna_entry_type, dna_entry) = dna.clone().to_entry();
+        let dna_entry = dna.to_entry();
         let dna_commit = block_on(commit_entry(
-            dna_entry_type,
             dna_entry,
             &context_clone.action_channel.clone(),
             &context_clone,
@@ -63,7 +62,7 @@ pub fn initialize_application(
                 context_clone
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.err().unwrap()),
+                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
                 return;

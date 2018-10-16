@@ -1,15 +1,8 @@
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
-use holochain_core_types::{cas::content::Address, json::ToJson};
-use nucleus::ribosome::api::Runtime;
+use futures::executor::block_on;
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
+use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
-use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct GetAppEntryArgs {
-    address: Address,
-}
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -21,53 +14,31 @@ pub fn invoke_get_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
+    let res_entry: Result<GetEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let input = res_entry.unwrap();
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(input.address));
-
-    let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
-        &runtime.context.action_channel,
-        &runtime.context.observer_channel,
-        action_wrapper.clone(),
-        move |state: &::state::State| {
-            let mut actions_copy = state.agent().actions();
-            match actions_copy.remove(&action_wrapper) {
-                Some(v) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(v)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
+    let future = get_entry(&runtime.context, input.address);
+    let result = block_on(future);
+    match result {
+        Err(_) => ribosome_error_code!(Unspecified),
+        Ok(maybe_entry) => match maybe_entry {
+            Some(entry) => {
+                let result = GetEntryResult::found(entry.to_string());
+                let result_string =
+                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                runtime.store_utf8(&result_string)
+            }
+            None => {
+                let result = GetEntryResult::not_found();
+                let result_string =
+                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
+                runtime.store_utf8(&result_string)
             }
         },
-    );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
-
-    let action_result = receiver.recv().expect("observer dropped before done");
-
-    match action_result {
-        ActionResponse::GetEntry(maybe_entry) => {
-            // serialize, allocate and encode result
-            let json_str = maybe_entry.expect("should be valid json entry").to_json();
-            match json_str {
-                Ok(json) => runtime.store_utf8(&json),
-                Err(_) => ribosome_error_code!(ResponseSerializationFailed),
-            }
-        }
-        _ => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }
 
@@ -77,8 +48,10 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
-    use super::GetAppEntryArgs;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use super::GetEntryArgs;
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry, hash::HashString,
+    };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::api::{
@@ -93,8 +66,16 @@ mod tests {
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        let args = GetAppEntryArgs {
+        let args = GetEntryArgs {
             address: test_entry().address().into(),
+        };
+        serde_json::to_string(&args).unwrap().into_bytes()
+    }
+
+    /// dummy get args from standard test entry
+    pub fn test_get_args_unknown() -> Vec<u8> {
+        let args = GetEntryArgs {
+            address: HashString::from(String::from("xxxxxxxxx")),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -201,7 +182,10 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(
+                r#"{{"address":"{}","validation_failure":""}}"#,
+                test_entry().address()
+            ) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(
@@ -219,7 +203,51 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("\"test entry content\"\u{0}");
+        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
+
+        assert_eq!(expected, get_runtime.result);
+    }
+
+    #[test]
+    /// test that we get status NotFound on an obviously broken hash
+    fn test_get_not_found() {
+        let wasm = test_get_round_trip_wat();
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
+        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
+        let (context, _) = test_context_and_logger("joan");
+        let context = instance.initialize_context(context);
+
+        println!("{:?}", instance.state().agent().top_chain_header());
+        println!(
+            "{:?}",
+            instance
+                .state()
+                .agent()
+                .top_chain_header()
+                .expect("top chain_header was None")
+                .address()
+        );
+
+        let get_call = ZomeFnCall::new(
+            &test_zome_name(),
+            &test_capability(),
+            "get_dispatch",
+            &test_parameters(),
+        );
+        let get_runtime = call(
+            &dna.name.to_string(),
+            Arc::clone(&context),
+            wasm.clone(),
+            &get_call,
+            Some(test_get_args_unknown()),
+        ).expect("test should be callable");
+
+        let mut expected = "".to_owned();
+        expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

@@ -23,9 +23,9 @@ impl Network {
         // FIXME
     }
 
-    pub fn get(&mut self, _address: &Address) -> Content {
+    pub fn get(&mut self, _address: &Address) -> Option<Content> {
         // FIXME
-        AddressableContent::from_content(&"".to_string())
+        None
     }
 }
 
@@ -82,8 +82,8 @@ where
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> &CAS {
-        &self.content_storage
+    pub(crate) fn content_storage(&self) -> CAS {
+        self.content_storage.clone()
     }
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage

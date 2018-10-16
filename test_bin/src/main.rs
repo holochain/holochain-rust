@@ -13,7 +13,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use tempfile::{tempdir, TempDir};
+use tempfile::tempdir;
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -46,7 +46,7 @@ fn main() {
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
         tempdir.path().to_str().unwrap(),
-    );
+    ).expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 

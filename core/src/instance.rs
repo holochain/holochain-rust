@@ -270,7 +270,9 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     extern crate test_utils;
+    use self::tempfile::tempdir;
     use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
@@ -296,7 +298,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use tempfile::tempdir;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -362,7 +363,8 @@ pub mod tests {
             Agent::from("Florence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
-        );
+            tempdir().unwrap().path().to_str().unwrap(),
+        ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new()));
         context.set_state(global_state.clone());
         Arc::new(context)

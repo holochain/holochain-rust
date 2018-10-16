@@ -23,7 +23,7 @@ use std::{
     io::prelude::*,
     sync::{Arc, Mutex},
 };
-use tempfile::{tempdir, TempDir};
+use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
@@ -159,6 +159,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let tempdir = tempdir().unwrap();
+    let agent = Agent::from(agent_name.to_string());
     let logger = test_logger();
     (
         Arc::new(

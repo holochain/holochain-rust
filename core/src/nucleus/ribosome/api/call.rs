@@ -170,9 +170,11 @@ pub(crate) fn reduce_call(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     extern crate test_utils;
     extern crate wabt;
 
+    use self::tempfile::tempdir;
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
@@ -195,7 +197,6 @@ pub mod tests {
     use persister::SimplePersister;
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
-    use tempfile::tempdir;
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
@@ -229,7 +230,7 @@ pub mod tests {
     fn create_context() -> Arc<Context> {
         Arc::new(
             Context::new(
-                Agent::from_string("alex".to_string()),
+                Agent::from("alex".to_string()),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new())),
                 tempdir().unwrap().path().to_str().unwrap(),

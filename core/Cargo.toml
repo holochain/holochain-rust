@@ -27,6 +27,7 @@ config = "0.8"
 regex = "1"
 holochain_core_types = { path = "../core_types" }
 holochain_cas_implementations = { path = "../cas_implementations" }
+tempfile="3"
 [dev-dependencies]
 wabt = "0.4"
 test_utils = { path = "../test_utils"}

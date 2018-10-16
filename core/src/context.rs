@@ -95,13 +95,14 @@ impl Context {
 #[cfg(test)]
 mod tests {
     extern crate holochain_agent;
+    extern crate tempfile;
     extern crate test_utils;
+    use self::tempfile::tempdir;
     use super::*;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
-    use tempfile::tempdir;
 
     #[test]
     fn default_buffer_size_test() {

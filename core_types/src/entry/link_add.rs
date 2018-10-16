@@ -95,9 +95,9 @@ pub mod tests {
 
     use cas::content::AddressableContent;
     use entry::{
-        entry_type::EntryType,
-        link::{Link, LinkActionKind, LinkEntry, LinkTag},
-        test_entry_a, test_entry_b, Entry, ToEntry,
+        EntryType,
+        link_add::{LinkAdd, LinkActionKind, LinkTag},
+        test_app_entry_a, test_app_entry_b, Entry,
     };
     use std::string::ToString;
 
@@ -105,10 +105,10 @@ pub mod tests {
         LinkTag::from("foo-tag")
     }
 
-    pub fn test_link() -> Link {
-        Link::new(
-            &test_entry_a().address(),
-            &test_entry_b().address(),
+    pub fn test_link_add() -> LinkAdd {
+        LinkAdd::new(
+            &test_app_entry_a().address(),
+            &test_app_entry_b().address(),
             &test_link_tag(),
         )
     }
@@ -130,8 +130,8 @@ pub mod tests {
     pub fn test_link_entry_string() -> String {
         format!(
             "{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}",
-            test_entry_a().address(),
-            test_entry_b().address(),
+            test_app_entry_a().address(),
+            test_app_entry_b().address(),
         )
     }
 
@@ -142,12 +142,12 @@ pub mod tests {
 
     #[test]
     fn link_base_test() {
-        assert_eq!(&test_entry_a().address(), test_link().base(),);
+        assert_eq!(&test_app_entry_a().address(), test_link().base(),);
     }
 
     #[test]
     fn link_target_test() {
-        assert_eq!(&test_entry_b().address(), test_link().target(),);
+        assert_eq!(&test_app_entry_b().address(), test_link().target(),);
     }
 
     #[test]

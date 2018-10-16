@@ -117,9 +117,10 @@ impl Zome {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use serde_json;
-    use zome::Zome;
+    use entry::dna::zome::Zome;
+    use entry::dna::zome::ZomeDescription;
+    use entry::dna::zome::ErrorHandling;
 
     pub fn test_zome() -> Zome {
         Zome::default()
@@ -139,7 +140,7 @@ pub mod tests {
         ).unwrap();
 
         let mut zome = Zome::default();
-        zome.description = String::from("test");
+        zome.description = ZomeDescription::from("test");
         zome.config.error_handling = ErrorHandling::ThrowErrors;
 
         assert_eq!(fixture, zome);

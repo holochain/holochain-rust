@@ -299,6 +299,7 @@ pub mod tests {
         time::Duration,
     };
     use holochain_core_types::entry::Entry;
+    use holochain_core_types::entry::link_list::LinkList;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -721,16 +722,17 @@ pub mod tests {
     #[test]
     fn can_commit_link() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
-        let link = create_test_link();
-        let link_list_entry = LinkListEntry::new(&[link]);
-        let entry = link_list_entry.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(entry));
+        let context = test_context();
+        let link = create_test_link_add();
+        let link_list_entry = Entry::LinkList(LinkList::new(&[link]));
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry));
+
         // Set up instance and process the action
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
+
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());
         instance
@@ -740,7 +742,7 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
                     assert_eq!(entry.entry_type(), &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }
                 _ => false,
@@ -751,19 +753,20 @@ pub mod tests {
     #[test]
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
-        let link_a = create_test_link_a();
-        let link_b = create_test_link_b();
-        let link_c = create_test_link_c();
-        let link_list_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
-        let entry = link_list_entry.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(entry));
+        let context = test_context();
+        let link_a = create_test_link_add_a();
+        let link_b = create_test_link_add_b();
+        let link_c = create_test_link_add_c();
+        let link_list_entry = Entry::LinkList(LinkList::new(&[link_a, link_b, link_c]));
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry));
         println!("commit_multilink: {:?}", commit_action);
+
         // Set up instance and process the action
         let instance = Instance::new();
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
+
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());
         instance
@@ -773,7 +776,7 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
                     assert_eq!(entry.entry_type(), &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }
                 _ => false,

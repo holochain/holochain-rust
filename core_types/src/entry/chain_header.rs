@@ -122,10 +122,10 @@ pub fn test_chain_header() -> ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain_header::{test_chain_header, ChainHeader};
+    use entry::chain_header::{test_chain_header, ChainHeader};
     use entry::{
-        entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
-        test_entry, test_entry_a, test_entry_b, ToEntry,
+        test_app_entry_type, test_app_entry_type_a, test_app_entry_type_b,
+        test_app_entry, test_app_entry_a, test_app_entry_b,
     };
     use signature::{test_signature, test_signature_b};
     use time::test_iso_8601;
@@ -138,8 +138,8 @@ pub mod tests {
     /// returns a dummy header for use in tests. different from test_chain_header_a.
     pub fn test_chain_header_b() -> ChainHeader {
         ChainHeader::new(
-            &test_entry_type_b(),
-            &test_entry_b().address(),
+            &test_app_entry_type_b(),
+            &test_app_entry_b().address(),
             &test_signature_b(),
             &None,
             &None,
@@ -161,8 +161,8 @@ pub mod tests {
         assert_ne!(test_chain_header_a(), test_chain_header_b());
 
         // different type is different
-        let entry_a = test_entry_a();
-        let entry_b = test_entry_b();
+        let entry_a = test_app_entry_a();
+        let entry_b = test_app_entry_b();
         assert_ne!(
             ChainHeader::new(
                 &entry_a.entry_type(),
@@ -183,7 +183,7 @@ pub mod tests {
         );
 
         // different previous header is different
-        let entry = test_entry();
+        let entry = test_app_entry();
         assert_ne!(
             ChainHeader::new(
                 &entry.entry_type(),
@@ -209,7 +209,7 @@ pub mod tests {
     fn new() {
         let chain_header = test_chain_header();
 
-        assert_eq!(chain_header.entry_address(), &test_entry().address());
+        assert_eq!(chain_header.entry_address(), &test_app_entry().address());
         assert_eq!(chain_header.link(), None);
         assert_ne!(chain_header.address(), Address::new());
     }
@@ -217,7 +217,7 @@ pub mod tests {
     #[test]
     /// tests for header.entry_type()
     fn entry_type() {
-        assert_eq!(test_chain_header().entry_type(), &test_entry_type());
+        assert_eq!(test_chain_header().entry_type(), &test_app_entry_type());
     }
 
     #[test]
@@ -229,7 +229,7 @@ pub mod tests {
     #[test]
     fn link_test() {
         let chain_header_a = test_chain_header();
-        let entry_b = test_entry();
+        let entry_b = test_app_entry();
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
@@ -244,13 +244,13 @@ pub mod tests {
 
     #[test]
     fn entry_test() {
-        assert_eq!(test_chain_header().entry_address(), &test_entry().address());
+        assert_eq!(test_chain_header().entry_address(), &test_app_entry().address());
     }
 
     #[test]
     fn link_same_type_test() {
         let chain_header_a = test_chain_header();
-        let entry_b = test_entry_b();
+        let entry_b = test_app_entry_b();
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
@@ -259,7 +259,7 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry_c = test_entry_a();
+        let entry_c = test_app_entry_a();
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
@@ -306,16 +306,16 @@ pub mod tests {
     fn address_entry_type() {
         assert_ne!(
             ChainHeader::new(
-                &test_entry_type_a(),
-                &test_entry().address(),
+                &test_app_entry_type_a(),
+                &test_app_entry().address(),
                 &test_signature(),
                 &None,
                 &None,
                 &test_iso_8601(),
             ).address(),
             ChainHeader::new(
-                &test_entry_type_b(),
-                &test_entry().address(),
+                &test_app_entry_type_b(),
+                &test_app_entry().address(),
                 &test_signature(),
                 &None,
                 &None,
@@ -327,7 +327,7 @@ pub mod tests {
     #[test]
     /// test that different chain state returns different addresses
     fn address_chain_state() {
-        let entry = test_entry();
+        let entry = test_app_entry();
         assert_ne!(
             test_chain_header().address(),
             ChainHeader::new(
@@ -344,7 +344,7 @@ pub mod tests {
     #[test]
     /// test that different type_next returns different addresses
     fn address_type_next() {
-        let entry = test_entry();
+        let entry = test_app_entry();
         assert_ne!(
             test_chain_header().address(),
             ChainHeader::new(

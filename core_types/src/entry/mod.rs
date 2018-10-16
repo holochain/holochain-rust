@@ -13,6 +13,7 @@ use serde_json;
 use snowflake;
 use std::fmt::{Display, Formatter, Result};
 use json::JsonString;
+use entry::link_list::LinkList;
 
 pub mod agent;
 pub mod app;
@@ -23,6 +24,7 @@ pub mod dna;
 // pub mod entry_type;
 pub mod link_add;
 pub mod link_remove;
+pub mod link_list;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash)]
 pub struct AppEntryType(String);
@@ -70,6 +72,7 @@ pub enum EntryType {
     Delete,
     LinkAdd,
     LinkRemove,
+    LinkList,
     ChainHeader,
     ChainMigrate,
 }
@@ -111,6 +114,7 @@ pub enum Entry {
 
     LinkAdd(LinkAdd),
     LinkRemove(LinkRemove),
+    LinkList(LinkList),
 
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
@@ -125,6 +129,7 @@ impl Entry {
             Entry::Delete(_) => EntryType::Delete,
             Entry::LinkAdd(_) => EntryType::LinkAdd,
             Entry::LinkRemove(_) => EntryType::LinkRemove,
+            Entry::LinkList(_) => EntryType::LinkList,
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
         }
@@ -220,13 +225,13 @@ pub fn expected_app_entry_content() -> Content {
     Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
 }
 
-/// dummy entry content, same as test_entry_content()
+/// dummy entry content, same as test_app_entry_content()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_app_entry_value_a() -> AppEntryValue {
     test_app_entry_value()
 }
 
-/// dummy entry content, differs from test_entry_content()
+/// dummy entry content, differs from test_app_entry_content()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_app_entry_value_b() -> AppEntryValue {
     #[derive(Serialize)]
@@ -251,13 +256,13 @@ pub fn expected_app_entry_address() -> Address {
     Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
 }
 
-/// dummy entry, same as test_entry()
+/// dummy entry, same as test_app_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_app_entry_a() -> Entry {
     test_app_entry()
 }
 
-/// dummy entry, differs from test_entry()
+/// dummy entry, differs from test_app_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_app_entry_b() -> Entry {
     Entry::App(test_app_entry_type_b(), test_app_entry_value_b())
@@ -308,14 +313,14 @@ pub mod tests {
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::{test_entry_address, Entry};
-    use json::{FromJson, ToJson};
+    use entry::{expected_app_entry_address, Entry};
+    use entry::link_list::LinkList;
 
     #[test]
     /// tests for PartialEq
     fn eq() {
-        let entry_a = test_entry_a();
-        let entry_b = test_entry_b();
+        let entry_a = test_app_entry_a();
+        let entry_b = test_app_entry_b();
 
         // same content is equal
         assert_eq!(entry_a, entry_a);
@@ -327,25 +332,25 @@ pub mod tests {
     #[test]
     /// test entry.address() against a known value
     fn known_address() {
-        assert_eq!(test_entry_address(), test_entry().address());
+        assert_eq!(expected_app_entry_address(), test_app_entry().address());
     }
 
     #[test]
     /// show From<Entry> for String
     fn string_from_entry_test() {
-        assert_eq!(test_entry().content(), String::from(test_entry()));
+        assert_eq!(test_app_entry().content(), String::from(test_app_entry()));
     }
 
     #[test]
     /// show From<String> for Entry
     fn entry_from_string_test() {
-        assert_eq!(test_entry(), Entry::from(test_entry().content()));
+        assert_eq!(test_app_entry(), Entry::from(test_app_entry().content()));
     }
 
     #[test]
     /// tests for entry.content()
     fn content_test() {
-        let content = test_entry_content();
+        let content = test_app_entry_content();
         let entry = Entry::from_content(&content);
 
         assert_eq!(content, entry.content());
@@ -354,8 +359,8 @@ pub mod tests {
     #[test]
     /// test that we can round trip through JSON
     fn json_round_trip() {
-        let entry = test_entry();
-        let expected = test_entry_content();
+        let entry = test_app_entry();
+        let expected = test_app_entry_content();
         assert_eq!(expected, entry.to_json().unwrap());
         assert_eq!(entry, Entry::from_json(&expected).unwrap());
         assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
@@ -378,16 +383,16 @@ pub mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
-            test_entry_content(),
-            test_entry(),
-            String::from(test_entry_address()),
+            test_app_entry_content(),
+            test_app_entry(),
+            String::from(expected_app_entry_address()),
         );
     }
 
     #[test]
     /// show CAS round trip
     fn cas_round_trip_test() {
-        let entries = vec![test_entry()];
+        let entries = vec![test_app_entry()];
         AddressableContentTestSuite::addressable_content_round_trip::<
             Entry,
             ExampleContentAddressableStorage,

@@ -119,7 +119,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(test_entry_address())
+        Action::GetEntry(expected_app_entry_address())
     }
 
     /// dummy action wrapper with test_action()
@@ -127,14 +127,14 @@ pub mod tests {
         ActionWrapper::new(test_action())
     }
 
-    /// dummy action wrapper with commit of test_entry()
+    /// dummy action wrapper with commit of test_app_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit(test_app_entry()))
     }
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(test_entry_address()))
+        ActionWrapper::new(Action::GetEntry(expected_app_entry_address()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

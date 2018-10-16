@@ -154,7 +154,7 @@ pub mod tests {
     fn iterator_test() {
         let chain_store = test_chain_store();
 
-        let entry = test_entry_b();
+        let entry = test_app_entry_b();
         let chain_header_a = test_chain_header();
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
@@ -196,7 +196,7 @@ pub mod tests {
 
         let chain_header_a = test_chain_header();
         // b has a different type to a
-        let entry_b = test_entry_b();
+        let entry_b = test_app_entry_b();
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),

@@ -157,6 +157,7 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
+    use holochain_core_types::cas::content::AddressableContent;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -186,7 +187,7 @@ mod tests {
             Ok(hc) => {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
-                assert_eq!(hc.context.agent.to_string(), "bob".to_string());
+                assert_eq!(hc.context.agent_id_entry().content(), "bob".to_string());
                 assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
                 assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -216,7 +217,7 @@ mod tests {
             ),
         );
 
-        let (context, _test_logger) = test_context("bob");
+        let (context, _test_logger) = test_context();
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {
@@ -244,7 +245,7 @@ mod tests {
             ),
         );
 
-        let (context, _test_logger) = test_context("bob");
+        let (context, _test_logger) = test_context();
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {
@@ -259,7 +260,7 @@ mod tests {
     #[test]
     fn can_start_and_stop() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
 
@@ -310,7 +311,7 @@ mod tests {
  )
 "#;
         let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
-        let (context, _) = test_context("bob");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.call("test_zome", "test_cap", "main", "");
@@ -328,7 +329,7 @@ mod tests {
     #[test]
     fn can_get_state() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
@@ -347,7 +348,7 @@ mod tests {
         );
         let capability = create_test_cap_with_fn_name("test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("bob");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         hc.start().expect("couldn't start");
@@ -375,7 +376,7 @@ mod tests {
         );
         let capability = create_test_cap_with_fn_name("test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -409,7 +410,7 @@ mod tests {
         );
         let capability = create_test_cap_with_fn_name("test_fail");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
+        let (context, _) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -444,7 +445,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -478,7 +479,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger) = test_context();
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance

@@ -176,7 +176,7 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_core_types::entry::agent::AgentId;
-    use holochain_core_types::error::DnaError;
+    use holochain_core_types::entry::dna::error::DnaError;
     use holochain_core_types::entry::dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
@@ -196,6 +196,7 @@ pub mod tests {
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
     use test_utils::create_test_dna_with_cap;
+    use holochain_core_types::entry::Entry;
 
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
@@ -227,7 +228,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         Arc::new(Context::new(
-            Agent::from("alex".to_string()),
+            &Entry::AgentId(AgentId::default()),
             Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
             Arc::new(Mutex::new(SimplePersister::new())),
         ))

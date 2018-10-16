@@ -57,19 +57,19 @@ impl HashString {
 pub mod tests {
     use super::*;
     use cas::content::AddressableContent;
-    use entry::{test_entry, test_entry_address};
+    use entry::{test_app_entry, expected_app_entry_address};
     use multihash::Hash;
 
-    /// dummy hash based on the key of test_entry()
+    /// dummy hash based on the key of test_app_entry()
     pub fn test_hash() -> HashString {
-        test_entry().address()
+        test_app_entry().address()
     }
 
     #[test]
     /// show ToString implementation
     /// automatically derived by Rust because fmt::Display is implemented
     fn to_string_test() {
-        assert_eq!(test_hash().to_string(), test_entry_address().to_string(),)
+        assert_eq!(test_hash().to_string(), test_app_entry_address().to_string(),)
     }
 
     #[test]
@@ -79,7 +79,7 @@ pub mod tests {
 
         assert_eq!(
             test_hash(),
-            HashString::from(test_entry().address().to_string()),
+            HashString::from(test_app_entry().address().to_string()),
         );
     }
 
@@ -88,7 +88,7 @@ pub mod tests {
     fn from_str_test() {
         assert_eq!(HashString::new(), HashString::from(""));
 
-        assert_eq!(test_hash(), HashString::from(test_entry().address()),);
+        assert_eq!(test_hash(), HashString::from(test_app_entry().address()),);
     }
 
     #[test]

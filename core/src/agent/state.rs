@@ -218,14 +218,14 @@ pub mod tests {
         AgentState::new(test_chain_store())
     }
 
-    /// dummy action response for a successful commit as test_entry()
+    /// dummy action response for a successful commit as test_app_entry()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_entry_address()))
+        ActionResponse::Commit(Ok(expected_app_entry_address()))
     }
 
-    /// dummy action response for a successful get as test_entry()
+    /// dummy action response for a successful get as test_app_entry()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_entry()))
+        ActionResponse::GetEntry(Some(test_app_entry()))
     }
 
     #[test]
@@ -292,8 +292,8 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            format!("{{\"address\":\"{}\"}}", test_entry_address()),
-            ActionResponse::Commit(Ok(test_entry_address()))
+            format!("{{\"address\":\"{}\"}}", expected_app_entry_address()),
+            ActionResponse::Commit(Ok(expected_app_entry_address()))
                 .to_json()
                 .unwrap(),
         );
@@ -309,7 +309,7 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}",
-            ActionResponse::GetEntry(Some(test_entry().clone()))
+            ActionResponse::GetEntry(Some(test_app_entry().clone()))
                 .to_json()
                 .unwrap(),
         );
@@ -319,8 +319,8 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            format!("[\"{}\"]", test_entry_address()),
-            ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
+            format!("[\"{}\"]", expected_app_entry_address()),
+            ActionResponse::GetLinks(Ok(vec![test_app_entry().address()]))
                 .to_json()
                 .unwrap(),
         );
@@ -335,8 +335,8 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            format!("{{\"address\":\"{}\"}}", test_entry_address()),
-            ActionResponse::LinkEntries(Ok(test_entry()))
+            format!("{{\"address\":\"{}\"}}", expected_app_entry_address()),
+            ActionResponse::LinkEntries(Ok(test_app_entry()))
                 .to_json()
                 .unwrap(),
         );

@@ -1,25 +1,18 @@
 extern crate holochain_agent;
 extern crate holochain_core;
-extern crate test_utils;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
+extern crate test_utils;
 
-use holochain_core_types::error::HolochainError;
-use holochain_core::{
-    context::Context, logger::Logger,
-    persister::SimplePersister,
-};
-use holochain_core_api::Holochain;
-use std::sync::{Arc, Mutex};
-use test_utils::{
-    create_test_cap_with_fn_name,
-    create_test_dna_with_cap,
-    create_wasm_from_file,
-};
 use holochain_agent::Agent;
+use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core_api::Holochain;
+use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
+use std::sync::{Arc, Mutex};
+use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {
@@ -51,10 +44,13 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     )
 }
 
-pub fn launch_hc_with_integration_test_wasm(fn_name: &str, fn_arg: &str) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>)  {
+pub fn launch_hc_with_integration_test_wasm(
+    fn_name: &str,
+    fn_arg: &str,
+) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
-    "wasm-test/integration-test/target/wasm32-unknown-unknown/debug/integration_test.wasm",
+        "wasm-test/integration-test/target/wasm32-unknown-unknown/debug/integration_test.wasm",
     );
     let capability = create_test_cap_with_fn_name(fn_name);
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -68,7 +64,6 @@ pub fn launch_hc_with_integration_test_wasm(fn_name: &str, fn_arg: &str) -> (Res
     let result = hc.call("test_zome", "test_cap", fn_name, fn_arg);
     return (result, test_logger);
 }
-
 
 #[test]
 fn can_return_error_report() {
@@ -110,10 +105,10 @@ fn call_serialize_err() {
     );
 }
 
-
 #[test]
 fn call_deserialize_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_ok", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_deserialize_ok", r#"{}"#);
     // Verify result
     assert_eq!("", result.unwrap());
     // Verify logs
@@ -126,7 +121,8 @@ fn call_deserialize_ok() {
 
 #[test]
 fn call_deserialize_err() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_err", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_deserialize_err", r#"{}"#);
     // Verify result
     assert_eq!("\"some error string\"", result.unwrap());
     // Verify logs
@@ -139,7 +135,8 @@ fn call_deserialize_err() {
 
 #[test]
 fn call_deserialize_allocation_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_allocation_ok", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_deserialize_allocation_ok", r#"{}"#);
     // Verify result
     assert_eq!("{\"value\":\"fish\"}", result.unwrap());
     // Verify logs
@@ -152,7 +149,8 @@ fn call_deserialize_allocation_ok() {
 
 #[test]
 fn call_try_deserialize_allocation_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_ok", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_ok", r#"{}"#);
     // Verify result
     assert_eq!("{\"value\":\"fish\"}", result.unwrap());
     // Verify logs
@@ -165,7 +163,8 @@ fn call_try_deserialize_allocation_ok() {
 
 #[test]
 fn call_try_deserialize_allocation_err() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_err", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_err", r#"{}"#);
     // Verify result
     assert_eq!("\"Unspecified\"", result.unwrap());
     // Verify logs

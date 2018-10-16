@@ -115,7 +115,9 @@ impl SinglePageStack {
     }
 
     // Create a SinglePageStack from a valid encoded allocation
-    pub fn from_encoded_allocation(encoded_last_allocation: u32) -> Result<Self, RibosomeErrorCode> {
+    pub fn from_encoded_allocation(
+        encoded_last_allocation: u32,
+    ) -> Result<Self, RibosomeErrorCode> {
         let maybe_allocation = decode_encoded_allocation(encoded_last_allocation as u32);
         if let Err(_) = maybe_allocation {
             return Err(RibosomeErrorCode::NotAnAllocation);
@@ -188,10 +190,16 @@ pub mod tests {
         assert_eq!(0b1111111111111111, single_page_stack.unwrap().top());
         let single_page_stack = SinglePageStack::from_encoded_allocation(0);
         // stack top is 0
-        assert_eq!(RibosomeErrorCode::NotAnAllocation, single_page_stack.err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            single_page_stack.err().unwrap()
+        );
         let i = 0b0000000000000001_0000000000000000;
         let single_page_stack = SinglePageStack::from_encoded_allocation(i);
-        assert_eq!(RibosomeErrorCode::NotAnAllocation, single_page_stack.err().unwrap());
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            single_page_stack.err().unwrap()
+        );
     }
 
     #[test]

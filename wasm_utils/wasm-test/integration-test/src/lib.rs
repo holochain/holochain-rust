@@ -5,11 +5,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-use holochain_wasm_utils::{
-    memory_allocation::*,
-    memory_serialization::*,
-};
-use std::{os::raw::c_char};
+use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
+use std::os::raw::c_char;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
 struct InputTestStruct {
@@ -28,7 +25,9 @@ pub extern "C" fn test_error_report(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_serialize_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let obj = InputTestStruct { value: "fish".to_string() };
+    let obj = InputTestStruct {
+        value: "fish".to_string(),
+    };
     assert_eq!(0, stack.top());
     let res = serialize(&mut stack, obj.clone());
     assert_eq!(json!(obj).to_string().len(), stack.top() as usize);
@@ -43,7 +42,9 @@ pub extern "C" fn test_serialize_err(_: u32) -> u32 {
     let maybe_stack = SinglePageStack::from_encoded_allocation(allmost_full_alloc);
     zome_assert!(stack, maybe_stack.is_ok());
     let mut stack = maybe_stack.unwrap();
-    let obj = InputTestStruct { value: "fish".to_string() };
+    let obj = InputTestStruct {
+        value: "fish".to_string(),
+    };
     let res = serialize(&mut stack, obj.clone());
     assert!(res.is_err());
     res.err().unwrap() as u32
@@ -52,7 +53,9 @@ pub extern "C" fn test_serialize_err(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_deserialize_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let obj = InputTestStruct { value: "fish".to_string() };
+    let obj = InputTestStruct {
+        value: "fish".to_string(),
+    };
     let res = serialize(&mut stack, obj.clone());
     let ptr = res.unwrap().offset() as *mut c_char;
     let res = deserialize(ptr);

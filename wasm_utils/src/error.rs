@@ -6,7 +6,10 @@ use std::fmt;
 macro_rules! zome_assert {
     ($stack:ident, $cond:expr) => {
         if !$cond {
-            let error_report = ribosome_error_report!(format!(r#"Zome assertion failed: `{}`"#, stringify!($cond)));
+            let error_report = ribosome_error_report!(format!(
+                r#"Zome assertion failed: `{}`"#,
+                stringify!($cond)
+            ));
             let res = serialize(&mut $stack, error_report);
             return res.unwrap().encode();
         }

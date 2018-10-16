@@ -220,7 +220,7 @@ pub mod tests {
     use dht::dht_reducers::commit_sys_entry;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        entry::{test_app_entry, test_sys_entry, test_unpublishable_entry, Entry},
     };
     use instance::tests::test_context;
     use state::test_store;
@@ -230,14 +230,14 @@ pub mod tests {
     fn commit_sys_entry_test() {
         let context = test_context("bob");
         let store = test_store();
-        let entry = test_entry();
+        let entry = test_app_entry();
 
         let unpublishable_entry = test_unpublishable_entry();
 
         let new_dht_store =
             commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
-        // test_entry is not sys so should do nothing
+        // test_app_entry is not sys so should do nothing
         assert_eq!(None, new_dht_store);
         assert_eq!(
             None,

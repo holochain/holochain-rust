@@ -7,6 +7,16 @@ pub struct AgentId {
     dpki_root: Key,
 }
 
+impl Default for AgentId {
+    fn default() -> AgentId {
+        AgentId {
+            signing_key: Key::new(),
+            encryption_key: Key::new(),
+            dpki_root: Key::new(),
+        }
+    }
+}
+
 impl AgentId {
     pub fn new(signing_key: &Key, encryption_key: &Key, dpki_root: &Key) -> AgentId {
         AgentId {

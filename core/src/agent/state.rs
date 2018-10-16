@@ -207,9 +207,8 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_entry_address},
+        entry::{test_app_entry, expected_app_entry_address},
         error::HolochainError,
-        json::ToJson,
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};

@@ -381,7 +381,6 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     extern crate test_utils;
@@ -403,7 +402,7 @@ pub mod tests {
         sync::{Arc, Mutex},
     };
 
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_core_types::entry::dna::zome::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

@@ -276,12 +276,12 @@ pub mod tests {
     use agent::state::ActionResponse;
     use context::Context;
     use futures::executor::block_on;
-    use holochain_agent::Agent;
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::{entry_type::EntryType, link::Link, link_list::LinkListEntry, ToEntry},
+        entry::{EntryType, link_add::LinkAdd},
+        entry::agent::AgentId,
     };
-    use holochain_dna::{zome::Zome, Dna};
+    use holochain_core_types::entry::dna::{zome::Zome, Dna};
     use instance::{Instance, Observer};
     use logger::Logger;
     use nucleus::{
@@ -298,6 +298,7 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
+    use holochain_core_types::entry::Entry;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -316,12 +317,11 @@ pub mod tests {
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
-    pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from(agent_name.to_owned());
+    pub fn test_context_and_logger() -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let logger = test_logger();
         (
             Arc::new(Context::new(
-                agent,
+                &Entry::AgentId(AgentId::default()),
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
             )),
@@ -337,14 +337,12 @@ pub mod tests {
 
     /// create a test context
     pub fn test_context_with_channels(
-        agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
         Arc::new(Context::new_with_channels(
-            agent,
+            &Entry::AgentId(AgentId::default()),
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new())),
             action_channel.clone(),
@@ -354,7 +352,7 @@ pub mod tests {
 
     pub fn test_context_with_state() -> Arc<Context> {
         let mut context = Context::new(
-            Agent::from("Florence".to_string()),
+            &Entry::AgentId(AgentId::default()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );
@@ -691,28 +689,28 @@ pub mod tests {
             });
     }
 
-    pub fn create_test_link() -> Link {
-        Link::new(
+    pub fn create_test_link_add() -> LinkAdd {
+        LinkAdd::new(
             &Address::from("12".to_string()),
             &Address::from("34".to_string()),
             "fake",
         )
     }
 
-    pub fn create_test_link_a() -> Link {
-        create_test_link()
+    pub fn create_test_link_add_a() -> LinkAdd {
+        create_test_link_add()
     }
 
-    pub fn create_test_link_b() -> Link {
-        Link::new(
+    pub fn create_test_link_add_b() -> LinkAdd {
+        LinkAdd::new(
             &Address::from("56".to_string()),
             &Address::from("78".to_string()),
             "faux",
         )
     }
 
-    pub fn create_test_link_c() -> Link {
-        Link::new(
+    pub fn create_test_link_add_c() -> LinkAdd {
+        LinkAdd::new(
             &Address::from("90".to_string()),
             &Address::from("ab".to_string()),
             "fake",

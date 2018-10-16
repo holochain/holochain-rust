@@ -1,11 +1,10 @@
-extern crate holochain_agent;
 extern crate holochain_core;
-extern crate holochain_dna;
 extern crate wabt;
+extern crate holochain_core_types;
 
-use holochain_agent::Agent;
+use holochain_core_types::entry::agent::AgentId;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use holochain_dna::{
+use holochain_core_types::entry::dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
@@ -23,6 +22,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wabt::Wat2Wasm;
+use holochain_core_types::entry::dna::zome::AppEntryTypes;
+use holochain_core_types::entry::AppEntryType;
+use holochain_core_types::entry::Entry;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -67,14 +69,14 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
 
-    let mut entry_types = HashMap::new();
-    entry_types.insert(String::from("testEntryType"), EntryTypeDef::new());
-    entry_types.insert(String::from("testEntryTypeB"), EntryTypeDef::new());
+    let mut app_entry_types = AppEntryTypes::new();
+    app_entry_types.insert(AppEntryType::from("testEntryType"), EntryTypeDef::new());
+    app_entry_types.insert(AppEntryType::from("testEntryTypeB"), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &entry_types,
+        &app_entry_types,
         &capabilities,
         &DnaWasm { code: wasm },
     );
@@ -112,13 +114,13 @@ pub fn create_test_dna_with_cap(
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), cap.clone());
 
-    let etypedef = EntryTypeDef::new();
-    let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), etypedef);
+    let entry_type_def = EntryTypeDef::new();
+    let mut app_entry_types = AppEntryTypes::new();
+    app_entry_types.insert(AppEntryType::from("testEntryType"), entry_type_def);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &entry_types,
+        &app_entry_types,
         &capabilities,
         &DnaWasm {
             code: wasm.to_owned(),
@@ -155,12 +157,12 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from(agent_name.to_string());
+pub fn test_context_and_logger() -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    let agent_id_entry = Entry::AgentId(AgentId::default());
     let logger = test_logger();
     (
         Arc::new(Context::new(
-            agent,
+            &agent_id_entry,
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new())),
         )),
@@ -168,8 +170,8 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     )
 }
 
-pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let (context, _) = test_context_and_logger(agent_name);
+pub fn test_context() -> Arc<Context> {
+    let (context, _) = test_context_and_logger();
     context
 }
 

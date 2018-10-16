@@ -159,6 +159,12 @@ impl AddressableContent for Entry {
     }
 }
 
+impl Display for Entry {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.content())
+    }
+}
+
 impl From<Entry> for JsonString {
     fn from(entry: Entry) -> JsonString {
         JsonString::from(entry.content())
@@ -241,7 +247,7 @@ pub fn test_app_entry() -> Entry {
 
 /// the correct hash for test_app_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn expected_add_entry_address() -> Address {
+pub fn expected_app_entry_address() -> Address {
     Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
 }
 

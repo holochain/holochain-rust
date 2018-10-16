@@ -34,13 +34,13 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        entry::test_entry,
+        entry::test_app_entry,
     };
     use instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {
-        let entry = test_entry();
+        let entry = test_app_entry();
         let context = test_context_with_state();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(None), result);
@@ -57,7 +57,7 @@ pub mod tests {
 
     #[test]
     fn get_entry_from_dht_cas_futures() {
-        let entry = test_entry();
+        let entry = test_app_entry();
         let context = test_context_with_state();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(None), block_on(future));

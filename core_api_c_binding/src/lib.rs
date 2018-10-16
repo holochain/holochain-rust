@@ -1,11 +1,13 @@
 extern crate holochain_core;
 extern crate holochain_core_api;
-extern crate holochain_dna;
+extern crate holochain_core_types;
 
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
-use holochain_dna::Dna;
+use holochain_core_types::entry::dna::Dna;
+use holochain_core_types::entry::agent::AgentId;
 use std::sync::Arc;
+use holochain_core_types::entry::Entry;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{
@@ -23,10 +25,10 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let agent = Agent::from("c_bob".to_string());
+    let agent_id_entry = Entry::AgentId(AgentId::default());
 
     let context = Arc::new(Context::new(
-        agent,
+        &agent_id_entry,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
     ));

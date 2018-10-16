@@ -5,4 +5,5 @@ authors = ["Nicolas Luck <nicolas@lucksus.org>"]
 
 [dependencies]
 holochain_core = { path = "../core" }
+holochain_core_types = { path = "../core_types" }
 wabt = "0.4"

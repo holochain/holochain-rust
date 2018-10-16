@@ -77,7 +77,7 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use super::GetAppEntryArgs;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, hash::HashString,
+        cas::content::AddressableContent, entry::test_app_entry, hash::HashString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -94,7 +94,7 @@ mod tests {
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
         let args = GetAppEntryArgs {
-            address: test_entry().address().into(),
+            address: test_app_entry().address().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
     }
@@ -209,7 +209,7 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_app_entry().address()) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(

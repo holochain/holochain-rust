@@ -30,7 +30,7 @@ impl Context {
     }
 
     pub fn new(
-        agent_id_entry: Entry,
+        agent_id_entry: &Entry,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
     ) -> Context {
@@ -38,7 +38,7 @@ impl Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Context {
-            agent_id_entry,
+            agent_id_entry: agent_id_entry.to_owned(),
             logger,
             persister,
             state: None,
@@ -48,7 +48,7 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent_id_entry: Entry,
+        agent_id_entry: &Entry,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
@@ -56,7 +56,7 @@ impl Context {
     ) -> Context {
         assert_eq!(EntryType::AgentId, agent_id_entry.entry_type());
         Context {
-            agent_id_entry,
+            agent_id_entry: agent_id_entry.to_owned(),
             logger,
             persister,
             state: None,
@@ -90,13 +90,15 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_agent;
     extern crate test_utils;
-    use super::*;
+    use context::Context;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
+    use holochain_core_types::entry::agent::AgentId;
+    use holochain_core_types::entry::Entry;
+    use std::sync::RwLock;
 
     #[test]
     fn default_buffer_size_test() {
@@ -106,7 +108,7 @@ mod tests {
     #[test]
     fn test_state() {
         let mut context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
+            &Entry::AgentId(AgentId::default()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );
@@ -126,7 +128,7 @@ mod tests {
     #[should_panic]
     fn test_deadlock() {
         let mut context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
+            &Entry::AgentId(AgentId::default()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
         );

@@ -6,3 +6,4 @@ authors = ["neonphog <neonphog@gmail.com>"]
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_core_api = { path = "../core_api" }
+holochain_core_types = { path = "../core_types" }

@@ -53,7 +53,6 @@
 extern crate futures;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 #[cfg(test)]
 extern crate test_utils;
 
@@ -65,8 +64,8 @@ use holochain_core::{
     state::State,
 };
 use holochain_core_types::error::HolochainError;
-use holochain_dna::Dna;
 use std::sync::Arc;
+use holochain_core_types::entry::dna::Dna;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -151,8 +150,8 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
+    use holochain_core_types::entry::Entry;
     use holochain_core_types::entry::agent::AgentId;
-    use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
@@ -163,12 +162,12 @@ mod tests {
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = Agent::from(agent_name.to_string());
+    fn test_context() -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
+        let agent_id_entry = Entry::AgentId(AgentId::default());
         let logger = test_utils::test_logger();
         (
             Arc::new(Context::new(
-                agent,
+                &agent_id_entry,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
             )),
@@ -180,7 +179,7 @@ mod tests {
     fn can_instantiate() {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
-        let (context, test_logger) = test_context("bob");
+        let (context, test_logger) = test_context();
         let result = Holochain::new(dna.clone(), context.clone());
 
         match result {

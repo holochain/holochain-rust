@@ -138,11 +138,12 @@ pub mod tests {
     use holochain_cas_implementations::cas::memory::MemoryStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        chain_header::{test_chain_header, ChainHeader},
-        entry::{test_entry, test_entry_b},
+        entry::{test_app_entry, test_app_entry_b},
         signature::{test_signature, test_signature_b},
         time::test_iso_8601,
     };
+    use holochain_core_types::entry::chain_header::ChainHeader;
+    use holochain_core_types::entry::chain_header::test_chain_header;
 
     pub fn test_chain_store() -> ChainStore<MemoryStorage> {
         ChainStore::new(MemoryStorage::new().expect("could not create new chain store"))
@@ -205,7 +206,7 @@ pub mod tests {
             &test_iso_8601(),
         );
         // c has same type as a
-        let entry_c = test_entry();
+        let entry_c = test_app_entry();
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),

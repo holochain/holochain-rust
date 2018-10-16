@@ -50,7 +50,7 @@ pub fn launch_hc_with_integration_test_wasm(
 ) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/debug/integration_test.wasm",
+        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/integration_test.wasm",
     );
     let capability = create_test_cap_with_fn_name(fn_name);
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);

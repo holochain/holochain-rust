@@ -499,7 +499,7 @@ pub mod tests {
     #[test]
     /// test for returning zome function result actions
     fn test_reduce_return_zome_function_result() {
-        let context = test_context("jimmy");
+        let context = test_context();
         let mut state = test_nucleus_state();
         let action_wrapper = test_action_wrapper_rzfr();
 
@@ -521,7 +521,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+        let context = test_context_with_channels(&sender, &tx_observer);
 
         // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
@@ -541,7 +541,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
+        let context = test_context_with_channels(&sender, &tx_observer).clone();
 
         // Reduce Init action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
@@ -611,7 +611,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+        let context = test_context_with_channels(&sender, &tx_observer);
 
         let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
@@ -622,7 +622,7 @@ pub mod tests {
     fn call_ribosome_wrong_dna() {
         let mut instance = Instance::new();
 
-        instance.start_action_loop(test_context("jane"));
+        instance.start_action_loop(test_context());
 
         let call = ZomeFnCall::new("test_zome", "test_cap", "main", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);

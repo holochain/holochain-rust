@@ -27,7 +27,7 @@ pub mod tests {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context());
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 
@@ -44,7 +44,7 @@ pub mod tests {
             0,
         ).expect("Test callback instance could not be initialized");
 
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context());
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 

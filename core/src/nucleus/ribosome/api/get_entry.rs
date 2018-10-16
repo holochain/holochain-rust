@@ -179,7 +179,7 @@ mod tests {
             wasm.clone(),
         );
         let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger();
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());
@@ -242,7 +242,7 @@ mod tests {
             wasm.clone(),
         );
         let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger();
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());

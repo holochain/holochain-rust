@@ -331,8 +331,8 @@ pub mod tests {
     }
 
     /// create a test context
-    pub fn test_context(agent_name: &str) -> Arc<Context> {
-        let (context, _) = test_context_and_logger(agent_name);
+    pub fn test_context() -> Arc<Context> {
+        let (context, _) = test_context_and_logger();
         context
     }
 
@@ -372,7 +372,7 @@ pub mod tests {
     pub fn test_instance(dna: Dna) -> Result<Instance, String> {
         // Create instance and plug in our DNA
         let mut instance = Instance::new();
-        let context = test_context("jane");
+        let context = test_context();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
@@ -409,7 +409,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::Dna);
+                    assert_eq!(entry.entry_type(), EntryType::Dna);
                     true
                 }
                 _ => false,
@@ -454,7 +454,7 @@ pub mod tests {
     pub fn can_process_action() {
         let mut instance = Instance::new();
 
-        let context = test_context("jane");
+        let context = test_context();
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_get();
@@ -503,7 +503,7 @@ pub mod tests {
     /// the test thread could complete before the closure was called.
     fn can_dispatch_with_observer() {
         let mut instance = Instance::new();
-        instance.start_action_loop(test_context("jane"));
+        instance.start_action_loop(test_context());
 
         let dna = Dna::new();
         let (sender, receiver) = sync_channel(1);
@@ -540,7 +540,7 @@ pub mod tests {
         let dna = Dna::new();
 
         let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.start_action_loop(test_context("jane"));
+        instance.start_action_loop(test_context());
 
         // the initial state is not intialized
         assert_eq!(
@@ -633,9 +633,9 @@ pub mod tests {
     #[test]
     fn can_commit_dna() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
+        let context = test_context();
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let dna_entry = dna.to_entry();
+        let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
@@ -652,7 +652,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::Dna);
+                    assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -664,9 +664,8 @@ pub mod tests {
     #[test]
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
-        let context = test_context("alex");
-        let agent_entry = context.agent.to_entry();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
+        let context = test_context();
+        let commit_agent_action = ActionWrapper::new(Action::Commit(context.agent_id_entry().to_owned()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -682,8 +681,8 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::AgentId,);
-                    assert_eq!(entry.content(), agent_entry.content());
+                    assert_eq!(entry.entry_type(), EntryType::AgentId,);
+                    assert_eq!(entry.content(), context.agent_id_entry().content());
                     true
                 }
                 _ => false,
@@ -725,7 +724,7 @@ pub mod tests {
         let context = test_context();
         let link = create_test_link_add();
         let link_list_entry = Entry::LinkList(LinkList::new(&[link]));
-        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry));
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
 
         // Set up instance and process the action
         let instance = Instance::new();
@@ -741,7 +740,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::LinkList,);
+                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }
@@ -758,7 +757,7 @@ pub mod tests {
         let link_b = create_test_link_add_b();
         let link_c = create_test_link_add_c();
         let link_list_entry = Entry::LinkList(LinkList::new(&[link_a, link_b, link_c]));
-        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry));
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
         println!("commit_multilink: {:?}", commit_action);
 
         // Set up instance and process the action
@@ -775,7 +774,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::LinkList,);
+                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }

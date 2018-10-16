@@ -124,7 +124,6 @@ pub mod tests {
     use cas::content::{Address, AddressableContent};
     use entry::chain_header::{test_chain_header, ChainHeader};
     use entry::{
-        test_app_entry_type, test_app_entry_type_a, test_app_entry_type_b,
         test_app_entry, test_app_entry_a, test_app_entry_b,
     };
     use signature::{test_signature, test_signature_b};
@@ -137,9 +136,10 @@ pub mod tests {
 
     /// returns a dummy header for use in tests. different from test_chain_header_a.
     pub fn test_chain_header_b() -> ChainHeader {
+        let entry = test_app_entry_b();
         ChainHeader::new(
-            &test_app_entry_type_b(),
-            &test_app_entry_b().address(),
+            &entry.entry_type(),
+            &entry.address(),
             &test_signature_b(),
             &None,
             &None,
@@ -217,7 +217,8 @@ pub mod tests {
     #[test]
     /// tests for header.entry_type()
     fn entry_type() {
-        assert_eq!(test_chain_header().entry_type(), &test_app_entry_type());
+        let entry = test_app_entry();
+        assert_eq!(test_chain_header().entry_type(), &entry.entry_type());
     }
 
     #[test]
@@ -304,18 +305,21 @@ pub mod tests {
     #[test]
     /// test that different entry types returns different addresses
     fn address_entry_type() {
+        let entry_a = test_app_entry_a();
+        let entry_b = test_app_entry_b();
+
         assert_ne!(
             ChainHeader::new(
-                &test_app_entry_type_a(),
-                &test_app_entry().address(),
+                &entry_a.entry_type(),
+                &entry_a.address(),
                 &test_signature(),
                 &None,
                 &None,
                 &test_iso_8601(),
             ).address(),
             ChainHeader::new(
-                &test_app_entry_type_b(),
-                &test_app_entry().address(),
+                &entry_b.entry_type(),
+                &entry_b.address(),
                 &test_signature(),
                 &None,
                 &None,
@@ -355,14 +359,6 @@ pub mod tests {
                 &Some(test_chain_header().address()),
                 &test_iso_8601(),
             ).address(),
-        );
-    }
-
-    #[test]
-    fn can_round_trip_header_entry() {
-        assert_eq!(
-            test_chain_header(),
-            ChainHeader::from_entry(&test_chain_header().to_entry())
         );
     }
 }

@@ -176,6 +176,12 @@ impl From<Entry> for JsonString {
     }
 }
 
+impl From<JsonString> for Entry {
+    fn from(json_string: JsonString) -> Entry {
+        Entry::from_content(&String::from(json_string))
+    }
+}
+
 impl From<Option<Entry>> for JsonString {
     fn from (maybe_entry: Option<Entry>) -> JsonString {
         let inner = match maybe_entry {
@@ -297,7 +303,7 @@ pub fn test_sys_entry() -> Entry {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_address() -> Address {
+pub fn expected_sys_entry_address() -> Address {
     Address::from("QmWePdZYQrYFBUkBy1GPyCCUf8UmkmptsjtcVqZJ9Tzdse".to_string())
 }
 
@@ -308,13 +314,19 @@ pub fn test_unpublishable_entry() -> Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
+    use entry::expected_sys_entry_address;
+    use json::JsonString;
+    use entry::test_app_entry_a;
+    use entry::test_app_entry_b;
+    use entry::expected_app_entry_address;
+    use entry::test_app_entry;
+    use entry::expected_app_entry_content;
+    use entry::test_sys_entry;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::{expected_app_entry_address, Entry};
-    use entry::link_list::LinkList;
+    use entry::Entry;
 
     #[test]
     /// tests for PartialEq
@@ -350,7 +362,7 @@ pub mod tests {
     #[test]
     /// tests for entry.content()
     fn content_test() {
-        let content = test_app_entry_content();
+        let content = expected_app_entry_content();
         let entry = Entry::from_content(&content);
 
         assert_eq!(content, entry.content());
@@ -360,21 +372,21 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let entry = test_app_entry();
-        let expected = test_app_entry_content();
-        assert_eq!(expected, entry.to_json().unwrap());
-        assert_eq!(entry, Entry::from_json(&expected).unwrap());
-        assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
+        let expected = JsonString::from(expected_app_entry_content());
+        assert_eq!(expected, JsonString::from(entry.clone()));
+        assert_eq!(&entry, &Entry::from(expected));
+        assert_eq!(&entry, &Entry::from(JsonString::from(entry.clone())));
 
         let sys_entry = test_sys_entry();
-        let expected = format!(
+        let expected = JsonString::from(format!(
             "{{\"value\":\"{}\",\"entry_type\":\"AgentId\"}}",
-            test_sys_entry_address(),
-        );
-        assert_eq!(expected, sys_entry.to_json().unwrap());
-        assert_eq!(sys_entry, Entry::from_json(&expected).unwrap());
+            expected_sys_entry_address(),
+        ));
+        assert_eq!(expected, JsonString::from(sys_entry.clone()));
+        assert_eq!(&sys_entry, &Entry::from(expected));
         assert_eq!(
-            sys_entry,
-            Entry::from_json(&sys_entry.to_json().unwrap()).unwrap()
+            &sys_entry,
+            &Entry::from(JsonString::from(sys_entry.clone()))
         );
     }
 
@@ -383,7 +395,7 @@ pub mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
-            test_app_entry_content(),
+            expected_app_entry_content(),
             test_app_entry(),
             String::from(expected_app_entry_address()),
         );

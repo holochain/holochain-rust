@@ -31,7 +31,7 @@ pub mod tests {
             Callback::MissingNo.as_str(),
             0,
         ).expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context());
 
         let result = receive(context, zome, &CallbackParams::Receive);
 
@@ -43,7 +43,7 @@ pub mod tests {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context());
 
         let result = receive(context, zome, &CallbackParams::Receive);
 
@@ -55,7 +55,7 @@ pub mod tests {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 1)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context());
 
         let result = receive(context, zome, &CallbackParams::Receive);
 

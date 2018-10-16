@@ -563,7 +563,7 @@ pub mod tests {
         let app_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
-        let (c, logger) = test_context_and_logger("joan");
+        let (c, logger) = test_context_and_logger();
         let context = instance.initialize_context(c);
 
         test_zome_api_function_call(&app_name, context, logger, &instance, &wasm, args_bytes)

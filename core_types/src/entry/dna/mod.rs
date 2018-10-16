@@ -473,7 +473,7 @@ pub mod tests {
                 .app_entry_types()
                 .get(&AppEntryType::from("type1"))
                 .unwrap()
-                .sharing,
+                .sharing(),
             zome::entry_types::Sharing::Public
         );
     }

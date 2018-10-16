@@ -228,7 +228,7 @@ pub mod tests {
 
     #[test]
     fn commit_sys_entry_test() {
-        let context = test_context("bob");
+        let context = test_context();
         let store = test_store();
         let entry = test_app_entry();
 

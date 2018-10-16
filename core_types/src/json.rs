@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 use serde_json;
 use serde::Serialize;
 
+#[derive(Debug, PartialEq)]
 pub struct JsonString(String);
 
 impl JsonString {
@@ -13,6 +14,12 @@ impl JsonString {
 impl From<String> for JsonString {
     fn from(s: String) -> JsonString {
         JsonString(s)
+    }
+}
+
+impl From<JsonString> for String {
+    fn from(json_string: JsonString) -> String {
+        json_string.0
     }
 }
 

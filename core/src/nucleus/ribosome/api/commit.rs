@@ -117,7 +117,7 @@ pub mod tests {
 
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_app_entry_type, test_app_entry},
+        entry::test_app_entry,
     };
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
@@ -127,12 +127,11 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_app_entry_type();
         let entry = test_app_entry();
 
         let args = CommitAppEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
+            entry_type_name: entry.entry_type().to_string(),
+            entry_value: entry.content(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

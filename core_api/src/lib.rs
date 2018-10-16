@@ -155,7 +155,7 @@ mod tests {
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
-    use tempfile::{tempdir, TempDir};
+    use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
@@ -169,12 +169,14 @@ mod tests {
         let agent = holochain_agent::Agent::from_string(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-                tempdir().unwrap().path().to_str().unwrap(),
-            ).unwrap()),
+            Arc::new(
+                Context::new(
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    tempdir().unwrap().path().to_str().unwrap(),
+                ).unwrap(),
+            ),
             logger,
         )
     }

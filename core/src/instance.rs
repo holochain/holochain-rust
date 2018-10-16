@@ -296,7 +296,7 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use tempfile::{tempdir, TempDir};
+    use tempfile::tempdir;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -319,12 +319,14 @@ pub mod tests {
         let agent = Agent::from_string(agent_name.to_string());
         let logger = test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-                tempdir().unwrap().path().to_str().unwrap(),
-            ).unwrap()),
+            Arc::new(
+                Context::new(
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    tempdir().unwrap().path().to_str().unwrap(),
+                ).unwrap(),
+            ),
             logger,
         )
     }
@@ -343,14 +345,16 @@ pub mod tests {
     ) -> Arc<Context> {
         let agent = Agent::from_string(agent_name.to_string());
         let logger = test_logger();
-        Arc::new(Context::new_with_channels(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-            action_channel.clone(),
-            observer_channel.clone(),
-            tempdir().unwrap().path().to_str().unwrap(),
-        ).unwrap())
+        Arc::new(
+            Context::new_with_channels(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                action_channel.clone(),
+                observer_channel.clone(),
+                tempdir().unwrap().path().to_str().unwrap(),
+            ).unwrap(),
+        )
     }
 
     #[test]

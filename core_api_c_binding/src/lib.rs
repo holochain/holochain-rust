@@ -36,19 +36,14 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
-    
+
     match context {
-        Ok(con) => 
-        {
-            match Holochain::new(*dna, Arc::new(con)) {
+        Ok(con) => match Holochain::new(*dna, Arc::new(con)) {
             Ok(hc) => Box::into_raw(Box::new(hc)),
             Err(_) => std::ptr::null_mut(),
-            }
-        }
-        Err(_) => std::ptr::null_mut()
+        },
+        Err(_) => std::ptr::null_mut(),
     }
-
-    
 }
 
 #[no_mangle]

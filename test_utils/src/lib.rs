@@ -162,12 +162,14 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     let agent = Agent::from_string(agent_name.to_string());
     let logger = test_logger();
     (
-        Arc::new(Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-            tempdir.path().to_str().unwrap(),
-        ).unwrap()),
+        Arc::new(
+            Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                tempdir.path().to_str().unwrap(),
+            ).unwrap(),
+        ),
         logger,
     )
 }

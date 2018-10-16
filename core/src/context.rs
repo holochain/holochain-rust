@@ -4,7 +4,6 @@ use holochain_core_types::error::HolochainError;
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
-use riker::actor::Actor;
 use state::State;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
@@ -38,18 +37,20 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         folder_path: &str,
-    ) -> Context {
+    ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
-        Context {
-            agent,
-            logger,
-            persister,
-            state: None,
-            action_channel: tx_action,
-            observer_channel: tx_observer,
-            file_storage: FilesystemStorage::new(folder_path).expect("storage should be created"),
-        }
+        FilesystemStorage::new(folder_path).and_then(|file_system| {
+            Ok(Context {
+                agent,
+                logger,
+                persister,
+                state: None,
+                action_channel: tx_action,
+                observer_channel: tx_observer,
+                file_storage: file_system,
+            })
+        })
     }
 
     pub fn new_with_channels(
@@ -59,16 +60,18 @@ impl Context {
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
         folder_path: &str,
-    ) -> Context {
-        Context {
-            agent,
-            logger,
-            persister,
-            state: None,
-            action_channel,
-            observer_channel,
-            file_storage: FilesystemStorage::new(folder_path).expect("storage should be created"),
-        }
+    ) -> Result<Context, HolochainError> {
+        FilesystemStorage::new(folder_path).and_then(|file_system| {
+            Ok(Context {
+                agent,
+                logger,
+                persister,
+                state: None,
+                action_channel,
+                observer_channel,
+                file_storage: file_system,
+            })
+        })
     }
     // helper function to make it easier to call the logger
     pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
@@ -98,7 +101,7 @@ mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
-    use tempfile::{tempdir, TempDir};
+    use tempfile::tempdir;
 
     #[test]
     fn default_buffer_size_test() {
@@ -112,7 +115,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
-        );
+        ).unwrap();
 
         assert!(context.state().is_none());
 
@@ -133,7 +136,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
-        );
+        ).unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new()));
         context.set_state(global_state.clone());

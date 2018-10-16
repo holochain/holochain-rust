@@ -27,20 +27,28 @@ impl Logger for NullLogger {
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     let agent = Agent::from_string("c_bob".to_string());
 
-    let context = Arc::new(Context::new(
+    let context = Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
         "holostorage",
-    ));
+    );
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
-
-    match Holochain::new(*dna, context) {
-        Ok(hc) => Box::into_raw(Box::new(hc)),
-        Err(_) => std::ptr::null_mut(),
+    
+    match context {
+        Ok(con) => 
+        {
+            match Holochain::new(*dna, Arc::new(con)) {
+            Ok(hc) => Box::into_raw(Box::new(hc)),
+            Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(_) => std::ptr::null_mut()
     }
+
+    
 }
 
 #[no_mangle]

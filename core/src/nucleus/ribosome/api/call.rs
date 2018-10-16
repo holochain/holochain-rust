@@ -232,7 +232,7 @@ pub mod tests {
             Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
-        ))
+        ).unwrap())
     }
 
     #[cfg_attr(tarpaulin, skip)]

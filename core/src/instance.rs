@@ -324,7 +324,7 @@ pub mod tests {
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
                 tempdir().unwrap().path().to_str().unwrap(),
-            )),
+            ).unwrap()),
             logger,
         )
     }
@@ -350,7 +350,7 @@ pub mod tests {
             action_channel.clone(),
             observer_channel.clone(),
             tempdir().unwrap().path().to_str().unwrap(),
-        ))
+        ).unwrap())
     }
 
     #[test]

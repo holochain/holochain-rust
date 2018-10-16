@@ -14,7 +14,7 @@ extern {
 /// return error code
 fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
   // Write input string on stack
-  let maybe_allocation =  serialize(mem_stack, s);
+  let maybe_allocation =  store_as_json(mem_stack, s);
   if let Err(_) = maybe_allocation {
     return;
   }

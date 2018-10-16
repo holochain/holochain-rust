@@ -11,7 +11,7 @@ macro_rules! zome_assert {
                 r#"Zome assertion failed: `{}`"#,
                 stringify!($cond)
             ));
-            let res = serialize(&mut $stack, error_report);
+            let res = store_as_json(&mut $stack, error_report);
             return res.unwrap().encode();
         }
     };

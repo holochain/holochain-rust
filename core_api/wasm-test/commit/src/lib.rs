@@ -92,7 +92,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }
@@ -103,7 +103,7 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit_fail(&mut mem_stack);
   return serialize_into_encoded_allocation(&mut mem_stack, output);
 }

@@ -41,7 +41,7 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
-    let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+    let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let input = deserialize_allocation(encoded_allocation_of_input as u32);
     let output = test_inner(input);
     return serialize_into_encoded_allocation(&mut mem_stack, output);

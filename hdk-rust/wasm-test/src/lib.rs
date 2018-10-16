@@ -20,7 +20,7 @@ use hdk::RibosomeError;
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
     #[allow(unused_must_use)]
     {
@@ -52,7 +52,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 
     // Deserialize and check for an encoded error

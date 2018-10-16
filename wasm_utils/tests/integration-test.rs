@@ -80,20 +80,20 @@ fn can_return_error_report() {
     );
 }
 
-
-#[test]
-fn call_store_string_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
-    println!("result = {:?}", result);
-    // Verify result
-    assert_eq!("some string", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
-}
+/// TODO #486 - load and store string from wasm memory
+//#[test]
+//fn call_store_string_ok() {
+//    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
+//    println!("result = {:?}", result);
+//    // Verify result
+//    assert_eq!("some string", result.unwrap());
+//    // Verify logs
+//    let test_logger = test_logger.lock().unwrap();
+//    assert_eq!(
+//        format!("{:?}", *test_logger),
+//        "TestLogger { log: [\"TestApp instantiated\"] }",
+//    );
+//}
 
 #[test]
 fn call_store_as_json_ok() {
@@ -111,7 +111,8 @@ fn call_store_as_json_ok() {
 
 #[test]
 fn call_store_as_json_err() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_as_json_err", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_store_as_json_err", r#"{}"#);
     // Verify result
     assert!(result.is_ok());
     // Verify logs
@@ -143,7 +144,8 @@ fn call_load_json_from_raw_err() {
     // Verify result
     assert_eq!(
         json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string(),
-        result.unwrap());
+        result.unwrap()
+    );
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
@@ -154,8 +156,7 @@ fn call_load_json_from_raw_err() {
 
 #[test]
 fn call_load_json_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_json_ok", r#"{}"#);
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_json_ok", r#"{}"#);
     // Verify result
     assert_eq!("{\"value\":\"fish\"}", result.unwrap());
     // Verify logs
@@ -168,8 +169,7 @@ fn call_load_json_ok() {
 
 #[test]
 fn call_load_json_err() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_json_err", r#"{}"#);
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_json_err", r#"{}"#);
     // Verify result
     assert_eq!("\"Unspecified\"", result.unwrap());
     // Verify logs

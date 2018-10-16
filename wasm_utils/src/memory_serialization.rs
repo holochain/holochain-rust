@@ -1,5 +1,7 @@
 use error::{RibosomeErrorCode, RibosomeErrorReport};
-use memory_allocation::{decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX};
+use memory_allocation::{
+    decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
+};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
@@ -25,9 +27,7 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 //}
 
 /// Expecting to retrieve a struct from an encoded allocation, but return error string in case of error
-pub fn load_json<'s, T: Deserialize<'s>>(
-    encoded_allocation: u32,
-) -> Result<T, String> {
+pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, String> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
         Err(return_code) => Err(return_code.to_string()),
@@ -97,12 +97,12 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
 //}
 
 // Write in wasm memory according to stack state
-fn write_in_wasm_memory(stack: &mut SinglePageStack,
-                            bytes: &Vec<u8>,
-                            len: u16)
-    -> Result<SinglePageAllocation, RibosomeErrorCode>  {
-    if len as u32 + stack.top() as u32 > U16_MAX
-    {
+fn write_in_wasm_memory(
+    stack: &mut SinglePageStack,
+    bytes: &Vec<u8>,
+    len: u16,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+    if len as u32 + stack.top() as u32 > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
     let ptr = stack.allocate(len) as *mut c_char;

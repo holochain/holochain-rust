@@ -33,7 +33,8 @@ pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     // Actual program
     // Init memory stack
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
+        G_MEM_STACK =
+            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 }
 

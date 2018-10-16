@@ -1,9 +1,8 @@
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
-        let maybe_input = ::holochain_wasm_utils::memory_serialization::load_json(
-            $encoded_allocation_of_input,
-        );
+        let maybe_input =
+            ::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
         if let Err(_) = maybe_input {
             return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
                 as u32;

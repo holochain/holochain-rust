@@ -1,7 +1,8 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use std::fmt;
 
-// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
+/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
+/// Will panic! if out or memory or other serialization error occured.
 #[macro_export]
 macro_rules! zome_assert {
     ($stack:ident, $cond:expr) => {
@@ -16,7 +17,7 @@ macro_rules! zome_assert {
     };
 }
 
-// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
+/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
 macro_rules! ribosome_error_code {
     ($s:ident) => {
@@ -26,7 +27,7 @@ macro_rules! ribosome_error_code {
     };
 }
 
-// Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
+/// Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
 #[macro_export]
 macro_rules! ribosome_error_report {
     ($s:expr) => {

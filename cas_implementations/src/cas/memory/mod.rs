@@ -1,7 +1,7 @@
 mod actor;
+use actor::{AskSelf, Protocol};
 use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
-    actor::{AskSelf, Protocol},
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,

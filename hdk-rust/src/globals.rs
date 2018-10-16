@@ -1,8 +1,7 @@
 //! File for holding all internal/private globals used by the zome api library
 
 use holochain_wasm_utils::memory_allocation::SinglePageStack;
-use init_globals::init_globals;
-use init_globals::AppGlobals;
+use init_globals::{init_globals, AppGlobals};
 
 // Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;

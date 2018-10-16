@@ -1,8 +1,7 @@
 //! File for holding the internal/private zome api function `init_globals`
 
 use holochain_wasm_utils::{
-    holochain_core_types::hash::HashString,
-    memory_serialization::try_deserialize_allocation,
+    holochain_core_types::hash::HashString, memory_serialization::try_deserialize_allocation,
 };
 
 extern "C" {

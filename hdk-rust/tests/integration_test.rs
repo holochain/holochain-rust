@@ -60,7 +60,10 @@ fn can_commit_entry() {
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(result.unwrap(),r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#);
+    assert_eq!(
+        result.unwrap(),
+        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+    );
 }
 
 #[test]
@@ -75,7 +78,10 @@ fn can_commit_entry_macro() {
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(),r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#);
+    assert_eq!(
+        result.unwrap(),
+        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+    );
 }
 
 #[test]
@@ -108,7 +114,10 @@ fn can_get_entry() {
         r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(),"{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}");
+    assert_eq!(
+        result.unwrap(),
+        "{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"
+    );
 
     let result = hc.call(
         "test_zome",
@@ -118,7 +127,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(),"{\"stuff\":\"non fail\"}");
+    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
 
     // test the case with a bad hash
     let result = hc.call(
@@ -129,7 +138,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(),"{\"got back no entry\":true}");
+    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
 }
 
 #[test]
@@ -144,5 +153,8 @@ fn can_invalidate_invalid_commit() {
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!("{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}", result.unwrap());
+    assert_eq!(
+        "{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}",
+        result.unwrap()
+    );
 }

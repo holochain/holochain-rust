@@ -1,16 +1,16 @@
 #[macro_export]
 macro_rules! try_deserialize_arguments {
-    ($encoded_allocation_of_input:ident) => (
-        {
-            let maybe_input = ::holochain_wasm_utils::memory_serialization::try_deserialize_allocation($encoded_allocation_of_input);
-            if let Err(_) = maybe_input {
-                return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed as u32;
-            }
-            maybe_input
+    ($encoded_allocation_of_input:ident) => {{
+        let maybe_input = ::holochain_wasm_utils::memory_serialization::try_deserialize_allocation(
+            $encoded_allocation_of_input,
+        );
+        if let Err(_) = maybe_input {
+            return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
+                as u32;
         }
-    );
+        maybe_input
+    }};
 }
-
 
 /// A macro for easily writing zome functions
 ///
@@ -76,7 +76,6 @@ macro_rules! zome_functions {
         )+
     );
 }
-
 
 #[macro_export]
 macro_rules! validations {

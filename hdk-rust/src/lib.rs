@@ -18,33 +18,29 @@ pub mod macros;
 
 use self::RibosomeError::*;
 use globals::*;
+pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
     },
     holochain_core_types::hash::HashString,
-    memory_serialization::*, memory_allocation::*,
+    memory_allocation::*,
+    memory_serialization::*,
 };
-pub use holochain_wasm_utils::api_serialization::validation::*;
 
 pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     // Actual program
     // Init memory stack
     unsafe {
-        G_MEM_STACK =
-            Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
     }
 }
 
-pub fn serialize_wasm_output<T: serde::Serialize>(output: T) -> u32
-{
+pub fn serialize_wasm_output<T: serde::Serialize>(output: T) -> u32 {
     // Serialize output in WASM memory
-    unsafe {
-        return serialize_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32
-    }
+    unsafe { return serialize_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32 }
 }
-
 
 //--------------------------------------------------------------------------------------------------
 // APP GLOBAL VARIABLES
@@ -92,7 +88,7 @@ pub enum RibosomeError {
     RibosomeFailed(String),
     FunctionNotImplemented,
     HashNotFound,
-    ValidationFailed(String)
+    ValidationFailed(String),
 }
 
 impl RibosomeError {
@@ -353,7 +349,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
     }
-    let result : GetEntryResult = result.unwrap();
+    let result: GetEntryResult = result.unwrap();
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
@@ -370,7 +366,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
 pub fn link_entries<S: Into<String>>(
     _base: HashString,
     _target: HashString,
-    _tag: S
+    _tag: S,
 ) -> Result<(), RibosomeError> {
     // FIXME
     Err(RibosomeError::FunctionNotImplemented)

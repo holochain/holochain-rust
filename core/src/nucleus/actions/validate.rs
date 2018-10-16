@@ -42,12 +42,10 @@ pub fn validate_entry(
                 Ok(validation_result) => match validation_result {
                     CallbackResult::Fail(error_string) => Err(error_string),
                     CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => {
-                        Err(format!(
-                            "Validation callback not implemented for {:?}",
-                            thread_entry.entry_type(),
-                        ))
-                    }
+                    CallbackResult::NotImplemented => Err(format!(
+                        "Validation callback not implemented for {:?}",
+                        thread_entry.entry_type(),
+                    )),
                 },
                 Err(error) => Err(error.to_string()),
             };

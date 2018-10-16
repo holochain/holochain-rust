@@ -215,7 +215,7 @@ impl Dna {
             println!("{:?}", app_entry_type);
             if zome.app_entry_types().contains_key(app_entry_type) {
                 println!("foo");
-                return Some(zome_name.to_owned())
+                return Some(zome_name.to_owned());
             }
         }
         None
@@ -257,8 +257,10 @@ pub fn test_dna() -> Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
-    use entry::dna::wasm::DnaWasm;
-    use entry::dna::zome::{AppEntryTypes, Capabilities, Config, Zome, ZomeDescription};
+    use entry::dna::{
+        wasm::DnaWasm,
+        zome::{AppEntryTypes, Capabilities, Config, Zome, ZomeDescription},
+    };
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 

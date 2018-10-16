@@ -9,12 +9,12 @@ use holochain_core_types::{
     },
     entry::{chain_header::ChainHeader, Entry},
     error::HolochainError,
+    json::JsonString,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
 use std::{collections::HashMap, sync::Arc};
-use holochain_core_types::json::JsonString;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -207,13 +207,12 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_app_entry, expected_app_entry_address},
+        entry::{expected_app_entry_address, link_add::test_link_add_entry, test_app_entry},
         error::HolochainError,
+        json::JsonString,
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::entry::link_add::test_link_add_entry;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -299,7 +298,9 @@ pub mod tests {
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::Commit(Err(HolochainError::new("some error")))),
+            JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 
@@ -309,18 +310,25 @@ pub mod tests {
             JsonString::from("{\"App\":[\"testEntryType\",{\"foo\":\"test entry value\",\"bar\":[\"bing\",\"baz\"]}]}"),
             JsonString::from(ActionResponse::GetEntry(Some(test_app_entry().clone()))),
         );
-        assert_eq!(JsonString::from("{\"entry\": null}"), JsonString::from(ActionResponse::GetEntry(None)));
+        assert_eq!(
+            JsonString::from("{\"entry\": null}"),
+            JsonString::from(ActionResponse::GetEntry(None))
+        );
     }
 
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
             JsonString::from(format!("[\"{}\"]", expected_app_entry_address())),
-            JsonString::from(ActionResponse::GetLinks(Ok(vec![test_app_entry().address()])))
+            JsonString::from(ActionResponse::GetLinks(Ok(vec![
+                test_app_entry().address(),
+            ])))
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new("some error")))),
+            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 
@@ -332,7 +340,9 @@ pub mod tests {
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new("some error")))),
+            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 }

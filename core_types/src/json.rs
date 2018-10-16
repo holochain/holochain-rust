@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
-use serde_json;
 use serde::Serialize;
+use serde_json;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, PartialEq)]
 pub struct JsonString(String);

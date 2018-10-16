@@ -6,14 +6,14 @@ use entry::{
     delete::Delete,
     dna::{test_dna, Dna},
     link_add::LinkAdd,
+    link_list::LinkList,
     link_remove::LinkRemove,
 };
+use json::JsonString;
 use keys::test_key;
 use serde_json;
 use snowflake;
 use std::fmt::{Display, Formatter, Result};
-use json::JsonString;
-use entry::link_list::LinkList;
 
 pub mod agent;
 pub mod app;
@@ -23,8 +23,8 @@ pub mod delete;
 pub mod dna;
 // pub mod entry_type;
 pub mod link_add;
-pub mod link_remove;
 pub mod link_list;
+pub mod link_remove;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash)]
 pub struct AppEntryType(String);
@@ -99,13 +99,16 @@ impl EntryType {
 
 impl From<EntryType> for JsonString {
     fn from(entry_type: EntryType) -> JsonString {
-        JsonString::from(serde_json::to_string(&entry_type).expect("could not serialize Json EntryType"))
+        JsonString::from(
+            serde_json::to_string(&entry_type).expect("could not serialize Json EntryType"),
+        )
     }
 }
 
 impl From<JsonString> for EntryType {
     fn from(json_string: JsonString) -> EntryType {
-        serde_json::from_str(&String::from(json_string)).expect("could not deserialize Json EntryType")
+        serde_json::from_str(&String::from(json_string))
+            .expect("could not deserialize Json EntryType")
     }
 }
 
@@ -195,7 +198,7 @@ impl From<JsonString> for Entry {
 }
 
 impl From<Option<Entry>> for JsonString {
-    fn from (maybe_entry: Option<Entry>) -> JsonString {
+    fn from(maybe_entry: Option<Entry>) -> JsonString {
         let inner = match maybe_entry {
             Some(entry) => JsonString::from(entry),
             None => JsonString::none(),
@@ -326,19 +329,15 @@ pub fn test_unpublishable_entry() -> Entry {
 
 #[cfg(test)]
 pub mod tests {
-    use entry::expected_sys_entry_address;
-    use json::JsonString;
-    use entry::test_app_entry_a;
-    use entry::test_app_entry_b;
-    use entry::expected_app_entry_address;
-    use entry::test_app_entry;
-    use entry::expected_app_entry_content;
-    use entry::test_sys_entry;
     use cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::Entry;
+    use entry::{
+        expected_app_entry_address, expected_app_entry_content, expected_sys_entry_address,
+        test_app_entry, test_app_entry_a, test_app_entry_b, test_sys_entry, Entry,
+    };
+    use json::JsonString;
 
     #[test]
     /// tests for PartialEq

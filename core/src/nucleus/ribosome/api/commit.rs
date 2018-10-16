@@ -5,16 +5,14 @@ use agent::{
 };
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    entry::{Entry},
+    entry::{AppEntryValue, Entry, EntryType},
+    error::HolochainError,
+    json::JsonString,
 };
 use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, ValidationData};
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::entry::EntryType;
-use holochain_core_types::entry::AppEntryValue;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::error::HolochainError;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
@@ -23,10 +21,7 @@ struct CommitAppEntryArgs {
     entry_value: String,
 }
 
-fn build_validation_data_commit(
-    _entry: Entry,
-    _state: &AgentState,
-) -> ValidationData {
+fn build_validation_data_commit(_entry: Entry, _state: &AgentState) -> ValidationData {
     //
     // TODO: populate validation data with with chain content
     // I have left this out because filling the valiation data with
@@ -69,11 +64,12 @@ pub fn invoke_commit_app_entry(
     let app_entry_type = unwrap_to!(entry_type => EntryType::App);
 
     // Create Chain Entry
-    let entry = Entry::App(app_entry_type.to_owned(), AppEntryValue::from(input.entry_value));
-    let validation_data = build_validation_data_commit(
-        entry.clone(),
-        &runtime.context.state().unwrap().agent(),
+    let entry = Entry::App(
+        app_entry_type.to_owned(),
+        AppEntryValue::from(input.entry_value),
     );
+    let validation_data =
+        build_validation_data_commit(entry.clone(), &runtime.context.state().unwrap().agent());
 
     // Wait for future to be resolved
     let task_result: Result<ActionResponse, String> = block_on(
@@ -119,10 +115,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use holochain_core_types::{
-        cas::content::AddressableContent,
-        entry::test_app_entry,
-    };
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_app_entry};
     use nucleus::ribosome::{
         api::{commit::CommitAppEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,

@@ -63,9 +63,8 @@ use holochain_core::{
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{entry::dna::Dna, error::HolochainError};
 use std::sync::Arc;
-use holochain_core_types::entry::dna::Dna;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -150,14 +149,15 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::entry::Entry;
-    use holochain_core_types::entry::agent::AgentId;
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{agent::AgentId, Entry},
+    };
     use std::sync::{Arc, Mutex};
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
-    use holochain_core_types::cas::content::AddressableContent;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};

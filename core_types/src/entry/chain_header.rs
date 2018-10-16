@@ -97,8 +97,7 @@ impl ChainHeader {
 
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        serde_json::to_string(self)
-            .expect("could not Jsonify ChainHeader as Content")
+        serde_json::to_string(self).expect("could not Jsonify ChainHeader as Content")
     }
 
     fn from_content(content: &Content) -> Self {
@@ -122,8 +121,8 @@ pub fn test_chain_header() -> ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use entry::chain_header::{test_chain_header, ChainHeader};
     use entry::{
+        chain_header::{test_chain_header, ChainHeader},
         test_app_entry, test_app_entry_a, test_app_entry_b,
     };
     use signature::{test_signature, test_signature_b};
@@ -245,7 +244,10 @@ pub mod tests {
 
     #[test]
     fn entry_test() {
-        assert_eq!(test_chain_header().entry_address(), &test_app_entry().address());
+        assert_eq!(
+            test_chain_header().entry_address(),
+            &test_app_entry().address()
+        );
     }
 
     #[test]

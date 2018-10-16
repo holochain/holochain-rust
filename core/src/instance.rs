@@ -278,10 +278,14 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::{EntryType, link_add::LinkAdd},
-        entry::agent::AgentId,
+        entry::{
+            agent::AgentId,
+            dna::{zome::Zome, Dna},
+            link_add::LinkAdd,
+            link_list::LinkList,
+            Entry, EntryType,
+        },
     };
-    use holochain_core_types::entry::dna::{zome::Zome, Dna};
     use instance::{Instance, Observer};
     use logger::Logger;
     use nucleus::{
@@ -298,8 +302,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use holochain_core_types::entry::Entry;
-    use holochain_core_types::entry::link_list::LinkList;
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -665,7 +667,8 @@ pub mod tests {
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context();
-        let commit_agent_action = ActionWrapper::new(Action::Commit(context.agent_id_entry().to_owned()));
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit(context.agent_id_entry().to_owned()));
 
         // Set up instance and process the action
         let instance = Instance::new();

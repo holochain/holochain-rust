@@ -8,7 +8,9 @@ pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
 use context::Context;
-use holochain_core_types::entry::dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::{
+    entry::dna::zome::capabilities::ReservedCapabilityNames, json::JsonString,
+};
 use holochain_wasm_utils::{
     error::{RibosomeErrorCode, RibosomeReturnCode},
     memory_allocation::decode_encoded_allocation,
@@ -31,7 +33,6 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
-use holochain_core_types::json::JsonString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS

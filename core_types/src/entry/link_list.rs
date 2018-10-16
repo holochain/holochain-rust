@@ -11,7 +11,7 @@ impl LinkList {
             links: links.to_vec(),
         }
     }
-     pub fn links(&self) -> &Vec<LinkAdd> {
+    pub fn links(&self) -> &Vec<LinkAdd> {
         &self.links
     }
 }

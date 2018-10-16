@@ -1,7 +1,11 @@
 extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
-    entry::{dna::wasm::DnaWasm, Entry},
+    cas::content::AddressableContent,
+    entry::{
+        dna::{wasm::DnaWasm, zome::ZomeName},
+        Entry,
+    },
     error::HolochainError,
 };
 use holochain_wasm_utils::validation::ValidationData;
@@ -13,8 +17,6 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
-use holochain_core_types::entry::dna::zome::ZomeName;
-use holochain_core_types::cas::content::AddressableContent;
 
 pub fn validate_entry(
     entry: &Entry,
@@ -22,11 +24,7 @@ pub fn validate_entry(
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     match entry {
-        Entry::App(_, _) => Ok(validate_app_entry(
-            entry,
-            validation_data,
-            context,
-        )?),
+        Entry::App(_, _) => Ok(validate_app_entry(entry, validation_data, context)?),
         Entry::Dna(_) => Ok(CallbackResult::Pass),
         _ => Ok(CallbackResult::NotImplemented),
     }
@@ -48,7 +46,8 @@ fn validate_app_entry(
             let zome_name = zome_name.unwrap();
             match get_wasm(&context, &zome_name) {
                 Some(wasm) => {
-                    let validation_call = build_validation_call(zome_name, app_entry, validation_data)?;
+                    let validation_call =
+                        build_validation_call(zome_name, app_entry, validation_data)?;
                     Ok(run_validation_callback(
                         context.clone(),
                         validation_call,
@@ -82,7 +81,10 @@ fn build_validation_call(
             serde_json::from_str(&format!("\"{}\"", &entry_content))
         })
         .or_else(|error| {
-            let msg = format!("Error trying to serialize entry '{}', {:?}", entry_content, error);
+            let msg = format!(
+                "Error trying to serialize entry '{}', {:?}",
+                entry_content, error
+            );
             Err(HolochainError::new(&msg))
         });
 

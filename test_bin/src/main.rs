@@ -4,14 +4,13 @@ extern crate holochain_core_types;
 
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
 use holochain_core_api::*;
+use holochain_core_types::entry::Entry;
 use std::{
     env,
     sync::{Arc, Mutex},
 };
-use holochain_core_types::entry::Entry;
 
-use holochain_core_types::entry::dna::Dna;
-use holochain_core_types::entry::agent::AgentId;
+use holochain_core_types::entry::{agent::AgentId, dna::Dna};
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]

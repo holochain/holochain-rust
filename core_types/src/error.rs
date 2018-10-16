@@ -1,13 +1,13 @@
 use self::HolochainError::*;
 use entry::dna::error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use json::JsonString;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
 };
-use json::JsonString;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
@@ -117,7 +117,10 @@ mod tests {
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!(JsonString::from(r#"{"error":"foo"}"#), JsonString::from(err));
+        assert_eq!(
+            JsonString::from(r#"{"error":"foo"}"#),
+            JsonString::from(err)
+        );
     }
 
     #[test]

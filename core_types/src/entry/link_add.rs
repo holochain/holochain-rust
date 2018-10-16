@@ -1,8 +1,5 @@
-use cas::content::Address;
-use entry::Entry;
-use entry::test_app_entry_b;
-use entry::test_app_entry_a;
-use cas::content::AddressableContent;
+use cas::content::{Address, AddressableContent};
+use entry::{test_app_entry_a, test_app_entry_b, Entry};
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -61,10 +58,9 @@ pub mod tests {
 
     use cas::content::AddressableContent;
     use entry::{
+        link_add::{test_link_add, test_link_tag},
         test_app_entry_a, test_app_entry_b,
     };
-    use entry::link_add::test_link_add;
-    use entry::link_add::test_link_tag;
 
     #[test]
     fn link_smoke_test() {

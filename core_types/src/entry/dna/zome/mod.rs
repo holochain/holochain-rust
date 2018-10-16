@@ -3,9 +3,11 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use entry::{dna::wasm::DnaWasm, AppEntryType};
+use entry::{
+    dna::{wasm::DnaWasm, zome::entry_types::EntryTypeDef},
+    AppEntryType,
+};
 use std::collections::HashMap;
-use entry::dna::zome::entry_types::EntryTypeDef;
 
 pub type ZomeName = String;
 pub type ZomeDescription = String;
@@ -118,10 +120,8 @@ impl Zome {
 
 #[cfg(test)]
 pub mod tests {
+    use entry::dna::zome::{ErrorHandling, Zome, ZomeDescription};
     use serde_json;
-    use entry::dna::zome::Zome;
-    use entry::dna::zome::ZomeDescription;
-    use entry::dna::zome::ErrorHandling;
 
     pub fn test_zome() -> Zome {
         Zome::default()

@@ -1,6 +1,6 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
-use std::fmt;
 use holochain_core_types::json::JsonString;
+use std::fmt;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]

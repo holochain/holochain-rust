@@ -4,10 +4,8 @@ extern crate holochain_core_types;
 
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
-use holochain_core_types::entry::dna::Dna;
-use holochain_core_types::entry::agent::AgentId;
+use holochain_core_types::entry::{agent::AgentId, dna::Dna, Entry};
 use std::sync::Arc;
-use holochain_core_types::entry::Entry;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{

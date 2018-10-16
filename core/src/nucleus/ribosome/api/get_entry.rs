@@ -1,10 +1,11 @@
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    json::JsonString,
+};
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::cas::content::AddressableContent;
-use holochain_core_types::json::JsonString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct GetAppEntryArgs {
@@ -25,7 +26,10 @@ struct GetAppEntryResult {
 
 impl From<GetAppEntryResult> for JsonString {
     fn from(get_app_entry_result: GetAppEntryResult) -> JsonString {
-        JsonString::from(serde_json::to_string(&get_app_entry_result).expect("could not serialize app entry result"))
+        JsonString::from(
+            serde_json::to_string(&get_app_entry_result)
+                .expect("could not serialize app entry result"),
+        )
     }
 }
 

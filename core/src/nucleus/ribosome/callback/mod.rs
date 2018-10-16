@@ -7,6 +7,7 @@ pub mod validate_entry;
 
 use context::Context;
 use holochain_core_types::{
+    cas::content::AddressableContent,
     entry::{
         dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
         Entry,
@@ -22,7 +23,6 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
-use holochain_core_types::cas::content::AddressableContent;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str

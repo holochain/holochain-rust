@@ -1,5 +1,8 @@
 use action::ActionWrapper;
-use holochain_core_types::{error::HolochainError, entry::Entry};
+use holochain_core_types::{
+    entry::{Entry, EntryType},
+    error::HolochainError,
+};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -8,7 +11,6 @@ use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
-use holochain_core_types::entry::EntryType;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -92,13 +94,11 @@ impl Context {
 mod tests {
     extern crate test_utils;
     use context::Context;
+    use holochain_core_types::entry::{agent::AgentId, Entry};
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
-    use std::sync::{Arc, Mutex};
-    use holochain_core_types::entry::agent::AgentId;
-    use holochain_core_types::entry::Entry;
-    use std::sync::RwLock;
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn default_buffer_size_test() {

@@ -113,7 +113,7 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use holochain_core_types::entry::{test_app_entry, expected_app_entry_address};
+    use holochain_core_types::entry::{expected_app_entry_address, test_app_entry};
     use nucleus::tests::test_call_result;
     use test_utils::calculate_hash;
 

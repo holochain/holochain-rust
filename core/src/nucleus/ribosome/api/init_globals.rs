@@ -1,9 +1,10 @@
+use holochain_core_types::{
+    cas::content::{AddressableContent, Content},
+    json::JsonString,
+};
 use nucleus::ribosome::api::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::cas::content::Content;
-use holochain_core_types::cas::content::AddressableContent;
-use holochain_core_types::json::JsonString;
 use serde_json;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 #[derive(Serialize)]
 struct InitGlobalsOutput {
@@ -17,7 +18,10 @@ struct InitGlobalsOutput {
 
 impl From<InitGlobalsOutput> for JsonString {
     fn from(init_globals_output: InitGlobalsOutput) -> JsonString {
-        JsonString::from(serde_json::to_string(&init_globals_output).expect("could not serialize init globals output"))
+        JsonString::from(
+            serde_json::to_string(&init_globals_output)
+                .expect("could not serialize init globals output"),
+        )
     }
 }
 

@@ -1,9 +1,9 @@
 use cas::storage::ContentAddressableStorage;
 use hash::HashString;
-use multihash::Hash;
-use std::fmt::{Debug, Write};
 use json::JsonString;
+use multihash::Hash;
 use serde_json;
+use std::fmt::{Debug, Write};
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -52,7 +52,9 @@ impl From<Address> for JsonString {
 
 impl From<Vec<Address>> for JsonString {
     fn from(address_list: Vec<Address>) -> JsonString {
-        JsonString::from(serde_json::to_string(&address_list).expect("could not Json serialize address list"))
+        JsonString::from(
+            serde_json::to_string(&address_list).expect("could not Json serialize address list"),
+        )
     }
 }
 

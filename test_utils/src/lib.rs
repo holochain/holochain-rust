@@ -1,17 +1,20 @@
 extern crate holochain_core;
-extern crate wabt;
 extern crate holochain_core_types;
+extern crate wabt;
 
-use holochain_core_types::entry::agent::AgentId;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use holochain_core_types::entry::dna::{
-    wasm::DnaWasm,
-    zome::{
-        capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::EntryTypeDef,
-        Config, Zome,
+use holochain_core_types::entry::{
+    agent::AgentId,
+    dna::{
+        wasm::DnaWasm,
+        zome::{
+            capabilities::{Capability, FnDeclaration, Membrane},
+            entry_types::EntryTypeDef,
+            AppEntryTypes, Config, Zome,
+        },
+        Dna,
     },
-    Dna,
+    AppEntryType, Entry,
 };
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -22,9 +25,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wabt::Wat2Wasm;
-use holochain_core_types::entry::dna::zome::AppEntryTypes;
-use holochain_core_types::entry::AppEntryType;
-use holochain_core_types::entry::Entry;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {

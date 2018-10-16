@@ -1,6 +1,8 @@
 use action::{Action, ActionWrapper};
 use context::Context;
-use holochain_core_types::{entry::dna::zome::capabilities::Membrane, error::HolochainError};
+use holochain_core_types::{
+    entry::dna::zome::capabilities::Membrane, error::HolochainError, json::JsonString,
+};
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,
@@ -9,7 +11,6 @@ use nucleus::{
 use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::json::JsonString;
 
 /// Struct for input data received when Call API function is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -175,9 +176,11 @@ pub mod tests {
 
     use super::*;
     use context::Context;
-    use holochain_core_types::entry::agent::AgentId;
-    use holochain_core_types::entry::dna::error::DnaError;
-    use holochain_core_types::entry::dna::{zome::capabilities::Capability, Dna};
+    use holochain_core_types::entry::{
+        agent::AgentId,
+        dna::{error::DnaError, zome::capabilities::Capability, Dna},
+        Entry,
+    };
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,
@@ -196,7 +199,6 @@ pub mod tests {
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
     use test_utils::create_test_dna_with_cap;
-    use holochain_core_types::entry::Entry;
 
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]

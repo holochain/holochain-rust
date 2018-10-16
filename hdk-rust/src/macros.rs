@@ -1,7 +1,7 @@
 #[macro_export]
-macro_rules! try_deserialize_arguments {
+macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
-        let maybe_input = ::holochain_wasm_utils::memory_serialization::try_deserialize_allocation(
+        let maybe_input = ::holochain_wasm_utils::memory_serialization::load_json(
             $encoded_allocation_of_input,
         );
         if let Err(_) = maybe_input {
@@ -59,7 +59,7 @@ macro_rules! zome_functions {
                 }
 
                 // Deserialize input
-                let maybe_input = try_deserialize_arguments!(encoded_allocation_of_input);
+                let maybe_input = load_json!(encoded_allocation_of_input);
                 let input: InputStruct = maybe_input.unwrap();
 
                 // Macro'd function body
@@ -106,7 +106,7 @@ macro_rules! validations {
                 }
 
                 // Deserialize input
-                let maybe_input = try_deserialize_arguments!(encoded_allocation_of_input);
+                let maybe_input = load_json!(encoded_allocation_of_input);
                 let input_generic: InputStructGeneric = maybe_input.unwrap();
                 let input = InputStruct {
                     $entry: input_generic.entry,

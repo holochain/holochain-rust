@@ -70,7 +70,6 @@ The following functions are **incomplete**:
 - update_entry
 - update_agent
 - remove_entry
-- get_entry
 - link_entries
 - get_links
 - query

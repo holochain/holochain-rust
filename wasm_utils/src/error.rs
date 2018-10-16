@@ -3,10 +3,10 @@ use std::fmt;
 
 // Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 #[macro_export]
-macro_rules! dna_assert {
+macro_rules! zome_assert {
     ($stack:ident, $cond:expr) => {
         if !$cond {
-            let error_report = ribosome_error_report!(format!(r#"DNA assertion failed: `{}`"#, stringify!($cond)));
+            let error_report = ribosome_error_report!(format!(r#"Zome assertion failed: `{}`"#, stringify!($cond)));
             let res = serialize(&mut $stack, error_report);
             return res.unwrap().encode();
         }
@@ -58,7 +58,7 @@ impl fmt::Display for RibosomeErrorReport {
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation
 #[repr(u32)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeReturnCode {
     Success,
     Failure(RibosomeErrorCode),
@@ -66,7 +66,7 @@ pub enum RibosomeReturnCode {
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,
@@ -107,11 +107,11 @@ impl ToString for RibosomeErrorCode {
 }
 
 impl RibosomeReturnCode {
-    pub fn from_error(err_code: RibosomeErrorCode) -> RibosomeReturnCode {
+    pub fn from_error(err_code: RibosomeErrorCode) -> Self {
         Failure(err_code)
     }
 
-    pub fn from_offset(offset: u16) -> RibosomeReturnCode {
+    pub fn from_offset(offset: u16) -> Self {
         match offset {
             0 => Success,
             _ => Failure(RibosomeErrorCode::from_offset(offset)),
@@ -120,7 +120,7 @@ impl RibosomeReturnCode {
 }
 
 impl RibosomeErrorCode {
-    pub fn from_offset(offset: u16) -> RibosomeErrorCode {
+    pub fn from_offset(offset: u16) -> Self {
         match offset {
             0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
@@ -132,6 +132,13 @@ impl RibosomeErrorCode {
             8 => NotAnAllocation,
             9 => ZeroSizedAllocation,
             1 | _ => Unspecified,
+        }
+    }
+
+    pub fn from_return_code(ret_code: RibosomeReturnCode) -> Self {
+        match ret_code {
+            Success => unreachable!(),
+            Failure(rib_err) => rib_err,
         }
     }
 }

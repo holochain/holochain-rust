@@ -52,8 +52,10 @@ pub fn serialize<T: Serialize>(
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
     let json_bytes_len = json_bytes.len();
-    assert!(json_bytes_len < <u16>::max_value() as usize);
-
+    if json_bytes_len > <u16>::max_value() as usize
+        || json_bytes_len as u32 + stack.top() as u32 > <u16>::max_value() as u32 {
+        return Err(RibosomeErrorCode::OutOfMemory);
+    }
     let ptr = stack.allocate(json_bytes_len as u16) as *mut c_char;
 
     let ptr_safe = unsafe { slice::from_raw_parts_mut(ptr, json_bytes_len) };

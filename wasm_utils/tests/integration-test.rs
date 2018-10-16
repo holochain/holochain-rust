@@ -2,9 +2,11 @@ extern crate holochain_agent;
 extern crate holochain_core;
 extern crate test_utils;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 
+use holochain_core_types::error::HolochainError;
 use holochain_core::{
     context::Context, logger::Logger,
     persister::SimplePersister,
@@ -49,14 +51,12 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     )
 }
 
-
-#[test]
-fn can_call_serialize_test() {
+pub fn launch_hc_with_integration_test_wasm(fn_name: &str, fn_arg: &str) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>)  {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/debug/integration_test.wasm",
+    "wasm-test/integration-test/target/wasm32-unknown-unknown/debug/integration_test.wasm",
     );
-    let capability = create_test_cap_with_fn_name("test_serialize");
+    let capability = create_test_cap_with_fn_name(fn_name);
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
     let (context, test_logger) = test_context_and_logger("alex");
@@ -64,16 +64,111 @@ fn can_call_serialize_test() {
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    // @TODO don't use history length in tests
-    // @see https://github.com/holochain/holochain-rust/issues/195
-    assert_eq!(hc.state().unwrap().history.len(), 3);
+    // Call the exposed wasm function
+    let result = hc.call("test_zome", "test_cap", fn_name, fn_arg);
+    return (result, test_logger);
+}
 
-    // Call the exposed wasm function that calls the Commit API function
-    let result = hc.call("test_zome", "test_cap", "test_serialize", r#"{}"#);
+
+#[test]
+fn can_return_error_report() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_error_report", r#"{}"#);
+    // Verify result
     let error_report: RibosomeErrorReport = serde_json::from_str(&result.clone().unwrap()).unwrap();
-    println!("{}", error_report.to_string());
-    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
+    assert_eq!("Zome assertion failed: `false`", error_report.description);
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
 
+#[test]
+fn call_serialize_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_serialize_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_serialize_err() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_serialize_err", r#"{}"#);
+    // Verify result
+    assert!(result.is_ok());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_serialize_err\\\' returned: Out of memory\"] }",
+    );
+}
+
+
+#[test]
+fn call_deserialize_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_deserialize_ok\\\' returned: Success\"] }",
+    );
+}
+
+#[test]
+fn call_deserialize_err() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_err", r#"{}"#);
+    // Verify result
+    assert_eq!("\"some error string\"", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_deserialize_allocation_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_deserialize_allocation_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_try_deserialize_allocation_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_try_deserialize_allocation_err() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_try_deserialize_allocation_err", r#"{}"#);
+    // Verify result
+    assert_eq!("\"Unspecified\"", result.unwrap());
+    // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
         format!("{:?}", *test_logger),

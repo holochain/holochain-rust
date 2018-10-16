@@ -132,7 +132,8 @@ fn reduce_commit_entry(
     );
 
     // @TODO adding the entry to the CAS should happen elsewhere.
-    fn response(context :&Context,
+    fn response(
+        context: &Context,
         state: &mut AgentState,
         entry: &Entry,
         chain_header: &ChainHeader,
@@ -142,7 +143,7 @@ fn reduce_commit_entry(
         res_context.file_storage.add(chain_header)?;
         Ok(entry.address())
     }
-    let result  = response(&*_context,state, &entry, &chain_header);
+    let result = response(&*_context, state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
 
     state
@@ -160,7 +161,10 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
     let res_context = &*_context.clone();
-    let result = res_context.file_storage.fetch(&address).expect("could not fetch from CAS");
+    let result = res_context
+        .file_storage
+        .fetch(&address)
+        .expect("could not fetch from CAS");
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 

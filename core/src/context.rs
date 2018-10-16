@@ -1,3 +1,4 @@
+use riker::actor::Actor;
 use action::ActionWrapper;
 use holochain_agent::Agent;
 use holochain_core_types::error::HolochainError;
@@ -9,6 +10,8 @@ use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
+
+use holochain_cas_implementations::cas::file::FilesystemStorage;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -22,9 +25,10 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
+    pub file_storage : FilesystemStorage
 }
 
-impl Context {
+impl Context{
     pub fn default_channel_buffer_size() -> usize {
         100
     }
@@ -43,6 +47,7 @@ impl Context {
             state: None,
             action_channel: tx_action,
             observer_channel: tx_observer,
+            file_storage : FilesystemStorage::new("/holo/home").expect("storage should be created")
         }
     }
 
@@ -60,6 +65,7 @@ impl Context {
             state: None,
             action_channel,
             observer_channel,
+            file_storage : FilesystemStorage::new("/holo/home").expect("storage should be created")
         }
     }
     // helper function to make it easier to call the logger

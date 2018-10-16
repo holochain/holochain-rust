@@ -296,6 +296,7 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
+    use tempfile::{tempdir, TempDir};
 
     #[derive(Clone, Debug)]
     pub struct TestLogger {
@@ -322,6 +323,7 @@ pub mod tests {
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
+                tempdir().unwrap().path().to_str().unwrap(),
             )),
             logger,
         )
@@ -347,6 +349,7 @@ pub mod tests {
             Arc::new(Mutex::new(SimplePersister::new())),
             action_channel.clone(),
             observer_channel.clone(),
+            tempdir().unwrap().path().to_str().unwrap(),
         ))
     }
 

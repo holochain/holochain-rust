@@ -54,6 +54,7 @@ extern crate futures;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
+extern crate tempfile;
 #[cfg(test)]
 extern crate test_utils;
 
@@ -154,6 +155,7 @@ mod tests {
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
+    use tempfile::{tempdir, TempDir};
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
@@ -171,6 +173,7 @@ mod tests {
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
+                tempdir().unwrap().path().to_str().unwrap(),
             )),
             logger,
         )

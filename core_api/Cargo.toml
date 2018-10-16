@@ -9,6 +9,7 @@ holochain_core_types = { path = "../core_types" }
 holochain_dna = { path = "../dna" }
 holochain_agent = { path = "../agent" }
 futures-preview = "0.2.2"
+tempfile = "3"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

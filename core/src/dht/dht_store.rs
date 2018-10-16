@@ -63,9 +63,8 @@ where
     // Linking
     // =======
     pub fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        let link_eav = EntityAttributeValue::new(&_link.base(), &_link.tag(), &_link.target());
-        Ok(self.meta_storage.add_eav(&link_eav)?)
-        // Err(HolochainError::NotImplemented)
+        //FIX ME
+        Err(HolochainError::NotImplemented)
     }
 
     pub fn remove_link(&mut self) {
@@ -77,9 +76,8 @@ where
         _address: HashString,
         _attribute_name: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        Ok(self
-            .meta_storage
-            .fetch_eav(Some(_address), Some(_attribute_name), None)?)
+        //FIX ME
+        Err(HolochainError::NotImplemented)
     }
 
     // Getters (for reducers)

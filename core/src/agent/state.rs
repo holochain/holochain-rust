@@ -102,7 +102,7 @@ impl ToJson for ActionResponse {
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
 /// @see https://github.com/holochain/holochain-rust/issues/222
 fn reduce_commit_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -143,7 +143,7 @@ fn reduce_commit_entry(
         res_context.file_storage.add(chain_header)?;
         Ok(entry.address())
     }
-    let result = response(&*_context, state, &entry, &chain_header);
+    let result = response(&*context, state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
 
     state

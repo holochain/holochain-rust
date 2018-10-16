@@ -195,6 +195,7 @@ pub mod tests {
     use persister::SimplePersister;
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use tempfile::{tempdir, TempDir};
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
@@ -230,6 +231,7 @@ pub mod tests {
             Agent::from_string("alex".to_string()),
             Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
             Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
         ))
     }
 

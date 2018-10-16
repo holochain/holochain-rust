@@ -31,6 +31,7 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
+        "holostorage",
     ));
 
     assert!(!ptr.is_null());

@@ -37,6 +37,7 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
+        folder_path: &str,
     ) -> Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -47,7 +48,7 @@ impl Context {
             state: None,
             action_channel: tx_action,
             observer_channel: tx_observer,
-            file_storage: FilesystemStorage::new("/holo/home").expect("storage should be created"),
+            file_storage: FilesystemStorage::new(folder_path).expect("storage should be created"),
         }
     }
 
@@ -57,6 +58,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
+        folder_path: &str,
     ) -> Context {
         Context {
             agent,
@@ -65,7 +67,7 @@ impl Context {
             state: None,
             action_channel,
             observer_channel,
-            file_storage: FilesystemStorage::new("/holo/home").expect("storage should be created"),
+            file_storage: FilesystemStorage::new(folder_path).expect("storage should be created"),
         }
     }
     // helper function to make it easier to call the logger
@@ -96,6 +98,7 @@ mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
+    use tempfile::{tempdir, TempDir};
 
     #[test]
     fn default_buffer_size_test() {
@@ -108,6 +111,7 @@ mod tests {
             holochain_agent::Agent::from_string("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
         );
 
         assert!(context.state().is_none());
@@ -128,6 +132,7 @@ mod tests {
             holochain_agent::Agent::from_string("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
         );
 
         let global_state = Arc::new(RwLock::new(State::new()));

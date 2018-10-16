@@ -1,14 +1,11 @@
-use actor::{AskSelf, Protocol, SYS};
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
-use riker::actors::*;
-use snowflake;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
-    sync::mpsc::channel,
+    sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
 
@@ -30,16 +27,16 @@ pub trait ContentAddressableStorage: Clone + Send + Sync {
 
 #[derive(Clone)]
 /// some struct to show an example ContentAddressableStorage implementation
-/// there is no persistence or concurrency in this example so use a raw HashMap
+/// this is a thread-safe wrapper around the non-thread-safe implementation below
 /// @see ExampleContentAddressableStorageActor
 pub struct ExampleContentAddressableStorage {
-    actor: ActorRef<Protocol>,
+    content: Arc<RwLock<ExampleContentAddressableStorageContent>>,
 }
 
 impl ExampleContentAddressableStorage {
     pub fn new() -> Result<ExampleContentAddressableStorage, HolochainError> {
         Ok(ExampleContentAddressableStorage {
-            actor: ExampleContentAddressableStorageActor::new_ref()?,
+            content: Arc::new(RwLock::new(ExampleContentAddressableStorageContent::new())),
         })
     }
 }
@@ -50,27 +47,21 @@ pub fn test_content_addressable_storage() -> ExampleContentAddressableStorage {
 
 impl ContentAddressableStorage for ExampleContentAddressableStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
-        unwrap_to!(response => Protocol::CasAddResult).clone()
+        self.content
+            .write()
+            .unwrap()
+            .unthreadable_add(&content.address(), &content.content())
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasContains(address.clone()))?;
-        unwrap_to!(response => Protocol::CasContainsResult).clone()
+        self.content.read().unwrap().unthreadable_contains(address)
     }
 
     fn fetch<AC: AddressableContent>(
         &self,
         address: &Address,
     ) -> Result<Option<AC>, HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasFetch(address.clone()))?;
-        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        let content = self.content.read().unwrap().unthreadable_fetch(address)?;
         Ok(match content {
             Some(c) => Some(AC::from_content(&c)),
             None => None,
@@ -78,38 +69,16 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
     }
 }
 
-/// show an example Actor for ContentAddressableStorage
-/// a key requirement of the CAS is that cloning doesn't undermine data consistency
-/// a key requirement of the CAS is that multithreading doesn't undermine data consistency
-/// actors deliver on both points through the ActorRef<Protocol> abstraction
-/// cloned actor references point to the same actor with the same internal state
-/// actors have internal message queues to co-ordinate requests
-/// the tradeoff is boilerplate + some overhead from the actor system
-pub struct ExampleContentAddressableStorageActor {
+/// Not thread-safe CAS implementation with a HashMap
+pub struct ExampleContentAddressableStorageContent {
     storage: HashMap<Address, Content>,
 }
 
-impl ExampleContentAddressableStorageActor {
-    pub fn new() -> ExampleContentAddressableStorageActor {
-        ExampleContentAddressableStorageActor {
+impl ExampleContentAddressableStorageContent {
+    pub fn new() -> ExampleContentAddressableStorageContent {
+        ExampleContentAddressableStorageContent {
             storage: HashMap::new(),
         }
-    }
-
-    fn actor() -> BoxActor<Protocol> {
-        Box::new(ExampleContentAddressableStorageActor::new())
-    }
-
-    fn props() -> BoxActorProd<Protocol> {
-        Props::new(Box::new(ExampleContentAddressableStorageActor::actor))
-    }
-
-    pub fn new_ref() -> Result<ActorRef<Protocol>, HolochainError> {
-        Ok(SYS.actor_of(
-            ExampleContentAddressableStorageActor::props(),
-            // all actors have the same ID to allow round trip across clones
-            &snowflake::ProcessUniqueId::new().to_string(),
-        )?)
     }
 
     fn unthreadable_add(
@@ -127,36 +96,6 @@ impl ExampleContentAddressableStorageActor {
 
     fn unthreadable_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         Ok(self.storage.get(address).cloned())
-    }
-}
-
-/// this is all boilerplate
-impl Actor for ExampleContentAddressableStorageActor {
-    type Msg = Protocol;
-
-    fn receive(
-        &mut self,
-        context: &Context<Self::Msg>,
-        message: Self::Msg,
-        sender: Option<ActorRef<Self::Msg>>,
-    ) {
-        sender
-            .try_tell(
-                match message {
-                    Protocol::CasAdd(address, content) => {
-                        Protocol::CasAddResult(self.unthreadable_add(&address, &content))
-                    }
-                    Protocol::CasContains(address) => {
-                        Protocol::CasContainsResult(self.unthreadable_contains(&address))
-                    }
-                    Protocol::CasFetch(address) => {
-                        Protocol::CasFetchResult(self.unthreadable_fetch(&address))
-                    }
-                    _ => unreachable!(),
-                },
-                Some(context.myself()),
-            )
-            .expect("failed to tell MemoryStorageActor sender");
     }
 }
 
@@ -297,50 +236,57 @@ impl EavTestSuite {
             &value_content.address(),
         );
 
-        assert_eq!(
-            HashSet::new(),
-            eav_storage
-                .fetch_eav(
-                    Some(entity_content.address()),
-                    Some(attribute.clone()),
-                    Some(value_content.address())
-                )
-                .expect("could not fetch eav"),
-        );
+        let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
+
+        for eav_storage in two_stores.iter() {
+            assert_eq!(
+                HashSet::new(),
+                eav_storage
+                    .fetch_eav(
+                        Some(entity_content.address()),
+                        Some(attribute.clone()),
+                        Some(value_content.address())
+                    )
+                    .expect("could not fetch eav"),
+            );
+        }
 
         eav_storage.add_eav(&eav).expect("could not add eav");
 
         let mut expected = HashSet::new();
         expected.insert(eav.clone());
-        // some examples of constraints that should all return the eav
-        for (e, a, v) in vec![
-            // constrain all
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                Some(value_content.address()),
-            ),
-            // open entity
-            (None, Some(attribute.clone()), Some(value_content.address())),
-            // open attribute
-            (
-                Some(entity_content.address()),
-                None,
-                Some(value_content.address()),
-            ),
-            // open value
-            (
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                None,
-            ),
-            // open
-            (None, None, None),
-        ] {
-            assert_eq!(
-                expected,
-                eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
-            );
+
+        for eav_storage in two_stores.iter() {
+            // some examples of constraints that should all return the eav
+            for (e, a, v) in vec![
+                // constrain all
+                (
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    Some(value_content.address()),
+                ),
+                // open entity
+                (None, Some(attribute.clone()), Some(value_content.address())),
+                // open attribute
+                (
+                    Some(entity_content.address()),
+                    None,
+                    Some(value_content.address()),
+                ),
+                // open value
+                (
+                    Some(entity_content.address()),
+                    Some(attribute.clone()),
+                    None,
+                ),
+                // open
+                (None, None, None),
+            ] {
+                assert_eq!(
+                    expected,
+                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
+                );
+            }
         }
     }
     pub fn test_one_to_many<A, S>(mut eav_storage: S)

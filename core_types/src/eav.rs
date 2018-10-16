@@ -1,8 +1,11 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
-use error::HolochainError;
+use error::{HcResult, HolochainError};
 use serde_json;
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    sync::{Arc, RwLock},
+};
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -85,7 +88,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage {
+pub trait EntityAttributeValueStorage: Clone {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -104,32 +107,30 @@ pub trait EntityAttributeValueStorage {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
-pub struct ExampleEntityAttributeValueStorage {
-    eavs: HashSet<EntityAttributeValue>,
+pub struct ExampleEntityAttributeValueStorageNonSync {
+    storage: HashSet<EntityAttributeValue>,
 }
 
-impl ExampleEntityAttributeValueStorage {
-    pub fn new() -> ExampleEntityAttributeValueStorage {
-        ExampleEntityAttributeValueStorage {
-            eavs: HashSet::new(),
+impl ExampleEntityAttributeValueStorageNonSync {
+    pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
+        ExampleEntityAttributeValueStorageNonSync {
+            storage: HashSet::new(),
         }
     }
-}
 
-impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.eavs.insert(eav.clone());
+    fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+        self.storage.insert(eav.clone());
         Ok(())
     }
 
-    fn fetch_eav(
+    fn unthreadable_fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         let filtered = self
-            .eavs
+            .storage
             .iter()
             .cloned()
             .filter(|eav| match entity {
@@ -146,6 +147,36 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .collect::<HashSet<EntityAttributeValue>>();
         Ok(filtered)
+    }
+}
+
+#[derive(Clone)]
+pub struct ExampleEntityAttributeValueStorage {
+    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
+}
+
+impl ExampleEntityAttributeValueStorage {
+    pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
+        Ok(ExampleEntityAttributeValueStorage {
+            content: Arc::new(RwLock::new(ExampleEntityAttributeValueStorageNonSync::new())),
+        })
+    }
+}
+
+impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
+        self.content.write().unwrap().unthreadable_add_eav(eav)
+    }
+    fn fetch_eav(
+        &self,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        self.content
+            .read()
+            .unwrap()
+            .unthreadable_fetch_eav(entity, attribute, value)
     }
 }
 
@@ -187,7 +218,8 @@ pub fn eav_round_trip_test_runner(
         &attribute,
         &value_content.address(),
     );
-    let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+    let mut eav_storage =
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
         HashSet::new(),
@@ -247,9 +279,13 @@ pub mod tests {
     };
     use eav::EntityAttributeValue;
 
+    pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
+        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
+    }
+
     #[test]
     fn example_eav_round_trip() {
-        let eav_storage = ExampleEntityAttributeValueStorage::new();
+        let eav_storage = test_eav_storage();
         let entity = ExampleAddressableContent::from_content(&"foo".to_string());
         let attribute = "favourite-color".to_string();
         let value = ExampleAddressableContent::from_content(&"blue".to_string());
@@ -262,7 +298,7 @@ pub mod tests {
         EavTestSuite::test_one_to_many::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
-        >(ExampleEntityAttributeValueStorage::new());
+        >(test_eav_storage());
     }
 
     #[test]
@@ -270,7 +306,7 @@ pub mod tests {
         EavTestSuite::test_many_to_one::<
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
-        >(ExampleEntityAttributeValueStorage::new());
+        >(test_eav_storage());
     }
 
     #[test]

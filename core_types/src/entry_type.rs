@@ -94,16 +94,19 @@ impl EntryType {
 }
 
 /// dummy entry type
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_type() -> EntryType {
     EntryType::App(String::from("testEntryType"))
 }
 
 /// dummy entry type, same as test_type()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_type_a() -> EntryType {
     test_entry_type()
 }
 
 /// dummy entry type, differs from test_type()
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_type_b() -> EntryType {
     EntryType::App(String::from("testEntryTypeB"))
 }
@@ -113,6 +116,7 @@ pub fn test_sys_entry_type() -> EntryType {
     EntryType::AgentId
 }
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry_type() -> EntryType {
     EntryType::Dna
 }

@@ -7,7 +7,6 @@ use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
     eav::EntityAttributeValueStorage,
     entry::Entry,
-    entry_type::EntryType,
 };
 use std::sync::Arc;
 
@@ -47,7 +46,7 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     match action_wrapper.action() {
-        Action::Commit(_, _) => Some(reduce_commit_entry),
+        Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::GetLinks(_) => Some(reduce_get_links),
@@ -59,7 +58,6 @@ where
 pub(crate) fn commit_sys_entry<CAS, EAVS>(
     _context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
-    entry_type: &EntryType,
     entry: &Entry,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
@@ -67,7 +65,7 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     // system entry type must be publishable
-    if !entry_type.clone().can_publish() {
+    if !entry.entry_type().to_owned().can_publish() {
         return None;
     }
     // Add it local storage
@@ -85,7 +83,6 @@ where
 pub(crate) fn commit_app_entry<CAS, EAVS>(
     context: Arc<Context>,
     old_store: &DhtStore<CAS, EAVS>,
-    entry_type: &EntryType,
     entry: &Entry,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
@@ -100,7 +97,7 @@ where
         .nucleus()
         .dna()
         .expect("context.state must hold DNA in order to commit an app entry.");
-    let maybe_def = dna.get_entry_type_def(&entry_type.to_string());
+    let maybe_def = dna.get_entry_type_def(&entry.entry_type().to_string());
     if maybe_def.is_none() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
@@ -136,10 +133,7 @@ where
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
     let action = action_wrapper.action();
-    let (entry_type, entry) = match action {
-        Action::Commit(entry_type, entry) => (entry_type, entry),
-        _ => unreachable!(),
-    };
+    let entry = unwrap_to!(action => Action::Commit);
 
     // pre-condition: Must not already have entry in local storage
     if old_store
@@ -152,10 +146,10 @@ where
     }
 
     // Handle sys entries and app entries differently
-    if entry_type.clone().is_sys() {
-        return commit_sys_entry(context, old_store, entry_type, entry);
+    if entry.entry_type().to_owned().is_sys() {
+        return commit_sys_entry(context, old_store, entry);
     }
-    return commit_app_entry(context, old_store, entry_type, entry);
+    return commit_app_entry(context, old_store, entry);
 }
 
 //
@@ -177,14 +171,20 @@ where
         return None;
     }
     // Retrieve it from the network...
-    let entry = Entry::from_content(&old_store.network().clone().get(address));
-    let mut new_store = (*old_store).clone();
-    // ...and add it to the local storage
-    let res = new_store.content_storage_mut().add(&entry);
-    match res {
-        Err(_) => None,
-        Ok(()) => Some(new_store),
-    }
+    old_store
+        .network()
+        .clone()
+        .get(address)
+        .and_then(|content| {
+            let entry = Entry::from_content(&content);
+            let mut new_store = (*old_store).clone();
+            // ...and add it to the local storage
+            let res = new_store.content_storage_mut().add(&entry);
+            match res {
+                Err(_) => None,
+                Ok(()) => Some(new_store),
+            }
+        })
 }
 
 //
@@ -221,8 +221,7 @@ pub mod tests {
     use dht::dht_reducers::commit_sys_entry;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        entry::{test_entry, test_sys_entry, Entry},
-        entry_type::{test_sys_entry_type, test_unpublishable_entry_type},
+        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
     };
     use instance::tests::test_context;
     use state::test_store;
@@ -234,14 +233,10 @@ pub mod tests {
         let store = test_store();
         let entry = test_entry();
 
-        let unpublishable_entry_type = test_unpublishable_entry_type();
+        let unpublishable_entry = test_unpublishable_entry();
 
-        let new_dht_store = commit_sys_entry(
-            Arc::clone(&context),
-            &store.dht(),
-            &unpublishable_entry_type,
-            &entry,
-        );
+        let new_dht_store =
+            commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
         // test_entry is not sys so should do nothing
         assert_eq!(None, new_dht_store);
@@ -254,15 +249,10 @@ pub mod tests {
                 .expect("could not fetch from cas")
         );
 
-        let sys_entry_type = test_sys_entry_type();
         let sys_entry = test_sys_entry();
 
-        let new_dht_store = commit_sys_entry(
-            Arc::clone(&context),
-            &store.dht(),
-            &sys_entry_type,
-            &sys_entry,
-        ).expect("there should be a new store for committing a sys entry");
+        let new_dht_store = commit_sys_entry(Arc::clone(&context), &store.dht(), &sys_entry)
+            .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),

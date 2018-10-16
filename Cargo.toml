@@ -10,4 +10,5 @@ members = [
   "net",
   "test_bin",
   "net_ipc",
+  "hdk-rust",
 ]

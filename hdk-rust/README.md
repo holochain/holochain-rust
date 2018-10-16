@@ -19,7 +19,7 @@ version = "versionnumber"
 authors = ["Your Name Here"]
 
 [dependencies]
-hdk = { git = "https://github.com/holochain/hdk-rust"}
+hdk = { git = "https://github.com/holochain/holochain-rust"}
 ```
 
 `hdk-rust` includes a macro which should be used for writing your application logic into Zome functions. To use it looks something like this:
@@ -59,6 +59,7 @@ Functions will continue to move from incomplete to complete as this library matu
 The following functions are **complete**:
 - debug
 - commit_entry
+- get_entry
 
 The following functions are **incomplete**:
 - property

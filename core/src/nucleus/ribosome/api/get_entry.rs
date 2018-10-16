@@ -271,7 +271,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
+        expected.push_str("{\"status\":\"NotFound\",\"entry_content\":\"\"}\u{0}");
 
         assert_eq!(expected, get_runtime.result);
     }

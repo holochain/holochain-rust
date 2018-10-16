@@ -11,7 +11,7 @@ use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, Validati
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::entry::AppEntryType;
+use holochain_core_types::entry::EntryType;
 use holochain_core_types::entry::AppEntryValue;
 use holochain_core_types::json::JsonString;
 use holochain_core_types::error::HolochainError;
@@ -19,7 +19,7 @@ use holochain_core_types::error::HolochainError;
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
-    entry_type_name: String,
+    entry_type_json_str: String,
     entry_value: String,
 }
 
@@ -64,8 +64,12 @@ pub fn invoke_commit_app_entry(
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
+    let entry_type_json = JsonString::from(input.entry_type_json_str);
+    let entry_type = EntryType::from(entry_type_json);
+    let app_entry_type = unwrap_to!(entry_type => EntryType::App);
+
     // Create Chain Entry
-    let entry = Entry::App(AppEntryType::from(input.entry_type_name), AppEntryValue::from(input.entry_value));
+    let entry = Entry::App(app_entry_type.to_owned(), AppEntryValue::from(input.entry_value));
     let validation_data = build_validation_data_commit(
         entry.clone(),
         &runtime.context.state().unwrap().agent(),
@@ -130,7 +134,7 @@ pub mod tests {
         let entry = test_app_entry();
 
         let args = CommitAppEntryArgs {
-            entry_type_name: entry.entry_type().to_string(),
+            entry_type_json_str: entry.entry_type().to_string(),
             entry_value: entry.content(),
         };
         serde_json::to_string(&args)

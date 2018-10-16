@@ -213,6 +213,7 @@ pub mod tests {
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
     use holochain_core_types::json::JsonString;
+    use holochain_core_types::entry::link_add::test_link_add_entry;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -293,7 +294,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"address\":\"{}\"}}", expected_app_entry_address())),
+            JsonString::from(format!("\"{}\"", expected_app_entry_address())),
             JsonString::from(ActionResponse::Commit(Ok(expected_app_entry_address()))),
         );
         assert_eq!(
@@ -305,10 +306,10 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}"),
+            JsonString::from("{\"App\":[\"testEntryType\",{\"foo\":\"test entry value\",\"bar\":[\"bing\",\"baz\"]}]}"),
             JsonString::from(ActionResponse::GetEntry(Some(test_app_entry().clone()))),
         );
-        assert_eq!(JsonString::from(""), JsonString::from(ActionResponse::GetEntry(None)));
+        assert_eq!(JsonString::from("{\"entry\": null}"), JsonString::from(ActionResponse::GetEntry(None)));
     }
 
     #[test]
@@ -326,8 +327,8 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"address\":\"{}\"}}", expected_app_entry_address())),
-            JsonString::from(ActionResponse::LinkEntries(Ok(test_app_entry()))),
+            JsonString::from(format!("\"{}\"", test_link_add_entry().address())),
+            JsonString::from(ActionResponse::LinkEntries(Ok(test_link_add_entry()))),
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),

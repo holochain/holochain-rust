@@ -97,9 +97,21 @@ impl EntryType {
     }
 }
 
+impl From<EntryType> for JsonString {
+    fn from(entry_type: EntryType) -> JsonString {
+        JsonString::from(serde_json::to_string(&entry_type).expect("could not serialize Json EntryType"))
+    }
+}
+
+impl From<JsonString> for EntryType {
+    fn from(json_string: JsonString) -> EntryType {
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize Json EntryType")
+    }
+}
+
 impl Display for EntryType {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", JsonString::from(self.to_owned()))
     }
 }
 
@@ -259,7 +271,7 @@ pub fn test_app_entry() -> Entry {
 /// the correct hash for test_app_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_app_entry_address() -> Address {
-    Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
+    Address::from("QmQyNMKseDKup2aNptN1h6xTkfZNNrVJMNAzjcmD5We4wu")
 }
 
 /// dummy entry, same as test_app_entry()

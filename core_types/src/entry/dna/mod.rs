@@ -207,13 +207,15 @@ impl Dna {
     }
 
     /// Return the name of the zome holding a specified app entry_type
-    pub fn get_zome_name_for_entry_type(&self, app_entry_type: &AppEntryType) -> Option<String> {
+    pub fn get_zome_name_for_entry_type(&self, app_entry_type: &AppEntryType) -> Option<ZomeName> {
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
-            for (zome_entry_type_name, _) in zome.app_entry_types() {
-                if zome_entry_type_name == app_entry_type {
-                    return Some(zome_name.clone());
-                }
+            println!("{:?}", zome_name);
+            println!("{:?}", zome.app_entry_types());
+            println!("{:?}", app_entry_type);
+            if zome.app_entry_types().contains_key(app_entry_type) {
+                println!("foo");
+                return Some(zome_name.to_owned())
             }
         }
         None
@@ -275,7 +277,7 @@ pub mod tests {
 
         app_entry_types.insert(app_entry_type.clone(), entry_type_def.clone());
 
-        let mut zome = Zome::new(
+        let zome = Zome::new(
             &ZomeDescription::new(),
             &Config::new(),
             &app_entry_types,

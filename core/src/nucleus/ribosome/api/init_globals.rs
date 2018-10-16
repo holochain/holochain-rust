@@ -63,7 +63,7 @@ pub mod tests {
             test_zome_api_function_runtime(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
       runtime.result.to_string(),
-      "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
+      "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_entry_content\":\"{\\\"AgentId\\\":{\\\"signing_key\\\":{},\\\"encryption_key\\\":{},\\\"dpki_root\\\":{}}}\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
         .to_string());
     }
 }

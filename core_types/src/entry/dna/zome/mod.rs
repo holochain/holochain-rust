@@ -5,6 +5,7 @@ pub mod entry_types;
 
 use entry::{dna::wasm::DnaWasm, AppEntryType};
 use std::collections::HashMap;
+use entry::dna::zome::entry_types::EntryTypeDef;
 
 pub type ZomeName = String;
 pub type ZomeDescription = String;
@@ -47,7 +48,7 @@ impl Config {
     }
 }
 
-pub type AppEntryTypes = HashMap<AppEntryType, entry_types::EntryTypeDef>;
+pub type AppEntryTypes = HashMap<AppEntryType, EntryTypeDef>;
 
 pub type Capabilities = HashMap<String, capabilities::Capability>;
 

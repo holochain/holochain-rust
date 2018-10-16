@@ -1,4 +1,8 @@
 use cas::content::Address;
+use entry::Entry;
+use entry::test_app_entry_b;
+use entry::test_app_entry_a;
+use cas::content::AddressableContent;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -36,30 +40,31 @@ impl LinkAdd {
     }
 }
 
+pub fn test_link_tag() -> LinkTag {
+    LinkTag::from("foo-tag")
+}
+
+pub fn test_link_add() -> LinkAdd {
+    LinkAdd::new(
+        &test_app_entry_a().address(),
+        &test_app_entry_b().address(),
+        &test_link_tag(),
+    )
+}
+
+pub fn test_link_add_entry() -> Entry {
+    Entry::LinkAdd(test_link_add())
+}
+
 #[cfg(test)]
 pub mod tests {
 
     use cas::content::AddressableContent;
     use entry::{
-        link_add::{LinkAdd, LinkTag},
-        test_app_entry_a, test_app_entry_b, Entry,
+        test_app_entry_a, test_app_entry_b,
     };
-
-    pub fn test_link_tag() -> LinkTag {
-        LinkTag::from("foo-tag")
-    }
-
-    pub fn test_link_add() -> LinkAdd {
-        LinkAdd::new(
-            &test_app_entry_a().address(),
-            &test_app_entry_b().address(),
-            &test_link_tag(),
-        )
-    }
-
-    pub fn test_link_add_entry() -> Entry {
-        Entry::LinkAdd(test_link_add())
-    }
+    use entry::link_add::test_link_add;
+    use entry::link_add::test_link_tag;
 
     #[test]
     fn link_smoke_test() {

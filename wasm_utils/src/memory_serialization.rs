@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-/// TODO #486 - load and store string from wasm memory
+// TODO #486 - load and store string from wasm memory
 //pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
 //    let maybe_allocation = decode_encoded_allocation(encoded_allocation);
 //    match maybe_allocation {
@@ -48,7 +48,7 @@ pub fn store_as_json<T: Serialize>(
     return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
 }
 
-/// Sugar
+// Sugar
 pub fn store_json_into_encoded_allocation<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,
@@ -61,9 +61,9 @@ pub fn store_json_into_encoded_allocation<T: Serialize>(
 // Helper
 //-------------------------------------------------------------------------------------------------
 
-// Convert a json string stored in wasm memory into a specified struct
-// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
-// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
+/// Convert a json string stored in wasm memory into a specified struct
+/// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+/// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
 pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
@@ -84,7 +84,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
     }
 }
 
-/// TODO #486 - load and store string from wasm memory
+// TODO #486 - load and store string from wasm memory
 //// Convert a string stored in wasm memory into a String
 //fn load_string_from_allocation(alloc: &SinglePageAllocation) -> String {
 //    unsafe{
@@ -96,7 +96,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
 //    }
 //}
 
-// Write in wasm memory according to stack state
+/// Write in wasm memory according to stack state
 fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
     bytes: &Vec<u8>,
@@ -110,6 +110,5 @@ fn write_in_wasm_memory(
     for (i, byte) in bytes.iter().enumerate() {
         ptr_safe[i] = *byte as i8;
     }
-    //return Err(RibosomeErrorCode::OutOfMemory);
     SinglePageAllocation::new(ptr as u16, len)
 }

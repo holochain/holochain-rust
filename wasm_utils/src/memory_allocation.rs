@@ -114,11 +114,15 @@ impl SinglePageStack {
         }
     }
 
-    pub fn from_encoded(encoded_last_allocation: u32) -> Self {
+    /// Create a SinglePageStack from a valid encoded allocation
+    pub fn from_encoded_allocation(
+        encoded_last_allocation: u32,
+    ) -> Result<Self, RibosomeErrorCode> {
         let maybe_allocation = decode_encoded_allocation(encoded_last_allocation as u32);
-        let last_allocation =
-            maybe_allocation.expect("received error instead of valid encoded allocation");
-        return SinglePageStack::new(last_allocation);
+        if let Err(_) = maybe_allocation {
+            return Err(RibosomeErrorCode::NotAnAllocation);
+        }
+        return Ok(SinglePageStack::new(maybe_allocation.unwrap()));
     }
 
     pub fn allocate(&mut self, size: u16) -> u16 {
@@ -181,10 +185,21 @@ pub mod tests {
     #[test]
     fn single_page_stack_from_encoded_test() {
         let i = 0b1010101010101010_0101010101010101;
-        let single_page_stack = SinglePageStack::from_encoded(i);
-
+        let single_page_stack = SinglePageStack::from_encoded_allocation(i);
         // stack top is offset + length
-        assert_eq!(0b1111111111111111, single_page_stack.top());
+        assert_eq!(0b1111111111111111, single_page_stack.unwrap().top());
+        let single_page_stack = SinglePageStack::from_encoded_allocation(0);
+        // stack top is 0
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            single_page_stack.err().unwrap()
+        );
+        let i = 0b0000000000000001_0000000000000000;
+        let single_page_stack = SinglePageStack::from_encoded_allocation(i);
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            single_page_stack.err().unwrap()
+        );
     }
 
     #[test]

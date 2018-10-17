@@ -4,7 +4,13 @@ version = "0.1.0"
 authors = ["Holochain Core Dev Team <dev.support@holo.host>"]
 
 [dependencies]
-serde="1"
-serde_derive="1"
-serde_json="1"
-holochain_core_types={ path = "../core_types" }
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+holochain_core_types = { path = "../core_types" }
+
+[dev-dependencies]
+test_utils = { path = "../test_utils"}
+holochain_core = { path = "../core" }
+holochain_core_api = { path = "../core_api" }
+holochain_agent = { path = "../agent" }

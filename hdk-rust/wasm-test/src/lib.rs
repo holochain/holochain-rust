@@ -20,7 +20,7 @@ use hdk::RibosomeError;
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
     #[allow(unused_must_use)]
     {
@@ -52,11 +52,11 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 
     // Deserialize and check for an encoded error
-    let result = try_deserialize_allocation(encoded_allocation_of_input as u32);
+    let result = load_json(encoded_allocation_of_input as u32);
     if let Err(e) = result {
         hdk::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
@@ -71,13 +71,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         Ok(hash_str) => CommitOutputStruct {address: hash_str.to_string()},
         Err(RibosomeError::RibosomeFailed(err_str)) => {
             unsafe {
-                return serialize_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
+                return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
             }
         },
        Err(_) => unreachable!(),
     };
     unsafe {
-        return serialize_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
+        return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
     }
 }
 

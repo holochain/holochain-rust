@@ -142,6 +142,7 @@ wasm_build: ensure_wasm_target
 	cd core_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
 .PHONY: build
 build: core_toolchain wasm_build

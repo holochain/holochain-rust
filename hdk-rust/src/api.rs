@@ -366,10 +366,7 @@ pub fn send(
 }
 
 /// FIXME DOC
-pub fn start_bundle(
-    _timeout: usize,
-    _user_param: serde_json::Value
-) -> Result<(), RibosomeError> {
+pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), RibosomeError> {
     // FIXME
     Err(RibosomeError::FunctionNotImplemented)
 }

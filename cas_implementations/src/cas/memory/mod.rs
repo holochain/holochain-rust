@@ -60,6 +60,8 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
     };
+    use holochain_core_types::json::JsonString;
+    use holochain_core_types::json::RawString;
 
     pub fn test_memory_storage() -> MemoryStorage {
         MemoryStorage::new().expect("could not create memory storage")
@@ -69,8 +71,8 @@ pub mod tests {
     fn memory_round_trip() {
         let test_suite = StorageTestSuite::new(test_memory_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            JsonString::from(RawString::from("foo")),
+            JsonString::from(RawString::from("bar")),
         );
     }
 

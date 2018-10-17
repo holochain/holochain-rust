@@ -13,6 +13,7 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 use walkdir::{DirEntry, WalkDir};
+use holochain_core_types::json::JsonString;
 
 const ACTOR_ID_ROOT: &'static str = "/eav_file_actor/";
 
@@ -105,7 +106,7 @@ impl EavFileStorageActor {
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let mut f = File::create(address_path)?;
-        writeln!(f, "{}", eav.content())?;
+        writeln!(f, "{}", String::from(eav.content()))?;
         Ok(())
     }
 
@@ -166,7 +167,7 @@ impl EavFileStorageActor {
         Ok(entity_attribute_value_inter
             .into_iter()
             .filter(|e| e.is_ok())
-            .map(|eav_content| EntityAttributeValue::from_content(&eav_content.unwrap()))
+            .map(|eav_content| EntityAttributeValue::from_content(&JsonString::from(eav_content.unwrap())))
             .collect())
     }
 }

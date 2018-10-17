@@ -9,6 +9,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
+use holochain_core_types::json::JsonString;
 
 #[derive(Clone)]
 pub struct FilesystemStorage {

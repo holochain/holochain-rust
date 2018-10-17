@@ -9,6 +9,7 @@ use std::{
     fs::{create_dir_all, read_to_string, write},
     path::{Path, MAIN_SEPARATOR},
 };
+use holochain_core_types::json::JsonString;
 
 const ACTOR_ID_ROOT: &'static str = "/filesystem_storage_actor/";
 
@@ -77,7 +78,7 @@ impl FilesystemStorageActor {
     /// filesystem CAS fetch. NOT thread safe.
     fn unthreadable_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         if self.unthreadable_contains(&address)? {
-            Ok(Some(read_to_string(self.address_to_path(address))?))
+            Ok(Some(JsonString::from(read_to_string(self.address_to_path(address))?)))
         } else {
             Ok(None)
         }

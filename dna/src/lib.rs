@@ -43,6 +43,7 @@ use holochain_core_types::{
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
+use holochain_core_types::json::JsonString;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -115,38 +116,6 @@ impl Dna {
     /// ```
     pub fn new() -> Self {
         Default::default()
-    }
-
-    /// Create a new in-memory dna struct from a json string.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use holochain_dna::Dna;
-    ///
-    /// let dna = Dna::from_json_str(r#"{
-    ///     "name": "MyTestApp"
-    /// }"#).expect("DNA should be valid");
-    ///
-    /// assert_eq!("MyTestApp", dna.name);
-    /// ```
-    pub fn from_json_str(dna: &str) -> serde_json::Result<Self> {
-        serde_json::from_str(dna)
-    }
-
-    /// Generate a json string from an in-memory dna struct.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use holochain_dna::Dna;
-    ///
-    /// let dna = Dna::new();
-    /// println!("json: {}", dna.to_json());
-    ///
-    /// ```
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).expect("DNA should serialize")
     }
 
     /// Generate a pretty-printed json string from an in-memory dna struct.
@@ -257,14 +226,26 @@ impl PartialEq for Dna {
     }
 }
 
+impl From<JsonString> for Dna {
+    fn from(json_string: JsonString) -> Dna {
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize dna")
+    }
+}
+
+impl From<Dna> for JsonString {
+    fn from(dna: Dna) -> JsonString {
+        serde_json::to_string(&dna).expect("DNA should serialize")
+    }
+}
+
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(&EntryType::Dna, &self.to_json())
+        Entry::new(&EntryType::Dna, JsonString::from(self.to_owned()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
+        Dna::from(&entry.content())
     }
 }
 

@@ -1,0 +1,20 @@
+[package]
+name = "integration-test"
+version = "0.1.0"
+authors = ["Holochain Core Dev Team <dev.support@holo.host>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[workspace]
+members = []
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+holochain_wasm_utils = { path = "../../"}

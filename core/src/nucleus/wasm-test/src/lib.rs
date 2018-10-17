@@ -14,7 +14,7 @@ extern {
 /// return error code
 fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
   // Write input string on stack
-  let maybe_allocation =  serialize(mem_stack, s);
+  let maybe_allocation =  store_as_json(mem_stack, s);
   if let Err(_) = maybe_allocation {
     return;
   }
@@ -37,7 +37,7 @@ fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   hdk_debug(&mut mem_stack, "Hello world!");
   return 0;
 }
@@ -47,7 +47,7 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   hdk_debug(&mut mem_stack, "Hello");
   hdk_debug(&mut mem_stack, "world");
   hdk_debug(&mut mem_stack, "!");

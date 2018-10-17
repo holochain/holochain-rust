@@ -33,13 +33,14 @@ pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     // Actual program
     // Init memory stack
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded(encoded_allocation_of_input));
+        G_MEM_STACK =
+            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 }
 
 pub fn serialize_wasm_output<T: serde::Serialize>(output: T) -> u32 {
     // Serialize output in WASM memory
-    unsafe { return serialize_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32 }
+    unsafe { return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32 }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -210,7 +211,7 @@ pub fn make_hash<S: Into<String>>(
 /// FIXME DOC
 pub fn debug(msg: &str) -> Result<(), RibosomeError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
-    let maybe_allocation_of_input = serialize(&mut mem_stack, msg);
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -265,7 +266,7 @@ pub fn commit_entry(
         entry_type_name: entry_type_name.to_string(),
         entry_value: entry_content.to_string(),
     };
-    let maybe_allocation_of_input = serialize(&mut mem_stack, input);
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -277,7 +278,7 @@ pub fn commit_entry(
         encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as u32);
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
+    let result = load_json(encoded_allocation_of_result as u32);
 
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
@@ -333,7 +334,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
     let input = GetEntryArgs {
         address: entry_hash,
     };
-    let maybe_allocation_of_input = serialize(&mut mem_stack, input);
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -345,7 +346,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
         encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = try_deserialize_allocation(encoded_allocation_of_result as u32);
+    let result = load_json(encoded_allocation_of_result as u32);
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
     }

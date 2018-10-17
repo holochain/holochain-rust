@@ -45,13 +45,15 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     )
 }
 
+// Function called at start of all unit tests:
+//   Startup holochain and do a call on the specified wasm function.
 pub fn launch_hc_with_integration_test_wasm(
     fn_name: &str,
     fn_arg: &str,
 ) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/integration_test.wasm",
+        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
     );
     let capability = create_test_cap_with_fn_name(fn_name);
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
@@ -80,25 +82,37 @@ fn can_return_error_report() {
     );
 }
 
-/// TODO #486 - load and store string from wasm memory
-//#[test]
-//fn call_store_string_ok() {
-//    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
-//    println!("result = {:?}", result);
-//    // Verify result
-//    assert_eq!("some string", result.unwrap());
-//    // Verify logs
-//    let test_logger = test_logger.lock().unwrap();
-//    assert_eq!(
-//        format!("{:?}", *test_logger),
-//        "TestLogger { log: [\"TestApp instantiated\"] }",
-//    );
-//}
+#[test]
+fn call_store_string_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("fish", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
 
 #[test]
-fn call_store_as_json_ok() {
+fn call_store_as_json_str_ok() {
     let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_ok", r#"{}"#);
+        launch_hc_with_integration_test_wasm("test_store_as_json_str_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("\"fish\"", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_store_as_json_obj_ok() {
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_store_as_json_obj_ok", r#"{}"#);
     // Verify result
     assert_eq!("{\"value\":\"fish\"}", result.unwrap());
     // Verify logs
@@ -106,6 +120,20 @@ fn call_store_as_json_ok() {
     assert_eq!(
         format!("{:?}", *test_logger),
         "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_store_string_err() {
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_store_string_err", r#"{}"#);
+    // Verify result
+    assert!(result.is_ok());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_string_err\\\' returned: Out of memory\"] }",
     );
 }
 
@@ -172,6 +200,32 @@ fn call_load_json_err() {
     let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_json_err", r#"{}"#);
     // Verify result
     assert_eq!("\"Unspecified\"", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_load_string_ok() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_string_ok", r#"{}"#);
+    // Verify result
+    assert_eq!("fish", result.unwrap());
+    // Verify logs
+    let test_logger = test_logger.lock().unwrap();
+    assert_eq!(
+        format!("{:?}", *test_logger),
+        "TestLogger { log: [\"TestApp instantiated\"] }",
+    );
+}
+
+#[test]
+fn call_load_string_err() {
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_string_err", r#"{}"#);
+    // Verify result
+    assert_eq!("Unspecified", result.unwrap());
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(

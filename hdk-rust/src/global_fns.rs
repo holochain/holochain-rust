@@ -1,12 +1,7 @@
-
-use serde;
 use globals::G_MEM_STACK;
 pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::{
-    memory_allocation::*,
-    memory_serialization::*,
-};
-
+use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
+use serde;
 
 /// Init global memory stack
 pub fn init_global_memory(encoded_allocation_of_input: u32) {

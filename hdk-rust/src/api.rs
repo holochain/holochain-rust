@@ -1,4 +1,3 @@
-
 use serde_json;
 
 use self::RibosomeError::*;
@@ -147,7 +146,6 @@ impl Default for GetEntryMask {
 //        Commit,
 //    }
 //}
-
 
 /// Allowed input for close_bundle()
 pub enum BundleOnClose {

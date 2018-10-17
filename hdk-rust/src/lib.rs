@@ -12,8 +12,10 @@ extern crate bitflags;
 extern crate lazy_static;
 pub extern crate holochain_wasm_utils;
 
-pub mod api;
+mod api;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;
 pub mod macros;
+
+pub use api::*;

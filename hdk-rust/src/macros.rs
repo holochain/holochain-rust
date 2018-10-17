@@ -95,13 +95,13 @@ macro_rules! validations {
                 #[derive(Deserialize)]
                 struct InputStruct {
                     $entry : $entry_type,
-                    $ctx : ::hdk::api::ValidationData,
+                    $ctx : ::hdk::ValidationData,
                 }
 
                 #[derive(Deserialize)]
                 struct InputStructGeneric {
                     entry : $entry_type,
-                    ctx : ::hdk::api::ValidationData,
+                    ctx : ::hdk::ValidationData,
                 }
 
                 // Deserialize input

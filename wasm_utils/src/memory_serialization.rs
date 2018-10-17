@@ -96,7 +96,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
 //    }
 //}
 
-// Write in wasm memory according to stack state
+/// Write in wasm memory according to stack state
 fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
     bytes: &Vec<u8>,

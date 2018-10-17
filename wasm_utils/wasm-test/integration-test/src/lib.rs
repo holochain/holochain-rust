@@ -24,7 +24,7 @@ pub extern "C" fn test_error_report(_: u32) -> u32 {
     0
 }
 
-/// TODO #486 - load and store string from wasm memory
+// TODO #486 - load and store string from wasm memory
 //// Can't do zome_assert!() while testing store_as_json() since it internally uses store_as_json() !
 //// so using normal assert! even if we get unhelpful Trap::Unreachable error message.
 //#[no_mangle]

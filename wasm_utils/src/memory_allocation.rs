@@ -114,7 +114,7 @@ impl SinglePageStack {
         }
     }
 
-    // Create a SinglePageStack from a valid encoded allocation
+    /// Create a SinglePageStack from a valid encoded allocation
     pub fn from_encoded_allocation(
         encoded_last_allocation: u32,
     ) -> Result<Self, RibosomeErrorCode> {

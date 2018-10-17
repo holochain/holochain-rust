@@ -128,7 +128,7 @@ struct TestEntryType {
 
 validations! {
     [ENTRY] validate_testEntryType {
-        [hdk::api::ValidationPackage::Entry]
+        [hdk::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
             (entry.stuff != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())

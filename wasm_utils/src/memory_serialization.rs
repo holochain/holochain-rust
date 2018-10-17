@@ -48,7 +48,7 @@ pub fn store_as_json<T: Serialize>(
     return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
 }
 
-/// Sugar
+// Sugar
 pub fn store_json_into_encoded_allocation<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,

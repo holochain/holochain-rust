@@ -49,7 +49,7 @@ macro_rules! zome_functions {
             #[no_mangle]
             pub extern "C" fn $func_name(encoded_allocation_of_input: u32) -> u32 {
 
-                ::hdk::init_memory_stack(encoded_allocation_of_input);
+                ::hdk::global_fns::init_global_memory(encoded_allocation_of_input);
 
                 // Macro'd InputStruct
                 #[derive(Deserialize)]
@@ -70,7 +70,7 @@ macro_rules! zome_functions {
                 // Execute inner function
                 let output_obj = execute(input);
 
-                ::hdk::serialize_wasm_output(output_obj)
+                ::hdk::global_fns::store_and_return_output(output_obj)
             }
         )+
     );
@@ -89,19 +89,19 @@ macro_rules! validations {
             #[no_mangle]
             pub extern "C" fn $func_name(encoded_allocation_of_input: u32) -> u32 {
 
-                ::hdk::init_memory_stack(encoded_allocation_of_input);
+                ::hdk::global_fns::init_global_memory(encoded_allocation_of_input);
 
                 // Macro'd InputStruct
                 #[derive(Deserialize)]
                 struct InputStruct {
                     $entry : $entry_type,
-                    $ctx : ::hdk::ValidationData,
+                    $ctx : ::hdk::api::ValidationData,
                 }
 
                 #[derive(Deserialize)]
                 struct InputStructGeneric {
                     entry : $entry_type,
-                    ctx : ::hdk::ValidationData,
+                    ctx : ::hdk::api::ValidationData,
                 }
 
                 // Deserialize input
@@ -122,7 +122,7 @@ macro_rules! validations {
                 let validation_result = execute(input);
                 match validation_result {
                     Ok(()) => 0,
-                    Err(fail_string) => ::hdk::serialize_wasm_output(fail_string),
+                    Err(fail_string) => ::hdk::global_fns::store_and_return_output(fail_string),
                 }
             }
         )+

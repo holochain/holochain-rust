@@ -15,21 +15,19 @@ use holochain_wasm_utils::{
     holochain_core_types::hash::HashString,
     memory_serialization::*, memory_allocation::*
 };
-use hdk::RibosomeError;
+use hdk::api::RibosomeError;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
-    unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
-    }
+    hdk::global_fns::init_global_memory(encoded_allocation_of_input);
     #[allow(unused_must_use)]
     {
-        hdk::debug(&hdk::APP_NAME);
-        hdk::debug(&hdk::APP_DNA_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_ID_STR);
-        hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
+        hdk::api::debug(&hdk::api::APP_NAME);
+        hdk::api::debug(&hdk::api::APP_DNA_HASH.to_string());
+        hdk::api::debug(&hdk::api::APP_AGENT_ID_STR);
+        hdk::api::debug(&hdk::api::APP_AGENT_KEY_HASH.to_string());
+        hdk::api::debug(&hdk::api::APP_AGENT_INITIAL_HASH.to_string());
+        hdk::api::debug(&hdk::api::APP_AGENT_LATEST_HASH.to_string());
     }
 
 
@@ -58,14 +56,14 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
     if let Err(e) = result {
-        hdk::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
+        hdk::api::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
     let input: CommitInputStruct = result.unwrap();
     let entry_content = serde_json::from_str::<serde_json::Value>(&input.entry_content);
     let entry_content = entry_content.unwrap();
-    let res = hdk::commit_entry(&input.entry_type_name, entry_content);
+    let res = hdk::api::commit_entry(&input.entry_type_name, entry_content);
 
     let res_obj = match res {
         Ok(hash_str) => CommitOutputStruct {address: hash_str.to_string()},
@@ -85,7 +83,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 zome_functions! {
     check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
         let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-        let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
+        let res = hdk::api::commit_entry(&entry_type_name, entry_content.unwrap());
         match res {
             Ok(hash_str) => json!({ "address": hash_str }),
             Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
@@ -95,7 +93,7 @@ zome_functions! {
     }
 
     check_get_entry: |entry_hash: HashString| {
-        let res = hdk::get_entry(entry_hash);
+        let res = hdk::api::get_entry(entry_hash);
         match res {
             Ok(Some(entry)) => {
                 let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&entry);
@@ -132,7 +130,7 @@ struct TestEntryType {
 
 validations! {
     [ENTRY] validate_testEntryType {
-        [hdk::ValidationPackage::Entry]
+        [hdk::api::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
             (entry.stuff != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())

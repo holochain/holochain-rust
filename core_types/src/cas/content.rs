@@ -2,14 +2,16 @@ use cas::storage::ContentAddressableStorage;
 use hash::HashString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
+use json::JsonString;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
 /// consider what would happen if we had multi GB addresses...
 pub type Address = HashString;
-/// the Content is a String
+
+/// the Content is a JsonString
 /// this is the only way to be confident in persisting all Rust types across all backends
-pub type Content = String;
+pub type Content = JsonString;
 
 /// can be stored as serialized content
 /// the content is the address, there is no "location" like a file system or URL
@@ -22,14 +24,16 @@ pub trait AddressableContent {
     /// it is recommended to implement an "address space" prefix for address algorithms that don't
     /// offer strong cryptographic guarantees like sha et. al.
     fn address(&self) -> Address {
-        Address::encode_from_str(&self.content(), Hash::SHA2256)
+        Address::encode_from_str(&String::from(self.content()), Hash::SHA2256)
     }
+
     /// the Content that would be stored in a ContentAddressableStorage
+    /// the default implementation covers anything that implements From<Foo> for JsonString
     fn content(&self) -> Content;
+
     /// restore/deserialize the original struct/type from serialized Content
-    fn from_content(&Content) -> Self
-    where
-        Self: Sized;
+    /// the default implementation covers anything that implements From<JsonString> for Foo
+    fn from_content(content: &Content) -> Self where Self: Sized;
 }
 
 impl AddressableContent for Content {
@@ -82,7 +86,7 @@ impl AddressableContent for OtherExampleAddressableContent {
     fn from_content(content: &Content) -> Self {
         OtherExampleAddressableContent {
             content: content.clone(),
-            address: Address::encode_from_str(&content, Hash::SHA2256),
+            address: Address::encode_from_str(&String::from(content), Hash::SHA2256),
         }
     }
 }

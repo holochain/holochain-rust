@@ -8,6 +8,7 @@ use std::{
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
+use json::RawString;
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
@@ -224,6 +225,7 @@ where
 pub struct EavTestSuite;
 
 impl EavTestSuite {
+
     pub fn test_round_trip(
         mut eav_storage: impl EntityAttributeValueStorage,
         entity_content: impl AddressableContent,
@@ -294,11 +296,15 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -309,7 +315,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -350,11 +356,16 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
+
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -365,7 +376,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(

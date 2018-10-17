@@ -3,21 +3,28 @@ use entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
-use error::HolochainError;
-use json::{FromJson, ToJson};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
+use json::JsonString;
+use json::RawString;
 
 /// Structure holding actual data in a source chain "Item"
-/// data is stored as a JSON string
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// data is stored as a JsonString
+#[derive(Clone, Debug)]
 pub struct Entry {
-    value: String,
+    value: JsonString,
     entry_type: EntryType,
 }
 
 impl Entry {
+    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry {
+        Entry {
+            entry_type: entry_type.to_owned(),
+            value: value.to_owned(),
+        }
+    }
+
     pub fn value(&self) -> &Content {
         &self.value
     }
@@ -38,51 +45,41 @@ impl PartialEq for Entry {
     }
 }
 
-impl From<String> for Entry {
-    fn from(string: String) -> Self {
-        Entry::from_content(&string)
+/// entries are double serialized!
+/// this struct facilitates the outer serialization
+#[derive(Serialize, Deserialize)]
+pub struct SerializableEntry {
+    value: String,
+    entry_type: String,
+}
+
+impl From<Entry> for JsonString {
+    fn from(entry: Entry) -> JsonString {
+        let json_entry = SerializableEntry {
+            value: String::from(entry.value()),
+            entry_type: String::from(entry.entry_type().to_owned()),
+        };
+        JsonString::from(serde_json::to_string(&json_entry).expect("could not Jsonify JsonEntry"))
     }
 }
 
-impl From<Entry> for String {
-    fn from(entry: Entry) -> Self {
-        entry.content()
+impl From<JsonString> for Entry {
+    fn from(json_string: JsonString) -> Entry {
+        let serializable_entry: SerializableEntry = serde_json::from_str(&String::from(json_string)).expect("could not deserialize JsonEntry");
+        Entry{
+            value: JsonString::from(serializable_entry.value),
+            entry_type: EntryType::from(serializable_entry.entry_type.to_owned()),
+        }
     }
 }
 
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not convert Entry to Json Content")
+        Content::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {
-        Entry::from_json(&content.to_string()).expect("could not convert Json Content to Entry")
-    }
-}
-
-impl Entry {
-    pub fn new(entry_type: &EntryType, value: &Content) -> Entry {
-        Entry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
-        }
-    }
-}
-
-impl ToJson for Entry {
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
-    }
-}
-
-impl FromJson for Entry {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
+        Self::from(content.to_owned())
     }
 }
 
@@ -96,31 +93,31 @@ impl Deref for Entry {
 
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value() -> String {
-    "test entry value".into()
+pub fn test_entry_value() -> JsonString {
+    JsonString::from(RawString::from("test entry value"))
 }
 
 pub fn test_entry_content() -> Content {
     Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
 }
 
-/// dummy entry content, same as test_entry_content()
+/// dummy entry content, same as test_entry_value()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_a() -> String {
+pub fn test_entry_value_a() -> JsonString {
     test_entry_value()
 }
 
-/// dummy entry content, differs from test_entry_content()
+/// dummy entry content, differs from test_entry_value()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_b() -> String {
-    "other test entry value".into()
+pub fn test_entry_value_b() -> JsonString {
+    JsonString::from(RawString::from("other test entry value"))
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_value() -> String {
+pub fn test_sys_entry_value() -> JsonString {
     // looks like a believable hash
     // sys entries are hashy right?
-    test_entry_value().address().into()
+    JsonString::from(RawString::from(String::from(test_entry_value().address())))
 }
 
 /// dummy entry
@@ -152,7 +149,7 @@ pub fn test_entry_b() -> Entry {
 pub fn test_entry_unique() -> Entry {
     Entry::new(
         &test_entry_type(),
-        &snowflake::ProcessUniqueId::new().to_string(),
+        &JsonString::from(RawString::from(snowflake::ProcessUniqueId::new().to_string())),
     )
 }
 

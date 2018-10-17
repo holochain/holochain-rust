@@ -1,8 +1,7 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry, Entry, ToEntry};
 use entry_type::{test_entry_type, EntryType};
-use error::HolochainError;
-use json::ToJson;
+use json::JsonString;
 use serde_json;
 use signature::{test_signature, Signature};
 use time::{test_iso_8601, Iso8601};
@@ -98,9 +97,15 @@ impl ChainHeader {
     }
 }
 
-impl ToJson for ChainHeader {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(self)?)
+impl From<ChainHeader> for JsonString {
+    fn from(chain_header: ChainHeader) -> JsonString {
+        JsonString::from(serde_json::to_string(&chain_header).expect("failed to Jsonify ChainHeader"))
+    }
+}
+
+impl From<JsonString> for ChainHeader {
+    fn from(json_string: JsonString) -> ChainHeader {
+        serde_json::from_str(&String::from(json_string)).expect("failed to deserialize ChainHeader")
     }
 }
 
@@ -109,25 +114,22 @@ impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
         Entry::new(
             &EntryType::ChainHeader,
-            &self.to_json().expect("entry should be valid"),
+            &JsonString::from(self.to_owned()),
         )
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return ChainHeader::from_json_str(&entry.value())
-            .expect("entry is not a valid ChainHeader Entry");
+        ChainHeader::from(entry.value().to_owned())
     }
 }
 
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not Jsonify ChainHeader as Content")
+        Content::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {
-        ChainHeader::from_json_str(content)
-            .expect("could not read Json as valid ChainHeader Content")
+        Self::from(content.to_owned())
     }
 }
 

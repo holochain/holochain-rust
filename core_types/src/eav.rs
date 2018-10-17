@@ -1,11 +1,12 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
-use serde_json;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
 };
+use json::JsonString;
+use serde_json;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -39,15 +40,25 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
+impl From<EntityAttributeValue> for JsonString {
+    fn from(eav: EntityAttributeValue) -> JsonString {
+        JsonString::from(serde_json::to_string(&eav).expect("failed to Jsonify EntityAttributeValue"))
+    }
+}
+
+impl From<JsonString> for EntityAttributeValue {
+    fn from(json_string: JsonString) -> EntityAttributeValue {
+        serde_json::from_str(&String::from(json_string)).expect("failed to deserialize EntityAttributeValue")
+    }
+}
+
 impl AddressableContent for EntityAttributeValue {
     fn content(&self) -> Content {
-        serde_json::to_string(self)
-            .expect("could not serialize EntityAttributeValue to Json Content")
+        Content::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {
-        serde_json::from_str(content)
-            .expect("could not deserialize Json Content to EntityAttributeValue")
+        Self::from(content.to_owned())
     }
 }
 

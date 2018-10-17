@@ -1,11 +1,10 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry, Entry};
-use error::HolochainError;
-use json::{FromJson, RoundTripJson, ToJson};
 use keys::test_keys;
 use multihash::Hash;
 use serde_json;
 use std::cmp::Ordering;
+use json::JsonString;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 /// Meta represents an extended form of EAV (entity-attribute-value) data
@@ -94,21 +93,17 @@ impl EntryMeta {
     }
 }
 
-impl ToJson for EntryMeta {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
+impl From<EntryMeta> for JsonString {
+    fn from(entry_meta: EntryMeta) -> JsonString {
+        JsonString::from(serde_json::to_string(&entry_meta).expect("could not Jsonify EntryMeta"))
     }
 }
 
-impl FromJson for EntryMeta {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
+impl From<JsonString> for EntryMeta {
+    fn from(json_string: JsonString) -> EntryMeta {
+        serde_json::from_str(&String::from(json_string)).expect("Could not deserialize EntryMeta from JsonString")
     }
 }
-
-impl RoundTripJson for EntryMeta {}
 
 impl AddressableContent for EntryMeta {
     fn address(&self) -> Address {
@@ -116,11 +111,11 @@ impl AddressableContent for EntryMeta {
     }
 
     fn content(&self) -> Content {
-        self.to_json().expect("could not Jsonify EntryMeta Content")
+        Content::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {
-        EntryMeta::from_json(content).expect("could not parse JSON as EntryMeta Content")
+        Self::from(content.to_owned())
     }
 }
 

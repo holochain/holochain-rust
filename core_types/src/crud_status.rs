@@ -1,4 +1,6 @@
 use cas::content::{AddressableContent, Content};
+use json::JsonString;
+use serde_json;
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -6,7 +8,7 @@ pub const STATUS_NAME: &str = "crud-status";
 pub const LINK_NAME: &str = "crud-link";
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Serialize, Deserialize)]
     /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
     /// statuses are represented as bitflags so we can easily build masks for filtering lookups
     pub struct CrudStatus: u8 {
@@ -19,42 +21,25 @@ bitflags! {
     }
 }
 
-impl ToString for CrudStatus {
-    fn to_string(&self) -> String {
-        // don't do self.bits().to_string() because that spits out values for default() and all()
-        // only explicit statuses are safe as strings
-        // the expectation is that strings will be stored, referenced and parsed
-        match self.to_owned() {
-            CrudStatus::LIVE => "1",
-            CrudStatus::REJECTED => "2",
-            CrudStatus::DELETED => "4",
-            CrudStatus::MODIFIED => "8",
-            CrudStatus::LOCKED => "16",
-            _ => unreachable!(),
-        }.to_string()
+impl From<CrudStatus> for JsonString {
+    fn from(crud_status: CrudStatus) -> JsonString {
+        JsonString::from(serde_json::to_string(&crud_status).expect("failed to Jsonify CrudStatus"))
     }
 }
 
-impl<'a> From<&'a String> for CrudStatus {
-    fn from(s: &String) -> CrudStatus {
-        match s.as_ref() {
-            "1" => CrudStatus::LIVE,
-            "2" => CrudStatus::REJECTED,
-            "4" => CrudStatus::DELETED,
-            "8" => CrudStatus::MODIFIED,
-            "16" => CrudStatus::LOCKED,
-            _ => unreachable!(),
-        }
+impl From<JsonString> for CrudStatus {
+    fn from(json_string: JsonString) -> CrudStatus {
+        serde_json::from_str(&String::from(json_string)).expect("failed to deserialize CrudStatus")
     }
 }
 
 impl AddressableContent for CrudStatus {
     fn content(&self) -> Content {
-        self.to_string()
+        Content::from(self.to_owned())
     }
 
     fn from_content(content: &Content) -> Self {
-        CrudStatus::from(content)
+        Self::from(content.to_owned())
     }
 }
 

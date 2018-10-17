@@ -2,7 +2,7 @@ use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use serde_json;
-use std::string::ToString;
+use json::JsonString;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -81,28 +81,27 @@ impl LinkEntry {
     }
 }
 
-impl ToString for LinkEntry {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("LinkEntry failed to serialize")
+impl From<LinkEntry> for JsonString {
+    fn from(link_entry: LinkEntry) -> JsonString {
+        JsonString::from(serde_json::to_string(&link_entry).expect("LinkEntry failed to serialize"))
     }
 }
 
-impl From<String> for LinkEntry {
-    fn from(s: String) -> LinkEntry {
-        serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
+impl From<JsonString> for LinkEntry {
+    fn from(json_string: JsonString) -> LinkEntry {
+        serde_json::from_str(&String::from(json_string)).expect("LinkEntry failed to deserialize")
     }
 }
 
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        Entry::new(&EntryType::Link, &json_array)
+        Entry::new(&EntryType::Link, &JsonString::from(self.to_owned()))
     }
 
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::Link, entry.entry_type());
-        serde_json::from_str(&entry.value().to_owned()).expect("entry is not a valid LinkEntry")
+        LinkEntry::from(entry.value().to_owned())
     }
 }
 
@@ -127,22 +126,22 @@ impl LinkListEntry {
     }
 }
 
-impl ToString for LinkListEntry {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("LinkListEntry failed to serialize")
+impl From<LinkListEntry> for JsonString {
+    fn from(link_list_entry: LinkListEntry) -> JsonString {
+        JsonString::from(serde_json::to_string(&link_list_entry).expect("LinkListEntry failed to serialize"))
     }
 }
 
-impl From<String> for LinkListEntry {
-    fn from(s: String) -> LinkListEntry {
-        serde_json::from_str(&s).expect("LinkListEntry failed to deserialize")
+impl From<JsonString> for LinkListEntry {
+    fn from(json_string: JsonString) -> LinkListEntry {
+        serde_json::from_str(&String::from(json_string)).expect("LinkListEntry failed to deserialize")
     }
 }
 
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::LinkList, &self.to_string())
+        Entry::new(&EntryType::LinkList, &JsonString::from(self.to_owned()))
     }
 
     fn from_entry(entry: &Entry) -> Self {

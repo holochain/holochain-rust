@@ -70,15 +70,9 @@ impl FromStr for EntryType {
     }
 }
 
-impl Display for EntryType {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl EntryType {
-    pub fn as_str(&self) -> &str {
-        let ret = match *self {
+impl From<EntryType> for String {
+    fn from(entry_type: EntryType) -> String {
+        String::from(match entry_type {
             EntryType::App(ref s) => s,
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
@@ -88,8 +82,19 @@ impl EntryType {
             EntryType::Link => sys_prefix!("link"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
-        };
-        ret
+        })
+    }
+}
+
+impl From<String> for EntryType {
+    fn from(s: String) -> EntryType {
+        EntryType::from_str(&s).expect("could not convert String to EntryType")
+    }
+}
+
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", String::from(self.to_owned()))
     }
 }
 

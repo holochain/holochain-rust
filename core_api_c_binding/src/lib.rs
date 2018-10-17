@@ -3,7 +3,7 @@ extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
 
-use holochain_core::context::{Context,STORAGE_PATH};
+use holochain_core::context::{Context, STORAGE_PATH};
 use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;

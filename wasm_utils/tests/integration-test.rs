@@ -21,6 +21,7 @@ use std::{
     fs::{self, DirBuilder},
     sync::{Arc, Mutex},
 };
+use tempfile::tempdir;
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
@@ -41,10 +42,6 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    DirBuilder::new()
-        .recursive(true)
-        .create(STORAGE_PATH)
-        .unwrap();
     let agent = Agent::from(agent_name.to_string());
     let logger = test_logger();
     (
@@ -53,7 +50,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
-                STORAGE_PATH,
+                tempdir().unwrap().path().to_str().unwrap(),
             ).unwrap(),
         ),
         logger,

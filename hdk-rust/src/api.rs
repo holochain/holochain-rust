@@ -12,6 +12,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use std::{error::Error, fmt};
 
 //--------------------------------------------------------------------------------------------------
 // APP GLOBAL VARIABLES
@@ -50,7 +51,7 @@ lazy_static! {
 //--------------------------------------------------------------------------------------------------
 
 // HC.HashNotFound
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeError {
     RibosomeFailed(String),
     FunctionNotImplemented,
@@ -60,13 +61,42 @@ pub enum RibosomeError {
 
 impl RibosomeError {
     pub fn to_json(&self) -> serde_json::Value {
-        let err_str = match self {
-            RibosomeFailed(error_desc) => error_desc.clone(),
-            FunctionNotImplemented => "Function not implemented".to_string(),
-            HashNotFound => "Hash not found".to_string(),
-            ValidationFailed(msg) => format!("Validation failed: {}", msg),
-        };
-        json!({ "error": err_str })
+        json!({ "error": self.description() })
+    }
+}
+
+impl fmt::Display for RibosomeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // @TODO seems weird to use debug for display
+        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
+        // what is the right way to do this?
+        // @see https://github.com/holochain/holochain-rust/issues/223
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for RibosomeError {
+    fn description(&self) -> &str {
+        match self {
+            RibosomeFailed(error_desc) => error_desc,
+            FunctionNotImplemented => "Function not implemented",
+            HashNotFound => "Hash not found",
+            ValidationFailed(failure_desc) => failure_desc,
+        }
+    }
+}
+
+impl PartialEq<String> for RibosomeError {
+    fn eq(&self, failure_msg: &String) -> bool {
+        match self {
+            RibosomeFailed(msg) => {
+                if msg == failure_msg {
+                    return true;
+                }
+                false
+            }
+            _ => false,
+        }
     }
 }
 

@@ -195,6 +195,7 @@ pub fn debug(msg: &str) -> Result<(), RibosomeError> {
 /// FIXME DOC
 pub fn call<S: Into<String>>(
     _zome_name: S,
+    _cap_name: S,
     _function_name: S,
     _arguments: serde_json::Value,
 ) -> Result<serde_json::Value, RibosomeError> {
@@ -365,11 +366,13 @@ pub fn send(
 }
 
 /// FIXME DOC
-pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) {
+pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), RibosomeError> {
     // FIXME
+    Err(RibosomeError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn close_bundle(_action: BundleOnClose) {
+pub fn close_bundle(_action: BundleOnClose) -> Result<(), RibosomeError> {
     // FIXME
+    Err(RibosomeError::FunctionNotImplemented)
 }

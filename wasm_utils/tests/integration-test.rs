@@ -5,6 +5,7 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate tempfile;
 extern crate test_utils;
 
 use holochain_agent::Agent;
@@ -13,6 +14,7 @@ use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use std::sync::{Arc, Mutex};
+use tempfile::tempdir;
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
@@ -36,11 +38,14 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     let agent = Agent::from(agent_name.to_string());
     let logger = test_logger();
     (
-        Arc::new(Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        )),
+        Arc::new(
+            Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                tempdir().unwrap().path().to_str().unwrap(),
+            ).unwrap(),
+        ),
         logger,
     )
 }

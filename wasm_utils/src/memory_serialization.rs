@@ -62,7 +62,7 @@ pub fn store_json_into_encoded_allocation<T: Serialize>(
 //-------------------------------------------------------------------------------------------------
 
 /// Convert a json string stored in wasm memory into a specified struct
-// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+/// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
 // If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]

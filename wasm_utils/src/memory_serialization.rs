@@ -84,7 +84,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
     }
 }
 
-/// TODO #486 - load and store string from wasm memory
+// TODO #486 - load and store string from wasm memory
 //// Convert a string stored in wasm memory into a String
 //fn load_string_from_allocation(alloc: &SinglePageAllocation) -> String {
 //    unsafe{

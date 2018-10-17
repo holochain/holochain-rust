@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-/// TODO #486 - load and store string from wasm memory
+// TODO #486 - load and store string from wasm memory
 //pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
 //    let maybe_allocation = decode_encoded_allocation(encoded_allocation);
 //    match maybe_allocation {

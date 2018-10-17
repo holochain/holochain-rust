@@ -13,12 +13,13 @@ use holochain_wasm_utils::validation::{HcEntryAction, HcEntryLifecycle, Validati
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::entry::AppEntryType;
 
 /// Struct for input data received when Commit API function is invoked
 #[derive(Deserialize, Default, Debug, Serialize)]
 struct CommitAppEntryArgs {
-    entry_type_json_str: String,
-    entry_value: String,
+    app_entry_type: AppEntryType,
+    app_entry_value: AppEntryValue,
 }
 
 fn build_validation_data_commit(_entry: Entry, _state: &AgentState) -> ValidationData {

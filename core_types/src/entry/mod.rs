@@ -31,6 +31,12 @@ pub struct AppEntryType(String);
 
 impl Eq for AppEntryType {}
 
+impl Default for AppEntryType {
+    fn default() -> AppEntryType {
+        AppEntryType(String::new())
+    }
+}
+
 impl From<&'static str> for AppEntryType {
     fn from(s: &str) -> AppEntryType {
         AppEntryType(String::from(s))

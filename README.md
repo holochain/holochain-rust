@@ -13,9 +13,9 @@
 [![In Progress](https://img.shields.io/waffle/label/holochain/holochain-rust/in%20progress.svg)](http://waffle.io/holochain/holochain-rust)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-This is the home of the Holochain Rust library, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust.
+This is the home of the Holochain Rust libraries, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust, and extended.
 
-**[Code Status:](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 was released October 2017.  Alpha 1 was released May 2018.  We expect a developer pre-release of this Rust re-write in mid October 2018.
+**[Code Status:](https://github.com/holochain/holochain-rust/milestones?direction=asc&sort=completeness&state=all)** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.  We expect a developer pre-release of this Rust re-write in mid October 2018.
 <br/>
 
 | Holochain Links: | [FAQ](https://holochain.github.io/holochain-rust/faq.html) | [Developer Docs](https://holochain.github.io/holochain-rust/) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |
@@ -23,23 +23,54 @@ This is the home of the Holochain Rust library, being rewritten from [Go](https:
 
 ## Overview
 
-This `holochain-rust` repo does not contain any end-user executables, rather it delivers the holochain-core libraries in the form of a number of rust cargo crates which other repos use for building utilities or Holochain services that run Holochain applications. The first such utilities are [holosqape](https://github.com/holochain/holosqape) and the [hcshell](https://github.com/holochain/holosqape) container for test running.
+This `holochain-rust` repository implements three distinct yet overlapping aspects of the Holochain framework.
 
-- `holochain_core_api`: the primary client wrapper crate used to instantiate and run a Holochain genome.
-- `holochain_core`: the main crate that implements the core Holochain functionality.
-- `holochain_dna`: a crate for working with holochain DNA from a package file.  Used by both holochain_core and the [packager utility](https://github.com/holochain/holochain-cmd)
-- `holochain_agent`: a crate for managing holochain agent info, including identities, keys etc..  Used by both holochain_core and other utilities.
+1. The core Holochain functionality that executes applications
+2. A wrapper used to instantiate, manage, and run applications
+3. A library and syntax for use in Rust based development of Zomes within applications
 
-We have designed Holochain applications to consist at the low-level of WebAssembly running in a virtual machine environment.  This allows us to robustly make any language that compiles to WASM available as an option for programmers to write their Holochain applications.  However each language requires a small bit of stub code to connect into the WASM runtime environment.  [`hdk-rust`](https://github.com/holochain/holochain-rust/tree/develop/hdk-rust) and [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript) implement the code for Rust and Assemblyscript compatibility.  We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://holochain.github.io/holochain-rust/writing_development_kit.html).
+Let's elaborate on these three aspects.
+
+### 1 - core
+The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
+
+### 2 - core api
+The first aspect only implements the logic for the execution of a single application. Meanwhile, there is a strong need to be able to load and instantiate multiple applications, and possibly even multiple instances of the same application. The [core_api](./core_api) folder contains the code that implements this capability. Even then, this code must be employed within some other context to actually run it. Such a thing is called a Holochain "container". 
+
+A container is a Holochain utility or service that manages and runs Holochain applications. The first such containers are the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container for test running.
+
+To implement a Rust based container, one could use the Rust crate exposed in [core_api](./core_api). To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) code could be used, such as HoloSqape does.
+
+### 3 - HDK Rust
+Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. However, most languages will be easiest to use with some stub code to connect into the WASM runtime environment, because of some constraints with WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.
+
+[`hdk-rust`](./hdk-rust) is a solid reference implementation of this, that enables Zomes to be written in the Rust language (the same, somewhat confusingly, as Holochain Core).
+
+Within this repository, some aspects cross over between `core` and `hdk-rust`, such as [core_types](./core_types), since they get stored into WASM memory in `core`, and then loaded from WASM memory, within `hdk-rust`. Related, [wasm_utils](./wasm_utils) is used on both sides to actually perform the storing, and loading, of values into and from WASM memory.
+
+#### Other HDKs and language options
+Any language that compiles to WASM can be available as an option for programmers to write Holochain applications.
+
+An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is under experimental development at [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript). 
+
+We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://holochain.github.io/holochain-rust/writing_development_kit.html).
 
 ## Documentation: The Book on Holochain
-
 There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 ## Installation & Usage
-The following instructions are for developers of Holochain Core itself. **If you are developing Holochain applications**, you will want to instead proceed to install both the [`hc` command line tool](https://github.com/holochain/holochain-cmd) and the [`hcshell` test runner](https://github.com/holochain/holosqape) to help create Holochain DNA packages suitable for running in a Holochain service.  If you are a Holochain end-user, either you will install DNA packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.
 
-**Core Developers Only**
+Please note that this repository, with its installation instructions, is not useful to install if you fall into one of the following two categories:
+
+If you are developing Holochain applications, you will want to instead install both:
+- the [`hc` command line tool](https://github.com/holochain/holochain-cmd)
+- the [`hcshell` test runner](https://github.com/holochain/holosqape#hcshell)
+These will help create and test Holochain DNA packages suitable for running in a Holochain service.
+You may also wish to look into the [hdk-rust](./hdk-rust) folder within this repository, to read on about the use of the HDK for Zome development.
+
+If you are a Holochain end-user, either you will install DNA packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.
+
+**The following instructions are for Holochain Core & HDK Developers Only**
 
 There are two approaches to building and testing Holochain, using `make` or using `docker`:
 
@@ -117,7 +148,7 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
 1. Start by creating a branch in the [app-spec-rust](https://github.com/holochain/app-spec-rust) repository which demonstrates an actual implementation of the use of the new feature in the sample application that lives in that repository, including tests that would pass if the feature were actually implemented here in the holochain-rust repo.
 1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail, because they try and run the proposed changes against the `develop` branch of this `holochain-rust` repo.
-1. Do any development necessary in the `holochain-rust` and `hdk-rust` repos to implement the feature demonstrated in `app-spec-rust`
+1. Do any development necessary in the `holochain-rust` repo to implement the feature demonstrated in `app-spec-rust`
 1. Finally, when the feature is fully implemented, the CI tests should turn green on `app-spec-rust` and the branch can be merged.  This merge in `app-spec-rust` of the feature branch completes the test-driven development loop.
 
 In this way [`app-spec-rust`](https://github.com/holochain/app-spec-rust) works as a living specification with example app to build against.

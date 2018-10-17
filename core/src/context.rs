@@ -12,6 +12,11 @@ use std::sync::{
 
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 
+#[cfg(target_os = "linux")]
+pub static STORAGE_PATH: &str = "$HOME/.hc/storage";
+#[cfg(target_os = "windows")]
+pub static STORAGE_PATH: &str = "%HOMEPATH%/.hc/storage";
+
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
 /// but also the store of the instance that gets injected before passing on the context

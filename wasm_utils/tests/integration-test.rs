@@ -9,12 +9,18 @@ extern crate tempfile;
 extern crate test_utils;
 
 use holochain_agent::Agent;
-use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core::{
+    context::{Context, STORAGE_PATH},
+    logger::Logger,
+    persister::SimplePersister,
+};
 use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
-use std::sync::{Arc, Mutex};
-use tempfile::tempdir;
+use std::{
+    fs::{self, DirBuilder},
+    sync::{Arc, Mutex},
+};
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
@@ -35,6 +41,10 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    DirBuilder::new()
+        .recursive(true)
+        .create(STORAGE_PATH)
+        .unwrap();
     let agent = Agent::from(agent_name.to_string());
     let logger = test_logger();
     (
@@ -43,7 +53,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
-                tempdir().unwrap().path().to_str().unwrap(),
+                STORAGE_PATH,
             ).unwrap(),
         ),
         logger,

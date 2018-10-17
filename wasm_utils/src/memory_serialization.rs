@@ -6,19 +6,18 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-
 //-------------------------------------------------------------------------------------------------
 // Raw
 //-------------------------------------------------------------------------------------------------
 
-/// Convert a string stored in wasm memory into a String
+/// Convert a string stored in wasm memory into a String.
 fn load_str_from_raw<'a>(ptr_data: *mut c_char) -> &'a str {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
     let stored_str = ptr_safe_c_str.to_str().unwrap();
     stored_str
 }
 
-/// Write in wasm memory according to stack state
+/// Write in wasm memory according to stack state.
 fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
     bytes: &Vec<u8>,
@@ -39,9 +38,11 @@ fn write_in_wasm_memory(
 // String
 //-------------------------------------------------------------------------------------------------
 
-/// Write a string in wasm memory
-pub fn store_string(stack: &mut SinglePageStack, s: &str)
-    -> Result<SinglePageAllocation, RibosomeErrorCode> {
+/// Write a string in wasm memory according to stack state.
+pub fn store_string(
+    stack: &mut SinglePageStack,
+    s: &str,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let bytes = s.to_string().into_bytes();
     let len = bytes.len();
     if len > <u16>::max_value() as usize {
@@ -55,7 +56,6 @@ pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str
     let allocation_of_output = store_string(stack, s).unwrap();
     return allocation_of_output.encode() as i32;
 }
-
 
 /// Retrieve a stored string from an encoded allocation.
 /// Return error string if encoded_allocation is invalid.
@@ -71,7 +71,7 @@ pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
 // JSON
 //-------------------------------------------------------------------------------------------------
 
-/// Write a data struct as a json string in wasm memory
+/// Write a data struct as a json string in wasm memory according to stack state.
 pub fn store_as_json<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,

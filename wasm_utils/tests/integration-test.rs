@@ -84,7 +84,8 @@ fn can_return_error_report() {
 
 #[test]
 fn call_store_string_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
     // Verify result
     assert_eq!("fish", result.unwrap());
     // Verify logs
@@ -210,7 +211,8 @@ fn call_load_json_err() {
 
 #[test]
 fn call_load_string_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_string_ok", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_load_string_ok", r#"{}"#);
     // Verify result
     assert_eq!("fish", result.unwrap());
     // Verify logs
@@ -223,7 +225,8 @@ fn call_load_string_ok() {
 
 #[test]
 fn call_load_string_err() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_string_err", r#"{}"#);
+    let (result, test_logger) =
+        launch_hc_with_integration_test_wasm("test_load_string_err", r#"{}"#);
     // Verify result
     assert_eq!("Unspecified", result.unwrap());
     // Verify logs

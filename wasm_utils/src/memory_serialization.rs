@@ -110,6 +110,5 @@ fn write_in_wasm_memory(
     for (i, byte) in bytes.iter().enumerate() {
         ptr_safe[i] = *byte as i8;
     }
-    //return Err(RibosomeErrorCode::OutOfMemory);
     SinglePageAllocation::new(ptr as u16, len)
 }

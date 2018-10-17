@@ -3,7 +3,7 @@ extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
 
-use holochain_core::context::Context;
+use holochain_core::context::{Context,STORAGE_PATH};
 use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -31,7 +31,7 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
-        "holostorage",
+        STORAGE_PATH,
     );
 
     assert!(!ptr.is_null());

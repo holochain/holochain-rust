@@ -581,7 +581,14 @@ pub mod tests {
         let (context, logger) = test_context_and_logger("joan");
         let initiliazed_context = instance.initialize_context(context);
 
-        test_zome_api_function_call(&dna_name, initiliazed_context, logger, &instance, &wasm, args_bytes)
+        test_zome_api_function_call(
+            &dna_name,
+            initiliazed_context,
+            logger,
+            &instance,
+            &wasm,
+            args_bytes,
+        )
     }
 
     #[test]

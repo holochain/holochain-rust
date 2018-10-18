@@ -10,7 +10,7 @@ use std::sync::{
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
 
-use holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -25,7 +25,7 @@ pub struct Context {
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
     pub file_storage: FilesystemStorage,
-    pub eav_storage : EavFileStorage
+    pub eav_storage: EavFileStorage,
 }
 
 impl Context {
@@ -38,23 +38,22 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         cas_path: &str,
-        eav_path: &str
+        eav_path: &str,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         let cas = FilesystemStorage::new(cas_path)?;
         let eav = EavFileStorage::new(eav_path.to_string())?;
         Ok(Context {
-                agent,
-                logger,
-                persister,
-                state: None,
-                action_channel: tx_action,
-                observer_channel: tx_observer,
-                file_storage: cas,
-                eav_storage : eav
-            })
-        
+            agent,
+            logger,
+            persister,
+            state: None,
+            action_channel: tx_action,
+            observer_channel: tx_observer,
+            file_storage: cas,
+            eav_storage: eav,
+        })
     }
 
     pub fn new_with_channels(
@@ -64,21 +63,20 @@ impl Context {
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
         cas_path: &str,
-        eav_path: &str
+        eav_path: &str,
     ) -> Result<Context, HolochainError> {
         let cas = FilesystemStorage::new(cas_path)?;
         let eav = EavFileStorage::new(eav_path.to_string())?;
-            Ok(Context {
-                agent,
-                logger,
-                persister,
-                state: None,
-                action_channel,
-                observer_channel,
-                file_storage: cas,
-                eav_storage : eav
-            })
-        
+        Ok(Context {
+            agent,
+            logger,
+            persister,
+            state: None,
+            action_channel,
+            observer_channel,
+            file_storage: cas,
+            eav_storage: eav,
+        })
     }
     // helper function to make it easier to call the logger
     pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
@@ -123,6 +121,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
+            tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());
@@ -143,6 +142,7 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
             tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
 

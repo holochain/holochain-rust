@@ -45,6 +45,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new())),
                 tempdir().unwrap().path().to_str().unwrap(),
+                tempdir().unwrap().path().to_str().unwrap(),
             ).unwrap(),
         ),
         logger,

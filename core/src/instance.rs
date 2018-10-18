@@ -326,6 +326,7 @@ pub mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new())),
                     tempdir().unwrap().path().to_str().unwrap(),
+                    tempdir().unwrap().path().to_str().unwrap(),
                 ).unwrap(),
             ),
             logger,
@@ -354,6 +355,7 @@ pub mod tests {
                 action_channel.clone(),
                 observer_channel.clone(),
                 tempdir().unwrap().path().to_str().unwrap(),
+                tempdir().unwrap().path().to_str().unwrap(),
             ).unwrap(),
         )
     }
@@ -363,6 +365,7 @@ pub mod tests {
             Agent::from("Florence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
             tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

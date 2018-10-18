@@ -175,6 +175,7 @@ mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new())),
                     tempdir().unwrap().path().to_str().unwrap(),
+                    tempdir().unwrap().path().to_str().unwrap(),
                 ).unwrap(),
             ),
             logger,

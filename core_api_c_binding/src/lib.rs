@@ -1,13 +1,15 @@
+extern crate directories;
 extern crate holochain_agent;
+extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
-extern crate holochain_cas_implementations;
-extern crate directories;
 
-use holochain_core::context::Context;
 use holochain_cas_implementations::path::storage_path;
+use holochain_core::context::Context;
 use holochain_core_api::Holochain;
+use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
 
@@ -21,8 +23,6 @@ use std::{
     sync::Mutex,
 };
 
-
-
 #[derive(Clone, Debug)]
 struct NullLogger {}
 
@@ -32,17 +32,7 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let agent = Agent::from("c_bob".to_string());
-    let user_dir = UserDirs::new().expect("Cannot find homedir");
-    let home_dir = user_dir.home_dir();
-    let context = Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new())),
-        &storage_path(home_dir,"cas").unwrap(),
-        &storage_path(home_dir,"eav").unwrap(),
-        
-    );
+    let context = get_context();
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
@@ -53,6 +43,28 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
             Err(_) => std::ptr::null_mut(),
         },
         Err(_) => std::ptr::null_mut(),
+    }
+}
+
+fn get_context() -> Result<Context, HolochainError> {
+    let agent = Agent::from("c_bob".to_string());
+    match UserDirs::new() {
+        Some(user_dir) => {
+            let home_dir = user_dir.home_dir();
+            match (storage_path(home_dir, "cas"), storage_path(home_dir, "eav")) {
+                (Ok(cas_path), Ok(eav_path)) => Context::new(
+                    agent,
+                    Arc::new(Mutex::new(NullLogger {})),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    &cas_path,
+                    &eav_path,
+                ),
+                (_, _) => Err(HolochainError::IoError("Could not create path".to_string())),
+            }
+        }
+        None => Err(HolochainError::ErrorGeneric(
+            "Could not create context".to_string(),
+        )),
     }
 }
 
@@ -79,10 +91,6 @@ pub unsafe extern "C" fn holochain_stop(ptr: *mut Holochain) -> bool {
 
     holochain.stop().is_ok()
 }
-
-
-
-
 
 type CStrPtr = *mut c_char;
 

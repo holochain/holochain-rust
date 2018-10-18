@@ -54,8 +54,6 @@ impl ContentAddressableStorage for FilesystemStorage {
     }
 }
 
-
-
 #[cfg(test)]
 pub mod tests {
     use cas::file::FilesystemStorage;

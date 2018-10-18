@@ -1,4 +1,4 @@
-use nucleus::ribosome::api::Runtime;
+use nucleus::ribosome::runtime::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;

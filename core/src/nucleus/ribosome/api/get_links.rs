@@ -1,7 +1,7 @@
 use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use holochain_core_types::get_links_args::GetLinksArgs;
-use nucleus::ribosome::api::Runtime;
+use nucleus::ribosome::runtime::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};

@@ -6,7 +6,7 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use holochain_core_types::error::{DnaError, HolochainError};
+use holochain_core_types::error::{DnaError, HolochainError, HcResult};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
@@ -124,11 +124,7 @@ pub fn call_and_wait_for_result(
     receiver.recv().expect("local channel to work")
 }
 
-pub type JsonString = String;
-//pub type RibosomeReturn = Result<JsonString, Result<RibosomeErrorReport, String>>;
-pub type ZomeFnResult = Result<JsonString, HolochainError>;
-
-
+pub type ZomeFnResult = HcResult<String>;
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {

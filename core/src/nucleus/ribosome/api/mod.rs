@@ -24,7 +24,7 @@ use nucleus::{
         memory::SinglePageManager,
         Defn,
     },
-    ZomeFnCall,
+    ZomeFnCall, ZomeFnResult,
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc};
@@ -220,8 +220,6 @@ impl Runtime {
     }
 }
 
-// HolochainError::ErrorGeneric(format!("{}", wasmi_error)
-
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
@@ -231,7 +229,7 @@ pub fn call(
     wasm: Vec<u8>,
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
-) -> HcResult<String> {
+) -> ZomeFnResult {
     // Create wasm module from wasm binary
     let module = wasmi::Module::from_buffer(wasm).expect("wasm binary should be valid");
 

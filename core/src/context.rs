@@ -36,11 +36,12 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        folder_path: &str,
+        cas_path: &str,
+        eav_path: &str
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
-        FilesystemStorage::new(folder_path).and_then(|file_system| {
+        FilesystemStorage::new(cas_path).and_then(|file_system| {
             Ok(Context {
                 agent,
                 logger,

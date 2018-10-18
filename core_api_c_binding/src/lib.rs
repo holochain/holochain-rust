@@ -6,6 +6,7 @@ extern crate holochain_cas_implementations;
 extern crate directories;
 
 use holochain_core::context::Context;
+use holochain_cas_implementations::cas::storage_path;
 use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -36,7 +37,8 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
-        home_dir.to_str().unwrap()
+        &storage_path(home_dir,"cas").unwrap(),
+        &storage_path(home_dir,"eav").unwrap(),
         
     );
 

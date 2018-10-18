@@ -460,8 +460,8 @@ mod tests {
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
-            format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
+            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
+            format!("{:?}", test_logger.log),
         );
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
@@ -496,8 +496,8 @@ mod tests {
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
-            format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
+            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
+            format!("{:?}", test_logger.log),
         );
 
         // Check in holochain instance's history that the deb event has been processed

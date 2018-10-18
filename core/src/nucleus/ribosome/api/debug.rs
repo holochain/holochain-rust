@@ -11,7 +11,12 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let payload = runtime.load_utf8_from_args(args);
     println!("{}", payload);
-    // TODO #502 - log in logger as DEBUG
+    // TODO #502 - log in logger as DEBUG log-level
+    runtime
+        .context
+        .log(&format!("zome_log:DEBUG: '{}'", payload))
+        .expect("Logger should work");
+
     // Return Ribosome Success Code
     Ok(Some(RuntimeValue::I32(0 as i32)))
 }
@@ -41,8 +46,8 @@ pub mod tests {
         let logger = logger.lock().unwrap();
         assert!(call_result.is_empty());
         assert_eq!(
+            "[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]",
             format!("{:?}", logger.log),
-            "[\"Zome Function \\\'test\\\' returned: Success\"]".to_string(),
         );
     }
 }

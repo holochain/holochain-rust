@@ -354,14 +354,14 @@ pub fn call(
             .unwrap();
     }
 
-    // Handle result returned by invoked function
+    // Handle result returned by called zome function
     let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
-    let return_text: String;
+    let return_log_msg: String;
     let return_result: HcResult<String>;
     match maybe_allocation {
-        // Nothing in memory, log return code
+        // Nothing in memory, return result depending on return_code received.
         Err(return_code) => {
-            return_text = return_code.to_string();
+            return_log_msg = return_code.to_string();
             return_result = match return_code {
                 RibosomeReturnCode::Success => Ok(String::new()),
                 RibosomeReturnCode::Failure(err_code) => {
@@ -369,28 +369,28 @@ pub fn call(
                 }
             };
         }
-        // Something in memory, try to read it
+        // Something in memory, try to read and return it
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);
             let maybe_zome_result = String::from_utf8(result);
             match maybe_zome_result {
                 Err(err) => {
-                    return_text = err.to_string();
+                    return_log_msg = err.to_string();
                     return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
                 }
                 Ok(json_str) => {
-                    return_text = json_str.clone();
+                    return_log_msg = json_str.clone();
                     return_result = Ok(json_str);
                 }
             }
         }
     };
-    // Log & Done
+    // Log & done
     runtime
         .context
         .log(&format!(
             "Zome Function '{}' returned: {}",
-            zome_call.fn_name, return_text,
+            zome_call.fn_name, return_log_msg,
         ))
         .expect("Logger should work");
     return return_result;
@@ -575,13 +575,13 @@ pub mod tests {
             wasm.clone(),
         );
 
-        let app_name = &dna.name.to_string().clone();
+        let dna_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
-        let (c, logger) = test_context_and_logger("joan");
-        let context = instance.initialize_context(c);
+        let (context, logger) = test_context_and_logger("joan");
+        let initiliazed_context = instance.initialize_context(context);
 
-        test_zome_api_function_call(&app_name, context, logger, &instance, &wasm, args_bytes)
+        test_zome_api_function_call(&dna_name, initiliazed_context, logger, &instance, &wasm, args_bytes)
     }
 
     #[test]

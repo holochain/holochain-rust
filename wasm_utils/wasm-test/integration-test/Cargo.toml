@@ -1,5 +1,5 @@
 [package]
-name = "integration-test"
+name = "wasm-integration-test"
 version = "0.1.0"
 authors = ["Holochain Core Dev Team <dev.support@holo.host>"]
 

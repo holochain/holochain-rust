@@ -1,4 +1,3 @@
-
 use context::Context;
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_wasm_utils::{
@@ -6,19 +5,13 @@ use holochain_wasm_utils::{
     memory_allocation::decode_encoded_allocation,
 };
 use nucleus::{
-    ribosome::{
-        api::{
-            ZomeApiFunction,
-        },
-        memory::SinglePageManager,
-        runtime::Runtime,
-    },
+    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
     ZomeFnCall, ZomeFnResult,
 };
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
-    self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
+    self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
+    ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
 };
 
 /// Executes an exposed zome function in a wasm binary.

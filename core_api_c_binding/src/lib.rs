@@ -2,11 +2,15 @@ extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
+extern crate holochain_cas_implementations;
+extern crate directories;
 
-use holochain_core::context::{Context, STORAGE_PATH};
+use holochain_core::context::Context;
 use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;
+
+use directories::UserDirs;
 
 use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
@@ -26,12 +30,14 @@ impl Logger for NullLogger {
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     let agent = Agent::from("c_bob".to_string());
-
+    let user_dir = UserDirs::new().expect("Cannot find homedir");
+    let home_dir = user_dir.home_dir();
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new())),
-        STORAGE_PATH,
+        home_dir.to_str().unwrap()
+        
     );
 
     assert!(!ptr.is_null());

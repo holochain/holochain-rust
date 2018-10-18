@@ -28,6 +28,7 @@ regex = "1"
 holochain_core_types = { path = "../core_types" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 
+
 [dev-dependencies]
 wabt = "0.4"
 test_utils = { path = "../test_utils"}

@@ -13,7 +13,7 @@ use std::sync::{
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 
 #[cfg(target_os = "macos")]
-static STORAGE_PATH: &str = "$HOME/.hc/storage";
+pub static STORAGE_PATH: &str = "$HOME/.hc/storage";
 #[cfg(target_os = "linux")]
 pub static STORAGE_PATH: &str = "$HOME/.hc/storage";
 #[cfg(target_os = "windows")]

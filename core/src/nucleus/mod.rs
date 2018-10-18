@@ -6,7 +6,7 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use holochain_core_types::error::{DnaError, HolochainError, HcResult};
+use holochain_core_types::error::{DnaError, HcResult, HolochainError};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
@@ -224,7 +224,9 @@ pub(crate) fn launch_zome_fn_call(
         // Send ReturnZomeFunctionResult Action
         context
             .action_channel
-            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(response)))
+            .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
+                response,
+            )))
             .expect("action channel to be open in reducer");
     });
 }
@@ -247,7 +249,8 @@ fn reduce_execute_zome_function(
         fn_call: &ZomeFnCall,
         error: HolochainError,
     ) {
-        let zome_not_found_response = ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
+        let zome_not_found_response =
+            ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
 
         action_channel
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(

@@ -9,7 +9,7 @@ pub mod get_links;
 pub mod init_globals;
 
 use context::Context;
-use holochain_core_types::error::{HolochainError, HcResult};
+use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use holochain_wasm_utils::{
     error::{RibosomeErrorCode, RibosomeReturnCode},
@@ -211,9 +211,7 @@ impl Runtime {
         if allocation_of_result.is_err() {
             return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
         }
-        let encoded_allocation = allocation_of_result
-            .unwrap()
-            .encode();
+        let encoded_allocation = allocation_of_result.unwrap().encode();
 
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
@@ -304,7 +302,8 @@ pub fn call(
     // Create module instance from wasm module, and start it if start is defined
     let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
-        .run_start(&mut NopExternals).map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()))?;
+        .run_start(&mut NopExternals)
+        .map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()))?;
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
@@ -349,8 +348,7 @@ pub fn call(
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
             )
-            .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))
-            ?
+            .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))?
             .unwrap()
             .try_into()
             .unwrap();
@@ -366,7 +364,9 @@ pub fn call(
             return_text = return_code.to_string();
             return_result = match return_code {
                 RibosomeReturnCode::Success => Ok(String::new()),
-                RibosomeReturnCode::Failure(err_code) => Err(HolochainError::RibosomeFailed(err_code.to_string())),
+                RibosomeReturnCode::Failure(err_code) => {
+                    Err(HolochainError::RibosomeFailed(err_code.to_string()))
+                }
             };
         }
         // Something in memory, try to read it
@@ -377,11 +377,11 @@ pub fn call(
                 Err(err) => {
                     return_text = err.to_string();
                     return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
-                },
-                Ok(json_str) =>  {
+                }
+                Ok(json_str) => {
                     return_text = json_str.clone();
                     return_result = Ok(json_str);
-                },
+                }
             }
         }
     };
@@ -390,8 +390,7 @@ pub fn call(
         .context
         .log(&format!(
             "Zome Function '{}' returned: {}",
-            zome_call.fn_name,
-            return_text,
+            zome_call.fn_name, return_text,
         ))
         .expect("Logger should work");
     return return_result;
@@ -410,10 +409,7 @@ pub mod tests {
         Instance,
     };
     use nucleus::{
-        ribosome::{
-            api::call,
-            Defn,
-        },
+        ribosome::{api::call, Defn},
         ZomeFnCall,
     };
     use std::{

@@ -6,7 +6,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use nucleus::{
     state::{NucleusState, ValidationResult},
-    ZomeFnCall, ExecuteZomeFnResponse,
+    ExecuteZomeFnResponse, ZomeFnCall,
 };
 use snowflake;
 use std::{

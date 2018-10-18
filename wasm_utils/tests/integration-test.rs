@@ -42,7 +42,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn launch_hc_with_test_wasm(fn_name: &str) -> ZomeFnResult {
+pub fn call_zome_function_with_hc(fn_name: &str) -> ZomeFnResult {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
         "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
@@ -61,7 +61,7 @@ pub fn launch_hc_with_test_wasm(fn_name: &str) -> ZomeFnResult {
 
 #[test]
 fn can_return_error_report() {
-    let call_result = launch_hc_with_test_wasm("test_error_report");
+    let call_result = call_zome_function_with_hc("test_error_report");
     let error_report: RibosomeErrorReport =
         serde_json::from_str(&call_result.clone().unwrap()).unwrap();
     assert_eq!("Zome assertion failed: `false`", error_report.description);
@@ -69,25 +69,25 @@ fn can_return_error_report() {
 
 #[test]
 fn call_store_string_ok() {
-    let call_result = launch_hc_with_test_wasm("test_store_string_ok");
+    let call_result = call_zome_function_with_hc("test_store_string_ok");
     assert_eq!("fish", call_result.unwrap());
 }
 
 #[test]
 fn call_store_as_json_str_ok() {
-    let call_result = launch_hc_with_test_wasm("test_store_as_json_str_ok");
+    let call_result = call_zome_function_with_hc("test_store_as_json_str_ok");
     assert_eq!("\"fish\"", call_result.unwrap());
 }
 
 #[test]
 fn call_store_as_json_obj_ok() {
-    let call_result = launch_hc_with_test_wasm("test_store_as_json_obj_ok");
+    let call_result = call_zome_function_with_hc("test_store_as_json_obj_ok");
     assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
 }
 
 #[test]
 fn call_store_string_err() {
-    let call_result = launch_hc_with_test_wasm("test_store_string_err");
+    let call_result = call_zome_function_with_hc("test_store_string_err");
     assert_eq!(
         HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
         call_result.err().unwrap(),
@@ -96,7 +96,7 @@ fn call_store_string_err() {
 
 #[test]
 fn call_store_as_json_err() {
-    let call_result = launch_hc_with_test_wasm("test_store_as_json_err");
+    let call_result = call_zome_function_with_hc("test_store_as_json_err");
     assert_eq!(
         HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
         call_result.err().unwrap(),
@@ -105,13 +105,13 @@ fn call_store_as_json_err() {
 
 #[test]
 fn call_load_json_from_raw_ok() {
-    let call_result = launch_hc_with_test_wasm("test_load_json_from_raw_ok");
+    let call_result = call_zome_function_with_hc("test_load_json_from_raw_ok");
     assert_eq!("", call_result.unwrap());
 }
 
 #[test]
 fn call_load_json_from_raw_err() {
-    let call_result = launch_hc_with_test_wasm("test_load_json_from_raw_err");
+    let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
     assert_eq!(
         json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string(),
         call_result.unwrap()
@@ -120,24 +120,24 @@ fn call_load_json_from_raw_err() {
 
 #[test]
 fn call_load_json_ok() {
-    let call_result = launch_hc_with_test_wasm("test_load_json_ok");
+    let call_result = call_zome_function_with_hc("test_load_json_ok");
     assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
 }
 
 #[test]
 fn call_load_json_err() {
-    let call_result = launch_hc_with_test_wasm("test_load_json_err");
+    let call_result = call_zome_function_with_hc("test_load_json_err");
     assert_eq!("\"Unspecified\"", call_result.unwrap());
 }
 
 #[test]
 fn call_load_string_ok() {
-    let call_result = launch_hc_with_test_wasm("test_load_string_ok");
+    let call_result = call_zome_function_with_hc("test_load_string_ok");
     assert_eq!("fish", call_result.unwrap());
 }
 
 #[test]
 fn call_load_string_err() {
-    let call_result = launch_hc_with_test_wasm("test_load_string_err");
+    let call_result = call_zome_function_with_hc("test_load_string_err");
     assert_eq!("Unspecified", call_result.unwrap());
 }

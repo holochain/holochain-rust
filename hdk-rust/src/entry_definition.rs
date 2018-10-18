@@ -1,17 +1,14 @@
-use std::collections::HashMap;
+use holochain_dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::{
-    api_serialization::validation::{
-        ValidationData, ValidationPackage,
-    },
+    api_serialization::validation::{ValidationData, ValidationPackage},
     holochain_core_types::hash::HashString,
 };
-use holochain_dna::zome::entry_types::{
-    EntryTypeDef,
-};
+use std::collections::HashMap;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackage + Sync>;
 pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + Sync>;
-pub type LinkValidator = Box<FnMut(HashString, String, HashString, ValidationData) -> Result<(), String> + Sync>;
+pub type LinkValidator =
+    Box<FnMut(HashString, String, HashString, ValidationData) -> Result<(), String> + Sync>;
 
 pub struct ValidatingEntryType {
     pub name: String,
@@ -20,7 +17,6 @@ pub struct ValidatingEntryType {
     pub validator: Validator,
     pub link_validators: HashMap<String, LinkValidator>,
 }
-
 
 #[macro_export]
 macro_rules! entry {

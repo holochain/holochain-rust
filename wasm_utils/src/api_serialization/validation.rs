@@ -4,11 +4,11 @@ extern crate serde_json;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum ValidationPackage {
-    Entry,           //sending only the entry
-    ChainEntries,    //sending all (public?) source chain entries
-    ChainHeaders,    //sending all source chain headers
-    ChainFull,       //sending the whole chain, entries and headers
-    Custom(String),  //sending something custom
+    Entry,          //sending only the entry
+    ChainEntries,   //sending all (public?) source chain entries
+    ChainHeaders,   //sending all source chain headers
+    ChainFull,      //sending the whole chain, entries and headers
+    Custom(String), //sending something custom
 }
 
 #[derive(Clone, Serialize, Deserialize)]

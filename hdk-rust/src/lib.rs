@@ -10,8 +10,8 @@ extern crate serde_derive;
 extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
-pub extern crate holochain_wasm_utils;
 pub extern crate holochain_dna;
+pub extern crate holochain_wasm_utils;
 
 mod api;
 pub mod entry_definition;

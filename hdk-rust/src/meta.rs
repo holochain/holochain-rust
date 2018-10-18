@@ -1,21 +1,18 @@
 use entry_definition::ValidatingEntryType;
-use holochain_wasm_utils::{
-    error::RibosomeErrorCode,
-    memory_serialization::load_string,
-};
+use holochain_wasm_utils::{error::RibosomeErrorCode, memory_serialization::load_string};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
 }
 
 pub struct ZomeDefinition {
-    pub entry_types: Vec<ValidatingEntryType>
+    pub entry_types: Vec<ValidatingEntryType>,
 }
 
 impl ZomeDefinition {
     fn new() -> ZomeDefinition {
         ZomeDefinition {
-            entry_types: Vec::new()
+            entry_types: Vec::new(),
         }
     }
 
@@ -25,7 +22,7 @@ impl ZomeDefinition {
     }
 }
 
-extern {
+extern "C" {
     #[allow(improper_ctypes)]
     fn zome_setup(zd: &mut ZomeDefinition);
 }
@@ -47,7 +44,8 @@ pub extern "C" fn validation_package(encoded_allocation_of_input: u32) -> u32 {
     }
     let name: String = maybe_name.unwrap();
 
-    match zd.entry_types
+    match zd
+        .entry_types
         .into_iter()
         .find(|ref entry_type| entry_type.name == name)
     {

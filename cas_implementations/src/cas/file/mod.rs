@@ -10,7 +10,7 @@ use holochain_core_types::{
 };
 use riker::actors::*;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
 }

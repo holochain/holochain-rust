@@ -1,7 +1,7 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::memory::MemoryStorage;
+use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent},
@@ -26,13 +26,13 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<MemoryStorage>,
+    chain: ChainStore<FilesystemStorage>,
     top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<MemoryStorage>) -> AgentState {
+    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -52,7 +52,7 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<MemoryStorage> {
+    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
         self.chain.clone()
     }
 

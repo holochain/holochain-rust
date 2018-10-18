@@ -118,21 +118,21 @@ mod tests {
 
     #[test]
     fn test_state() {
-        let mut context = Context::new(
+        let mut maybe_context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
 
-        assert!(context.state().is_none());
+        assert!(maybe_context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new()));
-        context.set_state(global_state.clone());
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
+        maybe_context.set_state(global_state.clone());
 
         {
             let _read_lock = global_state.read().unwrap();
-            assert!(context.state().is_some());
+            assert!(maybe_context.state().is_some());
         }
     }
 
@@ -146,7 +146,7 @@ mod tests {
             tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
 
-        let global_state = Arc::new(RwLock::new(State::new()));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

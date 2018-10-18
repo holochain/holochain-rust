@@ -177,11 +177,11 @@ impl Instance {
     }
 
     /// Creates a new Instance with disconnected channels.
-    pub fn new() -> Self {
+    pub fn new(context: Arc<Context>) -> Self {
         let (tx_action, _) = sync_channel(1);
         let (tx_observer, _) = sync_channel(1);
         Instance {
-            state: Arc::new(RwLock::new(State::new())),
+            state: Arc::new(RwLock::new(State::new(context))),
             action_channel: tx_action,
             observer_channel: tx_observer,
         }
@@ -194,11 +194,11 @@ impl Instance {
     }
 }
 
-impl Default for Instance {
-    fn default() -> Self {
-        Self::new()
+/*impl Default for Instance {
+    fn default(context:Context) -> Self {
+        Self::new(context)
     }
-}
+}*/
 
 /// Send Action to Instance's Event Queue and block until is has been processed.
 ///
@@ -365,7 +365,7 @@ pub mod tests {
             Arc::new(Mutex::new(SimplePersister::new())),
             tempdir().unwrap().path().to_str().unwrap(),
         ).unwrap();
-        let global_state = Arc::new(RwLock::new(State::new()));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -379,7 +379,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Result<Instance, String> {
         // Create instance and plug in our DNA
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
         let context = test_context("jane");
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
@@ -460,7 +460,7 @@ pub mod tests {
     /// to the state and that no observers or actions
     /// are sent on the passed channels.
     pub fn can_process_action() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
 
         let context = test_context("jane");
         let (rx_action, rx_observer) = instance.initialize_channels();
@@ -510,7 +510,7 @@ pub mod tests {
     /// run and the assert will actually run.  If we put the assert inside the closure
     /// the test thread could complete before the closure was called.
     fn can_dispatch_with_observer() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
         instance.start_action_loop(test_context("jane"));
 
         let dna = Dna::new();
@@ -538,7 +538,7 @@ pub mod tests {
     #[test]
     /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
@@ -647,7 +647,7 @@ pub mod tests {
         let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
@@ -677,7 +677,7 @@ pub mod tests {
         let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);

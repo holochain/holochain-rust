@@ -11,7 +11,7 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let payload = runtime.load_utf8_from_args(args);
     println!("{}", payload);
-    // TODO log in logger as DEBUG
+    // TODO #502 - log in logger as DEBUG
     // Return Ribosome Success Code
     Ok(Some(RuntimeValue::I32(0 as i32)))
 }

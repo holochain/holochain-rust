@@ -99,18 +99,18 @@ fn run_validation_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) -> CallbackResult {
     match ribosome::api::call(
-        &app_name,
+        &dna_name,
         context,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
+        Ok(call_result) => match call_result.is_empty() {
             true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
+            false => CallbackResult::Fail(call_result),
         },
         Err(_) => CallbackResult::NotImplemented,
     }

@@ -6,7 +6,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use nucleus::{
     state::{NucleusState, ValidationResult},
-    ZomeFnCall, ZomeFnResult,
+    ExecuteZomeFnResponse, ZomeFnCall,
 };
 use snowflake;
 use std::{
@@ -82,7 +82,7 @@ pub enum Action {
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(ZomeFnResult),
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
     /// initialize an application from a Dna
     /// not the same as genesis
@@ -113,7 +113,7 @@ pub mod tests {
 
     use action::{Action, ActionWrapper};
     use holochain_core_types::entry::{test_entry, test_entry_address};
-    use nucleus::tests::test_call_result;
+    use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action
@@ -137,7 +137,7 @@ pub mod tests {
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_response()))
     }
 
     #[test]

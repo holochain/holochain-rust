@@ -19,9 +19,7 @@ use hdk::RibosomeError;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
-    unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
-    }
+    hdk::global_fns::init_global_memory(encoded_allocation_of_input);
     #[allow(unused_must_use)]
     {
         hdk::debug(&hdk::APP_NAME);
@@ -31,8 +29,6 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
         hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
         hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
     }
-
-
     return 0;
 }
 

@@ -7,7 +7,9 @@ pub mod debug;
 pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
+
 use context::Context;
+use holochain_core_types::error::{HolochainError, HcResult};
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use holochain_wasm_utils::{
     error::{RibosomeErrorCode, RibosomeReturnCode},
@@ -157,11 +159,14 @@ impl ZomeApiFunction {
 /// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
 pub struct Runtime {
-    pub context: Arc<Context>,
-    pub result: String,
+    // Memory state tracker between ribosome and wasm.
     memory_manager: SinglePageManager,
-    zome_call: ZomeFnCall,
-    pub app_name: String,
+    // Context of Holochain. Required for operating.
+    pub context: Arc<Context>,
+    // Name of the DNA that is being hosted.
+    pub dna_name: String,
+    // The zome function call that initiated the Ribosome.
+    pub zome_call: ZomeFnCall,
 }
 
 impl Runtime {
@@ -206,10 +211,7 @@ impl Runtime {
         if allocation_of_result.is_err() {
             return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
         }
-
         let encoded_allocation = allocation_of_result
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
             .unwrap()
             .encode();
 
@@ -218,18 +220,20 @@ impl Runtime {
     }
 }
 
-/// Executes an exposed function in a wasm binary
+// HolochainError::ErrorGeneric(format!("{}", wasmi_error)
+
+/// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
-/// panics if wasm isn't valid
+/// panics if wasm binary isn't valid.
 pub fn call(
-    app_name: &str,
+    dna_name: &str,
     context: Arc<Context>,
     wasm: Vec<u8>,
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
-) -> Result<Runtime, InterpreterError> {
+) -> HcResult<String> {
     // Create wasm module from wasm binary
-    let module = wasmi::Module::from_buffer(wasm).expect("wasm should be valid");
+    let module = wasmi::Module::from_buffer(wasm).expect("wasm binary should be valid");
 
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions
@@ -302,18 +306,17 @@ pub fn call(
     // Create module instance from wasm module, and start it if start is defined
     let wasm_instance = ModuleInstance::new(&module, &imports)
         .expect("Failed to instantiate module")
-        .run_start(&mut NopExternals)?;
+        .run_start(&mut NopExternals).map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()))?;
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        context,
-        result: String::new(),
         memory_manager: SinglePageManager::new(&wasm_instance),
+        context,
         zome_call: zome_call.clone(),
-        app_name: app_name.to_string(),
+        dna_name: dna_name.to_string(),
     };
 
     // Write input arguments in wasm memory
@@ -326,10 +329,8 @@ pub fn call(
             // No allocation to write is ok
             Err(RibosomeErrorCode::ZeroSizedAllocation) => 0,
             // Any other error is memory related
-            Err(_) => {
-                return Err(InterpreterError::Trap(Trap::new(
-                    TrapKind::MemoryAccessOutOfBounds,
-                )))
+            Err(err) => {
+                return Err(HolochainError::RibosomeFailed(err.to_string()));
             }
             // Write successful, encode allocation
             Ok(allocation_of_input) => allocation_of_input.encode(),
@@ -349,7 +350,9 @@ pub fn call(
                 zome_call.fn_name.clone().as_str(),
                 &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
                 mut_runtime,
-            )?
+            )
+            .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))
+            ?
             .unwrap()
             .try_into()
             .unwrap();
@@ -357,25 +360,43 @@ pub fn call(
 
     // Handle result returned by invoked function
     let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
+    let return_text: String;
+    let return_result: HcResult<String>;
     match maybe_allocation {
         // Nothing in memory, log return code
         Err(return_code) => {
-            runtime
-                .context
-                .log(&format!(
-                    "Zome Function '{}' returned: {}",
-                    zome_call.fn_name,
-                    return_code.to_string()
-                ))
-                .expect("Logger should work");
+            return_text = return_code.to_string();
+            return_result = match return_code {
+                RibosomeReturnCode::Success => Ok(String::new()),
+                RibosomeReturnCode::Failure(err_code) => Err(HolochainError::RibosomeFailed(err_code.to_string())),
+            };
         }
         // Something in memory, try to read it
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);
-            runtime.result = String::from_utf8(result).unwrap();
+            let maybe_zome_result = String::from_utf8(result);
+            match maybe_zome_result {
+                Err(err) => {
+                    return_text = err.to_string();
+                    return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
+                },
+                Ok(json_str) =>  {
+                    return_text = json_str.clone();
+                    return_result = Ok(json_str);
+                },
+            }
         }
-    }
-    Ok(runtime.clone())
+    };
+    // Log & Done
+    runtime
+        .context
+        .log(&format!(
+            "Zome Function '{}' returned: {}",
+            zome_call.fn_name,
+            return_text,
+        ))
+        .expect("Logger should work");
+    return return_result;
 }
 
 #[cfg(test)]
@@ -392,7 +413,7 @@ pub mod tests {
     };
     use nucleus::{
         ribosome::{
-            api::{call, Runtime},
+            api::call,
             Defn,
         },
         ZomeFnCall,
@@ -519,13 +540,13 @@ pub mod tests {
     /// calls the zome API function with passed bytes argument using the instance runtime
     /// returns the runtime after the call completes
     pub fn test_zome_api_function_call(
-        app_name: &str,
+        dna_name: &str,
         context: Arc<Context>,
         logger: Arc<Mutex<TestLogger>>,
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Mutex<TestLogger>>) {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
@@ -534,7 +555,7 @@ pub mod tests {
         );
         (
             call(
-                &app_name,
+                &dna_name,
                 context,
                 wasm.clone(),
                 &zome_call,
@@ -552,7 +573,7 @@ pub mod tests {
     pub fn test_zome_api_function_runtime(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Mutex<TestLogger>>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),

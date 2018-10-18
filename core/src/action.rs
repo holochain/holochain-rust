@@ -6,7 +6,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use nucleus::{
     state::{NucleusState, ValidationResult},
-    ZomeFnCall, ZomeFnResult,
+    ZomeFnCall, ExecuteZomeFnResponse,
 };
 use snowflake;
 use std::{
@@ -82,7 +82,7 @@ pub enum Action {
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(ZomeFnResult),
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
     /// initialize an application from a Dna
     /// not the same as genesis

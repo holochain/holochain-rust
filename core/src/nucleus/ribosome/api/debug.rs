@@ -9,8 +9,9 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    runtime.result = runtime.load_utf8_from_args(args);
-    println!("{}", runtime.result);
+    let payload = runtime.load_utf8_from_args(args);
+    println!("{}", payload);
+    // TODO log in logger as DEBUG
     // Return Ribosome Success Code
     Ok(Some(RuntimeValue::I32(0 as i32)))
 }
@@ -34,11 +35,11 @@ pub mod tests {
 
     #[test]
     /// test that bytes passed to debug end up in the log
-    fn test_debug() {
-        let (runtime, logger) =
+    fn test_zome_api_function_debug() {
+        let (call_result, logger) =
             test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let logger = logger.lock().unwrap();
-        assert_eq!("foo".to_string(), runtime.result);
+        assert!(call_result.is_empty());
         assert_eq!(
             format!("{:?}", logger.log),
             "[\"Zome Function \\\'test\\\' returned: Success\"]".to_string(),

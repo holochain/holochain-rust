@@ -22,7 +22,7 @@ pub fn invoke_init_globals(
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let globals = InitGlobalsOutput {
-        app_name: runtime.app_name.to_string(),
+        app_name: runtime.dna_name.to_string(),
 
         // TODO #232 - Implement Dna hash
         app_dna_hash: "FIXME-app_dna_hash".to_string(),
@@ -51,11 +51,11 @@ pub mod tests {
     /// test that bytes passed to debug end up in the log
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
-        let (runtime, _) =
+        let (call_result, _) =
             test_zome_api_function_runtime(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
-      runtime.result.to_string(),
-      "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
+            call_result,
+            "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
         .to_string());
     }
 }

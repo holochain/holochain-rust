@@ -147,10 +147,12 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
-        },
+        Ok(call_result) =>
+            if call_result.is_empty() {
+                CallbackResult::Pass
+            } else {
+                CallbackResult::Fail(call_result)
+            },
         Err(_) => CallbackResult::NotImplemented,
     }
 }

@@ -68,16 +68,11 @@ pub fn launch_hc_with_integration_test_wasm(
 
 #[test]
 fn can_return_error_report() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_error_report", r#"{}"#);
+    let (result, _) = launch_hc_with_integration_test_wasm("test_error_report", r#"{}"#);
     // Verify result
     let error_report: RibosomeErrorReport = serde_json::from_str(&result.clone().unwrap()).unwrap();
     assert_eq!("Zome assertion failed: `false`", error_report.description);
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    // Note: Don't verify log since it will hold error report with line number
 }
 
 /// TODO #486 - load and store string from wasm memory
@@ -104,8 +99,8 @@ fn call_store_as_json_ok() {
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_as_json_ok\\\' returned: {\\\"value\\\":\\\"fish\\\"}\"] }",
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
     );
 }
 
@@ -113,13 +108,14 @@ fn call_store_as_json_ok() {
 fn call_store_as_json_err() {
     let (result, test_logger) =
         launch_hc_with_integration_test_wasm("test_store_as_json_err", r#"{}"#);
+    println!("result = {:?}", result);
     // Verify result
-    assert!(result.is_ok());
+    assert!(result.is_err());
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
-        format!("{:?}", *test_logger),
         "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_as_json_err\\\' returned: Out of memory\"] }",
+        format!("{:?}", *test_logger),
     );
 }
 
@@ -132,8 +128,8 @@ fn call_load_json_from_raw_ok() {
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
-        format!("{:?}", *test_logger),
         "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_from_raw_ok\\\' returned: Success\"] }",
+        format!("{:?}", *test_logger),
     );
 }
 
@@ -149,8 +145,8 @@ fn call_load_json_from_raw_err() {
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_from_raw_err\\\' returned: \\\"Argument deserialization failed\\\"\"] }",
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
     );
 }
 
@@ -162,8 +158,8 @@ fn call_load_json_ok() {
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_ok\\\' returned: {\\\"value\\\":\\\"fish\\\"}\"] }",
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
     );
 }
 
@@ -175,7 +171,7 @@ fn call_load_json_err() {
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_err\\\' returned: \\\"Unspecified\\\"\"] }",
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
     );
 }

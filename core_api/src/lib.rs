@@ -456,7 +456,7 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-        assert_eq!("\"Hello world!\"", result.unwrap());
+        assert!(result.unwrap().is_empty());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
@@ -492,8 +492,7 @@ mod tests {
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
         // Expect a string as result
-        println!("result = {:?}", result);
-        assert_eq!("\"!\"", result.unwrap());
+        assert!(result.unwrap().is_empty());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(

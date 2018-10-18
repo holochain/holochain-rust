@@ -172,7 +172,7 @@ mod tests {
             "commit_dispatch",
             &test_parameters(),
         );
-        let commit_runtime = call(
+        let call_result = call(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -181,7 +181,7 @@ mod tests {
         ).expect("test should be callable");
 
         assert_eq!(
-            commit_runtime.result,
+            call_result,
             format!(
                 r#"{{"address":"{}","validation_failure":""}}"#,
                 test_entry().address()
@@ -194,7 +194,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = call(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -205,7 +205,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = call(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -249,7 +249,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
 }

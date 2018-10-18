@@ -80,7 +80,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);

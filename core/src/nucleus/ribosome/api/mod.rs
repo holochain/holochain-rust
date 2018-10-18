@@ -31,6 +31,7 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
+use holochain_core_types::json::JsonString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -158,7 +159,7 @@ impl ZomeApiFunction {
 #[derive(Clone)]
 pub struct Runtime {
     pub context: Arc<Context>,
-    pub result: String,
+    pub result: JsonString,
     memory_manager: SinglePageManager,
     zome_call: ZomeFnCall,
     pub app_name: String,
@@ -194,12 +195,14 @@ impl Runtime {
             .unwrap()
     }
 
-    /// Store a string in wasm memory.
-    /// Input should be a a json string.
+    /// Store a JsonString in wasm memory.
+    /// Input should be a a JsonString.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
-        // write str to runtime memory
-        let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
+    pub fn store_json_string(&mut self, json_string: &JsonString) -> Result<Option<RuntimeValue>, Trap> {
+        // write as String to runtime memory
+        // will be picked up as a JsonString on the other side
+        // @see call()
+        let mut s_bytes: Vec<_> = String::from(json_string).into_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
         let allocation_of_result = self.memory_manager.write(&s_bytes);
@@ -310,7 +313,7 @@ pub fn call(
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         context,
-        result: String::new(),
+        result: JsonString::none(),
         memory_manager: SinglePageManager::new(&wasm_instance),
         zome_call: zome_call.clone(),
         app_name: app_name.to_string(),
@@ -372,7 +375,7 @@ pub fn call(
         // Something in memory, try to read it
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);
-            runtime.result = String::from_utf8(result).unwrap();
+            runtime.result = JsonString::from(String::from_utf8(result).unwrap());
         }
     }
     Ok(runtime.clone())

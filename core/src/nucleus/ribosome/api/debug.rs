@@ -1,5 +1,7 @@
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::json::JsonString;
+use holochain_core_types::json::RawString;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -9,7 +11,7 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    runtime.result = runtime.load_utf8_from_args(args);
+    runtime.result = JsonString::from(RawString::from(runtime.load_utf8_from_args(args)));
     println!("{}", runtime.result);
     // Return Ribosome Success Code
     Ok(Some(RuntimeValue::I32(0 as i32)))

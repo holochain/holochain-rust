@@ -11,8 +11,10 @@ use holochain_wasm_utils::api_serialization::{
 };
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
-use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::entry::EntryValue;
+use holochain_core_types::json::JsonString;
+use holochain_core_types::json::RawString;
 
 fn build_validation_data_commit(
     _entry: Entry,
@@ -57,9 +59,9 @@ pub fn invoke_commit_app_entry(
     };
 
     // Create Chain Entry
-    let entry_type =
-        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
-    let entry = Entry::new(&entry_type, &input.entry_value);
+    let entry_type = EntryType::from(input.entry_type_name);
+    let entry_value = EntryValue::from(input.entry_value);
+    let entry = Entry::new(&entry_type, &entry_value);
     let validation_data = build_validation_data_commit(
         entry.clone(),
         entry_type.clone(),
@@ -78,10 +80,10 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let maybe_json = match task_result {
-        Ok(address) => serde_json::to_string(&CommitEntryResult::success(address)),
+    let json = match task_result {
+        Ok(address) => JsonString::from(CommitEntryResult::success(address)),
         Err(HolochainError::ValidationFailed(fail_string)) => {
-            serde_json::to_string(&CommitEntryResult::failure(fail_string))
+            JsonString::from(CommitEntryResult::failure(fail_string))
         }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
@@ -89,16 +91,13 @@ pub fn invoke_commit_app_entry(
                 error_string
             ));
 
-            serde_json::to_string(&error_report.to_string())
+            JsonString::from(RawString::from(String::from(error_report)))
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
 
-    match maybe_json {
-        Ok(json) => runtime.store_utf8(&json),
-        Err(_) => ribosome_error_code!(ResponseSerializationFailed),
-    }
+    runtime.store_json_string(&json)
 }
 
 #[cfg(test)]

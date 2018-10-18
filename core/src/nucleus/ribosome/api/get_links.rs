@@ -5,6 +5,7 @@ use nucleus::ribosome::api::Runtime;
 use serde_json;
 use std::sync::mpsc::channel;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::json::JsonString;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -54,7 +55,7 @@ pub fn invoke_get_links(
     let action_result = receiver.recv().expect("observer dropped before done");
     if let ActionResponse::GetLinks(maybe_links) = action_result {
         if let Ok(link_list) = maybe_links {
-            return runtime.store_utf8(&json!(link_list).as_str().expect("should jsonify"));
+            return runtime.store_json_string(&JsonString::from(link_list));
         }
     }
     // Fail

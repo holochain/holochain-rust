@@ -1,5 +1,8 @@
 use serde_json;
 use serde::Serialize;
+use std::fmt::Display;
+use std::fmt::Result as FmtResult;
+use std::fmt::Formatter;
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -41,9 +44,25 @@ impl From<&'static str> for JsonString {
     }
 }
 
+impl<S: Serialize> From<S> for JsonString {
+    fn from(serializable: S) -> JsonString {
+        JsonString::from(serde_json::to_string(&serializable).expect("could not serialize"))
+    }
+}
+
 impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
         JsonString::from(serde_json::to_string(&result).expect("could not Json serialize result"))
+    }
+}
+
+impl Display for JsonString {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(
+            f,
+            "{}",
+            String::from(self),
+        )
     }
 }
 

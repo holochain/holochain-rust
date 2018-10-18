@@ -5,6 +5,7 @@
 //! See the associated Qt unit tests in the c_binding_tests directory.
 
 extern crate holochain_dna;
+extern crate holochain_core_types;
 
 use holochain_dna::Dna;
 use std::{
@@ -12,6 +13,8 @@ use std::{
     os::raw::c_char,
     panic::catch_unwind,
 };
+
+use holochain_core_types::json::JsonString;
 
 #[no_mangle]
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
@@ -27,10 +30,7 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     match catch_unwind(|| {
         let json = unsafe { CStr::from_ptr(buf).to_string_lossy().into_owned() };
 
-        let dna = match Dna::from_json_str(&json) {
-            Ok(d) => d,
-            Err(_) => return std::ptr::null_mut(),
-        };
+        let dna = Dna::from(JsonString::from(json));
 
         Box::into_raw(Box::new(dna))
     }) {
@@ -59,14 +59,14 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
             &*ptr
         };
 
-        let json = dna.to_json();
+        let json_string = JsonString::from(dna.to_owned());
 
-        let json = match CString::new(json) {
+        let json_cstring = match CString::new(String::from(json_string)) {
             Ok(s) => s,
             Err(_) => return std::ptr::null_mut(),
         };
 
-        json.into_raw()
+        json_cstring.into_raw()
     }) {
         Ok(r) => r,
         Err(_) => std::ptr::null_mut(),
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_holochain_dna_get_zome_names() {
-        let mut dna = Dna::from_json_str(
+        let mut dna = Dna::from(JsonString::from(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -415,7 +415,7 @@ mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        ));
 
         let mut cnames = CStringVec {
             len: 0,

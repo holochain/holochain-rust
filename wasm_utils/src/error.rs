@@ -58,6 +58,12 @@ impl fmt::Display for RibosomeErrorReport {
     }
 }
 
+impl From<RibosomeErrorReport> for String {
+    fn from(ribosome_error_report: RibosomeErrorReport) -> String {
+        ribosome_error_report.to_string()
+    }
+}
+
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation

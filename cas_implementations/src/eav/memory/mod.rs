@@ -7,8 +7,6 @@ use holochain_core_types::{
 };
 use riker::actors::*;
 use std::collections::HashSet;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::json::RawString;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct EavMemoryStorage {

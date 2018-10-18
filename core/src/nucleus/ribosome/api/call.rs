@@ -95,7 +95,7 @@ pub fn invoke_call(
 
     // action_result should be a json str of the result of the zome function called
     match action_result {
-        Ok(json_str) => runtime.store_utf8(&json_str),
+        Ok(json_string) => runtime.store_json_string(&json_string),
         Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
     }
 }

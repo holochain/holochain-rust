@@ -9,11 +9,13 @@ use std::ops::Deref;
 use json::JsonString;
 use json::RawString;
 
+pub type EntryValue = JsonString;
+
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
 #[derive(Clone, Debug)]
 pub struct Entry {
-    value: JsonString,
+    value: EntryValue,
     entry_type: EntryType,
 }
 

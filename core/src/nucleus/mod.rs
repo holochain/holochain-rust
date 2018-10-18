@@ -21,6 +21,7 @@ use std::{
     },
     thread,
 };
+use holochain_core_types::json::JsonString;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -75,7 +76,7 @@ pub fn call_zome_and_wait_for_result(
     call: ZomeFnCall,
     action_channel: &SyncSender<ActionWrapper>,
     observer_channel: &SyncSender<Observer>,
-) -> Result<String, HolochainError> {
+) -> Result<JsonString, HolochainError> {
     let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
@@ -104,7 +105,7 @@ pub fn call_zome_and_wait_for_result(
 pub fn call_and_wait_for_result(
     call: ZomeFnCall,
     instance: &mut super::instance::Instance,
-) -> Result<String, HolochainError> {
+) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
@@ -127,11 +128,11 @@ pub fn call_and_wait_for_result(
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ZomeFnResult {
     call: ZomeFnCall,
-    result: Result<String, HolochainError>,
+    result: Result<JsonString, HolochainError>,
 }
 
 impl ZomeFnResult {
-    fn new(call: ZomeFnCall, result: Result<String, HolochainError>) -> Self {
+    fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
         ZomeFnResult { call, result }
     }
 
@@ -141,7 +142,7 @@ impl ZomeFnResult {
     }
 
     /// read only access to result
-    pub fn result(&self) -> Result<String, HolochainError> {
+    pub fn result(&self) -> Result<JsonString, HolochainError> {
         self.result.clone()
     }
 }
@@ -218,7 +219,7 @@ pub(crate) fn launch_zome_fn_call(
             Some(fc.clone().parameters.into_bytes()),
         ) {
             Ok(runtime) => {
-                result = ZomeFnResult::new(fc.clone(), Ok(runtime.result.to_string()));
+                result = ZomeFnResult::new(fc.clone(), Ok(runtime.result));
             }
 
             Err(ref error) => {

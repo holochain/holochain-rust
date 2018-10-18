@@ -3,6 +3,8 @@ use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryR
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::api_serialization::get_entry::SerializableGetEntryResult;
+use holochain_core_types::json::JsonString;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -25,19 +27,16 @@ pub fn invoke_get_entry(
     let result = block_on(future);
     match result {
         Err(_) => ribosome_error_code!(Unspecified),
-        Ok(maybe_entry) => match maybe_entry {
-            Some(entry) => {
-                let result = GetEntryResult::found(entry.to_string());
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
-            None => {
-                let result = GetEntryResult::not_found();
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
+        Ok(maybe_entry) => {
+            let result = match maybe_entry {
+                Some(entry) => GetEntryResult::found(JsonString::from(entry)),
+                None => GetEntryResult::not_found(),
+            };
+            let outer_result = SerializableGetEntryResult{
+                status: String::from(JsonString::from(result.status)),
+                entry_json: String::from(result.entry_json),
+            };
+            runtime.store_json_string(&JsonString::from(outer_result))
         },
     }
 }

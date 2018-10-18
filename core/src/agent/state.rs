@@ -10,7 +10,6 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
-    json::ToJson,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
@@ -72,29 +71,6 @@ pub enum ActionResponse {
     GetEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
-}
-
-impl ToJson for ActionResponse {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        match self {
-            ActionResponse::Commit(result) => match result {
-                Ok(entry_address) => Ok(format!("{{\"address\":\"{}\"}}", entry_address)),
-                Err(err) => Ok((*err).to_json()?),
-            },
-            ActionResponse::GetEntry(result) => match result {
-                Some(entry) => Ok(entry.to_json()?),
-                None => Ok("".to_string()),
-            },
-            ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => Ok(json!(hash_list).to_string()),
-                Err(err) => Ok((*err).to_json()?),
-            },
-            ActionResponse::LinkEntries(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
-                Err(err) => Ok((*err).to_json()?),
-            },
-        }
-    }
 }
 
 /// Do a Commit Action against an agent state.

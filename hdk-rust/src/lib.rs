@@ -22,12 +22,13 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
+        get_entry::{GetEntryArgs, GetEntryResult, SerializableGetEntryResult, GetResultStatus},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
     memory_serialization::*,
 };
+use holochain_wasm_utils::holochain_core_types::json::JsonString;
 
 pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     // Actual program
@@ -324,7 +325,7 @@ pub fn remove_entry<S: Into<String>>(
 }
 
 /// implements access to low-level WASM hc_get_entry
-pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError> {
+pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeError> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -350,7 +351,11 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
     }
-    let result: GetEntryResult = result.unwrap();
+    let outer_result: SerializableGetEntryResult = result.unwrap();
+    let result = GetEntryResult{
+        status: GetResultStatus::from(JsonString::from(outer_result.status)),
+        entry_json: JsonString::from(outer_result.entry_json),
+    };
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
@@ -358,7 +363,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
         .expect("deallocate failed");
 
     match result.status {
-        GetResultStatus::Found => Ok(Some(result.entry)),
+        GetResultStatus::Found => Ok(Some(result.entry_json)),
         GetResultStatus::NotFound => Ok(None),
     }
 }

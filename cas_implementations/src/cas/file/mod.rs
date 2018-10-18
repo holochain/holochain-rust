@@ -9,7 +9,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
-use holochain_core_types::json::JsonString;
 
 #[derive(Clone)]
 pub struct FilesystemStorage {
@@ -62,6 +61,8 @@ pub mod tests {
         storage::StorageTestSuite,
     };
     use tempfile::{tempdir, TempDir};
+    use holochain_core_types::json::JsonString;
+    use holochain_core_types::json::RawString;
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();
@@ -78,8 +79,8 @@ pub mod tests {
         let (cas, _dir) = test_file_cas();
         let test_suite = StorageTestSuite::new(cas);
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            JsonString::from(RawString::from("foo")),
+            JsonString::from(RawString::from("bar")),
         );
     }
 

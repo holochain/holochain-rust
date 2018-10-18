@@ -6,7 +6,7 @@ extern crate holochain_cas_implementations;
 extern crate directories;
 
 use holochain_core::context::Context;
-use holochain_cas_implementations::cas::storage_path;
+use holochain_cas_implementations::path::storage_path;
 use holochain_core_api::Holochain;
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -20,6 +20,8 @@ use std::{
     os::raw::c_char,
     sync::Mutex,
 };
+
+
 
 #[derive(Clone, Debug)]
 struct NullLogger {}
@@ -77,6 +79,10 @@ pub unsafe extern "C" fn holochain_stop(ptr: *mut Holochain) -> bool {
 
     holochain.stop().is_ok()
 }
+
+
+
+
 
 type CStrPtr = *mut c_char;
 

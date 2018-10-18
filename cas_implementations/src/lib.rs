@@ -21,3 +21,4 @@ extern crate walkdir;
 pub mod actor;
 pub mod cas;
 pub mod eav;
+pub mod path;

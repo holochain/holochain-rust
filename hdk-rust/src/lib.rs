@@ -11,11 +11,15 @@ extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
 pub extern crate holochain_wasm_utils;
+pub extern crate holochain_dna;
 
 mod api;
+pub mod entry_definition;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;
 pub mod macros;
+pub mod meta;
 
 pub use api::*;
+pub use holochain_wasm_utils::api_serialization::validation::*;

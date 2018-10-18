@@ -61,6 +61,7 @@ pub fn validate_entry(
                             "Validation callback not implemented for {:?}",
                             entry_type.clone()
                         )),
+                        _ => unreachable!(),
                     },
                     Err(error) => Err(error.to_string()),
                 };

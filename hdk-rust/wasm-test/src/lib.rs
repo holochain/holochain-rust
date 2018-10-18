@@ -17,6 +17,10 @@ use holochain_wasm_utils::{
 };
 use hdk::RibosomeError;
 
+use hdk::holochain_dna::zome::entry_types::Sharing;
+
+use hdk::meta::ZomeDefinition;
+
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     hdk::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -134,4 +138,22 @@ validations! {
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
         }
     }
+}
+
+#[no_mangle]
+pub extern fn zome_setup(zd: &mut ZomeDefinition) {
+    zd.define(entry!(
+        name: "testEntryType",
+        description: "asdfda",
+        sharing: Sharing::Public,
+
+        validation_package: || {
+            hdk::ValidationPackage::ChainFull
+        },
+
+        validation_function: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            (entry.stuff != "FAIL")
+                .ok_or_else(|| "FAIL content is not allowed".to_string())
+        }
+    ));
 }

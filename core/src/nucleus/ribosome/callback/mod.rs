@@ -4,10 +4,12 @@
 pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
+pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{entry::Entry, json::ToJson};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
+use holochain_wasm_utils::api_serialization::validation::ValidationPackage;
 use nucleus::{
     ribosome::{
         self,
@@ -132,6 +134,7 @@ pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+    ValidationPackage(ValidationPackage),
 }
 
 pub(crate) fn run_callback(

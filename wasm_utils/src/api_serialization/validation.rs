@@ -2,6 +2,15 @@ use holochain_core_types::{chain_header::ChainHeader, hash::HashString};
 
 extern crate serde_json;
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub enum ValidationPackage {
+    Entry,           //sending only the entry
+    ChainEntries,    //sending all (public?) source chain entries
+    ChainHeaders,    //sending all source chain headers
+    ChainFull,       //sending the whole chain, entries and headers
+    Custom(String),  //sending something custom
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ValidationData {
     pub chain_header: Option<ChainHeader>,

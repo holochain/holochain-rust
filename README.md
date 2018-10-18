@@ -35,7 +35,7 @@ Let's elaborate on these three aspects.
 The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
 
 ### 2 - core api
-The first aspect only implements the logic for the execution of a single application. Meanwhile, there is a strong need to be able to load and instantiate multiple applications, and possibly even multiple instances of the same application. The [core_api](./core_api) folder contains the code that implements this capability. Even then, this code must be employed within some other context to actually run it. Such a thing is called a Holochain "container". 
+The first aspect only implements the logic for the execution of a single application. Meanwhile, there is a strong need to be able to load and instantiate multiple applications, and possibly even multiple instances of the same application. The [core_api](./core_api) folder contains the code that implements this capability. Even then, this code must be employed within some other context to actually run it. Such a thing is called a Holochain "container".
 
 A container is a Holochain utility or service that manages and runs Holochain applications. The first such containers are the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container for test running.
 
@@ -51,7 +51,7 @@ Within this repository, some aspects cross over between `core` and `hdk-rust`, s
 #### Other HDKs and language options
 Any language that compiles to WASM and can serialize/deserialize JSON data can be available as an option for programmers to write Holochain applications.
 
-An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is under experimental development at [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript). 
+An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is under experimental development at [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript).
 
 We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://holochain.github.io/holochain-rust/writing_development_kit.html).
 
@@ -74,9 +74,9 @@ If you are a Holochain end-user, either you will install DNA packages into a Hol
 
 There are two approaches to building and testing Holochain, using `make` or using `docker`:
 
-### Make (ubuntu only)
+### Make (ubuntu and macOS only)
 
-If you are running on ubuntu, and you have `make` installed, you can do local development by simply typing:
+If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
 
 `make` which will:
 

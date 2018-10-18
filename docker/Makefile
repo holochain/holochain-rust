@@ -57,7 +57,7 @@ install_rustup_tools:
 install_system_libzmq:
 	if ! (pkg-config libzmq --libs) ; then \
 		if ! which apt-get ; then \
-			if	which brew ; then \
+			if which brew ; then \
 				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
 				brew install zmq \
 			else \

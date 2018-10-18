@@ -167,6 +167,7 @@ ${C_BINDING_TESTS}:
 # clean up the target directory and all extraneous "C" binding test files
 clean: ${C_BINDING_CLEAN}
 	-@$(RM) -rf target
+	-@$(RM) -rf wasm_utils/wasm-test/integration-test/target
 
 # clean up the extraneous "C" binding test files
 ${C_BINDING_CLEAN}:

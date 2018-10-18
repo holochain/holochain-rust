@@ -110,7 +110,7 @@ pub mod tests {
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -132,7 +132,7 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (call_result, _) = test_zome_api_function_runtime(
+        let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );

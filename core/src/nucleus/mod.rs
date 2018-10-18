@@ -247,11 +247,11 @@ fn reduce_execute_zome_function(
         fn_call: &ZomeFnCall,
         error: HolochainError,
     ) {
-        let zome_not_found_result = ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
+        let zome_not_found_response = ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
 
         action_channel
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
-                zome_not_found_result,
+                zome_not_found_response,
             )))
             .expect("action channel to be open in reducer");
     }
@@ -448,7 +448,7 @@ pub mod tests {
     }
 
     /// dummy function result
-    pub fn test_call_result() -> ExecuteZomeFnResponse {
+    pub fn test_call_response() -> ExecuteZomeFnResponse {
         ExecuteZomeFnResponse::new(test_zome_call(), Ok("foo".to_string()))
     }
 
@@ -474,7 +474,7 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(test_call_result().result(), Ok("foo".to_string()));
+        assert_eq!(test_call_response().result(), Ok("foo".to_string()));
     }
 
     #[test]

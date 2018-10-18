@@ -563,12 +563,12 @@ pub mod tests {
         )
     }
 
-    /// given a canonical zome API function name and args as bytes:
+    /// Given a canonical zome API function name and args as bytes:
     /// - builds wasm with test_zome_api_function_wasm
     /// - builds dna and test instance
     /// - calls the zome API function with passed bytes argument using the instance runtime
-    /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(
+    /// - returns the call result
+    pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
     ) -> (String, Arc<Mutex<TestLogger>>) {

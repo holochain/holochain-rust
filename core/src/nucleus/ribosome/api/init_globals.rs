@@ -43,7 +43,7 @@ pub fn invoke_init_globals(
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
 
@@ -52,7 +52,7 @@ pub mod tests {
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (call_result, _) =
-            test_zome_api_function_runtime(ZomeApiFunction::InitGlobals.as_str(), input);
+            test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
             call_result,
             "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"

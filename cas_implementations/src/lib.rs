@@ -15,7 +15,6 @@ extern crate riker_patterns;
 #[macro_use]
 extern crate unwrap_to;
 extern crate snowflake;
-extern crate tempfile;
 extern crate walkdir;
 
 pub mod actor;

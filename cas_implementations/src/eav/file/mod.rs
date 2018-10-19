@@ -41,13 +41,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
 #[cfg(test)]
 pub mod tests {
-
+    extern crate tempfile;
     use eav::file::EavFileStorage;
     use holochain_core_types::cas::{
         content::{AddressableContent, ExampleAddressableContent},
         storage::EavTestSuite,
     };
-    use tempfile::tempdir;
+    use self::tempfile::tempdir;
 
     #[test]
     fn file_eav_round_trip() {

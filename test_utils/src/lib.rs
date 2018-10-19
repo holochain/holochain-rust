@@ -4,12 +4,11 @@ extern crate holochain_core_api;
 extern crate holochain_dna;
 extern crate wabt;
 
-use holochain_core_api::Holochain;
 use holochain_agent::Agent;
 use holochain_core::{
-    context::Context, logger::Logger, persister::SimplePersister,
-    nucleus::ZomeFnResult,
+    context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
 };
+use holochain_core_api::Holochain;
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
@@ -203,7 +202,6 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> ZomeFnResult
     // Call the exposed wasm function
     return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
 }
-
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {

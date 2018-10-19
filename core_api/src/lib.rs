@@ -51,10 +51,10 @@
 //!```
 
 extern crate futures;
+extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
-extern crate holochain_agent;
 #[cfg(test)]
 extern crate test_utils;
 
@@ -511,7 +511,8 @@ mod tests {
     fn call_debug_stacked() {
         let call_result = hc_setup_and_call_zome_fn(
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
-            "debug_stacked_hello");
+            "debug_stacked_hello",
+        );
         assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
     }
 }

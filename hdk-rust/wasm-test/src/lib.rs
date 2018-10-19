@@ -148,7 +148,7 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
         sharing: Sharing::Public,
 
         validation_package: || {
-            hdk::ValidationPackage::ChainFull
+            hdk::ValidationPackageDefinition::ChainFull
         },
 
         validation_function: |entry: TestEntryType, _ctx: hdk::ValidationData| {

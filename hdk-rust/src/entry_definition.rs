@@ -1,11 +1,11 @@
 use holochain_dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::{
-    api_serialization::validation::{ValidationData, ValidationPackage},
+    api_serialization::validation::{ValidationData, ValidationPackageDefinition},
     holochain_core_types::hash::HashString,
 };
 use std::collections::HashMap;
 
-pub type PackageCreator = Box<FnMut() -> ValidationPackage + Sync>;
+pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + Sync>;
 pub type LinkValidator =
     Box<FnMut(HashString, String, HashString, ValidationData) -> Result<(), String> + Sync>;

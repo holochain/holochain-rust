@@ -3,7 +3,7 @@ use holochain_core_types::{chain_header::ChainHeader, hash::HashString};
 extern crate serde_json;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub enum ValidationPackage {
+pub enum ValidationPackageDefinition {
     Entry,          //sending only the entry
     ChainEntries,   //sending all (public?) source chain entries
     ChainHeaders,   //sending all source chain headers

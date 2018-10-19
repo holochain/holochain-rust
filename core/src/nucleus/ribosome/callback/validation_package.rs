@@ -39,16 +39,14 @@ pub fn validation_package(
                         Some(app_entry_type.into_bytes()),
                     ) {
                         Err(error) => Err(HolochainError::ErrorGeneric(format!("wasmi error: {}", error))),
-                        Ok(runtime) => match runtime.result.is_empty() {
-                            true => Ok(CallbackResult::NotImplemented),
-                            false => {
-                                match serde_json::from_str(&runtime.result) {
-                                    Ok(package) => Ok(CallbackResult::ValidationPackage(package)),
-                                    Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not deserialized as ValidationPackage")))
-                                }
-
+                        Ok(result) => if result.is_empty() {
+                            Ok(CallbackResult::NotImplemented)
+                        } else {
+                            match serde_json::from_str(&result) {
+                                Ok(package) => Ok(CallbackResult::ValidationPackage(package)),
+                                Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not deserialized as ValidationPackage")))
                             }
-                        },
+                        }
                     }
                 }
             }

@@ -12,6 +12,7 @@ use holochain_core::{
     context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
 };
 use holochain_core_api::Holochain;
+use holochain_core_api::tests::hc_setup_and_call_zome_fn;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use std::sync::{Arc, Mutex};
@@ -28,35 +29,10 @@ impl Logger for TestLogger {
     }
 }
 
-/// create a test context and TestLogger pair so we can use the logger in assertions
-pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::from(agent_name.to_string());
-    let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
-
-    return Arc::new(Context::new(
-        agent,
-        logger.clone(),
-        Arc::new(Mutex::new(SimplePersister::new())),
-    ));
-}
-
-// Function called at start of all unit tests:
-//   Startup holochain and do a call on the specified wasm function.
-pub fn call_zome_function_with_hc(fn_name: &str) -> ZomeFnResult {
-    // Setup the holochain instance
-    let wasm = create_wasm_from_file(
+fn call_zome_function_with_hc(fn_name: &str) -> ZomeFnResult {
+    hc_setup_and_call_zome_fn(
         "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-    );
-    let capability = create_test_cap_with_fn_name(fn_name);
-    let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-
-    let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
-
-    // Run the holochain instance
-    hc.start().expect("couldn't start");
-    // Call the exposed wasm function
-    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+        fn_name)
 }
 
 #[test]
@@ -145,27 +121,23 @@ fn call_load_string_err() {
 #[test]
 fn call_stacked_strings() {
     let call_result = call_zome_function_with_hc("test_stacked_strings");
-    println!("call_result = {:?}", call_result);
     assert_eq!("first", call_result.unwrap());
 }
 
 #[test]
 fn call_stacked_json_str() {
     let call_result = call_zome_function_with_hc("test_stacked_json_str");
-    println!("call_result = {:?}", call_result);
     assert_eq!("\"first\"", call_result.unwrap());
 }
 
 #[test]
 fn call_stacked_json_obj() {
     let call_result = call_zome_function_with_hc("test_stacked_json_obj");
-    println!("call_result = {:?}", call_result);
     assert_eq!("{\"value\":\"first\"}", call_result.unwrap());
 }
 
 #[test]
 fn call_stacked_mix() {
     let call_result = call_zome_function_with_hc("test_stacked_mix");
-    println!("call_result = {:?}", call_result);
     assert_eq!("third", call_result.unwrap());
 }

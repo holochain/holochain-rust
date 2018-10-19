@@ -180,6 +180,7 @@ pub mod tests {
     use holochain_agent::Agent;
     use holochain_core_types::error::DnaError;
     use holochain_dna::{zome::capabilities::Capability, Dna};
+    use holochain_cas_implementations::{eav::file::EavFileStorage,cas::file::FilesystemStorage};
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,
@@ -233,8 +234,8 @@ pub mod tests {
                 Agent::from("alex".to_string()),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new())),
-                tempdir().unwrap().path().to_str().unwrap(),
-                tempdir().unwrap().path().to_str().unwrap(),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
             ).unwrap(),
         )
     }

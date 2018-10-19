@@ -279,6 +279,7 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_agent::Agent;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
     };
@@ -325,8 +326,8 @@ pub mod tests {
                     agent,
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new())),
-                    tempdir().unwrap().path().to_str().unwrap(),
-                    tempdir().unwrap().path().to_str().unwrap(),
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
                 ).unwrap(),
             ),
             logger,
@@ -354,8 +355,8 @@ pub mod tests {
                 Arc::new(Mutex::new(SimplePersister::new())),
                 action_channel.clone(),
                 observer_channel.clone(),
-                tempdir().unwrap().path().to_str().unwrap(),
-                tempdir().unwrap().path().to_str().unwrap(),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
             ).unwrap(),
         )
     }
@@ -365,8 +366,8 @@ pub mod tests {
             Agent::from("Florence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
-            tempdir().unwrap().path().to_str().unwrap(),
-            tempdir().unwrap().path().to_str().unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

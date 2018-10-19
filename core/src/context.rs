@@ -37,13 +37,11 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas_path: &str,
-        eav_path: &str,
+        cas: FilesystemStorage,
+        eav: EavFileStorage,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
-        let cas = FilesystemStorage::new(cas_path)?;
-        let eav = EavFileStorage::new(eav_path.to_string())?;
         Ok(Context {
             agent,
             logger,
@@ -51,7 +49,7 @@ impl Context {
             state: None,
             action_channel: tx_action,
             observer_channel: tx_observer,
-            file_storage: cas,
+            file_storage:cas,
             eav_storage: eav,
         })
     }
@@ -62,11 +60,9 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
-        cas_path: &str,
-        eav_path: &str,
+        cas: FilesystemStorage,
+        eav: EavFileStorage
     ) -> Result<Context, HolochainError> {
-        let cas = FilesystemStorage::new(cas_path)?;
-        let eav = EavFileStorage::new(eav_path.to_string())?;
         Ok(Context {
             agent,
             logger,
@@ -74,7 +70,7 @@ impl Context {
             state: None,
             action_channel,
             observer_channel,
-            file_storage: cas,
+            file_storage:cas,
             eav_storage: eav,
         })
     }
@@ -120,8 +116,8 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
-            tempdir().unwrap().path().to_str().unwrap(),
-            tempdir().unwrap().path().to_str().unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());
@@ -142,8 +138,8 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
-            tempdir().unwrap().path().to_str().unwrap(),
-            tempdir().unwrap().path().to_str().unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

@@ -63,7 +63,7 @@ where
     // Linking
     // =======
     pub fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        //FIX ME
+        // FIXME
         Err(HolochainError::NotImplemented)
     }
 
@@ -76,7 +76,7 @@ where
         _address: HashString,
         _attribute_name: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        //FIX ME
+        // FIXME
         Err(HolochainError::NotImplemented)
     }
 

@@ -8,4 +8,6 @@ holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
 holochain_agent = { path = "../agent" }
 holochain_core_api = { path = "../core_api" }
+
+[dev-dependencies]
 tempfile = "3"

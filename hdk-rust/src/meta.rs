@@ -38,7 +38,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(encoded_allocation
 
     // Deserialize input
     let maybe_name = load_string(encoded_allocation_of_input);
-    if let Err(_) = maybe_name {
+    if maybe_name.is_err() {
         return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
             as u32;
     }

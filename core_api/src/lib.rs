@@ -148,6 +148,9 @@ impl Holochain {
 mod tests {
     extern crate holochain_agent;
     extern crate holochain_cas_implementations;
+    use self::holochain_cas_implementations::{
+        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+    };
     use super::*;
     use holochain_core::{
         context::Context,
@@ -161,7 +164,6 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
-    use self::holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -177,7 +179,8 @@ mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new())),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
                 ).unwrap(),
             ),
             logger,

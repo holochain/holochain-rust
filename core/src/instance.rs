@@ -279,7 +279,7 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_agent::Agent;
-    use holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
     };
@@ -327,7 +327,8 @@ pub mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new())),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
                 ).unwrap(),
             ),
             logger,
@@ -356,7 +357,8 @@ pub mod tests {
                 action_channel.clone(),
                 observer_channel.clone(),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
             ).unwrap(),
         )
     }

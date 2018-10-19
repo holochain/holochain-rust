@@ -49,7 +49,7 @@ impl Context {
             state: None,
             action_channel: tx_action,
             observer_channel: tx_observer,
-            file_storage:cas,
+            file_storage: cas,
             eav_storage: eav,
         })
     }
@@ -61,7 +61,7 @@ impl Context {
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
         cas: FilesystemStorage,
-        eav: EavFileStorage
+        eav: EavFileStorage,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent,
@@ -70,7 +70,7 @@ impl Context {
             state: None,
             action_channel,
             observer_channel,
-            file_storage:cas,
+            file_storage: cas,
             eav_storage: eav,
         })
     }

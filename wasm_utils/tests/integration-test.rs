@@ -5,17 +5,17 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
-extern crate holochain_cas_implementations;
 
 use holochain_agent::Agent;
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{
     context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
 };
 use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
-use holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
 use holochain_wasm_utils::error::*;
 use std::sync::{Arc, Mutex};
 

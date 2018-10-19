@@ -8,7 +8,9 @@ extern crate serde_json;
 extern crate test_utils;
 
 use holochain_agent::Agent;
-use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core::{
+    context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
+};
 use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
@@ -26,31 +28,21 @@ impl Logger for TestLogger {
     }
 }
 
-/// create a test logger
-pub fn test_logger() -> Arc<Mutex<TestLogger>> {
-    Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
-}
-
 /// create a test context and TestLogger pair so we can use the logger in assertions
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = Agent::from(agent_name.to_string());
-    let logger = test_logger();
-    (
-        Arc::new(Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        )),
-        logger,
-    )
+    let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
+
+    return Arc::new(Context::new(
+        agent,
+        logger.clone(),
+        Arc::new(Mutex::new(SimplePersister::new())),
+    ));
 }
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn launch_hc_with_integration_test_wasm(
-    fn_name: &str,
-    fn_arg: &str,
-) -> (Result<String, HolochainError>, Arc<Mutex<TestLogger>>) {
+pub fn call_zome_function_with_hc(fn_name: &str) -> ZomeFnResult {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(
         "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
@@ -58,181 +50,94 @@ pub fn launch_hc_with_integration_test_wasm(
     let capability = create_test_cap_with_fn_name(fn_name);
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-    let (context, test_logger) = test_context_and_logger("alex");
+    let context = create_test_context("alex");
     let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    let result = hc.call("test_zome", "test_cap", fn_name, fn_arg);
-    return (result, test_logger);
+    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
 }
 
 #[test]
 fn can_return_error_report() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_error_report", r#"{}"#);
-    // Verify result
-    let error_report: RibosomeErrorReport = serde_json::from_str(&result.clone().unwrap()).unwrap();
+    let call_result = call_zome_function_with_hc("test_error_report");
+    let error_report: RibosomeErrorReport =
+        serde_json::from_str(&call_result.clone().unwrap()).unwrap();
     assert_eq!("Zome assertion failed: `false`", error_report.description);
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
 }
 
 #[test]
 fn call_store_string_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_string_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("fish", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_store_string_ok");
+    assert_eq!("fish", call_result.unwrap());
 }
 
 #[test]
 fn call_store_as_json_str_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_str_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("\"fish\"", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_store_as_json_str_ok");
+    assert_eq!("\"fish\"", call_result.unwrap());
 }
 
 #[test]
 fn call_store_as_json_obj_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_obj_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_store_as_json_obj_ok");
+    assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
 }
 
 #[test]
 fn call_store_string_err() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_string_err", r#"{}"#);
-    // Verify result
-    assert!(result.is_ok());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
+    let call_result = call_zome_function_with_hc("test_store_string_err");
     assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_string_err\\\' returned: Out of memory\"] }",
+        HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
+        call_result.err().unwrap(),
     );
 }
 
 #[test]
 fn call_store_as_json_err() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_err", r#"{}"#);
-    // Verify result
-    assert!(result.is_ok());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
+    let call_result = call_zome_function_with_hc("test_store_as_json_err");
     assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_as_json_err\\\' returned: Out of memory\"] }",
+        HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
+        call_result.err().unwrap(),
     );
 }
 
 #[test]
 fn call_load_json_from_raw_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_json_from_raw_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_from_raw_ok\\\' returned: Success\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_load_json_from_raw_ok");
+    assert_eq!("", call_result.unwrap());
 }
 
 #[test]
 fn call_load_json_from_raw_err() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_json_from_raw_err", r#"{}"#);
-    // Verify result
+    let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
     assert_eq!(
         json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string(),
-        result.unwrap()
-    );
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
+        call_result.unwrap()
     );
 }
 
 #[test]
 fn call_load_json_ok() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_json_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("{\"value\":\"fish\"}", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_load_json_ok");
+    assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
 }
 
 #[test]
 fn call_load_json_err() {
-    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_load_json_err", r#"{}"#);
-    // Verify result
-    assert_eq!("\"Unspecified\"", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_load_json_err");
+    assert_eq!("\"Unspecified\"", call_result.unwrap());
 }
 
 #[test]
 fn call_load_string_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_string_ok", r#"{}"#);
-    // Verify result
-    assert_eq!("fish", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_load_string_ok");
+    assert_eq!("fish", call_result.unwrap());
 }
 
 #[test]
 fn call_load_string_err() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_load_string_err", r#"{}"#);
-    // Verify result
-    assert_eq!("Unspecified", result.unwrap());
-    // Verify logs
-    let test_logger = test_logger.lock().unwrap();
-    assert_eq!(
-        format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\"] }",
-    );
+    let call_result = call_zome_function_with_hc("test_load_string_err");
+    assert_eq!("Unspecified", call_result.unwrap());
 }

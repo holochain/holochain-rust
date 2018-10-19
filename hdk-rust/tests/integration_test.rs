@@ -45,7 +45,7 @@ fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
-    assert!(!result.clone().unwrap().is_empty(), "result = {:?}", result);
+    assert!(result.clone().unwrap().is_empty(), "result = {:?}", result);
 }
 
 #[test]

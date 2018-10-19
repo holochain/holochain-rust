@@ -6,7 +6,9 @@ extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 
-use holochain_cas_implementations::path::storage_path;
+use holochain_cas_implementations::{
+    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::storage_path,
+};
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
@@ -51,16 +53,15 @@ fn get_context() -> Result<Context, HolochainError> {
     match UserDirs::new() {
         Some(user_dir) => {
             let home_dir = user_dir.home_dir();
-            match (storage_path(home_dir, "cas"), storage_path(home_dir, "eav")) {
-                (Ok(cas_path), Ok(eav_path)) => Context::new(
-                    agent,
-                    Arc::new(Mutex::new(NullLogger {})),
-                    Arc::new(Mutex::new(SimplePersister::new())),
-                    &cas_path,
-                    &eav_path,
-                ),
-                (_, _) => Err(HolochainError::IoError("Could not create path".to_string())),
-            }
+            let cas_path = storage_path(home_dir, "cas")?;
+            let eav_path = storage_path(home_dir, "eav")?;
+            Context::new(
+                agent,
+                Arc::new(Mutex::new(NullLogger {})),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                FilesystemStorage::new(&cas_path).unwrap(),
+                EavFileStorage::new(eav_path).unwrap(),
+            )
         }
         None => Err(HolochainError::ErrorGeneric(
             "Could not create context".to_string(),

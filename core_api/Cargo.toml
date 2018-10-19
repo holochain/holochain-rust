@@ -12,4 +12,5 @@ futures-preview = "0.2.2"
 tempfile = "3"
 
 [dev-dependencies]
+holochain_cas_implementations = { path = "../cas_implementations" }
 test_utils = { path = "../test_utils"}

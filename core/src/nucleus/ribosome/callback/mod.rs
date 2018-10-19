@@ -140,7 +140,7 @@ pub(crate) fn run_callback(
     wasm: &DnaWasm,
     app_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
+    match ribosome::run_dna(
         &app_name,
         context,
         wasm.code.clone(),

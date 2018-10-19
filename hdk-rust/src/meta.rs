@@ -28,7 +28,7 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn validation_package(encoded_allocation_of_input: u32) -> u32 {
+pub extern "C" fn __hdk_get_validation_package_for_entry_type(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();

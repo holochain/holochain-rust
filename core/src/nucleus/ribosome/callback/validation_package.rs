@@ -33,7 +33,7 @@ pub fn validation_package(
                         &ZomeFnCall::new(
                             &zome_name,
                             "no capability, since this is an entry validation call",
-                            "validation_package",
+                            "__hdk_get_validation_package_for_entry_type",
                             &app_entry_type,
                         ),
                         Some(app_entry_type.into_bytes()),

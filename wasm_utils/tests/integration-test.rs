@@ -141,3 +141,31 @@ fn call_load_string_err() {
     let call_result = call_zome_function_with_hc("test_load_string_err");
     assert_eq!("Unspecified", call_result.unwrap());
 }
+
+#[test]
+fn call_stacked_strings() {
+    let call_result = call_zome_function_with_hc("test_stacked_strings");
+    println!("call_result = {:?}", call_result);
+    assert_eq!("first", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_json_str() {
+    let call_result = call_zome_function_with_hc("test_stacked_json_str");
+    println!("call_result = {:?}", call_result);
+    assert_eq!("\"first\"", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_json_obj() {
+    let call_result = call_zome_function_with_hc("test_stacked_json_obj");
+    println!("call_result = {:?}", call_result);
+    assert_eq!("{\"value\":\"first\"}", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_mix() {
+    let call_result = call_zome_function_with_hc("test_stacked_mix");
+    println!("call_result = {:?}", call_result);
+    assert_eq!("third", call_result.unwrap());
+}

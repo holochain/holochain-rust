@@ -13,10 +13,7 @@ pub enum GetResultStatus {
 
 // empty for now, need to implement get options
 #[derive(Deserialize, Debug, Serialize)]
-pub struct GetEntryOptions {
-
-}
-
+pub struct GetEntryOptions {}
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct GetEntryResult {

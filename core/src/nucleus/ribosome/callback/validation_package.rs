@@ -45,7 +45,7 @@ pub fn get_validation_package_definition(
                         Ok(CallbackResult::NotImplemented)
                     } else {
                         match serde_json::from_str(&result) {
-                                Ok(package) => Ok(CallbackResult::ValidationPackage(package)),
+                                Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
                                 Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not deserialized as ValidationPackage")))
                             }
                     },

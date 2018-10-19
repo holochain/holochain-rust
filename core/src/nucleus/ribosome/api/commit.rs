@@ -4,10 +4,10 @@ use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
     hash::HashString,
+    validation::{EntryAction, EntryLifecycle, ValidationData, ValidationPackage},
 };
 use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryArgs, CommitEntryResult},
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use nucleus::{actions::validate::*, ribosome::Runtime};
 use serde_json;
@@ -30,11 +30,13 @@ fn build_validation_data_commit(
 
     //let agent_key = state.keys().expect("Can't commit entry without agent key");
     ValidationData {
-        chain_header: None, //Some(new_header),
+        package: ValidationPackage {
+            chain_header: None,
+            source_chain_entries: None,
+            source_chain_headers: None,
+            custom: None,
+        },
         sources: vec![HashString::from("<insert your agent key here>")],
-        source_chain_entries: None,
-        source_chain_headers: None,
-        custom: None,
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Commit,
     }

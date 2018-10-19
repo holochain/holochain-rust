@@ -1,7 +1,9 @@
 use holochain_dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::{
-    api_serialization::validation::{ValidationData, ValidationPackageDefinition},
-    holochain_core_types::hash::HashString,
+    holochain_core_types::{
+        hash::HashString,
+        validation::{ValidationData, ValidationPackageDefinition},
+    },
 };
 use std::collections::HashMap;
 

@@ -145,52 +145,19 @@ impl Holochain {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use holochain_core::{
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        nucleus::ZomeFnResult,
         persister::SimplePersister,
     };
     use holochain_dna::Dna;
-    use holochain_agent::Agent;
     use std::sync::{Arc, Mutex};
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
-        create_wasm_from_file,
+        create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
-
-
-    // Function called at start of all unit tests:
-    //   Startup holochain and do a call on the specified wasm function.
-    pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> ZomeFnResult {
-        // Setup the holochain instance
-        let wasm = create_wasm_from_file(wasm_path);
-        let capability = create_test_cap_with_fn_name(fn_name);
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-
-        let context = create_test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
-
-        // Run the holochain instance
-        hc.start().expect("couldn't start");
-        // Call the exposed wasm function
-        return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
-    }
-
-
-    /// create a test context and TestLogger pair so we can use the logger in assertions
-    pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-        let agent = Agent::from(agent_name.to_string());
-        let logger = test_utils::test_logger();
-
-        return Arc::new(Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        ));
-    }
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};

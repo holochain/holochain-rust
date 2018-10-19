@@ -1,10 +1,15 @@
 extern crate holochain_agent;
 extern crate holochain_core;
+extern crate holochain_core_api;
 extern crate holochain_dna;
 extern crate wabt;
 
+use holochain_core_api::Holochain;
 use holochain_agent::Agent;
-use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core::{
+    context::Context, logger::Logger, persister::SimplePersister,
+    nucleus::ZomeFnResult,
+};
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
@@ -180,4 +185,34 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
+}
+
+// Function called at start of all unit tests:
+//   Startup holochain and do a call on the specified wasm function.
+pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> ZomeFnResult {
+    // Setup the holochain instance
+    let wasm = create_wasm_from_file(wasm_path);
+    let capability = create_test_cap_with_fn_name(fn_name);
+    let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+
+    let context = create_test_context("alex");
+    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+
+    // Run the holochain instance
+    hc.start().expect("couldn't start");
+    // Call the exposed wasm function
+    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+}
+
+
+/// create a test context and TestLogger pair so we can use the logger in assertions
+pub fn create_test_context(agent_name: &str) -> Arc<Context> {
+    let agent = Agent::from(agent_name.to_string());
+    let logger = test_logger();
+
+    return Arc::new(Context::new(
+        agent,
+        logger.clone(),
+        Arc::new(Mutex::new(SimplePersister::new())),
+    ));
 }

@@ -7,16 +7,12 @@ extern crate holochain_wasm_utils;
 extern crate serde_json;
 extern crate test_utils;
 
-use holochain_agent::Agent;
 use holochain_core::{
-    context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
+    logger::Logger, nucleus::ZomeFnResult,
 };
-use holochain_core_api::Holochain;
-use holochain_core_api::tests::hc_setup_and_call_zome_fn;
+use test_utils::hc_setup_and_call_zome_fn;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
-use std::sync::{Arc, Mutex};
-use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {

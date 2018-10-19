@@ -25,30 +25,31 @@ pub fn validation_package(
             let zome_name = zome_name.unwrap();
             match get_wasm(&context, &zome_name) {
                 None => Err(HolochainError::ErrorGeneric(String::from("no wasm found"))),
-                Some(wasm) => {
-                    match ribosome::api::call(
-                        &dna.name.clone(),
-                        context,
-                        wasm.code.clone(),
-                        &ZomeFnCall::new(
-                            &zome_name,
-                            "no capability, since this is an entry validation call",
-                            "__hdk_get_validation_package_for_entry_type",
-                            &app_entry_type,
-                        ),
-                        Some(app_entry_type.into_bytes()),
-                    ) {
-                        Err(error) => Err(HolochainError::ErrorGeneric(format!("wasmi error: {}", error))),
-                        Ok(result) => if result.is_empty() {
-                            Ok(CallbackResult::NotImplemented)
-                        } else {
-                            match serde_json::from_str(&result) {
+                Some(wasm) => match ribosome::api::call(
+                    &dna.name.clone(),
+                    context,
+                    wasm.code.clone(),
+                    &ZomeFnCall::new(
+                        &zome_name,
+                        "no capability, since this is an entry validation call",
+                        "__hdk_get_validation_package_for_entry_type",
+                        &app_entry_type,
+                    ),
+                    Some(app_entry_type.into_bytes()),
+                ) {
+                    Err(error) => Err(HolochainError::ErrorGeneric(format!(
+                        "wasmi error: {}",
+                        error
+                    ))),
+                    Ok(result) => if result.is_empty() {
+                        Ok(CallbackResult::NotImplemented)
+                    } else {
+                        match serde_json::from_str(&result) {
                                 Ok(package) => Ok(CallbackResult::ValidationPackage(package)),
                                 Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not deserialized as ValidationPackage")))
                             }
-                        }
-                    }
-                }
+                    },
+                },
             }
         }
         _ => Err(HolochainError::NotImplemented),

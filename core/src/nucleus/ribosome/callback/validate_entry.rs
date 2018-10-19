@@ -115,5 +115,3 @@ fn run_validation_callback(
         Err(_) => CallbackResult::NotImplemented,
     }
 }
-
-

@@ -36,15 +36,15 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = Agent::from(agent_name.to_string());
     let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
 
-        Arc::new(
-            Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-                tempdir().unwrap().path().to_str().unwrap(),
-                tempdir().unwrap().path().to_str().unwrap(),
-            ).unwrap(),
-        )
+    Arc::new(
+        Context::new(
+            agent,
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+            tempdir().unwrap().path().to_str().unwrap(),
+            tempdir().unwrap().path().to_str().unwrap(),
+        ).unwrap(),
+    )
 }
 
 // Function called at start of all unit tests:

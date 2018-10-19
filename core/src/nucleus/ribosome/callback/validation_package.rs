@@ -25,7 +25,7 @@ pub fn get_validation_package_definition(
             let zome_name = zome_name.unwrap();
             match get_wasm(&context, &zome_name) {
                 None => Err(HolochainError::ErrorGeneric(String::from("no wasm found"))),
-                Some(wasm) => match ribosome::api::call(
+                Some(wasm) => match ribosome::run_dna(
                     &dna.name.clone(),
                     context,
                     wasm.code.clone(),

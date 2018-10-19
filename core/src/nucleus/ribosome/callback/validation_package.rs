@@ -10,7 +10,7 @@ use nucleus::{
 };
 use std::sync::Arc;
 
-pub fn validation_package(
+pub fn get_validation_package_definition(
     entry_type: EntryType,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {

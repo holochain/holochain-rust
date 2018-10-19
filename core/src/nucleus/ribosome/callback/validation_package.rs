@@ -1,11 +1,10 @@
 extern crate serde_json;
 use context::Context;
 use holochain_core_types::{entry_type::EntryType, error::HolochainError};
-use holochain_dna::wasm::DnaWasm;
 use nucleus::{
     ribosome::{
         self,
-        callback::{get_dna, CallbackResult},
+        callback::{get_dna, get_wasm, CallbackResult},
     },
     ZomeFnCall,
 };
@@ -56,15 +55,4 @@ pub fn validation_package(
         }
         _ => Err(HolochainError::NotImplemented),
     }
-}
-
-fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
-    let dna = get_dna(context).expect("Callback called without DNA set!");
-    dna.get_wasm_from_zome_name(zome).and_then(|wasm| {
-        if wasm.code.len() > 0 {
-            Some(wasm.clone())
-        } else {
-            None
-        }
-    })
 }

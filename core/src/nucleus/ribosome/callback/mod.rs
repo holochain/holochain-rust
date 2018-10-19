@@ -189,6 +189,13 @@ pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
     dna
 }
 
+pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
+    let dna = get_dna(context).expect("Callback called without DNA set!");
+    dna.get_wasm_from_zome_name(zome).and_then(|wasm| {
+        Some(wasm.clone()).filter(|_| !wasm.code.is_empty())
+    })
+}
+
 pub fn call(
     context: Arc<Context>,
     zome: &str,

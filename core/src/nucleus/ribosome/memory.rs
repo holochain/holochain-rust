@@ -17,16 +17,18 @@ pub struct SinglePageManager {
 }
 
 /// A Memory Manager limited to one wasm memory page that works like a stack.
-/// With this Memory Manager, Host and WASM only need to pass around an i32 to communicate any data.
+/// With this Memory Manager, the WASM host (i.e. the Ribosome) and WASM module (i.e. the Zome)
+/// only need to pass around an i32 to communicate any data.
 /// That i32 is the last memory allocation on the stack:
-/// it is split in an i16 'offset' in th upper bits and an i16 'length' in the lower bits.
+/// it is split in an i16 'offset' in the upper bits and an i16 'length' in the lower bits.
 /// This fits with the 64KiB sized of a memory Page.
 /// Complex input arguments should be stored on the latest allocation on the stack.
 /// Complex output arguments can be stored anywhere on stack.
-/// Since zero sized allocation is not allowed,
+/// Since zero sized allocations are not allowed,
 /// it is possible to pass around a return and/or error code with the following convention:
-/// using the i16 'offset' as return code and i16 length set to zero to indicate its a return code.
-/// return code of 0 means success, while any other value means a failure and gives the error code.
+/// using the i16 'offset' as return code and i16 'length' set to zero
+/// to indicate its a return code.
+/// Return code of 0 means success, while any other value means a failure and gives the error code.
 /// In the future, to handle bigger memory needs, we could do same with an i64 instead
 /// and handle multiple memory Pages.
 #[allow(unknown_lints)]

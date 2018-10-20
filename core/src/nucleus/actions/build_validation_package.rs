@@ -1,6 +1,7 @@
 extern crate futures;
 extern crate serde_json;
 use action::{Action, ActionWrapper};
+use agent;
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
@@ -15,7 +16,7 @@ use snowflake;
 use std::{sync::Arc, thread};
 
 pub fn build_validation_package(
-    entry: Entry,
+    entry: &Entry,
     context: &Arc<Context>,
 ) -> Box<dyn Future<Item = ValidationPackage, Error = HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
@@ -38,7 +39,22 @@ pub fn build_validation_package(
             let id = id.clone();
             let entry = entry.clone();
             let context = context.clone();
-            let entry_header = chain_header(entry.clone(), &context);
+            let entry_header = chain_header(entry.clone(), &context)
+                .unwrap_or(
+                    // TODO: make sure that we don't run into race conditions with respect to the chain
+                    // We need the source chain header as part of the validation package.
+                    // For an already committed entry (when asked to deliver the validation package to
+                    // a DHT node) we should have gotten one from chain_header() above.
+                    // But when we commit an entry, there is no header for it in the chain yet.
+                    // That is why we have to create a pre-flight header here.
+                    // If there is another zome function call that also calls commit before this commit
+                    // is done, we might create two pre-flight chain headers linking to the same
+                    // previous header. Since these pre-flight headers are not written to the chain
+                    // and just used for the validation, I don't see why it would be a problem.
+                    // If it was a problem, we would have to make sure that the whole commit process
+                    // (including validtion) is atomic.
+                    agent::state::create_new_chain_header(&entry, &*context.state().unwrap().agent())
+                );
 
             thread::spawn(move || {
                 let maybe_callback_result =
@@ -109,13 +125,12 @@ pub fn build_validation_package(
     })
 }
 
-fn chain_header(entry: Entry, context: &Arc<Context>) -> ChainHeader {
+fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
         .find(|ref header| *header.entry_address() == entry.address())
-        .expect("Couldn't find header in chain for given entry")
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
@@ -292,7 +307,7 @@ mod tests {
         let chain_header = commit(test_entry_package_entry(), &context);
 
         let maybe_validation_package = block_on(build_validation_package(
-            test_entry_package_entry(),
+            &test_entry_package_entry(),
             &context.clone(),
         ));
         println!("{:?}", maybe_validation_package);
@@ -320,7 +335,7 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
         let maybe_validation_package = block_on(build_validation_package(
-            test_entry_package_chain_entries(),
+            &test_entry_package_chain_entries(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
@@ -347,7 +362,7 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
         let maybe_validation_package = block_on(build_validation_package(
-            test_entry_package_chain_headers(),
+            &test_entry_package_chain_headers(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
@@ -374,7 +389,7 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
         let maybe_validation_package = block_on(build_validation_package(
-            test_entry_package_chain_full(),
+            &test_entry_package_chain_full(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());

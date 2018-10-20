@@ -1,10 +1,8 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry,
-    error::HolochainError,
-    get_links_args::GetLinksArgs, links_entry::Link,
-    validation::ValidationPackage,
+    cas::content::Address, entry::Entry, error::HolochainError, get_links_args::GetLinksArgs,
+    links_entry::Link, validation::ValidationPackage,
 };
 use holochain_dna::Dna;
 use nucleus::{
@@ -103,7 +101,12 @@ pub enum Action {
     /// and the hash of the entry that was validated
     ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
 
-    ReturnValidationPackage((snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>)),
+    ReturnValidationPackage(
+        (
+            snowflake::ProcessUniqueId,
+            Result<ValidationPackage, HolochainError>,
+        ),
+    ),
 }
 
 /// function signature for action handler functions

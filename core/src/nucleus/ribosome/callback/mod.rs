@@ -7,10 +7,7 @@ pub mod validate_entry;
 pub mod validation_package;
 
 use context::Context;
-use holochain_core_types::{
-    entry::Entry, json::ToJson,
-    validation::ValidationPackageDefinition,
-};
+use holochain_core_types::{entry::Entry, json::ToJson, validation::ValidationPackageDefinition};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{

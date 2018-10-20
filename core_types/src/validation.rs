@@ -1,7 +1,7 @@
 extern crate serde_json;
-use hash::HashString;
 use chain_header::ChainHeader;
 use entry::Entry;
+use hash::HashString;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ValidationPackage {
@@ -30,7 +30,6 @@ pub enum ValidationPackageDefinition {
     ChainFull,      //sending the whole chain, entries and headers
     Custom(String), //sending something custom
 }
-
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ValidationData {

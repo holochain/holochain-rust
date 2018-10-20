@@ -1,9 +1,7 @@
 use holochain_dna::zome::entry_types::EntryTypeDef;
-use holochain_wasm_utils::{
-    holochain_core_types::{
-        hash::HashString,
-        validation::{ValidationData, ValidationPackageDefinition},
-    },
+use holochain_wasm_utils::holochain_core_types::{
+    hash::HashString,
+    validation::{ValidationData, ValidationPackageDefinition},
 };
 use std::collections::HashMap;
 

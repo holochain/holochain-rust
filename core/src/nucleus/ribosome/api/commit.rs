@@ -2,13 +2,14 @@ extern crate futures;
 use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
+    cas::content::Address,
+    entry::Entry,
+    entry_type::EntryType,
+    error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData, ValidationPackage},
 };
-use holochain_wasm_utils::api_serialization::{
-    commit::{CommitEntryArgs, CommitEntryResult},
-};
+use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
 use nucleus::{actions::validate::*, ribosome::Runtime};
 use serde_json;
 use std::str::FromStr;

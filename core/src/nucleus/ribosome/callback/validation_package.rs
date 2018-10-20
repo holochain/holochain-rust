@@ -42,11 +42,11 @@ pub fn get_validation_package_definition(
                         error
                     ))),
                     Ok(result) => if result.is_empty() {
-                        Ok(CallbackResult::NotImplemented)
+                        Err(HolochainError::SerializationError(String::from("__hdk_get_validation_package_for_entry_type returned empty result")))
                     } else {
                         match serde_json::from_str(&result) {
                                 Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
-                                Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not deserialized as ValidationPackage")))
+                                Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not be deserialized as ValidationPackage")))
                             }
                     },
                 },

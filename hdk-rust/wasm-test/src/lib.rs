@@ -144,7 +144,6 @@ struct TestEntryType {
 
 validations! {
     [ENTRY] validate_testEntryType {
-        [hdk::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
             (entry.stuff != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
@@ -152,7 +151,6 @@ validations! {
     }
 
     [ENTRY] validate_validation_package_tester {
-        [hdk::ValidationPackage::Entry]
         |_entry: TestEntryType, ctx: hdk::ValidationData| {
             Err(serde_json::to_string(&ctx).unwrap())
         }

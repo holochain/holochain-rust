@@ -80,7 +80,6 @@ macro_rules! zome_functions {
 macro_rules! validations {
     (
         $([ENTRY] $func_name:ident {
-            [$package:path]
             | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $main_block:expr
         })+
     ) => (

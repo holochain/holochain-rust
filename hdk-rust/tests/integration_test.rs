@@ -2,11 +2,14 @@ extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_dna;
 extern crate test_utils;
+extern crate holochain_core_types;
 
 use holochain_core_api::*;
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
+use holochain_core_types::json::JsonString;
+use holochain_core_types::json::RawString;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -45,7 +48,7 @@ fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
-    assert!(!result.clone().unwrap().is_empty(), "result = {:?}", result);
+    assert_eq!(result.clone().unwrap(), JsonString::from(RawString::from("")), "result = {:?}", result);
 }
 
 #[test]
@@ -62,7 +65,7 @@ fn can_commit_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
     );
 }
 
@@ -80,7 +83,7 @@ fn can_commit_entry_macro() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#)
     );
 }
 
@@ -95,7 +98,7 @@ fn can_round_trip() {
     );
     assert_eq!(
         result.unwrap(),
-        "{\"first\":\"bob\",\"second\":\"had a boring day\"}"
+        JsonString::from("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
     );
 
     let test_logger = test_logger.lock().unwrap();
@@ -116,7 +119,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"
+        JsonString::from("{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"),
     );
 
     let result = hc.call(
@@ -127,7 +130,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
+    assert_eq!(result.unwrap(), JsonString::from("{\"stuff\":\"non fail\"}"));
 
     // test the case with a bad hash
     let result = hc.call(
@@ -138,7 +141,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
+    assert_eq!(result.unwrap(), JsonString::from("{\"got back no entry\":true}"));
 }
 
 #[test]
@@ -154,7 +157,7 @@ fn can_invalidate_invalid_commit() {
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
-        "{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}",
+        JsonString::from("{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}"),
         result.unwrap()
     );
 }

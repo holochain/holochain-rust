@@ -49,7 +49,7 @@ impl PartialEq for Entry {
 
 /// entries are double serialized!
 /// this struct facilitates the outer serialization
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct SerializableEntry {
     value: String,
     entry_type: String,
@@ -177,7 +177,6 @@ pub mod tests {
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use entry::{test_entry_address, Entry};
-    use json::{FromJson, ToJson};
 
     #[test]
     /// tests for PartialEq

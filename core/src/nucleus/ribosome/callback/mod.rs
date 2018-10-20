@@ -7,6 +7,7 @@ pub mod validate_entry;
 
 use context::Context;
 use holochain_core_types::entry::Entry;
+use holochain_core_types::json::JsonString;
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -18,6 +19,7 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use serde_json;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -120,18 +122,24 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
-            CallbackParams::Receive => "".to_string(),
+            CallbackParams::Genesis => String::new(),
+            CallbackParams::ValidateCommit(entry) => String::from(JsonString::from(entry.to_owned())),
+            CallbackParams::Receive => String::new(),
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+}
+
+impl From<JsonString> for CallbackResult {
+    fn from(json_string: JsonString) -> CallbackResult {
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize CallbackResult")
+    }
 }
 
 pub(crate) fn run_callback(
@@ -147,10 +155,7 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
-        },
+        Ok(runtime) => CallbackResult::from(runtime.result),
         Err(_) => CallbackResult::NotImplemented,
     }
 }

@@ -183,7 +183,6 @@ pub mod tests {
     use super::*;
     use cas::content::{Address, AddressableContent};
     use entry::{test_entry, test_entry_address};
-    use json::{FromJson, ToJson};
     use keys::test_keys;
     use std::cmp::Ordering;
 

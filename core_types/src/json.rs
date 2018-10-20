@@ -44,15 +44,15 @@ impl From<&'static str> for JsonString {
     }
 }
 
-impl<S: Serialize> From<S> for JsonString {
-    fn from(serializable: S) -> JsonString {
-        JsonString::from(serde_json::to_string(&serializable).expect("could not serialize"))
+impl<T: Serialize> From<Vec<T>> for JsonString {
+    fn from(vector: Vec<T>) -> JsonString {
+        JsonString::from(serde_json::to_string(&vector).expect("could not Jsonify vector"))
     }
 }
 
 impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(serde_json::to_string(&result).expect("could not Json serialize result"))
+        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
     }
 }
 
@@ -82,8 +82,21 @@ impl From<String> for RawString {
     }
 }
 
+impl From<RawString> for String {
+    fn from(raw_string: RawString) -> String {
+        raw_string.0
+    }
+}
+
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
         JsonString::from(serde_json::to_string(&raw_string.0).expect("could not Jsonify RawString"))
+    }
+}
+
+impl From<JsonString> for RawString {
+    fn from(json_string: JsonString) -> RawString {
+        let s: String = serde_json::from_str(&String::from(json_string)).expect("could not deserialize JsonString");
+        RawString::from(s)
     }
 }

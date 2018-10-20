@@ -32,12 +32,12 @@ pub fn validate_entry(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(&String::from(entry_type))
+        .get_zome_name_for_entry_type(&String::from(entry_type.clone()))
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
-                String::from(entry_type)
+                String::from(entry_type.clone())
             ))));;
         }
         Some(_) => {

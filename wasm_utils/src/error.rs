@@ -1,5 +1,7 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use std::fmt;
+use serde_json;
+use holochain_core_types::json::JsonString;
 
 /// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 /// Will panic! if out or memory or other serialization error occured.
@@ -61,6 +63,12 @@ impl fmt::Display for RibosomeErrorReport {
 impl From<RibosomeErrorReport> for String {
     fn from(ribosome_error_report: RibosomeErrorReport) -> String {
         ribosome_error_report.to_string()
+    }
+}
+
+impl From<JsonString> for RibosomeErrorReport {
+    fn from(json_string: JsonString) -> RibosomeErrorReport {
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize RibosomeErrorReport")
     }
 }
 

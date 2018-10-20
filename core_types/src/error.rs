@@ -9,7 +9,7 @@ use std::{
 use json::JsonString;
 
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
 pub enum HolochainError {
     ErrorGeneric(String),
     InstanceNotActive,
@@ -95,7 +95,7 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

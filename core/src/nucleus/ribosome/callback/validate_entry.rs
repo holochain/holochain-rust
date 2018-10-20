@@ -70,7 +70,7 @@ fn build_validation_call(
         .expect("ValidationData could not be turned into JSON?!");
 
     // Trying to interpret entry as json object
-    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&*entry)
+    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&String::from((*entry).to_owned()))
         .or_else(|_| {
             // If it can't be parsed as object, treat it as a string by adding quotation marks:
             serde_json::from_str(&format!("\"{}\"", &*entry))
@@ -108,10 +108,7 @@ fn run_validation_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
-        },
+        Ok(runtime) => CallbackResult::from(runtime.result),
         Err(_) => CallbackResult::NotImplemented,
     }
 }

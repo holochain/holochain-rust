@@ -1,6 +1,7 @@
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
+use holochain_core_types::json::JsonString;
 use serde_json;
 
 #[derive(Serialize)]
@@ -11,6 +12,12 @@ struct InitGlobalsOutput {
     app_agent_key_hash: String,
     app_agent_initial_hash: String,
     app_agent_latest_hash: String,
+}
+
+impl From<InitGlobalsOutput> for JsonString {
+    fn from(init_globals_output: InitGlobalsOutput) -> JsonString {
+        JsonString::from(serde_json::to_string(&init_globals_output).expect("could not Jsonify InitGlobalsOutput"))
+    }
 }
 
 /// ZomeApiFunction::InitGlobals secret function code
@@ -27,7 +34,7 @@ pub fn invoke_init_globals(
         // TODO #232 - Implement Dna hash
         app_dna_hash: "FIXME-app_dna_hash".to_string(),
 
-        app_agent_id_str: runtime.context.agent.to_string(),
+        app_agent_id_str: String::from(runtime.context.agent.to_owned()),
 
         // TODO #233 - Implement agent pub key hash
         app_agent_key_hash: "FIXME-app_agent_key_hash".to_string(),
@@ -37,7 +44,7 @@ pub fn invoke_init_globals(
         app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
     };
 
-    return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
+    return runtime.store_json_string(&JsonString::from(globals));
 }
 
 #[cfg(test)]

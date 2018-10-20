@@ -35,6 +35,12 @@ impl From<String> for Identity {
     }
 }
 
+impl From<Identity> for String {
+    fn from(identity: Identity) -> String {
+        String::from(RawString::from(identity.0))
+    }
+}
+
 /// Object holding all Agent's data.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Agent(Identity);
@@ -42,6 +48,12 @@ pub struct Agent(Identity);
 impl From<String> for Agent {
     fn from(s: String) -> Agent {
         Agent::from(Identity::from(s))
+    }
+}
+
+impl From<Agent> for String {
+    fn from(agent: Agent) -> String {
+        String::from(agent.0)
     }
 }
 

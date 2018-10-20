@@ -67,6 +67,7 @@ use holochain_core::{
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
+use holochain_core_types::json::JsonString;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -122,7 +123,7 @@ impl Holochain {
         cap: &str,
         fn_name: &str,
         params: &str,
-    ) -> Result<String, HolochainError> {
+    ) -> Result<JsonString, HolochainError> {
         if !self.active {
             return Err(HolochainError::InstanceNotActive);
         }
@@ -187,7 +188,7 @@ mod tests {
             Ok(hc) => {
                 assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
                 assert!(!hc.active);
-                assert_eq!(hc.context.agent.to_string(), "bob".to_string());
+                assert_eq!(String::from(hc.context.agent.to_owned()), "bob".to_string());
                 assert!(hc.instance.state().nucleus().has_initialized());
                 let test_logger = test_logger.lock().unwrap();
                 assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -323,7 +324,7 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
-        assert_eq!(result.ok().unwrap(), "{\"holo\":\"world\"}")
+        assert_eq!(result.ok().unwrap(), JsonString::from("{\"holo\":\"world\"}"));
     }
 
     #[test]
@@ -363,7 +364,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
         );
     }
 
@@ -392,7 +393,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_ne!(
             result.clone().ok().unwrap(),
-            "{\"Err\":\"Argument deserialization failed\"}"
+            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         // Check in holochain instance's history that the commit event has been processed
@@ -426,7 +427,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            "{\"Err\":\"Argument deserialization failed\"}"
+            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         // Check in holochain instance's history that the commit event has been processed
@@ -456,7 +457,7 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-        assert_eq!("\"Hello world!\"", result.unwrap());
+        assert_eq!(JsonString::from("\"Hello world!\""), result.unwrap());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
@@ -493,7 +494,7 @@ mod tests {
 
         // Expect a string as result
         println!("result = {:?}", result);
-        assert_eq!("\"!\"", result.unwrap());
+        assert_eq!(JsonString::from("\"!\""), result.unwrap());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(

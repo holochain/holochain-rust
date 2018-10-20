@@ -101,7 +101,7 @@ fn run_validation_callback(
     wasm: &DnaWasm,
     dna_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
+    match ribosome::run_dna(
         &dna_name,
         context,
         wasm.code.clone(),

@@ -212,7 +212,7 @@ pub(crate) fn launch_zome_fn_call(
 
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
-        let call_result = ribosome::api::call(
+        let call_result = ribosome::run_dna(
             &app_name,
             context.clone(),
             code,

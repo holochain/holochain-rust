@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
+use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -54,10 +54,12 @@ mod tests {
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{
-            call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name},
+        ribosome::{
+            self,
+            api::{
+                commit::tests::test_commit_args_bytes,
+                tests::{test_capability, test_parameters, test_zome_name},
+            },
         },
         ZomeFnCall,
     };
@@ -172,7 +174,7 @@ mod tests {
             "commit_dispatch",
             &test_parameters(),
         );
-        let call_result = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -194,7 +196,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let call_result = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -238,7 +240,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let call_result = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),

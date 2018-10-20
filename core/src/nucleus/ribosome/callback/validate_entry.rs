@@ -113,6 +113,14 @@ fn run_validation_callback(
             true => CallbackResult::Pass,
             false => CallbackResult::Fail(call_result),
         },
-        Err(_) => CallbackResult::NotImplemented,
+        // TODO: have "not matching schema" be its own error
+        Err(HolochainError::RibosomeFailed(error_string)) => {
+            if error_string == "Argument deserialization failed" {
+                CallbackResult::Fail(String::from("JSON object does not match entry schema"))
+            } else {
+                CallbackResult::Fail(error_string)
+            }
+        },
+        Err(error) => CallbackResult::Fail(error.to_string())
     }
 }

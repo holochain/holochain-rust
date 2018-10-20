@@ -10,11 +10,12 @@ use holochain_core_types::{
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
-use nucleus::{actions::{build_validation_package::*, validate::*}, ribosome::Runtime};
-use serde_json;
-use std::{
-    str::FromStr
+use nucleus::{
+    actions::{build_validation_package::*, validate::*},
+    ribosome::Runtime,
 };
+use serde_json;
+use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -39,10 +40,9 @@ pub fn invoke_commit_app_entry(
     let entry = Entry::new(&entry_type, &input.entry_value);
 
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> =
-        block_on(
-            // 1. Build the context needed for validation of the entry
-            build_validation_package(&entry, &runtime.context)
+    let task_result: Result<Address, HolochainError> = block_on(
+        // 1. Build the context needed for validation of the entry
+        build_validation_package(&entry, &runtime.context)
             .and_then(|validation_package| {
                 Ok(ValidationData {
                     package: validation_package,
@@ -60,7 +60,8 @@ pub fn invoke_commit_app_entry(
                     &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)));
+            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
+    );
 
     let maybe_json = match task_result {
         Ok(address) => serde_json::to_string(&CommitEntryResult::success(address)),

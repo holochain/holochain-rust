@@ -42,7 +42,9 @@ pub fn get_validation_package_definition(
                         error
                     ))),
                     Ok(result) => if result.is_empty() {
-                        Err(HolochainError::SerializationError(String::from("__hdk_get_validation_package_for_entry_type returned empty result")))
+                        Err(HolochainError::SerializationError(String::from(
+                            "__hdk_get_validation_package_for_entry_type returned empty result",
+                        )))
                     } else {
                         match serde_json::from_str(&result) {
                                 Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),

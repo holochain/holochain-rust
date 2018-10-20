@@ -109,6 +109,18 @@ zome_functions! {
             Err(_) => unreachable!(),
         }
     }
+
+    commit_validation_package_tester: | | {
+        let res = hdk::commit_entry("validation_package_tester", json!({
+            "stuff": "test"
+        }));
+        match res {
+            Ok(hash_str) => json!({ "address": hash_str }),
+            Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+            Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
+            Err(_) => unreachable!(),
+        }
+    }
 }
 
 
@@ -138,6 +150,13 @@ validations! {
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
         }
     }
+
+    [ENTRY] validate_validation_package_tester {
+        [hdk::ValidationPackage::Entry]
+        |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            Err(serde_json::to_string(&ctx).unwrap())
+        }
+    }
 }
 
 #[no_mangle]
@@ -151,9 +170,22 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.stuff != "FAIL")
-                .ok_or_else(|| "FAIL content is not allowed".to_string())
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        }
+    ));
+
+    zd.define(entry!(
+        name: "validation_package_tester",
+        description: "asdfda",
+        sharing: Sharing::Public,
+
+        validation_package: || {
+            hdk::ValidationPackageDefinition::ChainFull
+        },
+
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
         }
     ));
 }

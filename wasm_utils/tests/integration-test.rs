@@ -11,7 +11,7 @@ use holochain_core::{logger::Logger, nucleus::ZomeFnResult};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use test_utils::hc_setup_and_call_zome_fn;
-
+use tempfile::tempdir;
 #[derive(Clone, Debug)]
 pub struct TestLogger {
     pub log: Vec<String>,

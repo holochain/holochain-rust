@@ -230,7 +230,7 @@ pub mod tests {
     #[test]
     fn commit_sys_entry_test() {
         let context = test_context("bob");
-        let store = test_store();
+        let store = test_store(context.clone());
         let entry = test_entry();
 
         let unpublishable_entry = test_unpublishable_entry();

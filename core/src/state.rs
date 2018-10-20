@@ -2,7 +2,7 @@ use action::ActionWrapper;
 use agent::{chain_store::ChainStore, state::AgentState};
 use context::Context;
 use dht::dht_store::DhtStore;
-use holochain_cas_implementations::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use nucleus::state::NucleusState;
 use std::{collections::HashSet, sync::Arc};
 
@@ -13,25 +13,23 @@ use std::{collections::HashSet, sync::Arc};
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
-    dht: Arc<DhtStore<MemoryStorage, EavMemoryStorage>>,
+    dht: Arc<DhtStore<FilesystemStorage, EavFileStorage>>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let content_storage =
-            MemoryStorage::new().expect("could not create new cas memory storage");
-        let eav_storage = EavMemoryStorage::new().expect("could not create new eav memory storage");
-
+        let cas = &(*context).file_storage;
+        let eav = &(*context).eav_storage;
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(ChainStore::new(content_storage.clone()))),
-            dht: Arc::new(DhtStore::new(content_storage.clone(), eav_storage.clone())),
+            agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
+            dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             history: HashSet::new(),
         }
     }
@@ -68,11 +66,11 @@ impl State {
         Arc::clone(&self.agent)
     }
 
-    pub fn dht(&self) -> Arc<DhtStore<MemoryStorage, EavMemoryStorage>> {
+    pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage, EavFileStorage>> {
         Arc::clone(&self.dht)
     }
 }
 
-pub fn test_store() -> State {
-    State::new()
+pub fn test_store(context: Arc<Context>) -> State {
+    State::new(context)
 }

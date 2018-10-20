@@ -57,7 +57,12 @@ install_rustup_tools:
 install_system_libzmq:
 	if ! (pkg-config libzmq --libs) ; then \
 		if ! which apt-get ; then \
-			echo "\033[0;93mNo apt-get installed and no system libzmq, build probably won't work\033[0m"; \
+			if which brew ; then \
+				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
+				brew install zmq \
+			else \
+				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
+			fi; \
 		else \
 			if [ "x${TRAVIS}" = "x" ]; then \
 				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
@@ -167,6 +172,7 @@ ${C_BINDING_TESTS}:
 # clean up the target directory and all extraneous "C" binding test files
 clean: ${C_BINDING_CLEAN}
 	-@$(RM) -rf target
+	-@$(RM) -rf wasm_utils/wasm-test/integration-test/target
 
 # clean up the extraneous "C" binding test files
 ${C_BINDING_CLEAN}:

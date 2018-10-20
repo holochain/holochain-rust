@@ -9,7 +9,7 @@ use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryArgs, CommitEntryResult},
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use nucleus::{actions::validate::*, ribosome::api::Runtime};
+use nucleus::{actions::validate::*, ribosome::Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -110,7 +110,7 @@ pub mod tests {
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
     use serde_json;
@@ -132,13 +132,13 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime(
+        let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );
 
         assert_eq!(
-            runtime.result,
+            call_result,
             format!(
                 r#"{{"address":"{}","validation_failure":""}}"#,
                 test_entry().address()

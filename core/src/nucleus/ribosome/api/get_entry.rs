@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
+use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -54,10 +54,12 @@ mod tests {
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{
-            call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name},
+        ribosome::{
+            self,
+            api::{
+                commit::tests::test_commit_args_bytes,
+                tests::{test_capability, test_parameters, test_zome_name},
+            },
         },
         ZomeFnCall,
     };
@@ -172,7 +174,7 @@ mod tests {
             "commit_dispatch",
             &test_parameters(),
         );
-        let commit_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -181,7 +183,7 @@ mod tests {
         ).expect("test should be callable");
 
         assert_eq!(
-            commit_runtime.result,
+            call_result,
             format!(
                 r#"{{"address":"{}","validation_failure":""}}"#,
                 test_entry().address()
@@ -194,7 +196,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -205,7 +207,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
     #[test]
@@ -238,7 +240,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -249,7 +251,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
 }

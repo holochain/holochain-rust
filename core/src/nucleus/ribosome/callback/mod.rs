@@ -140,16 +140,17 @@ pub(crate) fn run_callback(
     wasm: &DnaWasm,
     app_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
+    match ribosome::run_dna(
         &app_name,
         context,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
+        Ok(call_result) => if call_result.is_empty() {
+            CallbackResult::Pass
+        } else {
+            CallbackResult::Fail(call_result)
         },
         Err(_) => CallbackResult::NotImplemented,
     }

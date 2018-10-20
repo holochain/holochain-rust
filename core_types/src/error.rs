@@ -23,6 +23,7 @@ pub enum HolochainError {
     InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
     ValidationFailed(String),
+    RibosomeFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -64,6 +65,7 @@ impl Error for HolochainError {
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
             ValidationFailed(fail_msg) => &fail_msg,
+            RibosomeFailed(fail_msg) => &fail_msg,
         }
     }
 }

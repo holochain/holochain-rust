@@ -1,12 +1,21 @@
+extern crate directories;
 extern crate holochain_agent;
+extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 
+use holochain_cas_implementations::{
+    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::storage_path,
+};
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
+use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
+
+use directories::UserDirs;
 
 use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
@@ -25,20 +34,38 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let agent = Agent::from("c_bob".to_string());
-
-    let context = Arc::new(Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new())),
-    ));
+    let context = get_context();
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
 
-    match Holochain::new(*dna, context) {
-        Ok(hc) => Box::into_raw(Box::new(hc)),
+    match context {
+        Ok(con) => match Holochain::new(*dna, Arc::new(con)) {
+            Ok(hc) => Box::into_raw(Box::new(hc)),
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(_) => std::ptr::null_mut(),
+    }
+}
+
+fn get_context() -> Result<Context, HolochainError> {
+    let agent = Agent::from("c_bob".to_string());
+    match UserDirs::new() {
+        Some(user_dir) => {
+            let home_dir = user_dir.home_dir();
+            let cas_path = storage_path(home_dir, "cas")?;
+            let eav_path = storage_path(home_dir, "eav")?;
+            Context::new(
+                agent,
+                Arc::new(Mutex::new(NullLogger {})),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                FilesystemStorage::new(&cas_path).unwrap(),
+                EavFileStorage::new(eav_path).unwrap(),
+            )
+        }
+        None => Err(HolochainError::ErrorGeneric(
+            "Could not create context".to_string(),
+        )),
     }
 }
 

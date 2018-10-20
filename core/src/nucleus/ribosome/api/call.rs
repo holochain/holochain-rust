@@ -4,8 +4,8 @@ use holochain_core_types::error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,
-    state::NucleusState, ZomeFnCall,
+    get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
+    ZomeFnCall,
 };
 use serde_json;
 use std::sync::{mpsc::channel, Arc};

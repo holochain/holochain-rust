@@ -9,7 +9,7 @@ use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryArgs, CommitEntryResult},
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use nucleus::{actions::validate::*, ribosome::api::Runtime};
+use nucleus::{actions::validate::*, ribosome::Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};

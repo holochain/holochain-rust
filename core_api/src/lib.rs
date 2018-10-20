@@ -7,7 +7,8 @@
 //! extern crate holochain_core_api;
 //! extern crate holochain_dna;
 //! extern crate holochain_agent;
-//!
+//! extern crate holochain_cas_implementations;
+//! extern crate tempfile;
 //! use holochain_core_api::*;
 //! use holochain_dna::Dna;
 //! use holochain_agent::Agent;
@@ -15,6 +16,10 @@
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
 //! use holochain_core::persister::SimplePersister;
+//! use self::holochain_cas_implementations::{
+//!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+//! };
+//! use tempfile::tempdir;
 //!
 //! // instantiate a new app
 //!
@@ -28,7 +33,9 @@
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
 //!     Arc::new(Mutex::new(SimplePersister::new())),
-//! );
+//!     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+//!     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+//!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the app

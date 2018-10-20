@@ -5,13 +5,16 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_cas_implementations;
+extern crate tempfile;
 extern crate test_utils;
 
-use holochain_core::{logger::Logger, nucleus::ZomeFnResult};
+use holochain_core::{
+    logger::Logger, nucleus::ZomeFnResult,
+};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use test_utils::hc_setup_and_call_zome_fn;
-use tempfile::tempdir;
 #[derive(Clone, Debug)]
 pub struct TestLogger {
     pub log: Vec<String>,

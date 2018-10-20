@@ -43,13 +43,11 @@ pub fn store_string(
     s: &str,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let bytes = s.as_bytes();
-    let len = bytes.len();
-
-    if len > u16::max_value() as usize {
-        Err(RibosomeErrorCode::OutOfMemory)
-    } else {
-        write_in_wasm_memory(stack, bytes, len as u16)
+    let len = bytes.len() as u32;
+    if len > U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory)
     }
+    return write_in_wasm_memory(stack, bytes, len as u16);
 }
 
 // Sugar
@@ -77,12 +75,11 @@ pub fn store_as_json<T: Serialize>(
     internal: T,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
-    let json_bytes_len = json_bytes.len();
-    if json_bytes_len > u16::max_value() as usize {
-        Err(RibosomeErrorCode::OutOfMemory)
-    } else {
-        write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16)
+    let json_bytes_len = json_bytes.len() as u32;
+    if json_bytes_len > U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory);
     }
+    return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
 }
 
 // Sugar

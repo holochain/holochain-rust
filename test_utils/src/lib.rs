@@ -7,8 +7,9 @@ extern crate tempfile;
 extern crate wabt;
 
 use holochain_agent::Agent;
+use holochain_core_api::Holochain;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core::{context::Context, logger::Logger, persister::SimplePersister, nucleus::ZomeFnResult};
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
@@ -218,5 +219,8 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
         agent,
         logger.clone(),
         Arc::new(Mutex::new(SimplePersister::new())),
-    ));
+        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+            .unwrap(),
+    ).unwrap());
 }

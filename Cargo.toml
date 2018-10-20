@@ -9,6 +9,6 @@ members = [
   "dna_c_binding",
   "net",
   "test_bin",
-  #"net_ipc",
+  "net_ipc",
   "hdk-rust",
 ]

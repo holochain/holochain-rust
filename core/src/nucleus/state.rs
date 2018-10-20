@@ -1,4 +1,4 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::Address, error::HolochainError, validation::ValidationPackage};
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
@@ -32,6 +32,7 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_calls: HashMap<ZomeFnCall, Option<Result<String, HolochainError>>>,
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
+    pub validation_packages: HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }
 
 impl NucleusState {
@@ -41,6 +42,7 @@ impl NucleusState {
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
+            validation_packages: HashMap::new(),
         }
     }
 

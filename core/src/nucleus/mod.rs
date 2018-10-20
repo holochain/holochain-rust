@@ -358,6 +358,18 @@ fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+fn reduce_return_validation_package(
+    _context: Arc<Context>,
+    state: &mut NucleusState,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let (id, maybe_validation_package) = unwrap_to!(action => Action::ReturnValidationPackage);
+    state
+        .validation_packages
+        .insert(id.clone(), maybe_validation_package.clone());
+}
+
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
@@ -367,6 +379,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
+        Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         _ => None,
     }
 }

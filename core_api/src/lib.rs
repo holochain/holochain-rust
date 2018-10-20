@@ -54,6 +54,7 @@ extern crate futures;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
+extern crate tempfile;
 #[cfg(test)]
 extern crate test_utils;
 
@@ -79,7 +80,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
@@ -146,6 +147,10 @@ impl Holochain {
 #[cfg(test)]
 mod tests {
     extern crate holochain_agent;
+    extern crate holochain_cas_implementations;
+    use self::holochain_cas_implementations::{
+        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+    };
     use super::*;
     use holochain_core::{
         context::Context,
@@ -154,6 +159,7 @@ mod tests {
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
@@ -167,11 +173,16 @@ mod tests {
         let agent = holochain_agent::Agent::from(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-            )),
+            Arc::new(
+                Context::new(
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                ).unwrap(),
+            ),
             logger,
         )
     }

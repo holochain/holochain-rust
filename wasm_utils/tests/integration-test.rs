@@ -5,9 +5,12 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_cas_implementations;
+extern crate tempfile;
 extern crate test_utils;
 
 use holochain_agent::Agent;
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{
     context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
 };
@@ -15,6 +18,8 @@ use holochain_core_api::Holochain;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use std::sync::{Arc, Mutex};
+
+use tempfile::tempdir;
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
@@ -33,11 +38,15 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = Agent::from(agent_name.to_string());
     let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
 
-    return Arc::new(Context::new(
-        agent,
-        logger.clone(),
-        Arc::new(Mutex::new(SimplePersister::new())),
-    ));
+    Arc::new(
+        Context::new(
+            agent,
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new())),
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+        ).unwrap(),
+    )
 }
 
 // Function called at start of all unit tests:

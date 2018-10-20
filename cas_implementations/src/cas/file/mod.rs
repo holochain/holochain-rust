@@ -10,7 +10,7 @@ use holochain_core_types::{
 };
 use riker::actors::*;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
 }
@@ -55,12 +55,14 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
+
+    use self::tempfile::{tempdir, TempDir};
     use cas::file::FilesystemStorage;
     use holochain_core_types::cas::{
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
     };
-    use tempfile::{tempdir, TempDir};
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();

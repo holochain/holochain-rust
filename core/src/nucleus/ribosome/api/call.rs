@@ -170,12 +170,15 @@ pub(crate) fn reduce_call(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     extern crate test_utils;
     extern crate wabt;
 
+    use self::tempfile::tempdir;
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::error::DnaError;
     use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
@@ -226,11 +229,16 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
-        Arc::new(Context::new(
-            Agent::from("alex".to_string()),
-            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        ))
+        Arc::new(
+            Context::new(
+                Agent::from("alex".to_string()),
+                Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            ).unwrap(),
+        )
     }
 
     #[cfg_attr(tarpaulin, skip)]

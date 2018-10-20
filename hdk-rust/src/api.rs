@@ -6,7 +6,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
+        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -292,7 +292,10 @@ pub fn remove_entry<S: Into<String>>(
 }
 
 /// implements access to low-level WASM hc_get_entry
-pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError> {
+pub fn get_entry(
+    entry_hash: HashString,
+    _options: GetEntryOptions,
+) -> Result<GetEntryResult, RibosomeError> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -325,10 +328,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<String>, RibosomeError
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    match result.status {
-        GetResultStatus::Found => Ok(Some(result.entry)),
-        GetResultStatus::NotFound => Ok(None),
-    }
+    Ok(result)
 }
 
 /// FIXME DOC

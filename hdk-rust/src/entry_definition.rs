@@ -40,7 +40,7 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|raw_entry: String, ctx: ::hdk::holochain_wasm_utils::api_serialization::validation::ValidationData| {
+            let validator = Box::new(|raw_entry: String, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
                 let $ctx = ctx;
                 match serde_json::from_str(&raw_entry) {
                     Ok(entry) => {

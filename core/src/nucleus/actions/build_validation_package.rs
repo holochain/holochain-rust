@@ -143,8 +143,7 @@ fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
         .collect::<Vec<_>>()
 }
 
-/// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-/// Tracks the state for ValidationResults.
+/// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
 pub struct ValidationPackageFuture {
     context: Arc<Context>,
     key: snowflake::ProcessUniqueId,

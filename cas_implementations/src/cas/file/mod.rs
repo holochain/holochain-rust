@@ -9,7 +9,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
-use std::path::Path;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {

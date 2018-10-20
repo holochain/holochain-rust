@@ -8,7 +8,7 @@ use holochain_core_types::{
 use riker::actors::*;
 use std::collections::HashSet;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EavFileStorage {
     actor: ActorRef<Protocol>,
 }

@@ -41,7 +41,7 @@ pub fn invoke_commit_app_entry(
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
         block_on(
-            // First validate entry:
+            // 1. Build the context needed for validation of the entry
             build_validation_package(&entry, &runtime.context)
             .and_then(|validation_package| {
                 Ok(ValidationData {
@@ -51,6 +51,7 @@ pub fn invoke_commit_app_entry(
                     action: EntryAction::Commit,
                 })
             })
+            // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(
                     entry_type.clone(),
@@ -58,7 +59,7 @@ pub fn invoke_commit_app_entry(
                     validation_data,
                     &runtime.context)
             })
-            // if successful, commit entry:
+            // 3. Commit the valid entry to chain and DHT
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)));
 
     let maybe_json = match task_result {

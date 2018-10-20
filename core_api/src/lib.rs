@@ -156,10 +156,10 @@ impl Holochain {
 mod tests {
     extern crate holochain_cas_implementations;
 
-    use super::*;
     use self::holochain_cas_implementations::{
         cas::file::FilesystemStorage, eav::file::EavFileStorage,
     };
+    use super::*;
     extern crate holochain_agent;
     use holochain_core::{
         context::Context,
@@ -184,9 +184,9 @@ mod tests {
         (
             Arc::new(
                 Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),

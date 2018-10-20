@@ -9,9 +9,7 @@ extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_core::{
-    logger::Logger, nucleus::ZomeFnResult,
-};
+use holochain_core::{logger::Logger, nucleus::ZomeFnResult};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::error::*;
 use test_utils::hc_setup_and_call_zome_fn;

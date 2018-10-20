@@ -45,7 +45,7 @@ pub fn store_string(
     let bytes = s.as_bytes();
     let len = bytes.len() as u32;
     if len > U16_MAX {
-        return Err(RibosomeErrorCode::OutOfMemory)
+        return Err(RibosomeErrorCode::OutOfMemory);
     }
     return write_in_wasm_memory(stack, bytes, len as u16);
 }

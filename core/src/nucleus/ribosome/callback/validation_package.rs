@@ -36,7 +36,7 @@ pub fn get_validation_package_definition(
                     "__hdk_get_validation_package_for_entry_type",
                     &app_entry_type,
                 ),
-                Some(app_entry_type.into_bytes())
+                Some(app_entry_type.into_bytes()),
             )?;
 
             if result.is_empty() {
@@ -46,7 +46,9 @@ pub fn get_validation_package_definition(
             } else {
                 match serde_json::from_str(&result) {
                     Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
-                    Err(_) => Err(HolochainError::SerializationError(String::from("validation_package result could not be deserialized as ValidationPackage")))
+                    Err(_) => Err(HolochainError::SerializationError(String::from(
+                        "validation_package result could not be deserialized as ValidationPackage",
+                    ))),
                 }
             }
         }

@@ -12,13 +12,13 @@ use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 /// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
 pub struct Runtime {
-    // Memory state tracker between ribosome and wasm.
+    /// Memory state tracker between ribosome and wasm.
     pub memory_manager: SinglePageManager,
-    // Context of Holochain. Required for operating.
+    /// Context of Holochain. Required for operating.
     pub context: Arc<Context>,
-    // Name of the DNA that is being hosted.
+    /// Name of the DNA that is being hosted.
     pub dna_name: String,
-    // The zome function call that initiated the Ribosome.
+    /// The zome function call that initiated the Ribosome.
     pub zome_call: ZomeFnCall,
 }
 

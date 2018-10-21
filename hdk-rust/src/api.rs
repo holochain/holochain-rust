@@ -1,4 +1,3 @@
-use serde_json;
 use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -11,6 +10,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use serde_json;
 
 //--------------------------------------------------------------------------------------------------
 // APP GLOBAL VARIABLES
@@ -261,10 +261,7 @@ pub fn update_agent() -> ZomeApiResult<HashString> {
 
 /// FIXME DOC
 /// Commit a Deletion System Entry
-pub fn remove_entry<S: Into<String>>(
-    _entry: HashString,
-    _message: S,
-) -> ZomeApiResult<HashString> {
+pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -320,10 +317,7 @@ pub fn link_entries<S: Into<String>>(
 }
 
 /// FIXME DOC
-pub fn get_links<S: Into<String>>(
-    _base: HashString,
-    _tag: S,
-) -> ZomeApiResult<Vec<HashString>> {
+pub fn get_links<S: Into<String>>(_base: HashString, _tag: S) -> ZomeApiResult<Vec<HashString>> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -335,10 +329,7 @@ pub fn query() -> ZomeApiResult<Vec<String>> {
 }
 
 /// FIXME DOC
-pub fn send(
-    _to: HashString,
-    _message: serde_json::Value,
-) -> ZomeApiResult<serde_json::Value> {
+pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }

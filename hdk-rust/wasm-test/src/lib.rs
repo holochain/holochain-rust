@@ -9,13 +9,13 @@ extern crate serde_derive;
 extern crate boolinator;
 
 use boolinator::Boolinator;
-use hdk::globals::G_MEM_STACK;
+use hdk::{globals::G_MEM_STACK, RibosomeError};
 use holochain_wasm_utils::{
-    error::RibosomeErrorCode,
-    holochain_core_types::hash::HashString,
-    memory_serialization::*, memory_allocation::*
+    error::RibosomeErrorCode, holochain_core_types::hash::HashString, memory_allocation::*,
+    memory_serialization::*,
 };
-use hdk::RibosomeError;
+
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
 
 use hdk::holochain_dna::zome::entry_types::Sharing;
 
@@ -36,7 +36,6 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     return 0;
 }
 
-
 #[derive(Deserialize, Serialize, Default)]
 struct CommitOutputStruct {
     address: String,
@@ -44,7 +43,6 @@ struct CommitOutputStruct {
 
 #[no_mangle]
 pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
-
     #[derive(Deserialize, Default)]
     struct CommitInputStruct {
         entry_type_name: String,
@@ -52,7 +50,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 
     unsafe {
-        G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
+        G_MEM_STACK =
+            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 
     // Deserialize and check for an encoded error
@@ -68,13 +67,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     let res = hdk::commit_entry(&input.entry_type_name, entry_content);
 
     let res_obj = match res {
-        Ok(hash_str) => CommitOutputStruct {address: hash_str.to_string()},
-        Err(RibosomeError::RibosomeFailed(err_str)) => {
-            unsafe {
-                return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
-            }
+        Ok(hash_str) => CommitOutputStruct {
+            address: hash_str.to_string(),
         },
-       Err(_) => unreachable!(),
+        Err(RibosomeError::RibosomeFailed(err_str)) => unsafe {
+            return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
+        },
+        Err(_) => unreachable!(),
     };
     unsafe {
         return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
@@ -95,22 +94,23 @@ zome_functions! {
     }
 
     check_get_entry: |entry_hash: HashString| {
-        let res = hdk::get_entry(entry_hash);
+        let res = hdk::get_entry(entry_hash,GetEntryOptions{});
         match res {
-            Ok(Some(entry)) => {
-                let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&entry);
-                match maybe_entry_value {
-                    Ok(entry_value) => entry_value,
-                    Err(err) => json!({"error trying deserialize entry": err.to_string()}),
-                }
-            },
-            Ok(None) => json!({"got back no entry": true}),
+            Ok(result) => match result.status {
+                GetResultStatus::Found => {
+                    let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&result.entry);
+                    match maybe_entry_value {
+                        Ok(entry_value) => entry_value,
+                        Err(err) => json!({"error trying deserialize entry": err.to_string()}),
+                    }
+                },
+                GetResultStatus::NotFound => json!({"got back no entry": true}),
+            }
             Err(RibosomeError::RibosomeFailed(err_str)) => json!({"get entry Err": err_str}),
             Err(_) => unreachable!(),
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize)]
 struct TweetResponse {

@@ -1,7 +1,7 @@
 [package]
 name = "hdk"
 version = "0.0.0"
-authors = ["Nicolas Luck <nicolas.luck@holo.host>"]
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 serde = "1.0"
@@ -17,3 +17,4 @@ test_utils = { path = "../test_utils" }
 holochain_core_api = { path = "../core_api" }
 holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
+tempfile="3"

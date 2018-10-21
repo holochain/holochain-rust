@@ -7,7 +7,8 @@
 //! extern crate holochain_core_api;
 //! extern crate holochain_dna;
 //! extern crate holochain_agent;
-//!
+//! extern crate holochain_cas_implementations;
+//! extern crate tempfile;
 //! use holochain_core_api::*;
 //! use holochain_dna::Dna;
 //! use holochain_agent::Agent;
@@ -15,6 +16,10 @@
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
 //! use holochain_core::persister::SimplePersister;
+//! use self::holochain_cas_implementations::{
+//!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+//! };
+//! use tempfile::tempdir;
 //!
 //! // instantiate a new app
 //!
@@ -28,7 +33,9 @@
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
 //!     Arc::new(Mutex::new(SimplePersister::new())),
-//! );
+//!     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+//!     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+//!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the app
@@ -51,9 +58,11 @@
 //!```
 
 extern crate futures;
+extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
+extern crate tempfile;
 #[cfg(test)]
 extern crate test_utils;
 
@@ -79,7 +88,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
@@ -145,8 +154,13 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_agent;
+    extern crate holochain_cas_implementations;
+
+    use self::holochain_cas_implementations::{
+        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+    };
     use super::*;
+    extern crate holochain_agent;
     use holochain_core::{
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
@@ -154,9 +168,10 @@ mod tests {
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
-        create_wasm_from_file,
+        create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
 
     // TODO: TestLogger duplicated in test_utils because:
@@ -167,11 +182,16 @@ mod tests {
         let agent = holochain_agent::Agent::from(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-            )),
+            Arc::new(
+                Context::new(
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                ).unwrap(),
+            ),
             logger,
         )
     }
@@ -504,5 +524,15 @@ mod tests {
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(hc.state().unwrap().history.len(), 5);
+    }
+
+    #[test]
+    // TODO #165 - Move test to core/nucleus and use instance directly
+    fn call_debug_stacked() {
+        let call_result = hc_setup_and_call_zome_fn(
+            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
+            "debug_stacked_hello",
+        );
+        assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
     }
 }

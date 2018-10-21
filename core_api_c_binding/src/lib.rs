@@ -7,11 +7,13 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 
 use holochain_cas_implementations::{
-    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::storage_path,
+    cas::file::FilesystemStorage,
+    eav::file::EavFileStorage,
+    path::{create_path_if_not_exists, storage_path},
 };
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_dna::Dna;
 use std::sync::Arc;
 
@@ -48,13 +50,15 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     }
 }
 
-fn get_context() -> Result<Context, HolochainError> {
+fn get_context() -> HcResult<Context> {
     let agent = Agent::from("c_bob".to_string());
     match UserDirs::new() {
         Some(user_dir) => {
             let home_dir = user_dir.home_dir();
             let cas_path = storage_path(home_dir, "cas")?;
             let eav_path = storage_path(home_dir, "eav")?;
+            create_path_if_not_exists(&cas_path)?;
+            create_path_if_not_exists(&eav_path)?;
             Context::new(
                 agent,
                 Arc::new(Mutex::new(NullLogger {})),

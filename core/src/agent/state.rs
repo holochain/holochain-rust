@@ -1,7 +1,7 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::memory::MemoryStorage;
+use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent},
@@ -26,13 +26,13 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<MemoryStorage>,
+    chain: ChainStore<FilesystemStorage>,
     top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<MemoryStorage>) -> AgentState {
+    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -52,7 +52,7 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<MemoryStorage> {
+    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
         self.chain.clone()
     }
 
@@ -141,12 +141,12 @@ fn reduce_commit_entry(
         state.chain.content_storage().add(chain_header)?;
         Ok(entry.address())
     }
-    let res = response(state, &entry, &chain_header);
+    let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
 
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(res));
+        .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
 
 /// do a get action against an agent state
@@ -158,13 +158,11 @@ fn reduce_get_entry(
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-
     let result = state
-        .chain
+        .chain()
         .content_storage()
         .fetch(&address)
         .expect("could not fetch from CAS");
-
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 

@@ -6,6 +6,9 @@ authors = ["Nicolas Luck <nicolas@lucksus.org>"]
 [dependencies]
 holochain_dna = { path = "../dna" }
 holochain_core = { path = "../core" }
+holochain_core_api = { path = "../core_api" }
 holochain_agent = { path = "../agent" }
+holochain_cas_implementations = { path = "../cas_implementations" }
 wabt = "0.4"
+tempfile = "3"
 

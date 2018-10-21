@@ -13,17 +13,16 @@ use std::{ffi::CStr, os::raw::c_char, slice};
 /// Convert a string stored in wasm memory into a String.
 fn load_str_from_raw<'a>(ptr_data: *mut c_char) -> &'a str {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
-    let stored_str = ptr_safe_c_str.to_str().unwrap();
-    stored_str
+    ptr_safe_c_str.to_str().unwrap()
 }
 
 /// Write in wasm memory according to stack state.
 fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
-    bytes: &Vec<u8>,
+    bytes: &[u8],
     len: u16,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    if len as u32 + stack.top() as u32 > U16_MAX {
+    if u32::from(len) + u32::from(stack.top()) > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
     let ptr = stack.allocate(len) as *mut c_char;
@@ -43,18 +42,17 @@ pub fn store_string(
     stack: &mut SinglePageStack,
     s: &str,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let bytes = s.to_string().into_bytes();
-    let len = bytes.len();
-    if len > <u16>::max_value() as usize {
+    let bytes = s.as_bytes();
+    let len = bytes.len() as u32;
+    if len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, &bytes, len as u16);
+    return write_in_wasm_memory(stack, bytes, len as u16);
 }
 
 // Sugar
 pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str) -> i32 {
-    let allocation_of_output = store_string(stack, s).unwrap();
-    return allocation_of_output.encode() as i32;
+    store_string(stack, s).unwrap().encode() as i32
 }
 
 /// Retrieve a stored string from an encoded allocation.
@@ -77,8 +75,8 @@ pub fn store_as_json<T: Serialize>(
     internal: T,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
-    let json_bytes_len = json_bytes.len();
-    if json_bytes_len > <u16>::max_value() as usize {
+    let json_bytes_len = json_bytes.len() as u32;
+    if json_bytes_len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
     return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
@@ -89,8 +87,7 @@ pub fn store_json_into_encoded_allocation<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,
 ) -> i32 {
-    let allocation_of_output = store_as_json(stack, internal).unwrap();
-    return allocation_of_output.encode() as i32;
+    store_as_json(stack, internal).unwrap().encode() as i32
 }
 
 /// Retrieve a stored data struct from an encoded allocation.

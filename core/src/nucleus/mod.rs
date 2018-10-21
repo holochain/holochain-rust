@@ -627,7 +627,7 @@ pub mod tests {
     #[test]
     /// tests that calling an invalid DNA returns the correct error
     fn call_ribosome_wrong_dna() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("janet"));
 
         instance.start_action_loop(test_context("jane"));
 

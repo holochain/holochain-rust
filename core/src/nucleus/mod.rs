@@ -277,7 +277,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::ZomeNotFound(format!(
+                HolochainError::Dna(DnaError::ZomeNotFound(format!(
                     "Zome '{}' not found",
                     fn_call.zome_name.clone()
                 ))),
@@ -292,7 +292,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::CapabilityNotFound(format!(
+                HolochainError::Dna(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
                     fn_call.cap_name.clone(),
                     fn_call.zome_name.clone()
@@ -311,7 +311,7 @@ fn reduce_execute_zome_function(
         dispatch_error_result(
             &context.action_channel,
             &fn_call,
-            HolochainError::DnaError(DnaError::ZomeFunctionNotFound(format!(
+            HolochainError::Dna(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found",
                 fn_call.fn_name.clone()
             ))),
@@ -399,7 +399,7 @@ fn get_capability_with_zome_call(
     match res {
         Err(e) => Err(ExecuteZomeFnResponse::new(
             zome_call.clone(),
-            Err(HolochainError::DnaError(e)),
+            Err(HolochainError::Dna(e)),
         )),
         Ok(cap) => Ok(cap.clone()),
     }
@@ -639,7 +639,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(err))) => {
+            Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
                 assert_eq!(err, "Zome function \'xxx\' not found")
             }
             _ => assert!(false),
@@ -658,7 +658,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => {
+            Err(HolochainError::Dna(err)) => {
                 assert_eq!(err.description(), "Zome 'xxx' not found")
             }
             _ => assert!(false),
@@ -670,7 +670,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => assert_eq!(
+            Err(HolochainError::Dna(err)) => assert_eq!(
                 err.description(),
                 "Capability 'xxx' not found in Zome 'test_zome'"
             ),

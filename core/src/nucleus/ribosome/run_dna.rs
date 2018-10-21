@@ -1,9 +1,9 @@
 use context::Context;
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_wasm_utils::{
-    error::{RibosomeErrorCode, RibosomeReturnCode},
     memory_allocation::decode_encoded_allocation,
 };
+use holochain_core_types::error::{RibosomeErrorCode, RibosomeReturnCode};
 use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
     ZomeFnCall, ZomeFnResult,

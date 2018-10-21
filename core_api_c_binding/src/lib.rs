@@ -7,7 +7,9 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 
 use holochain_cas_implementations::{
-    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::storage_path,
+    cas::file::FilesystemStorage,
+    eav::file::EavFileStorage,
+    path::{create_path_if_not_exists, storage_path},
 };
 use holochain_core::context::Context;
 use holochain_core_api::Holochain;
@@ -55,6 +57,8 @@ fn get_context() -> Result<Context, HolochainError> {
             let home_dir = user_dir.home_dir();
             let cas_path = storage_path(home_dir, "cas")?;
             let eav_path = storage_path(home_dir, "eav")?;
+            create_path_if_not_exists(&cas_path)?;
+            create_path_if_not_exists(&eav_path)?;
             Context::new(
                 agent,
                 Arc::new(Mutex::new(NullLogger {})),

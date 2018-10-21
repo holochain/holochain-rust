@@ -120,7 +120,7 @@ fn run_validation_callback(
             } else {
                 CallbackResult::Fail(error_string)
             }
-        },
-        Err(error) => CallbackResult::Fail(error.to_string())
+        }
+        Err(error) => CallbackResult::Fail(error.to_string()),
     }
 }

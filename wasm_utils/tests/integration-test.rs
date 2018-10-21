@@ -10,9 +10,7 @@ extern crate tempfile;
 extern crate test_utils;
 
 use holochain_core::{logger::Logger, nucleus::ZomeFnResult};
-use holochain_core_types::error::{
-    HolochainError, RibosomeErrorCode, RibosomeErrorReport,
-};
+use holochain_core_types::error::{HolochainError, RibosomeErrorCode, RibosomeErrorReport};
 use test_utils::hc_setup_and_call_zome_fn;
 #[derive(Clone, Debug)]
 pub struct TestLogger {

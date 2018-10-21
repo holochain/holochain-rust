@@ -658,9 +658,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::Dna(err)) => {
-                assert_eq!(err.description(), "Zome 'xxx' not found")
-            }
+            Err(HolochainError::Dna(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 

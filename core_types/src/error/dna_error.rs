@@ -1,8 +1,4 @@
-
-use std::{
-    error::Error,
-    fmt,
-};
+use std::{error::Error, fmt};
 
 #[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum DnaError {

@@ -1,6 +1,6 @@
-use serde_json;
-use std::{fmt, error::Error};
 use self::ZomeApiError::*;
+use serde_json;
+use std::{error::Error, fmt};
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 

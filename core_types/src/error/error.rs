@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
 use serde_json::Error as SerdeError;
@@ -7,7 +8,6 @@ use std::{
     fmt,
     io::{self, Error as IoError},
 };
-use error::DnaError;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq)]

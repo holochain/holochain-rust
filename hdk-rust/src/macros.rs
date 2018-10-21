@@ -21,7 +21,7 @@ macro_rules! load_json {
 /// # extern crate serde_json;
 /// # #[macro_use] extern crate serde_derive;
 /// # use hdk::globals::G_MEM_STACK;
-/// # use holochain_core_types::error::RibosomeReturnCode;
+/// # use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
 /// # fn main() {
 /// #[derive(Serialize)]
 /// struct CreatePostResponse {

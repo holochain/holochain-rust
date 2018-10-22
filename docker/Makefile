@@ -39,7 +39,7 @@ install_rustup:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(CORE_RUST_VERSION) -y; \
 	fi
-	export PATH=${HOME}/.cargo/bin:${PATH}
+	export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
@@ -48,7 +48,7 @@ install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
 	fi
-	export PATH=${HOME}/.cargo/bin:${PATH}
+	export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # idempotent installation of libzmq system library
 # note, this is complicated by our use of travis-ci ubuntu trusty

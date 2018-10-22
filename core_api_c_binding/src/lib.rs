@@ -7,8 +7,7 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 
 use holochain_cas_implementations::{
-    cas::file::FilesystemStorage,
-    eav::file::EavFileStorage,
+    cas::file::FilesystemStorage, eav::file::EavFileStorage,
     path::{create_path_if_not_exists},
 };
 use holochain_core::context::Context;
@@ -20,9 +19,7 @@ use std::sync::Arc;
 use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{
-    ffi::{CStr, CString},
-    os::raw::c_char,
-    sync::Mutex,
+    ffi::{CStr, CString}, os::raw::c_char, sync::Mutex,
 };
 
 #[derive(Clone, Debug)]

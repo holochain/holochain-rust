@@ -3,11 +3,9 @@ use context::Context;
 use state::State;
 use std::{
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
-        Arc, RwLock, RwLockReadGuard,
+        mpsc::{sync_channel, Receiver, SyncSender}, Arc, RwLock, RwLockReadGuard,
     },
-    thread,
-    time::Duration,
+    thread, time::Duration,
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
@@ -286,17 +284,14 @@ pub mod tests {
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+        actions::initialize::initialize_application, ribosome::{callback::Callback, Defn},
     };
     use persister::SimplePersister;
     use state::State;
     use std::{
         sync::{
-            mpsc::{channel, sync_channel},
-            Arc, Mutex,
-        },
-        thread::sleep,
+            mpsc::{channel, sync_channel}, Arc, Mutex,
+        }, thread::sleep,
         time::Duration,
     };
 

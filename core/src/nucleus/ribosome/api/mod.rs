@@ -148,16 +148,13 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
-        Instance,
+        tests::{test_context_and_logger, test_instance, TestLogger}, Instance,
     };
     use nucleus::{
-        ribosome::{self, Defn},
-        ZomeFnCall,
+        ribosome::{self, Defn}, ZomeFnCall,
     };
     use std::{
-        str::FromStr,
-        sync::{Arc, Mutex},
+        str::FromStr, sync::{Arc, Mutex},
     };
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -243,6 +240,24 @@ pub mod tests {
         (result i32)
 
         (i32.const 0)
+    )
+
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
     )
 )
                 "#,

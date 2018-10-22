@@ -1,6 +1,5 @@
 use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    str::FromStr,
+    fmt::{Display, Formatter, Result as FmtResult}, str::FromStr,
 };
 
 // Macro for statically concatanating the system entry prefix for entry types of system entries
@@ -28,18 +27,18 @@ pub enum EntryType {
 }
 
 impl EntryType {
-    pub fn is_app(self) -> bool {
+    pub fn is_app(&self) -> bool {
         match self {
             EntryType::App(_) => true,
             _ => false,
         }
     }
-    pub fn is_sys(self) -> bool {
+    pub fn is_sys(&self) -> bool {
         !self.is_app()
     }
 
-    pub fn can_publish(self) -> bool {
-        self != EntryType::Dna
+    pub fn can_publish(&self) -> bool {
+        *self != EntryType::Dna
     }
 
     /// Checks entry_type_name is valid

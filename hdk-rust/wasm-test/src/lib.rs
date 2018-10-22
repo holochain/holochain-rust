@@ -117,8 +117,8 @@ zome_functions! {
         }));
         match res {
             Ok(hash_str) => json!({ "address": hash_str }),
-            Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-            Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
+            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
             Err(_) => unreachable!(),
         }
     }

@@ -1,5 +1,6 @@
 use holochain_core_types::error::RibosomeErrorCode;
 use holochain_wasm_utils::memory_allocation::{SinglePageAllocation, SinglePageStack, U16_MAX};
+
 use wasmi::{MemoryRef, ModuleRef};
 
 //--------------------------------------------------------------------------------------------------

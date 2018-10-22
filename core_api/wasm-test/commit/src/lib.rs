@@ -107,3 +107,9 @@ pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let output = hdk_commit_fail(&mut mem_stack);
   return store_json_into_encoded_allocation(&mut mem_stack, output);
 }
+
+#[no_mangle]
+pub extern fn __hdk_get_validation_package_for_entry_type(encoded_allocation_of_input: usize) -> i32 {
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+  store_string_into_encoded_allocation(&mut mem_stack, "\"ChainFull\"")
+}

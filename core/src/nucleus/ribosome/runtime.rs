@@ -2,8 +2,7 @@ use context::Context;
 use holochain_core_types::error::RibosomeReturnCode;
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn},
-    ZomeFnCall,
+    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn}, ZomeFnCall,
 };
 use std::sync::Arc;
 use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};

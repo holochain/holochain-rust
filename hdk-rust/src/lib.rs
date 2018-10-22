@@ -13,6 +13,7 @@ extern crate lazy_static;
 pub extern crate holochain_wasm_utils;
 
 mod api;
+pub mod error;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;

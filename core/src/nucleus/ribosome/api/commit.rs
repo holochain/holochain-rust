@@ -113,6 +113,7 @@ pub mod tests {
         Defn,
     };
     use serde_json;
+    use holochain_core_types::json::JsonString;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
@@ -121,7 +122,7 @@ pub mod tests {
 
         let args = CommitEntryArgs {
             entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
+            entry_value: String::from(entry.value().to_owned()),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -138,10 +139,10 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            format!(
+            JsonString::from(format!(
                 r#"{{"address":"{}","validation_failure":""}}"#,
                 test_entry().address()
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
     }
 

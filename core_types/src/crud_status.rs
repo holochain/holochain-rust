@@ -21,6 +21,40 @@ bitflags! {
     }
 }
 
+impl From<CrudStatus> for String {
+    fn from(crud_status: CrudStatus) -> String {
+        String::from(
+            match crud_status {
+                CrudStatus::LIVE => "1",
+                CrudStatus::REJECTED => "2",
+                CrudStatus::DELETED => "4",
+                CrudStatus::MODIFIED => "8",
+                CrudStatus::LOCKED => "16",
+                _ => unreachable!(),
+            }
+        )
+    }
+}
+
+impl From<&'static str> for CrudStatus {
+    fn from(s: &str) -> CrudStatus {
+        CrudStatus::from(String::from(s))
+    }
+}
+
+impl From<String> for CrudStatus {
+    fn from(s: String) -> CrudStatus {
+        match s.as_ref() {
+            "1" => CrudStatus::LIVE,
+            "2" => CrudStatus::REJECTED,
+            "4" => CrudStatus::DELETED,
+            "8" => CrudStatus::MODIFIED,
+            "16" => CrudStatus::LOCKED,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl From<CrudStatus> for JsonString {
     fn from(crud_status: CrudStatus) -> JsonString {
         JsonString::from(serde_json::to_string(&crud_status).expect("failed to Jsonify CrudStatus"))
@@ -53,6 +87,9 @@ mod tests {
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use eav::eav_round_trip_test_runner;
+    use json::JsonString;
+    use json::RawString;
+    use cas::content::Address;
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -80,30 +117,36 @@ mod tests {
 
     #[test]
     fn crud_status_example_eav() {
-        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
-        let attribute = "favourite-badge".to_string();
-        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        let entity_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("example")));
+        let attribute = String::from("favourite-badge");
+        let value_content: Content = CrudStatus::from_content(&JsonString::from(RawString::from("2"))).content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
     #[test]
-    /// show ToString implementation
+    /// show From<CrudStatus> implementation for String
     fn to_string_test() {
-        assert_eq!("1".to_string(), CrudStatus::LIVE.to_string());
-        assert_eq!("2".to_string(), CrudStatus::REJECTED.to_string());
-        assert_eq!("4".to_string(), CrudStatus::DELETED.to_string());
-        assert_eq!("8".to_string(), CrudStatus::MODIFIED.to_string());
-        assert_eq!("16".to_string(), CrudStatus::LOCKED.to_string());
+        assert_eq!(String::from("1"), String::from(CrudStatus::LIVE));
+        assert_eq!(String::from("2"), String::from(CrudStatus::REJECTED));
+        assert_eq!(String::from("4"), String::from(CrudStatus::DELETED));
+        assert_eq!(String::from("8"), String::from(CrudStatus::MODIFIED));
+        assert_eq!(String::from("16"), String::from(CrudStatus::LOCKED));
     }
 
     #[test]
-    /// show From<String> implementation
+    /// show From<String> and From<&'static str> implementation for CrudStatus
     fn from_string_test() {
-        assert_eq!(CrudStatus::from(&"1".to_string()), CrudStatus::LIVE);
-        assert_eq!(CrudStatus::from(&"2".to_string()), CrudStatus::REJECTED);
-        assert_eq!(CrudStatus::from(&"4".to_string()), CrudStatus::DELETED);
-        assert_eq!(CrudStatus::from(&"8".to_string()), CrudStatus::MODIFIED);
-        assert_eq!(CrudStatus::from(&"16".to_string()), CrudStatus::LOCKED);
+        assert_eq!(CrudStatus::from("1"), CrudStatus::LIVE);
+        assert_eq!(CrudStatus::from("2"), CrudStatus::REJECTED);
+        assert_eq!(CrudStatus::from("4"), CrudStatus::DELETED);
+        assert_eq!(CrudStatus::from("8"), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from("16"), CrudStatus::LOCKED);
+
+        assert_eq!(CrudStatus::from(String::from("1")), CrudStatus::LIVE);
+        assert_eq!(CrudStatus::from(String::from("2")), CrudStatus::REJECTED);
+        assert_eq!(CrudStatus::from(String::from("4")), CrudStatus::DELETED);
+        assert_eq!(CrudStatus::from(String::from("8")), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from(String::from("16")), CrudStatus::LOCKED);
     }
 
     #[test]
@@ -111,29 +154,29 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("1"),
+            JsonString::from(RawString::from("1")),
             CrudStatus::LIVE,
-            String::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG"),
+            Address::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("2"),
+            JsonString::from(RawString::from("2")),
             CrudStatus::REJECTED,
-            String::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg"),
+            Address::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("4"),
+            JsonString::from(RawString::from("4")),
             CrudStatus::DELETED,
-            String::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm"),
+            Address::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("8"),
+            JsonString::from(RawString::from("8")),
             CrudStatus::MODIFIED,
-            String::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi"),
+            Address::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("16"),
+            JsonString::from(RawString::from("16")),
             CrudStatus::LOCKED,
-            String::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a"),
+            Address::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a"),
         );
     }
 

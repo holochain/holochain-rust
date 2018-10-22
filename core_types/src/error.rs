@@ -145,7 +145,10 @@ mod tests {
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!(r#"{"error":"foo"}"#, err.to_json().unwrap());
+        assert_eq!(
+            JsonString::from(r#"{"error":"foo"}"#),
+            JsonString::from(err),
+        );
     }
 
     #[test]

@@ -23,6 +23,8 @@ pub mod tests {
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::json::JsonString;
+    use holochain_core_types::json::RawString;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {
@@ -40,10 +42,10 @@ pub mod tests {
         let (runtime, logger) =
             test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let logger = logger.lock().unwrap();
-        assert_eq!("foo".to_string(), runtime.result);
+        assert_eq!(JsonString::from(RawString::from("foo")), runtime.result);
         assert_eq!(
-            format!("{:?}", logger.log),
-            "[\"Zome Function \\\'test\\\' returned: Success\"]".to_string(),
+            JsonString::from(format!("{:?}", logger.log)),
+            JsonString::from("[\"Zome Function \\\'test\\\' returned: Success\"]"),
         );
     }
 }

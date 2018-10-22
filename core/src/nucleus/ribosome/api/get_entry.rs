@@ -5,6 +5,7 @@ use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use holochain_wasm_utils::api_serialization::get_entry::SerializableGetEntryResult;
 use holochain_core_types::json::JsonString;
+use holochain_core_types::entry::SerializedEntry;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -29,7 +30,7 @@ pub fn invoke_get_entry(
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(maybe_entry) => {
             let result = match maybe_entry {
-                Some(entry) => GetEntryResult::found(JsonString::from(entry)),
+                Some(entry) => GetEntryResult::found(JsonString::from(SerializedEntry::from(entry))),
                 None => GetEntryResult::not_found(),
             };
             let outer_result = SerializableGetEntryResult{
@@ -62,6 +63,7 @@ mod tests {
     };
     use serde_json;
     use std::sync::Arc;
+    use holochain_core_types::json::JsonString;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -181,10 +183,10 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            format!(
+            JsonString::from(format!(
                 r#"{{"address":"{}","validation_failure":""}}"#,
                 test_entry().address()
-            ) + "\u{0}",
+            ) + "\u{0}"),
         );
 
         let get_call = ZomeFnCall::new(
@@ -204,7 +206,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(JsonString::from(expected), get_runtime.result);
     }
 
     #[test]
@@ -248,7 +250,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(JsonString::from(expected), get_runtime.result);
     }
 
 }

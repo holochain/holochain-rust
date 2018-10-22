@@ -20,6 +20,7 @@ use nucleus::{
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 use serde_json;
+use holochain_core_types::entry::SerializedEntry;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -123,7 +124,7 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => String::new(),
-            CallbackParams::ValidateCommit(entry) => String::from(JsonString::from(entry.to_owned())),
+            CallbackParams::ValidateCommit(entry) => String::from(JsonString::from(SerializedEntry::from(entry.to_owned()))),
             CallbackParams::Receive => String::new(),
         }
     }

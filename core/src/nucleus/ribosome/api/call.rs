@@ -196,6 +196,7 @@ pub mod tests {
     use serde_json;
     use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
     use test_utils::create_test_dna_with_cap;
+    use holochain_core_types::json::JsonString;
 
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
@@ -236,7 +237,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
         dna: Dna,
-        expected: Result<Result<String, HolochainError>, RecvTimeoutError>,
+        expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let context = create_context();
 

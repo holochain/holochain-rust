@@ -157,7 +157,7 @@ pub mod tests {
     use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
     use entry_type::EntryType;
     use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
-    use std::string::ToString;
+    use json::JsonString;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -185,12 +185,12 @@ pub mod tests {
         )
     }
 
-    pub fn test_link_entry_string() -> String {
-        format!(
+    pub fn test_link_entry_json_string() -> JsonString {
+        JsonString::from(format!(
             "{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
-        )
+        ))
     }
 
     #[test]
@@ -234,13 +234,13 @@ pub mod tests {
     #[test]
     /// show ToString for LinkEntry
     fn link_entry_to_string_test() {
-        assert_eq!(test_link_entry_string(), test_link_entry().to_string(),);
+        assert_eq!(test_link_entry_json_string(), JsonString::from(test_link_entry()),);
     }
 
     #[test]
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
-        assert_eq!(LinkEntry::from(test_link_entry_string()), test_link_entry(),);
+        assert_eq!(LinkEntry::from(test_link_entry_json_string()), test_link_entry(),);
     }
 
     #[test]
@@ -248,7 +248,7 @@ pub mod tests {
     fn link_entry_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::Link, &test_link_entry_string()),
+            Entry::new(&EntryType::Link, &test_link_entry_json_string()),
             test_link_entry().to_entry(),
         );
 

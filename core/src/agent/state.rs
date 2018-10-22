@@ -17,7 +17,7 @@ use holochain_core_types::{
 use std::{collections::HashMap, sync::Arc};
 use serde_json;
 use holochain_core_types::json::JsonString;
-use holochain_core_types::entry::SerializableEntry;
+use holochain_core_types::entry::SerializedEntry;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -71,9 +71,9 @@ impl AgentState {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<SerializableEntry>),
+    GetEntry(Option<SerializedEntry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
-    LinkEntries(Result<SerializableEntry, HolochainError>),
+    LinkEntries(Result<SerializedEntry, HolochainError>),
 }
 
 impl From<ActionResponse> for JsonString {
@@ -145,7 +145,7 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
 
-    let result = state
+    let result: Option<Entry> = state
         .chain
         .content_storage()
         .fetch(&address)
@@ -156,7 +156,7 @@ fn reduce_get_entry(
 
     state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::GetEntry(result.clone()),
+        ActionResponse::GetEntry(result.clone().and_then(|entry| Some(entry.into()))),
     );
 }
 
@@ -199,6 +199,8 @@ pub mod tests {
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
     use holochain_core_types::json::JsonString;
+    use holochain_core_types::json::RawString;
+    use holochain_core_types::entry::SerializedEntry;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -212,7 +214,7 @@ pub mod tests {
 
     /// dummy action response for a successful get as test_entry()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_entry()))
+        ActionResponse::GetEntry(Some(SerializedEntry::from(test_entry())))
     }
 
     #[test]
@@ -292,9 +294,12 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}"),
-            JsonString::from(ActionResponse::GetEntry(Some(test_entry().clone())))
+            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(test_entry().clone()))))
         );
-        assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
+        assert_eq!(
+            JsonString::from(RawString::from("")),
+            JsonString::from(ActionResponse::GetEntry(None)),
+        )
     }
 
     #[test]
@@ -313,7 +318,7 @@ pub mod tests {
     fn test_link_entries_response_to_json() {
         assert_eq!(
             JsonString::from(format!("{{\"address\":\"{}\"}}", test_entry_address())),
-            JsonString::from(ActionResponse::LinkEntries(Ok(test_entry()))),
+            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(test_entry())))),
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),

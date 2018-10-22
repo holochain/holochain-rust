@@ -419,14 +419,16 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::{test_content_addressable_storage, StorageTestSuite},
     };
+    use json::JsonString;
+    use json::RawString;
 
     /// show that content of different types can round trip through the same storage
     #[test]
     fn example_content_round_trip_test() {
         let test_suite = StorageTestSuite::new(test_content_addressable_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            JsonString::from(RawString::from("foo")),
+            JsonString::from(RawString::from("bar")),
         );
     }
 }

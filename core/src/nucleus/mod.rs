@@ -424,6 +424,8 @@ pub mod tests {
     use std::sync::Arc;
 
     use std::error::Error;
+    use holochain_core_types::json::JsonString;
+    use holochain_core_types::json::RawString;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -457,7 +459,7 @@ pub mod tests {
 
     /// dummy function result
     pub fn test_call_result() -> ZomeFnResult {
-        ZomeFnResult::new(test_zome_call(), Ok("foo".to_string()))
+        ZomeFnResult::new(test_zome_call(), Ok(JsonString::from(RawString::from("foo"))))
     }
 
     #[test]
@@ -474,7 +476,7 @@ pub mod tests {
     /// test access to function result's function call
     fn test_zome_call_result() {
         let zome_call = test_zome_call();
-        let call_result = ZomeFnResult::new(zome_call.clone(), Ok("foo".to_string()));
+        let call_result = ZomeFnResult::new(zome_call.clone(), Ok(JsonString::from(RawString::from("foo"))));
 
         assert_eq!(call_result.call(), zome_call);
     }
@@ -482,7 +484,7 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(test_call_result().result(), Ok("foo".to_string()));
+        assert_eq!(test_call_result().result(), Ok(JsonString::from(RawString::from("foo"))));
     }
 
     #[test]
@@ -596,7 +598,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
         match result {
             // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
+            Ok(val) => assert_eq!(val, JsonString::from(RawString::from("1337"))),
             Err(err) => assert_eq!(err, HolochainError::InstanceActive),
         }
     }

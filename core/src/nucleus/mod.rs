@@ -10,16 +10,13 @@ use holochain_core_types::error::{DnaError, HcResult, HolochainError};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::api::call::reduce_call,
-    state::{NucleusState, NucleusStatus},
+    ribosome::api::call::reduce_call, state::{NucleusState, NucleusStatus},
 };
 use snowflake;
 use std::{
     sync::{
-        mpsc::{sync_channel, SyncSender},
-        Arc,
-    },
-    thread,
+        mpsc::{sync_channel, SyncSender}, Arc,
+    }, thread,
 };
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
@@ -358,6 +355,18 @@ fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+fn reduce_return_validation_package(
+    _context: Arc<Context>,
+    state: &mut NucleusState,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let (id, maybe_validation_package) = unwrap_to!(action => Action::ReturnValidationPackage);
+    state
+        .validation_packages
+        .insert(id.clone(), maybe_validation_package.clone());
+}
+
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
@@ -367,6 +376,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
+        Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         _ => None,
     }
 }
@@ -412,8 +422,7 @@ pub mod tests {
     use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
     use holochain_dna::Dna;
     use instance::{
-        tests::{test_context, test_context_with_channels, test_instance},
-        Instance,
+        tests::{test_context, test_context_with_channels, test_instance}, Instance,
     };
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::Arc;

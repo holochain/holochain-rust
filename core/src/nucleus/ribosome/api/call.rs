@@ -182,8 +182,7 @@ pub mod tests {
     use holochain_core_types::error::DnaError;
     use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
-        tests::{test_instance, TestLogger},
-        Observer,
+        tests::{test_instance, TestLogger}, Observer,
     };
     use nucleus::ribosome::{
         api::{

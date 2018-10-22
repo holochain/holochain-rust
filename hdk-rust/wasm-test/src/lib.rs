@@ -19,6 +19,10 @@ use holochain_wasm_utils::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
 
+use hdk::holochain_dna::zome::entry_types::Sharing;
+
+use hdk::meta::ZomeDefinition;
+
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     hdk::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -108,6 +112,18 @@ zome_functions! {
             Err(_) => unreachable!(),
         }
     }
+
+    commit_validation_package_tester: | | {
+        let res = hdk::commit_entry("validation_package_tester", json!({
+            "stuff": "test"
+        }));
+        match res {
+            Ok(hash_str) => json!({ "address": hash_str }),
+            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
+            Err(_) => unreachable!(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -130,10 +146,46 @@ struct TestEntryType {
 
 validations! {
     [ENTRY] validate_testEntryType {
-        [hdk::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
             (entry.stuff != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
         }
     }
+
+    [ENTRY] validate_validation_package_tester {
+        |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            Err(serde_json::to_string(&ctx).unwrap())
+        }
+    }
+}
+
+#[no_mangle]
+pub extern fn zome_setup(zd: &mut ZomeDefinition) {
+    zd.define(entry!(
+        name: "testEntryType",
+        description: "asdfda",
+        sharing: Sharing::Public,
+
+        validation_package: || {
+            hdk::ValidationPackageDefinition::ChainFull
+        },
+
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        }
+    ));
+
+    zd.define(entry!(
+        name: "validation_package_tester",
+        description: "asdfda",
+        sharing: Sharing::Public,
+
+        validation_package: || {
+            hdk::ValidationPackageDefinition::ChainFull
+        },
+
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        }
+    ));
 }

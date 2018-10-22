@@ -3,8 +3,7 @@ use actor::{AskSelf, Protocol};
 use cas::file::actor::FilesystemStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
+        content::{Address, AddressableContent}, storage::ContentAddressableStorage,
     },
     error::HolochainError,
 };

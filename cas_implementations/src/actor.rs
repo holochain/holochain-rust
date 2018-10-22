@@ -1,7 +1,6 @@
 use futures::executor::block_on;
 use holochain_core_types::{
-    cas::content::{Address, Content},
-    eav::{Attribute, Entity, EntityAttributeValue, Value},
+    cas::content::{Address, Content}, eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::HolochainError,
 };
 use riker::actors::*;

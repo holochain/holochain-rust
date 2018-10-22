@@ -10,13 +10,17 @@ extern crate serde_derive;
 extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
+pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
 mod api;
+pub mod entry_definition;
 pub mod error;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;
 pub mod macros;
+pub mod meta;
 
 pub use api::*;
+pub use holochain_wasm_utils::holochain_core_types::validation::*;

@@ -4,10 +4,12 @@
 pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
+pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{entry::Entry, json::ToJson};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
+use holochain_wasm_utils::api_serialization::validation::ValidationPackageDefinition;
 use nucleus::{
     ribosome::{
         self,
@@ -132,6 +134,7 @@ pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+    ValidationPackage(ValidationPackageDefinition),
 }
 
 pub(crate) fn run_callback(
@@ -185,6 +188,12 @@ pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
         }
     }
     dna
+}
+
+pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
+    let dna = get_dna(context).expect("Callback called without DNA set!");
+    dna.get_wasm_from_zome_name(zome)
+        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
 }
 
 pub fn call(

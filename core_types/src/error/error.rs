@@ -1,4 +1,5 @@
 use self::HolochainError::*;
+use error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
 use serde_json::Error as SerdeError;
@@ -15,7 +16,7 @@ pub enum HolochainError {
     NotImplemented,
     LoggingError,
     DnaMissing,
-    DnaError(DnaError),
+    Dna(DnaError),
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
@@ -57,7 +58,7 @@ impl Error for HolochainError {
             InstanceActive => "the instance is active",
             LoggingError => "logging failed",
             DnaMissing => "DNA is missing",
-            DnaError(dna_err) => dna_err.description(),
+            Dna(dna_err) => dna_err.description(),
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
@@ -92,33 +93,6 @@ impl From<SerdeError> for HolochainError {
 impl From<FutureCanceled> for HolochainError {
     fn from(_: FutureCanceled) -> Self {
         HolochainError::ErrorGeneric("Failed future".to_string())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Hash, Eq)]
-pub enum DnaError {
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
-}
-
-impl Error for DnaError {
-    fn description(&self) -> &str {
-        match self {
-            DnaError::ZomeNotFound(err_msg) => &err_msg,
-            DnaError::CapabilityNotFound(err_msg) => &err_msg,
-            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
-        }
-    }
-}
-
-impl fmt::Display for DnaError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
     }
 }
 
@@ -189,15 +163,15 @@ mod tests {
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
             (
-                HolochainError::DnaError(DnaError::ZomeNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::ZomeNotFound(String::from("foo"))),
                 "foo",
             ),
             (
-                HolochainError::DnaError(DnaError::CapabilityNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::CapabilityNotFound(String::from("foo"))),
                 "foo",
             ),
             (
-                HolochainError::DnaError(DnaError::ZomeFunctionNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::ZomeFunctionNotFound(String::from("foo"))),
                 "foo",
             ),
             (HolochainError::IoError(String::from("foo")), "foo"),

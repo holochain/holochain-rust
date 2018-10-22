@@ -1,12 +1,9 @@
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
+        content::{Address, AddressableContent, Content}, storage::ContentAddressableStorage,
     },
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    error::HolochainError,
-    hash::HashString,
-    links_entry::Link,
+    eav::{EntityAttributeValue, EntityAttributeValueStorage}, error::HolochainError,
+    hash::HashString, links_entry::Link,
 };
 use std::collections::HashSet;
 

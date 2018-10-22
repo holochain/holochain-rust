@@ -68,8 +68,7 @@ extern crate test_utils;
 
 use futures::executor::block_on;
 use holochain_core::{
-    context::Context,
-    instance::Instance,
+    context::Context, instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
@@ -104,6 +103,10 @@ impl Holochain {
             }
             Err(initialization_error) => Err(HolochainError::ErrorGeneric(initialization_error)),
         }
+    }
+
+    pub fn load(_path: String, _context: Arc<Context>) -> Result<Self, HolochainError> {
+        Err(HolochainError::NotImplemented)
     }
 
     /// activate the Holochain instance
@@ -162,9 +165,7 @@ mod tests {
     use super::*;
     extern crate holochain_agent;
     use holochain_core::{
-        context::Context,
-        nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
+        context::Context, nucleus::ribosome::{callback::Callback, Defn}, persister::SimplePersister,
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
@@ -418,7 +419,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 6);
+        assert_eq!(hc.state().unwrap().history.len(), 7);
     }
 
     #[test]

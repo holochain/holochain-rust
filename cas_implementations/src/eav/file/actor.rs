@@ -1,15 +1,11 @@
 use actor::{Protocol, SYS};
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    eav::{Attribute, Entity, EntityAttributeValue, Value},
-    error::{HcResult, HolochainError},
-    file_validation,
+    cas::content::AddressableContent, eav::{Attribute, Entity, EntityAttributeValue, Value},
+    error::{HcResult, HolochainError}, file_validation,
 };
 use riker::actors::*;
 use std::{
-    collections::HashSet,
-    fs::{create_dir_all, File, OpenOptions},
-    io::prelude::*,
+    collections::HashSet, fs::{create_dir_all, File, OpenOptions}, io::prelude::*,
     path::MAIN_SEPARATOR,
 };
 use walkdir::{DirEntry, WalkDir};

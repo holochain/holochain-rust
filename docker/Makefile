@@ -7,7 +7,7 @@
 
 all: main
 
-CORE_RUST_VERSION ?= nightly-2018-06-01
+CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
@@ -48,6 +48,7 @@ install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
 	fi
+
 	export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # idempotent installation of libzmq system library
@@ -144,6 +145,7 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
 	cd core/src/nucleus/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown

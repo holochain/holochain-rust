@@ -33,8 +33,9 @@ impl Logger for NullLogger {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
-    let context = get_context();
+pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> *mut Holochain {
+    let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
+    let context = get_context(path);
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
@@ -48,25 +49,17 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna) -> *mut Holochain {
     }
 }
 
-fn get_context() -> Result<Context, HolochainError> {
+fn get_context(path: String) -> Result<Context, HolochainError> {
     let agent = Agent::from("c_bob".to_string());
-    match UserDirs::new() {
-        Some(user_dir) => {
-            let home_dir = user_dir.home_dir();
-            let cas_path = storage_path(home_dir, "cas")?;
-            let eav_path = storage_path(home_dir, "eav")?;
-            Context::new(
-                agent,
-                Arc::new(Mutex::new(NullLogger {})),
-                Arc::new(Mutex::new(SimplePersister::new())),
-                FilesystemStorage::new(&cas_path).unwrap(),
-                EavFileStorage::new(eav_path).unwrap(),
-            )
-        }
-        None => Err(HolochainError::ErrorGeneric(
-            "Could not create context".to_string(),
-        )),
-    }
+    let cas_path = format!("{}/cas", path);
+    let eav_path = format!("{}/eav", path);
+    Context::new(
+        agent,
+        Arc::new(Mutex::new(NullLogger {})),
+        Arc::new(Mutex::new(SimplePersister::new())),
+        FilesystemStorage::new(&cas_path).unwrap(),
+        EavFileStorage::new(eav_path).unwrap(),
+    )
 }
 
 #[no_mangle]

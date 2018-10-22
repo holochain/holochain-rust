@@ -104,7 +104,9 @@ where
     pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
         &self.add_link_actions
     }
-    pub(crate) fn add_link_actions_mut(&mut self) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
+    pub(crate) fn add_link_actions_mut(
+        &mut self,
+    ) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
         &mut self.add_link_actions
     }
 }

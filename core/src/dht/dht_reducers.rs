@@ -5,8 +5,7 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage}, entry::Entry,
-    error::HolochainError,
+    eav::{EntityAttributeValue, EntityAttributeValueStorage}, entry::Entry, error::HolochainError,
 };
 use std::sync::Arc;
 
@@ -204,18 +203,22 @@ where
     let mut new_store = (*old_store).clone();
 
     if !old_store.content_storage().contains(link.base()).unwrap() {
-        new_store.add_link_actions_mut().insert(action_wrapper.clone(), Err(HolochainError::ErrorGeneric(String::from("Base for link not found"))));
+        new_store.add_link_actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "Base for link not found",
+            ))),
+        );
         return Some(new_store);
     }
 
-    let eav = EntityAttributeValue::new(
-        link.base(),
-        &format!("link:{}", link.tag()),
-        link.target(),
-    );
+    let eav =
+        EntityAttributeValue::new(link.base(), &format!("link:{}", link.tag()), link.target());
 
     let result = new_store.meta_storage_mut().add_eav(&eav);
-    new_store.add_link_actions_mut().insert(action_wrapper.clone(), result);
+    new_store
+        .add_link_actions_mut()
+        .insert(action_wrapper.clone(), result);
     Some(new_store)
 }
 
@@ -237,18 +240,14 @@ where
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use holochain_cas_implementations::eav::file::EavFileStorage;
     use dht::{
-        dht_store::DhtStore,
-        dht_reducers::{
-            commit_sys_entry, reduce,
-        }
+        dht_reducers::{commit_sys_entry, reduce}, dht_store::DhtStore,
     };
+    use holochain_cas_implementations::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         eav::EntityAttributeValueStorage,
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
-        links_entry::Link,
+        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry}, links_entry::Link,
     };
     use instance::tests::test_context;
     use state::test_store;
@@ -298,7 +297,6 @@ pub mod tests {
         );
     }
 
-
     #[test]
     fn can_add_links() {
         let context = test_context("bob");
@@ -319,11 +317,12 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_dht_store =
-                (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
 
-        let fetched = new_dht_store.meta_storage().fetch_eav(Some(entry.address()), None, None);
+        let fetched = new_dht_store
+            .meta_storage()
+            .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -353,11 +352,12 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_dht_store =
-                (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
 
-        let fetched = new_dht_store.meta_storage().fetch_eav(Some(entry.address()), None, None);
+        let fetched = new_dht_store
+            .meta_storage()
+            .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

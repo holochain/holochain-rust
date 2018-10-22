@@ -3,10 +3,8 @@ use context::Context;
 use holochain_core_types::{entry_type::EntryType, error::HolochainError};
 use nucleus::{
     ribosome::{
-        self,
-        callback::{get_dna, get_wasm, CallbackResult},
-    },
-    ZomeFnCall,
+        self, callback::{get_dna, get_wasm, CallbackResult},
+    }, ZomeFnCall,
 };
 use std::sync::Arc;
 
@@ -45,7 +43,7 @@ pub fn get_validation_package_definition(
                 )))
             } else {
                 match serde_json::from_str(&result) {
-                    Ok(package) => Ok(CallbackResult::ValidationPackage(package)),
+                    Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
                     Err(_) => Err(HolochainError::SerializationError(String::from(
                         "validation_package result could not be deserialized as ValidationPackage",
                     ))),

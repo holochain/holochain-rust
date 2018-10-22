@@ -2,9 +2,9 @@
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
         let maybe_input =
-            ::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
+            ::hdk::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
         if let Err(_) = maybe_input {
-            return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
+            return ::hdk::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
                 as u32;
         }
         maybe_input
@@ -80,7 +80,6 @@ macro_rules! zome_functions {
 macro_rules! validations {
     (
         $([ENTRY] $func_name:ident {
-            [$package:path]
             | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $main_block:expr
         })+
     ) => (

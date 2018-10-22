@@ -28,10 +28,6 @@ pub use holochain_wasm_utils::holochain_core_types::validation::*;
 // Adding empty zome_setup() so that the cfg(test) build can link.
 #[cfg(test)]
 pub mod tests {
-    use meta::ZomeDefinition;
-
     #[no_mangle]
-    pub fn zome_setup(_: &mut ZomeDefinition) {
-        // N/A
-    }
+    pub fn zome_setup(_: &mut super::meta::ZomeDefinition) {}
 }

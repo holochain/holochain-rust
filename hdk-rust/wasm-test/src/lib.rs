@@ -9,7 +9,7 @@ extern crate serde_derive;
 extern crate boolinator;
 
 use boolinator::Boolinator;
-use hdk::{globals::G_MEM_STACK, RibosomeError};
+use hdk::{globals::G_MEM_STACK, error::ZomeApiError};
 use holochain_wasm_utils::{
     error::RibosomeErrorCode, holochain_core_types::hash::HashString, memory_allocation::*,
     memory_serialization::*,
@@ -56,8 +56,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
-    if let Err(e) = result {
-        hdk::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
+    if let Err(err_str) = result {
+        hdk::debug(&format!("ERROR: {:?}", err_str)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
@@ -70,7 +70,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         Ok(hash_str) => CommitOutputStruct {
             address: hash_str.to_string(),
         },
-        Err(RibosomeError::RibosomeFailed(err_str)) => unsafe {
+        Err(ZomeApiError::Internal(err_str)) => unsafe {
             return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
         },
         Err(_) => unreachable!(),
@@ -87,8 +87,8 @@ zome_functions! {
         let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
         match res {
             Ok(hash_str) => json!({ "address": hash_str }),
-            Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-            Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
+            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
             Err(_) => unreachable!(),
         }
     }
@@ -106,7 +106,7 @@ zome_functions! {
                 },
                 GetResultStatus::NotFound => json!({"got back no entry": true}),
             }
-            Err(RibosomeError::RibosomeFailed(err_str)) => json!({"get entry Err": err_str}),
+            Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
             Err(_) => unreachable!(),
         }
     }

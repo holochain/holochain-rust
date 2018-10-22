@@ -1,6 +1,4 @@
-use serde_json;
-
-use self::RibosomeError::*;
+use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -12,6 +10,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use serde_json;
 
 //--------------------------------------------------------------------------------------------------
 // APP GLOBAL VARIABLES
@@ -48,27 +47,6 @@ lazy_static! {
 //--------------------------------------------------------------------------------------------------
 // SYSTEM CONSTS
 //--------------------------------------------------------------------------------------------------
-
-// HC.HashNotFound
-#[derive(Debug)]
-pub enum RibosomeError {
-    RibosomeFailed(String),
-    FunctionNotImplemented,
-    HashNotFound,
-    ValidationFailed(String),
-}
-
-impl RibosomeError {
-    pub fn to_json(&self) -> serde_json::Value {
-        let err_str = match self {
-            RibosomeFailed(error_desc) => error_desc.clone(),
-            FunctionNotImplemented => "Function not implemented".to_string(),
-            HashNotFound => "Hash not found".to_string(),
-            ValidationFailed(msg) => format!("Validation failed: {}", msg),
-        };
-        json!({ "error": err_str })
-    }
-}
 
 // HC.Status
 // WARNING keep in sync with CRUDStatus
@@ -161,26 +139,26 @@ pub enum BundleOnClose {
 /// Returns an application property, which are defined by the app developer.
 /// It returns values from the DNA file that you set as properties of your application
 /// (e.g. Name, Language, Description, Author, etc.).
-pub fn property<S: Into<String>>(_name: S) -> Result<String, RibosomeError> {
+pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
 pub fn make_hash<S: Into<String>>(
     _entry_type: S,
     _entry_data: serde_json::Value,
-) -> Result<HashString, RibosomeError> {
+) -> Result<HashString, ZomeApiError> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn debug(msg: &str) -> Result<(), RibosomeError> {
+pub fn debug(msg: &str) -> Result<(), ZomeApiError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
     if let Err(err_code) = maybe_allocation_of_input {
-        return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
+        return Err(ZomeApiError::Internal(err_code.to_string()));
     }
     let allocation_of_input = maybe_allocation_of_input.unwrap();
     unsafe {
@@ -198,15 +176,15 @@ pub fn call<S: Into<String>>(
     _cap_name: S,
     _function_name: S,
     _arguments: serde_json::Value,
-) -> Result<serde_json::Value, RibosomeError> {
+) -> ZomeApiResult<serde_json::Value> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn sign<S: Into<String>>(_doc: S) -> Result<String, RibosomeError> {
+pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
@@ -214,16 +192,16 @@ pub fn verify_signature<S: Into<String>>(
     _signature: S,
     _data: S,
     _pub_key: S,
-) -> Result<bool, RibosomeError> {
+) -> ZomeApiResult<bool> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
 pub fn commit_entry(
     entry_type_name: &str,
     entry_content: serde_json::Value,
-) -> Result<HashString, RibosomeError> {
+) -> ZomeApiResult<HashString> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -236,7 +214,7 @@ pub fn commit_entry(
     };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
-        return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
+        return Err(ZomeApiError::Internal(err_code.to_string()));
     }
     let allocation_of_input = maybe_allocation_of_input.unwrap();
 
@@ -249,7 +227,7 @@ pub fn commit_entry(
     let result = load_json(encoded_allocation_of_result as u32);
 
     if let Err(err_str) = result {
-        return Err(RibosomeError::RibosomeFailed(err_str));
+        return Err(ZomeApiError::Internal(err_str));
     }
     let output: CommitEntryResult = result.unwrap();
 
@@ -259,7 +237,7 @@ pub fn commit_entry(
         .expect("deallocate failed");
 
     if output.validation_failure.len() > 0 {
-        Err(RibosomeError::ValidationFailed(output.validation_failure))
+        Err(ZomeApiError::ValidationFailed(output.validation_failure))
     } else {
         Ok(HashString::from(output.address))
     }
@@ -270,32 +248,29 @@ pub fn update_entry<S: Into<String>>(
     _entry_type: S,
     _entry: serde_json::Value,
     _replaces: HashString,
-) -> Result<HashString, RibosomeError> {
+) -> ZomeApiResult<HashString> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn update_agent() -> Result<HashString, RibosomeError> {
+pub fn update_agent() -> ZomeApiResult<HashString> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
 /// Commit a Deletion System Entry
-pub fn remove_entry<S: Into<String>>(
-    _entry: HashString,
-    _message: S,
-) -> Result<HashString, RibosomeError> {
+pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// implements access to low-level WASM hc_get_entry
 pub fn get_entry(
     entry_hash: HashString,
     _options: GetEntryOptions,
-) -> Result<GetEntryResult, RibosomeError> {
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -307,7 +282,7 @@ pub fn get_entry(
     };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
-        return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
+        return Err(ZomeApiError::Internal(err_code.to_string()));
     }
     let allocation_of_input = maybe_allocation_of_input.unwrap();
 
@@ -319,7 +294,7 @@ pub fn get_entry(
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result = load_json(encoded_allocation_of_result as u32);
     if let Err(err_str) = result {
-        return Err(RibosomeError::RibosomeFailed(err_str));
+        return Err(ZomeApiError::Internal(err_str));
     }
     let result: GetEntryResult = result.unwrap();
 
@@ -336,43 +311,37 @@ pub fn link_entries<S: Into<String>>(
     _base: HashString,
     _target: HashString,
     _tag: S,
-) -> Result<(), RibosomeError> {
+) -> Result<(), ZomeApiError> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn get_links<S: Into<String>>(
-    _base: HashString,
-    _tag: S,
-) -> Result<Vec<HashString>, RibosomeError> {
+pub fn get_links<S: Into<String>>(_base: HashString, _tag: S) -> ZomeApiResult<Vec<HashString>> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn query() -> Result<Vec<String>, RibosomeError> {
+pub fn query() -> ZomeApiResult<Vec<String>> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn send(
-    _to: HashString,
-    _message: serde_json::Value,
-) -> Result<serde_json::Value, RibosomeError> {
+pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), RibosomeError> {
+pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), ZomeApiError> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// FIXME DOC
-pub fn close_bundle(_action: BundleOnClose) -> Result<(), RibosomeError> {
+pub fn close_bundle(_action: BundleOnClose) -> Result<(), ZomeApiError> {
     // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
+    Err(ZomeApiError::FunctionNotImplemented)
 }

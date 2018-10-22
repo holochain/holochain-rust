@@ -35,7 +35,7 @@ impl Logger for NullLogger {
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> *mut Holochain {
     let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
-    let context = get_context(path);
+    let context = get_context(&path);
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
@@ -49,7 +49,21 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> 
     }
 }
 
-fn get_context(path: String) -> Result<Context, HolochainError> {
+#[no_mangle]
+pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain {
+    let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
+    let context = get_context(&path);
+
+    match context {
+        Ok(con) => match Holochain::load(path, Arc::new(con)) {
+            Ok(hc) => Box::into_raw(Box::new(hc)),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = Agent::from("c_bob".to_string());
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);

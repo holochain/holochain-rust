@@ -1,5 +1,7 @@
 use entry_definition::ValidatingEntryType;
-use holochain_wasm_utils::{error::RibosomeErrorCode, memory_serialization::load_string};
+use holochain_wasm_utils::{
+    holochain_core_types::error::RibosomeErrorCode, memory_serialization::load_string,
+};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -42,7 +44,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     // Deserialize input
     let maybe_name = load_string(encoded_allocation_of_input);
     if maybe_name.is_err() {
-        return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
+        return ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
             as u32;
     }
     let name: String = maybe_name.unwrap();

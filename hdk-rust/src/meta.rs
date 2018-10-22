@@ -5,6 +5,7 @@ trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
 }
 
+#[allow(improper_ctypes)]
 pub struct ZomeDefinition {
     pub entry_types: Vec<ValidatingEntryType>,
 }
@@ -22,8 +23,8 @@ impl ZomeDefinition {
     }
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
-    #[allow(improper_ctypes)]
     fn zome_setup(zd: &mut ZomeDefinition);
 }
 

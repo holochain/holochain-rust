@@ -6,9 +6,7 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    chain_header::ChainHeader,
-    entry::Entry,
-    error::HolochainError,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use nucleus::ribosome::callback::{self, CallbackResult};
@@ -202,8 +200,7 @@ mod tests {
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
     use instance::{
-        tests::{test_context, test_instance},
-        Instance,
+        tests::{test_context, test_instance}, Instance,
     };
     use std::sync::Arc;
     use test_utils::*;

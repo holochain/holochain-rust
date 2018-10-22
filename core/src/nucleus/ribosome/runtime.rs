@@ -3,8 +3,7 @@ use holochain_wasm_utils::{
     error::RibosomeReturnCode, memory_allocation::decode_encoded_allocation,
 };
 use nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn},
-    ZomeFnCall,
+    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn}, ZomeFnCall,
 };
 use std::sync::Arc;
 use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};

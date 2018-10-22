@@ -3,10 +3,8 @@ use context::Context;
 use holochain_core_types::{entry_type::EntryType, error::HolochainError};
 use nucleus::{
     ribosome::{
-        self,
-        callback::{get_dna, get_wasm, CallbackResult},
-    },
-    ZomeFnCall,
+        self, callback::{get_dna, get_wasm, CallbackResult},
+    }, ZomeFnCall,
 };
 use std::sync::Arc;
 

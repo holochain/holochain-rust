@@ -6,10 +6,8 @@ use holochain_core_types::{
 use holochain_dna::wasm::DnaWasm;
 use nucleus::{
     ribosome::{
-        self,
-        callback::{get_dna, get_wasm, CallbackResult},
-    },
-    ZomeFnCall,
+        self, callback::{get_dna, get_wasm, CallbackResult},
+    }, ZomeFnCall,
 };
 use std::sync::Arc;
 

@@ -4,16 +4,10 @@ use context::Context;
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
+        content::{Address, AddressableContent}, storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
-    entry::Entry,
-    error::HolochainError,
-    json::ToJson,
-    keys::Keys,
-    signature::Signature,
-    time::Iso8601,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError, json::ToJson, keys::Keys,
+    signature::Signature, time::Iso8601,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -204,10 +198,8 @@ pub mod tests {
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
-        cas::content::AddressableContent,
-        entry::{test_entry, test_entry_address},
-        error::HolochainError,
-        json::ToJson,
+        cas::content::AddressableContent, entry::{test_entry, test_entry_address},
+        error::HolochainError, json::ToJson,
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};

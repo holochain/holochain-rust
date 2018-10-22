@@ -6,8 +6,7 @@ extern crate test_utils;
 
 use holochain_core_api::*;
 use holochain_dna::zome::{
-    capabilities::{Capability, FnDeclaration},
-    entry_types::EntryTypeDef,
+    capabilities::{Capability, FnDeclaration}, entry_types::EntryTypeDef,
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;

@@ -1,6 +1,5 @@
 use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    str::FromStr,
+    fmt::{Display, Formatter, Result as FmtResult}, str::FromStr,
 };
 
 // Macro for statically concatanating the system entry prefix for entry types of system entries

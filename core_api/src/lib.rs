@@ -105,6 +105,10 @@ impl Holochain {
         }
     }
 
+    pub fn load(_path: String, _context: Arc<Context>) -> Result<Self, HolochainError> {
+        Err(HolochainError::NotImplemented)
+    }
+
     /// activate the Holochain instance
     pub fn start(&mut self) -> Result<(), HolochainError> {
         if self.active {

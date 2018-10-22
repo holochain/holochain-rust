@@ -97,8 +97,8 @@ zome_functions! {
     check_get_entry: |entry_hash: HashString| {
         let res = hdk::get_entry(entry_hash);
         match res {
-            Ok(Some(entry)) => {
-                let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&entry);
+            Ok(Some(serialized_entry)) => {
+                let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&String::from(serialized_entry));
                 match maybe_entry_value {
                     Ok(entry_value) => entry_value,
                     Err(err) => json!({"error trying deserialize entry": err.to_string()}),

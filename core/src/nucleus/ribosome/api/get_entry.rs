@@ -3,7 +3,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryR
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_wasm_utils::api_serialization::get_entry::SerializableGetEntryResult;
+use holochain_wasm_utils::api_serialization::get_entry::SerializedGetEntryResult;
 use holochain_core_types::json::JsonString;
 use holochain_core_types::entry::SerializedEntry;
 
@@ -33,7 +33,7 @@ pub fn invoke_get_entry(
                 Some(entry) => GetEntryResult::found(JsonString::from(SerializedEntry::from(entry))),
                 None => GetEntryResult::not_found(),
             };
-            let outer_result = SerializableGetEntryResult{
+            let outer_result = SerializedGetEntryResult{
                 status: String::from(JsonString::from(result.status)),
                 entry_json: String::from(result.entry_json),
             };

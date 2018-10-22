@@ -22,7 +22,7 @@ pub struct GetEntryResult {
 /// GetEntryResult is double serialized!
 /// this struct facilitates outer serialization
 #[derive(Serialize, Deserialize)]
-pub struct SerializableGetEntryResult {
+pub struct SerializedGetEntryResult {
     pub status: String,
     pub entry_json: String,
 }
@@ -55,8 +55,8 @@ impl From<JsonString> for GetResultStatus {
     }
 }
 
-impl From<SerializableGetEntryResult> for JsonString {
-    fn from(serializable_get_entry_result: SerializableGetEntryResult) -> JsonString {
-        JsonString::from(serde_json::to_string(&serializable_get_entry_result).expect("could not Jsonify SerializableGetEntryResult"))
+impl From<SerializedGetEntryResult> for JsonString {
+    fn from(serializable_get_entry_result: SerializedGetEntryResult) -> JsonString {
+        JsonString::from(serde_json::to_string(&serializable_get_entry_result).expect("could not Jsonify SerializedGetEntryResult"))
     }
 }

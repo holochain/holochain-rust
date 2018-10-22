@@ -22,7 +22,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryResult, SerializableGetEntryResult, GetResultStatus},
+        get_entry::{GetEntryArgs, GetEntryResult, SerializedGetEntryResult, GetResultStatus},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -351,7 +351,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeE
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
     }
-    let outer_result: SerializableGetEntryResult = result.unwrap();
+    let outer_result: SerializedGetEntryResult = result.unwrap();
     let result = GetEntryResult{
         status: GetResultStatus::from(JsonString::from(outer_result.status)),
         entry_json: JsonString::from(outer_result.entry_json),

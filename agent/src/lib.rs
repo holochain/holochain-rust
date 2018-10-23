@@ -9,6 +9,7 @@ use holochain_core_types::{
     cas::content::{AddressableContent, Content},
     entry::{Entry, ToEntry},
     entry_type::EntryType,
+    //json::{FromJson, ToJson},
 };
 
 /// Object holding an Agent's identity.
@@ -68,6 +69,7 @@ impl ToEntry for Agent {
 
 impl AddressableContent for Agent {
     fn content(&self) -> Content {
+        // self.to_entry().to_json().unwrap()/*.to_string()*/
         self.to_entry().content()
     }
 

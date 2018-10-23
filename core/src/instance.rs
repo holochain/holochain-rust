@@ -309,6 +309,7 @@ pub mod tests {
         fn log(&mut self, msg: String) {
             self.log.push(msg);
         }
+        fn dump(&self) -> String { format!("{:?}", self.log) }
     }
 
     /// create a test logger
@@ -381,12 +382,17 @@ pub mod tests {
         assert_eq!(Context::default_channel_buffer_size(), 100);
     }
 
-    /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Result<Instance, String> {
+        test_instance_and_context(dna).map(|tuple| tuple.0)
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let mut instance = Instance::new(test_context("jason"));
         let context = test_context("jane");
+        let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
@@ -447,7 +453,7 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-        Ok(instance)
+        Ok((instance, context))
     }
 
     /// create a test instance with a blank DNA

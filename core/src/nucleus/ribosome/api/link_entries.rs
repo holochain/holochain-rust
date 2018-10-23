@@ -88,7 +88,7 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present() {
-        let (call_result, _) = test_zome_api_function(
+        let (call_result, _)  = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
         );
@@ -112,7 +112,7 @@ pub mod tests {
         let dna_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
-        let (context, logger) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger("joan");
         let initialized_context = instance.initialize_context(context);
 
         block_on(commit_entry(
@@ -121,10 +121,9 @@ pub mod tests {
             &initialized_context,
         )).expect("Could not commit entry for testing");
 
-        let (call_result, _) = test_zome_api_function_call(
+        let call_result = test_zome_api_function_call(
             &dna_name,
             initialized_context,
-            logger,
             &instance,
             &wasm,
             test_link_args_bytes(),

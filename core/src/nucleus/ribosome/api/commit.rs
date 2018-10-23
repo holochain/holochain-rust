@@ -116,7 +116,7 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (call_result, _) = test_zome_api_function(
+        let (call_result, _)  = test_zome_api_function(
             ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );

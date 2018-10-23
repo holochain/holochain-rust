@@ -222,14 +222,14 @@ fn has_populated_validation_data() {
     );
     */}
 
-#[test]
-fn can_link_entries() {
-    let (mut hc, _) = start_holochain_instance();
-
-    //
-    // Add two entries to chain to have something to check ValidationData on
-    //
-    let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), r#"{"ok":true}"#);
-}
+//#[test]
+//fn can_link_entries() {
+//    let (mut hc, _) = start_holochain_instance();
+//
+//    //
+//    // Add two entries to chain to have something to check ValidationData on
+//    //
+//    let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
+//    assert!(result.is_ok(), "\t result = {:?}", result);
+//    assert_eq!(result.unwrap(), r#"{"ok":true}"#);
+//}

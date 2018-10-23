@@ -7,8 +7,8 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    eav::{EntityAttributeValue,EntityAttributeValueStorage},
     chain_header::ChainHeader,
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
     entry::Entry,
     error::HolochainError,
     json::ToJson,
@@ -135,7 +135,7 @@ fn reduce_commit_entry(
 
     // @TODO adding the entry to the CAS should happen elsewhere.
     fn response(
-        context : Arc<Context>,
+        context: Arc<Context>,
         state: &mut AgentState,
         entry: &Entry,
         chain_header: &ChainHeader,
@@ -143,11 +143,20 @@ fn reduce_commit_entry(
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
         let eav_store = &mut (*context).eav_storage.clone();
-        let eav = EntityAttributeValue::new(&entry.address(),&String::from("chain-header"),&chain_header.address());let eav = EntityAttributeValue::new(&entry.address(),&String::from("chain-header"),&chain_header.address());
+        let eav = EntityAttributeValue::new(
+            &entry.address(),
+            &String::from("chain-header"),
+            &chain_header.address(),
+        );
+        let eav = EntityAttributeValue::new(
+            &entry.address(),
+            &String::from("chain-header"),
+            &chain_header.address(),
+        );
         eav_store.add_eav(&eav)?;
         Ok(entry.address())
     }
-    let result = response(_context,state, &entry, &chain_header);
+    let result = response(_context, state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
 
     state

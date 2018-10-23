@@ -423,16 +423,16 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::Dna);
+                    assert!(entry.entry_type() == &EntryType::AgentId || entry.entry_type() == &EntryType::Dna);
                     true
                 }
                 _ => false,
             })
             .is_none()
-        {
-            println!("Waiting for Commit for genesis");
-            sleep(Duration::from_millis(10))
-        }
+            {
+                println!("Waiting for Commit for genesis");
+                sleep(Duration::from_millis(10))
+            }
 
         while instance
             .state()

@@ -248,8 +248,9 @@ pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResul
 }
 
 /// Not Yet Available
-// Returns an application property, which are defined by the app developer.
-// It returns values from the DNA file that you set as properties of your application
+// Returns a DNA property, which are defined by the DNA developer.
+// They are custom values that are defined in the DNA file 
+// that can be used in the zome code for defining configurable behaviors.
 // (e.g. Name, Language, Description, Author, etc.).
 pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)

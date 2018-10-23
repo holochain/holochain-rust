@@ -341,7 +341,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 }
 
 /// Not Yet Available
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<HashString>> {
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
@@ -366,7 +366,7 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
         .expect("deallocate failed");
 
     if result.ok {
-        Ok(result.links)
+        Ok(result)
     } else {
         Err(ZomeApiError::Internal(result.error))
     }

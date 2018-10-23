@@ -161,7 +161,7 @@ zome_functions! {
         hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
 
         match hdk::get_links(&entry1_hash, "test-tag") {
-            Ok(links) => json!({"links": links}),
+            Ok(result) => json!({"links": result.links}),
             Err(error) => json!({"error": error}),
         }
     }

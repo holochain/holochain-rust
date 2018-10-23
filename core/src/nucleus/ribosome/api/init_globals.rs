@@ -69,8 +69,8 @@ pub mod tests {
             \"dna_hash\":\"QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD\",\
             \"agent_id_str\":\"joan\",\
             \"agent_key_hash\":\"Qme96E8FaeSkrbcyC2UwDcrQmKLr5MCuT3oXB9bStQnUtr\",\
-            \"agent_initial_hash\":\"\",\
-            \"agent_latest_hash\":\"\"\
+            \"agent_initial_hash\":\"QmVTWr6jVyfqoFjPWjceATkwWLtPgENz9NhxJvpHQ7mEmy\",\
+            \"agent_latest_hash\":\"QmVTWr6jVyfqoFjPWjceATkwWLtPgENz9NhxJvpHQ7mEmy\"\
             }\u{0}"
                 .to_string(),
             call_result);

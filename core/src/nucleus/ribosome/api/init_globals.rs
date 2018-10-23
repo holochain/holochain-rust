@@ -1,5 +1,6 @@
 use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -14,12 +15,12 @@ pub fn invoke_init_globals(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
-        app_dna_hash: match runtime.context.state() {
+        dna_hash: match runtime.context.state() {
             Some(state) => match state.nucleus().dna() {
-                Some(dna) => HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256).to_string(),
-                None => String::from(""),
+                Some(dna) => HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256),
+                None => HashString::from(""),
             },
-            None => String::from(""),
+            None => HashString::from(""),
         },
         agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash

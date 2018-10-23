@@ -7,6 +7,7 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
+    eav::{EntityAttributeValue,EntityAttributeValueStorage},
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
@@ -143,6 +144,7 @@ fn reduce_commit_entry(
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
+    EntityAttributeValue::new(&entry.address(),&String::from("chain-header"),&chain_header.address());
     state.top_chain_header = Some(chain_header);
 
     state

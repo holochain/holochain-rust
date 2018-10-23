@@ -28,12 +28,12 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     hdk::global_fns::init_global_memory(encoded_allocation_of_input);
     #[allow(unused_must_use)]
     {
-        hdk::debug(&hdk::APP_NAME);
-        hdk::debug(&hdk::APP_DNA_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_ID_STR);
-        hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
+        hdk::debug(&hdk::DNA_NAME);
+        hdk::debug(&hdk::DNA_HASH.to_string());
+        hdk::debug(&hdk::AGENT_ID_STR);
+        hdk::debug(&hdk::AGENT_KEY_HASH.to_string());
+        hdk::debug(&hdk::AGENT_INITIAL_HASH.to_string());
+        hdk::debug(&hdk::AGENT_LATEST_HASH.to_string());
     }
     return 0;
 }

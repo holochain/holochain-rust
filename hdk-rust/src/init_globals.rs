@@ -1,4 +1,6 @@
-//! File for holding the internal/private zome api function `init_globals`
+//! Holds the internal/private zome API function `init_globals`
+//! which initializes the Zome API Globals with the values it receives from the Ribosome.
+//! It is automatically called at startup of each Zome function call.
 
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 

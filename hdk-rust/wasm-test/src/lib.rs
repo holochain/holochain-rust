@@ -124,6 +124,26 @@ zome_functions! {
             Err(_) => unreachable!(),
         }
     }
+
+    link_two_entries: | | {
+        let entry1 = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry1"
+        }));
+        let entry2 = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry2"
+        }));
+        if entry1.is_err() {
+            return json!({"error": &format!("Could not commit entry: {}", entry1.err().unwrap().to_string())})
+        }
+        if entry2.is_err() {
+            return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
+        }
+
+        match hdk::link_entries(entry1.unwrap(), entry2.unwrap(), "test-tag") {
+            Ok(()) => json!({"ok": true}),
+            Err(error) => json!({"error": error.to_string()}),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

@@ -34,6 +34,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_get_entry",
         "send_tweet",
         "commit_validation_package_tester",
+        "link_two_entries",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
@@ -220,3 +221,23 @@ fn has_populated_validation_data() {
         result.unwrap()
     );
     */}
+
+#[test]
+fn can_link_entries() {
+    let (mut hc, _) = start_holochain_instance();
+
+    //
+    // Add two entries to chain to have something to check ValidationData on
+    //
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "link_two_entries",
+        r#"{}"#,
+    );
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        r#"{"ok":true}"#
+    );
+}

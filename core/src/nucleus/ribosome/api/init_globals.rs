@@ -19,7 +19,7 @@ pub fn invoke_init_globals(
             Some(state) => match state.nucleus().dna() {
                 Some(dna) => {
                     HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256)
-                },
+                }
                 None => HashString::from(""),
             },
             None => HashString::from(""),

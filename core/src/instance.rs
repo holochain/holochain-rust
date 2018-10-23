@@ -309,7 +309,9 @@ pub mod tests {
         fn log(&mut self, msg: String) {
             self.log.push(msg);
         }
-        fn dump(&self) -> String { format!("{:?}", self.log) }
+        fn dump(&self) -> String {
+            format!("{:?}", self.log)
+        }
     }
 
     /// create a test logger
@@ -429,7 +431,10 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert!(entry.entry_type() == &EntryType::AgentId || entry.entry_type() == &EntryType::Dna);
+                    assert!(
+                        entry.entry_type() == &EntryType::AgentId
+                            || entry.entry_type() == &EntryType::Dna
+                    );
                     true
                 }
                 _ => false,

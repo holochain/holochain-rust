@@ -88,7 +88,7 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present() {
-        let (call_result, _)  = test_zome_api_function(
+        let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
         );

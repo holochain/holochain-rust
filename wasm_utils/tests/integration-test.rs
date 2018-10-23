@@ -23,7 +23,9 @@ impl Logger for TestLogger {
         self.log.push(msg);
     }
 
-    fn dump(&self) -> String { format!("{:?}", self.log) }
+    fn dump(&self) -> String {
+        format!("{:?}", self.log)
+    }
 }
 
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<String> {

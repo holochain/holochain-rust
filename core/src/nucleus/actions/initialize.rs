@@ -82,17 +82,17 @@ pub fn initialize_application(
         // an entry from an Agent object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
         #[cfg_attr(tarpaulin, skip)]
-            {
-                if agent_id_commit.is_err() {
-                    context_clone
-                        .action_channel
-                        .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                            Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
-                        )))
-                        .expect("Action channel not usable in initialize_application()");
-                    return;
-                };
-            }
+        {
+            if agent_id_commit.is_err() {
+                context_clone
+                    .action_channel
+                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                        Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
+                    )))
+                    .expect("Action channel not usable in initialize_application()");
+                return;
+            };
+        }
 
         // map genesis across every zome
         let results: Vec<_> = dna

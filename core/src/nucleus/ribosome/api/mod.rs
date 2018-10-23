@@ -154,18 +154,12 @@ pub mod tests {
     extern crate test_utils;
     use super::ZomeApiFunction;
     use context::Context;
-    use instance::{
-        tests::test_instance_and_context,
-        Instance,
-    };
+    use instance::{tests::test_instance_and_context, Instance};
     use nucleus::{
         ribosome::{self, Defn},
         ZomeFnCall,
     };
-    use std::{
-        str::FromStr,
-        sync::Arc,
-    };
+    use std::{str::FromStr, sync::Arc};
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -321,7 +315,6 @@ pub mod tests {
             &zome_call,
             Some(args_bytes),
         ).expect("test should be callable")
-
     }
 
     /// Given a canonical zome API function name and args as bytes:
@@ -341,15 +334,11 @@ pub mod tests {
         );
 
         let dna_name = &dna.name.to_string().clone();
-        let (instance, context) = test_instance_and_context(dna).expect("Could not create test instance");
+        let (instance, context) =
+            test_instance_and_context(dna).expect("Could not create test instance");
 
-        let call_result = test_zome_api_function_call(
-            &dna_name,
-            context.clone(),
-            &instance,
-            &wasm,
-            args_bytes,
-        );
+        let call_result =
+            test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);
         (call_result, context)
     }
 

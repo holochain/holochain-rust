@@ -96,9 +96,9 @@ fn can_return_error_report() {
 //}
 
 #[test]
-fn call_store_as_json_ok() {
+fn call_store_json_ok() {
     let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_ok", r#"{}"#);
+        launch_hc_with_integration_test_wasm("test_store_json_ok", r#"{}"#);
     // Verify result
     assert_eq!(JsonString::from("{\"value\":\"fish\"}"), result.unwrap());
     // Verify logs
@@ -110,16 +110,16 @@ fn call_store_as_json_ok() {
 }
 
 #[test]
-fn call_store_as_json_err() {
+fn call_store_json_err() {
     let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_as_json_err", r#"{}"#);
+        launch_hc_with_integration_test_wasm("test_store_json_err", r#"{}"#);
     // Verify result
     assert!(result.is_ok());
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_as_json_err\\\' returned: Out of memory\"] }",
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_json_err\\\' returned: Out of memory\"] }",
     );
 }
 

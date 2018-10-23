@@ -2,7 +2,6 @@
 extern crate hdk;
 extern crate holochain_wasm_utils;
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -17,6 +16,7 @@ use holochain_wasm_utils::{
 };
 use hdk::RibosomeError;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
+use holochain_wasm_utils::holochain_core_types::entry::SerializedEntry;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
@@ -25,12 +25,12 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     }
     #[allow(unused_must_use)]
     {
-        hdk::debug(hdk::APP_NAME);
-        hdk::debug(hdk::APP_DNA_HASH);
-        hdk::debug(hdk::APP_AGENT_ID_STR);
-        hdk::debug(hdk::APP_AGENT_KEY_HASH);
-        hdk::debug(hdk::APP_AGENT_INITIAL_HASH);
-        hdk::debug(hdk::APP_AGENT_LATEST_HASH);
+        hdk::debug(hdk::APP_NAME.to_owned());
+        hdk::debug(hdk::APP_DNA_HASH.to_owned());
+        hdk::debug(hdk::APP_AGENT_ID_STR.to_owned());
+        hdk::debug(hdk::APP_AGENT_KEY_HASH.to_owned());
+        hdk::debug(hdk::APP_AGENT_INITIAL_HASH.to_owned());
+        hdk::debug(hdk::APP_AGENT_LATEST_HASH.to_owned());
     }
 
 
@@ -54,12 +54,6 @@ impl From<CommitOutputStruct> for JsonString {
 #[no_mangle]
 pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
-    #[derive(Deserialize, Default)]
-    struct CommitInputStruct {
-        entry_type_name: String,
-        entry_content: String,
-    }
-
     unsafe {
         G_MEM_STACK = Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
@@ -71,10 +65,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
-    let input: CommitInputStruct = result.unwrap();
-    let entry_content = serde_json::from_str::<serde_json::Value>(&input.entry_content);
-    let entry_content = entry_content.unwrap();
-    let res = hdk::commit_entry(&input.entry_type_name, entry_content);
+    let serialized_entry: SerializedEntry = result.unwrap();
+    let res = hdk::commit_entry(&serialized_entry);
 
     let res_obj = match res {
         Ok(hash_str) => CommitOutputStruct {address: hash_str.to_string()},
@@ -93,30 +85,14 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 //
 zome_functions! {
     check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
-        let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-        hdk::commit_entry(&entry_type_name, entry_content.unwrap())
-        // match res {
-        //     Ok(hash_str) => json!({ "address": hash_str }),
-        //     Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-        //     Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
-        //     Err(_) => unreachable!(),
-        // }
+        let serialized_entry = SerializedEntry::new(&entry_type_name, &entry_content);
+        hdk::commit_entry(&serialized_entry)
     }
+}
 
+zome_functions! {
     check_get_entry: |entry_hash: HashString| {
-        let res = hdk::get_entry(entry_hash);
-        match res {
-            Ok(Some(serialized_entry)) => {
-                let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&String::from(serialized_entry));
-                match maybe_entry_value {
-                    Ok(entry_value) => entry_value,
-                    Err(err) => json!({"error trying deserialize entry": err.to_string()}),
-                }
-            },
-            Ok(None) => json!({"got back no entry": true}),
-            Err(RibosomeError::RibosomeFailed(err_str)) => json!({"get entry Err": err_str}),
-            Err(_) => unreachable!(),
-        }
+        hdk::get_entry(entry_hash)
     }
 }
 
@@ -127,9 +103,14 @@ struct TweetResponse {
     second: String,
 }
 
+impl From<TweetResponse> for JsonString {
+    fn from(tweet_response: TweetResponse) -> JsonString {
+        JsonString::from(serde_json::to_string(&tweet_response).expect("could not Jsonify TweetResponse"))
+    }
+}
+
 zome_functions! {
     send_tweet: |author: String, content: String| {
-
         TweetResponse { first: author,  second: content}
     }
 }

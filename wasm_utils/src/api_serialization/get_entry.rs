@@ -1,3 +1,4 @@
+use holochain_core_types::entry::SerializedEntry;
 use holochain_core_types::{cas::content::Address, json::JsonString};
 use serde_json;
 
@@ -20,32 +21,24 @@ pub enum GetResultStatus {
     NotFound,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GetEntryResult {
     pub status: GetResultStatus,
-    pub entry_json: JsonString,
-}
-
-/// GetEntryResult is double serialized!
-/// this struct facilitates outer serialization
-#[derive(Serialize, Deserialize)]
-pub struct SerializedGetEntryResult {
-    pub status: String,
-    pub entry_json: String,
+    pub maybe_serialized_entry: Option<SerializedEntry>,
 }
 
 impl GetEntryResult {
-    pub fn found(entry_json: JsonString) -> GetEntryResult {
+    pub fn found(serialized_entry: SerializedEntry) -> GetEntryResult {
         GetEntryResult {
             status: GetResultStatus::Found,
-            entry_json,
+            maybe_serialized_entry: Some(serialized_entry),
         }
     }
 
     pub fn not_found() -> GetEntryResult {
         GetEntryResult {
             status: GetResultStatus::NotFound,
-            entry_json: JsonString::none(),
+            maybe_serialized_entry: None,
         }
     }
 }
@@ -65,11 +58,10 @@ impl From<JsonString> for GetResultStatus {
     }
 }
 
-impl From<SerializedGetEntryResult> for JsonString {
-    fn from(serializable_get_entry_result: SerializedGetEntryResult) -> JsonString {
+impl From<GetEntryResult> for JsonString {
+    fn from(get_entry_result: GetEntryResult) -> JsonString {
         JsonString::from(
-            serde_json::to_string(&serializable_get_entry_result)
-                .expect("could not Jsonify SerializedGetEntryResult"),
+            serde_json::to_string(&get_entry_result).expect("could not Jsonify GetEntryResult"),
         )
     }
 }

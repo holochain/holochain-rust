@@ -104,14 +104,13 @@ pub mod tests {
 
     use holochain_core_types::entry::SerializedEntry;
 use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        cas::content::AddressableContent, entry::test_entry,
         json::JsonString,
     };
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
-    use serde_json;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {

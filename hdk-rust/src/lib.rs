@@ -15,13 +15,14 @@ pub mod globals;
 pub mod init_globals;
 pub mod macros;
 
+use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use self::RibosomeError::*;
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::CommitEntryResult,
-        get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus, SerializedGetEntryResult},
+        get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
     },
     holochain_core_types::{
         hash::HashString,
@@ -286,20 +287,13 @@ pub fn verify_signature<S: Into<String>>(
 }
 
 /// FIXME DOC
-pub fn commit_entry(
-    entry_type_name: &str,
-    entry_content: serde_json::Value,
-) -> Result<HashString, RibosomeError> {
+pub fn commit_entry(serialized_entry: &SerializedEntry) -> Result<HashString, RibosomeError> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let serialized_entry = SerializedEntry::new(
-        &entry_type_name.to_string(),
-        &entry_content.to_string(),
-    );
-    let maybe_allocation_of_input = store_json(&mut mem_stack, serialized_entry);
+    let maybe_allocation_of_input = store_json(&mut mem_stack, serialized_entry.to_owned());
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -357,7 +351,7 @@ pub fn remove_entry<S: Into<String>>(
 }
 
 /// implements access to low-level WASM hc_get_entry
-pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeError> {
+pub fn get_entry(entry_address: Address) -> Result<Option<SerializedEntry>, RibosomeError> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -365,7 +359,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeE
 
     // Put args in struct and serialize into memory
     let input = GetEntryArgs {
-        address: entry_hash,
+        address: entry_address,
     };
     let maybe_allocation_of_input = store_json(&mut mem_stack, JsonString::from(input));
     if let Err(err_code) = maybe_allocation_of_input {
@@ -383,19 +377,15 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeE
     if let Err(err_str) = result {
         return Err(RibosomeError::RibosomeFailed(err_str));
     }
-    let outer_result: SerializedGetEntryResult = result.unwrap();
-    let result = GetEntryResult {
-        status: GetResultStatus::from(JsonString::from(outer_result.status)),
-        entry_json: JsonString::from(outer_result.entry_json),
-    };
+    let get_entry_result: GetEntryResult = result.unwrap();
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    match result.status {
-        GetResultStatus::Found => Ok(Some(result.entry_json)),
+    match get_entry_result.status {
+        GetResultStatus::Found => Ok(get_entry_result.maybe_serialized_entry),
         GetResultStatus::NotFound => Ok(None),
     }
 }

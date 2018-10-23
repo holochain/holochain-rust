@@ -1,5 +1,6 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use holochain_core_types::json::JsonString;
+use holochain_core_types::json::RawString;
 use serde_json;
 use std::fmt;
 
@@ -13,7 +14,7 @@ macro_rules! zome_assert {
                 r#"Zome assertion failed: `{}`"#,
                 stringify!($cond)
             ));
-            let res = store_as_json(&mut $stack, error_report);
+            let res = store_json(&mut $stack, error_report);
             return res.unwrap().encode();
         }
     };
@@ -70,6 +71,12 @@ impl From<JsonString> for RibosomeErrorReport {
     fn from(json_string: JsonString) -> RibosomeErrorReport {
         serde_json::from_str(&String::from(json_string))
             .expect("could not deserialize RibosomeErrorReport")
+    }
+}
+
+impl From<RibosomeErrorReport> for JsonString {
+    fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
+        JsonString::from(RawString::from(String::from(ribosome_error_report)))
     }
 }
 

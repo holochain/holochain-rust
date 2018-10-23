@@ -88,7 +88,23 @@ impl From<SerializedEntry> for JsonString {
 
 impl From<JsonString> for SerializedEntry {
     fn from(json_string: JsonString) -> SerializedEntry {
-        serde_json::from_str(&String::from(json_string)).expect("could not deserialize JsonEntry")
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize SerializedEntry")
+    }
+}
+
+impl From<Option<SerializedEntry>> for JsonString {
+    fn from(maybe_serialized_entry: Option<SerializedEntry>) -> JsonString {
+        JsonString::from(
+            format!(
+                "{{\"entry\":{}}}",
+                String::from(
+                    match maybe_serialized_entry {
+                        Some(serialized_entry) => JsonString::from(serialized_entry),
+                        None => JsonString::none(),
+                    }
+                ),
+            )
+        )
     }
 }
 

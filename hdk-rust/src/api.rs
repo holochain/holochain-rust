@@ -327,10 +327,11 @@ pub fn link_entries<S: Into<String>>(
     let allocation_of_input = store_as_json(&mut mem_stack, input)
         .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
 
-    let encoded_allocation_of_result: u32 = unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result : LinkEntriesResult = load_json(encoded_allocation_of_result as u32)
+    let result: LinkEntriesResult = load_json(encoded_allocation_of_result as u32)
         .map_err(|err_str| ZomeApiError::Internal(err_str))?;
 
     // Free result & input allocations and all allocations made inside commit()

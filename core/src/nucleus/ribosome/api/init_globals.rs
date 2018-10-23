@@ -44,6 +44,7 @@ pub fn invoke_init_globals(
             if found_entries.len() > 0 {
                 globals.agent_latest_hash = found_entries[0].clone();
                 globals.agent_initial_hash = found_entries.pop().unwrap();
+                globals.agent_key_hash = globals.agent_latest_hash.clone();
             }
         }
     };

@@ -2,12 +2,17 @@ extern crate futures;
 use agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
-    hash::HashString, validation::{EntryAction, EntryLifecycle, ValidationData},
+    cas::content::Address,
+    entry::Entry,
+    entry_type::EntryType,
+    error::HolochainError,
+    hash::HashString,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
 use nucleus::{
-    actions::{build_validation_package::*, validate::*}, ribosome::Runtime,
+    actions::{build_validation_package::*, validate::*},
+    ribosome::Runtime,
 };
 use serde_json;
 use std::str::FromStr;
@@ -90,7 +95,8 @@ pub mod tests {
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction}, Defn,
+        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
     };
     use serde_json;
 

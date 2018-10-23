@@ -2,7 +2,8 @@ extern crate serde_json;
 use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage}, entry::Entry,
+    cas::{content::Address, storage::ContentAddressableStorage},
+    entry::Entry,
     error::HolochainError,
 };
 use std::sync::Arc;
@@ -32,7 +33,8 @@ pub fn get_entry(
 pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage}, entry::test_entry,
+        cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        entry::test_entry,
     };
     use instance::tests::test_context_with_state;
 

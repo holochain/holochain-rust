@@ -55,18 +55,13 @@ impl Future for AddLinkFuture {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use nucleus;
 
     use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::content::AddressableContent, entry::Entry,
-        links_entry::Link,
-    };
+    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, links_entry::Link};
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {
@@ -83,10 +78,7 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(
-            &link,
-            &context.clone(),
-        ));
+        let result = block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_ok());
     }
@@ -99,14 +91,12 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(
-            &link,
-            &context.clone(),
-        ));
+        let result = block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), HolochainError::ErrorGeneric(String::from(
-            "Base for link not found",
-        )));
+        assert_eq!(
+            result.err().unwrap(),
+            HolochainError::ErrorGeneric(String::from("Base for link not found",))
+        );
     }
 }

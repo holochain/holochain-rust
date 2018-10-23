@@ -6,7 +6,8 @@ use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::Entry, error::HolochainError,
+    entry::Entry,
+    error::HolochainError,
 };
 use std::sync::Arc;
 
@@ -242,13 +243,15 @@ pub mod tests {
 
     use action::{Action, ActionWrapper};
     use dht::{
-        dht_reducers::{commit_sys_entry, reduce}, dht_store::DhtStore,
+        dht_reducers::{commit_sys_entry, reduce},
+        dht_store::DhtStore,
     };
     use holochain_cas_implementations::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         eav::EntityAttributeValueStorage,
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry}, links_entry::Link,
+        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        links_entry::Link,
     };
     use instance::tests::test_context;
     use state::test_store;

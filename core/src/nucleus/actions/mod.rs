@@ -14,7 +14,8 @@ pub mod tests {
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
     use instance::{
-        tests::{test_context, test_instance}, Instance,
+        tests::{test_context, test_instance},
+        Instance,
     };
     use std::sync::Arc;
     use test_utils::*;

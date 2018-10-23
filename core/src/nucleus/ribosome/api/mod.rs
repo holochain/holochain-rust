@@ -55,7 +55,7 @@ pub enum ZomeApiFunction {
     /// get_entry(address: Address) -> Entry
     GetAppEntry,
 
-    /// Init App Globals
+    /// Init Zome API Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
 

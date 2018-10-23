@@ -140,10 +140,10 @@ pub(crate) fn run_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
-        &app_name,
+        &dna_name,
         context,
         wasm.code.clone(),
         &fc,

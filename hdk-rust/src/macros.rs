@@ -22,6 +22,11 @@ macro_rules! load_json {
 /// # #[macro_use] extern crate serde_derive;
 /// # use hdk::globals::G_MEM_STACK;
 /// # use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+///
+/// # // Adding empty hc_init_globals() so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+///
 /// # fn main() {
 /// #[derive(Serialize)]
 /// struct CreatePostResponse {

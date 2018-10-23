@@ -113,17 +113,17 @@ pub mod tests {
         let instance = test_instance(dna).expect("Could not create test instance");
 
         let (context, logger) = test_context_and_logger("joan");
-        let initiliazed_context = instance.initialize_context(context);
+        let initialized_context = instance.initialize_context(context);
 
         block_on(commit_entry(
             test_entry(),
-            &initiliazed_context.action_channel.clone(),
-            &initiliazed_context,
+            &initialized_context.action_channel.clone(),
+            &initialized_context,
         )).expect("Could not commit entry for testing");
 
         let (call_result, _) = test_zome_api_function_call(
             &dna_name,
-            initiliazed_context,
+            initialized_context,
             logger,
             &instance,
             &wasm,

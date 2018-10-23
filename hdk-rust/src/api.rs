@@ -127,8 +127,8 @@ impl Default for GetEntryMask {
 
 // Allowed input for close_bundle()
 pub enum BundleOnClose {
-   Commit,
-   Discard,
+    Commit,
+    Discard,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -213,19 +213,14 @@ pub fn commit_entry(
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry(
-    address: HashString,
-    _options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
+pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
     // Put args in struct and serialize into memory
-    let input = GetEntryArgs {
-        address: address,
-    };
+    let input = GetEntryArgs { address: address };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(ZomeApiError::Internal(err_code.to_string()));

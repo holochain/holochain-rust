@@ -1,6 +1,6 @@
 //! Holds the internal/private zome API function `init_globals`
-//! which initializes into WASM memory the values it receives
-//! from the DNA, by calling the Zome once.
+//! which initializes the Zome API Globals with the values it receives from the Ribosome.
+//! It is automatically called at startup of each Zome function call.
 
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 

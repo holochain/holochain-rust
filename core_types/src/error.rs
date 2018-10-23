@@ -3,9 +3,7 @@ use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
 use serde_json::Error as SerdeError;
 use std::{
-    error::Error,
-    fmt,
-    io::{self, Error as IoError},
+    error::Error, fmt, io::{self, Error as IoError},
 };
 
 /// Enum holding all Holochain specific errors
@@ -22,6 +20,8 @@ pub enum HolochainError {
     SerializationError(String),
     InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
+    ValidationFailed(String),
+    RibosomeFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -62,6 +62,8 @@ impl Error for HolochainError {
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
+            ValidationFailed(fail_msg) => &fail_msg,
+            RibosomeFailed(fail_msg) => &fail_msg,
         }
     }
 }

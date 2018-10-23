@@ -7,30 +7,19 @@ pub mod debug;
 pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
-use context::Context;
+
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{
-    error::{RibosomeErrorCode, RibosomeReturnCode},
-    memory_allocation::decode_encoded_allocation,
-};
-use nucleus::{
-    ribosome::{
-        api::{
-            call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-            get_entry::invoke_get_entry, init_globals::invoke_init_globals,
-        },
-        memory::SinglePageManager,
-        Defn,
+use nucleus::ribosome::{
+    api::{
+        call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
+        get_entry::invoke_get_entry, init_globals::invoke_init_globals,
     },
-    ZomeFnCall,
+    Defn, Runtime,
 };
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::Arc};
-use wasmi::{
-    self, Error as InterpreterError, Externals, FuncInstance, FuncRef, ImportsBuilder,
-    ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
-    TrapKind, ValueType,
-};
+use std::str::FromStr;
+
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -150,234 +139,6 @@ impl ZomeApiFunction {
     }
 }
 
-//--------------------------------------------------------------------------------------------------
-// Wasm call
-//--------------------------------------------------------------------------------------------------
-
-/// Object holding data to pass around to invoked Zome API functions
-#[derive(Clone)]
-pub struct Runtime {
-    pub context: Arc<Context>,
-    pub result: String,
-    memory_manager: SinglePageManager,
-    zome_call: ZomeFnCall,
-    pub app_name: String,
-}
-
-impl Runtime {
-    /// Load a string stored in wasm memory.
-    /// Input RuntimeArgs should only have one input which is the encoded allocation holding
-    /// the complex data as an utf8 string.
-    /// Returns the utf8 string.
-    pub fn load_utf8_from_args(&self, args: &RuntimeArgs) -> String {
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        assert_eq!(1, args.len());
-
-        // Read complex argument serialized in memory
-        let encoded_allocation: u32 = args.nth(0);
-        let maybe_allocation = decode_encoded_allocation(encoded_allocation);
-        let allocation = match maybe_allocation {
-            // Handle empty allocation edge case
-            Err(RibosomeReturnCode::Success) => return String::new(),
-            // Handle error code
-            Err(_) => panic!("received error code instead of valid encoded allocation"),
-            // Handle normal allocation
-            Ok(allocation) => allocation,
-        };
-        let bin_arg = self.memory_manager.read(allocation);
-
-        // convert complex argument
-        String::from_utf8(bin_arg)
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-    }
-
-    /// Store a string in wasm memory.
-    /// Input should be a a json string.
-    /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
-        // write str to runtime memory
-        let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
-        s_bytes.push(0); // Add string terminate character (important)
-
-        let allocation_of_result = self.memory_manager.write(&s_bytes);
-        if allocation_of_result.is_err() {
-            return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
-        }
-
-        let encoded_allocation = allocation_of_result
-            // @TODO don't panic in WASM
-            // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
-            .encode();
-
-        // Return success in i32 format
-        Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
-    }
-}
-
-/// Executes an exposed function in a wasm binary
-/// Multithreaded function
-/// panics if wasm isn't valid
-pub fn call(
-    app_name: &str,
-    context: Arc<Context>,
-    wasm: Vec<u8>,
-    zome_call: &ZomeFnCall,
-    parameters: Option<Vec<u8>>,
-) -> Result<Runtime, InterpreterError> {
-    // Create wasm module from wasm binary
-    let module = wasmi::Module::from_buffer(wasm).expect("wasm should be valid");
-
-    // invoke_index and resolve_func work together to enable callable host functions
-    // within WASM modules, which is how the core API functions
-    // read about the Externals trait for more detail
-
-    // Correlate the indexes of core API functions with a call to the actual function
-    // by implementing the Externals wasmi trait for Runtime
-    impl Externals for Runtime {
-        fn invoke_index(
-            &mut self,
-            index: usize,
-            args: RuntimeArgs,
-        ) -> Result<Option<RuntimeValue>, Trap> {
-            let zf = ZomeApiFunction::from_index(index);
-            match zf {
-                ZomeApiFunction::MissingNo => panic!("unknown function index"),
-                // convert the function to its callable form and call it with the given arguments
-                _ => zf.as_fn()(self, &args),
-            }
-        }
-    }
-
-    // Correlate the names of the core ZomeApiFunction's with their indexes
-    // and declare its function signature (which is always the same)
-    struct RuntimeModuleImportResolver;
-    impl ModuleImportResolver for RuntimeModuleImportResolver {
-        fn resolve_func(
-            &self,
-            field_name: &str,
-            _signature: &Signature,
-        ) -> Result<FuncRef, InterpreterError> {
-            let api_fn = match ZomeApiFunction::from_str(&field_name) {
-                Ok(api_fn) => api_fn,
-                Err(_) => {
-                    return Err(InterpreterError::Function(format!(
-                        "host module doesn't export function with name {}",
-                        field_name
-                    )));
-                }
-            };
-
-            match api_fn {
-                // Abort is a way to receive useful debug info from
-                // assemblyscript memory allocators, see enum definition for function signature
-                ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(
-                    Signature::new(
-                        &[
-                            ValueType::I32,
-                            ValueType::I32,
-                            ValueType::I32,
-                            ValueType::I32,
-                        ][..],
-                        None,
-                    ),
-                    api_fn as usize,
-                )),
-                // All of our Zome API Functions have the same signature
-                _ => Ok(FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
-                    api_fn as usize,
-                )),
-            }
-        }
-    }
-
-    // Create Imports with previously described Resolver
-    let mut imports = ImportsBuilder::new();
-    imports.push_resolver("env", &RuntimeModuleImportResolver);
-
-    // Create module instance from wasm module, and start it if start is defined
-    let wasm_instance = ModuleInstance::new(&module, &imports)
-        .expect("Failed to instantiate module")
-        .run_start(&mut NopExternals)?;
-
-    // write input arguments for module call in memory Buffer
-    let input_parameters: Vec<_> = parameters.unwrap_or_default();
-
-    // instantiate runtime struct for passing external state data over wasm but not to wasm
-    let mut runtime = Runtime {
-        context,
-        result: String::new(),
-        memory_manager: SinglePageManager::new(&wasm_instance),
-        zome_call: zome_call.clone(),
-        app_name: app_name.to_string(),
-    };
-
-    // Write input arguments in wasm memory
-    // scope for mutable borrow of runtime
-    let encoded_allocation_of_input: u32;
-    {
-        let mut_runtime = &mut runtime;
-        let maybe_allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
-        encoded_allocation_of_input = match maybe_allocation_of_input {
-            // No allocation to write is ok
-            Err(RibosomeErrorCode::ZeroSizedAllocation) => 0,
-            // Any other error is memory related
-            Err(_) => {
-                return Err(InterpreterError::Trap(Trap::new(
-                    TrapKind::MemoryAccessOutOfBounds,
-                )))
-            }
-            // Write successful, encode allocation
-            Ok(allocation_of_input) => allocation_of_input.encode(),
-        }
-    }
-
-    // scope for mutable borrow of runtime
-    let returned_encoded_allocation: u32;
-    {
-        let mut_runtime = &mut runtime;
-
-        // invoke function in wasm instance
-        // arguments are info for wasm on how to retrieve complex input arguments
-        // which have been set in memory module
-        returned_encoded_allocation = wasm_instance
-            .invoke_export(
-                zome_call.fn_name.clone().as_str(),
-                &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
-                mut_runtime,
-            )?
-            .unwrap()
-            .try_into()
-            .unwrap();
-    }
-
-    // Handle result returned by invoked function
-    let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
-    match maybe_allocation {
-        // Nothing in memory, log return code
-        Err(return_code) => {
-            runtime
-                .context
-                .log(&format!(
-                    "Zome Function '{}' returned: {}",
-                    zome_call.fn_name,
-                    return_code.to_string()
-                ))
-                .expect("Logger should work");
-        }
-        // Something in memory, try to read it
-        Ok(valid_allocation) => {
-            let result = runtime.memory_manager.read(valid_allocation);
-            runtime.result = String::from_utf8(result).unwrap();
-        }
-    }
-    Ok(runtime.clone())
-}
-
 #[cfg(test)]
 pub mod tests {
     extern crate holochain_agent;
@@ -387,19 +148,13 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
-        Instance,
+        tests::{test_context_and_logger, test_instance, TestLogger}, Instance,
     };
     use nucleus::{
-        ribosome::{
-            api::{call, Runtime},
-            Defn,
-        },
-        ZomeFnCall,
+        ribosome::{self, Defn}, ZomeFnCall,
     };
     use std::{
-        str::FromStr,
-        sync::{Arc, Mutex},
+        str::FromStr, sync::{Arc, Mutex},
     };
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
@@ -486,6 +241,24 @@ pub mod tests {
 
         (i32.const 0)
     )
+
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
 )
                 "#,
                     canonical_name
@@ -519,13 +292,13 @@ pub mod tests {
     /// calls the zome API function with passed bytes argument using the instance runtime
     /// returns the runtime after the call completes
     pub fn test_zome_api_function_call(
-        app_name: &str,
+        dna_name: &str,
         context: Arc<Context>,
         logger: Arc<Mutex<TestLogger>>,
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Mutex<TestLogger>>) {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
@@ -533,8 +306,8 @@ pub mod tests {
             &test_parameters(),
         );
         (
-            call(
-                &app_name,
+            ribosome::run_dna(
+                &dna_name,
                 context,
                 wasm.clone(),
                 &zome_call,
@@ -544,15 +317,15 @@ pub mod tests {
         )
     }
 
-    /// given a canonical zome API function name and args as bytes:
+    /// Given a canonical zome API function name and args as bytes:
     /// - builds wasm with test_zome_api_function_wasm
     /// - builds dna and test instance
     /// - calls the zome API function with passed bytes argument using the instance runtime
-    /// - returns the runtime after the call completes
-    pub fn test_zome_api_function_runtime(
+    /// - returns the call result
+    pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (Runtime, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Mutex<TestLogger>>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -560,13 +333,20 @@ pub mod tests {
             wasm.clone(),
         );
 
-        let app_name = &dna.name.to_string().clone();
+        let dna_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
-        let (c, logger) = test_context_and_logger("joan");
-        let context = instance.initialize_context(c);
+        let (context, logger) = test_context_and_logger("joan");
+        let initiliazed_context = instance.initialize_context(context);
 
-        test_zome_api_function_call(&app_name, context, logger, &instance, &wasm, args_bytes)
+        test_zome_api_function_call(
+            &dna_name,
+            initiliazed_context,
+            logger,
+            &instance,
+            &wasm,
+            args_bytes,
+        )
     }
 
     #[test]

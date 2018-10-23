@@ -132,19 +132,21 @@ where
 
 #[cfg(test)]
 pub mod tests {
-
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use agent::chain_store::ChainStore;
-    use holochain_cas_implementations::cas::memory::MemoryStorage;
+    use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        chain_header::{test_chain_header, ChainHeader},
-        entry::{test_entry, test_entry_b},
-        signature::{test_signature, test_signature_b},
-        time::test_iso_8601,
+        chain_header::{test_chain_header, ChainHeader}, entry::{test_entry, test_entry_b},
+        signature::{test_signature, test_signature_b}, time::test_iso_8601,
     };
 
-    pub fn test_chain_store() -> ChainStore<MemoryStorage> {
-        ChainStore::new(MemoryStorage::new().expect("could not create new chain store"))
+    pub fn test_chain_store() -> ChainStore<FilesystemStorage> {
+        ChainStore::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
+                .expect("could not create new chain store"),
+        )
     }
 
     #[test]

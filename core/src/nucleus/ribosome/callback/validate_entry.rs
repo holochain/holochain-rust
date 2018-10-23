@@ -1,14 +1,13 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{entry::Entry, entry_type::EntryType, error::HolochainError};
+use holochain_core_types::{
+    entry::Entry, entry_type::EntryType, error::HolochainError, validation::ValidationData,
+};
 use holochain_dna::wasm::DnaWasm;
-use holochain_wasm_utils::validation::ValidationData;
 use nucleus::{
     ribosome::{
-        self,
-        callback::{get_dna, CallbackResult},
-    },
-    ZomeFnCall,
+        self, callback::{get_dna, get_wasm, CallbackResult},
+    }, ZomeFnCall,
 };
 use std::sync::Arc;
 
@@ -99,30 +98,27 @@ fn run_validation_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
-        &app_name,
+    match ribosome::run_dna(
+        &dna_name,
         context,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
+        Ok(call_result) => match call_result.is_empty() {
             true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
+            false => CallbackResult::Fail(call_result),
         },
-        Err(_) => CallbackResult::NotImplemented,
-    }
-}
-
-fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
-    let dna = get_dna(context).expect("Callback called without DNA set!");
-    dna.get_wasm_from_zome_name(zome).and_then(|wasm| {
-        if wasm.code.len() > 0 {
-            Some(wasm.clone())
-        } else {
-            None
+        // TODO: have "not matching schema" be its own error
+        Err(HolochainError::RibosomeFailed(error_string)) => {
+            if error_string == "Argument deserialization failed" {
+                CallbackResult::Fail(String::from("JSON object does not match entry schema"))
+            } else {
+                CallbackResult::Fail(error_string)
+            }
         }
-    })
+        Err(error) => CallbackResult::Fail(error.to_string()),
+    }
 }

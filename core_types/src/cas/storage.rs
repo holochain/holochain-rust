@@ -3,10 +3,7 @@ use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
 use std::{
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-    sync::{mpsc::channel, Arc, RwLock},
-    thread,
+    collections::{HashMap, HashSet}, fmt::Debug, sync::{mpsc::channel, Arc, RwLock}, thread,
 };
 
 /// content addressable store (CAS)

@@ -1,6 +1,6 @@
-use nucleus::ribosome::api::Runtime;
 use holochain_core_types::hash::HashString;
 use multihash::Hash as Multihash;
+use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 use serde_json;
@@ -24,7 +24,7 @@ pub fn invoke_init_globals(
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let globals = InitGlobalsOutput {
-        app_name: runtime.app_name.to_string(),
+        app_name: runtime.dna_name.to_string(),
 
         app_dna_hash: match runtime.context.state() {
             Some(state) => match state.nucleus().dna() {
@@ -50,19 +50,17 @@ pub fn invoke_init_globals(
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
-        Defn,
+        api::{tests::test_zome_api_function, ZomeApiFunction}, Defn,
     };
 
     #[test]
     /// test that bytes passed to debug end up in the log
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
-        let (runtime, _) =
-            test_zome_api_function_runtime(ZomeApiFunction::InitGlobals.as_str(), input);
+        let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
-      runtime.result.to_string(),
-      "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
+            call_result,
+            "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
         .to_string());
     }
 }

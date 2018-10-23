@@ -3,8 +3,7 @@ use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
 use serde_json;
 use std::{
-    collections::HashSet,
-    sync::{Arc, RwLock},
+    collections::HashSet, sync::{Arc, RwLock},
 };
 
 /// EAV (entity-attribute-value) data

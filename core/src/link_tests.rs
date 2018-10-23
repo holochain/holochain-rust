@@ -6,9 +6,7 @@ pub mod tests {
     extern crate test_utils;
     use action::{Action, ActionWrapper};
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
-        entry::ToEntry,
-        entry_type::EntryType,
+        cas::content::{Address, AddressableContent}, entry::ToEntry, entry_type::EntryType,
         links_entry::*,
     };
     use instance::{tests::test_context, Instance, Observer};
@@ -53,7 +51,7 @@ pub mod tests {
         let entry = link_list_entry.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
@@ -86,7 +84,7 @@ pub mod tests {
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);

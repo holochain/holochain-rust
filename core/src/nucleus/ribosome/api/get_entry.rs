@@ -1,25 +1,8 @@
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
-use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
+use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct GetAppEntryArgs {
-    address: Address,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-enum GetResultStatus {
-    Found,
-    NotFound,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct GetAppEntryResult {
-    status: GetResultStatus,
-    entry: String,
-}
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -31,7 +14,7 @@ pub fn invoke_get_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let res_entry: Result<GetAppEntryArgs, _> = serde_json::from_str(&args_str);
+    let res_entry: Result<GetEntryArgs, _> = serde_json::from_str(&args_str);
     // Exit on error
     if res_entry.is_err() {
         return ribosome_error_code!(ArgumentDeserializationFailed);
@@ -44,19 +27,13 @@ pub fn invoke_get_entry(
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(maybe_entry) => match maybe_entry {
             Some(entry) => {
-                let result = GetAppEntryResult {
-                    status: GetResultStatus::Found,
-                    entry: entry.to_string(),
-                };
+                let result = GetEntryResult::found(entry.to_string());
                 let result_string =
                     serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
                 runtime.store_utf8(&result_string)
             }
             None => {
-                let result = GetAppEntryResult {
-                    status: GetResultStatus::NotFound,
-                    entry: String::from(""),
-                };
+                let result = GetEntryResult::not_found();
                 let result_string =
                     serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
                 runtime.store_utf8(&result_string)
@@ -71,16 +48,18 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
-    use super::GetAppEntryArgs;
+    use super::GetEntryArgs;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, hash::HashString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{
-            call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name},
+        ribosome::{
+            self,
+            api::{
+                commit::tests::test_commit_args_bytes,
+                tests::{test_capability, test_parameters, test_zome_name},
+            },
         },
         ZomeFnCall,
     };
@@ -89,7 +68,7 @@ mod tests {
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        let args = GetAppEntryArgs {
+        let args = GetEntryArgs {
             address: test_entry().address().into(),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
@@ -97,7 +76,7 @@ mod tests {
 
     /// dummy get args from standard test entry
     pub fn test_get_args_unknown() -> Vec<u8> {
-        let args = GetAppEntryArgs {
+        let args = GetEntryArgs {
             address: HashString::from(String::from("xxxxxxxxx")),
         };
         serde_json::to_string(&args).unwrap().into_bytes()
@@ -157,6 +136,23 @@ mod tests {
 
         (i32.const 0)
     )
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
 )
                 "#,
             )
@@ -195,7 +191,7 @@ mod tests {
             "commit_dispatch",
             &test_parameters(),
         );
-        let commit_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -204,8 +200,11 @@ mod tests {
         ).expect("test should be callable");
 
         assert_eq!(
-            commit_runtime.result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            call_result,
+            format!(
+                r#"{{"address":"{}","validation_failure":""}}"#,
+                test_entry().address()
+            ) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(
@@ -214,7 +213,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -225,7 +224,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
     #[test]
@@ -258,7 +257,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -269,7 +268,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
 
-        assert_eq!(expected, get_runtime.result);
+        assert_eq!(expected, call_result);
     }
 
 }

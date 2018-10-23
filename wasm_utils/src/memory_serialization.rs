@@ -1,103 +1,123 @@
 use error::{RibosomeErrorCode, RibosomeErrorReport};
-use memory_allocation::{decode_encoded_allocation, SinglePageAllocation, SinglePageStack};
+use memory_allocation::{
+    decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
+};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 
-// Convert a json string stored in wasm memory into a specified struct
-// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
-// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
-#[allow(unknown_lints)]
-#[allow(not_unsafe_ptr_arg_deref)]
-pub fn deserialize<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
+//-------------------------------------------------------------------------------------------------
+// Raw
+//-------------------------------------------------------------------------------------------------
+
+/// Convert a string stored in wasm memory into a String.
+fn load_str_from_raw<'a>(ptr_data: *mut c_char) -> &'a str {
     let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
-    let actual_str = ptr_safe_c_str.to_str().unwrap();
-    let res = serde_json::from_str(actual_str);
-    match res {
-        Err(_) => {
-            // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
-            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
-                serde_json::from_str(actual_str);
-            match maybe_error_report {
-                Err(err) => Err(err.to_string()),
-                Ok(error_report) => Err(error_report.description),
-            }
-        }
-        Ok(x) => Ok(x),
+    ptr_safe_c_str.to_str().unwrap()
+}
+
+/// Write in wasm memory according to stack state.
+fn write_in_wasm_memory(
+    stack: &mut SinglePageStack,
+    bytes: &[u8],
+    len: u16,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+    if u32::from(len) + u32::from(stack.top()) > U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory);
     }
+    let ptr = stack.allocate(len) as *mut c_char;
+    let ptr_safe = unsafe { slice::from_raw_parts_mut(ptr, len as usize) };
+    for (i, byte) in bytes.iter().enumerate() {
+        ptr_safe[i] = *byte as i8;
+    }
+    SinglePageAllocation::new(ptr as u16, len)
 }
 
-// Expecting to retrieve a struct from a valid encoded allocation
-pub fn deserialize_allocation<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> T {
-    let allocation = SinglePageAllocation::from_encoded_allocation(encoded_allocation);
-    let allocation = allocation.expect("received error instead of valid encoded allocation");
-    return deserialize(allocation.offset() as *mut c_char).unwrap();
+//-------------------------------------------------------------------------------------------------
+// String
+//-------------------------------------------------------------------------------------------------
+
+/// Write a string in wasm memory according to stack state.
+pub fn store_string(
+    stack: &mut SinglePageStack,
+    s: &str,
+) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+    let bytes = s.as_bytes();
+    let len = bytes.len() as u32;
+    if len > U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory);
+    }
+    return write_in_wasm_memory(stack, bytes, len as u16);
 }
 
-// Expecting to retrieve a struct from an encoded allocation, but return error string in case of error
-pub fn try_deserialize_allocation<'s, T: Deserialize<'s>>(
-    encoded_allocation: u32,
-) -> Result<T, String> {
+// Sugar
+pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str) -> i32 {
+    store_string(stack, s).unwrap().encode() as i32
+}
+
+/// Retrieve a stored string from an encoded allocation.
+/// Return error string if encoded_allocation is invalid.
+pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
         Err(return_code) => Err(return_code.to_string()),
-        Ok(allocation) => deserialize(allocation.offset() as *mut c_char),
+        Ok(allocation) => Ok(load_str_from_raw(allocation.offset() as *mut c_char).to_string()),
     }
 }
 
-// Write a data struct into a memory buffer as json string
-pub fn serialize<T: Serialize>(
+//-------------------------------------------------------------------------------------------------
+// JSON
+//-------------------------------------------------------------------------------------------------
+
+/// Write a data struct as a json string in wasm memory according to stack state.
+pub fn store_as_json<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let json_bytes = serde_json::to_vec(&internal).unwrap();
-    let json_bytes_len = json_bytes.len();
-    assert!(json_bytes_len < <u16>::max_value() as usize);
-
-    let ptr = stack.allocate(json_bytes_len as u16) as *mut c_char;
-
-    let ptr_safe = unsafe { slice::from_raw_parts_mut(ptr, json_bytes_len) };
-
-    for (i, byte) in json_bytes.iter().enumerate() {
-        ptr_safe[i] = *byte as i8;
+    let json_bytes_len = json_bytes.len() as u32;
+    if json_bytes_len > U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory);
     }
-
-    SinglePageAllocation::new(ptr as u16, json_bytes_len as u16)
+    return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
 }
 
-// Helper
-pub fn serialize_into_encoded_allocation<T: Serialize>(
+// Sugar
+pub fn store_json_into_encoded_allocation<T: Serialize>(
     stack: &mut SinglePageStack,
     internal: T,
 ) -> i32 {
-    let allocation_of_output = serialize(stack, internal).unwrap();
-    return allocation_of_output.encode() as i32;
+    store_as_json(stack, internal).unwrap().encode() as i32
 }
 
-/*
-TODO: figure out a way to get tests to work for serialization, see #451
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    #[derive(Deserialize, Serialize, Default,Debug,PartialEq)]
-    struct TestStruct {
-        value: String,
-    }
-
-    #[test]
-    fn can_round_trip_allocation() {
-
-        let mut mem_stack = SinglePageStack::default();
-
-        let test_value = TestStruct{value:"fish".to_string()};
-
-        let encoded_allocation = serialize_into_encoded_allocation(&mut mem_stack,test_value);
-
-        assert_eq!(format!("{:?}", mem_stack),"dog");
-
-        let result : Result<TestStruct,String> = try_deserialize_allocation(encoded_allocation as u32);
-        assert_eq!(result.unwrap(),TestStruct{value:"fish".to_string()});
+/// Retrieve a stored data struct from an encoded allocation.
+/// Return error string if encoded_allocation is invalid.
+pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, String> {
+    let maybe_allocation = decode_encoded_allocation(encoded_allocation);
+    match maybe_allocation {
+        Err(return_code) => Err(return_code.to_string()),
+        Ok(allocation) => load_json_from_raw(allocation.offset() as *mut c_char),
     }
 }
-*/
+
+/// Convert a json string stored in wasm memory into a specified struct
+/// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+/// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
+#[allow(unknown_lints)]
+#[allow(not_unsafe_ptr_arg_deref)]
+pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
+    let stored_str = load_str_from_raw(ptr_data);
+    let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(stored_str);
+    match maybe_obj {
+        Ok(obj) => Ok(obj),
+        Err(_) => {
+            // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
+            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
+                serde_json::from_str(stored_str);
+            match maybe_error_report {
+                Err(_) => Err(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
+                Ok(error_report) => Err(error_report.description),
+            }
+        }
+    }
+}

@@ -7,7 +7,7 @@
 
 all: main
 
-CORE_RUST_VERSION ?= nightly-2018-06-01
+CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
 CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
@@ -39,7 +39,7 @@ install_rustup:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(CORE_RUST_VERSION) -y; \
 	fi
-	export PATH=${HOME}/.cargo/bin:${PATH}
+	export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
@@ -48,7 +48,8 @@ install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
 	fi
-	export PATH=${HOME}/.cargo/bin:${PATH}
+	export PATH="${HOME}/.cargo/bin:${PATH}"make
+
 
 # idempotent installation of libzmq system library
 # note, this is complicated by our use of travis-ci ubuntu trusty
@@ -57,7 +58,12 @@ install_rustup_tools:
 install_system_libzmq:
 	if ! (pkg-config libzmq --libs) ; then \
 		if ! which apt-get ; then \
-			echo "\033[0;93mNo apt-get installed and no system libzmq, build probably won't work\033[0m"; \
+			if which brew ; then \
+				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
+				brew install zmq \
+			else \
+				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
+			fi; \
 		else \
 			if [ "x${TRAVIS}" = "x" ]; then \
 				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
@@ -138,16 +144,19 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
-	cd core/src/nucleus/wasm-test && $(CARGO) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) build --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) build --target wasm32-unknown-unknown
+	cd core/src/nucleus/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd core_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd core_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
 .PHONY: build
 build: core_toolchain wasm_build
 	$(CARGO) build --all
 
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding
+	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check
@@ -165,6 +174,7 @@ ${C_BINDING_TESTS}:
 # clean up the target directory and all extraneous "C" binding test files
 clean: ${C_BINDING_CLEAN}
 	-@$(RM) -rf target
+	-@$(RM) -rf wasm_utils/wasm-test/integration-test/target
 
 # clean up the extraneous "C" binding test files
 ${C_BINDING_CLEAN}:

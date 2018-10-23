@@ -7,8 +7,7 @@ use holochain_core_types::entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
 use nucleus::{
-    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
-    state::NucleusStatus,
+    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult}, state::NucleusStatus,
 };
 use std::{sync::Arc, thread, time::*};
 
@@ -62,7 +61,7 @@ pub fn initialize_application(
                 context_clone
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.err().unwrap()),
+                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
                 return;

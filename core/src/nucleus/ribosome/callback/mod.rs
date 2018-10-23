@@ -4,15 +4,14 @@
 pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
+pub mod validation_package;
 
 use context::Context;
-use holochain_core_types::{entry::Entry, json::ToJson};
+use holochain_core_types::{entry::Entry, json::ToJson, validation::ValidationPackageDefinition};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
-        self,
-        callback::{genesis::genesis, receive::receive},
-        Defn,
+        self, callback::{genesis::genesis, receive::receive}, Defn,
     },
     ZomeFnCall,
 };
@@ -132,6 +131,7 @@ pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+    ValidationPackageDefinition(ValidationPackageDefinition),
 }
 
 pub(crate) fn run_callback(
@@ -140,16 +140,17 @@ pub(crate) fn run_callback(
     wasm: &DnaWasm,
     app_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
+    match ribosome::run_dna(
         &app_name,
         context,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => match runtime.result.is_empty() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(runtime.result),
+        Ok(call_result) => if call_result.is_empty() {
+            CallbackResult::Pass
+        } else {
+            CallbackResult::Fail(call_result)
         },
         Err(_) => CallbackResult::NotImplemented,
     }
@@ -184,6 +185,12 @@ pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
         }
     }
     dna
+}
+
+pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
+    let dna = get_dna(context).expect("Callback called without DNA set!");
+    dna.get_wasm_from_zome_name(zome)
+        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
 }
 
 pub fn call(

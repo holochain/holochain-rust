@@ -1,10 +1,7 @@
-
 use holochain_core_types::error::HolochainError;
-use std::error::Error;
-use std::fmt;
+use std::{error::Error, fmt};
 
 pub type HolochainResult<T> = Result<T, HolochainInstanceError>;
-
 
 // TODO rename to HolochainError
 #[derive(Debug, PartialEq, Clone)]
@@ -17,15 +14,11 @@ pub enum HolochainInstanceError {
 impl Error for HolochainInstanceError {
     fn description(&self) -> &str {
         match self {
-            HolochainInstanceError::InternalFailure(ref err)  => {
-                err.description()
-            },
-            HolochainInstanceError::InstanceNotActiveYet => {
-                "Holochain instance is not active yet."
-            },
+            HolochainInstanceError::InternalFailure(ref err) => err.description(),
+            HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
             HolochainInstanceError::InstanceAlreadyActive => {
                 "Holochain instance is already active."
-            },
+            }
         }
     }
 

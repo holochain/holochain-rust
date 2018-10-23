@@ -9,8 +9,8 @@ extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_core_api::error::{HolochainResult, HolochainInstanceError};
 use holochain_core::logger::Logger;
+use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::error::{HolochainError, RibosomeErrorCode, RibosomeErrorReport};
 use test_utils::hc_setup_and_call_zome_fn;
 #[derive(Clone, Debug)]
@@ -60,7 +60,9 @@ fn call_store_as_json_obj_ok() {
 fn call_store_string_err() {
     let call_result = call_zome_function_with_hc("test_store_string_err");
     assert_eq!(
-        HolochainInstanceError::from(HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string())),
+        HolochainInstanceError::from(HolochainError::RibosomeFailed(
+            RibosomeErrorCode::OutOfMemory.to_string()
+        )),
         call_result.err().unwrap(),
     );
 }
@@ -69,7 +71,9 @@ fn call_store_string_err() {
 fn call_store_as_json_err() {
     let call_result = call_zome_function_with_hc("test_store_as_json_err");
     assert_eq!(
-        HolochainInstanceError::from(HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string())),
+        HolochainInstanceError::from(HolochainError::RibosomeFailed(
+            RibosomeErrorCode::OutOfMemory.to_string()
+        )),
         call_result.err().unwrap(),
     );
 }

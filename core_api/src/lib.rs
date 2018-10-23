@@ -106,9 +106,9 @@ impl Holochain {
                 };
                 Ok(app)
             }
-            Err(err_str) => Err(
-                HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err_str)),
-            ),
+            Err(err_str) => Err(HolochainInstanceError::InternalFailure(
+                HolochainError::ErrorGeneric(err_str),
+            )),
         }
     }
 
@@ -275,8 +275,9 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
-            HolochainInstanceError::from(
-                    HolochainError::ErrorGeneric("Timeout while initializing".to_string())),
+            HolochainInstanceError::from(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string()
+            )),
             result.err().unwrap(),
         );
     }
@@ -290,7 +291,10 @@ mod tests {
 
         // stop when not active returns error
         let result = hc.stop();
-        assert_eq!(HolochainInstanceError::InstanceNotActiveYet, result.err().unwrap());
+        assert_eq!(
+            HolochainInstanceError::InstanceNotActiveYet,
+            result.err().unwrap()
+        );
 
         let result = hc.start();
         assert!(result.is_ok());
@@ -299,7 +303,10 @@ mod tests {
         // start when active returns error
         let result = hc.start();
         assert!(result.is_err());
-        assert_eq!(HolochainInstanceError::InstanceAlreadyActive, result.err().unwrap());
+        assert_eq!(
+            HolochainInstanceError::InstanceAlreadyActive,
+            result.err().unwrap()
+        );
 
         let result = hc.stop();
         assert!(result.is_ok());
@@ -327,7 +334,10 @@ mod tests {
 
         let result = hc.call("test_zome", "test_cap", "main", "");
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), HolochainInstanceError::InstanceNotActiveYet);
+        assert_eq!(
+            result.err().unwrap(),
+            HolochainInstanceError::InstanceNotActiveYet
+        );
 
         hc.start().expect("couldn't start");
 

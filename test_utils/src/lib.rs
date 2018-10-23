@@ -8,10 +8,8 @@ extern crate wabt;
 
 use holochain_agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core::{
-    context::Context, logger::Logger, persister::SimplePersister,
-};
-use holochain_core_api::{Holochain, error::HolochainResult};
+use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core_api::{error::HolochainResult, Holochain};
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{

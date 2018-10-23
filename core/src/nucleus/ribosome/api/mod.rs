@@ -148,13 +148,16 @@ pub mod tests {
     use super::ZomeApiFunction;
     use context::Context;
     use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger}, Instance,
+        tests::{test_context_and_logger, test_instance, TestLogger},
+        Instance,
     };
     use nucleus::{
-        ribosome::{self, Defn}, ZomeFnCall,
+        ribosome::{self, Defn},
+        ZomeFnCall,
     };
     use std::{
-        str::FromStr, sync::{Arc, Mutex},
+        str::FromStr,
+        sync::{Arc, Mutex},
     };
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;

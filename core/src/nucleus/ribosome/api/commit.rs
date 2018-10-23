@@ -1,4 +1,3 @@
-extern crate futures;
 use agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{

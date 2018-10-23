@@ -5,6 +5,7 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        link_entries::{LinkEntriesArgs, LinkEntriesResult},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -247,6 +248,45 @@ pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResul
     Ok(result)
 }
 
+/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
+/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
+/// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
+pub fn link_entries<S: Into<String>>(
+    base: HashString,
+    target: HashString,
+    tag: S,
+) -> Result<(), ZomeApiError> {
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    // Put args in struct and serialize into memory
+    let input = LinkEntriesArgs {
+        base,
+        target,
+        tag: tag.into(),
+    };
+
+    let allocation_of_input = store_as_json(&mut mem_stack, input)
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: LinkEntriesResult = load_json(encoded_allocation_of_result as u32)
+        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+
+    if result.ok {
+        Ok(())
+    } else {
+        Err(ZomeApiError::Internal(result.error))
+    }
+}
+
 /// Not Yet Available
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file 
@@ -296,15 +336,6 @@ pub fn update_agent() -> ZomeApiResult<HashString> {
 
 /// Not Yet Available
 pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// Not Yet Available
-pub fn link_entries<S: Into<String>>(
-    _base: HashString,
-    _target: HashString,
-    _tag: S,
-) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 

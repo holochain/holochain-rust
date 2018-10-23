@@ -35,7 +35,9 @@ pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    cas::content::AddressableContent, entry::{Entry, ToEntry}, entry_type::EntryType,
+    cas::content::AddressableContent,
+    entry::{Entry, ToEntry},
+    entry_type::EntryType,
     error::DnaError,
 };
 use std::collections::HashMap;

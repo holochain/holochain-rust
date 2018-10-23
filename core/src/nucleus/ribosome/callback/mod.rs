@@ -11,7 +11,9 @@ use holochain_core_types::{entry::Entry, json::ToJson, validation::ValidationPac
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
-        self, callback::{genesis::genesis, receive::receive}, Defn,
+        self,
+        callback::{genesis::genesis, receive::receive},
+        Defn,
     },
     ZomeFnCall,
 };

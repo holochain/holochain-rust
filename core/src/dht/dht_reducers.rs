@@ -5,7 +5,8 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    eav::EntityAttributeValueStorage, entry::Entry,
+    eav::EntityAttributeValueStorage,
+    entry::Entry,
 };
 use std::sync::Arc;
 

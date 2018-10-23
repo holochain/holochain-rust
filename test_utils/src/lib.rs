@@ -8,21 +8,24 @@ extern crate wabt;
 
 use holochain_agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core::{
-    context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
-};
-use holochain_core_api::Holochain;
+use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core_api::{error::HolochainResult, Holochain};
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, FnDeclaration, Membrane}, entry_types::EntryTypeDef, Config,
-        Zome,
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
+        Config, Zome,
     },
     Dna,
 };
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap}, fmt, fs::File, hash::{Hash, Hasher},
-    io::prelude::*, sync::{Arc, Mutex},
+    collections::{hash_map::DefaultHasher, HashMap},
+    fmt,
+    fs::File,
+    hash::{Hash, Hasher},
+    io::prelude::*,
+    sync::{Arc, Mutex},
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -192,7 +195,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> ZomeFnResult {
+pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<String> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let capability = create_test_cap_with_fn_name(fn_name);

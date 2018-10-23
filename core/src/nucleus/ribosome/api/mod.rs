@@ -154,18 +154,12 @@ pub mod tests {
     extern crate test_utils;
     use super::ZomeApiFunction;
     use context::Context;
-    use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
-        Instance,
-    };
+    use instance::{tests::test_instance_and_context, Instance};
     use nucleus::{
         ribosome::{self, Defn},
         ZomeFnCall,
     };
-    use std::{
-        str::FromStr,
-        sync::{Arc, Mutex},
-    };
+    use std::{str::FromStr, sync::Arc};
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -304,27 +298,23 @@ pub mod tests {
     pub fn test_zome_api_function_call(
         dna_name: &str,
         context: Arc<Context>,
-        logger: Arc<Mutex<TestLogger>>,
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Mutex<TestLogger>>) {
+    ) -> String {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
             &test_parameters(),
         );
-        (
-            ribosome::run_dna(
-                &dna_name,
-                context,
-                wasm.clone(),
-                &zome_call,
-                Some(args_bytes),
-            ).expect("test should be callable"),
-            logger,
-        )
+        ribosome::run_dna(
+            &dna_name,
+            context,
+            wasm.clone(),
+            &zome_call,
+            Some(args_bytes),
+        ).expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:
@@ -335,7 +325,7 @@ pub mod tests {
     pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -344,19 +334,12 @@ pub mod tests {
         );
 
         let dna_name = &dna.name.to_string().clone();
-        let instance = test_instance(dna).expect("Could not create test instance");
+        let (instance, context) =
+            test_instance_and_context(dna).expect("Could not create test instance");
 
-        let (context, logger) = test_context_and_logger("joan");
-        let initiliazed_context = instance.initialize_context(context);
-
-        test_zome_api_function_call(
-            &dna_name,
-            initiliazed_context,
-            logger,
-            &instance,
-            &wasm,
-            args_bytes,
-        )
+        let call_result =
+            test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);
+        (call_result, context)
     }
 
     #[test]

@@ -80,7 +80,7 @@ mod tests {
 
         let result = block_on(add_link(&link, &context.clone()));
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "result = {:?}", result);
     }
 
     #[test]

@@ -7,10 +7,10 @@ use nucleus::ribosome::Runtime;
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-/// ZomeApiFunction::CommitAppEntry function code
+/// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
-/// Expected complex argument: CommitArgs
-/// Returns an HcApiReturnCode as I32
+/// Expected complex argument: LinkEntriesArgs
+/// Returns a serialized LinkEntriesResult
 pub fn invoke_link_entries(
     runtime: &mut Runtime,
     args: &RuntimeArgs,

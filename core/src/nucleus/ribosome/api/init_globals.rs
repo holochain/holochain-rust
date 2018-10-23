@@ -43,7 +43,8 @@ pub fn invoke_init_globals(
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function, ZomeApiFunction}, Defn,
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
     };
 
     #[test]

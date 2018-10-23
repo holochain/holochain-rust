@@ -4,7 +4,8 @@ use holochain_core_types::error::{
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime}, ZomeFnCall, ZomeFnResult,
+    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
+    ZomeFnCall, ZomeFnResult,
 };
 use std::{str::FromStr, sync::Arc};
 use wasmi::{

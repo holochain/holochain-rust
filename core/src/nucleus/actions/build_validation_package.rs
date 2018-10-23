@@ -6,7 +6,9 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    chain_header::ChainHeader, entry::Entry, error::HolochainError,
+    chain_header::ChainHeader,
+    entry::Entry,
+    error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use nucleus::ribosome::callback::{self, CallbackResult};

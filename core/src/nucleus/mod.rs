@@ -10,13 +10,16 @@ use holochain_core_types::error::{DnaError, HcResult, HolochainError};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::api::call::reduce_call, state::{NucleusState, NucleusStatus},
+    ribosome::api::call::reduce_call,
+    state::{NucleusState, NucleusStatus},
 };
 use snowflake;
 use std::{
     sync::{
-        mpsc::{sync_channel, SyncSender}, Arc,
-    }, thread,
+        mpsc::{sync_channel, SyncSender},
+        Arc,
+    },
+    thread,
 };
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
@@ -422,7 +425,8 @@ pub mod tests {
     use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
     use holochain_dna::Dna;
     use instance::{
-        tests::{test_context, test_context_with_channels, test_instance}, Instance,
+        tests::{test_context, test_context_with_channels, test_instance},
+        Instance,
     };
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::Arc;

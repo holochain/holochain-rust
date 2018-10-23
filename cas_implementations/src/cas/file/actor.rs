@@ -1,10 +1,13 @@
 use super::super::super::actor::{Protocol, SYS};
 use holochain_core_types::{
-    cas::content::{Address, Content}, error::HolochainError, file_validation,
+    cas::content::{Address, Content},
+    error::HolochainError,
+    file_validation,
 };
 use riker::actors::*;
 use std::{
-    fs::{create_dir_all, read_to_string, write}, path::{Path, MAIN_SEPARATOR},
+    fs::{create_dir_all, read_to_string, write},
+    path::{Path, MAIN_SEPARATOR},
 };
 
 const ACTOR_ID_ROOT: &'static str = "/filesystem_storage_actor/";

@@ -429,10 +429,10 @@ pub mod tests {
                 _ => false,
             })
             .is_none()
-            {
-                println!("Waiting for Commit for genesis");
-                sleep(Duration::from_millis(10))
-            }
+        {
+            println!("Waiting for Commit for genesis");
+            sleep(Duration::from_millis(10))
+        }
 
         while instance
             .state()

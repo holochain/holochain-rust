@@ -69,11 +69,10 @@ pub fn initialize_application(
             };
         }
 
-
         // Commit AgentId to chain
-        let dna_entry = context_clone.agent.to_entry();
-        let dna_commit = block_on(commit_entry(
-            dna_entry,
+        let agent_id_entry = context_clone.agent.to_entry();
+        let agent_id_commit = block_on(commit_entry(
+            agent_id_entry,
             &context_clone.action_channel.clone(),
             &context_clone,
         ));
@@ -84,11 +83,11 @@ pub fn initialize_application(
         // Hence skipping it for codecov for now but leaving it in for resilience.
         #[cfg_attr(tarpaulin, skip)]
             {
-                if dna_commit.is_err() {
+                if agent_id_commit.is_err() {
                     context_clone
                         .action_channel
                         .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                            Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
+                            Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
                         )))
                         .expect("Action channel not usable in initialize_application()");
                     return;

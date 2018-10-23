@@ -1,33 +1,30 @@
 //! File for holding the internal/private zome api function `init_globals`
 
 use holochain_wasm_utils::{
-    holochain_core_types::hash::HashString, memory_serialization::load_json,
+    memory_serialization::load_json,
+    api_serialization::ZomeApiGlobals,
 };
 
 extern "C" {
     fn hc_init_globals(encoded_allocation_of_input: u32) -> u32;
 }
 
-// WARNING must be in sync with InitGlobalsOutput in core
-#[derive(Deserialize, Clone)]
-pub(crate) struct AppGlobals {
-    pub app_name: String,
-    pub app_dna_hash: HashString,
-    pub app_agent_id_str: String,
-    pub app_agent_key_hash: HashString,
-    pub app_agent_initial_hash: HashString,
-    pub app_agent_latest_hash: HashString,
-}
-
 // HC INIT GLOBALS - Secret Api Function
 // Retrieve all the public global values from the ribosome
-pub(crate) fn init_globals() -> AppGlobals {
+pub(crate) fn init_globals() -> ZomeApiGlobals {
     // Call WASMI-able init_globals
     let encoded_allocation_of_result = unsafe { hc_init_globals(0) };
     // Deserialize complex result stored in memory
     let result = load_json(encoded_allocation_of_result as u32);
     if result.is_err() {
-        panic!("AppGlobals should deserialize properly");
+        panic!("ZomeApiGlobals should deserialize properly");
     }
     result.unwrap()
+}
+
+// Adding empty hc_init_globals() so that the cfg(test) build can link.
+#[cfg(test)]
+pub mod tests {
+    #[no_mangle]
+    pub fn hc_init_globals(_: u32) -> u32 { 0 }
 }

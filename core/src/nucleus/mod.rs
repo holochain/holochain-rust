@@ -203,14 +203,14 @@ pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,
     zome_call: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) {
     let code = wasm.code.clone();
 
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            &app_name,
+            &dna_name,
             context.clone(),
             code,
             &zome_call,

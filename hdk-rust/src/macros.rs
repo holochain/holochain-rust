@@ -27,6 +27,8 @@ macro_rules! load_json {
 /// struct CreatePostResponse {
 ///     author: String,
 /// }
+/// #[no_mangle]
+/// pub fn hc_init_globals(_: u32) -> u32 { 0 }
 ///
 /// zome_functions! {
 ///     create_post: |author: String, content: String| {

@@ -11,35 +11,35 @@ use holochain_wasm_utils::{
 use serde_json;
 
 //--------------------------------------------------------------------------------------------------
-// APP GLOBAL VARIABLES
+// ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
 
 lazy_static! {
   /// The name of this Holochain taken from its DNA.
-  pub static ref APP_NAME: &'static str = &APP_GLOBALS.app_name;
+  pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
   /// The hash of this Holochain's DNA.
   /// Nodes must run the same DNA to be on the same DHT.
-  pub static ref APP_DNA_HASH: &'static HashString = &APP_GLOBALS.app_dna_hash;
+  pub static ref DNA_HASH: &'static HashString = &GLOBALS.dna_hash;
 
   /// The identity string used when the chain was first initialized.
   /// If you used JSON to embed multiple properties (such as FirstName, LastName, Email, etc),
-  /// they can be retrieved here as App.Agent.FirstName, etc. (FIXME)
-  pub static ref APP_AGENT_ID_STR: &'static str = &APP_GLOBALS.app_agent_id_str;
+  /// they can be retrieved here as Dna.Agent.FirstName, etc. (FIXME)
+  pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
 
   /// The hash of your public key.
   /// This is your node address on the DHT.
   /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref APP_AGENT_KEY_HASH: &'static HashString = &APP_GLOBALS.app_agent_key_hash;
+  pub static ref AGENT_KEY_HASH: &'static HashString = &GLOBALS.agent_key_hash;
 
   /// The hash of the first identity entry on your chain (The second entry on your chain).
   /// This is your peer's identity on the DHT.
-  pub static ref APP_AGENT_INITIAL_HASH: &'static HashString = &APP_GLOBALS.app_agent_initial_hash;
+  pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
 
   /// The hash of the most recent identity entry that has been committed to your chain.
-  /// Starts with the same value as APP_AGENT_INITIAL_HASH.
+  /// Starts with the same value as AGENT_INITIAL_HASH.
   /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
-  pub static ref APP_AGENT_LATEST_HASH: &'static HashString = &APP_GLOBALS.app_agent_latest_hash;
+  pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ pub enum BundleOnClose {
 //--------------------------------------------------------------------------------------------------
 
 /// FIXME DOC
-/// Returns an application property, which are defined by the app developer.
+/// Returns an application property, which are defined by the DNA developer.
 /// It returns values from the DNA file that you set as properties of your application
 /// (e.g. Name, Language, Description, Author, etc.).
 pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {

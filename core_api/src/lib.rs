@@ -21,7 +21,7 @@
 //! };
 //! use tempfile::tempdir;
 //!
-//! // instantiate a new app
+//! // instantiate a new holochain instance
 //!
 //! // need to get to something like this:
 //! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
@@ -38,10 +38,10 @@
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
-//! // start up the app
-//! hc.start().expect("couldn't start the app");
+//! // start up the holochain instance
+//! hc.start().expect("couldn't start the holochain instance");
 //!
-//! // call a function in the app
+//! // call a function in the zome code
 //! hc.call("test_zome","test_cap","some_fn","{}");
 //!
 //! // get the state
@@ -52,8 +52,8 @@
 //!     // ...
 //! }
 //!
-//! // stop the app
-//! hc.stop().expect("couldn't stop the app");
+//! // stop the holochain instance
+//! hc.stop().expect("couldn't stop the holochain instance");
 //!
 //!```
 
@@ -94,12 +94,12 @@ impl Holochain {
         match block_on(initialize_application(dna, context.clone())) {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
-                let app = Holochain {
+                let hc = Holochain {
                     instance,
                     context,
                     active: false,
                 };
-                Ok(app)
+                Ok(hc)
             }
             Err(initialization_error) => Err(HolochainError::ErrorGeneric(initialization_error)),
         }

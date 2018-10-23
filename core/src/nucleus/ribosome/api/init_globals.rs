@@ -1,8 +1,8 @@
-use nucleus::ribosome::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use serde_json;
-use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use holochain_core_types::hash::HashString;
+use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use nucleus::ribosome::Runtime;
+use serde_json;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32

@@ -1,5 +1,6 @@
 use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -14,8 +15,15 @@ pub fn invoke_init_globals(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
-        // TODO #232 - Implement Dna hash
-        dna_hash: HashString::from("FIXME-dna_hash"),
+        dna_hash: match runtime.context.state() {
+            Some(state) => match state.nucleus().dna() {
+                Some(dna) => {
+                    HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256)
+                }
+                None => HashString::from(""),
+            },
+            None => HashString::from(""),
+        },
         agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash
         agent_key_hash: HashString::from("FIXME-agent_key_hash"),
@@ -40,7 +48,7 @@ pub mod tests {
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
             call_result,
-            "{\"dna_name\":\"TestApp\",\"dna_hash\":\"FIXME-dna_hash\",\"agent_id_str\":\"joan\",\"agent_key_hash\":\"FIXME-agent_key_hash\",\"agent_initial_hash\":\"FIXME-agent_initial_hash\",\"agent_latest_hash\":\"FIXME-agent_latest_hash\"}\u{0}"
+            "{\"dna_name\":\"TestApp\",\"dna_hash\":\"QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD\",\"agent_id_str\":\"joan\",\"agent_key_hash\":\"FIXME-agent_key_hash\",\"agent_initial_hash\":\"FIXME-agent_initial_hash\",\"agent_latest_hash\":\"FIXME-agent_latest_hash\"}\u{0}"
         .to_string());
     }
 }

@@ -5,6 +5,7 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        link_entries::{LinkEntriesArgs, LinkEntriesResult},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -17,16 +18,15 @@ use serde_json;
 //--------------------------------------------------------------------------------------------------
 
 lazy_static! {
-  /// The name of this Holochain taken from its DNA.
+  /// The `name` property as taken from the DNA.
   pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
-  /// The hash of this Holochain's DNA.
-  /// Nodes must run the same DNA to be on the same DHT.
+  /// The hash of the DNA the Zome is embedded within.
+  /// This is often useful as a fixed value that is known by all
+  /// participants running the DNA.
   pub static ref DNA_HASH: &'static HashString = &GLOBALS.dna_hash;
 
   /// The identity string used when the chain was first initialized.
-  /// If you used JSON to embed multiple properties (such as FirstName, LastName, Email, etc),
-  /// they can be retrieved here as Dna.Agent.FirstName, etc. (FIXME)
   pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
 
   /// The hash of your public key.
@@ -38,6 +38,7 @@ lazy_static! {
   /// This is your peer's identity on the DHT.
   pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
 
+  #[doc(hidden)]
   /// The hash of the most recent identity entry that has been committed to your chain.
   /// Starts with the same value as AGENT_INITIAL_HASH.
   /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
@@ -125,7 +126,7 @@ impl Default for GetEntryMask {
 //    }
 //}
 
-/// Allowed input for close_bundle()
+// Allowed input for close_bundle()
 pub enum BundleOnClose {
     Commit,
     Discard,
@@ -135,26 +136,9 @@ pub enum BundleOnClose {
 // API FUNCTIONS
 //--------------------------------------------------------------------------------------------------
 
-/// FIXME DOC
-/// Returns an application property, which are defined by the DNA developer.
-/// It returns values from the DNA file that you set as properties of your application
-/// (e.g. Name, Language, Description, Author, etc.).
-pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
-pub fn make_hash<S: Into<String>>(
-    _entry_type: S,
-    _entry_data: serde_json::Value,
-) -> Result<HashString, ZomeApiError> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
-pub fn debug(msg: &str) -> Result<(), ZomeApiError> {
+/// Prints a string through the stdout of the running service, and also
+/// writes that string to the logger in the execution context
+pub fn debug(msg: &str) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
     if let Err(err_code) = maybe_allocation_of_input {
@@ -170,37 +154,22 @@ pub fn debug(msg: &str) -> Result<(), ZomeApiError> {
     Ok(())
 }
 
-/// FIXME DOC
+/// Not Yet Available
 pub fn call<S: Into<String>>(
     _zome_name: S,
     _cap_name: S,
     _function_name: S,
     _arguments: serde_json::Value,
 ) -> ZomeApiResult<serde_json::Value> {
-    // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
-pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
-pub fn verify_signature<S: Into<String>>(
-    _signature: S,
-    _data: S,
-    _pub_key: S,
-) -> ZomeApiResult<bool> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
+/// Attempts to commit an entry to your local source chain. The entry
+/// will have to pass the defined validation rules for that entry type. If the entry type is defined as public, will also publish the entry to the DHT. Returns either an
+/// address of the committed entry as a string, or an error.
 pub fn commit_entry(
     entry_type_name: &str,
-    entry_content: serde_json::Value,
+    entry_value: serde_json::Value,
 ) -> ZomeApiResult<HashString> {
     let mut mem_stack: SinglePageStack;
     unsafe {
@@ -210,7 +179,7 @@ pub fn commit_entry(
     // Put args in struct and serialize into memory
     let input = CommitEntryArgs {
         entry_type_name: entry_type_name.to_string(),
-        entry_value: entry_content.to_string(),
+        entry_value: entry_value.to_string(),
     };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
@@ -243,43 +212,16 @@ pub fn commit_entry(
     }
 }
 
-/// FIXME DOC
-pub fn update_entry<S: Into<String>>(
-    _entry_type: S,
-    _entry: serde_json::Value,
-    _replaces: HashString,
-) -> ZomeApiResult<HashString> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
-pub fn update_agent() -> ZomeApiResult<HashString> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
-/// Commit a Deletion System Entry
-pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
-}
-
-/// implements access to low-level WASM hc_get_entry
-pub fn get_entry(
-    entry_hash: HashString,
-    _options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
+/// Retrieves an entry from the local chain or the DHT, by looking it up using
+/// its address.
+pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
     // Put args in struct and serialize into memory
-    let input = GetEntryArgs {
-        address: entry_hash,
-    };
+    let input = GetEntryArgs { address: address };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(ZomeApiError::Internal(err_code.to_string()));
@@ -306,42 +248,118 @@ pub fn get_entry(
     Ok(result)
 }
 
-/// FIXME DOC
+/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
+/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
+/// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 pub fn link_entries<S: Into<String>>(
-    _base: HashString,
-    _target: HashString,
-    _tag: S,
+    base: HashString,
+    target: HashString,
+    tag: S,
 ) -> Result<(), ZomeApiError> {
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    // Put args in struct and serialize into memory
+    let input = LinkEntriesArgs {
+        base,
+        target,
+        tag: tag.into(),
+    };
+
+    let allocation_of_input = store_as_json(&mut mem_stack, input)
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: LinkEntriesResult = load_json(encoded_allocation_of_result as u32)
+        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+
+    if result.ok {
+        Ok(())
+    } else {
+        Err(ZomeApiError::Internal(result.error))
+    }
+}
+
+/// Not Yet Available
+// Returns a DNA property, which are defined by the DNA developer.
+// They are custom values that are defined in the DNA file
+// that can be used in the zome code for defining configurable behaviors.
+// (e.g. Name, Language, Description, Author, etc.).
+pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
+pub fn make_hash<S: Into<String>>(
+    _entry_type: S,
+    _entry_data: serde_json::Value,
+) -> ZomeApiResult<HashString> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
+/// Not Yet Available
+pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
+pub fn verify_signature<S: Into<String>>(
+    _signature: S,
+    _data: S,
+    _pub_key: S,
+) -> ZomeApiResult<bool> {
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
+pub fn update_entry<S: Into<String>>(
+    _entry_type: S,
+    _entry: serde_json::Value,
+    _replaces: HashString,
+) -> ZomeApiResult<HashString> {
+    // FIXME
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
+pub fn update_agent() -> ZomeApiResult<HashString> {
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
+pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
+    Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Not Yet Available
 pub fn get_links<S: Into<String>>(_base: HashString, _tag: S) -> ZomeApiResult<Vec<HashString>> {
-    // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
+/// Not Yet Available
 pub fn query() -> ZomeApiResult<Vec<String>> {
-    // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
+/// Not Yet Available
 pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
-    // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
-pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), ZomeApiError> {
-    // FIXME
+/// Not Yet Available
+pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// FIXME DOC
-pub fn close_bundle(_action: BundleOnClose) -> Result<(), ZomeApiError> {
-    // FIXME
+/// Not Yet Available
+pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }

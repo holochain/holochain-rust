@@ -1,4 +1,5 @@
-//! File for holding all internal/private globals used by the zome api library
+//! Holds the internal/private globals used by the zome api library.
+//! Also contains the functions declarations of the external functions provided by the Ribosome.
 
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
 use init_globals::init_globals;
@@ -11,7 +12,7 @@ lazy_static! {
     pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals();
 }
 
-// Invokable functions in the ribosome
+// Invokable functions in the Ribosome
 // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
 #[allow(dead_code)]
 extern "C" {

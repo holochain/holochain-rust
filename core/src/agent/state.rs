@@ -144,14 +144,9 @@ fn reduce_commit_entry(
         state.chain.content_storage().add(chain_header)?;
         let eav_store = &mut (*context).eav_storage.clone();
         let eav = EntityAttributeValue::new(
-            &entry.address(),
-            &String::from("chain-header"),
             &chain_header.address(),
-        );
-        let eav = EntityAttributeValue::new(
-            &entry.address(),
             &String::from("chain-header"),
-            &chain_header.address(),
+            &entry.address(),
         );
         eav_store.add_eav(&eav)?;
         Ok(entry.address())

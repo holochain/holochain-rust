@@ -1,6 +1,5 @@
 //! Holds the internal/private globals used by the zome api library.
-//! Also contains the external links to the host functions for
-//! the core Ribosome <> WASM API.
+//! Also contains the functions declarations of the external functions provided by the Ribosome.
 
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
 use init_globals::init_globals;

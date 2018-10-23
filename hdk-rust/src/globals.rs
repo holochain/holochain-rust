@@ -1,8 +1,6 @@
 //! File for holding all internal/private globals used by the zome api library
 
-use holochain_wasm_utils::{
-    memory_allocation::SinglePageStack, api_serialization::ZomeApiGlobals,
-};
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
 use init_globals::init_globals;
 
 // Internal global for memory usage

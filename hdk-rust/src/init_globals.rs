@@ -1,9 +1,6 @@
 //! File for holding the internal/private zome api function `init_globals`
 
-use holochain_wasm_utils::{
-    memory_serialization::load_json,
-    api_serialization::ZomeApiGlobals,
-};
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 
 extern "C" {
     fn hc_init_globals(encoded_allocation_of_input: u32) -> u32;

@@ -13,15 +13,15 @@ pub fn invoke_init_globals(
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let globals = ZomeApiGlobals {
-        dna_name:           runtime.dna_name.to_string(),
+        dna_name: runtime.dna_name.to_string(),
         // TODO #232 - Implement Dna hash
-        dna_hash:           HashString::from("FIXME-dna_hash"),
-        agent_id_str:       runtime.context.agent.to_string(),
+        dna_hash: HashString::from("FIXME-dna_hash"),
+        agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash
-        agent_key_hash:     HashString::from("FIXME-agent_key_hash"),
+        agent_key_hash: HashString::from("FIXME-agent_key_hash"),
         // TODO #234 - Implement agent identity entry hashes
         agent_initial_hash: HashString::from("FIXME-agent_initial_hash"),
-        agent_latest_hash:  HashString::from("FIXME-agent_latest_hash"),
+        agent_latest_hash: HashString::from("FIXME-agent_latest_hash"),
     };
     return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
 }

@@ -130,25 +130,27 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"ok\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"),
+        JsonString::from(
+            format!("{{\"ok\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
+        ),
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        r#"{"entry_hash":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#,
+        &format!("{{\"entry_address\":\"{}\"}}", test_entry_a().address()),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"stuff\":\"non fail\"}")
+        JsonString::from("{\"ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
     );
 
     // test the case with a bad hash
@@ -156,13 +158,13 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_get_entry",
-        r#"{"entry_hash":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+        r#"{"entry_address":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"got back no entry\":true}")
+        JsonString::from("{\"ok\":{\"entry\":null}}")
     );
 }
 

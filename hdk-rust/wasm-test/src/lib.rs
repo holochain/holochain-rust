@@ -11,12 +11,12 @@ use boolinator::Boolinator;
 use hdk::globals::G_MEM_STACK;
 use holochain_wasm_utils::{
     error::RibosomeErrorCode,
-    holochain_core_types::hash::HashString,
     memory_serialization::*, memory_allocation::*
 };
 use hdk::RibosomeError;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::entry::SerializedEntry;
+use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
@@ -98,8 +98,8 @@ zome_functions! {
 }
 
 zome_functions! {
-    check_get_entry: |entry_hash: HashString| {
-        hdk::get_entry(entry_hash)
+    check_get_entry: |entry_address: Address| {
+        hdk::get_entry(entry_address)
     }
 }
 

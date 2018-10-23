@@ -252,16 +252,16 @@ pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResul
 /// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 pub fn link_entries<S: Into<String>>(
-    base: HashString,
-    target: HashString,
+    base: &HashString,
+    target: &HashString,
     tag: S,
 ) -> Result<(), ZomeApiError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
     let input = LinkEntriesArgs {
-        base,
-        target,
+        base: base.clone(),
+        target: target.clone(),
         tag: tag.into(),
     };
 

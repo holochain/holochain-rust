@@ -139,7 +139,7 @@ zome_functions! {
             return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
         }
 
-        match hdk::link_entries(entry1.unwrap(), entry2.unwrap(), "test-tag") {
+        match hdk::link_entries(&entry1.unwrap(), &entry2.unwrap(), "test-tag") {
             Ok(()) => json!({"ok": true}),
             Err(error) => json!({"error": error.to_string()}),
         }

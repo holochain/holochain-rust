@@ -206,14 +206,14 @@ pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,
     zome_call: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) {
     let code = wasm.code.clone();
 
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            &app_name,
+            &dna_name,
             context.clone(),
             code,
             &zome_call,
@@ -602,11 +602,8 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
 
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
-        match result {
-            // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
-            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-        }
+        assert!(result.is_ok());
+        assert_eq!("1337", result.unwrap());
     }
 
     #[test]

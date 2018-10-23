@@ -13,35 +13,35 @@ use holochain_wasm_utils::{
 use serde_json;
 
 //--------------------------------------------------------------------------------------------------
-// APP GLOBAL VARIABLES
+// ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
 
 lazy_static! {
   /// The `name` property as taken from the DNA.
-  pub static ref APP_NAME: &'static str = &APP_GLOBALS.app_name;
+  pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
   /// The hash of the DNA the Zome is embedded within.
   /// This is often useful as a fixed value that is known by all
   /// participants running the DNA.
-  pub static ref APP_DNA_HASH: &'static HashString = &APP_GLOBALS.app_dna_hash;
+  pub static ref DNA_HASH: &'static HashString = &GLOBALS.dna_hash;
 
   /// The identity string used when the chain was first initialized.
-  pub static ref APP_AGENT_ID_STR: &'static str = &APP_GLOBALS.app_agent_id_str;
+  pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
 
   /// The hash of your public key.
   /// This is your node address on the DHT.
   /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref APP_AGENT_KEY_HASH: &'static HashString = &APP_GLOBALS.app_agent_key_hash;
+  pub static ref AGENT_KEY_HASH: &'static HashString = &GLOBALS.agent_key_hash;
 
   /// The hash of the first identity entry on your chain (The second entry on your chain).
   /// This is your peer's identity on the DHT.
-  pub static ref APP_AGENT_INITIAL_HASH: &'static HashString = &APP_GLOBALS.app_agent_initial_hash;
+  pub static ref AGENT_INITIAL_HASH: &'static HashString = &GLOBALS.agent_initial_hash;
 
   #[doc(hidden)]
   /// The hash of the most recent identity entry that has been committed to your chain.
-  /// Starts with the same value as APP_AGENT_INITIAL_HASH.
+  /// Starts with the same value as AGENT_INITIAL_HASH.
   /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
-  pub static ref APP_AGENT_LATEST_HASH: &'static HashString = &APP_GLOBALS.app_agent_latest_hash;
+  pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ pub enum BundleOnClose {
 
 /// Prints a string through the stdout of the running service, and also
 /// writes that string to the logger in the execution context
-pub fn debug(msg: &str) -> Result<(), ZomeApiError> {
+pub fn debug(msg: &str) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
     if let Err(err_code) = maybe_allocation_of_input {
@@ -264,7 +264,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 pub fn make_hash<S: Into<String>>(
     _entry_type: S,
     _entry_data: serde_json::Value,
-) -> Result<HashString, ZomeApiError> {
+) -> ZomeApiResult<HashString> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -308,7 +308,7 @@ pub fn link_entries<S: Into<String>>(
     _base: HashString,
     _target: HashString,
     _tag: S,
-) -> Result<(), ZomeApiError> {
+) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
@@ -328,11 +328,11 @@ pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde
 }
 
 /// Not Yet Available
-pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> Result<(), ZomeApiError> {
+pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// Not Yet Available
-pub fn close_bundle(_action: BundleOnClose) -> Result<(), ZomeApiError> {
+pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }

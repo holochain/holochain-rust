@@ -2,15 +2,15 @@
 //! Also contains the external links to the host functions for
 //! the core Ribosome <> WASM API.
 
-use holochain_wasm_utils::memory_allocation::SinglePageStack;
-use init_globals::{init_globals, AppGlobals};
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
+use init_globals::init_globals;
 
 // Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;
 
-// Internal global for retrieving all app globals
+// Internal global for retrieving all Zome API globals
 lazy_static! {
-    pub(crate) static ref APP_GLOBALS: AppGlobals = init_globals();
+    pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals();
 }
 
 // Invokable functions in the Ribosome

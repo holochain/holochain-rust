@@ -164,7 +164,7 @@ pub fn call<S: Into<String>>(
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
-/// will have to pass the defined validation rules for that entry type. Returns either an
+/// will have to pass the defined validation rules for that entry type. If the entry type is defined as public, will also publish the entry to the DHT. Returns either an
 /// address of the committed entry as a string, or an error.
 pub fn commit_entry(
     entry_type_name: &str,

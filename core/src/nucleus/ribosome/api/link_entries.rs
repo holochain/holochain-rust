@@ -1,4 +1,3 @@
-extern crate futures;
 use dht::actions::add_link::*;
 use futures::executor::block_on;
 use holochain_core_types::error::HolochainError;

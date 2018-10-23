@@ -1,6 +1,7 @@
 use actor::{Protocol, SYS};
 use holochain_core_types::{
-    eav::{Attribute, Entity, EntityAttributeValue, Value}, error::{HcResult, HolochainError},
+    eav::{Attribute, Entity, EntityAttributeValue, Value},
+    error::{HcResult, HolochainError},
 };
 use riker::actors::*;
 use snowflake;

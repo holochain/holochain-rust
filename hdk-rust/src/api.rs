@@ -6,7 +6,9 @@ use holochain_wasm_utils::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
     },
-    holochain_core_types::hash::HashString, memory_allocation::*, memory_serialization::*,
+    holochain_core_types::hash::HashString,
+    memory_allocation::*,
+    memory_serialization::*,
 };
 use serde_json;
 

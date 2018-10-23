@@ -15,14 +15,19 @@ use holochain_core_api::{Holochain, error::HolochainResult};
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, FnDeclaration, Membrane}, entry_types::EntryTypeDef, Config,
-        Zome,
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
+        Config, Zome,
     },
     Dna,
 };
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap}, fmt, fs::File, hash::{Hash, Hasher},
-    io::prelude::*, sync::{Arc, Mutex},
+    collections::{hash_map::DefaultHasher, HashMap},
+    fmt,
+    fs::File,
+    hash::{Hash, Hasher},
+    io::prelude::*,
+    sync::{Arc, Mutex},
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;

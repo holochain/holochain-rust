@@ -6,11 +6,13 @@ use holochain_core_types::{
 };
 use holochain_dna::Dna;
 use nucleus::{
-    state::{NucleusState, ValidationResult}, ExecuteZomeFnResponse, ZomeFnCall,
+    state::{NucleusState, ValidationResult},
+    ExecuteZomeFnResponse, ZomeFnCall,
 };
 use snowflake;
 use std::{
-    hash::{Hash, Hasher}, sync::Arc,
+    hash::{Hash, Hasher},
+    sync::Arc,
 };
 
 /// Wrapper for actions that provides a unique ID

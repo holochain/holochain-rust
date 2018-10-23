@@ -72,7 +72,8 @@ pub mod error;
 use error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
-    context::Context, instance::Instance,
+    context::Context,
+    instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
@@ -169,7 +170,9 @@ mod tests {
     use super::*;
     extern crate holochain_agent;
     use holochain_core::{
-        context::Context, nucleus::ribosome::{callback::Callback, Defn}, persister::SimplePersister,
+        context::Context,
+        nucleus::ribosome::{callback::Callback, Defn},
+        persister::SimplePersister,
     };
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};

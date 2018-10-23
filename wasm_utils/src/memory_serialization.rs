@@ -1,4 +1,4 @@
-use error::{RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };

@@ -45,7 +45,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use eav::file::EavFileStorage;
     use holochain_core_types::cas::{
-        content::{AddressableContent, ExampleAddressableContent}, storage::EavTestSuite,
+        content::{AddressableContent, ExampleAddressableContent},
+        storage::EavTestSuite,
     };
 
     #[test]

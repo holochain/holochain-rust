@@ -10,13 +10,16 @@ use holochain_core_types::error::{DnaError, HcResult, HolochainError};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
-    ribosome::api::call::reduce_call, state::{NucleusState, NucleusStatus},
+    ribosome::api::call::reduce_call,
+    state::{NucleusState, NucleusStatus},
 };
 use snowflake;
 use std::{
     sync::{
-        mpsc::{sync_channel, SyncSender}, Arc,
-    }, thread,
+        mpsc::{sync_channel, SyncSender},
+        Arc,
+    },
+    thread,
 };
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
@@ -274,7 +277,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::ZomeNotFound(format!(
+                HolochainError::Dna(DnaError::ZomeNotFound(format!(
                     "Zome '{}' not found",
                     fn_call.zome_name.clone()
                 ))),
@@ -289,7 +292,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::CapabilityNotFound(format!(
+                HolochainError::Dna(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
                     fn_call.cap_name.clone(),
                     fn_call.zome_name.clone()
@@ -308,7 +311,7 @@ fn reduce_execute_zome_function(
         dispatch_error_result(
             &context.action_channel,
             &fn_call,
-            HolochainError::DnaError(DnaError::ZomeFunctionNotFound(format!(
+            HolochainError::Dna(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found",
                 fn_call.fn_name.clone()
             ))),
@@ -409,7 +412,7 @@ fn get_capability_with_zome_call(
     match res {
         Err(e) => Err(ExecuteZomeFnResponse::new(
             zome_call.clone(),
-            Err(HolochainError::DnaError(e)),
+            Err(HolochainError::Dna(e)),
         )),
         Ok(cap) => Ok(cap.clone()),
     }
@@ -422,7 +425,8 @@ pub mod tests {
     use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
     use holochain_dna::Dna;
     use instance::{
-        tests::{test_context, test_context_with_channels, test_instance}, Instance,
+        tests::{test_context, test_context_with_channels, test_instance},
+        Instance,
     };
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::Arc;
@@ -648,7 +652,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(err))) => {
+            Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
                 assert_eq!(err, "Zome function \'xxx\' not found")
             }
             _ => assert!(false),
@@ -667,9 +671,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => {
-                assert_eq!(err.description(), "Zome 'xxx' not found")
-            }
+            Err(HolochainError::Dna(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 
@@ -679,7 +681,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => assert_eq!(
+            Err(HolochainError::Dna(err)) => assert_eq!(
                 err.description(),
                 "Capability 'xxx' not found in Zome 'test_zome'"
             ),

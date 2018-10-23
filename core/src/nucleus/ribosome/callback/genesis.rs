@@ -18,7 +18,8 @@ pub mod tests {
     use super::genesis;
     use instance::tests::test_context;
     use nucleus::ribosome::{
-        callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult}, Defn,
+        callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
+        Defn,
     };
 
     #[test]

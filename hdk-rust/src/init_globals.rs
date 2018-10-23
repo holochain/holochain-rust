@@ -21,10 +21,3 @@ pub(crate) fn init_globals() -> ZomeApiGlobals {
     }
     result.unwrap()
 }
-
-// Adding empty hc_init_globals() so that the cfg(test) build can link.
-#[cfg(test)]
-pub mod tests {
-    #[no_mangle]
-    pub fn hc_init_globals(_: u32) -> u32 { 0 }
-}

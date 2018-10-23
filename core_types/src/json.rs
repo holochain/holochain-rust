@@ -18,6 +18,11 @@ impl JsonString {
     pub fn none() -> JsonString {
         JsonString::from("null")
     }
+
+    /// achieves the same outcome as serde_json::to_vec()
+    pub fn into_bytes(&self) -> Vec<u8> {
+        self.0.to_owned().into_bytes()
+    }
 }
 
 impl From<String> for JsonString {
@@ -50,9 +55,26 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
+// impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
+//     fn from(result: Result<T, E>) -> JsonString {
+//         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
+//     }
+// }
+
+impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
+        JsonString::from(
+            match result {
+                Ok(t) => {
+                    let json_string: JsonString = t.into();
+                    format!("{{\"ok\":{}}}", String::from(json_string))
+                },
+                Err(e) => {
+                    let json_string: JsonString = e.into();
+                    format!("{{\"error\":{}}}", String::from(json_string))
+                },
+            }
+        )
     }
 }
 

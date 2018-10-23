@@ -20,12 +20,13 @@ use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        commit::{CommitEntryArgs, CommitEntryResult},
+        commit::CommitEntryResult,
         get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus, SerializedGetEntryResult},
     },
     holochain_core_types::{
         hash::HashString,
         json::{JsonString, RawString},
+        entry::SerializedEntry,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -40,7 +41,7 @@ pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     }
 }
 
-pub fn serialize_wasm_output(output: JsonString) -> u32 {
+pub fn serialize_wasm_output<J: Into<JsonString>>(output: J) -> u32 {
     // Serialize output in WASM memory
     unsafe { return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32 }
 }
@@ -294,12 +295,11 @@ pub fn commit_entry(
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    // Put args in struct and serialize into memory
-    let input = CommitEntryArgs {
-        entry_type_name: entry_type_name.to_string(),
-        entry_value: entry_content.to_string(),
-    };
-    let maybe_allocation_of_input = store_json(&mut mem_stack, JsonString::from(input));
+    let serialized_entry = SerializedEntry::new(
+        &entry_type_name.to_string(),
+        &entry_content.to_string(),
+    );
+    let maybe_allocation_of_input = store_json(&mut mem_stack, serialized_entry);
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }

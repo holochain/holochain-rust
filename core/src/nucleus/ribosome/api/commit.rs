@@ -1,16 +1,16 @@
 extern crate futures;
+use holochain_core_types::entry::SerializedEntry;
 use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, EntryValue},
-    entry_type::EntryType,
+    entry::{Entry},
     error::HolochainError,
     hash::HashString,
     json::{JsonString, RawString},
 };
 use holochain_wasm_utils::api_serialization::{
-    commit::{CommitEntryArgs, CommitEntryResult},
+    commit::{CommitEntryResult},
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
@@ -19,7 +19,6 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 fn build_validation_data_commit(
     _entry: Entry,
-    _entry_type: EntryType,
     _state: &AgentState,
 ) -> ValidationData {
     //
@@ -53,19 +52,16 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: CommitEntryArgs = match serde_json::from_str(&args_str) {
+    let serialized_entry: SerializedEntry = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Create Chain Entry
-    let entry_type = EntryType::from(input.entry_type_name);
-    let entry_value = EntryValue::from(input.entry_value);
-    let entry = Entry::new(&entry_type, &entry_value);
+    let entry = Entry::from(serialized_entry);
     let validation_data = build_validation_data_commit(
         entry.clone(),
-        entry_type.clone(),
         &runtime.context.state().unwrap().agent(),
     );
 
@@ -73,7 +69,7 @@ pub fn invoke_commit_app_entry(
     let task_result: Result<Address, HolochainError> = block_on(
         // First validate entry:
         validate_entry(
-            entry_type.clone(),
+            entry.entry_type().to_owned(),
             entry.clone(),
             validation_data,
             &runtime.context)
@@ -106,28 +102,23 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use holochain_core_types::{
+    use holochain_core_types::entry::SerializedEntry;
+use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
         json::JsonString,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let args = CommitEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: String::from(entry.value().to_owned()),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        let serialized_entry = SerializedEntry::from(entry);
+        JsonString::from(serialized_entry).into_bytes()
     }
 
     #[test]

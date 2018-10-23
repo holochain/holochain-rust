@@ -3,10 +3,11 @@ extern crate holochain_wasm_utils;
 
 use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::{
-  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
+  api_serialization::commit::{CommitEntryResult},
   memory_allocation::*, memory_serialization::*
 };
 use holochain_core_types::json::JsonString;
+use holochain_core_types::entry::SerializedEntry;
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
@@ -22,11 +23,11 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitEntryArgs {
-    entry_type_name: entry_type_name.to_owned(),
-    entry_value: entry_value.to_owned(),
-  };
-  let maybe_allocation =  store_json(mem_stack, JsonString::from(input));
+  let serialized_entry = SerializedEntry::new(
+    entry_type_name,
+    entry_value,
+  );
+  let maybe_allocation =  store_json(mem_stack, JsonString::from(serialized_entry));
   if let Err(return_code) = maybe_allocation {
     return Err(return_code.to_string());
   }

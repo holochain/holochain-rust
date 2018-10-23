@@ -54,6 +54,15 @@ pub struct SerializedEntry {
     entry_type: String,
 }
 
+impl SerializedEntry {
+    pub fn new(entry_type: &str, value: &str) -> SerializedEntry {
+        SerializedEntry{
+            entry_type: entry_type.to_owned(),
+            value: value.to_owned(),
+        }
+    }
+}
+
 impl From<Entry> for SerializedEntry {
     fn from(entry: Entry) -> SerializedEntry {
         SerializedEntry {

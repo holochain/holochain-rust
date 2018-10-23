@@ -20,9 +20,14 @@ pub fn invoke_get_links(
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
-    let get_links_result = runtime.context.state().unwrap().dht().get_links(input.entry_address, input.tag);
+    let get_links_result = runtime
+        .context
+        .state()
+        .unwrap()
+        .dht()
+        .get_links(input.entry_address, input.tag);
 
-    let json = serde_json::to_string(&GetLinksResult{
+    let json = serde_json::to_string(&GetLinksResult {
         ok: get_links_result.is_ok(),
         links: get_links_result
             .clone()
@@ -39,7 +44,6 @@ pub fn invoke_get_links(
     runtime.store_utf8(&json)
 }
 
-
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
@@ -49,10 +53,9 @@ pub mod tests {
     use dht::actions::add_link::add_link;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::Address, entry::Entry, entry_type::test_entry_type,
-        links_entry::Link,
+        cas::content::Address, entry::Entry, entry_type::test_entry_type, links_entry::Link,
     };
-    use holochain_wasm_utils::api_serialization::{get_links::GetLinksArgs};
+    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
@@ -70,8 +73,6 @@ pub mod tests {
             .expect("args should serialize")
             .into_bytes()
     }
-
-
 
     #[test]
     fn returns_list_of_links() {
@@ -114,8 +115,16 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
 
-        let ordering1: bool = call_result == format!(r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
-        let ordering2: bool = call_result == format!(r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
+        let ordering1: bool = call_result
+            == format!(
+                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
+                entry_hashes[1], entry_hashes[2]
+            ) + "\u{0}";
+        let ordering2: bool = call_result
+            == format!(
+                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
+                entry_hashes[2], entry_hashes[1]
+            ) + "\u{0}";
 
         assert!(ordering1 || ordering2);
 

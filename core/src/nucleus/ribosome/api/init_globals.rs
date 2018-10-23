@@ -1,4 +1,7 @@
-use holochain_core_types::hash::HashString;
+use holochain_core_types::{
+    hash::HashString,
+    entry_type::EntryType,
+};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
@@ -13,24 +16,38 @@ pub fn invoke_init_globals(
     runtime: &mut Runtime,
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let globals = ZomeApiGlobals {
+    // Create the ZomeApiGlobals struct with some default values
+    let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
-        dna_hash: match runtime.context.state() {
-            Some(state) => match state.nucleus().dna() {
-                Some(dna) => {
-                    HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256)
-                },
-                None => HashString::from(""),
-            },
-            None => HashString::from(""),
-        },
+        dna_hash: HashString::from(""),
         agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash
-        agent_key_hash: HashString::from("FIXME-agent_key_hash"),
+        agent_key_hash: HashString::encode_from_str("FIXME-agent_key_hash", Multihash::SHA2256),
         // TODO #234 - Implement agent identity entry hashes
-        agent_initial_hash: HashString::from("FIXME-agent_initial_hash"),
-        agent_latest_hash: HashString::from("FIXME-agent_latest_hash"),
+        agent_initial_hash: HashString::from(""),
+        agent_latest_hash: HashString::from(""),
     };
+    // Update fields
+    if let Some(state) = runtime.context.state() {
+        // Update dna_hash
+        if let Some(dna) = state.nucleus().dna() {
+            globals.dna_hash = HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256);
+        }
+        // Update agent hashes
+        let maybe_top = state.agent().top_chain_header();
+        if maybe_top.is_some() {
+            let mut found_entries: Vec<HashString> = vec![];
+            for chain_header in
+                state.agent().chain().iter_type(&maybe_top, &EntryType::AgentId) {
+                found_entries.push(chain_header.entry_address().to_owned());
+            }
+            if found_entries.len() > 0 {
+                globals.agent_latest_hash = found_entries[0].clone();
+                globals.agent_initial_hash = found_entries.pop().unwrap();
+            }
+        }
+    };
+    // Store it in wasm memory
     return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
 }
 
@@ -47,8 +64,15 @@ pub mod tests {
         let input: Vec<u8> = vec![];
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
-            call_result,
-            "{\"dna_name\":\"TestApp\",\"dna_hash\":\"QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD\",\"agent_id_str\":\"joan\",\"agent_key_hash\":\"FIXME-agent_key_hash\",\"agent_initial_hash\":\"FIXME-agent_initial_hash\",\"agent_latest_hash\":\"FIXME-agent_latest_hash\"}\u{0}"
-        .to_string());
+            "{\
+            \"dna_name\":\"TestApp\",\
+            \"dna_hash\":\"QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD\",\
+            \"agent_id_str\":\"joan\",\
+            \"agent_key_hash\":\"Qme96E8FaeSkrbcyC2UwDcrQmKLr5MCuT3oXB9bStQnUtr\",\
+            \"agent_initial_hash\":\"\",\
+            \"agent_latest_hash\":\"\"\
+            }\u{0}"
+                .to_string(),
+            call_result);
     }
 }

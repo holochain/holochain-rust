@@ -19,6 +19,7 @@ extern crate bitflags;
 
 #[macro_use]
 extern crate serde_derive;
+pub mod app_globals;
 pub mod cas;
 pub mod chain_header;
 pub mod crud_status;

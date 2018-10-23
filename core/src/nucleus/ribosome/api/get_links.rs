@@ -86,7 +86,7 @@ pub mod tests {
         let dna_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
-        let (context, logger) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger("joan");
         let initialized_context = instance.initialize_context(context);
 
         let mut entry_hashes: Vec<Address> = Vec::new();
@@ -106,10 +106,9 @@ pub mod tests {
         assert!(block_on(add_link(&link1, &initialized_context)).is_ok());
         assert!(block_on(add_link(&link2, &initialized_context)).is_ok());
 
-        let (call_result, _) = test_zome_api_function_call(
+        let call_result = test_zome_api_function_call(
             &dna_name,
             initialized_context.clone(),
-            logger.clone(),
             &instance,
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
@@ -128,10 +127,9 @@ pub mod tests {
 
         assert!(ordering1 || ordering2);
 
-        let (call_result, _) = test_zome_api_function_call(
+        let call_result = test_zome_api_function_call(
             &dna_name,
             initialized_context.clone(),
-            logger.clone(),
             &instance,
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "other-tag"),

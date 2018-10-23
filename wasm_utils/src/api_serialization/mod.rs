@@ -10,6 +10,7 @@
 /// importing this module.
 pub mod commit;
 pub mod get_entry;
+pub mod get_links;
 pub mod validation;
 mod zome_api_globals;
 

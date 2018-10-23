@@ -1,7 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, get_links_args::GetLinksArgs,
+    cas::content::Address, entry::Entry, error::HolochainError,
     links_entry::Link, validation::ValidationPackage,
 };
 use holochain_dna::Dna;
@@ -78,7 +78,7 @@ pub enum Action {
     /// link to add
     AddLink(Link),
     /// get links from entry address and attribute-name
-    GetLinks(GetLinksArgs),
+    //GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),

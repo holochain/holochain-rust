@@ -144,8 +144,10 @@ fn reduce_commit_entry(
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
-    EntityAttributeValue::new(&entry.address(),&String::from("chain-header"),&chain_header.address());
+    let eav = EntityAttributeValue::new(&entry.address(),&String::from("chain-header"),&chain_header.address());
     state.top_chain_header = Some(chain_header);
+    let mut file_storage = &mut (*_context).eav_storage.clone();
+    file_storage.add_eav(&eav);
 
     state
         .actions

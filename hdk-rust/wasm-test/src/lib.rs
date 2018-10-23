@@ -11,10 +11,12 @@ extern crate boolinator;
 use boolinator::Boolinator;
 use hdk::{globals::G_MEM_STACK, error::ZomeApiError};
 use holochain_wasm_utils::{
-    error::RibosomeErrorCode, holochain_core_types::hash::HashString, memory_allocation::*,
-    memory_serialization::*,
+    memory_allocation::*, memory_serialization::*,
+    holochain_core_types::{
+        error::RibosomeErrorCode,
+        hash::HashString,
+    },
 };
-
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
 
 use hdk::holochain_dna::zome::entry_types::Sharing;

@@ -5,6 +5,7 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        link_entries::{LinkEntriesArgs, LinkEntriesResult},
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -308,12 +309,47 @@ pub fn get_entry(
 
 /// FIXME DOC
 pub fn link_entries<S: Into<String>>(
-    _base: HashString,
-    _target: HashString,
-    _tag: S,
+    base: HashString,
+    target: HashString,
+    tag: S,
 ) -> Result<(), ZomeApiError> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
+    let mut mem_stack = unsafe {G_MEM_STACK.unwrap()};
+
+    // Put args in struct and serialize into memory
+    let input = LinkEntriesArgs {
+        base,
+        target,
+        tag: tag.into(),
+    };
+
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
+    if let Err(err_code) = maybe_allocation_of_input {
+        return Err(ZomeApiError::Internal(err_code.to_string()));
+    }
+    let allocation_of_input = maybe_allocation_of_input.unwrap();
+
+    // Call WASMI-able get_entry
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_link_entries(allocation_of_input.encode() as u32);
+    }
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result = load_json(encoded_allocation_of_result as u32);
+    if let Err(err_str) = result {
+        return Err(ZomeApiError::Internal(err_str));
+    }
+    let result: LinkEntriesResult = result.unwrap();
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+
+    if result.ok {
+        Ok(())
+    } else {
+        Err(ZomeApiError::Internal(result.error))
+    }
 }
 
 /// FIXME DOC

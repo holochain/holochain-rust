@@ -313,7 +313,7 @@ pub fn link_entries<S: Into<String>>(
     target: HashString,
     tag: S,
 ) -> Result<(), ZomeApiError> {
-    let mut mem_stack = unsafe {G_MEM_STACK.unwrap()};
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
     let input = LinkEntriesArgs {

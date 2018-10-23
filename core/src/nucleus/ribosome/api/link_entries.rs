@@ -1,13 +1,9 @@
 extern crate futures;
 use dht::actions::add_link::*;
 use futures::executor::block_on;
-use holochain_core_types::{
-    error::HolochainError,
-};
+use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs, LinkEntriesResult};
-use nucleus::{
-    ribosome::Runtime,
-};
+use nucleus::ribosome::Runtime;
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -28,9 +24,8 @@ pub fn invoke_link_entries(
     };
 
     // Wait for future to be resolved
-    let task_result: Result<(), HolochainError> = block_on(
-        add_link(&input.to_link(), &runtime.context)
-    );
+    let task_result: Result<(), HolochainError> =
+        block_on(add_link(&input.to_link(), &runtime.context));
 
     let result = LinkEntriesResult {
         ok: task_result.is_ok(),
@@ -55,11 +50,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
     };
-    use holochain_wasm_utils::api_serialization::{
-        commit::CommitEntryArgs,
-        link_entries::*,
-    };
-    use instance::tests::{test_instance, test_context_and_logger};
+    use holochain_wasm_utils::api_serialization::{commit::CommitEntryArgs, link_entries::*};
+    use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
         Defn,
@@ -94,7 +86,6 @@ pub mod tests {
             .into_bytes()
     }
 
-
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present() {
@@ -105,7 +96,8 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string() + "\u{0}",
+            r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
+                + "\u{0}",
         );
     }
 
@@ -124,11 +116,13 @@ pub mod tests {
         let (context, logger) = test_context_and_logger("joan");
         let initiliazed_context = instance.initialize_context(context);
 
-        block_on(
-            commit_entry(test_entry(), &initiliazed_context.action_channel.clone(), &initiliazed_context)
-        ).expect("Could not commit entry for testing");
+        block_on(commit_entry(
+            test_entry(),
+            &initiliazed_context.action_channel.clone(),
+            &initiliazed_context,
+        )).expect("Could not commit entry for testing");
 
-        let (call_result,_) = test_zome_api_function_call(
+        let (call_result, _) = test_zome_api_function_call(
             &dna_name,
             initiliazed_context,
             logger,

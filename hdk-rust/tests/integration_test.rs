@@ -229,15 +229,7 @@ fn can_link_entries() {
     //
     // Add two entries to chain to have something to check ValidationData on
     //
-    let result = hc.call(
-        "test_zome",
-        "test_cap",
-        "link_two_entries",
-        r#"{}"#,
-    );
+    let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        r#"{"ok":true}"#
-    );
+    assert_eq!(result.unwrap(), r#"{"ok":true}"#);
 }

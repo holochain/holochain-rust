@@ -602,11 +602,8 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
 
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
-        match result {
-            // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
-            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-        }
+        assert!(result.is_ok());
+        assert_eq!("1337", result.unwrap());
     }
 
     #[test]

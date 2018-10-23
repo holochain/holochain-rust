@@ -61,3 +61,10 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         }
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    // Adding empty zome_setup() so that the cfg(test) build can link.
+    #[no_mangle]
+    pub fn zome_setup(_: &mut super::ZomeDefinition) {}
+}

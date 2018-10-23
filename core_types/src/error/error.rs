@@ -13,8 +13,6 @@ use std::{
 #[derive(Clone, Debug, PartialEq, Hash, Eq)]
 pub enum HolochainError {
     ErrorGeneric(String),
-    InstanceNotActive,
-    InstanceActive,
     NotImplemented,
     LoggingError,
     DnaMissing,
@@ -56,8 +54,6 @@ impl Error for HolochainError {
         match self {
             ErrorGeneric(err_msg) => &err_msg,
             NotImplemented => "not implemented",
-            InstanceNotActive => "the instance is not active",
-            InstanceActive => "the instance is active",
             LoggingError => "logging failed",
             DnaMissing => "DNA is missing",
             Dna(dna_err) => dna_err.description(),
@@ -157,11 +153,6 @@ mod tests {
         for (input, output) in vec![
             (HolochainError::ErrorGeneric(String::from("foo")), "foo"),
             (HolochainError::NotImplemented, "not implemented"),
-            (
-                HolochainError::InstanceNotActive,
-                "the instance is not active",
-            ),
-            (HolochainError::InstanceActive, "the instance is active"),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
             (

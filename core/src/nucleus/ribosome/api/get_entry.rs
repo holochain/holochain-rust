@@ -1,11 +1,11 @@
 use futures::executor::block_on;
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
+use holochain_core_types::{entry::SerializedEntry, json::JsonString};
+use holochain_wasm_utils::api_serialization::get_entry::{
+    GetEntryArgs, GetEntryResult, SerializedGetEntryResult,
+};
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_wasm_utils::api_serialization::get_entry::SerializedGetEntryResult;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::entry::SerializedEntry;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -30,15 +30,17 @@ pub fn invoke_get_entry(
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(maybe_entry) => {
             let result = match maybe_entry {
-                Some(entry) => GetEntryResult::found(JsonString::from(SerializedEntry::from(entry))),
+                Some(entry) => {
+                    GetEntryResult::found(JsonString::from(SerializedEntry::from(entry)))
+                }
                 None => GetEntryResult::not_found(),
             };
-            let outer_result = SerializedGetEntryResult{
+            let outer_result = SerializedGetEntryResult {
                 status: String::from(JsonString::from(result.status)),
                 entry_json: String::from(result.entry_json),
             };
             runtime.store_json_string(&JsonString::from(outer_result))
-        },
+        }
     }
 }
 
@@ -50,7 +52,7 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use super::GetEntryArgs;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, hash::HashString,
+        cas::content::AddressableContent, entry::test_entry, hash::HashString, json::JsonString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -63,7 +65,6 @@ mod tests {
     };
     use serde_json;
     use std::sync::Arc;
-    use holochain_core_types::json::JsonString;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -183,10 +184,12 @@ mod tests {
 
         assert_eq!(
             commit_runtime.result,
-            JsonString::from(format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}"),
+            JsonString::from(
+                format!(
+                    r#"{{"address":"{}","validation_failure":""}}"#,
+                    test_entry().address()
+                ) + "\u{0}"
+            ),
         );
 
         let get_call = ZomeFnCall::new(

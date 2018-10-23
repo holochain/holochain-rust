@@ -2,13 +2,13 @@ use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
+use json::RawString;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
-use json::RawString;
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
@@ -225,7 +225,6 @@ where
 pub struct EavTestSuite;
 
 impl EavTestSuite {
-
     pub fn test_round_trip(
         mut eav_storage: impl EntityAttributeValueStorage,
         entity_content: impl AddressableContent,
@@ -419,8 +418,7 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::{test_content_addressable_storage, StorageTestSuite},
     };
-    use json::JsonString;
-    use json::RawString;
+    use json::{JsonString, RawString};
 
     /// show that content of different types can round trip through the same storage
     #[test]

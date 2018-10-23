@@ -1,15 +1,14 @@
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate test_utils;
-extern crate holochain_core_types;
 
 use holochain_core_api::*;
+use holochain_core_types::json::{JsonString, RawString};
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::json::RawString;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -48,7 +47,14 @@ fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
-    assert_eq!(result.clone().unwrap(), JsonString::from(RawString::from("")), "result = {:?}", result);
+    assert_eq!(
+        result.clone(),
+        Ok(JsonString::from(RawString::from(
+            "FIXME-app_agent_latest_hash"
+        ))),
+        "result = {:?}",
+        result
+    );
 }
 
 #[test]
@@ -130,7 +136,10 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from("{\"stuff\":\"non fail\"}"));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"stuff\":\"non fail\"}")
+    );
 
     // test the case with a bad hash
     let result = hc.call(
@@ -141,7 +150,10 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from("{\"got back no entry\":true}"));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"got back no entry\":true}")
+    );
 }
 
 #[test]
@@ -154,10 +166,10 @@ fn can_invalidate_invalid_commit() {
         "check_commit_entry_macro",
         r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
     );
-    // println!("\t result = {:?}", result);
-    // assert!(result.is_ok(), "\t result = {:?}", result);
-    // assert_eq!(
-    //     JsonString::from("{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}"),
-    //     result.unwrap()
-    // );
+    println!("\t result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        JsonString::from("{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}"),
+        result.unwrap()
+    );
 }

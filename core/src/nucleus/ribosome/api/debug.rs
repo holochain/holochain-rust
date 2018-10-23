@@ -1,7 +1,6 @@
+use holochain_core_types::json::{JsonString, RawString};
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::json::JsonString;
-use holochain_core_types::json::RawString;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -19,12 +18,11 @@ pub fn invoke_debug(
 
 #[cfg(test)]
 pub mod tests {
+    use holochain_core_types::json::{JsonString, RawString};
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {

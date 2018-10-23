@@ -42,18 +42,21 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 #[cfg(test)]
 pub mod tests {
     use eav::memory::EavMemoryStorage;
-    use holochain_core_types::cas::{
-        content::{AddressableContent, ExampleAddressableContent},
-        storage::EavTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{AddressableContent, ExampleAddressableContent},
+            storage::EavTestSuite,
+        },
+        json::{JsonString, RawString},
     };
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     #[test]
     fn memory_eav_round_trip() {
-        let entity_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+        let entity_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
         let attribute = "favourite-color".to_string();
-        let value_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+        let value_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
         EavTestSuite::test_round_trip(
             EavMemoryStorage::new().expect("could not construct new eav memory storage"),
             entity_content,

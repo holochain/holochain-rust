@@ -1,8 +1,9 @@
 use error::{RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::json::JsonString;
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 
@@ -36,24 +37,26 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, S
 }
 
 /// Write a data struct as a json string in wasm memory
-pub fn store_as_json<T: Serialize>(
+pub fn store_json<J: Into<JsonString>>(
     stack: &mut SinglePageStack,
-    internal: T,
+    json_string: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let json_bytes = serde_json::to_vec(&internal).unwrap();
+    let j: JsonString = json_string.into();
+    let s = String::from(j);
+    let json_bytes = s.as_bytes();
     let json_bytes_len = json_bytes.len();
     if json_bytes_len > <u16>::max_value() as usize {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
+    return write_in_wasm_memory(stack, json_bytes, json_bytes_len as u16);
 }
 
 // Sugar
-pub fn store_json_into_encoded_allocation<T: Serialize>(
+pub fn store_json_into_encoded_allocation<J: Into<JsonString>>(
     stack: &mut SinglePageStack,
-    internal: T,
+    json_string: J,
 ) -> i32 {
-    let allocation_of_output = store_as_json(stack, internal).unwrap();
+    let allocation_of_output = store_json(stack, json_string.into()).unwrap();
     return allocation_of_output.encode() as i32;
 }
 
@@ -99,7 +102,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
 /// Write in wasm memory according to stack state
 fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
-    bytes: &Vec<u8>,
+    bytes: &[u8],
     len: u16,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     if len as u32 + stack.top() as u32 > U16_MAX {

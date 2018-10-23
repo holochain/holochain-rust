@@ -6,7 +6,10 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use holochain_core_types::error::{DnaError, HolochainError};
+use holochain_core_types::{
+    error::{DnaError, HolochainError},
+    json::JsonString,
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
@@ -21,7 +24,6 @@ use std::{
     },
     thread,
 };
-use holochain_core_types::json::JsonString;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -423,9 +425,8 @@ pub mod tests {
     use nucleus::state::tests::test_nucleus_state;
     use std::sync::Arc;
 
+    use holochain_core_types::json::{JsonString, RawString};
     use std::error::Error;
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -459,7 +460,10 @@ pub mod tests {
 
     /// dummy function result
     pub fn test_call_result() -> ZomeFnResult {
-        ZomeFnResult::new(test_zome_call(), Ok(JsonString::from(RawString::from("foo"))))
+        ZomeFnResult::new(
+            test_zome_call(),
+            Ok(JsonString::from(RawString::from("foo"))),
+        )
     }
 
     #[test]
@@ -476,7 +480,10 @@ pub mod tests {
     /// test access to function result's function call
     fn test_zome_call_result() {
         let zome_call = test_zome_call();
-        let call_result = ZomeFnResult::new(zome_call.clone(), Ok(JsonString::from(RawString::from("foo"))));
+        let call_result = ZomeFnResult::new(
+            zome_call.clone(),
+            Ok(JsonString::from(RawString::from("foo"))),
+        );
 
         assert_eq!(call_result.call(), zome_call);
     }
@@ -484,7 +491,10 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(test_call_result().result(), Ok(JsonString::from(RawString::from("foo"))));
+        assert_eq!(
+            test_call_result().result(),
+            Ok(JsonString::from(RawString::from("foo")))
+        );
     }
 
     #[test]

@@ -10,11 +10,10 @@ extern crate test_utils;
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_api::Holochain;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_wasm_utils::error::*;
 use std::sync::{Arc, Mutex};
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
-use holochain_core_types::json::JsonString;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {
@@ -144,7 +143,9 @@ fn call_load_json_from_raw_err() {
         launch_hc_with_integration_test_wasm("test_load_json_from_raw_err", r#"{}"#);
     // Verify result
     assert_eq!(
-        JsonString::from(json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string()),
+        JsonString::from(
+            json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string()
+        ),
         result.unwrap()
     );
     // Verify logs

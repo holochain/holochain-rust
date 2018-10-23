@@ -43,21 +43,24 @@ impl EntityAttributeValueStorage for EavFileStorage {
 pub mod tests {
 
     use eav::file::EavFileStorage;
-    use holochain_core_types::cas::{
-        content::{AddressableContent, ExampleAddressableContent},
-        storage::EavTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{AddressableContent, ExampleAddressableContent},
+            storage::EavTestSuite,
+        },
+        json::{JsonString, RawString},
     };
     use tempfile::tempdir;
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     #[test]
     fn file_eav_round_trip() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
-        let entity_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+        let entity_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
         let attribute = "favourite-color".to_string();
-        let value_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+        let value_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
         EavTestSuite::test_round_trip(
             EavFileStorage::new(temp_path).unwrap(),
             entity_content,

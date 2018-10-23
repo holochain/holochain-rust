@@ -1,5 +1,4 @@
-use holochain_core_types::{cas::content::Address, hash::HashString};
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{cas::content::Address, hash::HashString, json::JsonString};
 use serde_json;
 
 /// Struct for input data received when Commit API function is invoked
@@ -8,6 +7,15 @@ pub struct CommitEntryArgs {
     pub entry_type_name: String,
     pub entry_value: String,
 }
+
+impl From<CommitEntryArgs> for JsonString {
+    fn from(commit_entry_args: CommitEntryArgs) -> JsonString {
+        JsonString::from(
+            serde_json::to_string(&commit_entry_args).expect("could not Jsonify CommitEntryArgs"),
+        )
+    }
+}
+
 #[derive(Deserialize, Serialize, Default, Debug)]
 pub struct CommitEntryResult {
     pub address: Address,
@@ -32,6 +40,9 @@ impl CommitEntryResult {
 
 impl From<CommitEntryResult> for JsonString {
     fn from(commit_entry_result: CommitEntryResult) -> JsonString {
-        JsonString::from(serde_json::to_string(&commit_entry_result).expect("could not Jsonify CommitEntryResult"))
+        JsonString::from(
+            serde_json::to_string(&commit_entry_result)
+                .expect("could not Jsonify CommitEntryResult"),
+        )
     }
 }

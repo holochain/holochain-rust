@@ -8,6 +8,7 @@ pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
 use context::Context;
+use holochain_core_types::json::JsonString;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use holochain_wasm_utils::{
     error::{RibosomeErrorCode, RibosomeReturnCode},
@@ -31,7 +32,6 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
-use holochain_core_types::json::JsonString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -198,7 +198,10 @@ impl Runtime {
     /// Store a JsonString in wasm memory.
     /// Input should be a a JsonString.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_json_string(&mut self, json_string: &JsonString) -> Result<Option<RuntimeValue>, Trap> {
+    pub fn store_json_string(
+        &mut self,
+        json_string: &JsonString,
+    ) -> Result<Option<RuntimeValue>, Trap> {
         // write as String to runtime memory
         // will be picked up as a JsonString on the other side
         // @see call()

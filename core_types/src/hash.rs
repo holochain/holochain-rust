@@ -1,3 +1,4 @@
+use json::JsonString;
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use serde::Serialize;
@@ -29,6 +30,12 @@ impl From<HashString> for String {
 impl<'a> From<&'a str> for HashString {
     fn from(s: &str) -> HashString {
         HashString::from(s.to_string())
+    }
+}
+
+impl From<HashString> for JsonString {
+    fn from(hash_string: HashString) -> JsonString {
+        JsonString::from(serde_json::to_string(&hash_string).expect("could not Jsonify HashString"))
     }
 }
 

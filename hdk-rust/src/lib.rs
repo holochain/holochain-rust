@@ -2,7 +2,6 @@
 //! All API Reference documentation should be done here.
 
 pub extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -22,13 +21,15 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryResult, SerializedGetEntryResult, GetResultStatus},
+        get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus, SerializedGetEntryResult},
     },
-    holochain_core_types::hash::HashString,
+    holochain_core_types::{
+        hash::HashString,
+        json::{JsonString, RawString},
+    },
     memory_allocation::*,
     memory_serialization::*,
 };
-use holochain_wasm_utils::holochain_core_types::json::JsonString;
 
 pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     // Actual program
@@ -39,7 +40,7 @@ pub fn init_memory_stack(encoded_allocation_of_input: u32) {
     }
 }
 
-pub fn serialize_wasm_output<T: serde::Serialize>(output: T) -> u32 {
+pub fn serialize_wasm_output(output: JsonString) -> u32 {
     // Serialize output in WASM memory
     unsafe { return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), output) as u32 }
 }
@@ -76,6 +77,37 @@ lazy_static! {
   pub static ref APP_AGENT_LATEST_HASH: &'static HashString = &APP_GLOBALS.app_agent_latest_hash;
 }
 
+impl From<APP_NAME> for JsonString {
+    fn from(app_name: APP_NAME) -> JsonString {
+        JsonString::from(RawString::from(app_name.to_string()))
+    }
+}
+impl From<APP_DNA_HASH> for JsonString {
+    fn from(app_dna_hash: APP_DNA_HASH) -> JsonString {
+        JsonString::from(HashString::from(app_dna_hash.to_string()))
+    }
+}
+impl From<APP_AGENT_ID_STR> for JsonString {
+    fn from(app_agent_id: APP_AGENT_ID_STR) -> JsonString {
+        JsonString::from(RawString::from(app_agent_id.to_string()))
+    }
+}
+impl From<APP_AGENT_KEY_HASH> for JsonString {
+    fn from(app_agent_key_hash: APP_AGENT_KEY_HASH) -> JsonString {
+        JsonString::from(HashString::from(app_agent_key_hash.to_string()))
+    }
+}
+impl From<APP_AGENT_INITIAL_HASH> for JsonString {
+    fn from(app_agent_initial_hash: APP_AGENT_INITIAL_HASH) -> JsonString {
+        JsonString::from(HashString::from(app_agent_initial_hash.to_string()))
+    }
+}
+impl From<APP_AGENT_LATEST_HASH> for JsonString {
+    fn from(app_agent_latest_hash: APP_AGENT_LATEST_HASH) -> JsonString {
+        JsonString::from(HashString::from(app_agent_latest_hash.to_string()))
+    }
+}
+
 //--------------------------------------------------------------------------------------------------
 // SYSTEM CONSTS
 //--------------------------------------------------------------------------------------------------
@@ -93,15 +125,15 @@ pub enum RibosomeError {
     ValidationFailed(String),
 }
 
-impl RibosomeError {
-    pub fn to_json(&self) -> serde_json::Value {
-        let err_str = match self {
+impl From<RibosomeError> for JsonString {
+    fn from(ribosome_error: RibosomeError) -> JsonString {
+        let err_str = match ribosome_error {
             RibosomeFailed(error_desc) => error_desc.clone(),
             FunctionNotImplemented => "Function not implemented".to_string(),
             HashNotFound => "Hash not found".to_string(),
             ValidationFailed(msg) => format!("Validation failed: {}", msg),
         };
-        json!({ "error": err_str })
+        JsonString::from(format!("{{\"error\":{}}}", err_str))
     }
 }
 
@@ -210,9 +242,9 @@ pub fn make_hash<S: Into<String>>(
 }
 
 /// FIXME DOC
-pub fn debug(msg: &str) -> Result<(), RibosomeError> {
+pub fn debug<J: Into<JsonString>>(msg: J) -> Result<(), RibosomeError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
+    let maybe_allocation_of_input = store_json(&mut mem_stack, msg.into());
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -267,7 +299,7 @@ pub fn commit_entry(
         entry_type_name: entry_type_name.to_string(),
         entry_value: entry_content.to_string(),
     };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
+    let maybe_allocation_of_input = store_json(&mut mem_stack, JsonString::from(input));
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -335,7 +367,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeE
     let input = GetEntryArgs {
         address: entry_hash,
     };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
+    let maybe_allocation_of_input = store_json(&mut mem_stack, JsonString::from(input));
     if let Err(err_code) = maybe_allocation_of_input {
         return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
     }
@@ -352,7 +384,7 @@ pub fn get_entry(entry_hash: HashString) -> Result<Option<JsonString>, RibosomeE
         return Err(RibosomeError::RibosomeFailed(err_str));
     }
     let outer_result: SerializedGetEntryResult = result.unwrap();
-    let result = GetEntryResult{
+    let result = GetEntryResult {
         status: GetResultStatus::from(JsonString::from(outer_result.status)),
         entry_json: JsonString::from(outer_result.entry_json),
     };

@@ -4,8 +4,8 @@
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
 
-extern crate holochain_dna;
 extern crate holochain_core_types;
+extern crate holochain_dna;
 
 use holochain_dna::Dna;
 use std::{

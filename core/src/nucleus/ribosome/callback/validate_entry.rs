@@ -70,11 +70,12 @@ fn build_validation_call(
         .expect("ValidationData could not be turned into JSON?!");
 
     // Trying to interpret entry as json object
-    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&String::from((*entry).to_owned()))
-        .or_else(|_| {
-            // If it can't be parsed as object, treat it as a string by adding quotation marks:
-            serde_json::from_str(&format!("\"{}\"", &*entry))
-        })
+    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&String::from(
+        (*entry).to_owned(),
+    )).or_else(|_| {
+        // If it can't be parsed as object, treat it as a string by adding quotation marks:
+        serde_json::from_str(&format!("\"{}\"", &*entry))
+    })
         .or_else(|error| {
             let msg = format!("Error trying to serialize entry '{}', {:?}", *entry, error);
             Err(HolochainError::new(&msg))

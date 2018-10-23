@@ -62,9 +62,9 @@ macro_rules! zome_functions {
                 let input: InputStruct = maybe_input.unwrap();
 
                 // Macro'd function body
-                fn execute(params: InputStruct) -> impl ::serde::Serialize {
+                fn execute(params: InputStruct) -> holochain_wasm_utils::holochain_core_types::json::JsonString {
                     let InputStruct { $($param),* } = params;
-                    $main_block
+                    $main_block.into()
                 }
 
                 // Execute inner function

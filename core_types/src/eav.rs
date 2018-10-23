@@ -1,12 +1,12 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
+use json::JsonString;
+use serde_json;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
 };
-use json::JsonString;
-use serde_json;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -42,13 +42,16 @@ pub struct EntityAttributeValue {
 
 impl From<EntityAttributeValue> for JsonString {
     fn from(eav: EntityAttributeValue) -> JsonString {
-        JsonString::from(serde_json::to_string(&eav).expect("failed to Jsonify EntityAttributeValue"))
+        JsonString::from(
+            serde_json::to_string(&eav).expect("failed to Jsonify EntityAttributeValue"),
+        )
     }
 }
 
 impl From<JsonString> for EntityAttributeValue {
     fn from(json_string: JsonString) -> EntityAttributeValue {
-        serde_json::from_str(&String::from(json_string)).expect("failed to deserialize EntityAttributeValue")
+        serde_json::from_str(&String::from(json_string))
+            .expect("failed to deserialize EntityAttributeValue")
     }
 }
 
@@ -298,9 +301,11 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+        let entity =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
         let attribute = "favourite-color".to_string();
-        let value = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+        let value =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

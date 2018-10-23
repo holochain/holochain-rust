@@ -1,15 +1,14 @@
 //! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
 extern crate holochain_core_types;
-extern crate serde_json;
 extern crate serde;
+extern crate serde_json;
 
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
     entry::{Entry, ToEntry},
     entry_type::EntryType,
+    json::{JsonString, RawString},
 };
-use holochain_core_types::json::JsonString;
-use holochain_core_types::json::RawString;
 
 /// Object holding an Agent's identity.
 #[derive(Clone, Debug, PartialEq)]
@@ -99,9 +98,10 @@ impl AddressableContent for Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_core_types::cas::content::Content;
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
+    use holochain_core_types::{
+        cas::content::Content,
+        json::{JsonString, RawString},
+    };
 
     pub fn test_identity_value() -> Content {
         JsonString::from(RawString::from("bob"))

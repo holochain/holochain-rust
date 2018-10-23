@@ -99,7 +99,9 @@ impl ChainHeader {
 
 impl From<ChainHeader> for JsonString {
     fn from(chain_header: ChainHeader) -> JsonString {
-        JsonString::from(serde_json::to_string(&chain_header).expect("failed to Jsonify ChainHeader"))
+        JsonString::from(
+            serde_json::to_string(&chain_header).expect("failed to Jsonify ChainHeader"),
+        )
     }
 }
 
@@ -112,10 +114,7 @@ impl From<JsonString> for ChainHeader {
 //
 impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
-        Entry::new(
-            &EntryType::ChainHeader,
-            &JsonString::from(self.to_owned()),
-        )
+        Entry::new(&EntryType::ChainHeader, &JsonString::from(self.to_owned()))
     }
 
     fn from_entry(entry: &Entry) -> Self {

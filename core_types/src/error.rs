@@ -1,12 +1,12 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use json::JsonString;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
 };
-use json::JsonString;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]

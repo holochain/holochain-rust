@@ -1,9 +1,8 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
 use std::collections::HashMap;
-use holochain_core_types::json::JsonString;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {

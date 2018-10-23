@@ -23,16 +23,14 @@ bitflags! {
 
 impl From<CrudStatus> for String {
     fn from(crud_status: CrudStatus) -> String {
-        String::from(
-            match crud_status {
-                CrudStatus::LIVE => "1",
-                CrudStatus::REJECTED => "2",
-                CrudStatus::DELETED => "4",
-                CrudStatus::MODIFIED => "8",
-                CrudStatus::LOCKED => "16",
-                _ => unreachable!(),
-            }
-        )
+        String::from(match crud_status {
+            CrudStatus::LIVE => "1",
+            CrudStatus::REJECTED => "2",
+            CrudStatus::DELETED => "4",
+            CrudStatus::MODIFIED => "8",
+            CrudStatus::LOCKED => "16",
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -82,14 +80,13 @@ mod tests {
     use super::CrudStatus;
     use cas::{
         content::{
-            AddressableContent, AddressableContentTestSuite, Content, ExampleAddressableContent,
+            Address, AddressableContent, AddressableContentTestSuite, Content,
+            ExampleAddressableContent,
         },
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use eav::eav_round_trip_test_runner;
-    use json::JsonString;
-    use json::RawString;
-    use cas::content::Address;
+    use json::{JsonString, RawString};
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -117,9 +114,11 @@ mod tests {
 
     #[test]
     fn crud_status_example_eav() {
-        let entity_content = ExampleAddressableContent::from_content(&JsonString::from(RawString::from("example")));
+        let entity_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("example")));
         let attribute = String::from("favourite-badge");
-        let value_content: Content = CrudStatus::from_content(&JsonString::from(RawString::from("2"))).content();
+        let value_content: Content =
+            CrudStatus::from_content(&JsonString::from(RawString::from("2"))).content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 

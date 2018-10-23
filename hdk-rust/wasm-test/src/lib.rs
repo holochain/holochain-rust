@@ -16,6 +16,7 @@ use holochain_wasm_utils::{
     memory_serialization::*, memory_allocation::*
 };
 use hdk::RibosomeError;
+use holochain_wasm_utils::holochain_core_types::json::JsonString;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
@@ -24,12 +25,12 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     }
     #[allow(unused_must_use)]
     {
-        hdk::debug(&hdk::APP_NAME);
-        hdk::debug(&hdk::APP_DNA_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_ID_STR);
-        hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
+        hdk::debug(hdk::APP_NAME);
+        hdk::debug(hdk::APP_DNA_HASH);
+        hdk::debug(hdk::APP_AGENT_ID_STR);
+        hdk::debug(hdk::APP_AGENT_KEY_HASH);
+        hdk::debug(hdk::APP_AGENT_INITIAL_HASH);
+        hdk::debug(hdk::APP_AGENT_LATEST_HASH);
     }
 
 
@@ -40,6 +41,14 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
 #[derive(Deserialize, Serialize, Default)]
 struct CommitOutputStruct {
     address: String,
+}
+
+impl From<CommitOutputStruct> for JsonString {
+    fn from(commit_output_struct: CommitOutputStruct) -> JsonString {
+        JsonString::from(
+            serde_json::to_string(&commit_output_struct).expect("could not Jsonify CommitOutputStruct")
+        )
+    }
 }
 
 #[no_mangle]
@@ -58,7 +67,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
     if let Err(e) = result {
-        hdk::debug(&format!("ERROR: {:?}", e)).expect("debug() must work");
+        hdk::debug(format!("ERROR: {:?}", e)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
@@ -85,13 +94,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 zome_functions! {
     check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
         let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-        let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
-        match res {
-            Ok(hash_str) => json!({ "address": hash_str }),
-            Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-            Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
-            Err(_) => unreachable!(),
-        }
+        hdk::commit_entry(&entry_type_name, entry_content.unwrap())
+        // match res {
+        //     Ok(hash_str) => json!({ "address": hash_str }),
+        //     Err(RibosomeError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+        //     Err(RibosomeError::RibosomeFailed(err_str)) => json!({ "error": err_str}),
+        //     Err(_) => unreachable!(),
+        // }
     }
 
     check_get_entry: |entry_hash: HashString| {

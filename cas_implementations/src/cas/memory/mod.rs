@@ -56,12 +56,13 @@ impl ContentAddressableStorage for MemoryStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::memory::MemoryStorage;
-    use holochain_core_types::cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::StorageTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::StorageTestSuite,
+        },
+        json::{JsonString, RawString},
     };
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     pub fn test_memory_storage() -> MemoryStorage {
         MemoryStorage::new().expect("could not create memory storage")

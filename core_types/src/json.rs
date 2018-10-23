@@ -1,8 +1,6 @@
-use serde_json;
 use serde::Serialize;
-use std::fmt::Display;
-use std::fmt::Result as FmtResult;
-use std::fmt::Formatter;
+use serde_json;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -17,7 +15,9 @@ pub struct JsonString(String);
 
 impl JsonString {
     /// represents None when implementing From<Option<Foo>>
-    pub fn none() -> JsonString { JsonString::from("null") }
+    pub fn none() -> JsonString {
+        JsonString::from("null")
+    }
 }
 
 impl From<String> for JsonString {
@@ -58,11 +58,7 @@ impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
 
 impl Display for JsonString {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(
-            f,
-            "{}",
-            String::from(self),
-        )
+        write!(f, "{}", String::from(self),)
     }
 }
 
@@ -96,7 +92,8 @@ impl From<RawString> for JsonString {
 
 impl From<JsonString> for RawString {
     fn from(json_string: JsonString) -> RawString {
-        let s: String = serde_json::from_str(&String::from(json_string)).expect("could not deserialize JsonString");
+        let s: String = serde_json::from_str(&String::from(json_string))
+            .expect("could not deserialize JsonString");
         RawString::from(s)
     }
 }

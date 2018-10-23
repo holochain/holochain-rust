@@ -16,7 +16,10 @@ struct InitGlobalsOutput {
 
 impl From<InitGlobalsOutput> for JsonString {
     fn from(init_globals_output: InitGlobalsOutput) -> JsonString {
-        JsonString::from(serde_json::to_string(&init_globals_output).expect("could not Jsonify InitGlobalsOutput"))
+        JsonString::from(
+            serde_json::to_string(&init_globals_output)
+                .expect("could not Jsonify InitGlobalsOutput"),
+        )
     }
 }
 

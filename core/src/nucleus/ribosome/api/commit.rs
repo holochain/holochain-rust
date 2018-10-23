@@ -2,8 +2,12 @@ extern crate futures;
 use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
+    cas::content::Address,
+    entry::{Entry, EntryValue},
+    entry_type::EntryType,
+    error::HolochainError,
     hash::HashString,
+    json::{JsonString, RawString},
 };
 use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryArgs, CommitEntryResult},
@@ -12,9 +16,6 @@ use holochain_wasm_utils::api_serialization::{
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::entry::EntryValue;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::json::RawString;
 
 fn build_validation_data_commit(
     _entry: Entry,
@@ -107,13 +108,13 @@ pub mod tests {
 
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        json::JsonString,
     };
     use nucleus::ribosome::{
         api::{commit::CommitEntryArgs, tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
     use serde_json;
-    use holochain_core_types::json::JsonString;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
@@ -139,10 +140,12 @@ pub mod tests {
 
         assert_eq!(
             runtime.result,
-            JsonString::from(format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}"),
+            JsonString::from(
+                format!(
+                    r#"{{"address":"{}","validation_failure":""}}"#,
+                    test_entry().address()
+                ) + "\u{0}"
+            ),
         );
     }
 

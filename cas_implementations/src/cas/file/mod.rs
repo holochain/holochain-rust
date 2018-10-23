@@ -56,13 +56,14 @@ impl ContentAddressableStorage for FilesystemStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::file::FilesystemStorage;
-    use holochain_core_types::cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::StorageTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::StorageTestSuite,
+        },
+        json::{JsonString, RawString},
     };
     use tempfile::{tempdir, TempDir};
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();

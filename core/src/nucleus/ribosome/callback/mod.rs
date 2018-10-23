@@ -6,8 +6,10 @@ pub mod receive;
 pub mod validate_entry;
 
 use context::Context;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{
+    entry::{Entry, SerializedEntry},
+    json::JsonString,
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -18,9 +20,8 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 use serde_json;
-use holochain_core_types::entry::SerializedEntry;
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -124,7 +125,9 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => String::new(),
-            CallbackParams::ValidateCommit(entry) => String::from(JsonString::from(SerializedEntry::from(entry.to_owned()))),
+            CallbackParams::ValidateCommit(entry) => {
+                String::from(JsonString::from(SerializedEntry::from(entry.to_owned())))
+            }
             CallbackParams::Receive => String::new(),
         }
     }
@@ -139,7 +142,8 @@ pub enum CallbackResult {
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
-        serde_json::from_str(&String::from(json_string)).expect("could not deserialize CallbackResult")
+        serde_json::from_str(&String::from(json_string))
+            .expect("could not deserialize CallbackResult")
     }
 }
 

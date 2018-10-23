@@ -8,16 +8,15 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
+    json::JsonString,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
-use std::{collections::HashMap, sync::Arc};
 use serde_json;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::entry::SerializedEntry;
+use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -78,7 +77,9 @@ pub enum ActionResponse {
 
 impl From<ActionResponse> for JsonString {
     fn from(action_response: ActionResponse) -> JsonString {
-        JsonString::from(serde_json::to_string(&action_response).expect("could not Jsonify ActionResponse"))
+        JsonString::from(
+            serde_json::to_string(&action_response).expect("could not Jsonify ActionResponse"),
+        )
     }
 }
 
@@ -193,14 +194,12 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_entry_address},
+        entry::{test_entry, test_entry_address, SerializedEntry},
         error::HolochainError,
+        json::{JsonString, RawString},
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
-    use holochain_core_types::json::JsonString;
-    use holochain_core_types::json::RawString;
-    use holochain_core_types::entry::SerializedEntry;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -286,15 +285,21 @@ pub mod tests {
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::Commit(Err(HolochainError::new("some error"))))
+            JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
+                "some error"
+            ))))
         );
     }
 
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}"),
-            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(test_entry().clone()))))
+            JsonString::from(
+                "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}"
+            ),
+            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(
+                test_entry().clone()
+            ))))
         );
         assert_eq!(
             JsonString::from(RawString::from("")),
@@ -310,7 +315,9 @@ pub mod tests {
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new("some error")))),
+            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 
@@ -318,11 +325,15 @@ pub mod tests {
     fn test_link_entries_response_to_json() {
         assert_eq!(
             JsonString::from(format!("{{\"address\":\"{}\"}}", test_entry_address())),
-            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(test_entry())))),
+            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
+                test_entry(),
+            )))),
         );
         assert_eq!(
             JsonString::from("{\"error\":\"some error\"}"),
-            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new("some error")))),
+            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 }

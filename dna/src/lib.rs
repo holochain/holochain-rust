@@ -39,11 +39,11 @@ use holochain_core_types::{
     entry::{Entry, ToEntry},
     entry_type::EntryType,
     error::DnaError,
+    json::JsonString,
 };
 use std::collections::HashMap;
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use holochain_core_types::json::JsonString;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {

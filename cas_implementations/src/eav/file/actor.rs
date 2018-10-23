@@ -4,6 +4,7 @@ use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
     file_validation,
+    json::JsonString,
 };
 use riker::actors::*;
 use std::{
@@ -13,7 +14,6 @@ use std::{
     path::MAIN_SEPARATOR,
 };
 use walkdir::{DirEntry, WalkDir};
-use holochain_core_types::json::JsonString;
 
 const ACTOR_ID_ROOT: &'static str = "/eav_file_actor/";
 
@@ -167,7 +167,9 @@ impl EavFileStorageActor {
         Ok(entity_attribute_value_inter
             .into_iter()
             .filter(|e| e.is_ok())
-            .map(|eav_content| EntityAttributeValue::from_content(&JsonString::from(eav_content.unwrap())))
+            .map(|eav_content| {
+                EntityAttributeValue::from_content(&JsonString::from(eav_content.unwrap()))
+            })
             .collect())
     }
 }

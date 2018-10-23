@@ -1,8 +1,8 @@
 use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
-use serde_json;
 use json::JsonString;
+use serde_json;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -128,13 +128,16 @@ impl LinkListEntry {
 
 impl From<LinkListEntry> for JsonString {
     fn from(link_list_entry: LinkListEntry) -> JsonString {
-        JsonString::from(serde_json::to_string(&link_list_entry).expect("LinkListEntry failed to serialize"))
+        JsonString::from(
+            serde_json::to_string(&link_list_entry).expect("LinkListEntry failed to serialize"),
+        )
     }
 }
 
 impl From<JsonString> for LinkListEntry {
     fn from(json_string: JsonString) -> LinkListEntry {
-        serde_json::from_str(&String::from(json_string)).expect("LinkListEntry failed to deserialize")
+        serde_json::from_str(&String::from(json_string))
+            .expect("LinkListEntry failed to deserialize")
     }
 }
 
@@ -156,8 +159,8 @@ pub mod tests {
     use cas::content::AddressableContent;
     use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
     use entry_type::EntryType;
-    use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
     use json::JsonString;
+    use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -234,13 +237,19 @@ pub mod tests {
     #[test]
     /// show ToString for LinkEntry
     fn link_entry_to_string_test() {
-        assert_eq!(test_link_entry_json_string(), JsonString::from(test_link_entry()),);
+        assert_eq!(
+            test_link_entry_json_string(),
+            JsonString::from(test_link_entry()),
+        );
     }
 
     #[test]
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
-        assert_eq!(LinkEntry::from(test_link_entry_json_string()), test_link_entry(),);
+        assert_eq!(
+            LinkEntry::from(test_link_entry_json_string()),
+            test_link_entry(),
+        );
     }
 
     #[test]

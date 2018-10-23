@@ -64,10 +64,9 @@ use holochain_core::{
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
 use std::sync::Arc;
-use holochain_core_types::json::JsonString;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -324,7 +323,10 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
-        assert_eq!(result.ok().unwrap(), JsonString::from("{\"holo\":\"world\"}"));
+        assert_eq!(
+            result.ok().unwrap(),
+            JsonString::from("{\"holo\":\"world\"}")
+        );
     }
 
     #[test]

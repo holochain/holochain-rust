@@ -156,7 +156,9 @@ pub mod tests {
     fn entry_type_valid_app_name() {
         assert!(EntryType::has_valid_app_name("agent_id"));
         assert!(!EntryType::has_valid_app_name("%agent_id"));
-        assert!(!EntryType::has_valid_app_name(&String::from(EntryType::AgentId)));
+        assert!(!EntryType::has_valid_app_name(&String::from(
+            EntryType::AgentId
+        )));
         assert!(!EntryType::has_valid_app_name(&String::new()));
         assert!(EntryType::has_valid_app_name("toto"));
         assert!(!EntryType::has_valid_app_name("%%"));

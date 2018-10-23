@@ -1,8 +1,8 @@
 use cas::storage::ContentAddressableStorage;
 use hash::HashString;
+use json::JsonString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
-use json::JsonString;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -33,7 +33,9 @@ pub trait AddressableContent {
 
     /// restore/deserialize the original struct/type from serialized Content
     /// the default implementation covers anything that implements From<JsonString> for Foo
-    fn from_content(content: &Content) -> Self where Self: Sized;
+    fn from_content(content: &Content) -> Self
+    where
+        Self: Sized;
 }
 
 impl AddressableContent for Content {
@@ -153,12 +155,10 @@ impl AddressableContentTestSuite {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{
-        AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
+        Address, AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
         OtherExampleAddressableContent,
     };
-    use json::JsonString;
-    use json::RawString;
-    use cas::content::Address;
+    use json::{JsonString, RawString};
 
     #[test]
     /// test the first example

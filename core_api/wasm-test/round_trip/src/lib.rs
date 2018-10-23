@@ -1,7 +1,9 @@
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 
+use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
 
@@ -19,6 +21,12 @@ struct InputStruct {
 struct OutputStruct {
     input_int_val_plus2: u8,
     input_str_val_plus_dog: String,
+}
+
+impl From<OutputStruct> for JsonString {
+    fn from(output_struct: OutputStruct) -> JsonString {
+        JsonString::from(serde_json::to_string(&output_struct).expect("could not Jsonify OutputStruct"))
+    }
 }
 
 
@@ -44,5 +52,5 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let input = load_json(encoded_allocation_of_input as u32).unwrap();
     let output = test_inner(input);
-    return store_json_into_encoded_allocation(&mut mem_stack, output);
+    return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
 }

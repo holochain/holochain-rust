@@ -6,6 +6,7 @@ use holochain_wasm_utils::{
   api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
   memory_allocation::*, memory_serialization::*
 };
+use holochain_core_types::json::JsonString;
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
@@ -25,7 +26,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
     entry_type_name: entry_type_name.to_owned(),
     entry_value: entry_value.to_owned(),
   };
-  let maybe_allocation =  store_as_json(mem_stack, input);
+  let maybe_allocation =  store_json(mem_stack, JsonString::from(input));
   if let Err(return_code) = maybe_allocation {
     return Err(return_code.to_string());
   }
@@ -60,7 +61,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     address: HashString::from("whatever"),
     validation_failure: String::from("")
   };
-  let maybe_allocation =  store_as_json(mem_stack, input);
+  let maybe_allocation =  store_json(mem_stack, JsonString::from(input));
   if let Err(return_code) = maybe_allocation {
     return Err(return_code.to_string());
   }
@@ -94,7 +95,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
-  return store_json_into_encoded_allocation(&mut mem_stack, output);
+  return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
 }
 
 /// Function called by Holochain Instance
@@ -105,5 +106,5 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit_fail(&mut mem_stack);
-  return store_json_into_encoded_allocation(&mut mem_stack, output);
+  return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
 }

@@ -3,11 +3,10 @@ use entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
+use json::{JsonString, RawString};
 use serde_json;
 use snowflake;
 use std::ops::Deref;
-use json::JsonString;
-use json::RawString;
 
 pub type EntryValue = JsonString;
 
@@ -66,7 +65,9 @@ impl From<Entry> for SerializedEntry {
 
 impl From<SerializedEntry> for JsonString {
     fn from(serialized_entry: SerializedEntry) -> JsonString {
-        JsonString::from(serde_json::to_string(&serialized_entry).expect("could not Jsonify SerializedEntry"))
+        JsonString::from(
+            serde_json::to_string(&serialized_entry).expect("could not Jsonify SerializedEntry"),
+        )
     }
 }
 
@@ -84,7 +85,7 @@ impl From<JsonString> for SerializedEntry {
 
 impl From<SerializedEntry> for Entry {
     fn from(serialized_entry: SerializedEntry) -> Entry {
-        Entry{
+        Entry {
             value: JsonString::from(serialized_entry.value),
             entry_type: EntryType::from(serialized_entry.entry_type),
         }
@@ -155,7 +156,7 @@ pub fn test_entry() -> Entry {
 }
 
 pub fn test_serialized_entry() -> SerializedEntry {
-    SerializedEntry{
+    SerializedEntry {
         value: String::from(test_entry_value()),
         entry_type: String::from(test_entry_content()),
     }
@@ -188,7 +189,9 @@ pub fn test_entry_b() -> Entry {
 pub fn test_entry_unique() -> Entry {
     Entry::new(
         &test_entry_type(),
-        &JsonString::from(RawString::from(snowflake::ProcessUniqueId::new().to_string())),
+        &JsonString::from(RawString::from(
+            snowflake::ProcessUniqueId::new().to_string(),
+        )),
     )
 }
 
@@ -243,13 +246,19 @@ pub mod tests {
     #[test]
     /// show From<SerializedEntry> for JsonString
     fn json_string_from_entry_test() {
-        assert_eq!(test_entry().content(), JsonString::from(SerializedEntry::from(test_entry())));
+        assert_eq!(
+            test_entry().content(),
+            JsonString::from(SerializedEntry::from(test_entry()))
+        );
     }
 
     #[test]
     /// show From<SerializedEntry> for Entry
     fn entry_from_string_test() {
-        assert_eq!(test_entry(), Entry::from(SerializedEntry::from(test_serialized_entry().content())));
+        assert_eq!(
+            test_entry(),
+            Entry::from(SerializedEntry::from(test_serialized_entry().content()))
+        );
     }
 
     #[test]
@@ -266,7 +275,10 @@ pub mod tests {
     fn json_round_trip() {
         let entry = test_entry();
         let expected = expected_serialized_entry_content();
-        assert_eq!(expected, JsonString::from(SerializedEntry::from(entry.clone())));
+        assert_eq!(
+            expected,
+            JsonString::from(SerializedEntry::from(entry.clone()))
+        );
         assert_eq!(entry, Entry::from(SerializedEntry::from(expected.clone())));
         assert_eq!(entry, Entry::from(SerializedEntry::from(entry.clone())));
 
@@ -275,8 +287,14 @@ pub mod tests {
             "{{\"value\":\"{}\",\"entry_type\":\"AgentId\"}}",
             test_sys_entry_address(),
         ));
-        assert_eq!(expected, JsonString::from(SerializedEntry::from(sys_entry.clone())));
-        assert_eq!(&sys_entry, &Entry::from(SerializedEntry::from(expected.clone())));
+        assert_eq!(
+            expected,
+            JsonString::from(SerializedEntry::from(sys_entry.clone()))
+        );
+        assert_eq!(
+            &sys_entry,
+            &Entry::from(SerializedEntry::from(expected.clone()))
+        );
         assert_eq!(
             &sys_entry,
             &Entry::from(SerializedEntry::from(sys_entry.clone())),

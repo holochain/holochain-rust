@@ -3,8 +3,7 @@
 //! the core Ribosome <> WASM API.
 
 use holochain_wasm_utils::memory_allocation::SinglePageStack;
-use holochain_wasm_utils::holochain_core_types::app_globals::AppGlobals;
-use init_globals::init_globals;
+use init_globals::{init_globals, AppGlobals};
 
 // Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;

@@ -400,7 +400,7 @@ mod tests {
         hc.start().expect("couldn't start");
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 3);
+        assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
@@ -415,7 +415,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        assert_eq!(hc.state().unwrap().history.len(), 8);
     }
 
     #[test]
@@ -434,7 +434,7 @@ mod tests {
         hc.start().expect("couldn't start");
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 3);
+        assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
@@ -449,7 +449,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
         hc.start().expect("couldn't start");
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 3);
+        assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
@@ -483,7 +483,7 @@ mod tests {
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]
@@ -503,7 +503,7 @@ mod tests {
         hc.start().expect("couldn't start");
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 3);
+        assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
@@ -520,7 +520,7 @@ mod tests {
         // Check in holochain instance's history that the deb event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+        assert_eq!(hc.state().unwrap().history.len(), 6);
     }
 
     #[test]

@@ -38,16 +38,15 @@ pub mod tests {
         test_debug_string().into_bytes()
     }
 
-    #[test]
     /// test that bytes passed to debug end up in the log
+    #[test]
     fn test_zome_api_function_debug() {
-        let (call_result, logger) =
+        let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        let logger = logger.lock().unwrap();
         assert!(call_result.is_empty());
         assert_eq!(
             "[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]",
-            format!("{:?}", logger.log),
+            format!("{}", (*context.logger.lock().unwrap()).dump()),
         );
     }
 }

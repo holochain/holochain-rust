@@ -53,11 +53,11 @@ fn main() {
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 
-    // start up the app
-    hc.start().expect("couldn't start the app");
-    println!("Started the app..");
+    // start up the holochain instance
+    hc.start().expect("couldn't start the holochain instance");
+    println!("Started the holochain instance..");
 
-    // call a function in the app
+    // call a function in the zome code
     //hc.call("some_fn");
 
     // get the state
@@ -69,7 +69,7 @@ fn main() {
         // ...
     }
 
-    // stop the app
-    hc.stop().expect("couldn't stop the app");
-    println!("Stopped the app..");
+    // stop the holochain instance
+    hc.stop().expect("couldn't stop the holochain instance");
+    println!("Stopped the holochain instance..");
 }

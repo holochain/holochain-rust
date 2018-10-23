@@ -1,3 +1,4 @@
+use action::ActionWrapper;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -8,7 +9,7 @@ use holochain_core_types::{
     hash::HashString,
     links_entry::Link,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -42,6 +43,8 @@ where
     meta_storage: EAVS,
     // Placeholder network module
     network: Network,
+
+    add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
 impl<CAS, EAVS> DhtStore<CAS, EAVS>
@@ -57,6 +60,7 @@ where
             content_storage,
             meta_storage,
             network,
+            add_link_actions: HashMap::new(),
         }
     }
 
@@ -82,16 +86,30 @@ where
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> CAS {
+    pub fn content_storage(&self) -> CAS {
         self.content_storage.clone()
     }
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage
+    }
+    pub fn meta_storage(&self) -> EAVS {
+        self.meta_storage.clone()
+    }
+    pub(crate) fn meta_storage_mut(&mut self) -> &mut EAVS {
+        &mut self.meta_storage
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network
     }
     pub(crate) fn network_mut(&mut self) -> &mut Network {
         &mut self.network
+    }
+    pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
+        &self.add_link_actions
+    }
+    pub(crate) fn add_link_actions_mut(
+        &mut self,
+    ) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
+        &mut self.add_link_actions
     }
 }

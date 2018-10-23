@@ -98,6 +98,26 @@ impl ToJson for ActionResponse {
     }
 }
 
+pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+    ChainHeader::new(
+        &entry.entry_type(),
+        &entry.address(),
+        // @TODO signatures
+        &Signature::from(""),
+        &agent_state
+            .top_chain_header
+            .clone()
+            .and_then(|chain_header| Some(chain_header.address())),
+        &agent_state
+            .chain()
+            .iter_type(&agent_state.top_chain_header, &entry.entry_type())
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.address())),
+        // @TODO timestamp
+        &Iso8601::from(""),
+    )
+}
+
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
@@ -111,29 +131,8 @@ fn reduce_commit_entry(
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
+    let chain_header = create_new_chain_header(&entry, state);
 
-    // @TODO validation dispatch should go here rather than upstream in invoke_commit
-    // @see https://github.com/holochain/holochain-rust/issues/256
-
-    let chain_header = ChainHeader::new(
-        &entry.entry_type(),
-        &entry.address(),
-        // @TODO signatures
-        &Signature::from(""),
-        &state
-            .top_chain_header
-            .clone()
-            .and_then(|chain_header| Some(chain_header.address())),
-        &state
-            .chain()
-            .iter_type(&state.top_chain_header, &entry.entry_type())
-            .nth(0)
-            .and_then(|chain_header| Some(chain_header.address())),
-        // @TODO timestamp
-        &Iso8601::from(""),
-    );
-
-    // @TODO adding the entry to the CAS should happen elsewhere.
     fn response(
         context: Arc<Context>,
         state: &mut AgentState,

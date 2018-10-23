@@ -1,44 +1,21 @@
-extern crate futures;
-use agent::{actions::commit::*, state::AgentState};
+use agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, entry_type::EntryType, error::HolochainError,
+    cas::content::Address,
+    entry::Entry,
+    entry_type::EntryType,
+    error::HolochainError,
     hash::HashString,
-};
-use holochain_wasm_utils::api_serialization::{
-    commit::{CommitEntryArgs, CommitEntryResult},
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use nucleus::{actions::validate::*, ribosome::Runtime};
+use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
+use nucleus::{
+    actions::{build_validation_package::*, validate::*},
+    ribosome::Runtime,
+};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
-fn build_validation_data_commit(
-    _entry: Entry,
-    _entry_type: EntryType,
-    _state: &AgentState,
-) -> ValidationData {
-    //
-    // TODO: populate validation data with with chain content
-    // I have left this out because filling the valiation data with
-    // chain headers and entries does not work as long as ValidationData
-    // is defined with the type copies i've put in wasm_utils/src/api_serialization/validation.rs.
-    // Doing this right requires a refactoring in which I extract all these types
-    // into a separate create ("core_types") that can be used from holochain core
-    // and the HDK.
-
-    //let agent_key = state.keys().expect("Can't commit entry without agent key");
-    ValidationData {
-        chain_header: None, //Some(new_header),
-        sources: vec![HashString::from("<insert your agent key here>")],
-        source_chain_entries: None,
-        source_chain_headers: None,
-        custom: None,
-        lifecycle: EntryLifecycle::Chain,
-        action: EntryAction::Commit,
-    }
-}
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -60,21 +37,28 @@ pub fn invoke_commit_app_entry(
     let entry_type =
         EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
     let entry = Entry::new(&entry_type, &input.entry_value);
-    let validation_data = build_validation_data_commit(
-        entry.clone(),
-        entry_type.clone(),
-        &runtime.context.state().unwrap().agent(),
-    );
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(
-        // First validate entry:
-        validate_entry(
-            entry_type.clone(),
-            entry.clone(),
-            validation_data,
-            &runtime.context)
-            // if successful, commit entry:
+        // 1. Build the context needed for validation of the entry
+        build_validation_package(&entry, &runtime.context)
+            .and_then(|validation_package| {
+                Ok(ValidationData {
+                    package: validation_package,
+                    sources: vec![HashString::from("<insert your agent key here>")],
+                    lifecycle: EntryLifecycle::Chain,
+                    action: EntryAction::Commit,
+                })
+            })
+            // 2. Validate the entry
+            .and_then(|validation_data| {
+                validate_entry(
+                    entry_type.clone(),
+                    entry.clone(),
+                    validation_data,
+                    &runtime.context)
+            })
+            // 3. Commit the valid entry to chain and DHT
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 

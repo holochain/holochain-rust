@@ -11,10 +11,12 @@ extern crate boolinator;
 use boolinator::Boolinator;
 use hdk::{globals::G_MEM_STACK, error::ZomeApiError};
 use holochain_wasm_utils::{
-    error::RibosomeErrorCode, holochain_core_types::hash::HashString, memory_allocation::*,
-    memory_serialization::*,
+    memory_allocation::*, memory_serialization::*,
+    holochain_core_types::{
+        error::RibosomeErrorCode,
+        hash::HashString,
+    },
 };
-
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
 
 use hdk::holochain_dna::zome::entry_types::Sharing;
@@ -26,12 +28,12 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
     hdk::global_fns::init_global_memory(encoded_allocation_of_input);
     #[allow(unused_must_use)]
     {
-        hdk::debug(&hdk::APP_NAME);
-        hdk::debug(&hdk::APP_DNA_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_ID_STR);
-        hdk::debug(&hdk::APP_AGENT_KEY_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_INITIAL_HASH.to_string());
-        hdk::debug(&hdk::APP_AGENT_LATEST_HASH.to_string());
+        hdk::debug(&hdk::DNA_NAME);
+        hdk::debug(&hdk::DNA_HASH.to_string());
+        hdk::debug(&hdk::AGENT_ID_STR);
+        hdk::debug(&hdk::AGENT_KEY_HASH.to_string());
+        hdk::debug(&hdk::AGENT_INITIAL_HASH.to_string());
+        hdk::debug(&hdk::AGENT_LATEST_HASH.to_string());
     }
     return 0;
 }
@@ -110,6 +112,38 @@ zome_functions! {
             Err(_) => unreachable!(),
         }
     }
+
+    commit_validation_package_tester: | | {
+        let res = hdk::commit_entry("validation_package_tester", json!({
+            "stuff": "test"
+        }));
+        match res {
+            Ok(hash_str) => json!({ "address": hash_str }),
+            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
+            Err(_) => unreachable!(),
+        }
+    }
+
+    link_two_entries: | | {
+        let entry1 = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry1"
+        }));
+        let entry2 = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry2"
+        }));
+        if entry1.is_err() {
+            return json!({"error": &format!("Could not commit entry: {}", entry1.err().unwrap().to_string())})
+        }
+        if entry2.is_err() {
+            return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
+        }
+
+        match hdk::link_entries(entry1.unwrap(), entry2.unwrap(), "test-tag") {
+            Ok(()) => json!({"ok": true}),
+            Err(error) => json!({"error": error.to_string()}),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -132,10 +166,15 @@ struct TestEntryType {
 
 validations! {
     [ENTRY] validate_testEntryType {
-        [hdk::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
             (entry.stuff != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
+        }
+    }
+
+    [ENTRY] validate_validation_package_tester {
+        |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            Err(serde_json::to_string(&ctx).unwrap())
         }
     }
 }
@@ -151,9 +190,22 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.stuff != "FAIL")
-                .ok_or_else(|| "FAIL content is not allowed".to_string())
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        }
+    ));
+
+    zd.define(entry!(
+        name: "validation_package_tester",
+        description: "asdfda",
+        sharing: Sharing::Public,
+
+        validation_package: || {
+            hdk::ValidationPackageDefinition::ChainFull
+        },
+
+        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
+            Err(String::from("Not in use yet. Will to replace validations! macro."))
         }
     ));
 }

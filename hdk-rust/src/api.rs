@@ -5,6 +5,7 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
     },
     holochain_core_types::hash::HashString,
@@ -252,16 +253,16 @@ pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResul
 /// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 pub fn link_entries<S: Into<String>>(
-    base: HashString,
-    target: HashString,
+    base: &HashString,
+    target: &HashString,
     tag: S,
 ) -> Result<(), ZomeApiError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
     let input = LinkEntriesArgs {
-        base,
-        target,
+        base: base.clone(),
+        target: target.clone(),
         tag: tag.into(),
     };
 
@@ -340,8 +341,35 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 }
 
 /// Not Yet Available
-pub fn get_links<S: Into<String>>(_base: HashString, _tag: S) -> ZomeApiResult<Vec<HashString>> {
-    Err(ZomeApiError::FunctionNotImplemented)
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    // Put args in struct and serialize into memory
+    let input = GetLinksArgs {
+        entry_address: base.clone(),
+        tag: tag.into(),
+    };
+
+    let allocation_of_input = store_as_json(&mut mem_stack, input)
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_get_links(allocation_of_input.encode() as u32) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: GetLinksResult = load_json(encoded_allocation_of_result as u32)
+        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+
+    if result.ok {
+        Ok(result)
+    } else {
+        Err(ZomeApiError::Internal(result.error))
+    }
 }
 
 /// Not Yet Available

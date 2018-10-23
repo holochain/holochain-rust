@@ -139,9 +139,30 @@ zome_functions! {
             return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
         }
 
-        match hdk::link_entries(entry1.unwrap(), entry2.unwrap(), "test-tag") {
+        match hdk::link_entries(&entry1.unwrap(), &entry2.unwrap(), "test-tag") {
             Ok(()) => json!({"ok": true}),
             Err(error) => json!({"error": error.to_string()}),
+        }
+    }
+
+    links_roundtrip: | | {
+        let entry1_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry1"
+        })).unwrap();
+        let entry2_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry2"
+        })).unwrap();
+        let entry3_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry3"
+        })).unwrap();
+
+
+        hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag").expect("Can't link?!");
+        hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
+
+        match hdk::get_links(&entry1_hash, "test-tag") {
+            Ok(result) => json!({"links": result.links}),
+            Err(error) => json!({"error": error}),
         }
     }
 }

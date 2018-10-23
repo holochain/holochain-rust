@@ -6,7 +6,9 @@ pub mod tests {
     extern crate test_utils;
     use action::{Action, ActionWrapper};
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent}, entry::ToEntry, entry_type::EntryType,
+        cas::content::{Address, AddressableContent},
+        entry::ToEntry,
+        entry_type::EntryType,
         links_entry::*,
     };
     use instance::{tests::test_context, Instance, Observer};

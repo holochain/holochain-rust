@@ -11,3 +11,6 @@
 pub mod commit;
 pub mod get_entry;
 pub mod validation;
+mod zome_api_globals;
+
+pub use self::zome_api_globals::*;

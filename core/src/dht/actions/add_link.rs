@@ -3,7 +3,7 @@ extern crate serde_json;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{Async, Future};
-use holochain_core_types::{error::HolochainError, links_entry::LinkEntry};
+use holochain_core_types::{error::HolochainError, links_entry::Link};
 use instance::dispatch_action;
 use std::sync::Arc;
 
@@ -15,8 +15,8 @@ use std::sync::Arc;
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(link_entry: LinkEntry, context: &Arc<Context>) -> AddLinkFuture {
-    let action_wrapper = ActionWrapper::new(Action::AddLink(link_entry.link().clone()));
+pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
+    let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
     dispatch_action(&context.action_channel, action_wrapper.clone());
 
     AddLinkFuture {
@@ -52,5 +52,61 @@ impl Future for AddLinkFuture {
         } else {
             Ok(futures::Async::Pending)
         }
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use nucleus;
+
+    use futures::executor::block_on;
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::Entry,
+        links_entry::Link,
+    };
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_entry() -> Entry {
+        nucleus::actions::tests::test_entry_package_entry()
+    }
+
+    #[test]
+    fn can_add_valid_link() {
+        let (_instance, context) = nucleus::actions::tests::instance();
+
+        let base = test_entry();
+        nucleus::actions::tests::commit(base.clone(), &context);
+
+        let target = base.clone();
+        let link = Link::new(&base.address(), &target.address(), "test-tag");
+
+        let result = block_on(add_link(
+            &link,
+            &context.clone(),
+        ));
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn errors_when_link_base_not_present() {
+        let (_instance, context) = nucleus::actions::tests::instance();
+
+        let base = test_entry();
+        let target = base.clone();
+        let link = Link::new(&base.address(), &target.address(), "test-tag");
+
+        let result = block_on(add_link(
+            &link,
+            &context.clone(),
+        ));
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
+        )));
     }
 }

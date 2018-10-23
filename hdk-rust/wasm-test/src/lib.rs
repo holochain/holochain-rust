@@ -144,6 +144,27 @@ zome_functions! {
             Err(error) => json!({"error": error.to_string()}),
         }
     }
+
+    links_roundtrip: | | {
+        let entry1_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry1"
+        })).unwrap();
+        let entry2_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry2"
+        })).unwrap();
+        let entry3_hash = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry3"
+        })).unwrap();
+
+
+        hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag").expect("Can't link?!");
+        hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
+
+        match hdk::get_links(&entry1_hash, "test-tag") {
+            Ok(links) => json!({"links": links}),
+            Err(error) => json!({"error": error}),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

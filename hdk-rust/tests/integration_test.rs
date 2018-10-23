@@ -35,6 +35,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "send_tweet",
         "commit_validation_package_tester",
         "link_two_entries",
+        "links_roundtrip",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
@@ -229,4 +230,15 @@ fn can_link_entries() {
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), r#"{"ok":true}"#);
+}
+
+#[test]
+fn can_roundtrip_links() {
+    let (mut hc, _) = start_holochain_instance();
+    let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    let result_string =  result.unwrap();
+    let ordering1: bool = result_string == r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#;
+    let ordering2: bool = result_string == r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#;
+    assert!(ordering1 || ordering2);
 }

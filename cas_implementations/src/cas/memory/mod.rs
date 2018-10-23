@@ -3,7 +3,8 @@ use actor::{AskSelf, Protocol};
 use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent}, storage::ContentAddressableStorage,
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
     },
     error::HolochainError,
 };

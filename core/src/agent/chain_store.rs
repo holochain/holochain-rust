@@ -138,8 +138,10 @@ pub mod tests {
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        chain_header::{test_chain_header, ChainHeader}, entry::{test_entry, test_entry_b},
-        signature::{test_signature, test_signature_b}, time::test_iso_8601,
+        chain_header::{test_chain_header, ChainHeader},
+        entry::{test_entry, test_entry_b},
+        signature::{test_signature, test_signature_b},
+        time::test_iso_8601,
     };
 
     pub fn test_chain_store() -> ChainStore<FilesystemStorage> {

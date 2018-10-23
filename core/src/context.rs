@@ -6,7 +6,8 @@ use logger::Logger;
 use persister::Persister;
 use state::State;
 use std::sync::{
-    mpsc::{sync_channel, SyncSender}, Arc, Mutex, RwLock, RwLockReadGuard,
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex, RwLock, RwLockReadGuard,
 };
 
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};

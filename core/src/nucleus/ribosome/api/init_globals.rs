@@ -12,7 +12,6 @@ pub fn invoke_init_globals(
     runtime: &mut Runtime,
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
     let globals = ZomeApiGlobals {
         dna_name:           runtime.dna_name.to_string(),
         // TODO #232 - Implement Dna hash

@@ -307,7 +307,9 @@ pub fn get_entry(
     Ok(result)
 }
 
-/// FIXME DOC
+/// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
+/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
+/// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 pub fn link_entries<S: Into<String>>(
     base: HashString,
     target: HashString,

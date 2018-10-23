@@ -280,7 +280,7 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"address\":\"{}\"}}", test_entry_address())),
+            JsonString::from(format!("{{\"ok\":\"{}\"}}", test_entry_address())),
             JsonString::from(ActionResponse::Commit(Ok(test_entry_address()))),
         );
         assert_eq!(
@@ -324,7 +324,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"address\":\"{}\"}}", test_entry_address())),
+            JsonString::from(format!("{{\"ok\":\"{}\"}}", test_entry_address())),
             JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
                 test_entry(),
             )))),

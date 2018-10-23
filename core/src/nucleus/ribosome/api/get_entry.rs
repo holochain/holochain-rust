@@ -182,7 +182,7 @@ mod tests {
             commit_runtime.result,
             JsonString::from(
                 format!(
-                    r#"{{"address":"{}","validation_failure":""}}"#,
+                    r#"{{"ok":"{}","validation_failure":""}}"#,
                     test_entry().address()
                 ) + "\u{0}"
             ),

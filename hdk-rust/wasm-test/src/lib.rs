@@ -69,13 +69,20 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     let res = hdk::commit_entry(&serialized_entry);
 
     let res_obj = match res {
-        Ok(hash_str) => CommitOutputStruct {address: hash_str.to_string()},
+        Ok(hash_str) => {
+            hdk::debug(format!("SUCCESS: {:?}", hash_str.clone().to_string())).expect("debug() must work");
+            CommitOutputStruct {address: hash_str.to_string()}
+        },
         Err(RibosomeError::RibosomeFailed(err_str)) => {
+            hdk::debug(format!("ERROR RibosomeFailed: {:?}", err_str)).expect("debug() must work");
             unsafe {
                 return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
             }
         },
-       Err(_) => unreachable!(),
+       Err(e) => {
+           hdk::debug(format!("ERROR unknown: {:?}", e)).expect("debug() must work");
+           unreachable!();
+       }
     };
     unsafe {
         return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
@@ -84,8 +91,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
 //
 zome_functions! {
-    check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
-        let serialized_entry = SerializedEntry::new(&entry_type_name, &entry_content);
+    check_commit_entry_macro: |entry_type: String, value: String| {
+        let serialized_entry = SerializedEntry::new(&entry_type, &value);
         hdk::commit_entry(&serialized_entry)
     }
 }
@@ -119,6 +126,9 @@ zome_functions! {
 struct TestEntryType {
     stuff: String,
 }
+
+#[derive(Serialize, Deserialize)]
+struct TestEntryTypeB(String);
 
 validations! {
     [ENTRY] validate_testEntryType {

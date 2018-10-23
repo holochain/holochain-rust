@@ -142,8 +142,8 @@ pub enum CallbackResult {
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
-        serde_json::from_str(&String::from(json_string))
-            .expect("could not deserialize CallbackResult")
+        serde_json::from_str(&String::from(json_string.clone()))
+            .expect(&format!("could not deserialize CallbackResult: {:?}", json_string))
     }
 }
 

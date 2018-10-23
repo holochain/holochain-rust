@@ -4,6 +4,10 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate test_utils;
 
+use holochain_core_types::cas::content::AddressableContent;
+use holochain_core_types::entry::test_entry_a;
+use holochain_core_types::entry::test_entry_b;
+use holochain_core_types::entry::SerializedEntry;
 use holochain_core_api::*;
 use holochain_core_types::json::{JsonString, RawString};
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
@@ -60,18 +64,21 @@ fn can_use_globals() {
 #[test]
 fn can_commit_entry() {
     let (mut hc, _) = start_holochain_instance();
+
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+        JsonString::from(
+            format!("{{\"address\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
+        ),
     );
 }
 
@@ -83,13 +90,16 @@ fn can_commit_entry_macro() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        // this works because the macro names the args the same as the SerializedEntry fields
+        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#)
+        JsonString::from(
+            format!("{{\"ok\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
+        ),
     );
 }
 
@@ -125,7 +135,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"),
+        JsonString::from("{\"ok\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"),
     );
 
     let result = hc.call(

@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use error::{RibosomeErrorCode, RibosomeErrorReport};
 use holochain_core_types::json::JsonString;
 use memory_allocation::{
@@ -42,13 +43,12 @@ pub fn store_json<J: Into<JsonString>>(
     json_string: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let j: JsonString = json_string.into();
-    let s = String::from(j);
-    let json_bytes = s.as_bytes();
+    let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len();
     if json_bytes_len > <u16>::max_value() as usize {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, json_bytes, json_bytes_len as u16);
+    return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
 }
 
 // Sugar
@@ -56,7 +56,7 @@ pub fn store_json_into_encoded_allocation<J: Into<JsonString>>(
     stack: &mut SinglePageStack,
     json_string: J,
 ) -> i32 {
-    let allocation_of_output = store_json(stack, json_string.into()).unwrap();
+    let allocation_of_output = store_json(stack, json_string).unwrap();
     return allocation_of_output.encode() as i32;
 }
 

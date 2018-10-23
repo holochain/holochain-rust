@@ -32,6 +32,7 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
+use holochain_core_types::json::RawString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -196,16 +197,16 @@ impl Runtime {
     }
 
     /// Store a JsonString in wasm memory.
-    /// Input should be a a JsonString.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_json_string(
+    pub fn store_json_string<J: Into<JsonString>>(
         &mut self,
-        json_string: &JsonString,
+        json_string: J,
     ) -> Result<Option<RuntimeValue>, Trap> {
+        let j: JsonString = json_string.into();
         // write as String to runtime memory
         // will be picked up as a JsonString on the other side
         // @see call()
-        let mut s_bytes: Vec<_> = String::from(json_string).into_bytes();
+        let mut s_bytes: Vec<_> = j.into_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
         let allocation_of_result = self.memory_manager.write(&s_bytes);
@@ -374,11 +375,14 @@ pub fn call(
                     return_code.to_string()
                 ))
                 .expect("Logger should work");
+            runtime.result = JsonString::from(return_code);
         }
         // Something in memory, try to read it
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);
+            // runtime.result = JsonString::from(RawString::from(String::from("foo")));
             runtime.result = JsonString::from(String::from_utf8(result).unwrap());
+            // runtime.result = JsonString::from(RawString::from(String::from_utf8(result).unwrap()));
         }
     }
     Ok(runtime.clone())

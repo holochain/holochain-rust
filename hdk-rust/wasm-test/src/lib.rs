@@ -33,8 +33,9 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
         hdk::debug(hdk::APP_AGENT_LATEST_HASH.to_owned());
     }
 
-
-    return 0;
+    unsafe {
+        return store_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), hdk::APP_AGENT_LATEST_HASH.clone()) as u32;
+    }
 }
 
 

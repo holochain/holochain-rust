@@ -3,16 +3,20 @@ extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate test_utils;
+extern crate backtrace;
 
+use holochain_core_types::entry_type::test_entry_type;
 use holochain_core_types::cas::content::AddressableContent;
 use holochain_core_types::entry::test_entry_a;
-use holochain_core_types::entry::test_entry_b;
+use holochain_core_types::entry::Entry;
 use holochain_core_types::entry::SerializedEntry;
 use holochain_core_api::*;
 use holochain_core_types::json::{JsonString, RawString};
+use holochain_core_types::hash::HashString;
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
+use backtrace::Backtrace;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -53,7 +57,7 @@ fn can_use_globals() {
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
     assert_eq!(
         result.clone(),
-        Ok(JsonString::from(RawString::from(
+        Ok(JsonString::from(HashString::from(
             "FIXME-app_agent_latest_hash"
         ))),
         "result = {:?}",
@@ -176,12 +180,13 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
+        &String::from(JsonString::from(SerializedEntry::from(Entry::new(&test_entry_type(), &JsonString::from("{\"stuff\": \"FAIL\"}"))))),
+        // r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
-        JsonString::from("{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}"),
-        result.unwrap()
+        result.unwrap(),
+        JsonString::from("{\"error\":{\"error\":Validation failed: FAIL content is not allowed}}"),
     );
 }

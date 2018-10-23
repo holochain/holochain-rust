@@ -115,6 +115,12 @@ impl ToString for RibosomeReturnCode {
     }
 }
 
+impl From<RibosomeReturnCode> for JsonString {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> JsonString {
+        JsonString::from(ribosome_return_code.to_string())
+    }
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 impl ToString for RibosomeErrorCode {
     fn to_string(&self) -> String {

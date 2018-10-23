@@ -7,7 +7,6 @@ use holochain_core_types::{
     entry::{Entry},
     error::HolochainError,
     hash::HashString,
-    json::{JsonString, RawString},
 };
 use holochain_wasm_utils::api_serialization::{
     commit::{CommitEntryResult},
@@ -77,10 +76,10 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let json = match task_result {
-        Ok(address) => JsonString::from(CommitEntryResult::success(address)),
+    let result = match task_result {
+        Ok(address) => CommitEntryResult::success(address),
         Err(HolochainError::ValidationFailed(fail_string)) => {
-            JsonString::from(CommitEntryResult::failure(fail_string))
+            CommitEntryResult::failure(fail_string)
         }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
@@ -88,13 +87,13 @@ pub fn invoke_commit_app_entry(
                 error_string
             ));
 
-            JsonString::from(RawString::from(String::from(error_report)))
+            CommitEntryResult::failure(String::from(error_report))
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }
     };
 
-    runtime.store_json_string(&json)
+    runtime.store_json_string(result)
 }
 
 #[cfg(test)]

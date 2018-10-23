@@ -8,7 +8,8 @@ use holochain_core_types::{
     hash::HashString,
 };
 use holochain_wasm_utils::api_serialization::validation::ValidationData;
-use nucleus::ribosome::callback::{self, CallbackResult};
+use holochain_core_types::ribosome::callback::CallbackResult;
+use nucleus::ribosome::callback;
 use snowflake;
 use std::{sync::Arc, thread};
 

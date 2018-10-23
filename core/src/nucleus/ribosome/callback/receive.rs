@@ -1,6 +1,8 @@
 use super::call;
 use context::Context;
-use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
+use holochain_core_types::ribosome::callback::CallbackParams;
+use holochain_core_types::ribosome::callback::CallbackResult;
+use nucleus::ribosome::callback::Callback;
 use std::sync::Arc;
 
 pub fn receive(

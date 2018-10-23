@@ -7,9 +7,11 @@ use holochain_core_types::entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
 use nucleus::{
-    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
+    ribosome::callback::{genesis::genesis},
     state::NucleusStatus,
 };
+use holochain_core_types::ribosome::callback::CallbackParams;
+use holochain_core_types::ribosome::callback::CallbackResult;
 use std::{sync::Arc, thread, time::*};
 
 /// Timeout in seconds for initialization process.

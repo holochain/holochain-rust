@@ -54,7 +54,7 @@ pub fn invoke_get_links(
     let action_result = receiver.recv().expect("observer dropped before done");
     if let ActionResponse::GetLinks(maybe_links) = action_result {
         if let Ok(link_list) = maybe_links {
-            return runtime.store_json_string(&JsonString::from(link_list));
+            return runtime.store_json_string(JsonString::from(link_list));
         }
     }
     // Fail

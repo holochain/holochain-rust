@@ -135,7 +135,7 @@ impl From<RibosomeError> for JsonString {
             HashNotFound => "Hash not found".to_string(),
             ValidationFailed(msg) => format!("Validation failed: {}", msg),
         };
-        JsonString::from(format!("{{\"error\":{}}}", err_str))
+        JsonString::from(RawString::from(err_str))
     }
 }
 

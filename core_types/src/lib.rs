@@ -35,3 +35,4 @@ pub mod links_entry;
 pub mod signature;
 pub mod time;
 pub mod validation;
+pub mod ribosome;

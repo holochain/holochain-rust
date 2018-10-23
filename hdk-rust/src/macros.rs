@@ -1,3 +1,4 @@
+
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
@@ -121,8 +122,11 @@ macro_rules! validations {
                 // Execute inner function
                 let validation_result = execute(input);
                 match validation_result {
-                    Ok(()) => 0,
-                    Err(fail_string) => ::hdk::serialize_wasm_output(fail_string),
+                    Ok(()) => {
+                        ::hdk::serialize_wasm_output(::holochain_wasm_utils::holochain_core_types::ribosome::callback::CallbackResult::Pass);
+                        0
+                    },
+                    Err(fail_string) => ::hdk::serialize_wasm_output(::holochain_wasm_utils::holochain_core_types::ribosome::callback::CallbackResult::Fail(fail_string)),
                 }
             }
         )+

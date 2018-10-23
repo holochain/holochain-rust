@@ -5,11 +5,9 @@ pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
 
+use holochain_core_types::ribosome::callback::CallbackParams;
+use holochain_core_types::ribosome::callback::CallbackResult;
 use context::Context;
-use holochain_core_types::{
-    entry::{Entry, SerializedEntry},
-    json::JsonString,
-};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -20,7 +18,6 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use serde_json;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
@@ -109,41 +106,6 @@ impl Defn for Callback {
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => ReservedCapabilityNames::Communication,
         }
-    }
-}
-
-#[derive(Debug)]
-pub enum CallbackParams {
-    Genesis,
-    ValidateCommit(Entry),
-    // @TODO call this from somewhere
-    // @see https://github.com/holochain/holochain-rust/issues/201
-    Receive,
-}
-
-impl ToString for CallbackParams {
-    fn to_string(&self) -> String {
-        match self {
-            CallbackParams::Genesis => String::new(),
-            CallbackParams::ValidateCommit(entry) => {
-                String::from(JsonString::from(SerializedEntry::from(entry.to_owned())))
-            }
-            CallbackParams::Receive => String::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-pub enum CallbackResult {
-    Pass,
-    Fail(String),
-    NotImplemented,
-}
-
-impl From<JsonString> for CallbackResult {
-    fn from(json_string: JsonString) -> CallbackResult {
-        serde_json::from_str(&String::from(json_string.clone()))
-            .expect(&format!("could not deserialize CallbackResult: {:?}", json_string))
     }
 }
 

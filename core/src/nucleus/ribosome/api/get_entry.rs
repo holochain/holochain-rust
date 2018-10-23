@@ -1,5 +1,5 @@
 use futures::executor::block_on;
-use holochain_core_types::{entry::SerializedEntry, json::JsonString};
+use holochain_core_types::{entry::SerializedEntry};
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult,
 };
@@ -35,7 +35,7 @@ pub fn invoke_get_entry(
                 }
                 None => GetEntryResult::not_found(),
             };
-            runtime.store_json_string(&JsonString::from(result))
+            runtime.store_json_string(result)
         }
     }
 }

@@ -17,3 +17,4 @@ holochain_core_api = { path = "../core_api" }
 holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
 holochain_core_types = { path = "../core_types" }
+backtrace = "0.3"

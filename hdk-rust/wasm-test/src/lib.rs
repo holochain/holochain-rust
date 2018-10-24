@@ -185,34 +185,22 @@ struct TestEntryType {
     stuff: String,
 }
 
-validations! {
-    [ENTRY] validate_testEntryType {
-        |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.stuff != "FAIL")
-                .ok_or_else(|| "FAIL content is not allowed".to_string())
-        }
-    }
-
-    [ENTRY] validate_validation_package_tester {
-        |_entry: TestEntryType, ctx: hdk::ValidationData| {
-            Err(serde_json::to_string(&ctx).unwrap())
-        }
-    }
-}
-
 #[no_mangle]
 pub extern fn zome_setup(zd: &mut ZomeDefinition) {
     zd.define(entry!(
         name: "testEntryType",
         description: "asdfda",
         sharing: Sharing::Public,
+        native_type: TestEntryType,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
-            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+        (entry.stuff != "FAIL")
+            .ok_or_else(|| "FAIL content is not allowed".to_string())
+
         }
     ));
 
@@ -220,13 +208,14 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
         name: "validation_package_tester",
         description: "asdfda",
         sharing: Sharing::Public,
+        native_type: TestEntryType,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
-            Err(String::from("Not in use yet. Will to replace validations! macro."))
+        validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            Err(serde_json::to_string(&ctx).unwrap())
         }
     ));
 }

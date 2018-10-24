@@ -341,7 +341,9 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
+/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
+/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function `link_entries`.
 pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 

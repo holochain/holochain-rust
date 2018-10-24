@@ -1,6 +1,11 @@
 use entry_definition::ValidatingEntryType;
 use holochain_wasm_utils::{
-    holochain_core_types::error::RibosomeErrorCode, memory_serialization::load_string,
+    api_serialization::validation::{
+        EntryValidationArgs,
+    },
+    holochain_core_types::error::RibosomeErrorCode, memory_serialization::{
+        load_json, load_string,
+    },
 };
 
 trait Ribosome {
@@ -60,6 +65,45 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
             ::global_fns::store_and_return_output(package)
         }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_validate_app_entry(
+    encoded_allocation_of_input: u32,
+) -> u32 {
+    ::global_fns::init_global_memory(encoded_allocation_of_input);
+
+    let mut zd = ZomeDefinition::new();
+    unsafe {
+        zome_setup(&mut zd);
+    }
+
+    // Deserialize input
+    let maybe_name = load_json(encoded_allocation_of_input);
+    if maybe_name.is_err() {
+        return ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
+            as u32;
+    }
+    let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
+
+    match zd
+        .entry_types
+        .into_iter()
+        .find(|ref entry_type| entry_type.name == entry_validation_args.entry_type)
+        {
+            None => RibosomeErrorCode::CallbackFailed as u32,
+            Some(mut entry_type_definition) => {
+                let validation_result = (*entry_type_definition.validator)(
+                    entry_validation_args.entry,
+                    entry_validation_args.validation_data,
+                );
+
+                match validation_result {
+                    Ok(()) => 0,
+                    Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+                }
+            }
+        }
 }
 
 #[cfg(test)]

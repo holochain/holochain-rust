@@ -330,13 +330,13 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"ok\":\"{}\"}}", expected_entry_address())),
+            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}"),
             JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
                 test_entry(),
             )))),
         );
         assert_eq!(
-            JsonString::from("{\"error\":\"some error\"}"),
+            JsonString::from("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),

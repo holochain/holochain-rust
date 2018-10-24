@@ -42,9 +42,6 @@ of the zome API function.
 
 ## Reference
 
-Note: Full reference is available in language-specific API Reference documentation.
-(TODO add links)
-
 ### Property
 
 Canonical name: `property`

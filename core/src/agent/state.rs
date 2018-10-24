@@ -39,9 +39,9 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-#[derive(Deserialize,Serialize)]
+#[derive(Debug,Deserialize,Serialize)]
 pub struct AgentStateSnapshot{
-    top_chain_header: Option<ChainHeader>
+    top_chain_header: ChainHeader
 }
 
 
@@ -81,7 +81,7 @@ impl AgentState {
 
 impl AgentStateSnapshot
 {
-    pub fn new(chain_header:Option<ChainHeader>) ->AgentStateSnapshot
+    pub fn new(chain_header:ChainHeader) ->AgentStateSnapshot
     {
         AgentStateSnapshot{top_chain_header : chain_header}
     }
@@ -202,7 +202,7 @@ fn reduce_commit_entry(
     ) -> Result<Address, HolochainError> {
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
-        let agent = AgentStateSnapshot::new(Some(chain_header.clone()));
+        let agent = AgentStateSnapshot::new(chain_header.clone());
         state.chain.content_storage().add(&agent)?;
         
         Ok(entry.address())
@@ -268,7 +268,7 @@ pub fn reduce(
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
+    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState,AgentStateSnapshot};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use agent::chain_store::{tests::test_chain_store, ChainStore};
     use holochain_cas_implementations::cas::file::FilesystemStorage;
@@ -277,6 +277,7 @@ pub mod tests {
         entry::{test_entry, test_entry_address},
         error::HolochainError,
         json::ToJson,
+        chain_header::test_chain_header
     };
     use instance::tests::test_context;
     use serde_json;
@@ -403,12 +404,12 @@ pub mod tests {
 
     #[test]
     pub fn serialize_round_trip_agent_state() {
-        let agent = test_agent_state();
-        let json = serde_json::to_string(&agent).unwrap();
-        println!("Juston stuff{:?}", json);
-        let agent_from_json: AgentState = serde_json::from_str(&json).unwrap();
-        assert_eq!(agent, agent_from_json);
-l     }
+        let header = test_chain_header();
+        let agent_snap = AgentStateSnapshot::new(header);
+        let json = serde_json::to_string(&agent_snap).unwrap();
+        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(agent_snap.address(), agent_from_json.address());
+     }
 
     #[test]
     fn test_link_entries_response_to_json() {

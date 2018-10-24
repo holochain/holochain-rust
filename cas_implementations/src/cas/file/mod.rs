@@ -9,7 +9,9 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
+use std::fmt;
 use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
@@ -43,6 +45,38 @@ impl Serialize for FilesystemStorage
         state.end()
     }
 }
+
+
+        impl<'de> Deserialize<'de> for FilesystemStorage {
+            fn deserialize<D>(deserializer: D) -> Result<FilesystemStorage, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FileVisitor;
+
+                impl<'de> Visitor<'de> for FileVisitor {
+                    type Value = FilesystemStorage;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`secs` or `nanos`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<FilesystemStorage, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "dir_path" => Ok(FilesystemStorage::new(value).unwrap()),
+                            _ => Err(de::Error::unknown_field(value, &["dir_path"])),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FileVisitor)
+            }
+        }
+
+
 
 
 

@@ -18,10 +18,7 @@ use holochain_wasm_utils::{
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
-
 use hdk::holochain_dna::zome::entry_types::Sharing;
-
-use hdk::meta::ZomeDefinition;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {

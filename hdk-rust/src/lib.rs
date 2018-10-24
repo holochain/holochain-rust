@@ -1,13 +1,13 @@
 //! Holochain Development Kit (HDK)
 //!
-//! The HDK is a huge help in writing Holochain applications.
-//! Holochain apps need to be written in WebAssembly, or a language that compiles to Wasm,
+//! The HDK helps in writing Holochain applications.
+//! Holochain DNAs need to be written in WebAssembly, or a language that compiles to Wasm,
 //! such as Rust. The HDK handles some of the low-level details of Wasm execution like
 //! memory allocation, (de)serializing data, and shuffling data and functions into and out of Wasm
 //! memory via some helper functions and Holochain-specific macros.
 //!
 //! The HDK lets the developer focus on application logic and, as much as possible, forget about the
-//! underlying low-level implementation. It would be possible to write a Holochain app without an
+//! underlying low-level implementation. It would be possible to write DNA source code without an
 //! HDK, but it would be extremely tedious!
 
 pub extern crate serde;

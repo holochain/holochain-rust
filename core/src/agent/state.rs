@@ -20,9 +20,10 @@ use holochain_core_types::{
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::{collections::HashMap, sync::Arc};
 
+
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq,Serialize,Deserialize)]
 pub struct AgentState {
     keys: Option<Keys>,
     /// every action and the result of that action
@@ -33,7 +34,7 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-impl Serialize for AgentState {
+/*impl Serialize for AgentState {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -45,7 +46,8 @@ impl Serialize for AgentState {
         state.serialize_field("top_chain_header", &self.top_chain_header)?;
         state.end()
     }
-}
+}*/
+
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
@@ -77,7 +79,7 @@ impl AgentState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq,Serialize,Deserialize)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -224,6 +226,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
     use agent::chain_store::tests::test_chain_store;
@@ -235,6 +238,10 @@ pub mod tests {
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
+    use agent::chain_store::ChainStore;
+    use serde_json;
+    use holochain_cas_implementations::cas::file::FilesystemStorage;
+    use self::tempfile::tempdir;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -353,6 +360,16 @@ pub mod tests {
                 .to_json()
                 .unwrap(),
         );
+    }
+
+    #[test]
+    pub fn serialize_round_trip_agent_state()
+    {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        let agent = test_agent_state();
+        let json = serde_json::to_string(&agent).unwrap();
+        println!("json encrypted{:}",json);
     }
 
     #[test]

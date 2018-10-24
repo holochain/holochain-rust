@@ -31,7 +31,7 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
         hdk::debug(&hdk::DNA_NAME);
         hdk::debug(&hdk::DNA_HASH.to_string());
         hdk::debug(&hdk::AGENT_ID_STR);
-        hdk::debug(&hdk::AGENT_KEY_HASH.to_string());
+        hdk::debug(&hdk::AGENT_ADDRESS.to_string());
         hdk::debug(&hdk::AGENT_INITIAL_HASH.to_string());
         hdk::debug(&hdk::AGENT_LATEST_HASH.to_string());
     }

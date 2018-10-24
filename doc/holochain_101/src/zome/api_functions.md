@@ -5,10 +5,10 @@
 A Zome API Function is any Holochain core functionality that is exposed as a
 callable function within zome code.
 
-Compare this to a Zome Callback Function, which is implemented by the zome code 
+Compare this to a Zome Callback Function, which is implemented by the zome code
 and called by Holochain.
 
-So, zome functions (functions in the zome code) are called by Holochain, 
+So, zome functions (functions in the zome code) are called by Holochain,
 which can optionally call Zome API Functions, and then finally return a
 value back to Holochain.
 
@@ -52,11 +52,15 @@ Canonical name: `property`
 Returns an application property, which are defined by the app developer in the DNA.
 It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).
 
+[LINK](https://holochain.github.io/rust-api/hdk/fn.property.html)
+
 ### Make Hash
 
 Canonical name: `make_hash`
 
-TODO
+Not yet available, but you will see
+updates here:
+[LINK](https://holochain.github.io/rust-api/hdk/fn.make_hash.html)
 
 ### Debug
 
@@ -64,24 +68,29 @@ Canonical name: `debug`
 
 Debug sends the passed arguments to the log that was given to the Holochain instance and returns `None`.
 
+[LINK](https://holochain.github.io/rust-api/hdk/fn.debug.html)
 
 ### Call
 
 Canonical name: `call`
 
-TODO
+Not yet available, but you will see
+updates here:
+[LINK](https://holochain.github.io/rust-api/hdk/fn.call.html)
 
 ### Sign
 
 Canonical name: `sign`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.sign.html)
 
 ### Verify Signature
 
 Canonical name: `verify_signature`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.verify_signature.html)
 
 ### Commit Entry
 
@@ -90,23 +99,28 @@ Canonical name: `commit_entry`
 Given an entry type and content, commits an entry to the local source chain.
 On success, returns the hash of the entry.
 
+[LINK](https://holochain.github.io/rust-api/hdk/fn.commit_entry.html)
+
 ### Update Entry
 
 Canonical name: `update_entry`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.update_entry.html)
 
 ### Update Agent
 
 Canonical name: `update_agent`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.update_agent.html)
 
 ### Remove Entry
 
 Canonical name: `remove_entry`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.remove_entry.html)
 
 ### Get Entry
 
@@ -115,6 +129,7 @@ Canonical name: `get_entry`
 Given an entry hash, returns the entry from the DHT if that entry exists.
 
 Entry lookup is done in the following order:
+
 - The local source chain
 - The local hash table
 - The distributed hash table
@@ -122,38 +137,52 @@ Entry lookup is done in the following order:
 Caller can request additional metadata on the entry such as type or sources
 (hashes of the agents that committed the entry).
 
+[LINK](https://holochain.github.io/rust-api/hdk/fn.get_entry.html)
+
 ### Get Links
 
 Canonical name: `get_links`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.get_links.html)
 
 ### Remove Entry
 
 Canonical name: `remove_entry`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.remove_entry.html)
 
 ### Query
 
 Canonical name: `query`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.query.html)
 
 ### Send
 
 Canonical name: `send`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.send.html)
 
 ### Start Bundle
 
 Canonical name: `start_bundle`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.start_bundle.html)
 
 ### Close Bundle
 
 Canonical name: `close_bundle`
 
-TODO
+Not yet available, but you will see
+updates here: [LINK](https://holochain.github.io/rust-api/hdk/fn.close_bundle.html)
+
+<!--NOTE TODO  This one appears to be missing   link_entries	Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a tag. Later, lists of entries can be looked up by using get_links. Entries can only be looked up in the direction from the base, which is the first argument, to the target.
+
+-->
+
+<!-- NOTE TODO Shouldn't we add laymens terms descriptions to these?  -->

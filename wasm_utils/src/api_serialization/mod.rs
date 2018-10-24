@@ -12,9 +12,8 @@ pub mod commit;
 pub mod get_entry;
 pub mod get_links;
 pub mod link_entries;
+mod query;
 pub mod validation;
 mod zome_api_globals;
-mod query;
 
-pub use self::zome_api_globals::*;
-pub use self::query::*;
+pub use self::{query::*, zome_api_globals::*};

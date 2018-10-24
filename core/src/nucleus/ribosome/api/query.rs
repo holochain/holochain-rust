@@ -1,6 +1,4 @@
-use holochain_core_types::{
-    entry_type::EntryType,
-};
+use holochain_core_types::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryResult};
 use nucleus::ribosome::Runtime;
 use serde_json;
@@ -29,7 +27,9 @@ pub fn invoke_query(
     let entry_type = maybe_entry_type.unwrap();
     // Perform query
     let agent = runtime.context.state().unwrap().agent();
-    let top = agent.top_chain_header().expect("Should have genesis entries.");
+    let top = agent
+        .top_chain_header()
+        .expect("Should have genesis entries.");
     let result = agent.chain().query(&Some(top), entry_type, input.limit);
     // Return result
     let query_result = QueryResult { hashes: result };

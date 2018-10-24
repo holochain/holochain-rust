@@ -1,6 +1,4 @@
-use holochain_core_types::{
-    hash::HashString,
-};
+use holochain_core_types::hash::HashString;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryArgs {

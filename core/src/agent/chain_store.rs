@@ -1,6 +1,7 @@
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage, chain_header::ChainHeader, entry_type::EntryType,
-    cas::content::Address,
+    cas::{content::Address, storage::ContentAddressableStorage},
+    chain_header::ChainHeader,
+    entry_type::EntryType,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -44,8 +45,8 @@ where
         &self,
         start_chain_header: &Option<ChainHeader>,
         entry_type: EntryType,
-        limit: u32)
-        -> Vec<Address> {
+        limit: u32,
+    ) -> Vec<Address> {
         let mut result: Vec<Address> = Vec::new();
         for header in self.iter_type(start_chain_header, &entry_type) {
             result.push(header.entry_address().clone());
@@ -317,13 +318,22 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type().to_owned(), 0);
+        let found = chain_store.query(
+            &Some(chain_header_c.clone()),
+            entry.entry_type().to_owned(),
+            0,
+        );
         let expected = vec![
             chain_header_c.entry_address().clone(),
-            chain_header_b.entry_address().clone()];
+            chain_header_b.entry_address().clone(),
+        ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type().to_owned(), 1);
+        let found = chain_store.query(
+            &Some(chain_header_c.clone()),
+            entry.entry_type().to_owned(),
+            1,
+        );
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

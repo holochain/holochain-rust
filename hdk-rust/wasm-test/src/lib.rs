@@ -208,6 +208,28 @@ zome_functions! {
     }
 }
 
+zome_functions! {
+    check_hash_app_entry: | | {
+        // Setup
+        let entry_value = json!({
+            "stuff": "entry1"
+        });
+        let commit_hash = hdk::commit_entry("testEntryType", entry_value.clone()).unwrap();
+        // Check bad entry type name
+        let result = hdk::hash_entry("bad", entry_value.clone());
+        assert!(result.is_err());
+        // Check good entry type name
+        let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
+        assert!(commit_hash == good_hash);
+        json!({"result": good_hash})
+    }
+
+    check_hash_sys_entry: | | {
+        // TODO
+        json!({"result": "FIXME"})
+    }
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct TweetResponse {

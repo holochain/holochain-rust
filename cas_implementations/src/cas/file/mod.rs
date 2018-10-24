@@ -9,19 +9,42 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
+use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
+    dir_path : String,
 }
 
 impl FilesystemStorage {
-    pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
+    pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
-            actor: FilesystemStorageActor::new_ref(dir_path)?,
+            actor: FilesystemStorageActor::new_ref(path)?,
+            dir_path : String::from(path)
         })
     }
+
+    pub fn dir_path(self) ->String
+    {
+        self.dir_path
+    }
 }
+
+impl Serialize for FilesystemStorage
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("FilesystemStorage", 1)?;
+        state.serialize_field("dir_path", &self.dir_path)?;
+        state.end()
+    }
+}
+
+
 
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {

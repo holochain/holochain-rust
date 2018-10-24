@@ -370,7 +370,7 @@ pub fn call(
             runtime
                 .context
                 .log(&format!(
-                    "Zome Function '{}' returned: {}",
+                    "Zome Function failed '{}' return code: {}",
                     zome_call.fn_name,
                     return_code.to_string()
                 ))

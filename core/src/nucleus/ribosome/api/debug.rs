@@ -10,10 +10,11 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let result = JsonString::from(RawString::from(runtime.load_utf8_from_args(args)));
-    println!("{}", result);
+    let args_str = runtime.load_utf8_from_args(args);
+    println!("DEBUG: {:?}", args_str);
+    runtime.context.log(&format!("DEBUG: {:?}", args_str)).expect("logger should work");
 
-    runtime.store_json_string(result)
+    runtime.store_json_string(JsonString::from(RawString::from(args_str)))
 }
 
 #[cfg(test)]
@@ -44,7 +45,7 @@ pub mod tests {
             JsonString::from(
                 format!(
                     "{}{}",
-                    String::from(JsonString::from(RawString::from("foo"))), 
+                    String::from(JsonString::from(RawString::from("foo"))),
                     "\u{0}",
                 ),
             ),
@@ -52,7 +53,7 @@ pub mod tests {
         );
         assert_eq!(
             JsonString::from(format!("{:?}", logger.log)),
-            JsonString::from("[\"Zome Function \\\'test\\\' returned: Success\"]"),
+            JsonString::from("[\"DEBUG: \\\"foo\\\"\"]"),
         );
     }
 }

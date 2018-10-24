@@ -1,7 +1,7 @@
 [package]
 name = "test-globals"
-version = "0.1.0"
-authors = [""]
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
 crate-type = ["cdylib"]

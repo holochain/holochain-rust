@@ -299,7 +299,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// Reconstructs an address of the given entry data.
+/// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
+/// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
+/// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
 pub fn hash_entry<S: Into<String>>(
     entry_type_name: S,
     entry_value: serde_json::Value,

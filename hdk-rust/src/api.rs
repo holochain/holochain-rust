@@ -216,15 +216,24 @@ pub fn commit_entry(
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry<T>(address: HashString) -> Option<T>
+pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
 where
     T: DeserializeOwned,
 {
     let res = get_entry_result(address, GetEntryOptions {});
-    res.ok().and_then(|result| match result.status {
-        GetResultStatus::Found => serde_json::from_str(&result.entry).ok(),
-        GetResultStatus::NotFound => None,
-    })
+    match res {
+        Ok(result) => match result.status {
+            GetResultStatus::Found => {
+                let maybe_entry_value: Result<T, _> = serde_json::from_str(&result.entry);
+                match maybe_entry_value {
+                    Ok(entry_value) => Ok(Some(entry_value)),
+                    Err(err) => Err(ZomeApiError::Internal(err.to_string())),
+                }
+            }
+            GetResultStatus::NotFound => Ok(None),
+        },
+        Err(err) => Err(err),
+    }
 }
 
 /// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using

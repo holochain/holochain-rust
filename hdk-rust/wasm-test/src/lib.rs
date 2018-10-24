@@ -119,11 +119,13 @@ zome_functions! {
     }
 
     check_get_entry: |entry_hash: HashString| {
-        let result : Option<EntryStruct> = hdk::get_entry(entry_hash);
+        let result : Result<Option<EntryStruct>,ZomeApiError> = hdk::get_entry(entry_hash);
         match result {
-            Some(entry_value) =>json!(entry_value),
-            None => json!("null"),
-
+            Ok(e) => match e {
+                Some(entry_value) => json!(entry_value),
+                None => json!(null),
+            },
+            Err(err) => json!({"get entry Err": err.to_string()}),
         }
     }
 

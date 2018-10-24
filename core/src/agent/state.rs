@@ -44,7 +44,7 @@ impl Serialize for AgentState {
         // 3 is the number of fields in the struct.
         let mut state = serializer.serialize_struct("AgentState", 2)?;
         state.serialize_field("chain_store", &self.chain)?;
-        state.serialize_field("top_chain_header", &self.top_chain_header)?;
+        state.serialize_field("top_chain_header",&self.top_chain_header)?;
         state.end()
     }
 }
@@ -69,11 +69,18 @@ impl<'de> Visitor<'de> for AgentVisitor
     {
 
     
-    
-        let chain : (String,ChainStore<FilesystemStorage>) = access.next_entry()?.expect("chain should be present");
-        let top_chain_header : (String,ChainHeader) = access.next_entry()?.expect("Chain header should be present");
+        let chain : (String,ChainStore<FilesystemStorage>) = access.next_entry()?.ok_or_else(||{de::Error::custom("Could not serialize file")})?;
         let mut agent = AgentState::new(chain.1);
-        agent.top_chain_header = Some(top_chain_header.1);
+        let top_chain_header :Option<ChainHeader> = match access.next_entry::<String,ChainHeader>()
+        {
+            Ok(entry) => match entry
+            {
+                Some(value) =>{Some(value.1)},
+                None =>None
+            },
+            Err(_) => None
+        };
+        agent.top_chain_header = top_chain_header;
         Ok(agent)
     }
 }
@@ -409,8 +416,9 @@ pub mod tests {
     {
         let agent = test_agent_state();
         let json = serde_json::to_string(&agent).unwrap();
-        let agent : AgentState = serde_json::from_str(&json).unwrap();
-        println!("json encrypted{:}",json);
+        let agent_from_json : AgentState = serde_json::from_str(&json).unwrap();
+        assert_eq!(agent,agent_from_json);
+       
     }
 
     #[test]

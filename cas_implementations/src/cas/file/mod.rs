@@ -67,8 +67,8 @@ impl<'de> Visitor<'de> for FileVisitor
 
         // While there are entries remaining in the input, add them
         // into our map.
-        let key : (String,String) = access.next_entry()?.expect("Supposed to get first entry");
-        Ok(FilesystemStorage::new(&key.1).expect("cannot create file"))
+        let key : (String,String) = access.next_entry()?.ok_or_else(||{de::Error::custom("Could not serialize file")})?;
+        Ok(FilesystemStorage::new(&key.1).map_err(|_|{de::Error::custom("Problem with creating file on filesystem")})?)
     }
 }
 

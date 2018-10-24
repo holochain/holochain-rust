@@ -14,3 +14,7 @@ pub fn test_signature() -> Signature {
 pub fn test_signature_b() -> Signature {
     Signature::from("another-fake-signature")
 }
+
+pub fn test_signature_c() -> Signature {
+    Signature::from("sig-c")
+}

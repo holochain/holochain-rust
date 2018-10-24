@@ -15,6 +15,7 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
         hash::HashString,
+        entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
@@ -166,6 +167,47 @@ zome_functions! {
         }
     }
 }
+
+zome_functions! {
+    check_query: | | {
+
+        // Query DNA entry
+        let result = hdk::query(&EntryType::Dna.to_string(), 0);
+        assert!(result.is_ok());
+        assert!(result.unwrap().len() == 1);
+
+        // Query AgentId entry
+        let result = hdk::query(&EntryType::AgentId.to_string(), 0);
+        assert!(result.is_ok());
+        assert!(result.unwrap().len() == 1);
+
+        // Query Zome entry
+        let _ = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry1"
+        })).unwrap();
+        let result = hdk::query("testEntryType", 1);
+        assert!(result.is_ok());
+        assert!(result.unwrap().len() == 1);
+
+        // Query Zome entries
+        let _ = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry2"
+        })).unwrap();
+        let _ = hdk::commit_entry("testEntryType", json!({
+            "stuff": "entry3"
+        })).unwrap();
+
+        let result = hdk::query("testEntryType", 0);
+        assert!(result.is_ok());
+        assert!(result.unwrap().len() == 3);
+
+        let result = hdk::query("testEntryType", 1);
+        assert!(result.is_ok());
+
+        json!(result.unwrap())
+    }
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct TweetResponse {

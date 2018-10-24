@@ -14,5 +14,7 @@ pub mod get_links;
 pub mod link_entries;
 pub mod validation;
 mod zome_api_globals;
+mod query;
 
 pub use self::zome_api_globals::*;
+pub use self::query::*;

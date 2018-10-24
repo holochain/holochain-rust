@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use error::{RibosomeErrorCode, RibosomeErrorReport};
 use holochain_core_types::json::JsonString;
 use memory_allocation::{

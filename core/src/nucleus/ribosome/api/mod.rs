@@ -32,7 +32,6 @@ use wasmi::{
     ModuleImportResolver, ModuleInstance, NopExternals, RuntimeArgs, RuntimeValue, Signature, Trap,
     TrapKind, ValueType,
 };
-use holochain_core_types::json::RawString;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS

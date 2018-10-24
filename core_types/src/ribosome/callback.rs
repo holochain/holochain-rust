@@ -33,8 +33,11 @@ pub enum CallbackResult {
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
-        serde_json::from_str(&String::from(json_string.clone()))
-            .expect(&format!("could not deserialize CallbackResult: {:?}", json_string))
+        let try: Result<CallbackResult, serde_json::Error> = serde_json::from_str(&String::from(json_string.clone()));
+        match try {
+            Ok(callback_result) => callback_result,
+            Err(_) => CallbackResult::Fail(String::from(json_string)),
+        }
     }
 }
 

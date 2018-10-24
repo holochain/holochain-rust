@@ -62,11 +62,12 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
     if let Err(e) = result {
-        hdk::debug(format!("ERROR: {:?}", e)).expect("debug() must work");
+        hdk::debug(format!("ERROR ArgumentDeserializationFailed: {:?}", e)).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
     let serialized_entry: SerializedEntry = result.unwrap();
+    hdk::debug(format!("SerializedEntry: {:?}", serialized_entry)).expect("debug() must work");
     let res = hdk::commit_entry(&serialized_entry);
 
     let res_obj = match res {
@@ -124,18 +125,19 @@ zome_functions! {
 }
 
 #[derive(Serialize, Deserialize)]
-struct TestEntryType {
-    stuff: String,
-}
+// struct TestEntryType {
+//     stuff: String,
+// }
+struct TestEntryType(String);
 
-#[derive(Serialize, Deserialize)]
-struct TestEntryTypeB(String);
+// #[derive(Serialize, Deserialize)]
+// struct TestEntryTypeB(String);
 
 validations! {
     [ENTRY] validate_testEntryType {
         [hdk::ValidationPackage::Entry]
         |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.stuff != "FAIL")
+            (entry.0 != "FAIL")
                 .ok_or_else(|| "FAIL content is not allowed".to_string())
         }
     }

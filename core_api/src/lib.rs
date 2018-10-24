@@ -393,6 +393,7 @@ mod tests {
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
+        // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
             JsonString::from("{\"Err\":\"Argument deserialization failed\"}")

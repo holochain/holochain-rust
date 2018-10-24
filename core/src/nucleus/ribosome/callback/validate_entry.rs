@@ -111,9 +111,7 @@ fn run_validation_callback(
         Some(fc.clone().parameters.into_bytes()),
     ) {
         Ok(runtime) => {
-            println!("{:?}", runtime.result);
             CallbackResult::from(runtime.result)
-            // CallbackResult::Pass
         },
         Err(_) => CallbackResult::NotImplemented,
     }

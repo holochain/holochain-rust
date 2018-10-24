@@ -23,7 +23,7 @@ macro_rules! define_zome {
             $genesis_expr:expr
         }
 
-        capabilities : {
+        functions : {
             $(
                 $cap:ident ( $vis:ident ) {
                     $(

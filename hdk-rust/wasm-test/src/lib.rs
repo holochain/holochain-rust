@@ -214,7 +214,7 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    capabilities: {
+    functions: {
         test (Public) {
             check_commit_entry_macro: {
                 inputs: |entry_type_name: String, entry_content: String|,

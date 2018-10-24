@@ -98,7 +98,7 @@ fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: Strin
 }
 
 fn handle_check_get_entry_result(entry_hash: HashString) -> serde_json::Value {
-    let res = hdk::get_entry(entry_hash,GetEntryOptions{});
+    let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
     match res {
         Ok(result) => match result.status {
             GetResultStatus::Found => {
@@ -243,6 +243,12 @@ define_zome! {
                 inputs: |entry_hash: HashString|,
                 outputs: |result: serde_json::Value|,
                 handler: handle_check_get_entry
+            }
+
+            check_get_entry_result: {
+                inputs: |entry_hash: HashString|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_get_entry_result
             }
 
             commit_validation_package_tester: {

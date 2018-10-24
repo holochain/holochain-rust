@@ -31,6 +31,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_global",
         "check_commit_entry",
         "check_commit_entry_macro",
+        "check_get_entry_result",
         "check_get_entry",
         "send_tweet",
         "commit_validation_package_tester",
@@ -116,6 +117,44 @@ fn can_round_trip() {
 }
 
 #[test]
+fn can_get_entry_result() {
+    let (mut hc, _) = start_holochain_instance();
+    // Call the exposed wasm function that calls the Commit API function
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_commit_entry_macro",
+        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+    );
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        "{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"
+    );
+
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_get_entry_result",
+        r#"{"entry_hash":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#,
+    );
+    println!("\t can_get_entry result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
+
+    // test the case with a bad hash
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_get_entry_result",
+        r#"{"entry_hash":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+    );
+    println!("\t can_get_entry result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
+}
+
+#[test]
 fn can_get_entry() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
@@ -150,7 +189,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
+    assert_eq!(result.unwrap(), "null");
 }
 
 #[test]

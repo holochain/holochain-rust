@@ -82,11 +82,16 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
+#[derive(Deserialize, Serialize, Default)]
+struct EntryStruct {
+    stuff: String
+}
+
 //
 zome_functions! {
     check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
-        let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-        let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
+        let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content).unwrap();
+        let res = hdk::commit_entry(&entry_type_name, entry_content);
         match res {
             Ok(hash_str) => json!({ "address": hash_str }),
             Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
@@ -95,8 +100,8 @@ zome_functions! {
         }
     }
 
-    check_get_entry: |entry_hash: HashString| {
-        let res = hdk::get_entry(entry_hash,GetEntryOptions{});
+    check_get_entry_result: |entry_hash: HashString| {
+        let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
         match res {
             Ok(result) => match result.status {
                 GetResultStatus::Found => {
@@ -110,6 +115,15 @@ zome_functions! {
             }
             Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
             Err(_) => unreachable!(),
+        }
+    }
+
+    check_get_entry: |entry_hash: HashString| {
+        let result : Option<EntryStruct> = hdk::get_entry(entry_hash);
+        match result {
+            Some(entry_value) =>json!(entry_value),
+            None => json!("null"),
+
         }
     }
 

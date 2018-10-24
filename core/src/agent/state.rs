@@ -44,6 +44,12 @@ pub struct AgentStateSnapshot {
     top_chain_header: ChainHeader,
 }
 
+impl AgentStateSnapshot {
+    pub fn top_chain_header(self) -> ChainHeader {
+        self.top_chain_header
+    }
+}
+
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
@@ -52,6 +58,18 @@ impl AgentState {
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
+        }
+    }
+
+    pub fn new_with_top_chain_header(
+        chain: ChainStore<FilesystemStorage>,
+        chain_header: ChainHeader,
+    ) -> AgentState {
+        AgentState {
+            keys: None,
+            actions: HashMap::new(),
+            chain,
+            top_chain_header: Some(chain_header),
         }
     }
 

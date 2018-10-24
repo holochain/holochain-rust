@@ -15,7 +15,7 @@ Holochain DNA files are written in a data format known as JSON. It stores sets o
 
 JSON is usually used for configuration and static data, but in the case of Holochain, these DNA files also contain compiled code, which is executable by Holochain.
 
-As previously mentioned, you do not need to edit this "master" DNA file directly. Holochain command line tools can be used to build it from your raw files. 
+As previously mentioned, you do not need to edit this "master" DNA file directly. Holochain command line tools can be used to build it from your raw files.
 
 [TODO link to command line tools 'package' command]
 
@@ -31,9 +31,11 @@ Obviously, the logic and functionality of your application will be written in co
 
 Holochain allows you to break down the functionality of your application into smaller, logical modules, called "Zomes". There should be a folder called `zomes` and each Zome should have its own sub-folder within that, in which the configuration and code for that particular Zome should be placed.
 
-These Zomes can call and access the functionality of the others, but they are written independently. When the DNA file is being built, the code for these Zomes is encoded using Base64 encoding and combined with the configuration file associated with the Zome. 
+These Zomes can call and access the functionality of the others, but they are written independently. When the DNA file is being built, the code for these Zomes is encoded using Base64 encoding and combined with the configuration file associated with the Zome.
 
-The configuration file should be a JSON file [TODO: what is the naming convention for this file] stored in the Zome folder. To see the full details of a Zome JSON file, [go here TODO: link to Zome properties reference]. 
+The configuration file should be a JSON file [TODO: what is the naming convention for this file] stored in the Zome folder. To see the full details of a Zome JSON file, [go here TODO: link to Zome properties reference].
+
+Here is an [example of such a JSON File](https://github.com/Connoropolous/fantastic-system/blob/master/app.json)
 
 The only coding language that Holochain knows how to execute is WebAssembly. However, it is unlikely to write WebAssembly code by hand, more likely is to write code in a language that can compile to WebAssembly, such as Rust, or Assemblyscript.
 

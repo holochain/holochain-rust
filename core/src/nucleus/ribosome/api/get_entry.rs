@@ -243,7 +243,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
+        expected.push_str("{\"status\":\"NotFound\",\"maybe_serialized_entry\":null}\u{0}");
 
         assert_eq!(JsonString::from(expected), get_runtime.result);
     }

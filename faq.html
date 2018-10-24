@@ -1,0 +1,379 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>FAQ - holochain_101</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">var path_to_root = "";</script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="welcome.html"><strong aria-hidden="true">1.</strong> Welcome</a></li><li><ol class="section"><li><a href="overview.html"><strong aria-hidden="true">1.1.</strong> Overview</a></li><li><a href="how_to_contribute.html"><strong aria-hidden="true">1.2.</strong> How to contribute</a></li></ol></li><li><a href="planning_a_dapp.html"><strong aria-hidden="true">2.</strong> Planning a dApp</a></li><li><a href="building_apps.html"><strong aria-hidden="true">3.</strong> Building Holochain Apps: Intro</a></li><li><ol class="section"><li><a href="building_for_different_platforms.html"><strong aria-hidden="true">3.1.</strong> (E) Building for Different Platforms</a></li><li><a href="intro_to_dna.html"><strong aria-hidden="true">3.2.</strong> Intro to DNA</a></li><li><a href="intro_to_command_line_tools.html"><strong aria-hidden="true">3.3.</strong> Intro to Command Line Tools</a></li><li><a href="new_project.html"><strong aria-hidden="true">3.4.</strong> Create A New Project</a></li><li><a href="configuring_an_app.html"><strong aria-hidden="true">3.5.</strong> (E) Configuring an App</a></li><li><a href="zome/rust.html"><strong aria-hidden="true">3.6.</strong> (E) Writing in Rust</a></li><li><a href="zome/assemblyscript.html"><strong aria-hidden="true">3.7.</strong> (E) Writing in Assemblyscript</a></li><li><a href="zome/intro_to_webassembly.html"><strong aria-hidden="true">3.8.</strong> (E) Intro to WebAssembly</a></li><li><a href="alpha_migrate.html"><strong aria-hidden="true">3.9.</strong> (E) Updating to Alpha 2</a></li><li><a href="built_with_holochain.html"><strong aria-hidden="true">3.10.</strong> Built With Holochain</a></li></ol></li><li><a href="zome/welcome.html"><strong aria-hidden="true">4.</strong> (E) Building Holochain Apps: Zome Code</a></li><li><ol class="section"><li><a href="zome/adding_a_zome.html"><strong aria-hidden="true">4.1.</strong> (E) Adding a Zome</a></li><li><a href="zome/capabilities.html"><strong aria-hidden="true">4.2.</strong> (E) Capabilities</a></li><li><a href="zome/entry_definitions.html"><strong aria-hidden="true">4.3.</strong> (E) Entry Definitions</a></li><li><a href="zome/read_and_write.html"><strong aria-hidden="true">4.4.</strong> (E) Read &amp; Write Data Operations</a></li><li><a href="zome/entry_validation.html"><strong aria-hidden="true">4.5.</strong> (E) Entry Validation</a></li><li><a href="zome/genesis.html"><strong aria-hidden="true">4.6.</strong> (E) Genesis</a></li><li><a href="zome/linking.html"><strong aria-hidden="true">4.7.</strong> (E) Linking</a></li><li><a href="zome/testing_functions.html"><strong aria-hidden="true">4.8.</strong> (E) Testing Functions</a></li><li><a href="zome/preparing_for_app_packaging.html"><strong aria-hidden="true">4.9.</strong> (E) Preparing For App Packaging</a></li><li><a href="zome/complete_reference.html"><strong aria-hidden="true">4.10.</strong> (E) Complete Zome API Reference</a></li><li><ol class="section"><li><a href="zome/app_variables.html"><strong aria-hidden="true">4.10.1.</strong> API App Variables</a></li><li><a href="zome/system_constants.html"><strong aria-hidden="true">4.10.2.</strong> API System Constants</a></li><li><a href="zome/api_functions.html"><strong aria-hidden="true">4.10.3.</strong> API functions</a></li><li><a href="zome/callback_functions.html"><strong aria-hidden="true">4.10.4.</strong> Zome Callbacks</a></li></ol></li><li><a href="zome/node_to_node_messages.html"><strong aria-hidden="true">4.11.</strong> (E) Node to Node Messaging</a></li><li><a href="zome/signatures.html"><strong aria-hidden="true">4.12.</strong> (E) Cryptographic Signatures</a></li><li><a href="zome/calling_other_zomes.html"><strong aria-hidden="true">4.13.</strong> (E) Calling Other Zomes</a></li><li><a href="zome/bundling.html"><strong aria-hidden="true">4.14.</strong> (E) Bundling</a></li><li><a href="zome/emitting_signals.html"><strong aria-hidden="true">4.15.</strong> (E) Emitting Signals</a></li></ol></li><li><a href="apps_user_interfaces.html"><strong aria-hidden="true">5.</strong> (E) Building Holochain Apps: User Interfaces</a></li><li><ol class="section"><li><a href="web_ui_with_websockets.html"><strong aria-hidden="true">5.1.</strong> (E) Web UIs with Websockets</a></li><li><a href="qml_uis.html"><strong aria-hidden="true">5.2.</strong> (E) QML based UIs</a></li></ol></li><li><a href="packaging_and_testing.html"><strong aria-hidden="true">6.</strong> (E) Building Holochain Apps: Packaging And Testing</a></li><li><ol class="section"><li><a href="app_packaging.html"><strong aria-hidden="true">6.1.</strong> (E) Packaging Your App Into DNA</a></li><li><a href="running_an_app.html"><strong aria-hidden="true">6.2.</strong> (E) Running Apps</a></li><li><a href="scenario_testing.html"><strong aria-hidden="true">6.3.</strong> (E) Scenario Testing</a></li></ol></li><li><a href="live_hc_apps.html"><strong aria-hidden="true">7.</strong> (E) Going Live with Holochain Apps</a></li><li><ol class="section"><li><a href="creating_versioned_releases.html"><strong aria-hidden="true">7.1.</strong> (E) Creating Versioned Releases</a></li></ol></li><li><a href="apps_advanced_topics.html"><strong aria-hidden="true">8.</strong> (E) Building Holochain Apps: Advanced Topics</a></li><li><ol class="section"><li><a href="building_for_android.html"><strong aria-hidden="true">8.1.</strong> Building For Android</a></li></ol></li><li><a href="extending_holochain.html"><strong aria-hidden="true">9.</strong> (E) Extending Holochain</a></li><li><ol class="section"><li><a href="embedding_holochain.html"><strong aria-hidden="true">9.1.</strong> (E) Embedding Holochain</a></li><li><ol class="section"><li><a href="core_api.html"><strong aria-hidden="true">9.1.1.</strong> (E) Core API</a></li></ol></li><li><a href="naming_conventions.html"><strong aria-hidden="true">9.2.</strong> Naming conventions</a></li><li><a href="writing_development_kit.html"><strong aria-hidden="true">9.3.</strong> Writing a Development Kit (HDK)</a></li><li><a href="zome/implementation.html"><strong aria-hidden="true">9.4.</strong> Implementing Zome API functions</a></li><li><a href="state_actions.html"><strong aria-hidden="true">9.5.</strong> Redux Architecture</a></li><li><ol class="section"><li><a href="state/actions.html"><strong aria-hidden="true">9.5.1.</strong> State actions</a></li></ol></li><li><a href="state/actors.html"><strong aria-hidden="true">9.6.</strong> State actors</a></li></ol></li><li><a href="faq.html" class="active"><strong aria-hidden="true">10.</strong> FAQ</a></li><li><a href="glossary.html"><strong aria-hidden="true">11.</strong> (E) Glossary</a></li><li><ol class="section"><li><a href="agent.html"><strong aria-hidden="true">11.1.</strong> (E) Agent</a></li><li><a href="keys.html"><strong aria-hidden="true">11.2.</strong> (E) Keys</a></li><li><a href="dna.html"><strong aria-hidden="true">11.3.</strong> (E) DNA</a></li><li><a href="zome.html"><strong aria-hidden="true">11.4.</strong> (E) Zome</a></li><li><a href="source_chain.html"><strong aria-hidden="true">11.5.</strong> (E) Source Chain</a></li><li><a href="distributed_hash_table.html"><strong aria-hidden="true">11.6.</strong> Distributed Hash Table</a></li></ol></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
+                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/faq.md"><i class="fa fa-edit"></i></a>
+                            </button>
+                        </div>
+
+                        <h1 class="menu-title">holochain_101</h1> 
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="#frequently-asked-questions" id="frequently-asked-questions"><h1>Frequently Asked Questions</h1></a>
+<ol>
+<li><a href="#how-is-holochain-different-from-blockchain">How is Holochain different from blockchain?</a></li>
+<li><a href="#why-do-you-call-it-holochain">Why do you call it &quot;Holochain&quot;?</a></li>
+<li><a href="#how-is-holochain-different-from-a-dht-distributed-hash-table">How is Holochain different from a DHT (Distributed Hash Table)?</a></li>
+<li><a href="#what-kind-of-projects-is-holochain-good-for">What kind of projects is Holochain good for?</a>
+<a href="#what-is-holochain-not-good-for">What is Holochain <em>not</em> good for?</a></li>
+<li><a href="#what-is-holochains-consensus-algorithm">What is Holochain's consensus algorithm?</a></li>
+<li><a href="#can-you-run-a-cryptocurrency-on-holochain">Can you run a cryptocurrency on Holochain?</a></li>
+<li><a href="#how-is-holochain-different-from-__________">How is Holochain different from __________?</a></li>
+<li><a href="#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps">What language is Holochain written in? What languages can I use to make Holochain apps?</a></li>
+<li><a href="#is-holochain-open-source">Is Holochain open source?</a>
+10 <a href="#how-is-holochain-more-environmentally-ethical-than-blockchain">How is Holochain more environmentally ethical than blockchain?</a></li>
+<li><a href="#how-are-data-validated-on-holochain">How are data validated on Holochain?</a></li>
+<li><a href="#what-happens-to-data-when-a-node-leaves-the-network">What happens to data when a node leaves the network?</a></li>
+<li><a href="#should-i-build-my-cointoken-on-holochain">Should I build my coin/token on Holochain?</a></li>
+<li><a href="#what-does-agent-centric-mean-how-is-this-different-from-data-centric">What does “agent-centric” mean? How is this different from “data-centric”?</a></li>
+<li><a href="#what-is-the-tps-transactions-per-second-on-holochain">What is the TPS (Transactions Per Second) on Holochain?</a></li>
+</ol>
+<a class="header" href="#how-is-holochain-different-from-blockchain" id="how-is-holochain-different-from-blockchain"><h2>How is Holochain different from blockchain?</h2></a>
+<blockquote>
+<p>Holochain and blockchain are built for fundamentally different use cases. Blockchain is relatively good for systems where it’s absolutely necessary to maintain global consensus. Holochain is much better than blockchain at anything that requires less than universal consensus (most things): It’s faster, more efficient, more scalable, adaptable, and extendable.</p>
+</blockquote>
+<p>Long before blockchains were <a href="https://en.wikipedia.org/wiki/Hash_chain">hash chains</a> and <a href="https://en.wikipedia.org/wiki/Merkle_tree">hash trees</a>. These structures can be used to ensure tamper-proof data integrity as progressive versions or additions to data are made. These kinds of hashes are often used as reference points to ensure data hasn't been messed with—like making sure you're getting the program you meant to download, not some virus in its place.</p>
+<p>Instead of trying to manage global consensus for every change to a huge blockchain ledger, every participant has <a href="https://medium.com/metacurrency-project/perspectives-on-blockchains-and-cryptocurrencies-7ef391605bd1#.kmous6d7z">their own signed hash chain</a> (<a href="https://medium.com/metacurrency-project/beyond-blockchain-simple-scalable-cryptocurrencies-1eb7aebac6ae#.u1idviscz">countersigned for transactions</a> involving others). After data is signed to local chains, it is shared to a <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> where every node runs the same validation rules (like blockchain nodes all run the <a href="https://bitcoin.org/en/bitcoin-core/features/validation">same validation rules</a>. If someone breaks those rules, the DHT rejects their data—their chain has forked away from the holochain.</p>
+<p>The initial <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin white paper</a> introduced a blockchain as an architecture for decentralized production of a chain of digital currency transactions. This solved two problems (time/sequence of transactions, and randomizing who writes to the chain) with one main innovation of bundling transactions into blocks which somebody wins the prize of being able to commit to the chain if they <a href="https://en.bitcoin.it/wiki/Hashcash">solve a busywork problem</a> faster than others.</p>
+<p>Now Bitcoin and blockchain have pervaded people's consciousness and many perceive it as a solution for all sorts of decentralized applications. However, when the problems are framed slightly differently, there are much more efficient and elegant solutions (like holochains) which don't have the <a href="https://www.google.com/search?q=blockchain+bottleneck">processing bottlenecks</a> of global consensus, storage requirements of everyone having a <a href="https://blockchain.info/charts/blocks-size">FULL copy</a> of all the data, or <a href="https://blog.p2pfoundation.net/essay-of-the-day-bitcoin-mining-and-its-energy-footprint/2015/12/20">wasting so much electricity </a> on busywork.</p>
+<a class="header" href="#why-do-you-call-it-holochain" id="why-do-you-call-it-holochain"><h2>Why do you call it &quot;Holochain&quot;?</h2></a>
+<blockquote>
+<p>A variety of reasons: it's a composed whole of other technologies, it's structurally holographic, and it empowers holistic patterns.</p>
+</blockquote>
+<a class="header" href="#a-unified-cryptographic-whole" id="a-unified-cryptographic-whole"><h3>A unified cryptographic <em>whole</em></h3></a>
+<p>Holochain is made from multiple cryptographic technologies composed into a new whole.</p>
+<ul>
+<li>
+<p><strong>Hashchains:</strong> Hashchains provide immutable data integrity and definitive time sequence from the vantage point of each node. Technically, we're using hash trees—blockchains do too, but they're not called blocktrees, so we're not calling these holotrees.</p>
+</li>
+<li>
+<p><strong>Cryptographic signing</strong> of chains, messages, and validation confirmations maintain authorship, provenance, and accountability. Countersigning of transactions/interactions between multiple parties provide non-repudiation and &quot;locking&quot; of chains.</p>
+</li>
+<li>
+<p><strong>DHT (Distributed Hash Table)</strong> leverages cryptographic hashes for content addressable storage, while randomizing of interactions by hashing into neighborhoods to impede collusion, and processing validation #1 and #2 to store data on the DHT.</p>
+</li>
+</ul>
+<a class="header" href="#holographic-storage" id="holographic-storage"><h3><em>Holo</em>graphic storage</h3></a>
+<p>Every node has a resilient sample of the whole. Like cutting a hologram, if you were to cut a Holochain network in half (make it so half the nodes were isolated from the other half), you would have two whole, functioning systems, not two partial, broken systems.</p>
+<p>This seems to be the strategy used to create resilience in natural systems. For example, where is your DNA stored? Every cell carries its own copy, with different functions expressed based on the role of that cell.</p>
+<p>Where is the English language stored? Every speaker carries it. People have different areas of expertise, or exposure to different slang or specialized vocabularies. Nobody has a complete copy, nor is anyone's version exactly the same as anyone else, If you disappeared half of the English speakers, it would not degrade the language much.</p>
+<p>If you keep cutting a hologram smaller and smaller eventually the image degrades enough to stop being recognizable, and depending on the resiliency rules for DHT neighborhoods, holochains would likely share a similar fate. Although, if the process of killing off the nodes was not instantaneous, the network may be able to keep reshuffling data per redundancy requirements to keep it alive.</p>
+<a class="header" href="#holarchy" id="holarchy"><h3><em>Hol</em>archy</h3></a>
+<p>Holochains are composable with each other into new levels of unification. In other words, Holochains can build on decentralized capacities provided by other Holochains, making new holistic patterns possible. Like bodies build new unity on holographic storage patterns that cells use for DNA, and a society build new unity on the holographic storage patterns of language, and so on.</p>
+<a class="header" href="#how-is-holochain-different-from-a-dht-distributed-hash-table" id="how-is-holochain-different-from-a-dht-distributed-hash-table"><h2>How is Holochain different from a DHT (Distributed Hash Table)?</h2></a>
+<p>DHTs enable key/value pair storage and retrieval across many machines. The only validation rules they have is the hash of the data itself to confirm what you're getting is probably what you intended to get. They have no other means to confirm authenticity, provenance, timelines, or integrity of data sources.</p>
+<p>In fact, since many DHTs are used for illegal file sharing (Napster, Bittorrent, Sharezaa, etc.), they are designed to protect anonymity of uploaders so they won't get in trouble. File sharing DHTs frequently serve virus infected files, planted by uploaders trying to infect digital pirates. There's no accountability for actions or reliable way to ensure bad data doesn't spread.</p>
+<p>By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become of the thing of the past.</p>
+<p>The DHT leverages the signed source chains to ensure tamper-proof immutability of data, as well as cryptographic signatures to verify its origins and provenance.</p>
+<p>The Holochain DHT also emulates aspects of a graph database by enabling people to connect links to other hashes in the DHT tagged with semantic markers. This helps solve the problem of finding the hashes that you want to retrieve from the DHT. For example, if I have the hash of your user identity, I could query it for links to blogs you've published to a holochain so that I can find them without knowing either the hash or the content. This is part of how we eliminate the need for tracking nodes that many DHTs rely on.</p>
+<a class="header" href="#what-kind-of-projects-is-holochain-good-for" id="what-kind-of-projects-is-holochain-good-for"><h2>What kind of projects is Holochain good for?</h2></a>
+<p>Sharing collaborative data without centralized control. Imagine a completely decentralized Wikipedia, DNS without root servers, or the ability to have fast reliable queries on a fully distributed PKI, etc.</p>
+<ul>
+<li>
+<p><strong>Social Networks, Social Media &amp; VRM:</strong> You want to run a social network without a company like Facebook in the middle. You want to share, post, publish, or tweet to shared space, while automatically keeping a copy of these things on your own device.</p>
+</li>
+<li>
+<p><strong>Supply Chains &amp; Open Value Networks:</strong> You want to have information that crosses the boundaries of companies, organizations, countries, which is collaboratively shared and managed, but not under the central control of any one of those organizations.</p>
+</li>
+<li>
+<p><strong>Cooperatives and New Commons:</strong> You want to create something which is truly held collectively and not by any particular individual. This is especially good for digital assets.</p>
+</li>
+<li>
+<p><strong>P2P Platforms:</strong> Peer-to-Peer applications where every person has similar capabilities, access, responsibilities, and value is produced collectively.</p>
+</li>
+<li>
+<p><strong>Collective Intelligence:</strong> Governance, decision-making frameworks, feedback systems, ratings, currencies, annotations, or work flow systems.</p>
+</li>
+<li>
+<p><strong>Collaborative Applications:</strong> Chats, Discussion Boards, Scheduling Apps, Wikis, Documentation, etc.</p>
+</li>
+<li>
+<p><strong>Reputational or Mutual Credit Cryptocurrencies:</strong> Currencies where issuance can be accounted for by actions of peers (like ratings), or through double-entry accounting are well-suited for holochains. Fiat currencies where tokens are thought to exist independent of accountability by agents are more challenging to implement on holochains.</p>
+</li>
+</ul>
+<a class="header" href="#what-is-holochain-not-good-for" id="what-is-holochain-not-good-for"><h2>What is Holochain <em>not</em> good for?</h2></a>
+<p>You probably should not use Holochain for:</p>
+<ul>
+<li>
+<p><strong>Just yourself:</strong> You generally don't need distributed tools to just run something for yourself. The exception would be if you want to run a holochain to synchronize certain data across a bunch of your devices (phone, laptop, desktop, cloud server, etc.)</p>
+</li>
+<li>
+<p><strong>Anonymous, secret, or private data:</strong> Not only do we need to do a security audit of our encryption and permissions, but you're publishing to a shared DHT space, so unless you really know what you're doing, you should not assume data is private. Some time in the future, I'm sure some applications will add an anonymization layer (like TOR), but that is not native.</p>
+</li>
+<li>
+<p><strong>Large files:</strong> Think of holochains more like a database than a file system. Nobody wants to be forced to load and host your big files on their devices just because they are in the neighborhood of its hash. Use something like IPFS if you want a decentralized file system.</p>
+</li>
+<li>
+<p><strong>Data positivist-oriented apps:</strong> If you have built all of your application logic around the idea that data exists as an absolute truth, not as an assertion by an agent at a time, then you would need to rethink your whole approach before putting it in a Holochain app. This is why most existing cryptocurrencies would need significant refactoring to move from blockchain to Holochain, since they are organized around managing the existence of cryptographic tokens.</p>
+</li>
+</ul>
+<a class="header" href="#what-is-holochains-consensus-algorithm" id="what-is-holochains-consensus-algorithm"><h2>What is Holochain's consensus algorithm?</h2></a>
+<blockquote>
+<p>Holochains don't manage consensus, at least not about some absolute perspective on data or sequence of events. They manage distributed data integrity. Holochains do rely on consensus about the validation rules (DNA) which define that integrity, but so does every blockchain or blockchain alternative (e.g. Bitcoin Core). If you have different validation rules, you're not on the same chain. These validation rules establish the &quot;data physics,&quot; and then applications are built on that foundation.</p>
+</blockquote>
+<p>In making Holochain, our goal is to keep it &quot;as simple as possible, but no simpler&quot; for providing data integrity for fully distributed applications. As we understand it, information integrity does not require consensus about an absolute order of events. You know how we know? Because the real world works this way—meaning, the physically distributed systems outside of computers. Atoms, molecules, cells, bodies each maintain the integrity of their individual and collective state just fine without consensus on a global ledger.</p>
+<p>Not only is there no consensus about an absolute order of events, but if you understand the General Theory of Relativity, then you'll understand there is in fact no real sequence of events, only sequences relative to a particular vantage point.</p>
+<p>That's how holochains are implemented. Each source chain for each person/agent/participant in a Holochain preserves the immutable data integrity and order of events of that agent's actions from their vantage point. As data is published from a source chain to the validating DHT, then other agents sign their validation, per the shared &quot;physics&quot; encoded into the DNA of that Holochain.</p>
+<p>The minor exception to the singular vantage point of each chain, is the case when a multi-party transaction is signed to each party's chain. That is an act of consensus -- but consensus on a very small scale -- just between the parties involved in the transaction. Each party signs the exact same transaction to with links to each of their previous chain entries. Luckily, it's pretty easy to reach consensus between 2 or 3 parties. In fact, that is already why they're doing a transaction together, because they all agree to it.</p>
+<p>Holochains do sign every change of data and timestamp (without a universal time synchronization solution), This provides ample foundation for most applications which need solid data integrity for shared data in a fully distributed multi-agent system. Surely, there will be people who will build consensus algorithms on top of foundation (maybe like rounds, witnesses, supermajorities of Swirld),</p>
+<p>However, if your system is designed around data having one absolute true state, not one which is dynamic and varied based on vantage point, we would suggest you rethink your design. So far, for every problem space where people thought they needed an absolute sequence of events or global consensus, we have been able to map an alternate approach without those requirements. Also, we already know this is how the world outside of computers works, so to design your system to require (or construct) an artificial reality is probably setting yourself up for failure, or at the very least for massive amounts of unnecessary computation, communication, and fragility within your system.</p>
+<a class="header" href="#how-is-holochain-more-environmentally-ethical-than-blockchain" id="how-is-holochain-more-environmentally-ethical-than-blockchain"><h2>How is Holochain more environmentally ethical than blockchain?</h2></a>
+<blockquote>
+<p>Holochain removes the need for global consensus, and with it the expenditure of massive amounts of electricity to synchronize millions of nodes about data that aren't relevant to them.</p>
+</blockquote>
+<p>There are two reasons Holochain is vastly more efficient than blockchain and more ethical in a green sense:</p>
+<ol>
+<li>
+<p>It eliminates the need for all nodes to be synchronized with each other in global consensus. Sharding is usually enabled on Holochain. This means that when two nodes make a transaction, each node saves a countersigned record of that transaction. Additionally, the transaction is published to the <a href="https://www.youtube.com/watch?v=FhF_kvgfEZM">Distributed Hash Table</a> (sent to and saved by some unpredictably random nodes that can be looked up later for retrieval).</p>
+<p>Sharding is configurable by app, and in some cases it's a good idea to turn it off. For example, imagine a distributed Slack-like team messaging app. With only 40-50 members, full synchronization would be worth the extra bandwidth requirement for the benefit of offline messages and reduced load times. But for most applications, global synchronization isn't really needed and sharding is kept on.</p>
+<p>Because of DHTs, and the sharding they enable, Holochain actually doesn't rely on the transfer of large amounts of redundant information, and uses vastly less bandwidth than blockchain.</p>
+</li>
+<li>
+<p>There's no mining on Holochain. Blockchain's proof-of-work system provides a hefty incentive for thousands of people to spend the processing power of their CPUs and GPUs using up <a href="https://digiconomist.net/bitcoin-energy-consumption">huge amounts</a> <a href="https://motherboard.vice.com/en_us/article/ywbbpm/bitcoin-mining-electricity-consumption-ethereum-energy-climate-change">of electricity</a> on solving a meaningless cryptographic puzzle. Holochain doesn't have mining.</p>
+</li>
+</ol>
+<a class="header" href="#how-is-holochain-different-from-__________" id="how-is-holochain-different-from-__________"><h2>How is Holochain different from __________?</h2></a>
+<p><strong>TODO: Update with reference to Rust project.</strong></p>
+<p>Please see the <a href="https://github.com/Holochain/holochain-proto/wiki/Comparisons">Comparisons page</a>.</p>
+<a class="header" href="#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps" id="what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps"><h2>What language is Holochain written in? What languages can I use to make Holochain apps?</h2></a>
+<p><strong>TODO: Update re Rust and Wasm.</strong></p>
+<blockquote>
+<p>Holochain core is written in Go; Holochain apps can be written in JavaScript or Lisp.</p>
+</blockquote>
+<p>Holochain core is written in Go. We picked Go because it's similar to C but has tons of more modern features like syntactic sugar, and lots of packages. It's also much less complicated than C++. Go is relatively simple, easy to learn, modern, and powerful.</p>
+<p>Holochain apps can currently be developed in JavaScript or Lisp, with front-end/UI built using CSS, HTML, and JavaScript. It's relatively easy to add more to the list of languages with which apps can be built. So for most of the development people will be doing on Holochain, a choice of languages can be used.</p>
+<a class="header" href="#is-holochain-open-source" id="is-holochain-open-source"><h2>Is Holochain open source?</h2></a>
+<p>Yes, it has an open source <a href="https://github.com/Holochain/holochain-rust/#license">license</a>.</p>
+<a class="header" href="#can-you-run-a-cryptocurrency-on-holochain" id="can-you-run-a-cryptocurrency-on-holochain"><h2>Can you run a cryptocurrency on Holochain?</h2></a>
+<blockquote>
+<p>Theoretically, yes—but for the moment, we'd discourage it.</p>
+</blockquote>
+<p>If you don't know how to issue currencies through mutual credit, or how to account for them through double entry accounting, then you probably shouldn't build one on Holochain. If you do understand those key principles, than it is not very difficult to build a cryptocurrency for which Holochain provides ample accounting and data integrity.</p>
+<p>However, you probably shouldn't try to do it in the way everyone is used to building cryptocurrencies on a global ledger of cryptographic tokens. <a href="https://en.bitcoin.it/wiki/Double-spending">Determining the status of tokens/coins</a> is what create the need for global consensus (about the existence/status/validity of the token or coin). However, there are <a href="https://medium.com/metacurrency-project/perspectives-on-blockchains-and-cryptocurrencies-7ef391605bd1">other approaches to making currencies</a> which, for example, involve <a href="https://medium.com/metacurrency-project/beyond-blockchain-simple-scalable-cryptocurrencies-1eb7aebac6ae">issuance via mutual credit</a> instead of issuance by fiat.</p>
+<p>Unfortunately, this is a hotly contested topic by many who often don't have a deep understanding of currency design nor cryptography, so we're not going to go too deep in this FAQ. We intend to publish a white paper on this topic soon, as well as launch some currencies built this way.</p>
+<a class="header" href="#how-are-data-validated-on-holochain" id="how-are-data-validated-on-holochain"><h2>How are data validated on Holochain?</h2></a>
+<blockquote>
+<p>On Holochain, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator.</p>
+</blockquote>
+<p>There is no overall, global &quot;correctness&quot; (or consensus) built in to Holochain. Instead, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator. If foul play is detected on a node's part (the node is either propagating or validating bad data) that node is blocked and a warning is sent to others. Here's <a href="https://i.imgur.com/bjp7Txg.png">an infographic</a> describing this process. In summary, instead of a global consensus system, Holochain uses an <a href="https://www.youtube.com/watch?v=PVTnEKxwYls&amp;t=1s">accountability-based system</a> with data validation by peers.</p>
+<p>Applying this to the example of 'Ourbnb', an imaginary distributed version ofAirbnb: The Ourbnb Holochain app would certainly be written with a rule, &quot;don't rent your apartment to two parties at the same time.&quot; So the moment a user rents to two parties at the same time, nodes receiving that datum on the DHT attempt to validate it against the app rules, detect a collision, and reject it. Holochain's gossip protocol is designed to operate at a rate at which collisions will be detected nearly immediately by gossiping peers. And since Holochain doesn't have a coin built into it, it incentivizes users to cooperate and co-create.</p>
+<p>As a user, you don't need to trust the provider of the application you're using, only agree with the shared protocols that make up the application itself. Aside from being responsible for the maintenance and security of apps they provide, application providers on Holochain are not like traditional application providers today (think Facebook, Twitter, etc.). They don't host your data because your data is stored by you and a random subset of the users of the application.</p>
+<a class="header" href="#what-happens-to-data-when-a-node-leaves-the-network" id="what-happens-to-data-when-a-node-leaves-the-network"><h2>What happens to data when a node leaves the network?</h2></a>
+<blockquote>
+<p>The DHT of a Holochain app makes sure that there are always enough nodes on the network that hold a given datum.</p>
+</blockquote>
+<p>When people running Holochain apps turn off their device, they leave the network. What happens to their data and the data of other people they were storing? There are always enough nodes that hold a given piece of data in the network so as to prevent data loss when nodes leave. The DHT and Holochain gossip protocol are designed this way. Also, the redundancy factor of data on a given DHT is configurable so it can be fine-tuned for any purpose. For example, a chat app for a small team might set a redundancy factor of 100% in order to prevent long loading times, while an app with thousands of users might have a very small redundancy factor.</p>
+<a class="header" href="#should-i-build-my-cointoken-on-holochain" id="should-i-build-my-cointoken-on-holochain"><h2>Should I build my coin/token on Holochain?</h2></a>
+<blockquote>
+<p>Since it's agent-centric instead of data-centric like traditional blockchains, Holochain isn't the best platform on which to build a token or coin.</p>
+</blockquote>
+<p>The idea of tokens or coins is a direct representation of a system being data-centric. While theoretically it would be possible to create a token on Holochain, it would be taking a step back instead of a step forward. The more exciting possibility is creating mutual credit currencies on Holochain. These are agent-centric currencies that are designed to facilitate active exchange of value and flourishing ecosystems instead of hoarding.</p>
+<a class="header" href="#what-does-agent-centric-mean-how-is-this-different-from-data-centric" id="what-does-agent-centric-mean-how-is-this-different-from-data-centric"><h2>What does “agent-centric” mean? How is this different from “data-centric?”</h2></a>
+<blockquote>
+<p>Agent-centric systems view data not as an object, but as a shared experience.</p>
+</blockquote>
+<p>Traditional blockchains are data-centric: they rely on and are built around the concept that data is a thing—an object. Holochain transitions to agent-centricism: the idea that data is shared experiences seen from many points of view. It's not a thing. It's a collection of shared, relative experiences. Einstein discovered this about the physical world a hundred years ago—Relativity. So why are modern blockchains that are supposedly &quot;cutting edge&quot; still falling back on this antiquated idea that data is an object, and for two agents to have different views of one piece of data is wrong?</p>
+<p>Holochain is deeply agent-centric. Using tech that embodies this mindset enables vastly richer interactions and collaboration to happen through its technology while at the same time being thousands of times more efficient.</p>
+<a class="header" href="#what-is-the-tps-transactions-per-second-on-holochain" id="what-is-the-tps-transactions-per-second-on-holochain"><h2>What is the TPS (Transactions Per Second) on Holochain?</h2></a>
+<blockquote>
+<p>Holochain doesn't have a set TPS (transactions per second) like other blockchain-based or blockchain-derived projects might because there's central point through which all transactions must pass. Instead, Holochain is a generalized protocol for distributed computing.</p>
+</blockquote>
+<p>It's common to ask a blockchain project, &quot;How much can your technology handle? What's its TPS?&quot; This is because nearly all of these projects are built around the limiting idea of a global ledger.</p>
+<p>But you are not asking, how many posts per second Facebook can do. Why? Because there is no technical problem, adding more servers to Facebook's data center (only maybe monetary problems).</p>
+<p>You are not asking how many emails per second the internet can handle, because there is no single bottleneck for email-sending, like there would be with a centralized approach.</p>
+<p>Why are we seeing a transaction limit with blockchain networks? Because blockchain in a strange way marries a decentralized p2p network of nodes with the logical notion of one absolute truth, i.e. the blockchain being one big decentralized database of transactions. It tries to maintain this way of thinking about apps that we are used to from centralized servers. It forces every node into the same &quot;consensus&quot;. That is implemented by having everybody share and validate everything. That does work, and maybe there are few usecases (like a global naming system maybe?) where it might be advantageous.. but applying that for everything is nonsensical.</p>
+<p>Holochain is not forcing such a model. Instead it allows for building applications that are like email. The application is rather like a protocol, or grammar, or (I prefer this language) like a dance. If you know the dance (If you have a copy of the validation rules of the app) you can tell who else is dancing that dance and who is not. The difference between Holochain and something like email is that (similarly to blockhain) Holochain is applying 1. cryptographic signatures and 2. tamper proof hash-chains (hence Holo<em>chain</em>) so that you can build a distributed system you can trust in. You know it is impossible (I'd rather say: very very hard) to game somebody. This so far was only possible by having trusted authorities like banks or Facebook.</p>
+<p>So, Holochain as an app framework does not pose any limit of transactions per second because there is no place where all transactions have to go through. It is like asking, &quot;how many words can humanity speak per second?&quot; Well, with every human being born, that number increases. Same for Holochain.</p>
+
+                        <hr />
+                        <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/faq.md">suggest an edit</a>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="state/actors.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="glossary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="state/actors.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="glossary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

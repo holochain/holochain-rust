@@ -1,0 +1,1374 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>holochain_101</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">var path_to_root = "";</script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="welcome.html"><strong aria-hidden="true">1.</strong> Welcome</a></li><li><ol class="section"><li><a href="overview.html"><strong aria-hidden="true">1.1.</strong> Overview</a></li><li><a href="how_to_contribute.html"><strong aria-hidden="true">1.2.</strong> How to contribute</a></li></ol></li><li><a href="planning_a_dapp.html"><strong aria-hidden="true">2.</strong> Planning a dApp</a></li><li><a href="building_apps.html"><strong aria-hidden="true">3.</strong> Building Holochain Apps: Intro</a></li><li><ol class="section"><li><a href="building_for_different_platforms.html"><strong aria-hidden="true">3.1.</strong> (E) Building for Different Platforms</a></li><li><a href="intro_to_dna.html"><strong aria-hidden="true">3.2.</strong> Intro to DNA</a></li><li><a href="intro_to_command_line_tools.html"><strong aria-hidden="true">3.3.</strong> Intro to Command Line Tools</a></li><li><a href="new_project.html"><strong aria-hidden="true">3.4.</strong> Create A New Project</a></li><li><a href="configuring_an_app.html"><strong aria-hidden="true">3.5.</strong> (E) Configuring an App</a></li><li><a href="zome/rust.html"><strong aria-hidden="true">3.6.</strong> (E) Writing in Rust</a></li><li><a href="zome/assemblyscript.html"><strong aria-hidden="true">3.7.</strong> (E) Writing in Assemblyscript</a></li><li><a href="zome/intro_to_webassembly.html"><strong aria-hidden="true">3.8.</strong> (E) Intro to WebAssembly</a></li><li><a href="alpha_migrate.html"><strong aria-hidden="true">3.9.</strong> (E) Updating to Alpha 2</a></li><li><a href="built_with_holochain.html"><strong aria-hidden="true">3.10.</strong> Built With Holochain</a></li></ol></li><li><a href="zome/welcome.html"><strong aria-hidden="true">4.</strong> (E) Building Holochain Apps: Zome Code</a></li><li><ol class="section"><li><a href="zome/adding_a_zome.html"><strong aria-hidden="true">4.1.</strong> (E) Adding a Zome</a></li><li><a href="zome/capabilities.html"><strong aria-hidden="true">4.2.</strong> (E) Capabilities</a></li><li><a href="zome/entry_definitions.html"><strong aria-hidden="true">4.3.</strong> (E) Entry Definitions</a></li><li><a href="zome/read_and_write.html"><strong aria-hidden="true">4.4.</strong> (E) Read &amp; Write Data Operations</a></li><li><a href="zome/entry_validation.html"><strong aria-hidden="true">4.5.</strong> (E) Entry Validation</a></li><li><a href="zome/genesis.html"><strong aria-hidden="true">4.6.</strong> (E) Genesis</a></li><li><a href="zome/linking.html"><strong aria-hidden="true">4.7.</strong> (E) Linking</a></li><li><a href="zome/testing_functions.html"><strong aria-hidden="true">4.8.</strong> (E) Testing Functions</a></li><li><a href="zome/preparing_for_app_packaging.html"><strong aria-hidden="true">4.9.</strong> (E) Preparing For App Packaging</a></li><li><a href="zome/complete_reference.html"><strong aria-hidden="true">4.10.</strong> (E) Complete Zome API Reference</a></li><li><ol class="section"><li><a href="zome/app_variables.html"><strong aria-hidden="true">4.10.1.</strong> API App Variables</a></li><li><a href="zome/system_constants.html"><strong aria-hidden="true">4.10.2.</strong> API System Constants</a></li><li><a href="zome/api_functions.html"><strong aria-hidden="true">4.10.3.</strong> API functions</a></li><li><a href="zome/callback_functions.html"><strong aria-hidden="true">4.10.4.</strong> Zome Callbacks</a></li></ol></li><li><a href="zome/node_to_node_messages.html"><strong aria-hidden="true">4.11.</strong> (E) Node to Node Messaging</a></li><li><a href="zome/signatures.html"><strong aria-hidden="true">4.12.</strong> (E) Cryptographic Signatures</a></li><li><a href="zome/calling_other_zomes.html"><strong aria-hidden="true">4.13.</strong> (E) Calling Other Zomes</a></li><li><a href="zome/bundling.html"><strong aria-hidden="true">4.14.</strong> (E) Bundling</a></li><li><a href="zome/emitting_signals.html"><strong aria-hidden="true">4.15.</strong> (E) Emitting Signals</a></li></ol></li><li><a href="apps_user_interfaces.html"><strong aria-hidden="true">5.</strong> (E) Building Holochain Apps: User Interfaces</a></li><li><ol class="section"><li><a href="web_ui_with_websockets.html"><strong aria-hidden="true">5.1.</strong> (E) Web UIs with Websockets</a></li><li><a href="qml_uis.html"><strong aria-hidden="true">5.2.</strong> (E) QML based UIs</a></li></ol></li><li><a href="packaging_and_testing.html"><strong aria-hidden="true">6.</strong> (E) Building Holochain Apps: Packaging And Testing</a></li><li><ol class="section"><li><a href="app_packaging.html"><strong aria-hidden="true">6.1.</strong> (E) Packaging Your App Into DNA</a></li><li><a href="running_an_app.html"><strong aria-hidden="true">6.2.</strong> (E) Running Apps</a></li><li><a href="scenario_testing.html"><strong aria-hidden="true">6.3.</strong> (E) Scenario Testing</a></li></ol></li><li><a href="live_hc_apps.html"><strong aria-hidden="true">7.</strong> (E) Going Live with Holochain Apps</a></li><li><ol class="section"><li><a href="creating_versioned_releases.html"><strong aria-hidden="true">7.1.</strong> (E) Creating Versioned Releases</a></li></ol></li><li><a href="apps_advanced_topics.html"><strong aria-hidden="true">8.</strong> (E) Building Holochain Apps: Advanced Topics</a></li><li><ol class="section"><li><a href="building_for_android.html"><strong aria-hidden="true">8.1.</strong> Building For Android</a></li></ol></li><li><a href="extending_holochain.html"><strong aria-hidden="true">9.</strong> (E) Extending Holochain</a></li><li><ol class="section"><li><a href="embedding_holochain.html"><strong aria-hidden="true">9.1.</strong> (E) Embedding Holochain</a></li><li><ol class="section"><li><a href="core_api.html"><strong aria-hidden="true">9.1.1.</strong> (E) Core API</a></li></ol></li><li><a href="naming_conventions.html"><strong aria-hidden="true">9.2.</strong> Naming conventions</a></li><li><a href="writing_development_kit.html"><strong aria-hidden="true">9.3.</strong> Writing a Development Kit (HDK)</a></li><li><a href="zome/implementation.html"><strong aria-hidden="true">9.4.</strong> Implementing Zome API functions</a></li><li><a href="state_actions.html"><strong aria-hidden="true">9.5.</strong> Redux Architecture</a></li><li><ol class="section"><li><a href="state/actions.html"><strong aria-hidden="true">9.5.1.</strong> State actions</a></li></ol></li><li><a href="state/actors.html"><strong aria-hidden="true">9.6.</strong> State actors</a></li></ol></li><li><a href="faq.html"><strong aria-hidden="true">10.</strong> FAQ</a></li><li><a href="glossary.html"><strong aria-hidden="true">11.</strong> (E) Glossary</a></li><li><ol class="section"><li><a href="agent.html"><strong aria-hidden="true">11.1.</strong> (E) Agent</a></li><li><a href="keys.html"><strong aria-hidden="true">11.2.</strong> (E) Keys</a></li><li><a href="dna.html"><strong aria-hidden="true">11.3.</strong> (E) DNA</a></li><li><a href="zome.html"><strong aria-hidden="true">11.4.</strong> (E) Zome</a></li><li><a href="source_chain.html"><strong aria-hidden="true">11.5.</strong> (E) Source Chain</a></li><li><a href="distributed_hash_table.html"><strong aria-hidden="true">11.6.</strong> Distributed Hash Table</a></li></ol></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
+                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/print.md"><i class="fa fa-edit"></i></a>
+                            </button>
+                        </div>
+
+                        <h1 class="menu-title">holochain_101</h1> 
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="#welcome" id="welcome"><h1>Welcome</h1></a>
+<a class="header" href="#status" id="status"><h2>Status</h2></a>
+<p><strong>This documentation is a work in progress. Articles which have content in them appear normally in the chapter navigation. Articles which are incomplete appear with a (E) next to their name, indicating it is an empty unwritten article.</strong></p>
+<p>Hi there! You've discovered the comprehensive Holochain guidebook.</p>
+<p>Holochain is an open source software library that provides a way for businesses, communities,
+and other groups to build and run applications which are hosted and validated by the &quot;users&quot; themselves.
+Doing so provides a superior level of agency and autonomy over heavy reliance on the so-called &quot;cloud&quot; and other third parties.</p>
+<p>These applications are known more widely as peer-to-peer, decentralized applications, or dApps. To distinguish between dApps built on Blockchains and those built on Holochain, we preemptively call the latter &quot;hApps&quot;. A more detailed comparison between Blockchain dApps and Holochain hApps is available <a href="https://medium.com/holochain/beyond-blockchain-simple-scalable-cryptocurrencies-1eb7aebac6ae">here</a>.</p>
+<p>Holochain provides a cross-platform framework for the development and execution of these applications.
+By running these kinds of applications, &quot;users&quot; cease to merely &quot;use&quot;. They become &quot;user-participants&quot; who are also responsible for hosting and validating the network's data. Applications can be developed utilizing any of the major operating systems, and run on virtually any device.</p>
+<p>The many benefits and opportunities associated with peer-to-peer dApps (e.g. offloaded server costs, elimination of single points of failure, and flexible governance structures) are made available, and often amplified through the Holochain hApp architecture, on desktops, laptops, and Android (arm64) devices.</p>
+<p>This book provides an in-depth explanation of Holochain's functions, from data validation to data propagation,
+so that you can get to work straightaway on developing applications that will serve your business, community, or otherwise.</p>
+<a class="header" href="#overview" id="overview"><h1>Overview</h1></a>
+<p>Depending on whether your interest is specific, or general, you may wish to read it front to back, or skip to specific sections of the book. If the summary of a section describes you, then it's a section for you!</p>
+<a class="header" href="#planning-a-dapp" id="planning-a-dapp"><h3>Planning a dApp</h3></a>
+<p><strong>Readers:</strong> You can't put the horse before the cart. First things first:  understanding the landscape of decentralized apps. What are the mechanics of a functioning decentralized app? You have an idea of what you want to build, and you need to get a grasp on what it's going to take. You need to know what your blind spots are, and what are the common pitfalls. You need to know which of your assumptions to hold on to, and which to let go.</p>
+<p><strong>Writing:</strong> General Audience</p>
+<a class="header" href="#building-holochain-apps" id="building-holochain-apps"><h3>Building Holochain Apps</h3></a>
+<p><strong>Readers:</strong> Whether you're a seasoned developer, or just starting out, you're in it to write code. You've either got an app project (or five) on the go, or you're in it to experiment and test the limits. You need to know what you need to know. You want to talk Holochain's language. You're an intrepid explorer of technical documentation.</p>
+<p><strong>Writing:</strong> Technical, Explanatory &amp; How-to</p>
+<a class="header" href="#going-live-with-holochain-apps" id="going-live-with-holochain-apps"><h3>Going Live with Holochain Apps</h3></a>
+<p><strong>Readers:</strong> You're involved in the conception, development, or design of a Holochain app, and you've got to know how to get your app out into the world, into the hands of the people who need it. You've got questions like &quot;How do updates to the app work?&quot;, &quot;How do I track performance of the app?&quot;, &quot;What are best practices for security?&quot;</p>
+<p><strong>Writing:</strong> General Audience</p>
+<a class="header" href="#extending-the-holochain-platform" id="extending-the-holochain-platform"><h3>Extending the Holochain Platform</h3></a>
+<p><strong>Readers:</strong> You want to look at Holochain itself, not what you can build with it, but to see what you can tweak, or contribute. You've got ideas for Holochain and got skills to pull them off. You're reading the Holochain source code, or source documentation. Maybe you want to enable app development in a whole other language not available yet, or maybe to run Holochain on a device or platform not supported yet. You can make sense of terse technical language, and direct yourself well.</p>
+<p><strong>Writing:</strong> Technical, Explanatory &amp; How-to</p>
+<a class="header" href="#how-to-contribute" id="how-to-contribute"><h1>How to contribute</h1></a>
+<p>This book uses a tool that builds HTML files from markdown files called <a href="https://github.com/rust-lang-nursery/mdBook">'mdbook'</a>. The markdown files are stored on GitHub, in the main <code>holochain-rust</code> repository. Because they are on GitHub, they have built-in version control, meaning that it's easy for anyone to contribute, and to propose, track and merge changes.</p>
+<p>There are two main pathways to contribute. One is by editing files directly in GitHub, and the other is cloning the repository to your computer, running mdbook locally, and then submitting change requests. The following covers both scenarios.</p>
+<a class="header" href="#writing-guidelines" id="writing-guidelines"><h2>Writing Guidelines</h2></a>
+<p>Please do not edit the SUMMARY.md file, which stores the raw chapter structure, without advanced signoff from the documentation team in <a href="https://chat.holochain.net/appsup/channels/hc-core">https://chat.holochain.net/appsup/channels/hc-core</a>.</p>
+<p>More forthcoming!</p>
+<a class="header" href="#how-the-book-works" id="how-the-book-works"><h2>How the Book Works</h2></a>
+<p>Writing is in classic markdown, so a new page is a new markdown file. These files get rendered in the book panel. One markdown file, SUMMARY.md stores the structure of the book as an outline.</p>
+<p>The HTML files used in the Book get automatically built from the markdown files. Even though they're auto-generated, static HTML files, one can search within the text.</p>
+<a class="header" href="#what-to-contribute" id="what-to-contribute"><h2>What to Contribute</h2></a>
+<p>For a current list of open documentation issues, check out the <a href="https://github.com/holochain/holochain-rust/issues?q=is%3Aissue+is%3Aopen+label%3Adocumentation">'documentation' label for github issues</a>.</p>
+<a class="header" href="#contributing-via-github" id="contributing-via-github"><h2>Contributing via GitHub</h2></a>
+<a class="header" href="#getting-there" id="getting-there"><h3>Getting there</h3></a>
+<ol>
+<li>
+<p>Log on to your GitHub account</p>
+</li>
+<li>
+<p>In the Holochain Rust repo, everything is under the <code>doc/holochain_101/src</code> folder. All markdown files are there, and some are nested in subfolders. Navigate to the following link: <a href="https://github.com/holochain/holochain-rust/tree/develop/doc/holochain_101/src">https://github.com/holochain/holochain-rust/tree/develop/doc/holochain_101/src</a></p>
+</li>
+<li>
+<p>Determine whether you are making, editing, or reviewing an article.</p>
+</li>
+</ol>
+<a class="header" href="#access-rights" id="access-rights"><h3>Access Rights</h3></a>
+<p>If you don't have write access to the repository you need to create a fork to contribute. Forking is easy. Click the &quot;Fork&quot; button in the top right hand corner of the Github UI.</p>
+<a class="header" href="#making-a-new-article" id="making-a-new-article"><h3>Making a new article</h3></a>
+<ol>
+<li>
+<p>Click &quot;Create New File&quot;</p>
+</li>
+<li>
+<p>Name this file what you intend to name the article, plus the <code>.md</code> extension, i.e. <code>how_to_contribute.md</code></p>
+</li>
+<li>
+<p>Use classic markdown to set up the page title, i.e. &quot;# How to contribute&quot;</p>
+</li>
+<li>
+<p>Write the rest of your text, checking the &quot;Preview&quot; tab to see how it would look.</p>
+</li>
+<li>
+<p>Scroll to the bottom of the page and select the option &quot;create a new branch for this commit and start a pull request&quot;. You can name a branch, though GitHub will set one automatically. If you know it, mention the issue that the request addresses.</p>
+</li>
+<li>
+<p>Click &quot;Propose New File&quot;. Proceed to the Making Multiple Edits or Opening a Pull Request section.</p>
+</li>
+</ol>
+<a class="header" href="#editing-an-article" id="editing-an-article"><h3>Editing an article</h3></a>
+<ol>
+<li>
+<p>Navigate to the article you want to edit.</p>
+</li>
+<li>
+<p>Click the 'pencil' icon to edit the article. There's a built-in text editor in GitHub, where you can write a change and also why you changed it (so that a reviewer can understand the rationale for the change).</p>
+</li>
+<li>
+<p>Select the branching method for making your change. (See Making Multiple Edits for clarification)</p>
+</li>
+<li>
+<p>Click &quot;Propose File Change&quot;. Proceed to the Making Multiple Edits or Opening a Pull Request section.</p>
+</li>
+</ol>
+<a class="header" href="#making-multiple-edits-on-one-branch--pull-request" id="making-multiple-edits-on-one-branch--pull-request"><h3>Making Multiple Edits On One Branch &amp; Pull Request</h3></a>
+<p>A &quot;branch&quot; is a series of divergent changes from the main version. If you want to make multiple edits at once, you will need to make each of those changes on the same branch as you named your original edit. Check which branch you are on by looking for the &quot;Branch: ?&quot; dropdown. Use the dropdown to switch to your branch if you're on the wrong one.</p>
+<a class="header" href="#opening-a-pull-request" id="opening-a-pull-request"><h3>Opening a Pull Request</h3></a>
+<ol>
+<li>
+<p>Once redirected to the &quot;comparing changes&quot; page, prepend your pull request title with &quot;MDBOOK: &quot; and then a very short statement of what changed.</p>
+</li>
+<li>
+<p>Add a more detailed description of what changes you made and why in the text box.</p>
+</li>
+<li>
+<p>If there is an open issue related to the article you're submiting or editing, tag it by using the &quot;#&quot; plus the issue number.</p>
+</li>
+<li>
+<p>Add the &quot;documentation&quot; label.</p>
+</li>
+<li>
+<p>If appropriate, click &quot;Reviewers&quot; and select one or more people to request reviews from.</p>
+</li>
+<li>
+<p>Click &quot;Create Pull Request&quot;.</p>
+</li>
+</ol>
+<a class="header" href="#reviewing-a-pull-request" id="reviewing-a-pull-request"><h3>Reviewing a Pull Request</h3></a>
+<ol>
+<li>
+<p>Under the Pull Request tab, look for ones starting with &quot;MDBOOK&quot;. Go to the Pull Request of your choice, and then click on the &quot;Files Changed&quot; tab.</p>
+</li>
+<li>
+<p>Start a review by hovering over a line and pressing the blue &quot;add&quot; symbol to add comments to a line</p>
+</li>
+<li>
+<p>Click the green &quot;Review Changes&quot; button. If you approve of the changes, select &quot;Approve&quot;. If you would like further changes to be made before it gets merged, select &quot;Request Changes&quot;. If you are just weighing in, select &quot;Comment&quot;. Then, click &quot;Submit Review&quot;.</p>
+</li>
+</ol>
+<a class="header" href="#merging-a-pull-request" id="merging-a-pull-request"><h3>Merging a Pull Request</h3></a>
+<ol start="3">
+<li>Under &quot;Conversation&quot; you can merge the pull request, which integrates it into the <code>develop</code> branch. Changes automatically deploy to <a href="https://holochain.github.io/holochain-rust">https://holochain.github.io/holochain-rust</a> within ~30 minutes. Merge the pull request once it has received two approved reviews.</li>
+</ol>
+<a class="header" href="#contributing-by-cloning-and-running-mdbook-advanced" id="contributing-by-cloning-and-running-mdbook-advanced"><h2>Contributing by Cloning and Running Mdbook (advanced)</h2></a>
+<p>You will need to have cloned <code>holochain-rust</code> to your computer. You will also need Docker installed.</p>
+<p>There is a Docker build that allows local build, serve, watch and live reload for the book.</p>
+<p>From the root of the repo, run:</p>
+<pre><code class="language-shell">. docker/build-mdbook-image &amp;&amp; . docker/run-mdbook
+</code></pre>
+<p>Once the book has built and is serving, visit <code>http://localhost:3000</code> in the browser.</p>
+<p>You can edit the markdown files in <code>doc/holochain_101/src</code> and the book will live reload.</p>
+<p>To do a one-time build of the files to HTML, run:</p>
+<pre><code class="language-shell">. docker/build-mdbook
+</code></pre>
+<p>Edit the files to your satisfaction, commit them to a branch (or a fork) and then open a pull request on GitHub. Once its on GitHub, the same things as mentioned above apply.</p>
+<a class="header" href="#planning-a-dapp-1" id="planning-a-dapp-1"><h1>Planning a dApp</h1></a>
+<a class="header" href="#what-is-a-dapp" id="what-is-a-dapp"><h2>What is a dApp?</h2></a>
+<p>A dApp is a distributed application. This means that the data associated with the application is stored by each user rather than in a central database.</p>
+<a class="header" href="#basic-expectations-for-dapps" id="basic-expectations-for-dapps"><h2>Basic expectations for dApps</h2></a>
+<p>Generally speaking, you need to know the following in order to build a Holochain dApp:</p>
+<p>how to install Holochain</p>
+<p>how to use the command line tools</p>
+<p>how to configure your application with a &quot;DNA&quot; file</p>
+<p>how to write your application code in a language that compiles to WebAssembly</p>
+<p><strong>how to think through building a distributed application</strong></p>
+<p>how to build a user interface for your app</p>
+<p>how to test your application code</p>
+<p>This article will help you plan a dApp by providing practical considerations about the specifics of distributed applications in general, and Holochain dApps in particular. It has been remarked that holochain dApps require us to make a mental shift, first from applications whose data is centrally organized, and also from blockchain-based, data-centric dApps.</p>
+<p>Here we will provide a basic overview of concepts from cryptography that are central to holochains.
+Then, we will consider the consequences of Holochain's cryptographic architecture for data permissioning, access, and security.
+Because app data storage is distributed amongst user-participants, one must expect that data encryption and permissions are important for protecting privacy in accordance with the jurisdictions in which the app is operating.</p>
+<p>Remember that, as user-participants leave the application, they take their data with them. They also retain copies of other data that they held to support the DHT.</p>
+<p>One must also re-think the dApp's business model such that it does not rely on a central authority's ability to whitelist access to a given resource.</p>
+<a class="header" href="#cryptography-in-holochain-dapps" id="cryptography-in-holochain-dapps"><h2>Cryptography in Holochain dApps</h2></a>
+<p>Distributed systems rely more heavily on cryptographic patterns and techniques than centralized systems. The basic concepts below explain how data integrity, ownership, and security are achieved natively with holochain's architecture. They are time-worn, relatively intuitive ideas that are critical for planning a holochain dApp.</p>
+<a class="header" href="#hashes" id="hashes"><h3>Hashes</h3></a>
+<p>Hashes ensure the reliability of information by representing any given piece of data with a unique, consistent string of random looking characters. This makes changes to data visible because one can see that a hash has changed hash without needing to inspect the data itself.</p>
+<p>However, it is impossible to get the original data from a hash -- its purpose is to prove that the data to which it corresponds has not been altered. The same data consistently gives the same hash, and different data always gives a completely different hash.</p>
+<p>These features imply that one can use small, portable hashes to verify data. One could also use a database containing data and their hashes as a table of contents, indexing (though not reading) data associated with a given hash.</p>
+<a class="header" href="#signatures" id="signatures"><h3>Signatures</h3></a>
+<p>Signatures provide an additional type of data verification, answering the question &quot;who created this data?&quot; Signatures looks like hashes. They are unique, reliable, and like hashes, cannot be used to retrieve the data to which they correspond. Signatures also come with a pair of keys. One is public, and the other private.</p>
+<p>The private key designates a unique author (or device), and the public key lets anyone verify a signature made by one specific private key. This key infrastructure addresses the problem of single points of failure associated with centralized systems by making each author responsible for securing their unique private key.</p>
+<a class="header" href="#encryption" id="encryption"><h3>Encryption</h3></a>
+<p>What if one needs to restrict access in addition to verifying data? Two types of encryption are possible. <em>Symmetric</em> encryption has one key for reading and writing data. <em>Asymmetric</em> encryption has two keys, where one creates messages and the other reads them.</p>
+<p>Encryption is a two way process, so the right key enables one to decrypt an encrypted message. With this added benefit come the drawbacks of the size of encrypted messages (at least as large as the original data) and broken encryption stripping the author of control of the original data.</p>
+<a class="header" href="#data-access-paradigms" id="data-access-paradigms"><h2>Data access paradigms</h2></a>
+<p>The following are five data access paradigms. Note that in real-world scenarios it is common to mix these options by combining separate dApps.
+In instances when many separate dApps are needed to share data, Holochain supports bridging between dApps
+Bridges between two networks with different data privacy models specify who can use the bridge, what data crosses the bridge, and tasks that might run in response to the bridge (e.g. notifications)</p>
+<p>Default model for Holochain data is public data shard on a public network, and every Holochain dApp has its own network and data, and creates networks for user-participants as soon as they join a dApp.
+The dApp code sets sharing and verification rules.</p>
+<a class="header" href="#public-shared-data-on-a-public-network" id="public-shared-data-on-a-public-network"><h3>Public, shared data on a public network</h3></a>
+<p>Public data works like Bittorrent:</p>
+<p>Anybody can join a network
+anybody can request any data they want from the network
+any data is available as long as at least one person is sharing it
+if some data is not shared by enough people, a new random person on the network must share it
+there is no &quot;local only&quot; data</p>
+<p>As stated above, an additional requirement for Holochain dApps is that new data must have a digital signature.</p>
+<a class="header" href="#public-shared-data-on-a-private-network" id="public-shared-data-on-a-private-network"><h3>Public, shared data on a private network</h3></a>
+<p>The functionality is the same as a public network, but private networks use cryptography for access control to the network itself.</p>
+<p>Each device on the network must open a P2P connection to another device before it can send any data.
+The devices that are already on the private network send a challenge to any new device before sending any more data.
+The new device must sign the challenge with the network private key.
+The network public key is set in the dApp configuration, available to Holochain.
+Holochain can then refuse any connection with a bad challenge signature.
+Data within the network is public and shared. Every device on the network has “logged in” with a signed challenge, so has full access.</p>
+<a class="header" href="#encrypted-data-on-a-public-or-private-network" id="encrypted-data-on-a-public-or-private-network"><h3>Encrypted data on a public or private network</h3></a>
+<p>Encryption relies on dApp developers encrypting and decrypting data within the dApp software.</p>
+<p>Holochain exposes a set of industry standard encryption algorithms (e.g. AES) to each dApp that cover both symmetric and asymmetric encryption options, in addition to hashing and signing tools.</p>
+<p>This option is very flexible for dApp developers but security becomes more subtle.
+Much like the private network, any one user-participant losing a key can become a serious security problem.</p>
+<p>Note that encryption can pose problems for Holochain's native validation method.</p>
+<a class="header" href="#private-local-only-data" id="private-local-only-data"><h3>Private, local only data</h3></a>
+<p>Any data in a dApp can be validated and stored by its author without being shared to the network. Private, local data can provide a useful database for portable user preferences and notes and avoids the complexity of encryption and key-based security.</p>
+<p>Private data is hashed in the same way as public data, and the hash is public. Accordingly, one could tell that private data exists without being able to access it or take advantage of this with dApps that feature the eventual reveal of previously authored, private data -- think a distributed guessing game, like &quot;rock, paper, scissors&quot; or a digital classroom that operates with signatures disconnected from real-world identity and uses this method to prevent cheating.</p>
+<a class="header" href="#hybrid-model-with-servers" id="hybrid-model-with-servers"><h3>Hybrid model with servers</h3></a>
+<p>Holochain supports many different environments and interfaces so that Holochain is easy to integrate with existing infrastructure. Any connected system with an API can push data through a dApp, as when one's phone sends a summary of private calendar data to a Holochain dApp. Any data in a dApp immediately becomes transparent, auditable and portable.</p>
+<p>The version of Holochain in active development covers the following integrations:</p>
+<ul>
+<li>Command line tools</li>
+<li>Web server</li>
+<li>Android</li>
+<li>Qt/QML</li>
+<li>Unity 3D games engine</li>
+</ul>
+<a class="header" href="#security---best-practices" id="security---best-practices"><h2>Security - best practices</h2></a>
+<p>A great way to begin offsetting the governance crises now typical of distributed systems (i.e. DAO hack) is to think in terms of protecting and enabling the community of user-participants in addition to cryptography.</p>
+<p>In essence, one must consider how to prevent undesired access to the DHT. If membranes are not properly built in the dApps's DNA, having access to the source code also means having access to the entire network's entries via the DHT. Developers must treat the code, or at least the DNA taken as a whole, as if it's a key to the data. Note, too, that one can easily fork a Holochain dApp without disrupting its activity, making it possible to retain the benefits of open-source code without some of the risks.</p>
+<a class="header" href="#membranes" id="membranes"><h3>Membranes</h3></a>
+<p>Security efforts begin with the specification of membranes, lest the code itself become a target. Though holochains rely on the cryptography above to create trust in data's provenance and immutability, trust is a distinctly human affair at the level of creating membranes. Different applications will require different levels of security, and Holochain is uniquely suited to accommodate a high degree of flexibility. DNA could define a closed list of participants, Proof of Service, or social triangulation requirements, for example.</p>
+<p>Sybil attacks are attacks launched through the creation of many nodes explicitly for the purpose of the attack. These nodes are identifiable by having no history. Blockchains prevent Sybil Attacks with Proof of Work. PoW is an implied membrane since it constrains who can verify blocks. In that case, the clearing node must have done &quot;work&quot; to maintain the network. Holochain requires membranes to identify and filter out Sybil nodes so that an attacker cannot use them to overrun the DHT.</p>
+<a class="header" href="#immune-system" id="immune-system"><h3>Immune system</h3></a>
+<p>Holochain relies on random users across the network validating every piece of data. This keeps the verification rules reliable and unbiased. This is called an &quot;immune system&quot; for validating content.</p>
+<p>Note that when using encrypted data, it is not possible to verify contents without the appropriate key. Encryption is a choice that should be made carefully, as it undermines Holochain's native immune system.</p>
+<a class="header" href="#scenarios-to-consider" id="scenarios-to-consider"><h2>Scenarios to consider</h2></a>
+<ol>
+<li>p2p platforms</li>
+<li>supply chains and open value networks</li>
+<li>social networks</li>
+<li>collaboration apps</li>
+</ol>
+<a class="header" href="#building-apps" id="building-apps"><h1>Building Apps</h1></a>
+<p>If you're looking to build a Holochain app, it is important to first know what a Holochain app is.</p>
+<p>First, recall that Holochain is an engine which can run your distributed apps. That engine expects and requires your application to be in a certain format which is unique to Holochain. That format is referred to as the &quot;DNA&quot; of your application. The DNA of an application exists as a singular file, which is mounted, and executed by Holochain.</p>
+<p>However, writing your application in a single file, as a developer, would not be feasible or desirable. Instead, you are supplied the tools to store your application code across a set of files within a folder, and tools to build all that code down into one file, in the DNA format.</p>
+<p>While there are lots of details to learn about Holochain and DNA, it can be useful to first look from a general perspective.</p>
+<p>[TODO: insert note about use of biological language throughout. imperfect but the closest thing]</p>
+<a class="header" href="#holochain-and-dna" id="holochain-and-dna"><h2>Holochain and DNA</h2></a>
+<p>Recall that a goal of Holochain is to enable cryptographically secured, tamper-proof peer-to-peer applications. DNA files play a fundamental role in enabling this. Imagine that we think of an application, and its users, as a game. When people play any game, it's important that they play by the same rules, otherwise, they are actually playing different games. With Holochain, a DNA file contains the complete set of rules and logic for an application. Thus, when users independently run an app with identical DNA, they are playing the same game: running the same application with cryptographic security.</p>
+<p>What this allows in technical terms is that these independent users begin sharing data with one another, and validating one anothers data. Thus, users can interact with the data in this distributed peer-to-peer system with full confidence in the integrity of that data.</p>
+<p>The key takeaway from this is that if you change the DNA (the configuration, validation rules, and application logic), and a user runs it, they are basically running a different app. If this brings up questions for you about updating your application to different versions, good catch. This concern will be addressed later in this section. For now, take a look at DNA in closer detail.</p>
+<a class="header" href="#building-for-different-platforms" id="building-for-different-platforms"><h1>Building for Different Platforms</h1></a>
+<a class="header" href="#introduction-to-dna" id="introduction-to-dna"><h1>Introduction to DNA</h1></a>
+<p>As a developer, though you will not have to interact directly with the contents of a DNA file that often, it is quite important to grasp its' role and structure.</p>
+<p>Holochain DNA files are written in a data format known as JSON. It stores sets of key-value pairs, and allows a nested tree structure. It looks like this:</p>
+<pre><code class="language-json">{
+  &quot;property_name&quot;: &quot;property_value&quot;,
+  &quot;nest_name&quot;: {
+    &quot;nested_property_name&quot;: &quot;nested_property_value&quot;
+  }
+}
+</code></pre>
+<p>JSON is usually used for configuration and static data, but in the case of Holochain, these DNA files also contain compiled code, which is executable by Holochain.</p>
+<p>As previously mentioned, you do not need to edit this &quot;master&quot; DNA file directly. Holochain command line tools can be used to build it from your raw files.</p>
+<p>[TODO link to command line tools 'package' command]</p>
+<a class="header" href="#configuration" id="configuration"><h2>Configuration</h2></a>
+<p>For the configuration related parts of your DNA, they will come from actual JSON files stored in your application folder. There will be multiple JSON files nested in the folder structure. An application folder should have a file in its' root called <code>app.json</code>.</p>
+<p>This file should define various properties of your application. Some of these properties Holochain fully expects and will not work without, others can be customised to your application. To see the full details of which properties you can set in <code>app.json</code>, [go here TODO: link to DNA properties reference].</p>
+<a class="header" href="#code" id="code"><h2>Code</h2></a>
+<p>Obviously, the logic and functionality of your application will be written in code. Here is a quick overview of how that works.</p>
+<p>Holochain allows you to break down the functionality of your application into smaller, logical modules, called &quot;Zomes&quot;. There should be a folder called <code>zomes</code> and each Zome should have its own sub-folder within that, in which the configuration and code for that particular Zome should be placed.</p>
+<p>These Zomes can call and access the functionality of the others, but they are written independently. When the DNA file is being built, the code for these Zomes is encoded using Base64 encoding and combined with the configuration file associated with the Zome.</p>
+<p>The configuration file should be a JSON file [TODO: what is the naming convention for this file] stored in the Zome folder. To see the full details of a Zome JSON file, [go here TODO: link to Zome properties reference].</p>
+<p>The only coding language that Holochain knows how to execute is WebAssembly. However, it is unlikely to write WebAssembly code by hand, more likely is to write code in a language that can compile to WebAssembly, such as Rust, or Assemblyscript.</p>
+<p>It is likely within each Zome to store code written in another language, and to define a build step in which it is compiled to WebAssembly, and then included in your DNA.</p>
+<p>If this is sounding complex, don't worry, you won't have to confront a lot of this complexity yourself, there are tools supplied to make this easy, and you'll be writing in a language that's familiar, or easy to learn.</p>
+<p>With this overview in mind, the details of app development can be explored.</p>
+<a class="header" href="#intro-to-command-line-tools" id="intro-to-command-line-tools"><h1>Intro to Command Line Tools</h1></a>
+<p>It will likely not come as much of a surprise that to develop a Holochain app requires the use of the command line, or terminal, of your computer.</p>
+<p>Fortunately, there are a set of custom designed tools for working with Holochain that can be installed as utilities to your command line to simplify and accelerate the process of Holochain app development.</p>
+<p>If you wish to be able to attempt what you are reading about, as you continue through the articles on building an app, you will need to first install these command line tools to your computer.</p>
+<p>The command tools are accessible for installation from an online repository at <a href="https://github.com/holochain/holochain-cmd">github.com/holochain/holochain-cmd</a>. If you wish to install them, follow the link, and then follow the instructions in the README there for installation.</p>
+<p>The README contains an overview of the different functions of the command line tools. You will also learn these organically just by proceeding through the other articles in this section. For example, how to use them to bootstrap a brand new project folder for your app.</p>
+<a class="header" href="#create-a-new-project" id="create-a-new-project"><h1>Create A New Project</h1></a>
+<p>The command line tools discussed in the last article can be used to easily create a new folder on your computer, that contains all the initial folders and files needed for a Holochain application.</p>
+<p>You will typically want to start a new Holochain application this way, since creating them all by hand would waste your time.</p>
+<p>In your terminal, change directories to one where you wish to initialize a new Holochain app. The command will create a new folder within the current directory for your app.</p>
+<p>Come up with a name for your application, or at least for your project folder.</p>
+<p>Copy or type the command below into your terminal, except replace <code>your_app_name</code> with the name you came up with. Press <code>Enter</code> to execute the command.</p>
+<pre><code class="language-shell">hc init your_app_name
+</code></pre>
+<p><code>hc</code> specifies that you wish to use the Holochain command line tools. <code>init</code> specifies to use the command for initializing a new project folder. <code>your_app_name</code> is an argument you supply as the app, and folder name.</p>
+<p>This has created a new folder in which you have the beginnings of a Holochain app.</p>
+<p>TODO: document clarified folder structure here and use to illustrate an overview of app development</p>
+<a class="header" href="#configuring-an-app" id="configuring-an-app"><h1>Configuring an App</h1></a>
+<a class="header" href="#writing-in-rust" id="writing-in-rust"><h1>Writing in Rust</h1></a>
+<a class="header" href="#writing-in-assemblyscript" id="writing-in-assemblyscript"><h1>Writing in Assemblyscript</h1></a>
+<a class="header" href="#intro-to-webassembly" id="intro-to-webassembly"><h1>Intro to WebAssembly</h1></a>
+<a class="header" href="#updating-to-alpha-2" id="updating-to-alpha-2"><h1>Updating to Alpha 2</h1></a>
+<a class="header" href="#built-with-holochain" id="built-with-holochain"><h1>Built With Holochain</h1></a>
+<p>Please click &quot;suggest an edit&quot;, and add something you built with Holochain to the list!</p>
+<ul>
+<li><a href="https://github.com/holochain/app-spec-rust">app-spec-rust</a></li>
+</ul>
+<a class="header" href="#building-holochain-apps-zome-code" id="building-holochain-apps-zome-code"><h1>Building Holochain Apps: Zome Code</h1></a>
+<a class="header" href="#adding-a-zome" id="adding-a-zome"><h1>Adding a Zome</h1></a>
+<a class="header" href="#capabilities" id="capabilities"><h1>Capabilities</h1></a>
+<a class="header" href="#entry-definitions" id="entry-definitions"><h1>Entry Definitions</h1></a>
+<a class="header" href="#read--write-data-operations" id="read--write-data-operations"><h1>Read &amp; Write Data Operations</h1></a>
+<a class="header" href="#entry-validation" id="entry-validation"><h1>Entry Validation</h1></a>
+<a class="header" href="#genesis" id="genesis"><h1>Genesis</h1></a>
+<a class="header" href="#linking" id="linking"><h1>Linking</h1></a>
+<a class="header" href="#testing-functions" id="testing-functions"><h1>Testing Functions</h1></a>
+<a class="header" href="#preparing-for-app-packaging" id="preparing-for-app-packaging"><h1>Preparing For App Packaging</h1></a>
+<a class="header" href="#complete-zome-api-reference" id="complete-zome-api-reference"><h1>Complete Zome API Reference</h1></a>
+<a class="header" href="#api-app-variables" id="api-app-variables"><h1>API App Variables</h1></a>
+<p>Note: Full reference is available in language-specific API Reference documentation.
+(TODO add links)</p>
+<table><thead><tr><th> Name        </th><th align="left"> Purpose           </th></tr></thead><tbody>
+<tr><td> APP_NAME </td><td align="left"> Name of the Holochain app taken from the DNA. </td></tr>
+<tr><td> APP_DNA_HASH </td><td align="left"> The hash of this Holochain's DNA </td></tr>
+<tr><td> APP_AGENT_ID_STR </td><td align="left"> The identity string used to initialize this Holochain with <code>hcadmin init</code>. </td></tr>
+<tr><td> APP_AGENT_KEY_HASH </td><td align="left"> The hash of local agent's public key. </td></tr>
+<tr><td> APP_AGENT_INITIAL_HASH </td><td align="left"> The hash of the first identity entry on the local chain. </td></tr>
+<tr><td> APP_AGENT_LATEST_HASH </td><td align="left"> The hash of the most recent identity entry that has been committed to the local chain. </td></tr>
+</tbody></table>
+<a class="header" href="#api-system-constants" id="api-system-constants"><h1>API System Constants</h1></a>
+<p>Note: Full reference is available in language-specific API Reference documentation.
+(TODO add links)</p>
+<table><thead><tr><th> Name        </th><th align="left"> Purpose           </th></tr></thead><tbody>
+<tr><td> VERSION      </td><td align="left"> Version of the Holochain software running the zome </td></tr>
+<tr><td> HashNotFound      </td><td align="left"> Value returned when a hash provided could not be found. </td></tr>
+<tr><td> Status </td><td align="left"> Enum holding all possible state of an entry. </td></tr>
+<tr><td> GetEntryMask </td><td align="left"> Mask values used for calling the <code>get_entry</code> Zome API Function. </td></tr>
+<tr><td> LinkAction </td><td align="left"> Constants used for calling the <code>link_entries</code> Zome API Function. </td></tr>
+<tr><td> PkgRequest </td><td align="left"> TODO </td></tr>
+<tr><td> ChainOption </td><td align="left"> TODO </td></tr>
+<tr><td> BridgeSide </td><td align="left"> TODO </td></tr>
+<tr><td> SysEntryType </td><td align="left"> Enum holding all possible types of system entries </td></tr>
+<tr><td> bundle_cancel.Reason </td><td align="left"> Enum used as argument for <code>bundle_canceled</code> callback </td></tr>
+<tr><td> bundle_cancel.Response </td><td align="left"> Enum used as return value for <code>bundle_canceled</code> callback </td></tr>
+</tbody></table>
+<a class="header" href="#zome-api-functions" id="zome-api-functions"><h1>Zome API functions</h1></a>
+<a class="header" href="#overview-1" id="overview-1"><h2>Overview</h2></a>
+<p>A Zome API Function is any Holochain core functionality that is exposed as a
+callable function within zome code.</p>
+<p>Compare this to a Zome Callback Function, which is implemented by the zome code
+and called by Holochain.</p>
+<p>So, zome functions (functions in the zome code) are called by Holochain,
+which can optionally call Zome API Functions, and then finally return a
+value back to Holochain.</p>
+<pre><code>Holochain blocks
+  -&gt; calls zome function
+  -&gt; executes WASM logic compiled from zome language
+  -&gt; zome logic calls zome API function
+    -&gt; Holochain natively executes zome API function
+    -&gt; Holochain returns value to zome function
+  -&gt; zome function returns some value
+  -&gt; Holochain receives final value of zome function
+</code></pre>
+<p>Each Zome API Function has a canonical name used internally by Holochain.</p>
+<p>Zome code can be written in any language that compiles to WASM. This means the
+canonical function name and the function name in the zome language might be
+different. The zome language will closely mirror the canonical names, but naming
+conventions such as capitalisation of the zome language are also respected.</p>
+<p>For example, the canonical <code>verify_signature</code> might become <code>verifySignature</code> in
+JavaScript.</p>
+<p>When a zome API function is called from within zome code a corresponding Rust
+function is called. The Rust function is passed the current zome runtime and the
+arguments that the zome API function was called with. The Rust function connects
+zome logic to Holochain core functionality and often has side effects. The
+return value of the Rust function is passed back to the zome code as the return
+of the zome API function.</p>
+<a class="header" href="#reference" id="reference"><h2>Reference</h2></a>
+<p>Note: Full reference is available in language-specific API Reference documentation.
+(TODO add links)</p>
+<a class="header" href="#property" id="property"><h3>Property</h3></a>
+<p>Canonical name: <code>property</code></p>
+<p>Returns an application property, which are defined by the app developer in the DNA.
+It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).</p>
+<a class="header" href="#make-hash" id="make-hash"><h3>Make Hash</h3></a>
+<p>Canonical name: <code>make_hash</code></p>
+<p>TODO</p>
+<a class="header" href="#debug" id="debug"><h3>Debug</h3></a>
+<p>Canonical name: <code>debug</code></p>
+<p>Debug sends the passed arguments to the log that was given to the Holochain instance and returns <code>None</code>.</p>
+<a class="header" href="#call" id="call"><h3>Call</h3></a>
+<p>Canonical name: <code>call</code></p>
+<p>TODO</p>
+<a class="header" href="#sign" id="sign"><h3>Sign</h3></a>
+<p>Canonical name: <code>sign</code></p>
+<p>TODO</p>
+<a class="header" href="#verify-signature" id="verify-signature"><h3>Verify Signature</h3></a>
+<p>Canonical name: <code>verify_signature</code></p>
+<p>TODO</p>
+<a class="header" href="#commit-entry" id="commit-entry"><h3>Commit Entry</h3></a>
+<p>Canonical name: <code>commit_entry</code></p>
+<p>Given an entry type and content, commits an entry to the local source chain.
+On success, returns the hash of the entry.</p>
+<a class="header" href="#update-entry" id="update-entry"><h3>Update Entry</h3></a>
+<p>Canonical name: <code>update_entry</code></p>
+<p>TODO</p>
+<a class="header" href="#update-agent" id="update-agent"><h3>Update Agent</h3></a>
+<p>Canonical name: <code>update_agent</code></p>
+<p>TODO</p>
+<a class="header" href="#remove-entry" id="remove-entry"><h3>Remove Entry</h3></a>
+<p>Canonical name: <code>remove_entry</code></p>
+<p>TODO</p>
+<a class="header" href="#get-entry" id="get-entry"><h3>Get Entry</h3></a>
+<p>Canonical name: <code>get_entry</code></p>
+<p>Given an entry hash, returns the entry from the DHT if that entry exists.</p>
+<p>Entry lookup is done in the following order:</p>
+<ul>
+<li>The local source chain</li>
+<li>The local hash table</li>
+<li>The distributed hash table</li>
+</ul>
+<p>Caller can request additional metadata on the entry such as type or sources
+(hashes of the agents that committed the entry).</p>
+<a class="header" href="#get-links" id="get-links"><h3>Get Links</h3></a>
+<p>Canonical name: <code>get_links</code></p>
+<p>TODO</p>
+<a class="header" href="#remove-entry-1" id="remove-entry-1"><h3>Remove Entry</h3></a>
+<p>Canonical name: <code>remove_entry</code></p>
+<p>TODO</p>
+<a class="header" href="#query" id="query"><h3>Query</h3></a>
+<p>Canonical name: <code>query</code></p>
+<p>TODO</p>
+<a class="header" href="#send" id="send"><h3>Send</h3></a>
+<p>Canonical name: <code>send</code></p>
+<p>TODO</p>
+<a class="header" href="#start-bundle" id="start-bundle"><h3>Start Bundle</h3></a>
+<p>Canonical name: <code>start_bundle</code></p>
+<p>TODO</p>
+<a class="header" href="#close-bundle" id="close-bundle"><h3>Close Bundle</h3></a>
+<p>Canonical name: <code>close_bundle</code></p>
+<p>TODO</p>
+<a class="header" href="#callback-functions" id="callback-functions"><h1>Callback functions</h1></a>
+<a class="header" href="#overview-2" id="overview-2"><h2>Overview</h2></a>
+<p>A callback function is implemented in the zome language and called by Holochain.</p>
+<p>Contrast this to a zome API function that is implemented by Holochain and called
+by the zome.</p>
+<p>Callback functions are passed some parameters and expected to return one of
+three possible <code>CallbackParams</code> variants:</p>
+<ul>
+<li><code>Pass</code>: The callback function has executed/validated successfully</li>
+<li><code>NotImplemented</code>: The callback function was not found in the current zome</li>
+<li><code>Fail(String)</code>: The callback function failed for the given reason</li>
+</ul>
+<p>As per Zome API functions, the names of the callback functions may be slightly
+different depending on the language. The canonical name follows Rust naming
+conventions but other languages may vary these (e.g. camel casing).</p>
+<p>To implement a callback function in a zome simply define it and Holochain will
+call it automatically during standard internal workflows.</p>
+<p>Return <code>true</code> or an empty string from the zome function to <code>Pass</code>.</p>
+<p>Return <code>false</code> or a non-empty string from the zome function to <code>Fail</code>. The
+string will be used as the <code>Fail</code> reason.</p>
+<a class="header" href="#reference-1" id="reference-1"><h2>Reference</h2></a>
+<a class="header" href="#genesis-1" id="genesis-1"><h3>Genesis</h3></a>
+<p>Canonical name: <code>genesis</code>
+Parameters: none</p>
+<p>Called the first time a dApp initializes.</p>
+<ul>
+<li><code>Pass</code>: the dApp will initialize</li>
+<li><code>NotImplemented</code>: the dApp will initialize</li>
+<li><code>Fail</code> (any reason): the dApp will NOT initialize</li>
+</ul>
+<a class="header" href="#validatecommit" id="validatecommit"><h3>ValidateCommit</h3></a>
+<p>Canonical name: <code>validate_commit</code>
+Parameters: The candidate entry to be committed</p>
+<p>Called internally by the <code>commit</code> Zome API function.</p>
+<ul>
+<li><code>Pass</code>: the entry will be committed</li>
+<li><code>NotImplemented</code>: the entry will be committed</li>
+<li><code>Fail</code> (any reason): the entry will NOT be committed and <code>commit</code> will return a <code>HcApiReturnCode::ErrorCallbackResult</code> error code.</li>
+</ul>
+<a class="header" href="#node-to-node-messaging" id="node-to-node-messaging"><h1>Node to Node Messaging</h1></a>
+<a class="header" href="#cryptographic-signatures" id="cryptographic-signatures"><h1>Cryptographic Signatures</h1></a>
+<a class="header" href="#calling-other-zomes" id="calling-other-zomes"><h1>Calling Other Zomes</h1></a>
+<a class="header" href="#bundling" id="bundling"><h1>Bundling</h1></a>
+<a class="header" href="#emitting-signals" id="emitting-signals"><h1>Emitting Signals</h1></a>
+<a class="header" href="#building-holochain-apps-user-interfaces" id="building-holochain-apps-user-interfaces"><h1>Building Holochain Apps: User Interfaces</h1></a>
+<a class="header" href="#web-uis-with-websockets" id="web-uis-with-websockets"><h1>Web UIs with Websockets</h1></a>
+<a class="header" href="#qml-based-uis" id="qml-based-uis"><h1>QML based UIs</h1></a>
+<a class="header" href="#building-holochain-apps-packaging-and-testing" id="building-holochain-apps-packaging-and-testing"><h1>Building Holochain Apps: Packaging And Testing</h1></a>
+<a class="header" href="#packaging-your-app-into-dna" id="packaging-your-app-into-dna"><h1>Packaging Your App Into DNA</h1></a>
+<a class="header" href="#running-apps" id="running-apps"><h1>Running Apps</h1></a>
+<a class="header" href="#scenario-testing" id="scenario-testing"><h1>Scenario Testing</h1></a>
+<a class="header" href="#going-live-with-holochain-apps-1" id="going-live-with-holochain-apps-1"><h1>Going Live with Holochain Apps</h1></a>
+<a class="header" href="#creating-versioned-releases" id="creating-versioned-releases"><h1>Creating Versioned Releases</h1></a>
+<a class="header" href="#building-holochain-apps-advanced-topics" id="building-holochain-apps-advanced-topics"><h1>Building Holochain Apps: Advanced Topics</h1></a>
+<a class="header" href="#building-for-android" id="building-for-android"><h1>Building For Android</h1></a>
+<p>Note: These instructions for building Holochain on Android are adapted from <a href="https://mozilla.github.io/firefox-browser-architecture/experiments/2017-09-21-rust-on-android.html">here</a>.</p>
+<p>In order to get to libraries that can be linked against when building <a href="https://github.com/holochain/holosqape">HoloSqape</a> for Android, you basically just need to setup up according targets for cargo.</p>
+<p>Given that the Android SDK is installed, here are the steps to setting things up for building:</p>
+<ol>
+<li>
+<p>Install the Android tools:</p>
+<p>a. Install <a href="https://developer.android.com/studio/">Android Studio</a>
+b. Open Android Studio and navigate to SDK Tools:
+- MacOS: <code>Android Studio &gt; Preferences &gt; Appearance &amp; Behaviour &gt; Android SDK &gt; SDK Tools</code>
+- Linux: <code>Configure (gear) &gt; Appearance &amp; Behavior &gt; System Settings &gt; Android SDK</code>
+c. Check the following options for installation and click OK:
+* Android SDK Tools
+* NDK
+* CMake
+* LLDB
+d. Get a beverage of your choice (or a full meal for that matter) why you wait for the lengthy download</p>
+</li>
+<li>
+<p>Setup ANDROID_HOME env variable:</p>
+</li>
+</ol>
+<p>On MacOS</p>
+<pre><code class="language-bash">export ANDROID_HOME=/Users/$USER/Library/Android/sdk
+</code></pre>
+<p>Linux: (assuming you used defaults when installing Android Studio)</p>
+<pre><code class="language-bash">export ANDROID_HOME=$HOME/Android/Sdk
+</code></pre>
+<ol start="2">
+<li>Create standalone NDKs (the commands below put the NDK in your home dir but you can put them where you like):</li>
+</ol>
+<pre><code class="language-bash">export NDK_HOME=$ANDROID_HOME/ndk-bundle
+cd ~
+mkdir NDK
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch arm64 --install-dir NDK/arm64
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch arm --install-dir NDK/arm
+${NDK_HOME}/build/tools/make_standalone_toolchain.py --api 26 --arch x86 --install-dir NDK/x86
+</code></pre>
+<ol start="3">
+<li>Add the following lines to your <code>~/.cargo/config</code>:</li>
+</ol>
+<pre><code class="language-toml">[target.aarch64-linux-android]
+ar = &quot;&lt;your $HOME value here&gt;/NDK/arm64/bin/aarch64-linux-android-ar&quot;
+linker = &quot;&lt;your $HOME value here&gt;/NDK/arm64/bin/aarch64-linux-android-clang&quot;
+
+[target.armv7-linux-androideabi]
+ar = &quot;&lt;your $HOME value here&gt;/NDK/arm/bin/arm-linux-androideabi-ar&quot;
+linker = &quot;&lt;your $HOME value here&gt;/NDK/arm/bin/arm-linux-androideabi-clang&quot;
+
+[target.i686-linux-android]
+ar = &quot;&lt;your $HOME value here&gt;/NDK/x86/bin/i686-linux-android-ar&quot;
+linker = &quot;&lt;your $HOME value here&gt;/NDK/x86/bin/i686-linux-android-clang&quot;
+
+</code></pre>
+<p>(this toml file needs absolute paths, so you need to prefix the path with your home dir).</p>
+<ol start="4">
+<li>Now you can add those targets to your rust installation with:</li>
+</ol>
+<pre><code>rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
+</code></pre>
+<p>Finally, should now be able to build Holochain for Android with your chosen target, e.g.:</p>
+<pre><code>cd &lt;holochain repo&gt;
+cargo build --target armv7-linux-androideabi --release
+</code></pre>
+<p><strong>NOTE:</strong>  there is currently a problem in that <code>wabt</code> (which we use in testing as a dev dependency) won't compile on android, and the cargo builder compiles dev dependencies even though they aren't being used in release builds.  Thus as a work around, for the cargo build command above to work, you need to manually comment out the dev dependency section in both <code>core/Cargo.toml</code> and <code>core_api/Cargo.toml</code></p>
+<a class="header" href="#extending-holochain" id="extending-holochain"><h1>Extending Holochain</h1></a>
+<a class="header" href="#embedding-holochain" id="embedding-holochain"><h1>Embedding Holochain</h1></a>
+<p>Core API is a library for embedding a Holochain instance (an hApp) in your own code. So this is for the use case of writing your own software that runs hApps. A common use case might be &quot;glueing&quot; several hApps together or adding centralized services, like file storage, on top of a hApp.</p>
+<a class="header" href="#core-api" id="core-api"><h1>Core API</h1></a>
+<a class="header" href="#naming-things" id="naming-things"><h1>Naming things</h1></a>
+<blockquote>
+<p>There are only two hard things in Computer Science: cache invalidation and naming things.</p>
+</blockquote>
+<a class="header" href="#rust-naming-conventions" id="rust-naming-conventions"><h2>Rust naming conventions</h2></a>
+<p>If in doubt refer to the Rust conventions.</p>
+<p>https://doc.rust-lang.org/1.0.0/style/style/naming/README.html</p>
+<a class="header" href="#holochain-naming-conventions" id="holochain-naming-conventions"><h2>Holochain naming conventions</h2></a>
+<p>There are gaps where the Rust conventions are either silent or following them
+would make things too ambiguous.</p>
+<a class="header" href="#actions--reducers" id="actions--reducers"><h3>Actions &amp; reducers</h3></a>
+<ul>
+<li><code>Action</code> is <code>VerbNoun</code> or <code>Verb</code> if there is no available noun and matches the underlying function e.g. <code>GetEntry</code></li>
+<li><code>ActionResponse</code> is <code>ActionName</code> e.g. <code>Action::GetEntry</code> results in <code>ActionResponse::GetEntry</code></li>
+<li>reducer name is <code>reduce_action_name</code> e.g. <code>reduce_get_entry</code></li>
+</ul>
+<a class="header" href="#actors--protocols" id="actors--protocols"><h3>Actors &amp; protocols</h3></a>
+<ul>
+<li>Actor <code>Protocol</code> is <code>VerbNoun</code> or <code>Verb</code> if there is no available noun and matches the underlying function e.g. <code>PutEntry</code> or <code>Setup</code></li>
+<li>Result of a <code>Protocol</code> is <code>VerbNounResult</code> or <code>VerbResult</code> e.g. <code>PutEntryResult</code> or <code>SetupResult</code></li>
+</ul>
+<a class="header" href="#method-names" id="method-names"><h3>Method names</h3></a>
+<ul>
+<li>method names that access something directly &quot;for free&quot; are the name of the thing being accessed, e.g. <code>entry()</code></li>
+<li>method names that have side effects or an expensive lookup are <code>verb_noun()</code> e.g. <code>put_entry()</code></li>
+</ul>
+<a class="header" href="#short-names" id="short-names"><h3>Short names</h3></a>
+<p>avoid micro names like <code>t</code>, <code>e</code>, <code>h</code> when <code>table</code>, <code>entry</code>, <code>header</code> is clearer.</p>
+<p>avoid shorthand names like <code>table</code> when <code>table_actor</code> is clearer.</p>
+<p>in the long run the legibility and unambiguity saves orders of magnitude more time than the typing costs.</p>
+<a class="header" href="#writing-a-development-kit" id="writing-a-development-kit"><h1>Writing a Development Kit</h1></a>
+<p>The end goal of a Development Kit is to simplify the experience of writing Zomes that compile to WASM for Holochain apps.</p>
+<p>At the time of writing, there is currently one active Developer Kit being written, for the Rust language. While it is possible to look at the <a href="https://github.com/holochain/hdk-rust">Rust language HDK</a> as a reference, this article is a more general guide that outlines what it takes to build a Development Kit.</p>
+<p>If you are interested in supporting developers to write Zomes in an unsupported language, you will want to first of all check whether that language can be compiled to WebAssembly, as that is a requirement.</p>
+<a class="header" href="#why-development-kits" id="why-development-kits"><h3>Why Development Kits</h3></a>
+<p>Development Kits are important because the WASM interface between Zomes and Holochain is really constrained. Because of WASMs design, WASM functions may only be called with 32 bit integers. Holochain implements a solution to this, but if app developers were to always have to interact with this solution directly, it would feel very complex. A Development Kit for each language should ideally be developed so that it gets so much simpler!</p>
+<a class="header" href="#the-development-kit-wasm-solution" id="the-development-kit-wasm-solution"><h3>The Development Kit WASM Solution</h3></a>
+<p>To enable passing arguments more complex than 32 bit integers between Zomes and Holochain, a pattern of utilizing WASM memory is used. When it is running the WASM code for a Zome, Holochain has access to both read and write from the WASM memory.</p>
+<p>The pattern defines that Holochain Zome API functions expect to both give and receive 32 bit integers which actually represent a WASM memory location. So to provide a Holochain Zome API function a complex argument, one must first write it into memory, and then call the function, giving it the memory location. Holochain will pull the argument from memory, execute its behaviour, store the result in memory, and return the memory location of the result. The Zome code then has to <em>also</em> lookup the result by its location in memory.</p>
+<p>Technically, an app developer can do all of these things if they have a reason to, but most won't want to handle the extra step involving memory. A Development Kit, then, should handle the extra step of writing to memory, and calling the native API function, and reading the result from memory, and returning that instead. Plus a few other sprinkles on top.</p>
+<a class="header" href="#crafting-the-api" id="crafting-the-api"><h3>Crafting the API</h3></a>
+<p>Using its WASM interpreter, Holochain exposes its callable Zome API functions by making them available as &quot;imports&quot; in Zome WASM modules. Per the memory discussion above, each of the Zome API functions have the same explicit function signature, but different implicit function signatures. The native functions have each been given a prefix so that Development Kit wrappers can expose a regular function name. Here is a complete list:</p>
+<ul>
+<li>hc_debug</li>
+<li>hc_call</li>
+<li>hc_sign</li>
+<li>hc_verify_signature</li>
+<li>hc_commit_entry</li>
+<li>hc_update_entry</li>
+<li>hc_update_agent</li>
+<li>hc_remove_entry</li>
+<li>hc_get_entry</li>
+<li>hc_link_entries</li>
+<li>hc_query</li>
+<li>hc_send</li>
+<li>hc_start_bundle</li>
+<li>hc_close_bundle</li>
+</ul>
+<p>There is a special additional one called <code>hc_init_globals</code> which we will discuss further.</p>
+<p>The Development Kit should implement and export one function per each native function from the list. The function should be called the same as its native form, but without the prefix. E.g. <code>hc_update_agent</code> should be called <code>update_agent</code> or <code>updateAgent</code>. That function should internally call the native function and handle the additional complexity around that.</p>
+<p>In order to call these &quot;external&quot; functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+extern {
+  fn hc_commit_entry(encoded_allocation_of_input: u32) -&gt; u32;
+}
+#}</code></pre></pre>
+<p>TODO: define or link to meaningful function signatures</p>
+<a class="header" href="#working-with-wasm-memory" id="working-with-wasm-memory"><h3>Working with WASM Memory</h3></a>
+<p>The goal of the Development Kit is to expose a meaningful and easy to use version of the API functions, with meaningful arguments and return values. There is a bit of flexibility around how this is done, as coding languages differ. However, the internal process will be similar in nature. Here it is, generalized:</p>
+<ol>
+<li>declare, or use a passed, single page 64 KiB memory stack</li>
+<li>join whatever inputs are given into a single serializable structure</li>
+<li>serialize the given data structure as an array of bytes</li>
+<li>determine byte array length</li>
+<li>ensure it is not oversized for the stack</li>
+<li>allocate the memory</li>
+<li>write the byte array to memory</li>
+<li>create an allocation pointer for the memory<br />
+a. use a 16 bit integer for the pointers <code>offset</code><br />
+b. use a 16 bit integer for the pointers <code>length</code></li>
+<li>join the pointers into a single 32 bit integer<br />
+a. high bits are <code>offset</code><br />
+b. low bits are <code>length</code></li>
+<li>call the native function with that 32 bit integer and assign the result to another 32 bit integer<br />
+a. e.g. <code>encoded_alloc_of_result = hc_commit_entry(encoded_alloc_of_input)</code></li>
+<li>deconstruct that 32 bit integer into two variables<br />
+a. use a 16 bit integer for the pointers <code>offset</code><br />
+b. use a 16 bit integer for the pointers <code>length</code></li>
+<li>read string data from memory at the <code>offset</code> address</li>
+<li>deallocate the memory</li>
+<li>deserialize the string to JSON if JSON is expected</li>
+</ol>
+<p>That looks like a lot of steps, but most of this code can be shared for the various functions throughout the Development Kit, leaving implementations to be as little as 5 lines long. Basically, the process inverts at the point of the native function call.</p>
+<a class="header" href="#wasm-single-page-stack" id="wasm-single-page-stack"><h4>WASM Single Page Stack</h4></a>
+<p>TODO</p>
+<a class="header" href="#app-globals" id="app-globals"><h3>App Globals</h3></a>
+<p>When writing Zome code, it is common to need to reference aspects of the context it runs in, such as the active user/agent, or the DNA hash of the app. Holochain exposes certain values through to the Zome, though it does so natively by way of the <code>hc_init_globals</code> function mentioned. Taking care to expose these values as constants will simplify the developer experience.</p>
+<p>This is done by calling <code>hc_init_globals</code> with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using <code>hdk::APP_NAME</code>. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from <code>hc_init_globals</code> they are in lower case. The object has the following values:</p>
+<ul>
+<li>app_name</li>
+<li>app_dna_hash</li>
+<li>app_agent_id_str</li>
+<li>app_agent_key_hash</li>
+<li>app_agent_initial_hash</li>
+<li>app_agent_latest_hash</li>
+</ul>
+<p>See the <a href="/zome/api_globals.html">API global variables</a> page for details on what these are.</p>
+<a class="header" href="#publish-it-and-get-in-touch" id="publish-it-and-get-in-touch"><h3>Publish It and Get In Touch</h3></a>
+<p>If you've made it through the process so far, good work. The community is an important part of the success of any project, and Holochain is no different. If you're really proud of your work, get in touch with the development team on the <a href="https://chat.holochain.net/appsup/channels/hc-core">chat server</a>, mention you're working on it, and request help if necessary. This book could be updated to include links to other HDKs. Whether you would like to, or you'd like the team to, the HDK could be published to the primary package manager in use for the language, to be used by developers around the world. For example, RubyGems for Ruby or npm for nodejs.</p>
+<a class="header" href="#zome-implementation" id="zome-implementation"><h1>Zome implementation</h1></a>
+<a class="header" href="#zome-api-functions-1" id="zome-api-functions-1"><h2>Zome API functions</h2></a>
+<p>Each zome API function is implemented under <code>nucleus::ribosome::api</code>.</p>
+<p>There is a fair bit of boilerplate at the moment, sorry!</p>
+<p>To co-ordinate the execution of an API function across Rust and WASM we need to
+define a few related items.</p>
+<p>Within <code>nucleus::ribosome::api</code>:</p>
+<ul>
+<li>A variant in the <code>ZomeApiFunction</code> enum</li>
+<li>The same canonical string in <em>both</em> <code>as_str</code> and <code>from_str</code></li>
+<li>A mapping to the API function under <code>as_fn</code></li>
+</ul>
+<p>As a new module under <code>nucleus::ribosome::api</code>:</p>
+<ul>
+<li>A ribosome module implementing the invocation logic as <code>invoke_*</code></li>
+<li>A struct to hold/serialize any input args if needed</li>
+</ul>
+<p>In <code>::action</code>:</p>
+<ul>
+<li>An action if the zome API function has side effects</li>
+</ul>
+<a class="header" href="#zome-api-function-definition" id="zome-api-function-definition"><h3>Zome API function definition</h3></a>
+<p>Simply add the name of the new zome API function to the end of the enum.</p>
+<p>Make sure to add the canonical names carefully. The Rust compiler will guide you
+through the rest if you miss something.</p>
+<p>DO add a doc comment summarising what the zome function does and sketching the
+function signature.</p>
+<p>DO extend the relevant unit tests.</p>
+<p>Do NOT add to the start or middle of the enum as that will renumber the other
+zome functions.</p>
+<a class="header" href="#zome-api-function-ribosome-module" id="zome-api-function-ribosome-module"><h3>Zome API function ribosome module</h3></a>
+<p>Each zome API function should have its own module under <code>nucleus::ribosome::*</code>.</p>
+<p>Implement a public function as <code>invoke_&lt;canonical name&gt;</code>. The function must take
+two arguments, a <code>&amp;mut nucleus::ribosome::Runtime</code> and a <code>&amp;wasmi::RuntimeArgs</code>.</p>
+<p>This function will be called by the invocation dispatch (see above).</p>
+<a class="header" href="#zome-api-function-arguments" id="zome-api-function-arguments"><h4>Zome API function arguments</h4></a>
+<p>The <code>wasmi::RuntimeArgs</code> passed to the Zome API function contains only a single
+<code>u32</code> value. This is an encoded representation of a single page of memory
+supported by the memory manager. The 16 high bits are the memory offset and the
+16 low bits are the memory length. See the <code>wasm_utils</code> crate for more
+implementation details.</p>
+<p>You don't have to work with the memory manager directly, simply pass the runtime
+and runtime args to <code>nucleus::runtime_args_to_utf8</code> to get a utf-8 string from
+memory.</p>
+<p>You DO have to handle serialization round trips if you want to pass anything
+other than a single utf-8 string to a zome API function.</p>
+<p>The simplest way to do this is implement a struct that derives <code>Serialize</code> and
+<code>Deserialize</code> from serde, then use serde and <code>.into_bytes()</code> co-ordinate the
+round trip.</p>
+<p>For an example implementation of a struct with several fields see:</p>
+<ul>
+<li><code>nucleus::ribosome::commit::CommitArgs</code> for the input args struct</li>
+<li><code>nucleus::ribosome::commit::tests::test_args_bytes</code> serializing the struct as bytes</li>
+<li><code>nucleus::ribosome::commit::invoke_commit</code> deserializing the struct from the runtime</li>
+</ul>
+<a class="header" href="#zome-api-function-action-dispatch" id="zome-api-function-action-dispatch"><h4>Zome API function action dispatch</h4></a>
+<p>If the function has a side effect it must send an action to the state reduction
+layer.</p>
+<p>Actions are covered in more detail in the state chapter.</p>
+<p>In summary, if you want to send an action and wait for a return value:</p>
+<ul>
+<li>create an outer channel in the scope of your invoke function that will receive the return value</li>
+<li>call <code>::instance::dispatch_action_with_observer</code> with:
+<ul>
+<li>the runtime's channels</li>
+<li>the action the reducer will dispatch on</li>
+<li>an observer sensor, which is a closure that polls for the action result and sends to your outer channel</li>
+</ul>
+</li>
+<li>block the outer channel until you receive the action result</li>
+</ul>
+<a class="header" href="#zome-api-function-return-values" id="zome-api-function-return-values"><h4>Zome API function return values</h4></a>
+<p>The zome API function returns a value to wasm representing success or a wasm trap.</p>
+<p>The success value can only be a single <code>i32</code>.</p>
+<p>Traps are a low level wasm concern and are unlikely to be directly useful to a
+zome API function implementation.</p>
+<p>See https://github.com/WebAssembly/design/blob/master/Semantics.md#traps</p>
+<p>To get complex values out of wasm we use the memory manager, much like the input
+argument serialization (see above).</p>
+<p>The util function <code>nucleus::runtime_allocate_encode_str</code> takes a string,
+allocates memory and returns the value that the zome API function must return.</p>
+<p>To return an error relevant to holochain, return <code>Ok</code> with an <code>HcApiReturnCode</code>
+error enum variant.</p>
+<p>For an example implementation returning a complex struct see:</p>
+<ul>
+<li><code>agent::state::ActionResponse::GetEntry</code> containing an <code>Entry</code> struct</li>
+<li><code>nucleus::ribosome::get::invoke_get</code>
+<ul>
+<li>match the action result against the correct enum variant</li>
+<li>serialize the entry using serde</li>
+<li>return the result of <code>runtime_allocate_encode_str</code></li>
+<li>if the action result variant does NOT match then return <code>HcApiReturnCode::ErrorActionResult</code></li>
+</ul>
+</li>
+</ul>
+<a class="header" href="#zome-api-function-agent-action" id="zome-api-function-agent-action"><h3>Zome API function agent action</h3></a>
+<p>If the zome API function will cause side effects to the agent state then it must
+implement and dispatch an action.</p>
+<p>Actions are covered in more detail in the state chapter.</p>
+<p>In summary, if a new agent action (for example) is needed:</p>
+<ul>
+<li>extend the <code>action::Action</code> enum
+<ul>
+<li>this sets the data type, the <code>ActionWrapper</code> provides a unique ID</li>
+<li>use the canonical name if that makes sense</li>
+</ul>
+</li>
+<li>extend an <code>ActionResult</code> enum if the action has a return value</li>
+<li>implement a reducer for the new action</li>
+</ul>
+<a class="header" href="#state--actions" id="state--actions"><h1>State &amp; Actions</h1></a>
+<p>Holochain uses a hybrid global/local state model.</p>
+<p>In our bio mimicry terms the global state is for &quot;short term memory&quot; and local
+state wraps references to &quot;long term memory&quot;.</p>
+<p>The global state is implemented as Redux style reducers. Any module can dispatch
+an action to the global state. The action will be &quot;reduced&quot; to a new state tree
+value by the modules responsible for each branch of the state tree. The response
+values from a reduction must be polled directly from the state tree in a thread
+using a &quot;sensor&quot; closure in an observer.</p>
+<p>Actions are stateless/immutable data structures that are dispatched by modules
+to communicate a request to do something potentially state changing. Everything
+in the system should be either stateless or change state only in response to an
+incoming action.</p>
+<p>The global state is called &quot;short term memory&quot; because it is highly dynamic,
+readily inspectable, and volatile. It does not survive indefinitely and is best
+thought of as a cache of recent history.</p>
+<p>Local state is implemented using actors to co-ordinate memory and threads in
+Rust for external, persistent state. The classic example is a database
+connection to the database that stores entries and headers. The db actor
+receives read/write messages, and a reference to the sender is stored in the
+global state.</p>
+<a class="header" href="#actions" id="actions"><h2>Actions</h2></a>
+<p>The <code>action</code> module defines actions and action wrappers:</p>
+<ul>
+<li><code>ActionWrapper</code>: struct contains a unique ID for the action and the <code>Action</code></li>
+<li><code>Action</code>: enum of specific data to a given action, e.g. <code>Action::Commit</code></li>
+</ul>
+<p>Processing an incoming action is a 3 step process:</p>
+<ol start="0">
+<li>Implement <code>reduce</code> to resolve and dispatch to a handler</li>
+<li>Resolve the action to an appropriate handler</li>
+<li>Implement handler logic</li>
+</ol>
+<a class="header" href="#reduce" id="reduce"><h3>Reduce</h3></a>
+<p>The <code>reduce</code> implementation is essentially copypasta. It handles resolving and
+dispatching to a handler with a new state clone. The handler resolution and
+dispatch logic should be split to facilitate clean unit testing.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub fn reduce(
+    old_state: Arc&lt;FooState&gt;,
+    action_wrapper: &amp;ActionWrapper,
+    action_channel: &amp;Sender&lt;ActionWrapper&gt;,
+    observer_channel: &amp;Sender&lt;Observer&gt;,
+) -&gt; Arc&lt;AgentState&gt; {
+  let handler = resolve_action_handler(action_wrapper);
+  match handler {
+      Some(f) =&gt; {
+          let mut new_state: FooState = (*old_state).clone();
+          f(&amp;mut new_state, &amp;action_wrapper, action_channel, observer_channel);
+          Arc::new(new_state)
+      }
+      None =&gt; old_state,
+  }
+}
+#}</code></pre></pre>
+<a class="header" href="#resolve-an-appropriate-handler" id="resolve-an-appropriate-handler"><h3>Resolve an appropriate handler</h3></a>
+<p>The action handler should map signals to action handlers.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+fn resolve_action_handler(
+    action_wrapper: &amp;ActionWrapper,
+) -&gt; Option&lt;fn(&amp;mut AgentState, &amp;ActionWrapper, &amp;Sender&lt;ActionWrapper&gt;, &amp;Sender&lt;Observer&gt;)&gt; {
+    match action_wrapper.action() {
+        Action::Commit(_, _) =&gt; Some(handle_commit),
+        Action::Get(_) =&gt; Some(handle_get),
+        _ =&gt; None,
+    }
+}
+#}</code></pre></pre>
+<a class="header" href="#implement-the-handlers" id="implement-the-handlers"><h3>Implement the handlers</h3></a>
+<p>Each handler should respond to one action signal and mutate the relevant state.</p>
+<p>The standard pattern is to maintain a <code>HashMap</code> of incoming action wrappers
+against the result of their action from the perspective of the current module.
+Each action wrapper has a unique <code>id</code> internally so there will be no key
+collisions.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+fn handle_foo(
+    state: &amp;mut FooState,
+    action_wrapper: &amp;ActionWrapper,
+    _action_channel: &amp;Sender&lt;ActionWrapper&gt;,
+    _observer_channel: &amp;Sender&lt;Observer&gt;,
+) {
+    let action = action_wrapper.action();
+    let bar = unwrap_to!(action =&gt; Action::Bar);
+
+    // do something with bar...
+    let result = bar.do_something();
+
+    state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::Bar(result.clone()));
+}
+#}</code></pre></pre>
+<p>WARNING: Actions are reduced in a simple loop. Holochain will hang if you
+dispatch and block on a new action while an outer action reduction is also
+blocking, waiting for a response.</p>
+<a class="header" href="#global-state" id="global-state"><h2>Global state</h2></a>
+<p><code>instance::Instance</code> has a <code>state::State</code> which is the one global state. Each
+stateful module has a <code>state.rs</code> module containing sub-state slices.</p>
+<p>See <code>src/agent/state.rs</code> and <code>src/nucleus/state.rs</code> and how they are put
+together in <code>src/state.rs</code>.</p>
+<p>State is read from the instance through relevant getter methods:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+instance.state().nucleus().dna()
+#}</code></pre></pre>
+<p>and mutated by dispatching an action:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let entry = Entry::new( ... );
+let action_wrapper = ActionWrapper::new(&amp;Action::Commit(entry));
+instance.dispatch(action_wrapper);
+#}</code></pre></pre>
+<p>Instance calls reduce on the state with the next action to consume:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub fn consume_next_action(&amp;mut self) {
+    if self.pending_actions.len() &gt; 0 {
+        let action = self.pending_actions.pop_front().unwrap();
+        self.state = self.state.clone().reduce(&amp;action);
+    }
+}
+#}</code></pre></pre>
+<p>The main reducer creates a new State object and calls the sub-reducers:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub fn reduce(&amp;mut self, action_wrapper: &amp;ActionWrapper) -&gt; Self {
+    let mut new_state = State {
+        nucleus: ::nucleus::reduce( ... ),
+        agent: ::agent::reduce( ... )
+    }
+
+    new_state.history.insert(action_wrapper);
+    new_state
+}
+#}</code></pre></pre>
+<p>Each incoming action wrapper is logged in the main state <code>history</code> to facilitate
+testing and &quot;time travel&quot; debugging.</p>
+<p>Sub-module state slices are included in <code>state::State</code> as counted references.</p>
+<p>The sub-module reducer must choose to either:</p>
+<ul>
+<li>If mutations happen, return a cloned, mutated state slice with a new reference</li>
+<li>If no mutations happen, return the reference to the original state slice</li>
+</ul>
+<p>The <code>reduce</code> copypasta above demonstrates this as the possible return values.</p>
+<p>Redux in Rust code was used as a reference from <a href="https://github.com/rust-redux/rust-redux">this repository</a>.</p>
+<a class="header" href="#local-state" id="local-state"><h2>Local state</h2></a>
+<p>Coming Soon.</p>
+<p>@TODO
+@see https://github.com/holochain/holochain-rust/issues/176</p>
+<a class="header" href="#internal-actors" id="internal-actors"><h1>Internal actors</h1></a>
+<p>Actors are discussed in two context:</p>
+<ul>
+<li>Each Holochain agent as an actor in a networking context</li>
+<li>Riker actors as an implemenation detail in the Holochain core lib</li>
+</ul>
+<p>This article is about the latter.</p>
+<a class="header" href="#actor-model" id="actor-model"><h2>Actor model</h2></a>
+<p>The <a href="https://en.wikipedia.org/wiki/Actor_model">actor model</a> is a relatively safe approach to co-ordinating concurrency.</p>
+<p>At a high level:</p>
+<ul>
+<li>An actor is the &quot;primitive&quot;, like objects are the primitive of the OO paradigm</li>
+<li>Actors are stateful but this state is never exposed to the rest of the system</li>
+<li>Actors manage their internal state</li>
+<li>Actors maintain a message queue or &quot;inbox&quot;</li>
+<li>Messages can be received concurrently but must be processed sequentially in FIFO order</li>
+<li>The messages have a preset format</li>
+<li>Actors update their internal state in response to messages</li>
+<li>Actors can send messages to each other</li>
+<li>Messages are always processed at most once</li>
+<li>Actors can &quot;supervise&quot; each other to create a fault tolerent system</li>
+<li>A supervisor can restart or stop a failed actor, or escalate the decision to another supervisor</li>
+</ul>
+<p>The guarantees provided by the message queue allow actors to use stateful logic
+that would not be safe otherwise in a concurrent context.</p>
+<p>For example, we can implement logic that reads/writes to the file system without
+locks or other co-ordination. Then put an actor in front of this logic and only
+interact with the file system through the relevant actor.</p>
+<a class="header" href="#riker" id="riker"><h2>Riker</h2></a>
+<p><a href="http://riker.rs/">Riker</a> is an actor library for Rust.</p>
+<p>The actor implementation in Riker has a few key concepts:</p>
+<ul>
+<li>protocol: a set of valid messages that can be sent (e.g. an enum)</li>
+<li>actor system: manages and co-ordinates all actors</li>
+<li>actor: anything implementing the <code>Actor</code> trait to create new actor instances and handle receiving messages</li>
+<li>actor instance: an instance of the actor struct that has internal state and is tracked by the actor system</li>
+<li>actor ref(erence): an ActorRef<MyProtocol> that can tell messages to the actor instance it references via. the actor system</li>
+</ul>
+<p>The actor reference is a &quot;killer feature&quot; of Riker for us.</p>
+<ul>
+<li>known size at compile, safe as properties of structs/enums</li>
+<li>small size, almost free to clone</li>
+<li>safe to share across threads and copy, no Arc reference counting, no locks, etc.</li>
+<li>safe to drop (the actor system maintains a URI style lookup)</li>
+<li>known type, no onerous generic trait handling</li>
+<li>no onerous lifetimes</li>
+</ul>
+<a class="header" href="#frequently-asked-questions" id="frequently-asked-questions"><h1>Frequently Asked Questions</h1></a>
+<ol>
+<li><a href="#how-is-holochain-different-from-blockchain">How is Holochain different from blockchain?</a></li>
+<li><a href="#why-do-you-call-it-holochain">Why do you call it &quot;Holochain&quot;?</a></li>
+<li><a href="#how-is-holochain-different-from-a-dht-distributed-hash-table">How is Holochain different from a DHT (Distributed Hash Table)?</a></li>
+<li><a href="#what-kind-of-projects-is-holochain-good-for">What kind of projects is Holochain good for?</a>
+<a href="#what-is-holochain-not-good-for">What is Holochain <em>not</em> good for?</a></li>
+<li><a href="#what-is-holochains-consensus-algorithm">What is Holochain's consensus algorithm?</a></li>
+<li><a href="#can-you-run-a-cryptocurrency-on-holochain">Can you run a cryptocurrency on Holochain?</a></li>
+<li><a href="#how-is-holochain-different-from-__________">How is Holochain different from __________?</a></li>
+<li><a href="#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps">What language is Holochain written in? What languages can I use to make Holochain apps?</a></li>
+<li><a href="#is-holochain-open-source">Is Holochain open source?</a>
+10 <a href="#how-is-holochain-more-environmentally-ethical-than-blockchain">How is Holochain more environmentally ethical than blockchain?</a></li>
+<li><a href="#how-are-data-validated-on-holochain">How are data validated on Holochain?</a></li>
+<li><a href="#what-happens-to-data-when-a-node-leaves-the-network">What happens to data when a node leaves the network?</a></li>
+<li><a href="#should-i-build-my-cointoken-on-holochain">Should I build my coin/token on Holochain?</a></li>
+<li><a href="#what-does-agent-centric-mean-how-is-this-different-from-data-centric">What does “agent-centric” mean? How is this different from “data-centric”?</a></li>
+<li><a href="#what-is-the-tps-transactions-per-second-on-holochain">What is the TPS (Transactions Per Second) on Holochain?</a></li>
+</ol>
+<a class="header" href="#how-is-holochain-different-from-blockchain" id="how-is-holochain-different-from-blockchain"><h2>How is Holochain different from blockchain?</h2></a>
+<blockquote>
+<p>Holochain and blockchain are built for fundamentally different use cases. Blockchain is relatively good for systems where it’s absolutely necessary to maintain global consensus. Holochain is much better than blockchain at anything that requires less than universal consensus (most things): It’s faster, more efficient, more scalable, adaptable, and extendable.</p>
+</blockquote>
+<p>Long before blockchains were <a href="https://en.wikipedia.org/wiki/Hash_chain">hash chains</a> and <a href="https://en.wikipedia.org/wiki/Merkle_tree">hash trees</a>. These structures can be used to ensure tamper-proof data integrity as progressive versions or additions to data are made. These kinds of hashes are often used as reference points to ensure data hasn't been messed with—like making sure you're getting the program you meant to download, not some virus in its place.</p>
+<p>Instead of trying to manage global consensus for every change to a huge blockchain ledger, every participant has <a href="https://medium.com/metacurrency-project/perspectives-on-blockchains-and-cryptocurrencies-7ef391605bd1#.kmous6d7z">their own signed hash chain</a> (<a href="https://medium.com/metacurrency-project/beyond-blockchain-simple-scalable-cryptocurrencies-1eb7aebac6ae#.u1idviscz">countersigned for transactions</a> involving others). After data is signed to local chains, it is shared to a <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> where every node runs the same validation rules (like blockchain nodes all run the <a href="https://bitcoin.org/en/bitcoin-core/features/validation">same validation rules</a>. If someone breaks those rules, the DHT rejects their data—their chain has forked away from the holochain.</p>
+<p>The initial <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin white paper</a> introduced a blockchain as an architecture for decentralized production of a chain of digital currency transactions. This solved two problems (time/sequence of transactions, and randomizing who writes to the chain) with one main innovation of bundling transactions into blocks which somebody wins the prize of being able to commit to the chain if they <a href="https://en.bitcoin.it/wiki/Hashcash">solve a busywork problem</a> faster than others.</p>
+<p>Now Bitcoin and blockchain have pervaded people's consciousness and many perceive it as a solution for all sorts of decentralized applications. However, when the problems are framed slightly differently, there are much more efficient and elegant solutions (like holochains) which don't have the <a href="https://www.google.com/search?q=blockchain+bottleneck">processing bottlenecks</a> of global consensus, storage requirements of everyone having a <a href="https://blockchain.info/charts/blocks-size">FULL copy</a> of all the data, or <a href="https://blog.p2pfoundation.net/essay-of-the-day-bitcoin-mining-and-its-energy-footprint/2015/12/20">wasting so much electricity </a> on busywork.</p>
+<a class="header" href="#why-do-you-call-it-holochain" id="why-do-you-call-it-holochain"><h2>Why do you call it &quot;Holochain&quot;?</h2></a>
+<blockquote>
+<p>A variety of reasons: it's a composed whole of other technologies, it's structurally holographic, and it empowers holistic patterns.</p>
+</blockquote>
+<a class="header" href="#a-unified-cryptographic-whole" id="a-unified-cryptographic-whole"><h3>A unified cryptographic <em>whole</em></h3></a>
+<p>Holochain is made from multiple cryptographic technologies composed into a new whole.</p>
+<ul>
+<li>
+<p><strong>Hashchains:</strong> Hashchains provide immutable data integrity and definitive time sequence from the vantage point of each node. Technically, we're using hash trees—blockchains do too, but they're not called blocktrees, so we're not calling these holotrees.</p>
+</li>
+<li>
+<p><strong>Cryptographic signing</strong> of chains, messages, and validation confirmations maintain authorship, provenance, and accountability. Countersigning of transactions/interactions between multiple parties provide non-repudiation and &quot;locking&quot; of chains.</p>
+</li>
+<li>
+<p><strong>DHT (Distributed Hash Table)</strong> leverages cryptographic hashes for content addressable storage, while randomizing of interactions by hashing into neighborhoods to impede collusion, and processing validation #1 and #2 to store data on the DHT.</p>
+</li>
+</ul>
+<a class="header" href="#holographic-storage" id="holographic-storage"><h3><em>Holo</em>graphic storage</h3></a>
+<p>Every node has a resilient sample of the whole. Like cutting a hologram, if you were to cut a Holochain network in half (make it so half the nodes were isolated from the other half), you would have two whole, functioning systems, not two partial, broken systems.</p>
+<p>This seems to be the strategy used to create resilience in natural systems. For example, where is your DNA stored? Every cell carries its own copy, with different functions expressed based on the role of that cell.</p>
+<p>Where is the English language stored? Every speaker carries it. People have different areas of expertise, or exposure to different slang or specialized vocabularies. Nobody has a complete copy, nor is anyone's version exactly the same as anyone else, If you disappeared half of the English speakers, it would not degrade the language much.</p>
+<p>If you keep cutting a hologram smaller and smaller eventually the image degrades enough to stop being recognizable, and depending on the resiliency rules for DHT neighborhoods, holochains would likely share a similar fate. Although, if the process of killing off the nodes was not instantaneous, the network may be able to keep reshuffling data per redundancy requirements to keep it alive.</p>
+<a class="header" href="#holarchy" id="holarchy"><h3><em>Hol</em>archy</h3></a>
+<p>Holochains are composable with each other into new levels of unification. In other words, Holochains can build on decentralized capacities provided by other Holochains, making new holistic patterns possible. Like bodies build new unity on holographic storage patterns that cells use for DNA, and a society build new unity on the holographic storage patterns of language, and so on.</p>
+<a class="header" href="#how-is-holochain-different-from-a-dht-distributed-hash-table" id="how-is-holochain-different-from-a-dht-distributed-hash-table"><h2>How is Holochain different from a DHT (Distributed Hash Table)?</h2></a>
+<p>DHTs enable key/value pair storage and retrieval across many machines. The only validation rules they have is the hash of the data itself to confirm what you're getting is probably what you intended to get. They have no other means to confirm authenticity, provenance, timelines, or integrity of data sources.</p>
+<p>In fact, since many DHTs are used for illegal file sharing (Napster, Bittorrent, Sharezaa, etc.), they are designed to protect anonymity of uploaders so they won't get in trouble. File sharing DHTs frequently serve virus infected files, planted by uploaders trying to infect digital pirates. There's no accountability for actions or reliable way to ensure bad data doesn't spread.</p>
+<p>By embedding validation rules as a condition for the propagation of data, our DHT keeps its data bound to signed source chains. This can provide similar consistency and rule enforcement as blockchain ledgers asynchronously so bottlenecks of immediate consensus become of the thing of the past.</p>
+<p>The DHT leverages the signed source chains to ensure tamper-proof immutability of data, as well as cryptographic signatures to verify its origins and provenance.</p>
+<p>The Holochain DHT also emulates aspects of a graph database by enabling people to connect links to other hashes in the DHT tagged with semantic markers. This helps solve the problem of finding the hashes that you want to retrieve from the DHT. For example, if I have the hash of your user identity, I could query it for links to blogs you've published to a holochain so that I can find them without knowing either the hash or the content. This is part of how we eliminate the need for tracking nodes that many DHTs rely on.</p>
+<a class="header" href="#what-kind-of-projects-is-holochain-good-for" id="what-kind-of-projects-is-holochain-good-for"><h2>What kind of projects is Holochain good for?</h2></a>
+<p>Sharing collaborative data without centralized control. Imagine a completely decentralized Wikipedia, DNS without root servers, or the ability to have fast reliable queries on a fully distributed PKI, etc.</p>
+<ul>
+<li>
+<p><strong>Social Networks, Social Media &amp; VRM:</strong> You want to run a social network without a company like Facebook in the middle. You want to share, post, publish, or tweet to shared space, while automatically keeping a copy of these things on your own device.</p>
+</li>
+<li>
+<p><strong>Supply Chains &amp; Open Value Networks:</strong> You want to have information that crosses the boundaries of companies, organizations, countries, which is collaboratively shared and managed, but not under the central control of any one of those organizations.</p>
+</li>
+<li>
+<p><strong>Cooperatives and New Commons:</strong> You want to create something which is truly held collectively and not by any particular individual. This is especially good for digital assets.</p>
+</li>
+<li>
+<p><strong>P2P Platforms:</strong> Peer-to-Peer applications where every person has similar capabilities, access, responsibilities, and value is produced collectively.</p>
+</li>
+<li>
+<p><strong>Collective Intelligence:</strong> Governance, decision-making frameworks, feedback systems, ratings, currencies, annotations, or work flow systems.</p>
+</li>
+<li>
+<p><strong>Collaborative Applications:</strong> Chats, Discussion Boards, Scheduling Apps, Wikis, Documentation, etc.</p>
+</li>
+<li>
+<p><strong>Reputational or Mutual Credit Cryptocurrencies:</strong> Currencies where issuance can be accounted for by actions of peers (like ratings), or through double-entry accounting are well-suited for holochains. Fiat currencies where tokens are thought to exist independent of accountability by agents are more challenging to implement on holochains.</p>
+</li>
+</ul>
+<a class="header" href="#what-is-holochain-not-good-for" id="what-is-holochain-not-good-for"><h2>What is Holochain <em>not</em> good for?</h2></a>
+<p>You probably should not use Holochain for:</p>
+<ul>
+<li>
+<p><strong>Just yourself:</strong> You generally don't need distributed tools to just run something for yourself. The exception would be if you want to run a holochain to synchronize certain data across a bunch of your devices (phone, laptop, desktop, cloud server, etc.)</p>
+</li>
+<li>
+<p><strong>Anonymous, secret, or private data:</strong> Not only do we need to do a security audit of our encryption and permissions, but you're publishing to a shared DHT space, so unless you really know what you're doing, you should not assume data is private. Some time in the future, I'm sure some applications will add an anonymization layer (like TOR), but that is not native.</p>
+</li>
+<li>
+<p><strong>Large files:</strong> Think of holochains more like a database than a file system. Nobody wants to be forced to load and host your big files on their devices just because they are in the neighborhood of its hash. Use something like IPFS if you want a decentralized file system.</p>
+</li>
+<li>
+<p><strong>Data positivist-oriented apps:</strong> If you have built all of your application logic around the idea that data exists as an absolute truth, not as an assertion by an agent at a time, then you would need to rethink your whole approach before putting it in a Holochain app. This is why most existing cryptocurrencies would need significant refactoring to move from blockchain to Holochain, since they are organized around managing the existence of cryptographic tokens.</p>
+</li>
+</ul>
+<a class="header" href="#what-is-holochains-consensus-algorithm" id="what-is-holochains-consensus-algorithm"><h2>What is Holochain's consensus algorithm?</h2></a>
+<blockquote>
+<p>Holochains don't manage consensus, at least not about some absolute perspective on data or sequence of events. They manage distributed data integrity. Holochains do rely on consensus about the validation rules (DNA) which define that integrity, but so does every blockchain or blockchain alternative (e.g. Bitcoin Core). If you have different validation rules, you're not on the same chain. These validation rules establish the &quot;data physics,&quot; and then applications are built on that foundation.</p>
+</blockquote>
+<p>In making Holochain, our goal is to keep it &quot;as simple as possible, but no simpler&quot; for providing data integrity for fully distributed applications. As we understand it, information integrity does not require consensus about an absolute order of events. You know how we know? Because the real world works this way—meaning, the physically distributed systems outside of computers. Atoms, molecules, cells, bodies each maintain the integrity of their individual and collective state just fine without consensus on a global ledger.</p>
+<p>Not only is there no consensus about an absolute order of events, but if you understand the General Theory of Relativity, then you'll understand there is in fact no real sequence of events, only sequences relative to a particular vantage point.</p>
+<p>That's how holochains are implemented. Each source chain for each person/agent/participant in a Holochain preserves the immutable data integrity and order of events of that agent's actions from their vantage point. As data is published from a source chain to the validating DHT, then other agents sign their validation, per the shared &quot;physics&quot; encoded into the DNA of that Holochain.</p>
+<p>The minor exception to the singular vantage point of each chain, is the case when a multi-party transaction is signed to each party's chain. That is an act of consensus -- but consensus on a very small scale -- just between the parties involved in the transaction. Each party signs the exact same transaction to with links to each of their previous chain entries. Luckily, it's pretty easy to reach consensus between 2 or 3 parties. In fact, that is already why they're doing a transaction together, because they all agree to it.</p>
+<p>Holochains do sign every change of data and timestamp (without a universal time synchronization solution), This provides ample foundation for most applications which need solid data integrity for shared data in a fully distributed multi-agent system. Surely, there will be people who will build consensus algorithms on top of foundation (maybe like rounds, witnesses, supermajorities of Swirld),</p>
+<p>However, if your system is designed around data having one absolute true state, not one which is dynamic and varied based on vantage point, we would suggest you rethink your design. So far, for every problem space where people thought they needed an absolute sequence of events or global consensus, we have been able to map an alternate approach without those requirements. Also, we already know this is how the world outside of computers works, so to design your system to require (or construct) an artificial reality is probably setting yourself up for failure, or at the very least for massive amounts of unnecessary computation, communication, and fragility within your system.</p>
+<a class="header" href="#how-is-holochain-more-environmentally-ethical-than-blockchain" id="how-is-holochain-more-environmentally-ethical-than-blockchain"><h2>How is Holochain more environmentally ethical than blockchain?</h2></a>
+<blockquote>
+<p>Holochain removes the need for global consensus, and with it the expenditure of massive amounts of electricity to synchronize millions of nodes about data that aren't relevant to them.</p>
+</blockquote>
+<p>There are two reasons Holochain is vastly more efficient than blockchain and more ethical in a green sense:</p>
+<ol>
+<li>
+<p>It eliminates the need for all nodes to be synchronized with each other in global consensus. Sharding is usually enabled on Holochain. This means that when two nodes make a transaction, each node saves a countersigned record of that transaction. Additionally, the transaction is published to the <a href="https://www.youtube.com/watch?v=FhF_kvgfEZM">Distributed Hash Table</a> (sent to and saved by some unpredictably random nodes that can be looked up later for retrieval).</p>
+<p>Sharding is configurable by app, and in some cases it's a good idea to turn it off. For example, imagine a distributed Slack-like team messaging app. With only 40-50 members, full synchronization would be worth the extra bandwidth requirement for the benefit of offline messages and reduced load times. But for most applications, global synchronization isn't really needed and sharding is kept on.</p>
+<p>Because of DHTs, and the sharding they enable, Holochain actually doesn't rely on the transfer of large amounts of redundant information, and uses vastly less bandwidth than blockchain.</p>
+</li>
+<li>
+<p>There's no mining on Holochain. Blockchain's proof-of-work system provides a hefty incentive for thousands of people to spend the processing power of their CPUs and GPUs using up <a href="https://digiconomist.net/bitcoin-energy-consumption">huge amounts</a> <a href="https://motherboard.vice.com/en_us/article/ywbbpm/bitcoin-mining-electricity-consumption-ethereum-energy-climate-change">of electricity</a> on solving a meaningless cryptographic puzzle. Holochain doesn't have mining.</p>
+</li>
+</ol>
+<a class="header" href="#how-is-holochain-different-from-__________" id="how-is-holochain-different-from-__________"><h2>How is Holochain different from __________?</h2></a>
+<p><strong>TODO: Update with reference to Rust project.</strong></p>
+<p>Please see the <a href="https://github.com/Holochain/holochain-proto/wiki/Comparisons">Comparisons page</a>.</p>
+<a class="header" href="#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps" id="what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps"><h2>What language is Holochain written in? What languages can I use to make Holochain apps?</h2></a>
+<p><strong>TODO: Update re Rust and Wasm.</strong></p>
+<blockquote>
+<p>Holochain core is written in Go; Holochain apps can be written in JavaScript or Lisp.</p>
+</blockquote>
+<p>Holochain core is written in Go. We picked Go because it's similar to C but has tons of more modern features like syntactic sugar, and lots of packages. It's also much less complicated than C++. Go is relatively simple, easy to learn, modern, and powerful.</p>
+<p>Holochain apps can currently be developed in JavaScript or Lisp, with front-end/UI built using CSS, HTML, and JavaScript. It's relatively easy to add more to the list of languages with which apps can be built. So for most of the development people will be doing on Holochain, a choice of languages can be used.</p>
+<a class="header" href="#is-holochain-open-source" id="is-holochain-open-source"><h2>Is Holochain open source?</h2></a>
+<p>Yes, it has an open source <a href="https://github.com/Holochain/holochain-rust/#license">license</a>.</p>
+<a class="header" href="#can-you-run-a-cryptocurrency-on-holochain" id="can-you-run-a-cryptocurrency-on-holochain"><h2>Can you run a cryptocurrency on Holochain?</h2></a>
+<blockquote>
+<p>Theoretically, yes—but for the moment, we'd discourage it.</p>
+</blockquote>
+<p>If you don't know how to issue currencies through mutual credit, or how to account for them through double entry accounting, then you probably shouldn't build one on Holochain. If you do understand those key principles, than it is not very difficult to build a cryptocurrency for which Holochain provides ample accounting and data integrity.</p>
+<p>However, you probably shouldn't try to do it in the way everyone is used to building cryptocurrencies on a global ledger of cryptographic tokens. <a href="https://en.bitcoin.it/wiki/Double-spending">Determining the status of tokens/coins</a> is what create the need for global consensus (about the existence/status/validity of the token or coin). However, there are <a href="https://medium.com/metacurrency-project/perspectives-on-blockchains-and-cryptocurrencies-7ef391605bd1">other approaches to making currencies</a> which, for example, involve <a href="https://medium.com/metacurrency-project/beyond-blockchain-simple-scalable-cryptocurrencies-1eb7aebac6ae">issuance via mutual credit</a> instead of issuance by fiat.</p>
+<p>Unfortunately, this is a hotly contested topic by many who often don't have a deep understanding of currency design nor cryptography, so we're not going to go too deep in this FAQ. We intend to publish a white paper on this topic soon, as well as launch some currencies built this way.</p>
+<a class="header" href="#how-are-data-validated-on-holochain" id="how-are-data-validated-on-holochain"><h2>How are data validated on Holochain?</h2></a>
+<blockquote>
+<p>On Holochain, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator.</p>
+</blockquote>
+<p>There is no overall, global &quot;correctness&quot; (or consensus) built in to Holochain. Instead, each node that receives a record of a transaction validates it against the shared application rules and gossips it to their peers. If the rules are broken, that transaction is rejected by the validator. If foul play is detected on a node's part (the node is either propagating or validating bad data) that node is blocked and a warning is sent to others. Here's <a href="https://i.imgur.com/bjp7Txg.png">an infographic</a> describing this process. In summary, instead of a global consensus system, Holochain uses an <a href="https://www.youtube.com/watch?v=PVTnEKxwYls&amp;t=1s">accountability-based system</a> with data validation by peers.</p>
+<p>Applying this to the example of 'Ourbnb', an imaginary distributed version ofAirbnb: The Ourbnb Holochain app would certainly be written with a rule, &quot;don't rent your apartment to two parties at the same time.&quot; So the moment a user rents to two parties at the same time, nodes receiving that datum on the DHT attempt to validate it against the app rules, detect a collision, and reject it. Holochain's gossip protocol is designed to operate at a rate at which collisions will be detected nearly immediately by gossiping peers. And since Holochain doesn't have a coin built into it, it incentivizes users to cooperate and co-create.</p>
+<p>As a user, you don't need to trust the provider of the application you're using, only agree with the shared protocols that make up the application itself. Aside from being responsible for the maintenance and security of apps they provide, application providers on Holochain are not like traditional application providers today (think Facebook, Twitter, etc.). They don't host your data because your data is stored by you and a random subset of the users of the application.</p>
+<a class="header" href="#what-happens-to-data-when-a-node-leaves-the-network" id="what-happens-to-data-when-a-node-leaves-the-network"><h2>What happens to data when a node leaves the network?</h2></a>
+<blockquote>
+<p>The DHT of a Holochain app makes sure that there are always enough nodes on the network that hold a given datum.</p>
+</blockquote>
+<p>When people running Holochain apps turn off their device, they leave the network. What happens to their data and the data of other people they were storing? There are always enough nodes that hold a given piece of data in the network so as to prevent data loss when nodes leave. The DHT and Holochain gossip protocol are designed this way. Also, the redundancy factor of data on a given DHT is configurable so it can be fine-tuned for any purpose. For example, a chat app for a small team might set a redundancy factor of 100% in order to prevent long loading times, while an app with thousands of users might have a very small redundancy factor.</p>
+<a class="header" href="#should-i-build-my-cointoken-on-holochain" id="should-i-build-my-cointoken-on-holochain"><h2>Should I build my coin/token on Holochain?</h2></a>
+<blockquote>
+<p>Since it's agent-centric instead of data-centric like traditional blockchains, Holochain isn't the best platform on which to build a token or coin.</p>
+</blockquote>
+<p>The idea of tokens or coins is a direct representation of a system being data-centric. While theoretically it would be possible to create a token on Holochain, it would be taking a step back instead of a step forward. The more exciting possibility is creating mutual credit currencies on Holochain. These are agent-centric currencies that are designed to facilitate active exchange of value and flourishing ecosystems instead of hoarding.</p>
+<a class="header" href="#what-does-agent-centric-mean-how-is-this-different-from-data-centric" id="what-does-agent-centric-mean-how-is-this-different-from-data-centric"><h2>What does “agent-centric” mean? How is this different from “data-centric?”</h2></a>
+<blockquote>
+<p>Agent-centric systems view data not as an object, but as a shared experience.</p>
+</blockquote>
+<p>Traditional blockchains are data-centric: they rely on and are built around the concept that data is a thing—an object. Holochain transitions to agent-centricism: the idea that data is shared experiences seen from many points of view. It's not a thing. It's a collection of shared, relative experiences. Einstein discovered this about the physical world a hundred years ago—Relativity. So why are modern blockchains that are supposedly &quot;cutting edge&quot; still falling back on this antiquated idea that data is an object, and for two agents to have different views of one piece of data is wrong?</p>
+<p>Holochain is deeply agent-centric. Using tech that embodies this mindset enables vastly richer interactions and collaboration to happen through its technology while at the same time being thousands of times more efficient.</p>
+<a class="header" href="#what-is-the-tps-transactions-per-second-on-holochain" id="what-is-the-tps-transactions-per-second-on-holochain"><h2>What is the TPS (Transactions Per Second) on Holochain?</h2></a>
+<blockquote>
+<p>Holochain doesn't have a set TPS (transactions per second) like other blockchain-based or blockchain-derived projects might because there's central point through which all transactions must pass. Instead, Holochain is a generalized protocol for distributed computing.</p>
+</blockquote>
+<p>It's common to ask a blockchain project, &quot;How much can your technology handle? What's its TPS?&quot; This is because nearly all of these projects are built around the limiting idea of a global ledger.</p>
+<p>But you are not asking, how many posts per second Facebook can do. Why? Because there is no technical problem, adding more servers to Facebook's data center (only maybe monetary problems).</p>
+<p>You are not asking how many emails per second the internet can handle, because there is no single bottleneck for email-sending, like there would be with a centralized approach.</p>
+<p>Why are we seeing a transaction limit with blockchain networks? Because blockchain in a strange way marries a decentralized p2p network of nodes with the logical notion of one absolute truth, i.e. the blockchain being one big decentralized database of transactions. It tries to maintain this way of thinking about apps that we are used to from centralized servers. It forces every node into the same &quot;consensus&quot;. That is implemented by having everybody share and validate everything. That does work, and maybe there are few usecases (like a global naming system maybe?) where it might be advantageous.. but applying that for everything is nonsensical.</p>
+<p>Holochain is not forcing such a model. Instead it allows for building applications that are like email. The application is rather like a protocol, or grammar, or (I prefer this language) like a dance. If you know the dance (If you have a copy of the validation rules of the app) you can tell who else is dancing that dance and who is not. The difference between Holochain and something like email is that (similarly to blockhain) Holochain is applying 1. cryptographic signatures and 2. tamper proof hash-chains (hence Holo<em>chain</em>) so that you can build a distributed system you can trust in. You know it is impossible (I'd rather say: very very hard) to game somebody. This so far was only possible by having trusted authorities like banks or Facebook.</p>
+<p>So, Holochain as an app framework does not pose any limit of transactions per second because there is no place where all transactions have to go through. It is like asking, &quot;how many words can humanity speak per second?&quot; Well, with every human being born, that number increases. Same for Holochain.</p>
+<a class="header" href="#glossary" id="glossary"><h1>Glossary</h1></a>
+<a class="header" href="#agent" id="agent"><h1>Agent</h1></a>
+<a class="header" href="#keys" id="keys"><h1>Keys</h1></a>
+<a class="header" href="#dna" id="dna"><h1>DNA</h1></a>
+<a class="header" href="#zome" id="zome"><h1>Zome</h1></a>
+<a class="header" href="#source-chain" id="source-chain"><h1>Source Chain</h1></a>
+<a class="header" href="#distributed-hash-table" id="distributed-hash-table"><h1>Distributed Hash Table</h1></a>
+<a class="header" href="#local-hash-table" id="local-hash-table"><h2>Local Hash Table</h2></a>
+<a class="header" href="#implementation-details" id="implementation-details"><h3>implementation details</h3></a>
+<p>First, read about <a href="/state/actors.html">state actors</a>.</p>
+<p>The 1:1 API implementation between actors and their inner table is achieved by
+internally blocking on an <code>ask</code> from riker patterns.</p>
+<p>https://github.com/riker-rs/riker-patterns</p>
+<p>The actor ref methods implementing <code>HashTable</code> sends messages to itself.</p>
+<p>Calling <code>table_actor_ref.commit(entry)</code> looks like this:</p>
+<ol start="0">
+<li>the actor ref constructs a <code>Protocol::PutPair</code> message including the entry</li>
+<li>the actor ref calls its own <code>ask</code> method, which builds a future using riker's <code>ask</code></li>
+<li>the actor ref blocks on its internal future</li>
+<li>the referenced actor receives the <code>Commit</code> message and matches/destructures this into the entry</li>
+<li>the entry is passed to the <code>commit()</code> method of the inner table</li>
+<li>the actor's inner table, implementing <code>HashTable</code>, does something with commit (e.g. MemTable inserts into a standard Rust, in-memory <code>HashMap</code>)</li>
+<li>the return value of the inner table <code>commit</code> is inserted into a <code>CommitResult</code> message</li>
+<li>the <code>CommitResult</code> message is sent by the actor back to the actor ref's internal future</li>
+<li>the actor ref stops blocking</li>
+<li>the <code>CommitResult</code> message is destructured by the actor ref so that the return of <code>commit</code> satisfies the <code>HashTable</code> trait implementation</li>
+</ol>
+<p>Riker <code>ask</code> returns a future from the futures <code>0.2.2</code> crate.</p>
+<p><code>table_actor.block_on_ask()</code> calls <code>block_on</code> and <code>unwrap</code> against this ask.</p>
+<p>Both the block and the unwrap should be handled better in the future.</p>
+
+                        <hr />
+                        <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/print.md">suggest an edit</a>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>

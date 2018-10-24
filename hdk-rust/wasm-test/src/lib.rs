@@ -191,6 +191,7 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
         name: "testEntryType",
         description: "asdfda",
         sharing: Sharing::Public,
+        native_type: TestEntryType,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
@@ -207,6 +208,7 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
         name: "validation_package_tester",
         description: "asdfda",
         sharing: Sharing::Public,
+        native_type: TestEntryType,
 
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull

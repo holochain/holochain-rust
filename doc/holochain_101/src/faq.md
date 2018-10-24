@@ -147,7 +147,7 @@ We picked Go because it's similar to C but has tons of more modern features like
 
 ### Rust
 
-We picked Rust because it is a balance of safe code to write and a powerful language, specifically in its adaptability.
+More on why coming soon.
 
 > TODO - Update this
 

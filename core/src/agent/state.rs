@@ -39,65 +39,13 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-impl Serialize for AgentState {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("AgentState", 3)?;
-        state.serialize_field("keys", &self.chain)?;
-        state.serialize_field("chain_store", &self.chain)?;
-        state.serialize_field("top_chain_header", &self.top_chain_header)?;
-        state.end()
-    }
+#[derive(Deserialize,Serialize)]
+pub struct AgentStateSnapshot{
+    top_chain_header: Option<ChainHeader>
 }
 
-struct AgentVisitor;
-impl<'de> Visitor<'de> for AgentVisitor {
-    // The type that our Visitor is going to produce.
-    type Value = AgentState;
 
-    // Format a message stating what data this Visitor expects to receive.
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a very special map")
-    }
 
-    // Deserialize MyMap from an abstract "map" provided by the
-    // Deserializer. The MapAccess input is a callback provided by
-    // the Deserializer to let us see each entry in the map.
-    fn visit_map<M>(self, mut access: M) -> Result<AgentState, M::Error>
-    where
-        M: MapAccess<'de>,
-    {
-        let chain: (String, ChainStore<FilesystemStorage>) = access
-            .next_entry()?
-            .ok_or_else(|| de::Error::custom("Could not serialize file"))?;
-        let mut agent = AgentState::new(chain.1);
-        let keys_to_get = match access.next_entry::<String, Keys>()? {
-            Some(keys) => Some(keys.1),
-            None => None,
-        };
-        let top_chain_pair = match access.next_entry::<String, ChainHeader>()? {
-            Some(key_chain_pair) => Some(key_chain_pair.1),
-            None => None,
-        };
-        agent.top_chain_header = top_chain_pair;
-        agent.keys = keys_to_get;
-        Ok(agent)
-    }
-}
-
-impl<'de> Deserialize<'de> for AgentState {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Instantiate our Visitor and ask the Deserializer to drive
-        // it over the input data, resulting in an instance of MyMap.
-        deserializer.deserialize_map(AgentVisitor)
-    }
-}
 
 impl AgentState {
     /// builds a new, empty AgentState
@@ -129,12 +77,20 @@ impl AgentState {
         self.top_chain_header.clone()
     }
 
+}
+
+impl AgentStateSnapshot
+{
+    pub fn new(chain_header:Option<ChainHeader>) ->AgentStateSnapshot
+    {
+        AgentStateSnapshot{top_chain_header : chain_header}
+    }
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
     }
 }
 
-impl ToEntry for AgentState {
+impl ToEntry for AgentStateSnapshot {
     fn to_entry(&self) -> Entry {
         Entry::new(
             &EntryType::AgentState,
@@ -143,25 +99,26 @@ impl ToEntry for AgentState {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return AgentState::from_json_str(&entry.value())
+        return AgentStateSnapshot::from_json_str(&entry.value())
             .expect("entry is not a valid ChainHeader Entry");
     }
 }
 
-impl ToJson for AgentState {
+
+impl ToJson for AgentStateSnapshot {
     fn to_json(&self) -> Result<String, HolochainError> {
         Ok(serde_json::to_string(self)?)
     }
 }
 
-impl AddressableContent for AgentState {
+impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
         self.to_json()
             .expect("could not Jsonify ChainHeader as Content")
     }
 
     fn from_content(content: &Content) -> Self {
-        AgentState::from_json_str(content)
+        AgentStateSnapshot::from_json_str(content)
             .expect("could not read Json as valid ChainHeader Content")
     }
 }
@@ -245,8 +202,9 @@ fn reduce_commit_entry(
     ) -> Result<Address, HolochainError> {
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
-        state.chain.content_storage().add(state)?;
-
+        let agent = AgentStateSnapshot::new(Some(chain_header.clone()));
+        state.chain.content_storage().add(&agent)?;
+        
         Ok(entry.address())
     }
     let result = response(_context, state, &entry, &chain_header);

@@ -113,7 +113,6 @@ fn run_validation_callback(
         Some(fc.clone().parameters.into_bytes()),
     ) {
         Ok(runtime) => {
-            println!("jj: {:?}", runtime.result.clone());
             let maybe_return_code = RibosomeReturnCode::try_from(runtime.result.clone());
             match maybe_return_code {
                 Ok(return_code) => CallbackResult::from(return_code),

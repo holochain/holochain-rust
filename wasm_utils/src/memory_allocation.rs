@@ -32,7 +32,6 @@ pub fn decode_encoded_allocation(
     let (offset, length) = u32_split_bits(encoded_allocation);
     // zero length allocation = RibosomeReturnCode
     if length == 0 {
-        println!("ooo");
         return Err(RibosomeReturnCode::from_offset(offset));
     }
     let res = SinglePageAllocation::new(offset, length);

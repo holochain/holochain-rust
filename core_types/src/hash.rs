@@ -64,7 +64,7 @@ impl HashString {
 pub mod tests {
     use super::*;
     use cas::content::AddressableContent;
-    use entry::{test_entry, test_entry_address};
+    use entry::{test_entry, expected_entry_address};
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()
@@ -76,7 +76,7 @@ pub mod tests {
     /// show ToString implementation
     /// automatically derived by Rust because fmt::Display is implemented
     fn to_string_test() {
-        assert_eq!(test_hash().to_string(), test_entry_address().to_string(),)
+        assert_eq!(test_hash().to_string(), expected_entry_address().to_string(),)
     }
 
     #[test]

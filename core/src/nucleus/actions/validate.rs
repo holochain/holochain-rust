@@ -53,7 +53,6 @@ pub fn validate_entry(
                     validation_data.clone(),
                     context.clone(),
                 );
-                println!("jjj: {:?}", maybe_validation_result.clone());
                 let result = match maybe_validation_result {
                     Ok(validation_result) => match validation_result {
                         CallbackResult::Fail(error_string) => Err(error_string),

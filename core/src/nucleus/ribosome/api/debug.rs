@@ -12,7 +12,7 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let result = JsonString::from(RawString::from(runtime.load_utf8_from_args(args)));
     println!("{}", result);
-    // Return Ribosome Success Code
+
     runtime.store_json_string(result)
 }
 
@@ -40,7 +40,16 @@ pub mod tests {
         let (runtime, logger) =
             test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let logger = logger.lock().unwrap();
-        assert_eq!(JsonString::from(RawString::from("foo")), runtime.result);
+        assert_eq!(
+            JsonString::from(
+                format!(
+                    "{}{}",
+                    String::from(JsonString::from(RawString::from("foo"))), 
+                    "\u{0}",
+                ),
+            ),
+            runtime.result,
+        );
         assert_eq!(
             JsonString::from(format!("{:?}", logger.log)),
             JsonString::from("[\"Zome Function \\\'test\\\' returned: Success\"]"),

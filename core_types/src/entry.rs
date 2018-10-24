@@ -193,8 +193,8 @@ pub fn expected_serialized_entry_content() -> JsonString {
 
 /// the correct hash for test_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_address() -> Address {
-    Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
+pub fn expected_entry_address() -> Address {
+    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT".to_string())
 }
 
 /// dummy entry, same as test_entry()
@@ -241,7 +241,7 @@ pub mod tests {
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::{test_entry_address, Entry};
+    use entry::{expected_entry_address, Entry};
 
     #[test]
     /// tests for PartialEq
@@ -259,7 +259,7 @@ pub mod tests {
     #[test]
     /// test entry.address() against a known value
     fn known_address() {
-        assert_eq!(test_entry_address(), test_entry().address());
+        assert_eq!(expected_entry_address(), test_entry().address());
     }
 
     #[test]
@@ -333,7 +333,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
             test_entry_content(),
             test_entry(),
-            test_entry_address(),
+            expected_entry_address(),
         );
     }
 

@@ -194,7 +194,7 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_entry_address, SerializedEntry},
+        entry::{test_entry, expected_entry_address, SerializedEntry},
         error::HolochainError,
         json::{JsonString, RawString},
     };
@@ -208,7 +208,7 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_entry_address()))
+        ActionResponse::Commit(Ok(expected_entry_address()))
     }
 
     /// dummy action response for a successful get as test_entry()
@@ -280,8 +280,8 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"Commit\":{{\"Ok\":\"{}\"}}}}", test_entry_address())),
-            JsonString::from(ActionResponse::Commit(Ok(test_entry_address()))),
+            JsonString::from(format!("{{\"Commit\":{{\"Ok\":\"{}\"}}}}", expected_entry_address())),
+            JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
             JsonString::from("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
@@ -310,7 +310,7 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("[\"{}\"]", test_entry_address())),
+            JsonString::from(format!("{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}", expected_entry_address())),
             JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(
@@ -324,7 +324,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"ok\":\"{}\"}}", test_entry_address())),
+            JsonString::from(format!("{{\"ok\":\"{}\"}}", expected_entry_address())),
             JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
                 test_entry(),
             )))),

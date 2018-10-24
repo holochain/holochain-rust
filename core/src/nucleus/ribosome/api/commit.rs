@@ -51,7 +51,6 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    println!("xxx: {:?}", args_str);
     let serialized_entry: SerializedEntry = match serde_json::from_str(&args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error

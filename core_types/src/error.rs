@@ -203,6 +203,7 @@ impl FromStr for RibosomeReturnCode {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // println!("zz: {:?}", s.clone());
         Ok(
             match s.as_ref() {
                 "Success" => RibosomeReturnCode::Success,

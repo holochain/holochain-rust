@@ -1,4 +1,4 @@
-use error::{RibosomeErrorCode, RibosomeReturnCode};
+use holochain_core_types::error::{RibosomeErrorCode, RibosomeReturnCode};
 
 //--------------------------------------------------------------------------------------------------
 // Helpers
@@ -150,7 +150,7 @@ impl SinglePageStack {
 pub mod tests {
 
     use super::*;
-    use error::RibosomeReturnCode;
+    use holochain_core_types::error::RibosomeReturnCode;
 
     pub fn test_single_page_allocation() -> SinglePageAllocation {
         SinglePageAllocation::new(0, 20).expect("could not create test SinglePageAllocation")

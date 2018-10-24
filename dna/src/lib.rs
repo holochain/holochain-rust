@@ -8,7 +8,7 @@
 //! ```
 //! use holochain_dna::Dna;
 //!
-//! let name = String::from("My Holochain App");
+//! let name = String::from("My Holochain DNA");
 //!
 //! let mut dna = Dna::new();
 //! dna.name = name.clone();

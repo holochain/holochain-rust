@@ -1,17 +1,9 @@
+use holochain_core_types::hash::HashString;
+use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-
 use serde_json;
-
-#[derive(Serialize)]
-struct InitGlobalsOutput {
-    app_name: String,
-    app_dna_hash: String,
-    app_agent_id_str: String,
-    app_agent_key_hash: String,
-    app_agent_initial_hash: String,
-    app_agent_latest_hash: String,
-}
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -21,22 +13,24 @@ pub fn invoke_init_globals(
     runtime: &mut Runtime,
     _args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let globals = InitGlobalsOutput {
-        app_name: runtime.dna_name.to_string(),
-
-        // TODO #232 - Implement Dna hash
-        app_dna_hash: "FIXME-app_dna_hash".to_string(),
-
-        app_agent_id_str: runtime.context.agent.to_string(),
-
+    let globals = ZomeApiGlobals {
+        dna_name: runtime.dna_name.to_string(),
+        dna_hash: match runtime.context.state() {
+            Some(state) => match state.nucleus().dna() {
+                Some(dna) => {
+                    HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256)
+                }
+                None => HashString::from(""),
+            },
+            None => HashString::from(""),
+        },
+        agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash
-        app_agent_key_hash: "FIXME-app_agent_key_hash".to_string(),
-
+        agent_key_hash: HashString::from("FIXME-agent_key_hash"),
         // TODO #234 - Implement agent identity entry hashes
-        app_agent_initial_hash: "FIXME-app_agent_initial_hash".to_string(),
-        app_agent_latest_hash: "FIXME-app_agent_latest_hash".to_string(),
+        agent_initial_hash: HashString::from("FIXME-agent_initial_hash"),
+        agent_latest_hash: HashString::from("FIXME-agent_latest_hash"),
     };
-
     return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
 }
 
@@ -54,7 +48,7 @@ pub mod tests {
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         assert_eq!(
             call_result,
-            "{\"app_name\":\"TestApp\",\"app_dna_hash\":\"FIXME-app_dna_hash\",\"app_agent_id_str\":\"joan\",\"app_agent_key_hash\":\"FIXME-app_agent_key_hash\",\"app_agent_initial_hash\":\"FIXME-app_agent_initial_hash\",\"app_agent_latest_hash\":\"FIXME-app_agent_latest_hash\"}\u{0}"
+            "{\"dna_name\":\"TestApp\",\"dna_hash\":\"QmZNgLb3XDR8VyJgH5vDPyDxXu4kdGTwconFAba6CfiVXY\",\"agent_id_str\":\"joan\",\"agent_key_hash\":\"FIXME-agent_key_hash\",\"agent_initial_hash\":\"FIXME-agent_initial_hash\",\"agent_latest_hash\":\"FIXME-agent_latest_hash\"}\u{0}"
         .to_string());
     }
 }

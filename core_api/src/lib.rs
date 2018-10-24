@@ -1,4 +1,5 @@
-//! holochain_core_api provides a library for container applications to instantiate and run holochain applications.
+//! `holochain_core_api` is a library for instantiating and using a holochain instance that
+//! runs a holochain DNA, DHT and source chain.
 //!
 //! # Examples
 //!
@@ -21,7 +22,7 @@
 //! };
 //! use tempfile::tempdir;
 //!
-//! // instantiate a new app
+//! // instantiate a new holochain instance
 //!
 //! // need to get to something like this:
 //! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
@@ -38,10 +39,10 @@
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
-//! // start up the app
-//! hc.start().expect("couldn't start the app");
+//! // start up the holochain instance
+//! hc.start().expect("couldn't start the holochain instance");
 //!
-//! // call a function in the app
+//! // call a function in the zome code
 //! hc.call("test_zome","test_cap","some_fn","{}");
 //!
 //! // get the state
@@ -52,8 +53,8 @@
 //!     // ...
 //! }
 //!
-//! // stop the app
-//! hc.stop().expect("couldn't stop the app");
+//! // stop the holochain instance
+//! hc.stop().expect("couldn't stop the holochain instance");
 //!
 //!```
 
@@ -66,6 +67,9 @@ extern crate tempfile;
 #[cfg(test)]
 extern crate test_utils;
 
+pub mod error;
+
+use error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,
@@ -87,7 +91,7 @@ pub struct Holochain {
 
 impl Holochain {
     /// create a new Holochain instance
-    pub fn new(dna: Dna, context: Arc<Context>) -> Result<Self, HolochainError> {
+    pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
@@ -95,30 +99,36 @@ impl Holochain {
         match block_on(initialize_application(dna, context.clone())) {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
-                let app = Holochain {
+                let hc = Holochain {
                     instance,
                     context,
                     active: false,
                 };
-                Ok(app)
+                Ok(hc)
             }
-            Err(initialization_error) => Err(HolochainError::ErrorGeneric(initialization_error)),
+            Err(err_str) => Err(HolochainInstanceError::InternalFailure(
+                HolochainError::ErrorGeneric(err_str),
+            )),
         }
     }
 
+    pub fn load(_path: String, _context: Arc<Context>) -> Result<Self, HolochainError> {
+        Err(HolochainError::NotImplemented)
+    }
+
     /// activate the Holochain instance
-    pub fn start(&mut self) -> Result<(), HolochainError> {
+    pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
         if self.active {
-            return Err(HolochainError::InstanceActive);
+            return Err(HolochainInstanceError::InstanceAlreadyActive);
         }
         self.active = true;
         Ok(())
     }
 
     /// deactivate the Holochain instance
-    pub fn stop(&mut self) -> Result<(), HolochainError> {
+    pub fn stop(&mut self) -> Result<(), HolochainInstanceError> {
         if !self.active {
-            return Err(HolochainError::InstanceNotActive);
+            return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         self.active = false;
         Ok(())
@@ -131,14 +141,12 @@ impl Holochain {
         cap: &str,
         fn_name: &str,
         params: &str,
-    ) -> Result<String, HolochainError> {
+    ) -> HolochainResult<String> {
         if !self.active {
-            return Err(HolochainError::InstanceNotActive);
+            return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-
         let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, &params);
-
-        call_and_wait_for_result(zome_call, &mut self.instance)
+        Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
     /// checks to see if an instance is active
@@ -147,7 +155,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&mut self) -> Result<State, HolochainError> {
+    pub fn state(&mut self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
 }
@@ -203,17 +211,15 @@ mod tests {
         let (context, test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
 
-        match result {
-            Ok(hc) => {
-                assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
-                assert!(!hc.active);
-                assert_eq!(hc.context.agent.to_string(), "bob".to_string());
-                assert!(hc.instance.state().nucleus().has_initialized());
-                let test_logger = test_logger.lock().unwrap();
-                assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
-            }
-            Err(_) => assert!(false),
-        };
+        assert!(result.is_ok());
+        let hc = result.unwrap();
+
+        assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
+        assert!(!hc.active);
+        assert_eq!(hc.context.agent.to_string(), "bob".to_string());
+        assert!(hc.instance.state().nucleus().has_initialized());
+        let test_logger = test_logger.lock().unwrap();
+        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
     }
 
     #[test]
@@ -239,11 +245,11 @@ mod tests {
 
         let (context, _test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
-
-        match result {
-            Ok(_) => assert!(false),
-            Err(err) => assert_eq!(err, HolochainError::ErrorGeneric("fail".to_string())),
-        };
+        assert!(result.is_err());
+        assert_eq!(
+            HolochainInstanceError::from(HolochainError::ErrorGeneric("fail".to_string())),
+            result.err().unwrap(),
+        );
     }
 
     #[test]
@@ -267,14 +273,13 @@ mod tests {
 
         let (context, _test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
-
-        match result {
-            Ok(_) => assert!(false),
-            Err(err) => assert_eq!(
-                err,
-                HolochainError::ErrorGeneric("Timeout while initializing".to_string())
-            ),
-        };
+        assert!(result.is_err());
+        assert_eq!(
+            HolochainInstanceError::from(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string()
+            )),
+            result.err().unwrap(),
+        );
     }
 
     #[test]
@@ -286,32 +291,25 @@ mod tests {
 
         // stop when not active returns error
         let result = hc.stop();
-        match result {
-            Err(HolochainError::InstanceNotActive) => assert!(true),
-            Ok(_) => assert!(false),
-            Err(_) => assert!(false),
-        }
+        assert_eq!(
+            HolochainInstanceError::InstanceNotActiveYet,
+            result.err().unwrap()
+        );
 
         let result = hc.start();
-        match result {
-            Ok(_) => assert!(true),
-            Err(_) => assert!(false),
-        }
+        assert!(result.is_ok());
         assert!(hc.active());
 
         // start when active returns error
         let result = hc.start();
-        match result {
-            Err(HolochainError::InstanceActive) => assert!(true),
-            Ok(_) => assert!(false),
-            Err(_) => assert!(false),
-        }
+        assert!(result.is_err());
+        assert_eq!(
+            HolochainInstanceError::InstanceAlreadyActive,
+            result.err().unwrap()
+        );
 
         let result = hc.stop();
-        match result {
-            Ok(_) => assert!(true),
-            Err(_) => assert!(false),
-        }
+        assert!(result.is_ok());
         assert!(!hc.active());
     }
 
@@ -336,7 +334,10 @@ mod tests {
 
         let result = hc.call("test_zome", "test_cap", "main", "");
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), HolochainError::InstanceNotActive);
+        assert_eq!(
+            result.err().unwrap(),
+            HolochainInstanceError::InstanceNotActiveYet
+        );
 
         hc.start().expect("couldn't start");
 
@@ -353,12 +354,8 @@ mod tests {
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
-        match result {
-            Ok(state) => {
-                assert_eq!(state.nucleus().dna(), Some(dna));
-            }
-            Err(_) => assert!(false),
-        };
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().nucleus().dna(), Some(dna));
     }
 
     #[test]
@@ -418,7 +415,7 @@ mod tests {
         // Check in holochain instance's history that the commit event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 6);
+        assert_eq!(hc.state().unwrap().history.len(), 7);
     }
 
     #[test]

@@ -12,7 +12,8 @@ extern "C" {
 #endif
 
 typedef void Holochain;
-extern Holochain *holochain_new(Dna*);
+extern Holochain *holochain_new(Dna*, const char* storage_path);
+extern Holochain *holochain_load(const char* storage_path);
 extern bool holochain_start(Holochain*);
 extern bool holochain_stop(Holochain*);
 extern char* holochain_call(Holochain*, const char* zome, const char* capability, const char* function, const char* parameters);

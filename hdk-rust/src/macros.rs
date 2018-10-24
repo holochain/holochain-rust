@@ -28,8 +28,8 @@ macro_rules! define_zome {
                 $cap:ident ( $vis:ident ) {
                     $(
                         $zome_function_name:ident : {
-                            inputs: | $( $input_param_name:ident : $input_param_type:ty )* |,
-                            outputs: | $( $output_param_name:ident : $output_param_type:ty )* |,
+                            inputs: | $( $input_param_name:ident : $input_param_type:ty ),* |,
+                            outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
                     )+
@@ -102,45 +102,39 @@ macro_rules! define_zome {
         }
 
         $(
-            #[no_mangle]
-            pub extern "C" fn $zome_function_name(encoded_allocation_of_input: u32) -> u32 {
-                $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+            $(
+                #[no_mangle]
+                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: u32) -> u32 {
+                    $crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
-                // Macro'd InputStruct
-                #[derive(Deserialize)]
-                struct InputStruct {
-                    $($input_param_name : $input_param_type),*
+                    // Macro'd InputStruct
+                    #[derive(Deserialize)]
+                    struct InputStruct {
+                        $($input_param_name : $input_param_type),*
+                    }
+
+                    // #[derive(Serialize)]
+                    // struct OutputStruct {
+                    //     $( $output_param_name:ident : $output_param_type:ty ),*
+                    // }
+
+                    // Deserialize input
+                    let maybe_input = load_json!(encoded_allocation_of_input);
+                    let input: InputStruct = maybe_input.unwrap();
+
+                    // Macro'd function body
+                    fn execute(params: InputStruct) -> impl ::serde::Serialize {
+                        let InputStruct { $($input_param_name),* } = params;
+
+                        $handler_path($($input_param_name),*)
+                    }
+
+                    // Execute inner function
+                    let output_obj = execute(input);
+
+                    $crate::global_fns::store_and_return_output(output_obj)
                 }
-
-                // #[derive(Serialize)]
-                // struct OutputStruct {
-                //     $( $output_param_name:ident : $output_param_type:ty ),*
-                // }
-
-                // Deserialize input
-                let maybe_input = load_json!(encoded_allocation_of_input);
-                let input: InputStruct = maybe_input.unwrap();
-
-                // Macro'd function body
-                fn execute(params: InputStruct) -> impl ::serde::Serialize {
-                    let InputStruct { $($input_param_name),* } = params;
-
-                    $handler_path($($input_param_name),*)
-                }
-
-                // Execute inner function
-                let output_obj = execute(input);
-
-                $crate::global_fns::store_and_return_output(output_obj)
-            }
+            )+
         )*
     };
-}
-
-define_zome! {
-    entries: []
-
-    genesis: || { Ok(()) }
-
-    capabilities: {}
 }

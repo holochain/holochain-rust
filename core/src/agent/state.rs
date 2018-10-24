@@ -196,7 +196,7 @@ pub mod tests {
         cas::content::AddressableContent,
         entry::{expected_entry_address, test_entry, SerializedEntry},
         error::HolochainError,
-        json::{JsonString, RawString},
+        json::{JsonString},
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};
@@ -298,14 +298,14 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from(
-                "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}"
+                "{\"GetEntry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
             ),
             JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(
                 test_entry().clone()
             ))))
         );
         assert_eq!(
-            JsonString::from(RawString::from("")),
+            JsonString::from("{\"GetEntry\":null}"),
             JsonString::from(ActionResponse::GetEntry(None)),
         )
     }

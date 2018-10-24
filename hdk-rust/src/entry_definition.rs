@@ -26,7 +26,7 @@ macro_rules! entry {
         sharing: $sharing:expr,
 
         validation_package: || $package_creator:expr,
-        validation_function: | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $entry_validation:expr
     ) => (
 
         {

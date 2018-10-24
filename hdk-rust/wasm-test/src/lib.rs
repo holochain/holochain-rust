@@ -196,7 +196,7 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+        validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
         (entry.stuff != "FAIL")
             .ok_or_else(|| "FAIL content is not allowed".to_string())
 
@@ -212,7 +212,7 @@ pub extern fn zome_setup(zd: &mut ZomeDefinition) {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation_function: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+        validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
             Err(serde_json::to_string(&ctx).unwrap())
         }
     ));

@@ -10,6 +10,7 @@ extern crate serde_derive;
 extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
+pub extern crate holochain_core_types;
 pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
@@ -23,4 +24,4 @@ pub mod macros;
 pub mod meta;
 
 pub use api::*;
-pub use holochain_wasm_utils::holochain_core_types::validation::*;
+pub use holochain_core_types::validation::*;

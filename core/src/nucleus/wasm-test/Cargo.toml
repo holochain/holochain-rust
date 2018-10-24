@@ -1,7 +1,7 @@
 [package]
 name = "debug"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
 crate-type = ["cdylib"]

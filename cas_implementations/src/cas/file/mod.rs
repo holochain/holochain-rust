@@ -18,69 +18,13 @@ use std::fmt;
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
-    dir_path: String,
 }
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
-            dir_path: String::from(path),
         })
-    }
-
-    pub fn dir_path(self) -> String {
-        self.dir_path
-    }
-}
-
-impl Serialize for FilesystemStorage {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("FilesystemStorage", 1)?;
-        state.serialize_field("dir_path", &self.dir_path)?;
-        state.end()
-    }
-}
-
-struct FileVisitor;
-impl<'de> Visitor<'de> for FileVisitor {
-    // The type that our Visitor is going to produce.
-    type Value = FilesystemStorage;
-
-    // Format a message stating what data this Visitor expects to receive.
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a very special map")
-    }
-
-    // Deserialize MyMap from an abstract "map" provided by the
-    // Deserializer. The MapAccess input is a callback provided by
-    // the Deserializer to let us see each entry in the map.
-    fn visit_map<M>(self, mut access: M) -> Result<FilesystemStorage, M::Error>
-    where
-        M: MapAccess<'de>,
-    {
-        // While there are entries remaining in the input, add them
-        // into our map.
-        let key: (String, String) = access
-            .next_entry()?
-            .ok_or_else(|| de::Error::custom("Could not serialize file"))?;
-        Ok(FilesystemStorage::new(&key.1)
-            .map_err(|_| de::Error::custom("Problem with creating file on filesystem"))?)
-    }
-}
-
-impl<'de> Deserialize<'de> for FilesystemStorage {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Instantiate our Visitor and ask the Deserializer to drive
-        // it over the input data, resulting in an instance of MyMap.
-        deserializer.deserialize_map(FileVisitor)
     }
 }
 
@@ -127,16 +71,6 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
     };
-
-    #[test]
-    pub fn serialization_round_trip() {
-        let tempdir = tempdir().unwrap();
-        let path = tempdir.path().to_str().unwrap();
-        let storage = FilesystemStorage::new(path).unwrap();
-        let file_json = serde_json::to_string(&storage).unwrap();
-        let file_serde: FilesystemStorage = serde_json::from_str(&file_json).unwrap();
-        assert_eq!(file_serde.dir_path, storage.dir_path);
-    }
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();

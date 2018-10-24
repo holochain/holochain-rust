@@ -57,10 +57,12 @@ macro_rules! define_zome {
             $crate::global_fns::store_and_return_output(execute())
         }
 
+        use $crate::holochain_dna::zome::capabilities::Capability;
+        use std::collections::HashMap;
+
         #[no_mangle]
         #[allow(unused_imports)]
-        pub extern "C" fn list_capabilities(encoded_allocation_of_input: u32) -> u32 {
-            $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+        pub fn __list_capabilities() -> HashMap<String, Capability> {
 
             use $crate::holochain_dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::HashMap;
@@ -98,7 +100,7 @@ macro_rules! define_zome {
                 cap_map
             };
 
-            $crate::global_fns::store_and_return_output(return_value)
+            return_value
         }
 
         $(

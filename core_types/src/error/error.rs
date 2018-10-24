@@ -10,7 +10,7 @@ use std::{
 };
 
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash, Eq,Serialize,Deserialize)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented,

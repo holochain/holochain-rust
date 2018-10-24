@@ -25,6 +25,7 @@ pub enum EntryType {
     /// TODO #339 - This is different kind of SystemEntry for the DHT only.
     /// Should be moved into a different enum for DHT entry types.
     LinkList,
+    AgentState,
 }
 
 impl EntryType {
@@ -65,6 +66,7 @@ impl FromStr for EntryType {
             sys_prefix!("link") => Ok(EntryType::Link),
             sys_prefix!("link_list") => Ok(EntryType::LinkList),
             sys_prefix!("migration") => Ok(EntryType::Migration),
+            sys_prefix!("agent_state") => Ok(EntryType::AgentState),
             _ => Ok(EntryType::App(s.to_string())),
         }
     }
@@ -88,6 +90,7 @@ impl EntryType {
             EntryType::Link => sys_prefix!("link"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
+            EntryType::AgentState => sys_prefix!("agent_state"),
         };
         ret
     }

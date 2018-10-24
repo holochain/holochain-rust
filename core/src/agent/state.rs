@@ -4,12 +4,13 @@ use context::Context;
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::Entry,
+    entry::{Entry, ToEntry},
+    entry_type::EntryType,
     error::HolochainError,
     json::ToJson,
     keys::Keys,
@@ -17,11 +18,13 @@ use holochain_core_types::{
     time::Iso8601,
 };
 
-use serde::ser::{Serialize, Serializer, SerializeStruct};
-use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
-use std::{collections::HashMap, sync::Arc};
-use std::fmt;
+use serde_json;
 
+use serde::{
+    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
+    ser::{Serialize, SerializeStruct, Serializer},
+};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -42,16 +45,16 @@ impl Serialize for AgentState {
         S: Serializer,
     {
         // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("AgentState", 2)?;
+        let mut state = serializer.serialize_struct("AgentState", 3)?;
+        state.serialize_field("keys", &self.chain)?;
         state.serialize_field("chain_store", &self.chain)?;
-        state.serialize_field("top_chain_header",&self.top_chain_header)?;
+        state.serialize_field("top_chain_header", &self.top_chain_header)?;
         state.end()
     }
 }
 
 struct AgentVisitor;
-impl<'de> Visitor<'de> for AgentVisitor
-{
+impl<'de> Visitor<'de> for AgentVisitor {
     // The type that our Visitor is going to produce.
     type Value = AgentState;
 
@@ -67,26 +70,25 @@ impl<'de> Visitor<'de> for AgentVisitor
     where
         M: MapAccess<'de>,
     {
-
-    
-        let chain : (String,ChainStore<FilesystemStorage>) = access.next_entry()?.ok_or_else(||{de::Error::custom("Could not serialize file")})?;
+        let chain: (String, ChainStore<FilesystemStorage>) = access
+            .next_entry()?
+            .ok_or_else(|| de::Error::custom("Could not serialize file"))?;
         let mut agent = AgentState::new(chain.1);
-        let top_chain_header :Option<ChainHeader> = match access.next_entry::<String,ChainHeader>()
-        {
-            Ok(entry) => match entry
-            {
-                Some(value) =>{Some(value.1)},
-                None =>None
-            },
-            Err(_) => None
+        let keys_to_get = match access.next_entry::<String, Keys>()? {
+            Some(keys) => Some(keys.1),
+            None => None,
         };
-        agent.top_chain_header = top_chain_header;
+        let top_chain_pair = match access.next_entry::<String, ChainHeader>()? {
+            Some(key_chain_pair) => Some(key_chain_pair.1),
+            None => None,
+        };
+        agent.top_chain_header = top_chain_pair;
+        agent.keys = keys_to_get;
         Ok(agent)
     }
 }
 
-impl<'de> Deserialize<'de> for AgentState
-{
+impl<'de> Deserialize<'de> for AgentState {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -126,9 +128,45 @@ impl AgentState {
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
     }
+
+    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(header_str)
+    }
 }
 
-#[derive(Clone, Debug, PartialEq,Serialize,Deserialize)]
+impl ToEntry for AgentState {
+    fn to_entry(&self) -> Entry {
+        Entry::new(
+            &EntryType::AgentState,
+            &self.to_json().expect("entry should be valid"),
+        )
+    }
+
+    fn from_entry(entry: &Entry) -> Self {
+        return AgentState::from_json_str(&entry.value())
+            .expect("entry is not a valid ChainHeader Entry");
+    }
+}
+
+impl ToJson for AgentState {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(self)?)
+    }
+}
+
+impl AddressableContent for AgentState {
+    fn content(&self) -> Content {
+        self.to_json()
+            .expect("could not Jsonify ChainHeader as Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        AgentState::from_json_str(content)
+            .expect("could not read Json as valid ChainHeader Content")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -207,13 +245,8 @@ fn reduce_commit_entry(
     ) -> Result<Address, HolochainError> {
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
-        let eav_store = &mut (*context).eav_storage.clone();
-        let eav = EntityAttributeValue::new(
-            &chain_header.address(),
-            &String::from("chain-header"),
-            &entry.address(),
-        );
-        eav_store.add_eav(&eav)?;
+        state.chain.content_storage().add(state)?;
+
         Ok(entry.address())
     }
     let result = response(_context, state, &entry, &chain_header);
@@ -276,9 +309,11 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
+    use self::tempfile::tempdir;
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
+    use agent::chain_store::{tests::test_chain_store, ChainStore};
+    use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
         entry::{test_entry, test_entry_address},
@@ -286,11 +321,8 @@ pub mod tests {
         json::ToJson,
     };
     use instance::tests::test_context;
-    use std::{collections::HashMap, sync::Arc};
-    use agent::chain_store::ChainStore;
     use serde_json;
-    use holochain_cas_implementations::cas::file::FilesystemStorage;
-    use self::tempfile::tempdir;
+    use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -412,14 +444,13 @@ pub mod tests {
     }
 
     #[test]
-    pub fn serialize_round_trip_agent_state()
-    {
+    pub fn serialize_round_trip_agent_state() {
         let agent = test_agent_state();
         let json = serde_json::to_string(&agent).unwrap();
-        let agent_from_json : AgentState = serde_json::from_str(&json).unwrap();
-        assert_eq!(agent,agent_from_json);
-       
-    }
+        println!("Juston stuff{:?}", json);
+        let agent_from_json: AgentState = serde_json::from_str(&json).unwrap();
+        assert_eq!(agent, agent_from_json);
+l     }
 
     #[test]
     fn test_link_entries_response_to_json() {

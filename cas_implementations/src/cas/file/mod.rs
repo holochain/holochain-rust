@@ -9,32 +9,32 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
+use serde::{
+    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
+    ser::{Serialize, SerializeStruct, Serializer},
+};
 use std::fmt;
-use serde::ser::{Serialize, Serializer, SerializeStruct};
-use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
-    dir_path : String,
+    dir_path: String,
 }
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
-            dir_path : String::from(path)
+            dir_path: String::from(path),
         })
     }
 
-    pub fn dir_path(self) ->String
-    {
+    pub fn dir_path(self) -> String {
         self.dir_path
     }
 }
 
-impl Serialize for FilesystemStorage
-{
+impl Serialize for FilesystemStorage {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -47,8 +47,7 @@ impl Serialize for FilesystemStorage
 }
 
 struct FileVisitor;
-impl<'de> Visitor<'de> for FileVisitor
-{
+impl<'de> Visitor<'de> for FileVisitor {
     // The type that our Visitor is going to produce.
     type Value = FilesystemStorage;
 
@@ -64,16 +63,17 @@ impl<'de> Visitor<'de> for FileVisitor
     where
         M: MapAccess<'de>,
     {
-
         // While there are entries remaining in the input, add them
         // into our map.
-        let key : (String,String) = access.next_entry()?.ok_or_else(||{de::Error::custom("Could not serialize file")})?;
-        Ok(FilesystemStorage::new(&key.1).map_err(|_|{de::Error::custom("Problem with creating file on filesystem")})?)
+        let key: (String, String) = access
+            .next_entry()?
+            .ok_or_else(|| de::Error::custom("Could not serialize file"))?;
+        Ok(FilesystemStorage::new(&key.1)
+            .map_err(|_| de::Error::custom("Problem with creating file on filesystem"))?)
     }
 }
 
-impl<'de> Deserialize<'de> for FilesystemStorage
-{
+impl<'de> Deserialize<'de> for FilesystemStorage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -83,9 +83,6 @@ impl<'de> Deserialize<'de> for FilesystemStorage
         deserializer.deserialize_map(FileVisitor)
     }
 }
-
-
-
 
 impl ContentAddressableStorage for FilesystemStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
@@ -119,10 +116,10 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
     extern crate serde_test;
+    extern crate tempfile;
+    use self::serde_test::{assert_tokens, Token};
     use serde_json;
-    use self::serde_test::{Token, assert_tokens};
 
     use self::tempfile::{tempdir, TempDir};
     use cas::file::FilesystemStorage;
@@ -132,14 +129,13 @@ pub mod tests {
     };
 
     #[test]
-    pub fn serialization_round_trip()
-    {
+    pub fn serialization_round_trip() {
         let tempdir = tempdir().unwrap();
         let path = tempdir.path().to_str().unwrap();
         let storage = FilesystemStorage::new(path).unwrap();
         let file_json = serde_json::to_string(&storage).unwrap();
-        let file_serde : FilesystemStorage = serde_json::from_str(&file_json).unwrap();
-        assert_eq!(file_serde.dir_path,storage.dir_path);
+        let file_serde: FilesystemStorage = serde_json::from_str(&file_json).unwrap();
+        assert_eq!(file_serde.dir_path, storage.dir_path);
     }
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {

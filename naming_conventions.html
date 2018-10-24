@@ -139,33 +139,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        <a class="header" href="#naming-things" id="naming-things"><h1>Naming things</h1></a>
+                        <a class="header" href="naming_conventions.html#naming-things" id="naming-things"><h1>Naming things</h1></a>
 <blockquote>
 <p>There are only two hard things in Computer Science: cache invalidation and naming things.</p>
 </blockquote>
-<a class="header" href="#rust-naming-conventions" id="rust-naming-conventions"><h2>Rust naming conventions</h2></a>
+<a class="header" href="naming_conventions.html#rust-naming-conventions" id="rust-naming-conventions"><h2>Rust naming conventions</h2></a>
 <p>If in doubt refer to the Rust conventions.</p>
 <p>https://doc.rust-lang.org/1.0.0/style/style/naming/README.html</p>
-<a class="header" href="#holochain-naming-conventions" id="holochain-naming-conventions"><h2>Holochain naming conventions</h2></a>
+<a class="header" href="naming_conventions.html#holochain-naming-conventions" id="holochain-naming-conventions"><h2>Holochain naming conventions</h2></a>
 <p>There are gaps where the Rust conventions are either silent or following them
 would make things too ambiguous.</p>
-<a class="header" href="#actions--reducers" id="actions--reducers"><h3>Actions &amp; reducers</h3></a>
+<a class="header" href="naming_conventions.html#actions--reducers" id="actions--reducers"><h3>Actions &amp; reducers</h3></a>
 <ul>
 <li><code>Action</code> is <code>VerbNoun</code> or <code>Verb</code> if there is no available noun and matches the underlying function e.g. <code>GetEntry</code></li>
 <li><code>ActionResponse</code> is <code>ActionName</code> e.g. <code>Action::GetEntry</code> results in <code>ActionResponse::GetEntry</code></li>
 <li>reducer name is <code>reduce_action_name</code> e.g. <code>reduce_get_entry</code></li>
 </ul>
-<a class="header" href="#actors--protocols" id="actors--protocols"><h3>Actors &amp; protocols</h3></a>
+<a class="header" href="naming_conventions.html#actors--protocols" id="actors--protocols"><h3>Actors &amp; protocols</h3></a>
 <ul>
 <li>Actor <code>Protocol</code> is <code>VerbNoun</code> or <code>Verb</code> if there is no available noun and matches the underlying function e.g. <code>PutEntry</code> or <code>Setup</code></li>
 <li>Result of a <code>Protocol</code> is <code>VerbNounResult</code> or <code>VerbResult</code> e.g. <code>PutEntryResult</code> or <code>SetupResult</code></li>
 </ul>
-<a class="header" href="#method-names" id="method-names"><h3>Method names</h3></a>
+<a class="header" href="naming_conventions.html#method-names" id="method-names"><h3>Method names</h3></a>
 <ul>
 <li>method names that access something directly &quot;for free&quot; are the name of the thing being accessed, e.g. <code>entry()</code></li>
 <li>method names that have side effects or an expensive lookup are <code>verb_noun()</code> e.g. <code>put_entry()</code></li>
 </ul>
-<a class="header" href="#short-names" id="short-names"><h3>Short names</h3></a>
+<a class="header" href="naming_conventions.html#short-names" id="short-names"><h3>Short names</h3></a>
 <p>avoid micro names like <code>t</code>, <code>e</code>, <code>h</code> when <code>table</code>, <code>entry</code>, <code>header</code> is clearer.</p>
 <p>avoid shorthand names like <code>table</code> when <code>table_actor</code> is clearer.</p>
 <p>in the long run the legibility and unambiguity saves orders of magnitude more time than the typing costs.</p>

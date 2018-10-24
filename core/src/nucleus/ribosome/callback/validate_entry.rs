@@ -66,7 +66,7 @@ fn build_validation_call(
     zome_name: String,
     validation_data: ValidationData,
 ) -> Result<ZomeFnCall, HolochainError> {
-    let params = serde_json::to_string(&EntryValidationArgs{
+    let params = serde_json::to_string(&EntryValidationArgs {
         entry_type,
         entry: entry.to_string(),
         validation_data,

@@ -139,7 +139,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <a class="header" href="state_actions.html#state--actions" id="state--actions"><h1>State &amp; Actions</h1></a>
+                        <a class="header" href="#state--actions" id="state--actions"><h1>State &amp; Actions</h1></a>
 <p>Holochain uses a hybrid global/local state model.</p>
 <p>In our bio mimicry terms the global state is for &quot;short term memory&quot; and local
 state wraps references to &quot;long term memory&quot;.</p>
@@ -160,7 +160,7 @@ Rust for external, persistent state. The classic example is a database
 connection to the database that stores entries and headers. The db actor
 receives read/write messages, and a reference to the sender is stored in the
 global state.</p>
-<a class="header" href="state_actions.html#actions" id="actions"><h2>Actions</h2></a>
+<a class="header" href="#actions" id="actions"><h2>Actions</h2></a>
 <p>The <code>action</code> module defines actions and action wrappers:</p>
 <ul>
 <li><code>ActionWrapper</code>: struct contains a unique ID for the action and the <code>Action</code></li>
@@ -172,7 +172,7 @@ global state.</p>
 <li>Resolve the action to an appropriate handler</li>
 <li>Implement handler logic</li>
 </ol>
-<a class="header" href="state_actions.html#reduce" id="reduce"><h3>Reduce</h3></a>
+<a class="header" href="#reduce" id="reduce"><h3>Reduce</h3></a>
 <p>The <code>reduce</code> implementation is essentially copypasta. It handles resolving and
 dispatching to a handler with a new state clone. The handler resolution and
 dispatch logic should be split to facilitate clean unit testing.</p>
@@ -196,7 +196,7 @@ pub fn reduce(
   }
 }
 #}</code></pre></pre>
-<a class="header" href="state_actions.html#resolve-an-appropriate-handler" id="resolve-an-appropriate-handler"><h3>Resolve an appropriate handler</h3></a>
+<a class="header" href="#resolve-an-appropriate-handler" id="resolve-an-appropriate-handler"><h3>Resolve an appropriate handler</h3></a>
 <p>The action handler should map signals to action handlers.</p>
 <pre><pre class="playpen"><code class="language-rust">
 # #![allow(unused_variables)]
@@ -211,7 +211,7 @@ fn resolve_action_handler(
     }
 }
 #}</code></pre></pre>
-<a class="header" href="state_actions.html#implement-the-handlers" id="implement-the-handlers"><h3>Implement the handlers</h3></a>
+<a class="header" href="#implement-the-handlers" id="implement-the-handlers"><h3>Implement the handlers</h3></a>
 <p>Each handler should respond to one action signal and mutate the relevant state.</p>
 <p>The standard pattern is to maintain a <code>HashMap</code> of incoming action wrappers
 against the result of their action from the perspective of the current module.
@@ -240,7 +240,7 @@ fn handle_foo(
 <p>WARNING: Actions are reduced in a simple loop. Holochain will hang if you
 dispatch and block on a new action while an outer action reduction is also
 blocking, waiting for a response.</p>
-<a class="header" href="state_actions.html#global-state" id="global-state"><h2>Global state</h2></a>
+<a class="header" href="#global-state" id="global-state"><h2>Global state</h2></a>
 <p><code>instance::Instance</code> has a <code>state::State</code> which is the one global state. Each
 stateful module has a <code>state.rs</code> module containing sub-state slices.</p>
 <p>See <code>src/agent/state.rs</code> and <code>src/nucleus/state.rs</code> and how they are put
@@ -294,7 +294,7 @@ testing and &quot;time travel&quot; debugging.</p>
 </ul>
 <p>The <code>reduce</code> copypasta above demonstrates this as the possible return values.</p>
 <p>Redux in Rust code was used as a reference from <a href="https://github.com/rust-redux/rust-redux">this repository</a>.</p>
-<a class="header" href="state_actions.html#local-state" id="local-state"><h2>Local state</h2></a>
+<a class="header" href="#local-state" id="local-state"><h2>Local state</h2></a>
 <p>Coming Soon.</p>
 
                         <hr />

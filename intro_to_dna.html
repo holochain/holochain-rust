@@ -139,7 +139,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <a class="header" href="intro_to_dna.html#introduction-to-dna" id="introduction-to-dna"><h1>Introduction to DNA</h1></a>
+                        <a class="header" href="#introduction-to-dna" id="introduction-to-dna"><h1>Introduction to DNA</h1></a>
 <p>As a developer, though you will not have to interact directly with the contents of a DNA file that often, it is quite important to grasp its' role and structure.</p>
 <p>Holochain DNA files are written in a data format known as JSON. It stores sets of key-value pairs, and allows a nested tree structure. It looks like this:</p>
 <pre><code class="language-json">{
@@ -152,10 +152,10 @@
 <p>JSON is usually used for configuration and static data, but in the case of Holochain, these DNA files also contain compiled code, which is executable by Holochain.</p>
 <p>As previously mentioned, you do not need to edit this &quot;master&quot; DNA file directly. Holochain command line tools can be used to build it from your raw files.</p>
 <p>[TODO link to command line tools 'package' command]</p>
-<a class="header" href="intro_to_dna.html#configuration" id="configuration"><h2>Configuration</h2></a>
+<a class="header" href="#configuration" id="configuration"><h2>Configuration</h2></a>
 <p>For the configuration related parts of your DNA, they will come from actual JSON files stored in your application folder. There will be multiple JSON files nested in the folder structure. An application folder should have a file in its' root called <code>app.json</code>.</p>
 <p>This file should define various properties of your application. Some of these properties Holochain fully expects and will not work without, others can be customised to your application. To see the full details of which properties you can set in <code>app.json</code>, [go here TODO: link to DNA properties reference].</p>
-<a class="header" href="intro_to_dna.html#code" id="code"><h2>Code</h2></a>
+<a class="header" href="#code" id="code"><h2>Code</h2></a>
 <p>Obviously, the logic and functionality of your application will be written in code. Here is a quick overview of how that works.</p>
 <p>Holochain allows you to break down the functionality of your application into smaller, logical modules, called &quot;Zomes&quot;. There should be a folder called <code>zomes</code> and each Zome should have its own sub-folder within that, in which the configuration and code for that particular Zome should be placed.</p>
 <p>These Zomes can call and access the functionality of the others, but they are written independently. When the DNA file is being built, the code for these Zomes is encoded using Base64 encoding and combined with the configuration file associated with the Zome.</p>

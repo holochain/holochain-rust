@@ -280,11 +280,11 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"ok\":\"{}\"}}", test_entry_address())),
+            JsonString::from(format!("{{\"Commit\":{{\"Ok\":\"{}\"}}}}", test_entry_address())),
             JsonString::from(ActionResponse::Commit(Ok(test_entry_address()))),
         );
         assert_eq!(
-            JsonString::from("{\"error\":\"some error\"}"),
+            JsonString::from("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
                 "some error"
             ))))

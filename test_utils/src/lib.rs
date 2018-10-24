@@ -38,11 +38,11 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
     let default_wat = r#"
             (module
                 (memory (;0;) 17)
-                (func (export "main") (param $p0 i32) (result i32)
-                    i32.const 4
+                (func (export "main") (param $p0 i32) (result f32)
+                    f32.const 4
                 )
-                (data (i32.const 0)
-                    "1337"
+                (data (f32.const 0)
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )

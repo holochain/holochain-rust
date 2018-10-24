@@ -80,12 +80,9 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    println!("zz: {:?}", task_result.clone());
-
     let result = match task_result {
         Ok(address) => CommitEntryResult::success(address),
         Err(HolochainError::ValidationFailed(fail_string)) => {
-            println!("zzz: {:?}", fail_string);
             CommitEntryResult::failure(fail_string)
         }
         Err(error_string) => {
@@ -138,7 +135,7 @@ use holochain_core_types::{
             runtime.result,
             JsonString::from(
                 format!(
-                    r#"{{"ok":"{}","validation_failure":""}}"#,
+                    r#"{{"address":"{}","validation_failure":""}}"#,
                     test_entry().address()
                 ) + "\u{0}"
             ),

@@ -86,23 +86,35 @@ impl Display for JsonString {
 
 /// generic type to facilitate Jsonifying strings
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""
-pub struct RawString(String);
+pub struct RawString(serde_json::Value);
 
 impl From<&'static str> for RawString {
     fn from(s: &str) -> RawString {
-        RawString(s.to_owned())
+        RawString(serde_json::Value::String(s.to_owned()))
     }
 }
 
 impl From<String> for RawString {
     fn from(s: String) -> RawString {
-        RawString(s)
+        RawString(serde_json::Value::String(s))
+    }
+}
+
+impl From<f64> for RawString {
+    fn from(i: f64) -> RawString {
+        RawString(serde_json::Value::Number(serde_json::Number::from_f64(i).expect("could not accept number")))
+    }
+}
+
+impl From<i32> for RawString {
+    fn from(i: i32) -> RawString {
+        RawString::from(i as f64)
     }
 }
 
 impl From<RawString> for String {
     fn from(raw_string: RawString) -> String {
-        raw_string.0
+        raw_string.0.to_string()
     }
 }
 

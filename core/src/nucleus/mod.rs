@@ -608,7 +608,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
         match result {
             // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, JsonString::from(RawString::from("1337"))),
+            Ok(val) => assert_eq!(val, JsonString::from(RawString::from(1337))),
             Err(err) => assert_eq!(err, HolochainError::InstanceActive),
         }
     }

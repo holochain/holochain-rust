@@ -10,10 +10,10 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    runtime.result = JsonString::from(RawString::from(runtime.load_utf8_from_args(args)));
-    println!("{}", runtime.result);
+    let result = JsonString::from(RawString::from(runtime.load_utf8_from_args(args)));
+    println!("{}", result);
     // Return Ribosome Success Code
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+    runtime.store_json_string(result)
 }
 
 #[cfg(test)]

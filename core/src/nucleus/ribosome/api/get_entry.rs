@@ -182,7 +182,7 @@ mod tests {
             commit_runtime.result,
             JsonString::from(
                 format!(
-                    r#"{{"ok":"{}","validation_failure":""}}"#,
+                    r#"{{"address":"{}","validation_failure":""}}"#,
                     test_entry().address()
                 ) + "\u{0}"
             ),
@@ -203,7 +203,7 @@ mod tests {
         ).expect("test should be callable");
 
         let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
+        expected.push_str("{\"status\":\"Found\",\"maybe_serialized_entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
         assert_eq!(JsonString::from(expected), get_runtime.result);
     }

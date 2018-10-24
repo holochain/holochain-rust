@@ -4,7 +4,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
     },
@@ -12,6 +12,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use serde::de::DeserializeOwned;
 use serde_json;
 
 //--------------------------------------------------------------------------------------------------
@@ -215,7 +216,32 @@ pub fn commit_entry(
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResult<GetEntryResult> {
+pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
+where
+    T: DeserializeOwned,
+{
+    let res = get_entry_result(address, GetEntryOptions {});
+    match res {
+        Ok(result) => match result.status {
+            GetResultStatus::Found => {
+                let maybe_entry_value: Result<T, _> = serde_json::from_str(&result.entry);
+                match maybe_entry_value {
+                    Ok(entry_value) => Ok(Some(entry_value)),
+                    Err(err) => Err(ZomeApiError::Internal(err.to_string())),
+                }
+            }
+            GetResultStatus::NotFound => Ok(None),
+        },
+        Err(err) => Err(err),
+    }
+}
+
+/// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
+/// its address, and a the full options to specify exactly what data to return
+pub fn get_entry_result(
+    address: HashString,
+    _options: GetEntryOptions,
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

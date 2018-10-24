@@ -12,6 +12,8 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
+use holochain_core_types::error::RibosomeReturnCode;
+use std::convert::TryFrom;
 
 pub fn validate_entry(
     entry: Entry,
@@ -111,7 +113,12 @@ fn run_validation_callback(
         Some(fc.clone().parameters.into_bytes()),
     ) {
         Ok(runtime) => {
-            CallbackResult::from(runtime.result)
+            println!("jj: {:?}", runtime.result.clone());
+            let maybe_return_code = RibosomeReturnCode::try_from(runtime.result.clone());
+            match maybe_return_code {
+                Ok(return_code) => CallbackResult::from(return_code),
+                Err(_) => CallbackResult::from(runtime.result),
+            }
         },
         Err(_) => CallbackResult::NotImplemented,
     }

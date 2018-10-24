@@ -7,6 +7,7 @@
 //! Note: This is already quite big. Maybe break the CAS and EAV traits
 //! out into their separate crate as well since those are generic and not
 //! necessarily bound to Holochain.
+#![feature(try_from)]
 
 extern crate futures;
 extern crate multihash;

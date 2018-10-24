@@ -16,7 +16,6 @@ use holochain_core_types::hash::HashString;
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
-use backtrace::Backtrace;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -144,32 +143,32 @@ fn can_get_entry() {
         ),
     );
 
-    // let result = hc.call(
-    //     "test_zome",
-    //     "test_cap",
-    //     "check_get_entry",
-    //     &format!("{{\"entry_address\":\"{}\"}}", test_entry_a().address()),
-    // );
-    // println!("\t can_get_entry result = {:?}", result);
-    // assert!(result.is_ok(), "\t result = {:?}", result);
-    // assert_eq!(
-    //     result.unwrap(),
-    //     JsonString::from("{\"ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
-    // );
-    //
-    // // test the case with a bad hash
-    // let result = hc.call(
-    //     "test_zome",
-    //     "test_cap",
-    //     "check_get_entry",
-    //     r#"{"entry_address":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
-    // );
-    // println!("\t can_get_entry result = {:?}", result);
-    // assert!(result.is_ok(), "\t result = {:?}", result);
-    // assert_eq!(
-    //     result.unwrap(),
-    //     JsonString::from("{\"ok\":{\"entry\":null}}")
-    // );
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_get_entry",
+        &format!("{{\"entry_address\":\"{}\"}}", test_entry_a().address()),
+    );
+    println!("\t can_get_entry result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
+    );
+
+    // test the case with a bad hash
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_get_entry",
+        r#"{"entry_address":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+    );
+    println!("\t can_get_entry result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"ok\":{\"entry\":null}}")
+    );
 }
 
 #[test]
@@ -180,13 +179,12 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(SerializedEntry::from(Entry::new(&test_entry_type(), &JsonString::from("{\"stuff\": \"FAIL\"}"))))),
-        // r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
+        &String::from(JsonString::from(SerializedEntry::from(Entry::new(&test_entry_type(), &JsonString::from(RawString::from("FAIL")))))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"error\":Validation failed: FAIL content is not allowed}}"),
+        JsonString::from("{\"error\":\"Validation failed: FAIL content is not allowed\"}"),
     );
 }

@@ -1,4 +1,4 @@
-use error::{RibosomeErrorCode, RibosomeReturnCode};
+use holochain_core_types::error::{RibosomeErrorCode, RibosomeReturnCode};
 
 //--------------------------------------------------------------------------------------------------
 // Helpers
@@ -32,6 +32,7 @@ pub fn decode_encoded_allocation(
     let (offset, length) = u32_split_bits(encoded_allocation);
     // zero length allocation = RibosomeReturnCode
     if length == 0 {
+        println!("ooo");
         return Err(RibosomeReturnCode::from_offset(offset));
     }
     let res = SinglePageAllocation::new(offset, length);
@@ -150,7 +151,7 @@ impl SinglePageStack {
 pub mod tests {
 
     use super::*;
-    use error::RibosomeReturnCode;
+    use holochain_core_types::error::RibosomeReturnCode;
 
     pub fn test_single_page_allocation() -> SinglePageAllocation {
         SinglePageAllocation::new(0, 20).expect("could not create test SinglePageAllocation")

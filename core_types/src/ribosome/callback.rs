@@ -2,6 +2,7 @@ use entry::Entry;
 use entry::SerializedEntry;
 use json::JsonString;
 use serde_json;
+use error::RibosomeReturnCode;
 
 #[derive(Debug)]
 pub enum CallbackParams {
@@ -45,5 +46,14 @@ impl From<CallbackResult> for JsonString {
     fn from(callback_result: CallbackResult) -> JsonString {
         JsonString::from(serde_json::to_string(&callback_result)
             .expect("could not Jsonify CallbackResult"))
+    }
+}
+
+impl From<RibosomeReturnCode> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+        match ribosome_return_code {
+            RibosomeReturnCode::Failure(ribosome_error_code) => CallbackResult::Fail(ribosome_error_code.to_string()),
+            RibosomeReturnCode::Success => CallbackResult::Pass,
+        }
     }
 }

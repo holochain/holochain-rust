@@ -95,7 +95,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 zome_functions! {
     check_commit_entry_macro: |entry_type: String, value: String| {
         let serialized_entry = SerializedEntry::new(&entry_type, &value);
-        hdk::commit_entry(&serialized_entry)
+        let res = hdk::commit_entry(&serialized_entry);
+        hdk::debug(format!("res: {:?}", res)).expect("debug() must work");
+        res
     }
 }
 

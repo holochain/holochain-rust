@@ -80,6 +80,8 @@ pub fn invoke_commit_app_entry(
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
+    println!("zz: {:?}", task_result.clone());
+
     let result = match task_result {
         Ok(address) => CommitEntryResult::success(address),
         Err(HolochainError::ValidationFailed(fail_string)) => {

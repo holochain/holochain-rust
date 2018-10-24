@@ -53,7 +53,7 @@ pub fn validate_entry(
                     validation_data.clone(),
                     context.clone(),
                 );
-
+                println!("jjj: {:?}", maybe_validation_result.clone());
                 let result = match maybe_validation_result {
                     Ok(validation_result) => match validation_result {
                         CallbackResult::Fail(error_string) => Err(error_string),
@@ -106,7 +106,10 @@ impl Future for ValidationFuture {
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
-                Some(Err(e)) => Err(HolochainError::ValidationFailed(e.clone())),
+                Some(Err(e)) => {
+                    println!("nnnn: {:?}", e);
+                    Err(HolochainError::ValidationFailed(e.clone()))
+                },
                 None => Ok(futures::Async::Pending),
             }
         } else {

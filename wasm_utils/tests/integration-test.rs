@@ -11,7 +11,7 @@ use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_api::Holochain;
 use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_wasm_utils::error::*;
+use holochain_core_types::error::*;
 use std::sync::{Arc, Mutex};
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 

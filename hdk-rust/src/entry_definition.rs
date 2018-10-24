@@ -24,9 +24,10 @@ macro_rules! entry {
         name: $name:expr,
         description: $description:expr,
         sharing: $sharing:expr,
+        $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation_function: | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $entry_validation:expr
     ) => (
 
         {

@@ -1,11 +1,20 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::keys::Keys;
-use cas::content::{Address, AddressableContent};
-use chain::{Chain, SourceChain};
+use agent::chain_store::ChainStore;
 use context::Context;
-use error::HolochainError;
-use hash_table::entry::Entry;
-use json::ToJson;
+use holochain_cas_implementations::cas::file::FilesystemStorage;
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    chain_header::ChainHeader,
+    entry::Entry,
+    error::HolochainError,
+    json::ToJson,
+    keys::Keys,
+    signature::Signature,
+    time::Iso8601,
+};
 use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
@@ -17,16 +26,18 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: Chain,
+    chain: ChainStore<FilesystemStorage>,
+    top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: &Chain) -> AgentState {
+    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
-            chain: chain.clone(),
+            chain,
+            top_chain_header: None,
         }
     }
 
@@ -35,15 +46,18 @@ impl AgentState {
         self.keys.clone()
     }
 
-    /// getter for the chain
-    pub fn chain(&self) -> &Chain {
-        &self.chain
-    }
-
     /// getter for a copy of self.actions
     /// uniquely maps action executions to the result of the action
     pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
         self.actions.clone()
+    }
+
+    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
+        self.chain.clone()
+    }
+
+    pub fn top_chain_header(&self) -> Option<ChainHeader> {
+        self.top_chain_header.clone()
     }
 }
 
@@ -54,7 +68,7 @@ impl AgentState {
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
-    Commit(Result<Entry, HolochainError>),
+    Commit(Result<Address, HolochainError>),
     GetEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
@@ -64,7 +78,7 @@ impl ToJson for ActionResponse {
     fn to_json(&self) -> Result<String, HolochainError> {
         match self {
             ActionResponse::Commit(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
+                Ok(entry_address) => Ok(format!("{{\"address\":\"{}\"}}", entry_address)),
                 Err(err) => Ok((*err).to_json()?),
             },
             ActionResponse::GetEntry(result) => match result {
@@ -83,6 +97,26 @@ impl ToJson for ActionResponse {
     }
 }
 
+pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+    ChainHeader::new(
+        &entry.entry_type(),
+        &entry.address(),
+        // @TODO signatures
+        &Signature::from(""),
+        &agent_state
+            .top_chain_header
+            .clone()
+            .and_then(|chain_header| Some(chain_header.address())),
+        &agent_state
+            .chain()
+            .iter_type(&agent_state.top_chain_header, &entry.entry_type())
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.address())),
+        // @TODO timestamp
+        &Iso8601::from(""),
+    )
+}
+
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
@@ -95,23 +129,24 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (entry_type, entry) = match action {
-        Action::Commit(entry_type, entry) => (entry_type, entry),
-        _ => unreachable!(),
-    };
+    let entry = unwrap_to!(action => Action::Commit);
+    let chain_header = create_new_chain_header(&entry, state);
 
-    // @TODO validation dispatch should go here rather than upstream in invoke_commit
-    // @see https://github.com/holochain/holochain-rust/issues/256
-
-    let res = state.chain.push_entry(&entry_type, &entry);
-    let response = match res {
-        Ok(pair) => Ok(pair.entry().clone()),
-        Err(e) => Err(e),
-    };
+    fn response(
+        state: &mut AgentState,
+        entry: &Entry,
+        chain_header: &ChainHeader,
+    ) -> Result<Address, HolochainError> {
+        state.chain.content_storage().add(entry)?;
+        state.chain.content_storage().add(chain_header)?;
+        Ok(entry.address())
+    }
+    let result = response(state, &entry, &chain_header);
+    state.top_chain_header = Some(chain_header);
 
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(response));
+        .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
 
 /// do a get action against an agent state
@@ -122,10 +157,12 @@ fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => Action::GetEntry);
-
-    let result = state.chain.entry(&key.clone());
-
+    let address = unwrap_to!(action => Action::GetEntry);
+    let result = state
+        .chain()
+        .content_storage()
+        .fetch(&address)
+        .expect("could not fetch from CAS");
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
@@ -138,7 +175,7 @@ fn reduce_get_entry(
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
-        Action::Commit(_, _) => Some(reduce_commit_entry),
+        Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
@@ -165,27 +202,29 @@ pub fn reduce(
 pub mod tests {
     use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use cas::content::AddressableContent;
-    use chain::{pair::tests::test_pair, tests::test_chain};
-    use error::HolochainError;
-    use hash_table::entry::tests::test_entry;
+    use agent::chain_store::tests::test_chain_store;
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, test_entry_address},
+        error::HolochainError,
+        json::ToJson,
+    };
     use instance::tests::test_context;
-    use json::ToJson;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
-        AgentState::new(&test_chain())
+        AgentState::new(test_chain_store())
     }
 
-    /// dummy action response for a successful commit as test_pair()
+    /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_pair().entry().clone()))
+        ActionResponse::Commit(Ok(test_entry_address()))
     }
 
-    /// dummy action response for a successful get as test_pair()
+    /// dummy action response for a successful get as test_entry()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+        ActionResponse::GetEntry(Some(test_entry()))
     }
 
     #[test]
@@ -252,8 +291,8 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
-            ActionResponse::Commit(Ok(test_pair().entry().clone()))
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
+            ActionResponse::Commit(Ok(test_entry_address()))
                 .to_json()
                 .unwrap(),
         );
@@ -268,8 +307,8 @@ pub mod tests {
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "\"test entry content\"",
-            ActionResponse::GetEntry(Some(test_pair().entry().clone()))
+            "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}",
+            ActionResponse::GetEntry(Some(test_entry().clone()))
                 .to_json()
                 .unwrap(),
         );
@@ -279,7 +318,7 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            "[\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"]",
+            format!("[\"{}\"]", test_entry_address()),
             ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
                 .to_json()
                 .unwrap(),
@@ -295,7 +334,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            "{\"address\":\"QmbXSE38SN3SuJDmHKSSw5qWWegvU7oTxrLDRavWjyxMrT\"}",
+            format!("{{\"address\":\"{}\"}}", test_entry_address()),
             ActionResponse::LinkEntries(Ok(test_entry()))
                 .to_json()
                 .unwrap(),

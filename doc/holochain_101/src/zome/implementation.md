@@ -111,10 +111,10 @@ error enum variant.
 
 For an example implementation returning a complex struct see:
 
-- `agent::state::ActionResult::GetEntry` defining a result containing a `Pair` struct
+- `agent::state::ActionResponse::GetEntry` containing an `Entry` struct
 - `nucleus::ribosome::get::invoke_get`
   - match the action result against the correct enum variant
-  - serialize the pair using serde
+  - serialize the entry using serde
   - return the result of `runtime_allocate_encode_str`
   - if the action result variant does NOT match then return `HcApiReturnCode::ErrorActionResult`
 

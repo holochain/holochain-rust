@@ -1,4 +1,5 @@
-use holochain_wasm_utils::memory_allocation::{SinglePageAllocation, SinglePageStack};
+use holochain_core_types::error::RibosomeErrorCode;
+use holochain_wasm_utils::memory_allocation::{SinglePageAllocation, SinglePageStack, U16_MAX};
 
 use wasmi::{MemoryRef, ModuleRef};
 
@@ -13,16 +14,21 @@ pub struct SinglePageManager {
     wasm_memory: MemoryRef,
 }
 
-/// A Memory Manager limited to one memory page that works like a stack
-/// With this Memory Manager, Host and WASM pass around only a i32.
-/// That i32 is the last memory allocation on the stack: a i16 offset and a i16 length
-/// (which fits with the 64KiB sized of a memory Page).
-/// Complex Input arguments should be stored on the latest allocation on the stack.
-/// Complex Output arguments can be stored anywhere on stack.
-/// ErrorCode passing is also made possible by convention:
-/// using i16 offset as error code and i16 length to zero to indicate its an error code.
-///
-/// In the future we could do same with i32 -> i64 and handle multiple memory Pages.
+/// A Memory Manager limited to one wasm memory page that works like a stack.
+/// With this Memory Manager, the WASM host (i.e. the Ribosome) and WASM module (i.e. the Zome)
+/// only need to pass around an i32 to communicate any data.
+/// That i32 is the last memory allocation on the stack:
+/// it is split in an i16 'offset' in the upper bits and an i16 'length' in the lower bits.
+/// This fits with the 64KiB sized of a memory Page.
+/// Complex input arguments should be stored on the latest allocation on the stack.
+/// Complex output arguments can be stored anywhere on stack.
+/// Since zero sized allocations are not allowed,
+/// it is possible to pass around a return and/or error code with the following convention:
+/// using the i16 'offset' as return code and i16 'length' set to zero
+/// to indicate its a return code.
+/// Return code of 0 means success, while any other value means a failure and gives the error code.
+/// In the future, to handle bigger memory needs, we could do same with an i64 instead
+/// and handle multiple memory Pages.
 #[allow(unknown_lints)]
 #[allow(cast_lossless)]
 impl SinglePageManager {
@@ -42,34 +48,35 @@ impl SinglePageManager {
     }
 
     /// Allocate on stack without writing in it
-    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, &str> {
-        if self.stack.top() as u32 + length as u32 >= 65536 {
-            return Err("Out of memory");
+    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+        if self.stack.top() as u32 + length as u32 > U16_MAX {
+            return Err(RibosomeErrorCode::OutOfMemory);
         }
         let offset = self.stack.allocate(length);
-        let allocation = SinglePageAllocation { offset, length };
-        Ok(allocation)
+        SinglePageAllocation::new(offset, length)
     }
 
     /// Write data on top of stack
-    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, &str> {
+    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, RibosomeErrorCode> {
         let data_len = data.len();
-        if data_len > 65536 {
-            return Err("data length provided is bigger than 64KiB");
+        if data_len > <u16>::max_value() as usize {
+            return Err(RibosomeErrorCode::OutOfMemory);
         }
-
+        if data_len == 0 {
+            return Err(RibosomeErrorCode::ZeroSizedAllocation);
+        }
         // scope for mutable borrow of self
         let mem_buf: SinglePageAllocation;
         {
             let res = self.allocate(data_len as u16);
-            if res.is_err() {
-                return Err("Not enough free memory available");
+            if let Err(err_code) = res {
+                return Err(err_code);
             }
             mem_buf = res.unwrap();
         }
 
         self.wasm_memory
-            .set(mem_buf.offset as u32, &data)
+            .set(mem_buf.offset() as u32, &data)
             .expect("memory should be writable");
         Ok(mem_buf)
     }
@@ -78,7 +85,7 @@ impl SinglePageManager {
     pub fn read(&self, allocation: SinglePageAllocation) -> Vec<u8> {
         return self
             .wasm_memory
-            .get(allocation.offset as u32, allocation.length as usize)
+            .get(allocation.offset() as u32, allocation.length() as usize)
             .expect("Successfully retrieve the result");
     }
 }

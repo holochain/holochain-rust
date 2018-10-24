@@ -108,6 +108,11 @@ impl Zome {
 pub mod tests {
     use super::*;
     use serde_json;
+    use zome::Zome;
+
+    pub fn test_zome() -> Zome {
+        Zome::default()
+    }
 
     #[test]
     fn build_and_compare() {

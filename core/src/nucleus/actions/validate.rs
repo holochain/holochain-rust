@@ -1,13 +1,13 @@
 extern crate futures;
+extern crate serde_json;
 use action::{Action, ActionWrapper};
-use cas::content::AddressableContent;
 use context::Context;
 use futures::{future, Async, Future};
-use hash::HashString;
-use hash_table::{entry::Entry, sys_entry::EntryType};
-use nucleus::ribosome::callback::{
-    validate_commit::validate_commit, CallbackParams, CallbackResult,
+use holochain_core_types::{
+    cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::HolochainError,
+    hash::HashString, validation::ValidationData,
 };
+use nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
 use std::{sync::Arc, thread};
 
@@ -19,8 +19,9 @@ use std::{sync::Arc, thread};
 pub fn validate_entry(
     entry_type: EntryType,
     entry: Entry,
+    validation_data: ValidationData,
     context: &Arc<Context>,
-) -> Box<dyn Future<Item = HashString, Error = String>> {
+) -> Box<dyn Future<Item = HashString, Error = HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
@@ -33,34 +34,42 @@ pub fn validate_entry(
         .get_zome_name_for_entry_type(entry_type.as_str())
     {
         None => {
-            return Box::new(future::err(format!(
+            return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
                 entry_type.as_str()
-            )));;
+            ))));;
         }
-        Some(zome_name) => {
+        Some(_) => {
             let id = id.clone();
             let address = address.clone();
             let entry = entry.clone();
             let context = context.clone();
             thread::spawn(move || {
-                let validation_result = match validate_commit(
+                let maybe_validation_result = callback::validate_entry::validate_entry(
+                    entry.clone(),
+                    entry_type.clone(),
+                    validation_data.clone(),
                     context.clone(),
-                    &zome_name,
-                    &CallbackParams::ValidateCommit(entry.clone()),
-                ) {
-                    CallbackResult::Fail(error_string) => Err(error_string),
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry_type.clone()
-                    )),
+                );
+
+                let result = match maybe_validation_result {
+                    Ok(validation_result) => match validation_result {
+                        CallbackResult::Fail(error_string) => Err(error_string),
+                        CallbackResult::Pass => Ok(()),
+                        CallbackResult::NotImplemented => Err(format!(
+                            "Validation callback not implemented for {:?}",
+                            entry_type.clone()
+                        )),
+                        _ => unreachable!(),
+                    },
+                    Err(error) => Err(error.to_string()),
                 };
+
                 context
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnValidationResult((
                         (id, address),
-                        validation_result,
+                        result,
                     ))))
                     .expect("action channel to be open in reducer");
             });
@@ -82,7 +91,7 @@ pub struct ValidationFuture {
 
 impl Future for ValidationFuture {
     type Item = HashString;
-    type Error = String;
+    type Error = HolochainError;
 
     fn poll(
         &mut self,
@@ -96,7 +105,7 @@ impl Future for ValidationFuture {
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
-                Some(Err(e)) => Err(e.clone()),
+                Some(Err(e)) => Err(HolochainError::ValidationFailed(e.clone())),
                 None => Ok(futures::Async::Pending),
             }
         } else {

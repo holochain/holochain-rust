@@ -1,5 +1,4 @@
-use holochain_wasm_utils::error::RibosomeReturnCode;
-use nucleus::ribosome::api::Runtime;
+use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::Debug function code
@@ -10,17 +9,22 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let arg = runtime.load_utf8_from_args(args);
+    let payload = runtime.load_utf8_from_args(args);
+    println!("{}", payload);
+    // TODO #502 - log in logger as DEBUG log-level
+    runtime
+        .context
+        .log(&format!("zome_log:DEBUG: '{}'", payload))
+        .expect("Logger should work");
 
-    println!("{}", arg);
-    let _ = runtime.context.log(&arg);
-    ribosome_return_code!(Success)
+    // Return Ribosome Success Code
+    Ok(Some(RuntimeValue::I32(0 as i32)))
 }
 
 #[cfg(test)]
 pub mod tests {
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
 
@@ -34,17 +38,15 @@ pub mod tests {
         test_debug_string().into_bytes()
     }
 
-    #[test]
     /// test that bytes passed to debug end up in the log
-    fn test_debug() {
-        let (_runtime, logger) =
-            test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        let result = logger.lock();
-        match result {
-            Err(_) => assert!(false),
-            Ok(logger) => {
-                assert_eq!(format!("{:?}", logger.log), "[\"foo\"]".to_string());
-            }
-        }
+    #[test]
+    fn test_zome_api_function_debug() {
+        let (call_result, context) =
+            test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
+        assert!(call_result.is_empty());
+        assert_eq!(
+            "[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]",
+            format!("{}", (*context.logger.lock().unwrap()).dump()),
+        );
     }
 }

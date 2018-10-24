@@ -1,12 +1,13 @@
 use agent::state::AgentState;
-use cas::content::Address;
 use context::Context;
-use hash_table::{entry::Entry, links_entry::Link, sys_entry::EntryType};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, links_entry::Link,
+    validation::ValidationPackage,
+};
 use holochain_dna::Dna;
 use nucleus::{
-    ribosome::api::get_links::GetLinksArgs,
     state::{NucleusState, ValidationResult},
-    ZomeFnCall, ZomeFnResult,
+    ExecuteZomeFnResponse, ZomeFnCall,
 };
 use snowflake;
 use std::{
@@ -66,23 +67,23 @@ impl Hash for ActionWrapper {
 }
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
-#[derive(Clone, PartialEq, Hash, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(EntryType, Entry),
+    Commit(Entry),
     /// GetEntry by address
     GetEntry(Address),
 
     /// link to add
     AddLink(Link),
     /// get links from entry address and attribute-name
-    GetLinks(GetLinksArgs),
+    //GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(ZomeFnResult),
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
     /// initialize an application from a Dna
     /// not the same as genesis
@@ -99,6 +100,13 @@ pub enum Action {
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
     ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
+
+    ReturnValidationPackage(
+        (
+            snowflake::ProcessUniqueId,
+            Result<ValidationPackage, HolochainError>,
+        ),
+    ),
 }
 
 /// function signature for action handler functions
@@ -112,8 +120,8 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use hash_table::entry::tests::{test_entry, test_entry_address, test_entry_type};
-    use nucleus::tests::test_call_result;
+    use holochain_core_types::entry::{test_entry, test_entry_address};
+    use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action
@@ -128,7 +136,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry_type(), test_entry()))
+        ActionWrapper::new(Action::Commit(test_entry()))
     }
 
     /// dummy action for a get of test_hash()
@@ -137,7 +145,7 @@ pub mod tests {
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_response()))
     }
 
     #[test]

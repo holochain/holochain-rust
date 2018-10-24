@@ -177,11 +177,11 @@ impl Instance {
     }
 
     /// Creates a new Instance with disconnected channels.
-    pub fn new() -> Self {
+    pub fn new(context: Arc<Context>) -> Self {
         let (tx_action, _) = sync_channel(1);
         let (tx_observer, _) = sync_channel(1);
         Instance {
-            state: Arc::new(RwLock::new(State::new())),
+            state: Arc::new(RwLock::new(State::new(context))),
             action_channel: tx_action,
             observer_channel: tx_observer,
         }
@@ -194,11 +194,11 @@ impl Instance {
     }
 }
 
-impl Default for Instance {
-    fn default() -> Self {
-        Self::new()
+/*impl Default for Instance {
+    fn default(context:Context) -> Self {
+        Self::new(context)
     }
-}
+}*/
 
 /// Send Action to Instance's Event Queue and block until is has been processed.
 ///
@@ -270,14 +270,19 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     extern crate test_utils;
+    use self::tempfile::tempdir;
     use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::state::ActionResponse;
     use context::Context;
     use futures::executor::block_on;
-    use hash_table::sys_entry::EntryType;
     use holochain_agent::Agent;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
+    };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
@@ -287,7 +292,10 @@ pub mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::{
-        sync::{mpsc::sync_channel, Arc, Mutex},
+        sync::{
+            mpsc::{channel, sync_channel},
+            Arc, Mutex,
+        },
         thread::sleep,
         time::Duration,
     };
@@ -301,6 +309,9 @@ pub mod tests {
         fn log(&mut self, msg: String) {
             self.log.push(msg);
         }
+        fn dump(&self) -> String {
+            format!("{:?}", self.log)
+        }
     }
 
     /// create a test logger
@@ -310,14 +321,19 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from_string(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
-            )),
+            Arc::new(
+                Context::new(
+                    agent,
+                    logger.clone(),
+                    Arc::new(Mutex::new(SimplePersister::new())),
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                ).unwrap(),
+            ),
             logger,
         )
     }
@@ -334,15 +350,33 @@ pub mod tests {
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from_string(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
-        Arc::new(Context::new_with_channels(
-            agent,
-            logger.clone(),
+        Arc::new(
+            Context::new_with_channels(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new())),
+                action_channel.clone(),
+                observer_channel.clone(),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            ).unwrap(),
+        )
+    }
+
+    pub fn test_context_with_state() -> Arc<Context> {
+        let mut context = Context::new(
+            Agent::from("Florence".to_string()),
+            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new())),
-            action_channel.clone(),
-            observer_channel.clone(),
-        ))
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+        ).unwrap();
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        context.set_state(global_state.clone());
+        Arc::new(context)
     }
 
     #[test]
@@ -350,12 +384,17 @@ pub mod tests {
         assert_eq!(Context::default_channel_buffer_size(), 100);
     }
 
-    /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Result<Instance, String> {
+        test_instance_and_context(dna).map(|tuple| tuple.0)
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let mut instance = Instance::new();
         let context = test_context("jane");
+        let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
@@ -391,8 +430,11 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry_type, _) => {
-                    assert_eq!(entry_type, &EntryType::Dna);
+                Action::Commit(entry) => {
+                    assert!(
+                        entry.entry_type() == &EntryType::AgentId
+                            || entry.entry_type() == &EntryType::Dna
+                    );
                     true
                 }
                 _ => false,
@@ -416,7 +458,7 @@ pub mod tests {
             println!("Waiting for ReturnInitializationResult");
             sleep(Duration::from_millis(10))
         }
-        Ok(instance)
+        Ok((instance, context))
     }
 
     /// create a test instance with a blank DNA
@@ -435,14 +477,14 @@ pub mod tests {
     /// to the state and that no observers or actions
     /// are sent on the passed channels.
     pub fn can_process_action() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
 
         let context = test_context("jane");
         let (rx_action, rx_observer) = instance.initialize_channels();
 
-        let aw = test_action_wrapper_get();
+        let action_wrapper = test_action_wrapper_get();
         let new_observers = instance.process_action(
-            aw.clone(),
+            action_wrapper.clone(),
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -468,7 +510,7 @@ pub mod tests {
         // Clone the agent Arc
         let actions = state.agent().actions();
         let response = actions
-            .get(&aw)
+            .get(&action_wrapper)
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(response, &ActionResponse::GetEntry(None));
@@ -485,7 +527,7 @@ pub mod tests {
     /// run and the assert will actually run.  If we put the assert inside the closure
     /// the test thread could complete before the closure was called.
     fn can_dispatch_with_observer() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
         instance.start_action_loop(test_context("jane"));
 
         let dna = Dna::new();
@@ -513,7 +555,7 @@ pub mod tests {
     #[test]
     /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
-        let mut instance = Instance::new();
+        let mut instance = Instance::new(test_context("jason"));
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
@@ -610,5 +652,66 @@ pub mod tests {
         let instance = test_instance(dna);
         assert!(instance.is_err());
         assert_eq!(instance.err().unwrap(), "1337");
+    }
+
+    /// Committing a DnaEntry to source chain should work
+    #[test]
+    fn can_commit_dna() {
+        // Create Context, Agent, Dna, and Commit AgentIdEntry Action
+        let context = test_context("alex");
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna_entry = dna.to_entry();
+        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
+
+        // Set up instance and process the action
+        let instance = Instance::new(test_context("jason"));
+        let state_observers: Vec<Observer> = Vec::new();
+        let (_, rx_observer) = channel::<Observer>();
+        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+
+        // Check if AgentIdEntry is found
+        assert_eq!(1, instance.state().history.iter().count());
+        instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::Commit(entry) => {
+                    assert_eq!(entry.entry_type(), &EntryType::Dna);
+                    assert_eq!(entry.content(), dna_entry.content());
+                    true
+                }
+                _ => false,
+            });
+    }
+
+    /// Committing an AgentIdEntry to source chain should work
+    #[test]
+    fn can_commit_agent() {
+        // Create Context, Agent and Commit AgentIdEntry Action
+        let context = test_context("alex");
+        let agent_entry = context.agent.to_entry();
+        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
+
+        // Set up instance and process the action
+        let instance = Instance::new(test_context("jason"));
+        let state_observers: Vec<Observer> = Vec::new();
+        let (_, rx_observer) = channel::<Observer>();
+        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
+
+        // Check if AgentIdEntry is found
+        assert_eq!(1, instance.state().history.iter().count());
+        instance
+            .state()
+            .history
+            .iter()
+            .find(|aw| match aw.action() {
+                Action::Commit(entry) => {
+                    assert_eq!(entry.entry_type(), &EntryType::AgentId,);
+                    assert_eq!(entry.content(), agent_entry.content());
+                    true
+                }
+                _ => false,
+            });
     }
 }

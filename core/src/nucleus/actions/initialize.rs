@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use hash_table::sys_entry::ToEntry;
+use holochain_core_types::entry::ToEntry;
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
 use nucleus::{
@@ -14,7 +14,7 @@ use std::{sync::Arc, thread, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
-const INITIALIZATION_TIMEOUT: u64 = 10;
+const INITIALIZATION_TIMEOUT: u64 = 30;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -45,9 +45,8 @@ pub fn initialize_application(
         );
 
         // Commit DNA to chain
-        let (dna_entry_type, dna_entry) = dna.clone().to_entry();
+        let dna_entry = dna.to_entry();
         let dna_commit = block_on(commit_entry(
-            dna_entry_type,
             dna_entry,
             &context_clone.action_channel.clone(),
             &context_clone,
@@ -63,7 +62,32 @@ pub fn initialize_application(
                 context_clone
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.err().unwrap()),
+                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
+                    )))
+                    .expect("Action channel not usable in initialize_application()");
+                return;
+            };
+        }
+
+        // Commit AgentId to chain
+        let agent_id_entry = context_clone.agent.to_entry();
+        let agent_id_commit = block_on(commit_entry(
+            agent_id_entry,
+            &context_clone.action_channel.clone(),
+            &context_clone,
+        ));
+
+        // Let initialization fail if AgentId could not be committed.
+        // Currently this cannot happen since ToEntry for Agent always creates
+        // an entry from an Agent object. So I can't create a test for the code below.
+        // Hence skipping it for codecov for now but leaving it in for resilience.
+        #[cfg_attr(tarpaulin, skip)]
+        {
+            if agent_id_commit.is_err() {
+                context_clone
+                    .action_channel
+                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                        Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
                 return;

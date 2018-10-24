@@ -1,25 +1,15 @@
+extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate serde_derive;
 
-use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
+use holochain_core_types::hash::HashString;
+use holochain_wasm_utils::{
+  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
+  memory_allocation::*, memory_serialization::*
+};
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
 }
-
-
-#[derive(Serialize, Default)]
-struct CommitInputStruct {
-  entry_type_name: String,
-  entry_content: String,
-}
-
-#[derive(Deserialize, Serialize, Default)]
-struct CommitOutputStruct {
-  hash: String,
-}
-
 
 //-------------------------------------------------------------------------------------------------
 // HC Commit Function Call - Succesful
@@ -27,15 +17,19 @@ struct CommitOutputStruct {
 
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
-fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_content: &str)
+fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_value: &str)
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitInputStruct {
-    entry_type_name: entry_type_name.to_string(),
-    entry_content: entry_content.to_string(),
+  let input = CommitEntryArgs {
+    entry_type_name: entry_type_name.to_owned(),
+    entry_value: entry_value.to_owned(),
   };
-  let allocation_of_input =  serialize(mem_stack, input);
+  let maybe_allocation =  store_as_json(mem_stack, input);
+  if let Err(return_code) = maybe_allocation {
+    return Err(return_code.to_string());
+  }
+  let allocation_of_input = maybe_allocation.unwrap();
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
@@ -43,13 +37,13 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_cont
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+  let output: CommitEntryResult = load_json(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
-  Ok(output.hash.to_string())
+  Ok(output.address.to_string())
 }
 
 
@@ -62,10 +56,15 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   -> Result<String, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitOutputStruct {
-    hash: "whatever".to_string(),
+  let input = CommitEntryResult {
+    address: HashString::from("whatever"),
+    validation_failure: String::from("")
   };
-  let allocation_of_input =  serialize(mem_stack, input);
+  let maybe_allocation =  store_as_json(mem_stack, input);
+  if let Err(return_code) = maybe_allocation {
+    return Err(return_code.to_string());
+  }
+  let allocation_of_input = maybe_allocation.unwrap();
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
@@ -73,13 +72,13 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitOutputStruct  = try_deserialize_allocation(encoded_allocation_of_result as u32)?;
+  let output: CommitEntryResult = load_json(encoded_allocation_of_result as u32)?;
 
   // Free result & input allocations and all allocations made inside commit()
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
 
   // Return hash
-  Ok(output.hash.to_string())
+  Ok(output.address.to_string())
 }
 
 
@@ -93,9 +92,9 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
-  return serialize_into_encoded_allocation(&mut mem_stack, output);
+  return store_json_into_encoded_allocation(&mut mem_stack, output);
 }
 
 /// Function called by Holochain Instance
@@ -104,7 +103,13 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
-  let mut mem_stack = SinglePageStack::from_encoded(encoded_allocation_of_input as u32);
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   let output = hdk_commit_fail(&mut mem_stack);
-  return serialize_into_encoded_allocation(&mut mem_stack, output);
+  return store_json_into_encoded_allocation(&mut mem_stack, output);
+}
+
+#[no_mangle]
+pub extern fn __hdk_get_validation_package_for_entry_type(encoded_allocation_of_input: usize) -> i32 {
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+  store_string_into_encoded_allocation(&mut mem_stack, "\"ChainFull\"")
 }

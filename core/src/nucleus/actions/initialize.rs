@@ -3,15 +3,13 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::entry::ToEntry;
+use holochain_core_types::{
+    entry::ToEntry,
+    ribosome::callback::{CallbackParams, CallbackResult},
+};
 use holochain_dna::Dna;
 use instance::dispatch_action_and_wait;
-use nucleus::{
-    ribosome::callback::{genesis::genesis},
-    state::NucleusStatus,
-};
-use holochain_core_types::ribosome::callback::CallbackParams;
-use holochain_core_types::ribosome::callback::CallbackResult;
+use nucleus::{ribosome::callback::genesis::genesis, state::NucleusStatus};
 use std::{sync::Arc, thread, time::*};
 
 /// Timeout in seconds for initialization process.

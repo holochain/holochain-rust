@@ -1,7 +1,6 @@
 use super::call;
 use context::Context;
-use holochain_core_types::ribosome::callback::CallbackParams;
-use holochain_core_types::ribosome::callback::CallbackResult;
+use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
 use nucleus::ribosome::callback::Callback;
 use std::sync::Arc;
 

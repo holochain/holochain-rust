@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{

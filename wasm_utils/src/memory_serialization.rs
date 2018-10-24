@@ -1,5 +1,7 @@
-use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{
+    error::{RibosomeErrorCode, RibosomeErrorReport},
+    json::JsonString,
+};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };

@@ -1,16 +1,14 @@
-use std::str::FromStr;
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::JsonString;
-use json::RawString;
-use serde_json::Error as SerdeError;
+use json::{JsonString, RawString};
+use serde_json::{self, Error as SerdeError};
 use std::{
+    convert::TryFrom,
     error::Error,
     fmt,
     io::{self, Error as IoError},
+    str::FromStr,
 };
-use serde_json;
-use std::convert::TryFrom;
 
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
@@ -204,12 +202,10 @@ impl FromStr for RibosomeReturnCode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // println!("zz: {:?}", s.clone());
-        Ok(
-            match s.as_ref() {
-                "Success" => RibosomeReturnCode::Success,
-                _ => RibosomeReturnCode::Failure(s.parse()?),
-            }
-        )
+        Ok(match s.as_ref() {
+            "Success" => RibosomeReturnCode::Success,
+            _ => RibosomeReturnCode::Failure(s.parse()?),
+        })
     }
 }
 
@@ -250,7 +246,9 @@ impl FromStr for RibosomeErrorCode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.as_ref() {
             "Unspecified" => Ok(RibosomeErrorCode::Unspecified),
-            "Argument deserialization failed" => Ok(RibosomeErrorCode::ArgumentDeserializationFailed),
+            "Argument deserialization failed" => {
+                Ok(RibosomeErrorCode::ArgumentDeserializationFailed)
+            }
             "Out of memory" => Ok(RibosomeErrorCode::OutOfMemory),
             "Received wrong action result" => Ok(RibosomeErrorCode::ReceivedWrongActionResult),
             "Callback failed" => Ok(RibosomeErrorCode::CallbackFailed),
@@ -258,7 +256,9 @@ impl FromStr for RibosomeErrorCode {
             "Response serialization failed" => Ok(RibosomeErrorCode::ResponseSerializationFailed),
             "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
             "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
-            _ => Err(HolochainError::ErrorGeneric(String::from("Unknown RibosomeErrorCode"))),
+            _ => Err(HolochainError::ErrorGeneric(String::from(
+                "Unknown RibosomeErrorCode",
+            ))),
         }
     }
 }
@@ -403,7 +403,10 @@ mod tests {
     fn ribosome_return_code_round_trip() {
         let oom =
             RibosomeReturnCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
-        assert_eq!(RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory), oom);
+        assert_eq!(
+            RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory),
+            oom
+        );
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
 

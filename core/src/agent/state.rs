@@ -194,7 +194,7 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, expected_entry_address, SerializedEntry},
+        entry::{expected_entry_address, test_entry, SerializedEntry},
         error::HolochainError,
         json::{JsonString, RawString},
     };
@@ -280,7 +280,10 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"Commit\":{{\"Ok\":\"{}\"}}}}", expected_entry_address())),
+            JsonString::from(format!(
+                "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
+                expected_entry_address()
+            )),
             JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
@@ -310,7 +313,10 @@ pub mod tests {
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            JsonString::from(format!("{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}", expected_entry_address())),
+            JsonString::from(format!(
+                "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
+                expected_entry_address()
+            )),
             JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(

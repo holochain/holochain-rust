@@ -1,5 +1,4 @@
-use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::{cas::content::Address, json::JsonString};
+use holochain_core_types::{cas::content::Address, entry::SerializedEntry, json::JsonString};
 use serde_json;
 
 #[derive(Deserialize, Default, Debug, Serialize)]

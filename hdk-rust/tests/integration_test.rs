@@ -1,18 +1,18 @@
+extern crate backtrace;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate test_utils;
-extern crate backtrace;
 
-use holochain_core_types::entry_type::test_entry_type;
-use holochain_core_types::cas::content::AddressableContent;
-use holochain_core_types::entry::test_entry_a;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::entry::SerializedEntry;
 use holochain_core_api::*;
-use holochain_core_types::json::{JsonString, RawString};
-use holochain_core_types::hash::HashString;
+use holochain_core_types::{
+    cas::content::AddressableContent,
+    entry::{test_entry_a, Entry, SerializedEntry},
+    entry_type::test_entry_type,
+    hash::HashString,
+    json::{JsonString, RawString},
+};
 use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
@@ -79,9 +79,10 @@ fn can_commit_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(
-            format!("{{\"address\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
-        ),
+        JsonString::from(format!(
+            "{{\"address\":\"{}\"}}",
+            String::from(SerializedEntry::from(test_entry_a()).address())
+        )),
     );
 }
 
@@ -100,9 +101,10 @@ fn can_commit_entry_macro() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(
-            format!("{{\"ok\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
-        ),
+        JsonString::from(format!(
+            "{{\"ok\":\"{}\"}}",
+            String::from(SerializedEntry::from(test_entry_a()).address())
+        )),
     );
 }
 
@@ -138,9 +140,10 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(
-            format!("{{\"ok\":\"{}\"}}", String::from(SerializedEntry::from(test_entry_a()).address()))
-        ),
+        JsonString::from(format!(
+            "{{\"ok\":\"{}\"}}",
+            String::from(SerializedEntry::from(test_entry_a()).address())
+        )),
     );
 
     let result = hc.call(
@@ -179,7 +182,10 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(SerializedEntry::from(Entry::new(&test_entry_type(), &JsonString::from(RawString::from("FAIL")))))),
+        &String::from(JsonString::from(SerializedEntry::from(Entry::new(
+            &test_entry_type(),
+            &JsonString::from(RawString::from("FAIL")),
+        )))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);

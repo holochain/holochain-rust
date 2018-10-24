@@ -52,11 +52,11 @@ pub fn invoke_init_globals(
 
 #[cfg(test)]
 pub mod tests {
+    use holochain_core_types::json::JsonString;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::json::JsonString;
 
     #[test]
     /// test that bytes passed to debug end up in the log

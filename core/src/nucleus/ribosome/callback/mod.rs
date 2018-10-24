@@ -5,9 +5,8 @@ pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
 
-use holochain_core_types::ribosome::callback::CallbackParams;
-use holochain_core_types::ribosome::callback::CallbackResult;
 use context::Context;
+use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{

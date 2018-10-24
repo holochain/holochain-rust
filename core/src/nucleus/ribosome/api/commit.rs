@@ -1,25 +1,21 @@
 extern crate futures;
-use holochain_core_types::entry::SerializedEntry;
 use agent::{actions::commit::*, state::AgentState};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry},
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
     hash::HashString,
 };
 use holochain_wasm_utils::api_serialization::{
-    commit::{CommitEntryResult},
+    commit::CommitEntryResult,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use nucleus::{actions::validate::*, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-fn build_validation_data_commit(
-    _entry: Entry,
-    _state: &AgentState,
-) -> ValidationData {
+fn build_validation_data_commit(_entry: Entry, _state: &AgentState) -> ValidationData {
     //
     // TODO: populate validation data with with chain content
     // I have left this out because filling the valiation data with
@@ -57,15 +53,13 @@ pub fn invoke_commit_app_entry(
         Err(e) => {
             println!("yyy: {:?}", e);
             return ribosome_error_code!(ArgumentDeserializationFailed);
-        },
+        }
     };
 
     // Create Chain Entry
     let entry = Entry::from(serialized_entry);
-    let validation_data = build_validation_data_commit(
-        entry.clone(),
-        &runtime.context.state().unwrap().agent(),
-    );
+    let validation_data =
+        build_validation_data_commit(entry.clone(), &runtime.context.state().unwrap().agent());
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(
@@ -104,9 +98,9 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry,
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{test_entry, SerializedEntry},
         json::JsonString,
     };
     use nucleus::ribosome::{

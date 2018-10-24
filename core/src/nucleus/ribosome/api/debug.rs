@@ -12,7 +12,10 @@ pub fn invoke_debug(
 ) -> Result<Option<RuntimeValue>, Trap> {
     let args_str = runtime.load_utf8_from_args(args);
     println!("DEBUG: {:?}", args_str);
-    runtime.context.log(&format!("DEBUG: {:?}", args_str)).expect("logger should work");
+    runtime
+        .context
+        .log(&format!("DEBUG: {:?}", args_str))
+        .expect("logger should work");
 
     runtime.store_json_string(JsonString::from(RawString::from(args_str)))
 }
@@ -42,13 +45,11 @@ pub mod tests {
             test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let logger = logger.lock().unwrap();
         assert_eq!(
-            JsonString::from(
-                format!(
-                    "{}{}",
-                    String::from(JsonString::from(RawString::from("foo"))),
-                    "\u{0}",
-                ),
-            ),
+            JsonString::from(format!(
+                "{}{}",
+                String::from(JsonString::from(RawString::from("foo"))),
+                "\u{0}",
+            ),),
             runtime.result,
         );
         assert_eq!(

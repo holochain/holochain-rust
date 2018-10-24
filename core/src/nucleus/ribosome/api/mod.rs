@@ -8,13 +8,12 @@ pub mod get_entry;
 pub mod get_links;
 pub mod init_globals;
 use context::Context;
-use holochain_core_types::json::JsonString;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use holochain_wasm_utils::{
-
-    memory_allocation::decode_encoded_allocation,
+use holochain_core_types::{
+    error::{RibosomeErrorCode, RibosomeReturnCode},
+    json::JsonString,
 };
-use holochain_core_types::error::{RibosomeErrorCode, RibosomeReturnCode};
+use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
     ribosome::{
         api::{

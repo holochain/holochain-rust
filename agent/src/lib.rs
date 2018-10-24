@@ -158,7 +158,8 @@ mod tests {
     #[test]
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
-        let expected_content = JsonString::from("{\"value\":\"\\\"bob\\\"\",\"entry_type\":\"%agent_id\"}");
+        let expected_content =
+            JsonString::from("{\"value\":\"\\\"bob\\\"\",\"entry_type\":\"%agent_id\"}");
         // content()
         assert_eq!(expected_content, test_agent().content(),);
 

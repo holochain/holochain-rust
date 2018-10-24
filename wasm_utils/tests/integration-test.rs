@@ -10,8 +10,10 @@ extern crate test_utils;
 use holochain_agent::Agent;
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_api::Holochain;
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_core_types::error::*;
+use holochain_core_types::{
+    error::{HolochainError, *},
+    json::JsonString,
+};
 use std::sync::{Arc, Mutex};
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
@@ -97,8 +99,7 @@ fn can_return_error_report() {
 
 #[test]
 fn call_store_json_ok() {
-    let (result, test_logger) =
-        launch_hc_with_integration_test_wasm("test_store_json_ok", r#"{}"#);
+    let (result, test_logger) = launch_hc_with_integration_test_wasm("test_store_json_ok", r#"{}"#);
     // Verify result
     assert_eq!(JsonString::from("{\"value\":\"fish\"}"), result.unwrap());
     // Verify logs

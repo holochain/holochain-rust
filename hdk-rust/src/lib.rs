@@ -15,7 +15,6 @@ pub mod globals;
 pub mod init_globals;
 pub mod macros;
 
-use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use self::RibosomeError::*;
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -25,9 +24,10 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
     },
     holochain_core_types::{
+        cas::content::Address,
+        entry::SerializedEntry,
         hash::HashString,
         json::{JsonString, RawString},
-        entry::SerializedEntry,
     },
     memory_allocation::*,
     memory_serialization::*,

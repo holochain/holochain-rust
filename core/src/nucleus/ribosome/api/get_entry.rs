@@ -1,8 +1,6 @@
 use futures::executor::block_on;
-use holochain_core_types::{entry::SerializedEntry};
-use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryArgs, GetEntryResult,
-};
+use holochain_core_types::entry::SerializedEntry;
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
 use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -30,9 +28,7 @@ pub fn invoke_get_entry(
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(maybe_entry) => {
             let result = match maybe_entry {
-                Some(entry) => {
-                    GetEntryResult::found(SerializedEntry::from(entry))
-                }
+                Some(entry) => GetEntryResult::found(SerializedEntry::from(entry)),
                 None => GetEntryResult::not_found(),
             };
             runtime.store_json_string(result)

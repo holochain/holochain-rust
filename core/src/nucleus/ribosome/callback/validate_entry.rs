@@ -1,19 +1,18 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{entry::Entry, entry_type::EntryType, error::HolochainError};
-use holochain_core_types::ribosome::callback::CallbackResult;
+use holochain_core_types::{
+    entry::Entry,
+    entry_type::EntryType,
+    error::{HolochainError, RibosomeReturnCode},
+    ribosome::callback::CallbackResult,
+};
 use holochain_dna::wasm::DnaWasm;
 use holochain_wasm_utils::api_serialization::validation::ValidationData;
 use nucleus::{
-    ribosome::{
-        self,
-        callback::get_dna,
-    },
+    ribosome::{self, callback::get_dna},
     ZomeFnCall,
 };
-use std::sync::Arc;
-use holochain_core_types::error::RibosomeReturnCode;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, sync::Arc};
 
 pub fn validate_entry(
     entry: Entry,
@@ -118,7 +117,7 @@ fn run_validation_callback(
                 Ok(return_code) => CallbackResult::from(return_code),
                 Err(_) => CallbackResult::from(runtime.result),
             }
-        },
+        }
         Err(_) => CallbackResult::NotImplemented,
     }
 }

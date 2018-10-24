@@ -1,8 +1,7 @@
-use entry::Entry;
-use entry::SerializedEntry;
+use entry::{Entry, SerializedEntry};
+use error::RibosomeReturnCode;
 use json::JsonString;
 use serde_json;
-use error::RibosomeReturnCode;
 
 #[derive(Debug)]
 pub enum CallbackParams {
@@ -34,7 +33,8 @@ pub enum CallbackResult {
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
-        let try: Result<CallbackResult, serde_json::Error> = serde_json::from_str(&String::from(json_string.clone()));
+        let try: Result<CallbackResult, serde_json::Error> =
+            serde_json::from_str(&String::from(json_string.clone()));
         match try {
             Ok(callback_result) => callback_result,
             Err(_) => CallbackResult::Fail(String::from(json_string)),
@@ -44,15 +44,18 @@ impl From<JsonString> for CallbackResult {
 
 impl From<CallbackResult> for JsonString {
     fn from(callback_result: CallbackResult) -> JsonString {
-        JsonString::from(serde_json::to_string(&callback_result)
-            .expect("could not Jsonify CallbackResult"))
+        JsonString::from(
+            serde_json::to_string(&callback_result).expect("could not Jsonify CallbackResult"),
+        )
     }
 }
 
 impl From<RibosomeReturnCode> for CallbackResult {
     fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeReturnCode::Failure(ribosome_error_code) => CallbackResult::Fail(ribosome_error_code.to_string()),
+            RibosomeReturnCode::Failure(ribosome_error_code) => {
+                CallbackResult::Fail(ribosome_error_code.to_string())
+            }
             RibosomeReturnCode::Success => CallbackResult::Pass,
         }
     }

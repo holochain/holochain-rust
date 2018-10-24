@@ -5,10 +5,9 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::HolochainError,
-    hash::HashString,
+    hash::HashString, ribosome::callback::CallbackResult,
 };
 use holochain_wasm_utils::api_serialization::validation::ValidationData;
-use holochain_core_types::ribosome::callback::CallbackResult;
 use nucleus::ribosome::callback;
 use snowflake;
 use std::{sync::Arc, thread};
@@ -108,7 +107,7 @@ impl Future for ValidationFuture {
                 Some(Err(e)) => {
                     println!("nnnn: {:?}", e);
                     Err(HolochainError::ValidationFailed(e.clone()))
-                },
+                }
                 None => Ok(futures::Async::Pending),
             }
         } else {

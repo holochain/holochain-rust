@@ -63,18 +63,16 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
 
 impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(
-            match result {
-                Ok(t) => {
-                    let json_string: JsonString = t.into();
-                    format!("{{\"ok\":{}}}", String::from(json_string))
-                },
-                Err(e) => {
-                    let json_string: JsonString = e.into();
-                    format!("{{\"error\":{}}}", String::from(json_string))
-                },
+        JsonString::from(match result {
+            Ok(t) => {
+                let json_string: JsonString = t.into();
+                format!("{{\"ok\":{}}}", String::from(json_string))
             }
-        )
+            Err(e) => {
+                let json_string: JsonString = e.into();
+                format!("{{\"error\":{}}}", String::from(json_string))
+            }
+        })
     }
 }
 
@@ -102,7 +100,9 @@ impl From<String> for RawString {
 
 impl From<f64> for RawString {
     fn from(i: f64) -> RawString {
-        RawString(serde_json::Value::Number(serde_json::Number::from_f64(i).expect("could not accept number")))
+        RawString(serde_json::Value::Number(
+            serde_json::Number::from_f64(i).expect("could not accept number"),
+        ))
     }
 }
 

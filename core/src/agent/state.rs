@@ -320,7 +320,7 @@ pub mod tests {
             JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(
-            JsonString::from("{\"error\":\"some error\"}"),
+            JsonString::from("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
             JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
                 "some error"
             )))),

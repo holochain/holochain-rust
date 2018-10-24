@@ -248,7 +248,7 @@ pub mod tests {
     )
 
     (func
-        (export "validate_testEntryType")
+        (export "__hdk_validate_app_entry")
         (param $allocation i32)
         (result i32)
 

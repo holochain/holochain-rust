@@ -17,13 +17,15 @@ use holochain_core_types::{
     time::Iso8601,
 };
 
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
 use std::{collections::HashMap, sync::Arc};
+use std::fmt;
 
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
-#[derive(Clone, Debug, PartialEq,Serialize,Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
     keys: Option<Keys>,
     /// every action and the result of that action
@@ -34,19 +36,59 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-/*impl Serialize for AgentState {
+impl Serialize for AgentState {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         // 3 is the number of fields in the struct.
-        let mut state = serializer.serialize_struct("AgentState", 3)?;
-        state.serialize_field("keys", &self.keys)?;
+        let mut state = serializer.serialize_struct("AgentState", 2)?;
         state.serialize_field("chain_store", &self.chain)?;
         state.serialize_field("top_chain_header", &self.top_chain_header)?;
         state.end()
     }
-}*/
+}
+
+struct AgentVisitor;
+impl<'de> Visitor<'de> for AgentVisitor
+{
+    // The type that our Visitor is going to produce.
+    type Value = AgentState;
+
+    // Format a message stating what data this Visitor expects to receive.
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a very special map")
+    }
+
+    // Deserialize MyMap from an abstract "map" provided by the
+    // Deserializer. The MapAccess input is a callback provided by
+    // the Deserializer to let us see each entry in the map.
+    fn visit_map<M>(self, mut access: M) -> Result<AgentState, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+
+    
+    
+        let chain : (String,ChainStore<FilesystemStorage>) = access.next_entry()?.expect("chain should be present");
+        let top_chain_header : (String,ChainHeader) = access.next_entry()?.expect("Chain header should be present");
+        let mut agent = AgentState::new(chain.1);
+        agent.top_chain_header = Some(top_chain_header.1);
+        Ok(agent)
+    }
+}
+
+impl<'de> Deserialize<'de> for AgentState
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Instantiate our Visitor and ask the Deserializer to drive
+        // it over the input data, resulting in an instance of MyMap.
+        deserializer.deserialize_map(AgentVisitor)
+    }
+}
 
 impl AgentState {
     /// builds a new, empty AgentState
@@ -365,10 +407,9 @@ pub mod tests {
     #[test]
     pub fn serialize_round_trip_agent_state()
     {
-        let tempdir = tempdir().unwrap();
-        let path = tempdir.path().to_str().unwrap();
         let agent = test_agent_state();
         let json = serde_json::to_string(&agent).unwrap();
+        let agent : AgentState = serde_json::from_str(&json).unwrap();
         println!("json encrypted{:}",json);
     }
 

@@ -17,7 +17,7 @@ use holochain_core_types::{
     time::Iso8601,
 };
 
-use serde::ser::{Serialize, Serializer, SerializeStruct};
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
@@ -33,8 +33,7 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-impl Serialize for AgentState
-{
+impl Serialize for AgentState {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -42,7 +41,7 @@ impl Serialize for AgentState
         // 3 is the number of fields in the struct.
         let mut state = serializer.serialize_struct("AgentState", 3)?;
         state.serialize_field("keys", &self.keys)?;
-        state.serialize_field("chain_store",&self.chain)?;
+        state.serialize_field("chain_store", &self.chain)?;
         state.serialize_field("top_chain_header", &self.top_chain_header)?;
         state.end()
     }

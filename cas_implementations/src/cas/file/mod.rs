@@ -11,7 +11,7 @@ use holochain_core_types::{
 use riker::actors::*;
 use std::fmt;
 use serde::ser::{Serialize, Serializer, SerializeStruct};
-use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
@@ -46,36 +46,43 @@ impl Serialize for FilesystemStorage
     }
 }
 
+struct FileVisitor;
+impl<'de> Visitor<'de> for FileVisitor
+{
+    // The type that our Visitor is going to produce.
+    type Value = FilesystemStorage;
 
-        impl<'de> Deserialize<'de> for FilesystemStorage {
-            fn deserialize<D>(deserializer: D) -> Result<FilesystemStorage, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                struct FileVisitor;
+    // Format a message stating what data this Visitor expects to receive.
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a very special map")
+    }
 
-                impl<'de> Visitor<'de> for FileVisitor {
-                    type Value = FilesystemStorage;
+    // Deserialize MyMap from an abstract "map" provided by the
+    // Deserializer. The MapAccess input is a callback provided by
+    // the Deserializer to let us see each entry in the map.
+    fn visit_map<M>(self, mut access: M) -> Result<FilesystemStorage, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                        formatter.write_str("`secs` or `nanos`")
-                    }
+        // While there are entries remaining in the input, add them
+        // into our map.
+        let key : (String,String) = access.next_entry()?.expect("Supposed to get first entry");
+        Ok(FilesystemStorage::new(&key.1).expect("cannot create file"))
+    }
+}
 
-                    fn visit_str<E>(self, value: &str) -> Result<FilesystemStorage, E>
-                    where
-                        E: de::Error,
-                    {
-                        match value {
-                            "dir_path" => Ok(FilesystemStorage::new(value).unwrap()),
-                            _ => Err(de::Error::unknown_field(value, &["dir_path"])),
-                        }
-                    }
-                }
-
-                deserializer.deserialize_identifier(FileVisitor)
-            }
-        }
-
+impl<'de> Deserialize<'de> for FilesystemStorage
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Instantiate our Visitor and ask the Deserializer to drive
+        // it over the input data, resulting in an instance of MyMap.
+        deserializer.deserialize_map(FileVisitor)
+    }
+}
 
 
 
@@ -113,6 +120,9 @@ impl ContentAddressableStorage for FilesystemStorage {
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
+    extern crate serde_test;
+    use serde_json;
+    use self::serde_test::{Token, assert_tokens};
 
     use self::tempfile::{tempdir, TempDir};
     use cas::file::FilesystemStorage;
@@ -120,6 +130,17 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::StorageTestSuite,
     };
+
+    #[test]
+    pub fn serialization_round_trip()
+    {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        let storage = FilesystemStorage::new(path).unwrap();
+        let file_json = serde_json::to_string(&storage).unwrap();
+        let file_serde : FilesystemStorage = serde_json::from_str(&file_json).unwrap();
+        assert_eq!(file_serde.dir_path,storage.dir_path);
+    }
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().unwrap();

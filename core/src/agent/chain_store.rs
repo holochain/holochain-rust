@@ -2,7 +2,7 @@ use holochain_core_types::{
     cas::storage::ContentAddressableStorage, chain_header::ChainHeader, entry_type::EntryType,
 };
 
-#[derive(Debug, PartialEq, Clone,Serialize,Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChainStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,

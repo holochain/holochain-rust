@@ -120,13 +120,11 @@ impl Holochain {
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
             .unwrap();
-        new_context.set_state(Arc::new(RwLock::new(loaded_state)));
-        let arc_context = Arc::new(new_context);
-        let mut instance = Instance::new(arc_context.clone());
+        let mut instance = Instance::from_state(loaded_state);
         instance.start_action_loop(context.clone());
         Ok(Holochain {
             instance,
-            context: arc_context.clone(),
+            context: context.clone(),
             active: false,
         })
     }

@@ -17,7 +17,7 @@ lazy_static! {
 #[allow(dead_code)]
 extern "C" {
     pub(crate) fn hc_property(encoded_allocation_of_input: u32) -> u32;
-    pub(crate) fn hc_make_hash(encoded_allocation_of_input: u32) -> u32;
+    pub(crate) fn hc_hash_entry(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_debug(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_call(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_sign(encoded_allocation_of_input: u32) -> u32;

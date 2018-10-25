@@ -4,14 +4,16 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult},
+        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
+        HashEntryArgs, QueryArgs, QueryResult,
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
     memory_serialization::*,
 };
+use serde::de::DeserializeOwned;
 use serde_json;
 
 //--------------------------------------------------------------------------------------------------
@@ -166,8 +168,9 @@ pub fn call<S: Into<String>>(
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
-/// will have to pass the defined validation rules for that entry type. If the entry type is defined as public, will also publish the entry to the DHT. Returns either an
-/// address of the committed entry as a string, or an error.
+/// will have to pass the defined validation rules for that entry type.
+/// If the entry type is defined as public, will also publish the entry to the DHT.
+/// Returns either an address of the committed entry as a string, or an error.
 pub fn commit_entry(
     entry_type_name: &str,
     entry_value: serde_json::Value,
@@ -215,7 +218,32 @@ pub fn commit_entry(
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry(address: HashString, _options: GetEntryOptions) -> ZomeApiResult<GetEntryResult> {
+pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
+where
+    T: DeserializeOwned,
+{
+    let res = get_entry_result(address, GetEntryOptions {});
+    match res {
+        Ok(result) => match result.status {
+            GetResultStatus::Found => {
+                let maybe_entry_value: Result<T, _> = serde_json::from_str(&result.entry);
+                match maybe_entry_value {
+                    Ok(entry_value) => Ok(Some(entry_value)),
+                    Err(err) => Err(ZomeApiError::Internal(err.to_string())),
+                }
+            }
+            GetResultStatus::NotFound => Ok(None),
+        },
+        Err(err) => Err(err),
+    }
+}
+
+/// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
+/// its address, and a the full options to specify exactly what data to return
+pub fn get_entry_result(
+    address: HashString,
+    _options: GetEntryOptions,
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -297,13 +325,32 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
-pub fn make_hash<S: Into<String>>(
-    _entry_type: S,
-    _entry_data: serde_json::Value,
+/// Reconstructs an address of the given entry data.
+/// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
+/// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
+/// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
+pub fn hash_entry<S: Into<String>>(
+    entry_type_name: S,
+    entry_value: serde_json::Value,
 ) -> ZomeApiResult<HashString> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    // Put args in struct and serialize into memory
+    let input = HashEntryArgs {
+        entry_type_name: entry_type_name.into(),
+        entry_value: entry_value.to_string(),
+    };
+    let allocation_of_input = store_as_json(&mut mem_stack, input)
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_hash_entry(allocation_of_input.encode() as u32) };
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result = load_string(encoded_allocation_of_result as u32)
+        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    Ok(HashString::from(result))
 }
 
 /// Not Yet Available
@@ -374,9 +421,28 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ge
     }
 }
 
-/// Not Yet Available
-pub fn query() -> ZomeApiResult<Vec<String>> {
-    Err(ZomeApiError::FunctionNotImplemented)
+/// Returns a list of entries from your local source chain, that match a given type.
+/// entry_type_name: Specify type of entry to retrieve
+/// limit: Max number of entries to retrieve
+pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>> {
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    // Put args in struct and serialize into memory
+    let input = QueryArgs {
+        entry_type_name: entry_type_name.to_string(),
+        limit: limit,
+    };
+    let allocation_of_input = store_as_json(&mut mem_stack, input)
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_query(allocation_of_input.encode() as u32) };
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: QueryResult = load_json(encoded_allocation_of_result as u32)
+        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    Ok(result.hashes)
 }
 
 /// Not Yet Available

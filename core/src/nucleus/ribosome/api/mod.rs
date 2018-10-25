@@ -6,15 +6,17 @@ pub mod commit;
 pub mod debug;
 pub mod get_entry;
 pub mod get_links;
+pub mod hash_entry;
 pub mod init_globals;
 pub mod link_entries;
+pub mod query;
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        get_entry::invoke_get_entry, get_links::invoke_get_links,
-        init_globals::invoke_init_globals, link_entries::invoke_link_entries,
+        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
+        init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
     },
     Defn, Runtime,
 };
@@ -67,6 +69,8 @@ pub enum ZomeApiFunction {
 
     LinkEntries,
     GetLinks,
+    Query,
+    HashEntry,
 }
 
 impl Defn for ZomeApiFunction {
@@ -81,6 +85,8 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Call => "hc_call",
             ZomeApiFunction::LinkEntries => "hc_link_entries",
             ZomeApiFunction::GetLinks => "hc_get_links",
+            ZomeApiFunction::Query => "hc_query",
+            ZomeApiFunction::HashEntry => "hc_hash_entry",
         }
     }
 
@@ -118,6 +124,8 @@ impl FromStr for ZomeApiFunction {
             "hc_call" => Ok(ZomeApiFunction::Call),
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
+            "hc_query" => Ok(ZomeApiFunction::Query),
+            "hc_hash_entry" => Ok(ZomeApiFunction::HashEntry),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -146,6 +154,8 @@ impl ZomeApiFunction {
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
+            ZomeApiFunction::Query => invoke_query,
+            ZomeApiFunction::HashEntry => invoke_hash_entry,
         }
     }
 }
@@ -366,6 +376,8 @@ pub mod tests {
             ("hc_call", ZomeApiFunction::Call),
             ("hc_link_entries", ZomeApiFunction::LinkEntries),
             ("hc_get_links", ZomeApiFunction::GetLinks),
+            ("hc_query", ZomeApiFunction::Query),
+            ("hc_hash_entry", ZomeApiFunction::HashEntry),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -390,6 +402,8 @@ pub mod tests {
             (ZomeApiFunction::Call, "hc_call"),
             (ZomeApiFunction::LinkEntries, "hc_link_entries"),
             (ZomeApiFunction::GetLinks, "hc_get_links"),
+            (ZomeApiFunction::Query, "hc_query"),
+            (ZomeApiFunction::HashEntry, "hc_hash_entry"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -405,6 +419,8 @@ pub mod tests {
             ("hc_call", 6),
             ("hc_link_entries", 7),
             ("hc_get_links", 8),
+            ("hc_query", 9),
+            ("hc_hash_entry", 10),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -420,6 +436,8 @@ pub mod tests {
             (6, ZomeApiFunction::Call),
             (7, ZomeApiFunction::LinkEntries),
             (8, ZomeApiFunction::GetLinks),
+            (9, ZomeApiFunction::Query),
+            (10, ZomeApiFunction::HashEntry),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

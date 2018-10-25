@@ -132,7 +132,14 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
 #[cfg(test)]
 pub mod tests {
+    use std::collections::HashMap;
+    use holochain_dna::zome::capabilities::Capability;
+
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
+    #[no_mangle]
+    fn __list_capabilities() -> HashMap<String, Capability> {
+        HashMap::new()
+    }
 }

@@ -7,7 +7,7 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
-        HashEntryArgs, QueryArgs, QueryResult,
+        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs, ZomeFnCallResult,
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,
@@ -159,12 +159,48 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 
 /// Not Yet Available
 pub fn call<S: Into<String>>(
-    _zome_name: S,
-    _cap_name: S,
-    _function_name: S,
-    _arguments: serde_json::Value,
-) -> ZomeApiResult<serde_json::Value> {
-    Err(ZomeApiError::FunctionNotImplemented)
+    zome_name: S,
+    cap_name: S,
+    fn_name: S,
+    fn_args: serde_json::Value,
+) -> ZomeApiResult<String> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
+
+    // Put args in struct and serialize into memory
+    let input = ZomeFnCallArgs {
+        zome_name: zome_name.into(),
+        cap_name: cap_name.into(),
+        fn_name: fn_name.into(),
+        fn_args: fn_args.to_string(),
+    };
+    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input.clone());
+    if let Err(err_code) = maybe_allocation_of_input {
+        return Err(ZomeApiError::Internal(err_code.to_string()));
+    }
+    let allocation_of_input = maybe_allocation_of_input.unwrap();
+
+    // Call WASMI-able commit
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
+    }
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result = load_string(encoded_allocation_of_result as u32);
+
+    if let Err(err_str) = result {
+        return Err(ZomeApiError::Internal(err_str));
+    }
+    let output = result.unwrap();
+
+    // Free result & input allocations and all allocations made inside commit()
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    // Done
+    Ok(output)
 }
 
 /// Attempts to commit an entry to your local source chain. The entry

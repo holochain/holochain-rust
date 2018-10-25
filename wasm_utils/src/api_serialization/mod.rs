@@ -16,5 +16,6 @@ pub mod link_entries;
 mod query;
 pub mod validation;
 mod zome_api_globals;
+mod call;
 
-pub use self::{hash_entry::*, query::*, zome_api_globals::*};
+pub use self::{hash_entry::*, query::*, zome_api_globals::*, call::*};

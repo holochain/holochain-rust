@@ -30,7 +30,6 @@ impl Persister for SimplePersister {
             .create(true)
             .open(self.file_path.clone())?;
         let json = State::serialize_state(state)?;
-        println!("serizlia state{:?}", json);
         Ok(f.write_all(json.as_bytes())?)
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {

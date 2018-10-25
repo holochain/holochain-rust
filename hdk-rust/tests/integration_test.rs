@@ -6,7 +6,7 @@ extern crate test_utils;
 
 use holochain_core_api::*;
 use holochain_dna::zome::{
-    capabilities::{Capability, FnDeclaration},
+    capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,
 };
 use std::sync::{Arc, Mutex};
@@ -14,6 +14,7 @@ use test_utils::*;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
+    capability.cap_type.membrane = Membrane::Public;
 
     for fn_name in fn_names {
         let mut fn_decl = FnDeclaration::new();
@@ -40,6 +41,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_query",
         "check_hash_app_entry",
         "check_hash_sys_entry",
+        "check_call",
+        "check_call_with_args",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
@@ -293,7 +296,7 @@ fn can_check_hash_app_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"result":"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966"}"#,
+        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
     );
 }
 
@@ -308,4 +311,30 @@ fn can_check_hash_sys_entry() {
     //        result.unwrap(),
     //        r#"{"result":"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966"}"#,
     //    );
+}
+
+
+#[test]
+fn can_check_call() {
+    let (mut hc, _) = start_holochain_instance();
+
+    let result = hc.call("test_zome", "test_cap", "check_call", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
+    );
+}
+
+#[test]
+fn can_check_call_with_args() {
+    let (mut hc, _) = start_holochain_instance();
+
+    let result = hc.call("test_zome", "test_cap", "check_call_with_args", r#"{}"#);
+    println!("\t result = {:?}", result);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+    );
 }

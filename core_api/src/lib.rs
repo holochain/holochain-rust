@@ -75,12 +75,12 @@ use holochain_core::{
     context::Context,
     instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
+    persister::{Persister, SimplePersister},
     state::State,
-    persister::{Persister,SimplePersister}
 };
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
-use std::sync::{RwLock,Arc};
+use std::sync::{Arc, RwLock};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -113,23 +113,22 @@ impl Holochain {
         }
     }
 
-    pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> 
-    {
+    pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut new_context = (*context).clone();
         let persister = SimplePersister::new(_path);
-        let loaded_state =  persister.load(context.clone()).unwrap_or(Some(State::new(context.clone()))).unwrap();
+        let loaded_state = persister
+            .load(context.clone())
+            .unwrap_or(Some(State::new(context.clone())))
+            .unwrap();
         new_context.set_state(Arc::new(RwLock::new(loaded_state)));
         let arc_context = Arc::new(new_context);
         let mut instance = Instance::new(arc_context.clone());
         instance.start_action_loop(context.clone());
-        Ok(Holochain 
-        {
+        Ok(Holochain {
             instance,
-            context:arc_context.clone(),
+            context: arc_context.clone(),
             active: false,
-       })
-            
-
+        })
     }
 
     /// activate the Holochain instance

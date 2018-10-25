@@ -27,7 +27,7 @@ use std::{
     io::prelude::*,
     sync::{Arc, Mutex},
 };
-use tempfile::{tempfile,tempdir};
+use tempfile::{tempdir, tempfile};
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem

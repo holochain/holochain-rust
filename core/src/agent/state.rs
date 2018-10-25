@@ -202,7 +202,7 @@ fn reduce_commit_entry(
         state.chain.content_storage().add(chain_header)?;
         Ok(entry.address())
     }
-    let result = response( state, &entry, &chain_header);
+    let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
     let con = _context.clone();
     let global_state = con.state().unwrap().clone();

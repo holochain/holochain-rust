@@ -39,7 +39,6 @@ impl State {
         }
     }
 
-
     pub fn new_with_agent(context: Arc<Context>, agent_state: Arc<AgentState>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
@@ -105,7 +104,10 @@ impl State {
             ChainStore::new(cas.clone()),
             snapshot.top_chain_header(),
         );
-        Ok(State::new_with_agent(context.clone(), Arc::new(agent_state)))
+        Ok(State::new_with_agent(
+            context.clone(),
+            Arc::new(agent_state),
+        ))
     }
 }
 

@@ -134,7 +134,7 @@ fn call_load_json_from_raw_ok() {
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_load_json_from_raw_ok\\\' returned: Success\"] }",
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'test_load_json_from_raw_ok\\\' return code: Success\"] }",
     );
 }
 

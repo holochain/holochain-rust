@@ -172,6 +172,15 @@ pub enum RibosomeReturnCode {
     Failure(RibosomeErrorCode),
 }
 
+impl From<RibosomeReturnCode> for i32 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Failure(code) => code as i32,
+        }
+    }
+}
+
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq)]
@@ -201,10 +210,9 @@ impl FromStr for RibosomeReturnCode {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // println!("zz: {:?}", s.clone());
         Ok(match s.as_ref() {
             "Success" => RibosomeReturnCode::Success,
-            _ => RibosomeReturnCode::Failure(s.parse()?),
+            _ => RibosomeReturnCode::Failure(s.parse().unwrap_or(RibosomeErrorCode::Unspecified)),
         })
     }
 }

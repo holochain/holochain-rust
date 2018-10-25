@@ -11,13 +11,14 @@ pub fn invoke_debug(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let args_str = runtime.load_utf8_from_args(args);
-    println!("DEBUG: {:?}", args_str);
+    let s = String::from(RawString::from(JsonString::from(args_str.clone())));
+    println!("DEBUG: {:?}", s);
     runtime
         .context
-        .log(&format!("DEBUG: {:?}", args_str))
+        .log(&format!("DEBUG: {:?}", s))
         .expect("logger should work");
 
-    runtime.store_json_string(JsonString::from(RawString::from(args_str)))
+    runtime.store_json_string(JsonString::from(RawString::from(s)))
 }
 
 #[cfg(test)]

@@ -49,7 +49,7 @@
 //! hc.stop().expect("couldn't stop the app");
 //!
 //!```
-
+#![feature(try_from)]
 extern crate futures;
 extern crate holochain_core;
 extern crate holochain_core_types;
@@ -158,6 +158,8 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
+    use holochain_core_types::error::RibosomeReturnCode;
+    use std::convert::TryFrom;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -495,9 +497,9 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
-        // Expect a string as result
+        // Expect Success as result
         println!("result = {:?}", result);
-        assert_eq!(JsonString::from("\"!\""), result.unwrap());
+        assert_eq!(RibosomeReturnCode::Success, RibosomeReturnCode::try_from(result.unwrap()).unwrap());
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(

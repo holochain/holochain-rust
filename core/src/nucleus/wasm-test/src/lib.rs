@@ -1,6 +1,7 @@
 extern crate holochain_wasm_utils;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
 
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
@@ -41,7 +42,7 @@ fn hdk_debug(mem_stack: &mut SinglePageStack, json_string: &JsonString) {
 pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello world!")));
-  return 0;
+  i32::from(RibosomeReturnCode::Success)
 }
 
 /// Function called by Holochain Instance
@@ -53,5 +54,5 @@ pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello")));
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
-  return 0;
+  i32::from(RibosomeReturnCode::Success)
 }

@@ -55,12 +55,6 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-// impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
-//     fn from(result: Result<T, E>) -> JsonString {
-//         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
-//     }
-// }
-
 impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
         JsonString::from(match result {
@@ -82,8 +76,10 @@ impl Display for JsonString {
     }
 }
 
-/// generic type to facilitate Jsonifying strings
+/// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""
+/// RawString must not implement Serialize and Deserialize itself
+#[derive(PartialEq, Debug)]
 pub struct RawString(serde_json::Value);
 
 impl From<&'static str> for RawString {
@@ -114,7 +110,10 @@ impl From<i32> for RawString {
 
 impl From<RawString> for String {
     fn from(raw_string: RawString) -> String {
-        raw_string.0.to_string()
+        // this will panic if RawString does not contain a string!
+        // use JsonString::from(...) to stringify numbers or other values
+        // @see raw_from_number_test()
+        String::from(raw_string.0.as_str().expect("could not extract inner string for RawString"))
     }
 }
 
@@ -126,8 +125,104 @@ impl From<RawString> for JsonString {
 
 impl From<JsonString> for RawString {
     fn from(json_string: JsonString) -> RawString {
-        let s: String = serde_json::from_str(&String::from(json_string))
-            .expect("could not deserialize JsonString");
-        RawString::from(s)
+        RawString(
+        serde_json::from_str(&String::from(json_string))
+            .expect("could not deserialize JsonString")
+        )
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use json::JsonString;
+    use json::RawString;
+
+    #[test]
+    fn json_none_test() {
+        assert_eq!(
+            String::from("null"),
+            String::from(JsonString::none()),
+        );
+    }
+
+    #[test]
+    fn json_into_bytes_test() {
+        assert_eq!(
+            JsonString::from("foo").into_bytes(),
+            vec![102, 111, 111],
+        );
+    }
+
+    #[test]
+    /// show From<&str> and From<String> for JsonString
+    fn json_from_string_test() {
+        assert_eq!(
+            String::from("foo"),
+            String::from(JsonString::from("foo")),
+        );
+
+        assert_eq!(
+            String::from("foo"),
+            String::from(JsonString::from(String::from("foo"))),
+        );
+
+        assert_eq!(
+            String::from("foo"),
+            String::from(&JsonString::from("foo")),
+        );
+    }
+
+    #[test]
+    /// show From<Vec<T>> for JsonString
+    fn json_from_vec() {
+        assert_eq!(
+            String::from("[\"foo\",\"bar\"]"),
+            String::from(JsonString::from(vec!["foo", "bar"])),
+        );
+    }
+
+    #[test]
+    /// show From<&str> and From<String> for RawString
+    fn raw_from_string_test() {
+        assert_eq!(
+            RawString::from(String::from("foo")),
+            RawString::from("foo"),
+        );
+    }
+
+    #[test]
+    /// show From<RawString> for String
+    fn string_from_raw_test() {
+        assert_eq!(
+            String::from("foo"),
+            String::from(RawString::from("foo")),
+        );
+    }
+
+    #[test]
+    /// show From<RawString> for JsonString
+    fn json_from_raw_test() {
+        assert_eq!(
+            String::from("\"foo\""),
+            String::from(JsonString::from(RawString::from("foo"))),
+        );
+    }
+
+    #[test]
+    /// show From<JsonString> for RawString
+    fn raw_from_json_test() {
+        assert_eq!(
+            String::from(RawString::from(JsonString::from("\"foo\""))),
+            String::from("foo"),
+        );
+    }
+
+    #[test]
+    /// show From<number> for RawString
+    fn raw_from_number_test() {
+        assert_eq!(
+            String::from("1.0"),
+            String::from(JsonString::from(RawString::from(1))),
+        );
     }
 }

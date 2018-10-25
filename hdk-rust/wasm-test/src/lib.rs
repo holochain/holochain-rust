@@ -80,7 +80,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
+#[derive(Deserialize, Serialize, Default)]
+struct EntryStruct {
+    stuff: String
+}
+
 //
+
 fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: String) -> serde_json::Value {
     let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
     let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
@@ -92,8 +98,8 @@ fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: Strin
     }
 }
 
-fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
-    let res = hdk::get_entry(entry_hash,GetEntryOptions{});
+fn handle_check_get_entry_result(entry_hash: HashString) -> serde_json::Value {
+    let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
     match res {
         Ok(result) => match result.status {
             GetResultStatus::Found => {
@@ -107,6 +113,17 @@ fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
         }
         Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
         Err(_) => unreachable!(),
+    }
+}
+
+fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
+    let result : Result<Option<EntryStruct>,ZomeApiError> = hdk::get_entry(entry_hash);
+    match result {
+        Ok(e) => match e {
+            Some(entry_value) => json!(entry_value),
+            None => json!(null),
+        },
+        Err(err) => json!({"get entry Err": err.to_string()}),
     }
 }
 
@@ -266,6 +283,12 @@ define_zome! {
                 inputs: |entry_hash: HashString|,
                 outputs: |result: serde_json::Value|,
                 handler: handle_check_get_entry
+            }
+
+            check_get_entry_result: {
+                inputs: |entry_hash: HashString|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_get_entry_result
             }
 
             commit_validation_package_tester: {

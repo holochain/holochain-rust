@@ -7,10 +7,7 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
-    cas::{
-        content::*,
-        storage::ContentAddressableStorage,
-    },
+    cas::{content::*, storage::ContentAddressableStorage},
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},
@@ -55,16 +52,24 @@ impl State {
         let cas = &(*context).file_storage;
         let eav = &(*context).eav_storage;
 
-        fn get_dna(agent_state: &Arc<AgentState>, cas: &FilesystemStorage) -> Result<Dna, HolochainError> {
-            let dna_entry_header = agent_state.chain()
-                .iter_type(&agent_state.top_chain_header(),
-                           &EntryType::Dna)
+        fn get_dna(
+            agent_state: &Arc<AgentState>,
+            cas: &FilesystemStorage,
+        ) -> Result<Dna, HolochainError> {
+            let dna_entry_header = agent_state
+                .chain()
+                .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
                 .last()
-                .ok_or(HolochainError::ErrorGeneric("No DNA entry found in source chain while creating state from agent".to_string()))?;
+                .ok_or(HolochainError::ErrorGeneric(
+                    "No DNA entry found in source chain while creating state from agent"
+                        .to_string(),
+                ))?;
 
             Ok(Dna::from_entry(
                 &cas.fetch(dna_entry_header.entry_address())?
-                    .ok_or(HolochainError::ErrorGeneric("No DNA entry found in storage while creating state from agent".to_string()))?
+                    .ok_or(HolochainError::ErrorGeneric(
+                        "No DNA entry found in storage while creating state from agent".to_string(),
+                    ))?,
             ))
         }
 

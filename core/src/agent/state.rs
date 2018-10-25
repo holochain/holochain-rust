@@ -209,10 +209,11 @@ fn reduce_commit_entry(
     let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
     let con = _context.clone();
-    let global_state = con.state().unwrap().clone();
-    let mut persis_lock = _context.clone().persister.clone();
-    let mut persister = &mut *persis_lock.lock().unwrap();
-    persister.save(global_state);
+    con.state().map(|global_state_lock| {
+        let mut persis_lock = _context.clone().persister.clone();
+        let mut persister = &mut *persis_lock.lock().unwrap();
+        persister.save(global_state_lock.clone());
+    });
 
     state
         .actions

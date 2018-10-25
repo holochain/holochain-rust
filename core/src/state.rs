@@ -54,18 +54,23 @@ impl State {
 
         let cas = &(*context).file_storage;
         let eav = &(*context).eav_storage;
-        let dna_entry_header = agent_state.chain()
-            .iter_type(&agent_state.top_chain_header(),
-                       &EntryType::Dna)
-            .last()
-            .expect("Could not find a DNA entry header in source chain while loading state");
-        let dna: Dna = Dna::from_entry(
-            &cas.fetch(dna_entry_header.entry_address())
-                .expect("Could not fetch from storage while loading state")
-                .expect("Could not find a DNA entry in storage while loading state")
-        );
+
+        fn get_dna(agent_state: &Arc<AgentState>, cas: &FilesystemStorage) -> Result<Dna, HolochainError> {
+            let dna_entry_header = agent_state.chain()
+                .iter_type(&agent_state.top_chain_header(),
+                           &EntryType::Dna)
+                .last()
+                .ok_or(HolochainError::ErrorGeneric("No DNA entry found in source chain while creating state from agent".to_string()))?;
+
+            Ok(Dna::from_entry(
+                &cas.fetch(dna_entry_header.entry_address())?
+                    .ok_or(HolochainError::ErrorGeneric("No DNA entry found in storage while creating state from agent".to_string()))?
+            ))
+        }
+
         let mut nucleus_state = NucleusState::new();
-        nucleus_state.dna = Some(dna);
+        nucleus_state.dna = get_dna(&agent_state, cas).ok();
+
         State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,

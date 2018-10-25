@@ -313,7 +313,6 @@ fn can_check_hash_sys_entry() {
     //    );
 }
 
-
 #[test]
 fn can_check_call() {
     let (mut hc, _) = start_holochain_instance();

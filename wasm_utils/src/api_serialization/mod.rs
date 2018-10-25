@@ -1,3 +1,4 @@
+mod call;
 /// This module holds structs for all arguments and return types
 /// that get serialized and deserialized between core native and
 /// the WASM based ribosome.
@@ -16,6 +17,5 @@ pub mod link_entries;
 mod query;
 pub mod validation;
 mod zome_api_globals;
-mod call;
 
-pub use self::{hash_entry::*, query::*, zome_api_globals::*, call::*};
+pub use self::{call::*, hash_entry::*, query::*, zome_api_globals::*};

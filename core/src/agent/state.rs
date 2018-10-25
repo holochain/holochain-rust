@@ -45,8 +45,8 @@ pub struct AgentStateSnapshot {
 }
 
 impl AgentStateSnapshot {
-    pub fn top_chain_header(&self) -> ChainHeader {
-        self.top_chain_header.clone()
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
     }
 }
 

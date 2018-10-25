@@ -102,7 +102,7 @@ impl State {
         let cas = &(context).file_storage;
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(cas.clone()),
-            snapshot.top_chain_header(),
+            snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(
             context.clone(),

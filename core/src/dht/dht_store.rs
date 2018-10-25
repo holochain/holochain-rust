@@ -77,11 +77,11 @@ where
 
     pub fn get_links(
         &self,
-        _address: HashString,
-        _attribute_name: String,
+        address: HashString,
+        tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        // FIXME
-        Err(HolochainError::NotImplemented)
+        self.meta_storage
+            .fetch_eav(Some(address), Some(format!("link:{}", tag)), None)
     }
 
     // Getters (for reducers)

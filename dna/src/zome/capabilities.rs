@@ -100,7 +100,7 @@ pub struct FnParameter {
 
 impl FnParameter {
     #[allow(dead_code)]
-    fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
+    pub fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
         FnParameter {
             name: n.into(),
             parameter_type: t.into(),

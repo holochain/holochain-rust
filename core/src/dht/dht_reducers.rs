@@ -50,7 +50,7 @@ where
         Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
-        Action::GetLinks(_) => Some(reduce_get_links),
+        //Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
     }
 }
@@ -224,7 +224,7 @@ where
     Some(new_store)
 }
 
-//
+#[allow(dead_code)]
 pub(crate) fn reduce_get_links<CAS, EAVS>(
     _context: Arc<Context>,
     _old_store: &DhtStore<CAS, EAVS>,

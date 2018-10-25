@@ -1,8 +1,7 @@
 [package]
 name = "holochain_core"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.org>",
-           "David Meister <thedavidmeister@gmail.com>"]
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_dna = { path = "../dna" }

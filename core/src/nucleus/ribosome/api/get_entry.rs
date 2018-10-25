@@ -130,7 +130,7 @@ mod tests {
     )
 
     (func
-        (export "validate_testEntryType")
+        (export "__hdk_validate_app_entry")
         (param $allocation i32)
         (result i32)
 
@@ -152,6 +152,14 @@ mod tests {
         (i32.store (i32.const 6) (i32.const 34))
 
         (i32.const 7)
+    )
+
+    (func
+        (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
     )
 )
                 "#,

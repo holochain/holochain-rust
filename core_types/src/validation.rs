@@ -31,7 +31,7 @@ pub enum ValidationPackageDefinition {
     Custom(String), //sending something custom
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ValidationData {
     pub package: ValidationPackage,
     pub sources: Vec<HashString>,
@@ -39,21 +39,21 @@ pub struct ValidationData {
     pub action: EntryAction,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryLifecycle {
     Chain,
     Dht,
     Meta,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryAction {
     Commit,
     Modify,
     Delete,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkAction {
     Commit,
     Delete,

@@ -1,6 +1,6 @@
 [package]
 name = "hdk"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -11,10 +11,11 @@ bitflags = "1.0"
 lazy_static = "1.1.0"
 holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_dna = { path = "../dna" }
+holochain_core_types = { path = "../core_types" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils" }
 holochain_core_api = { path = "../core_api" }
 holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
-tempfile="3"
+tempfile = "3"

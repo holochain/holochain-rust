@@ -1,5 +1,5 @@
 .qmake.stash
-**/target/
+/target/
 **/*.sock
 package-lock.json
 **/*.rs.bk

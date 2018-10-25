@@ -212,7 +212,7 @@ impl FromStr for RibosomeReturnCode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.as_ref() {
             "Success" => RibosomeReturnCode::Success,
-            _ => RibosomeReturnCode::Failure(s.parse().unwrap_or(RibosomeErrorCode::Unspecified)),
+            _ => RibosomeReturnCode::Failure(s.parse()?),
         })
     }
 }

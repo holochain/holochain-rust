@@ -1,4 +1,4 @@
-use holochain_core_types::json::{JsonString, RawString};
+use holochain_core_types::error::RibosomeReturnCode;
 use nucleus::ribosome::api::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -11,23 +11,25 @@ pub fn invoke_debug(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let args_str = runtime.load_utf8_from_args(args);
-    let s = String::from(RawString::from(JsonString::from(args_str.clone())));
-    println!("DEBUG: {:?}", s);
-    runtime
-        .context
-        .log(&format!("DEBUG: {:?}", s))
-        .expect("logger should work");
 
-    runtime.store_json_string(JsonString::from(RawString::from(s)))
+    println!("{}", args_str);
+
+    Ok(Some(RuntimeValue::I32(i32::from(
+        RibosomeReturnCode::Success,
+    ))))
 }
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::json::{JsonString, RawString};
+    use holochain_core_types::{
+        error::RibosomeReturnCode,
+        json::{JsonString, RawString},
+    };
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
         Defn,
     };
+    use std::convert::TryFrom;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {
@@ -46,16 +48,15 @@ pub mod tests {
             test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
         let logger = logger.lock().unwrap();
         assert_eq!(
-            JsonString::from(format!(
-                "{}{}",
-                String::from(JsonString::from(RawString::from("foo"))),
-                "\u{0}",
-            ),),
-            runtime.result,
+            RibosomeReturnCode::Success,
+            RibosomeReturnCode::try_from(runtime.result)
+                .expect("could not deserialize RibosomeReturnCode"),
         );
         assert_eq!(
             JsonString::from(format!("{:?}", logger.log)),
-            JsonString::from("[\"DEBUG: \\\"foo\\\"\"]"),
+            JsonString::from(
+                "[\"Zome Function did not allocate memory: \\\'test\\\' return code: Success\"]",
+            ),
         );
     }
 }

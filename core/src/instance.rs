@@ -277,9 +277,11 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_agent::Agent;
-    use holochain_core_types::json::RawString;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
+        cas::content::AddressableContent,
+        entry::ToEntry,
+        entry_type::EntryType,
+        json::{JsonString, RawString},
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -628,7 +630,10 @@ pub mod tests {
 
         let instance = test_instance(dna);
         assert!(instance.is_err());
-        assert_eq!(instance.err().unwrap(), String::from(RawString::from(1337)));
+        assert_eq!(
+            instance.err().unwrap(),
+            String::from(JsonString::from(RawString::from(1337)))
+        );
     }
 
     /// Committing a DnaEntry to source chain should work

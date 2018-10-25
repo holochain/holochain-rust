@@ -102,7 +102,7 @@ fn can_commit_entry_macro() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(format!(
-            "{{\"ok\":\"{}\"}}",
+            "{{\"Ok\":\"{}\"}}",
             String::from(SerializedEntry::from(test_entry_a()).address())
         )),
     );
@@ -141,7 +141,7 @@ fn can_get_entry() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(format!(
-            "{{\"ok\":\"{}\"}}",
+            "{{\"Ok\":\"{}\"}}",
             String::from(SerializedEntry::from(test_entry_a()).address())
         )),
     );
@@ -156,7 +156,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
+        JsonString::from("{\"Ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
     );
 
     // test the case with a bad hash
@@ -170,7 +170,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"ok\":{\"entry\":null}}")
+        JsonString::from("{\"Ok\":{\"entry\":null}}")
     );
 }
 
@@ -191,6 +191,6 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":\"Validation failed: FAIL content is not allowed\"}"),
+        JsonString::from("{\"Err\":\"Validation failed: FAIL content is not allowed\"}"),
     );
 }

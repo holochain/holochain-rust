@@ -7,7 +7,7 @@ use holochain_core_types::{
     cas::content::{AddressableContent, Content},
     entry::{Entry, ToEntry},
     entry_type::EntryType,
-    json::{JsonString},
+    json::JsonString,
 };
 
 /// Object holding an Agent's identity.

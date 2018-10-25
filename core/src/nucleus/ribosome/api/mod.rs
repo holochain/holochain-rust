@@ -369,7 +369,7 @@ pub fn call(
             runtime
                 .context
                 .log(&format!(
-                    "Zome Function failed '{}' return code: {}",
+                    "Zome Function did not allocate memory: '{}' return code: {}",
                     zome_call.fn_name,
                     return_code.to_string()
                 ))

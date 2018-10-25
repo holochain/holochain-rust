@@ -196,7 +196,7 @@ pub mod tests {
         cas::content::AddressableContent,
         entry::{expected_entry_address, test_entry, SerializedEntry},
         error::HolochainError,
-        json::{JsonString},
+        json::JsonString,
     };
     use instance::tests::test_context;
     use std::{collections::HashMap, sync::Arc};

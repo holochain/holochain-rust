@@ -152,14 +152,16 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
+    use holochain_core_types::error::RibosomeReturnCode;
     use holochain_dna::Dna;
-    use std::sync::{Arc, Mutex};
+    use std::{
+        convert::TryFrom,
+        sync::{Arc, Mutex},
+    };
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file,
     };
-    use holochain_core_types::error::RibosomeReturnCode;
-    use std::convert::TryFrom;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -462,12 +464,16 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-        assert_eq!(JsonString::from("\"Hello world!\""), result.unwrap());
+        assert_eq!(
+            RibosomeReturnCode::Success,
+            RibosomeReturnCode::try_from(result.unwrap())
+                .expect("could not deserialize RibosomeResultCode")
+        );
 
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
             format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
+            "[\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'debug_hello\\\' return code: Success\"]",
         );
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
@@ -499,12 +505,16 @@ mod tests {
 
         // Expect Success as result
         println!("result = {:?}", result);
-        assert_eq!(RibosomeReturnCode::Success, RibosomeReturnCode::try_from(result.unwrap()).unwrap());
+        assert_eq!(
+            RibosomeReturnCode::Success,
+            RibosomeReturnCode::try_from(result.unwrap()).unwrap()
+        );
 
         let test_logger = test_logger.lock().unwrap();
+
         assert_eq!(
             format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
+            "[\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'debug_multiple\\\' return code: Success\"]",
         );
 
         // Check in holochain instance's history that the deb event has been processed

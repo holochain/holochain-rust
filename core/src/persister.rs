@@ -42,11 +42,24 @@ impl SimplePersister {
 
 #[cfg(test)]
 mod tests {
+    extern crate tempfile;
     use super::*;
-
+    use self::tempfile::{tempdir,tempfile};
+    use test_utils::create_test_context;
+    use instance::tests::test_context;
     #[test]
-    fn sound_trip_test() 
+    fn persistance_round_trip() 
     {
+        let tempdir = tempdir().unwrap().path().join("test");
+        let tempfile = tempdir.to_str().unwrap();
+        let context = test_context("bob");
+        File::create(tempfile.clone()).unwrap();
+        let mut persistance  = SimplePersister::new(tempfile.to_string());
+        let state = State::new(context.clone());
+        persistance.save(state.clone()).unwrap();
+        let state_from_file = persistance.load(context).unwrap().unwrap();
+        assert_eq!(state,state_from_file )
+
     }
 
     // TODO write a persister.save() test

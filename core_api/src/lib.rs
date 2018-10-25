@@ -76,6 +76,7 @@ use holochain_core::{
     instance::Instance,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     state::State,
+    persister::{Persister,SimplePersister}
 };
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
@@ -112,7 +113,10 @@ impl Holochain {
         }
     }
 
-    pub fn load(_path: String, _context: Arc<Context>) -> Result<Self, HolochainError> {
+    pub fn load(_path: String, _context: Arc<Context>) -> Result<Self, HolochainError> 
+    {
+        let persister = SimplePersister::new(_path);
+        persister.load(_context);
         Err(HolochainError::NotImplemented)
     }
 

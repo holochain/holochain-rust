@@ -39,14 +39,14 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AgentStateSnapshot {
     top_chain_header: ChainHeader,
 }
 
 impl AgentStateSnapshot {
-    pub fn top_chain_header(self) -> ChainHeader {
-        self.top_chain_header
+    pub fn top_chain_header(&self) -> ChainHeader {
+        self.top_chain_header.clone()
     }
 }
 
@@ -119,6 +119,10 @@ impl AddressableContent for AgentStateSnapshot {
     fn from_content(content: &Content) -> Self {
         AgentStateSnapshot::from_json_str(content)
             .expect("could not read Json as valid ChainHeader Content")
+    }
+
+    fn address(&self) -> Address {
+        Address::from("AgentState")
     }
 }
 

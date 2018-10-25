@@ -33,7 +33,7 @@
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new())),
+//!     Arc::new(Mutex::new(SimplePersister::new(String::from("Agent Name")))),
 //!     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
 //!     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
 //!  ).unwrap();
@@ -115,18 +115,16 @@ impl Holochain {
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
         let mut new_context = (*context).clone();
-        let persister = SimplePersister::new(path);
+        let persister = SimplePersister::new(format!("{}/state", path));
         let loaded_state = persister
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
             .unwrap();
-        new_context.set_state(Arc::new(RwLock::new(loaded_state)));
-        let arc_context = Arc::new(new_context);
-        let mut instance = Instance::new(arc_context.clone());
+        let mut instance = Instance::from_state(loaded_state);
         instance.start_action_loop(context.clone());
         Ok(Holochain {
             instance,
-            context: arc_context.clone(),
+            context: context.clone(),
             active: false,
         })
     }

@@ -264,7 +264,7 @@ impl ToEntry for Dna {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
+        Dna::from_json_str(&entry.value()).expect("entry is not a valid Dna Entry")
     }
 }
 

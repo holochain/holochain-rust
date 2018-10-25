@@ -15,13 +15,11 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
         hash::HashString,
+        entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
-
 use hdk::holochain_dna::zome::entry_types::Sharing;
-
-use hdk::meta::ZomeDefinition;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
@@ -31,7 +29,7 @@ pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
         hdk::debug(&hdk::DNA_NAME);
         hdk::debug(&hdk::DNA_HASH.to_string());
         hdk::debug(&hdk::AGENT_ID_STR);
-        hdk::debug(&hdk::AGENT_KEY_HASH.to_string());
+        hdk::debug(&hdk::AGENT_ADDRESS.to_string());
         hdk::debug(&hdk::AGENT_INITIAL_HASH.to_string());
         hdk::debug(&hdk::AGENT_LATEST_HASH.to_string());
     }
@@ -82,68 +80,161 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
+#[derive(Deserialize, Serialize, Default)]
+struct EntryStruct {
+    stuff: String
+}
+
 //
-zome_functions! {
-    check_commit_entry_macro: |entry_type_name: String, entry_content: String| {
-        let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-        let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
-        match res {
-            Ok(hash_str) => json!({ "address": hash_str }),
-            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
-            Err(_) => unreachable!(),
+
+fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: String) -> serde_json::Value {
+    let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
+    let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
+    match res {
+        Ok(hash_str) => json!({ "address": hash_str }),
+        Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+        Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
+        Err(_) => unreachable!(),
+    }
+}
+
+fn handle_check_get_entry_result(entry_hash: HashString) -> serde_json::Value {
+    let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
+    match res {
+        Ok(result) => match result.status {
+            GetResultStatus::Found => {
+                let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&result.entry);
+                match maybe_entry_value {
+                    Ok(entry_value) => entry_value,
+                    Err(err) => json!({"error trying deserialize entry": err.to_string()}),
+                }
+            },
+            GetResultStatus::NotFound => json!({"got back no entry": true}),
         }
+        Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
+        Err(_) => unreachable!(),
+    }
+}
+
+fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
+    let result : Result<Option<EntryStruct>,ZomeApiError> = hdk::get_entry(entry_hash);
+    match result {
+        Ok(e) => match e {
+            Some(entry_value) => json!(entry_value),
+            None => json!(null),
+        },
+        Err(err) => json!({"get entry Err": err.to_string()}),
+    }
+}
+
+fn handle_commit_validation_package_tester() -> serde_json::Value {
+    let res = hdk::commit_entry("validation_package_tester", json!({
+        "stuff": "test"
+    }));
+    match res {
+        Ok(hash_str) => json!({ "address": hash_str }),
+        Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
+        Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
+        Err(_) => unreachable!(),
+    }
+}
+
+fn handle_link_two_entries()-> serde_json::Value {
+    let entry1 = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry1"
+    }));
+    let entry2 = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry2"
+    }));
+    if entry1.is_err() {
+        return json!({"error": &format!("Could not commit entry: {}", entry1.err().unwrap().to_string())})
+    }
+    if entry2.is_err() {
+        return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
     }
 
-    check_get_entry: |entry_hash: HashString| {
-        let res = hdk::get_entry(entry_hash,GetEntryOptions{});
-        match res {
-            Ok(result) => match result.status {
-                GetResultStatus::Found => {
-                    let maybe_entry_value : Result<serde_json::Value, _> = serde_json::from_str(&result.entry);
-                    match maybe_entry_value {
-                        Ok(entry_value) => entry_value,
-                        Err(err) => json!({"error trying deserialize entry": err.to_string()}),
-                    }
-                },
-                GetResultStatus::NotFound => json!({"got back no entry": true}),
-            }
-            Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
-            Err(_) => unreachable!(),
-        }
+    match hdk::link_entries(&entry1.unwrap(), &entry2.unwrap(), "test-tag") {
+        Ok(()) => json!({"ok": true}),
+        Err(error) => json!({"error": error.to_string()}),
     }
+}
 
-    commit_validation_package_tester: | | {
-        let res = hdk::commit_entry("validation_package_tester", json!({
-            "stuff": "test"
-        }));
-        match res {
-            Ok(hash_str) => json!({ "address": hash_str }),
-            Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-            Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
-            Err(_) => unreachable!(),
-        }
+fn handle_links_roundtrip() -> serde_json::Value {
+    let entry1_hash = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry1"
+    })).unwrap();
+    let entry2_hash = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry2"
+    })).unwrap();
+    let entry3_hash = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry3"
+    })).unwrap();
+
+
+    hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag").expect("Can't link?!");
+    hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
+
+    match hdk::get_links(&entry1_hash, "test-tag") {
+        Ok(result) => json!({"links": result.links}),
+        Err(error) => json!({"error": error}),
     }
+}
 
-    link_two_entries: | | {
-        let entry1 = hdk::commit_entry("testEntryType", json!({
-            "stuff": "entry1"
-        }));
-        let entry2 = hdk::commit_entry("testEntryType", json!({
-            "stuff": "entry2"
-        }));
-        if entry1.is_err() {
-            return json!({"error": &format!("Could not commit entry: {}", entry1.err().unwrap().to_string())})
-        }
-        if entry2.is_err() {
-            return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())})
-        }
+fn handle_check_query() -> serde_json::Value {
+    // Query DNA entry
+    let result = hdk::query(&EntryType::Dna.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
 
-        match hdk::link_entries(entry1.unwrap(), entry2.unwrap(), "test-tag") {
-            Ok(()) => json!({"ok": true}),
-            Err(error) => json!({"error": error.to_string()}),
-        }
-    }
+    // Query AgentId entry
+    let result = hdk::query(&EntryType::AgentId.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entry
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry1"
+    })).unwrap();
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entries
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry2"
+    })).unwrap();
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry3"
+    })).unwrap();
+
+    let result = hdk::query("testEntryType", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 3);
+
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+
+    json!(result.unwrap())
+}
+
+fn handle_check_hash_app_entry() -> serde_json::Value {
+    // Setup
+    let entry_value = json!({
+        "stuff": "entry1"
+    });
+    let commit_hash = hdk::commit_entry("testEntryType", entry_value.clone()).unwrap();
+    // Check bad entry type name
+    let result = hdk::hash_entry("bad", entry_value.clone());
+    assert!(result.is_err());
+    // Check good entry type name
+    let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
+    assert!(commit_hash == good_hash);
+    json!({"result": good_hash})
+}
+
+fn handle_check_hash_sys_entry() -> serde_json::Value {
+    // TODO
+    json!({"result": "FIXME"})
 }
 
 #[derive(Serialize, Deserialize)]
@@ -152,11 +243,9 @@ struct TweetResponse {
     second: String,
 }
 
-zome_functions! {
-    send_tweet: |author: String, content: String| {
 
-        TweetResponse { first: author,  second: content}
-    }
+fn handle_send_tweet(author: String, content: String) -> TweetResponse {
+    TweetResponse { first: author,  second: content}
 }
 
 #[derive(Serialize, Deserialize)]
@@ -164,48 +253,103 @@ struct TestEntryType {
     stuff: String,
 }
 
-validations! {
-    [ENTRY] validate_testEntryType {
-        |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.stuff != "FAIL")
-                .ok_or_else(|| "FAIL content is not allowed".to_string())
+define_zome! {
+    entries: [
+        entry!(
+            name: "testEntryType",
+            description: "asdfda",
+            sharing: Sharing::Public,
+            native_type: TestEntryType,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::ChainFull
+            },
+
+            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+                (entry.stuff != "FAIL")
+                    .ok_or_else(|| "FAIL content is not allowed".to_string())
+            }
+        ),
+
+        entry!(
+            name: "validation_package_tester",
+            description: "asdfda",
+            sharing: Sharing::Public,
+            native_type: TestEntryType,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::ChainFull
+            },
+
+            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+                Err(serde_json::to_string(&ctx).unwrap())
+            }
+        )
+    ]
+
+    genesis: || { Ok(()) }
+
+    functions: {
+        test (Public) {
+            check_commit_entry_macro: {
+                inputs: |entry_type_name: String, entry_content: String|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_commit_entry_macro
+            }
+
+            check_get_entry: {
+                inputs: |entry_hash: HashString|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_get_entry
+            }
+
+            check_get_entry_result: {
+                inputs: |entry_hash: HashString|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_get_entry_result
+            }
+
+            commit_validation_package_tester: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_commit_validation_package_tester
+            }
+
+            link_two_entries: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_link_two_entries
+            }
+
+            links_roundtrip: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_links_roundtrip
+            }
+
+            check_query: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_query
+            }
+
+            check_hash_app_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_app_entry
+            }
+
+            check_hash_sys_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_sys_entry
+            }
+
+            send_tweet: {
+                inputs: |author: String, content: String|,
+                outputs: |response: TweetResponse|,
+                handler: handle_send_tweet
+            }
         }
     }
-
-    [ENTRY] validate_validation_package_tester {
-        |_entry: TestEntryType, ctx: hdk::ValidationData| {
-            Err(serde_json::to_string(&ctx).unwrap())
-        }
-    }
-}
-
-#[no_mangle]
-pub extern fn zome_setup(zd: &mut ZomeDefinition) {
-    zd.define(entry!(
-        name: "testEntryType",
-        description: "asdfda",
-        sharing: Sharing::Public,
-
-        validation_package: || {
-            hdk::ValidationPackageDefinition::ChainFull
-        },
-
-        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
-            Err(String::from("Not in use yet. Will to replace validations! macro."))
-        }
-    ));
-
-    zd.define(entry!(
-        name: "validation_package_tester",
-        description: "asdfda",
-        sharing: Sharing::Public,
-
-        validation_package: || {
-            hdk::ValidationPackageDefinition::ChainFull
-        },
-
-        validation_function: |_entry: TestEntryType, _ctx: hdk::ValidationData| {
-            Err(String::from("Not in use yet. Will to replace validations! macro."))
-        }
-    ));
 }

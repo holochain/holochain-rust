@@ -2,133 +2,141 @@
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
         let maybe_input =
-            ::hdk::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
-        if let Err(_) = maybe_input {
-            return ::hdk::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
+            $crate::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
+        if maybe_input.is_err() {
+            return $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
                 as u32;
         }
         maybe_input
     }};
 }
 
-/// A macro for easily writing zome functions
-///
-/// # Examples
-/// ```
-/// # #[macro_use] extern crate hdk;
-/// # extern crate holochain_wasm_utils;
-/// # extern crate serde;
-/// # extern crate serde_json;
-/// # #[macro_use] extern crate serde_derive;
-/// # use hdk::globals::G_MEM_STACK;
-/// # use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
-///
-/// # // Adding empty hc_init_globals() so that the cfg(test) build can link.
-/// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
-///
-/// # fn main() {
-/// #[derive(Serialize)]
-/// struct CreatePostResponse {
-///     author: String,
-/// }
-///
-/// zome_functions! {
-///     create_post: |author: String, content: String| {
-///
-///         // ..snip..
-///
-///         CreatePostResponse { author: author }
-///     }
-/// }
-/// # }
-/// ```
-///
+/// A macro for describing zomes
 #[macro_export]
-macro_rules! zome_functions {
+macro_rules! define_zome {
     (
-        $($func_name:ident : | $($param:ident : $param_type:ty),* | $main_block:expr)+
-    ) => (
+        entries : [
+            $( $entry_expr:expr ),*
+        ]
+
+        genesis : || {
+            $genesis_expr:expr
+        }
+
+        functions : {
+            $(
+                $cap:ident ( $vis:ident ) {
+                    $(
+                        $zome_function_name:ident : {
+                            inputs: | $( $input_param_name:ident : $input_param_type:ty ),* |,
+                            outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
+                            handler: $handler_path:path
+                        }
+                    )+
+                }
+            )*
+        }
+
+    ) => {
+        #[no_mangle]
+        #[allow(unused_variables)]
+        pub extern "C" fn zome_setup(zd: &mut $crate::meta::ZomeDefinition) {
+            $(
+                zd.define($entry_expr);
+            )*
+        }
+
+        #[no_mangle]
+        pub extern "C" fn genesis(encoded_allocation_of_input: u32) -> u32 {
+            $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+
+            fn execute() -> Result<(), String> {
+                $genesis_expr
+            }
+
+            $crate::global_fns::store_and_return_output(execute())
+        }
+
+        use $crate::holochain_dna::zome::capabilities::Capability;
+        use std::collections::HashMap;
+
+        #[no_mangle]
+        #[allow(unused_imports)]
+        pub fn __list_capabilities() -> HashMap<String, Capability> {
+
+            use $crate::holochain_dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use std::collections::HashMap;
+
+            let return_value: HashMap<String, Capability> = {
+                let mut cap_map = HashMap::new();
+
+                $(
+                    {
+                        let mut capability = Capability::new();
+                        capability.cap_type = CapabilityType { membrane: Membrane::$vis };
+                        capability.functions = vec![
+                            $(
+                                FnDeclaration {
+                                    name: stringify!($zome_function_name).into(),
+                                    inputs: vec![
+                                        $(
+                                            FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
+                                        ),*
+                                    ],
+                                    outputs: vec![
+                                        $(
+                                            FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
+                                        ),*
+                                    ]
+                                }
+
+                            ),+
+                        ];
+
+                        cap_map.insert(stringify!($cap).into(), capability);
+                    }
+                ),*
+
+                cap_map
+            };
+
+            return_value
+        }
 
         $(
-            #[no_mangle]
-            pub extern "C" fn $func_name(encoded_allocation_of_input: u32) -> u32 {
+            $(
+                #[no_mangle]
+                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: u32) -> u32 {
+                    $crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
-                ::hdk::global_fns::init_global_memory(encoded_allocation_of_input);
+                    // Macro'd InputStruct
+                    #[derive(Deserialize)]
+                    struct InputStruct {
+                        $($input_param_name : $input_param_type),*
+                    }
 
-                // Macro'd InputStruct
-                #[derive(Deserialize)]
-                struct InputStruct {
-                    $($param : $param_type),*
+                    // #[derive(Serialize)]
+                    // struct OutputStruct {
+                    //     $( $output_param_name:ident : $output_param_type:ty ),*
+                    // }
+
+                    // Deserialize input
+                    let maybe_input = load_json!(encoded_allocation_of_input);
+                    let input: InputStruct = maybe_input.unwrap();
+
+                    // Macro'd function body
+                    fn execute(params: InputStruct) -> impl ::serde::Serialize {
+                        let InputStruct { $($input_param_name),* } = params;
+
+                        $handler_path($($input_param_name),*)
+                    }
+
+                    // Execute inner function
+                    let output_obj = execute(input);
+
+                    $crate::global_fns::store_and_return_output(output_obj)
                 }
-
-                // Deserialize input
-                let maybe_input = load_json!(encoded_allocation_of_input);
-                let input: InputStruct = maybe_input.unwrap();
-
-                // Macro'd function body
-                fn execute(params: InputStruct) -> impl ::serde::Serialize {
-                    let InputStruct { $($param),* } = params;
-                    $main_block
-                }
-
-                // Execute inner function
-                let output_obj = execute(input);
-
-                ::hdk::global_fns::store_and_return_output(output_obj)
-            }
-        )+
-    );
-}
-
-#[macro_export]
-macro_rules! validations {
-    (
-        $([ENTRY] $func_name:ident {
-            | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $main_block:expr
-        })+
-    ) => (
-
-        $(
-            #[no_mangle]
-            pub extern "C" fn $func_name(encoded_allocation_of_input: u32) -> u32 {
-
-                ::hdk::global_fns::init_global_memory(encoded_allocation_of_input);
-
-                // Macro'd InputStruct
-                #[derive(Deserialize)]
-                struct InputStruct {
-                    $entry : $entry_type,
-                    $ctx : ::hdk::ValidationData,
-                }
-
-                #[derive(Deserialize)]
-                struct InputStructGeneric {
-                    entry : $entry_type,
-                    ctx : ::hdk::ValidationData,
-                }
-
-                // Deserialize input
-                let maybe_input = load_json!(encoded_allocation_of_input);
-                let input_generic: InputStructGeneric = maybe_input.unwrap();
-                let input = InputStruct {
-                    $entry: input_generic.entry,
-                    $ctx: input_generic.ctx,
-                };
-
-                // Macro'd function body
-                fn execute(params: InputStruct) -> Result<(), String> {
-                    let InputStruct { $entry, $ctx } = params;
-                    $main_block
-                }
-
-                // Execute inner function
-                let validation_result = execute(input);
-                match validation_result {
-                    Ok(()) => 0,
-                    Err(fail_string) => ::hdk::global_fns::store_and_return_output(fail_string),
-                }
-            }
-        )+
-    );
+            )+
+        )*
+    };
 }

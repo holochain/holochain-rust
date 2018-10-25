@@ -44,6 +44,7 @@ pub enum RibosomeErrorCode {
     ResponseSerializationFailed     = 7 << 16,
     NotAnAllocation                 = 8 << 16,
     ZeroSizedAllocation             = 9 << 16,
+    UnknownEntryType                = 10 << 16,
 }
 
 impl ToString for RibosomeReturnCode {
@@ -68,6 +69,7 @@ impl ToString for RibosomeErrorCode {
             ResponseSerializationFailed     => "Response serialization failed",
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
+            UnknownEntryType                => "Unknown entry type",
         }.to_string()
     }
 }
@@ -97,6 +99,7 @@ impl RibosomeErrorCode {
             7 => ResponseSerializationFailed,
             8 => NotAnAllocation,
             9 => ZeroSizedAllocation,
+            10 => UnknownEntryType,
             1 | _ => Unspecified,
         }
     }

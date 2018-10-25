@@ -6,15 +6,17 @@ pub mod commit;
 pub mod debug;
 pub mod get_entry;
 pub mod get_links;
+pub mod hash_entry;
 pub mod init_globals;
 pub mod link_entries;
+pub mod query;
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        get_entry::invoke_get_entry, init_globals::invoke_init_globals,
-        link_entries::invoke_link_entries,
+        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
+        init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
     },
     Defn, Runtime,
 };
@@ -66,6 +68,9 @@ pub enum ZomeApiFunction {
     Call,
 
     LinkEntries,
+    GetLinks,
+    Query,
+    HashEntry,
 }
 
 impl Defn for ZomeApiFunction {
@@ -79,6 +84,9 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::InitGlobals => "hc_init_globals",
             ZomeApiFunction::Call => "hc_call",
             ZomeApiFunction::LinkEntries => "hc_link_entries",
+            ZomeApiFunction::GetLinks => "hc_get_links",
+            ZomeApiFunction::Query => "hc_query",
+            ZomeApiFunction::HashEntry => "hc_hash_entry",
         }
     }
 
@@ -115,6 +123,9 @@ impl FromStr for ZomeApiFunction {
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
             "hc_call" => Ok(ZomeApiFunction::Call),
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
+            "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
+            "hc_query" => Ok(ZomeApiFunction::Query),
+            "hc_hash_entry" => Ok(ZomeApiFunction::HashEntry),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -142,6 +153,9 @@ impl ZomeApiFunction {
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
+            ZomeApiFunction::GetLinks => invoke_get_links,
+            ZomeApiFunction::Query => invoke_query,
+            ZomeApiFunction::HashEntry => invoke_hash_entry,
         }
     }
 }
@@ -154,18 +168,12 @@ pub mod tests {
     extern crate test_utils;
     use super::ZomeApiFunction;
     use context::Context;
-    use instance::{
-        tests::{test_context_and_logger, test_instance, TestLogger},
-        Instance,
-    };
+    use instance::{tests::test_instance_and_context, Instance};
     use nucleus::{
         ribosome::{self, Defn},
         ZomeFnCall,
     };
-    use std::{
-        str::FromStr,
-        sync::{Arc, Mutex},
-    };
+    use std::{str::FromStr, sync::Arc};
 
     use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 
@@ -245,7 +253,7 @@ pub mod tests {
     )
 
     (func
-        (export "validate_testEntryType")
+        (export "__hdk_validate_app_entry")
         (param $allocation i32)
         (result i32)
 
@@ -268,6 +276,14 @@ pub mod tests {
         (i32.store (i32.const 6) (i32.const 34))
 
         (i32.const 7)
+    )
+
+    (func
+        (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
     )
 )
                 "#,
@@ -304,27 +320,23 @@ pub mod tests {
     pub fn test_zome_api_function_call(
         dna_name: &str,
         context: Arc<Context>,
-        logger: Arc<Mutex<TestLogger>>,
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Mutex<TestLogger>>) {
+    ) -> String {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
             &test_parameters(),
         );
-        (
-            ribosome::run_dna(
-                &dna_name,
-                context,
-                wasm.clone(),
-                &zome_call,
-                Some(args_bytes),
-            ).expect("test should be callable"),
-            logger,
-        )
+        ribosome::run_dna(
+            &dna_name,
+            context,
+            wasm.clone(),
+            &zome_call,
+            Some(args_bytes),
+        ).expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:
@@ -335,7 +347,7 @@ pub mod tests {
     pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Mutex<TestLogger>>) {
+    ) -> (String, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -344,19 +356,12 @@ pub mod tests {
         );
 
         let dna_name = &dna.name.to_string().clone();
-        let instance = test_instance(dna).expect("Could not create test instance");
+        let (instance, context) =
+            test_instance_and_context(dna).expect("Could not create test instance");
 
-        let (context, logger) = test_context_and_logger("joan");
-        let initiliazed_context = instance.initialize_context(context);
-
-        test_zome_api_function_call(
-            &dna_name,
-            initiliazed_context,
-            logger,
-            &instance,
-            &wasm,
-            args_bytes,
-        )
+        let call_result =
+            test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);
+        (call_result, context)
     }
 
     #[test]
@@ -370,6 +375,9 @@ pub mod tests {
             ("hc_init_globals", ZomeApiFunction::InitGlobals),
             ("hc_call", ZomeApiFunction::Call),
             ("hc_link_entries", ZomeApiFunction::LinkEntries),
+            ("hc_get_links", ZomeApiFunction::GetLinks),
+            ("hc_query", ZomeApiFunction::Query),
+            ("hc_hash_entry", ZomeApiFunction::HashEntry),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -393,6 +401,9 @@ pub mod tests {
             (ZomeApiFunction::InitGlobals, "hc_init_globals"),
             (ZomeApiFunction::Call, "hc_call"),
             (ZomeApiFunction::LinkEntries, "hc_link_entries"),
+            (ZomeApiFunction::GetLinks, "hc_get_links"),
+            (ZomeApiFunction::Query, "hc_query"),
+            (ZomeApiFunction::HashEntry, "hc_hash_entry"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -407,6 +418,9 @@ pub mod tests {
             ("hc_init_globals", 5),
             ("hc_call", 6),
             ("hc_link_entries", 7),
+            ("hc_get_links", 8),
+            ("hc_query", 9),
+            ("hc_hash_entry", 10),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -421,6 +435,9 @@ pub mod tests {
             (5, ZomeApiFunction::InitGlobals),
             (6, ZomeApiFunction::Call),
             (7, ZomeApiFunction::LinkEntries),
+            (8, ZomeApiFunction::GetLinks),
+            (9, ZomeApiFunction::Query),
+            (10, ZomeApiFunction::HashEntry),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

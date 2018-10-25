@@ -10,8 +10,11 @@
 /// importing this module.
 pub mod commit;
 pub mod get_entry;
+pub mod get_links;
+mod hash_entry;
 pub mod link_entries;
+mod query;
 pub mod validation;
 mod zome_api_globals;
 
-pub use self::zome_api_globals::*;
+pub use self::{hash_entry::*, query::*, zome_api_globals::*};

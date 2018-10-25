@@ -1,6 +1,6 @@
 use entry_definition::ValidatingEntryType;
 use globals::G_MEM_STACK;
-use holochain_dna::zome::{capabilities::Capability};
+use holochain_dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
     holochain_core_types::error::RibosomeErrorCode,
@@ -105,8 +105,6 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 }
 
-
-
 #[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -128,7 +126,9 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
         "capabilities": capabilities,
     })).expect("Can't serialize DNA");
 
-    unsafe { return store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32 }
+    unsafe {
+        return store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32;
+    }
 }
 
 #[cfg(test)]

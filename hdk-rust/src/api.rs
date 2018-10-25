@@ -157,7 +157,9 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
     Ok(())
 }
 
-/// Not Yet Available
+/// Call an exposed function from another zome.
+/// Arguments for the called function are passed as serde_json::Value.
+/// Returns the value that's returned by the given function as json str.
 pub fn call<S: Into<String>>(
     zome_name: S,
     cap_name: S,

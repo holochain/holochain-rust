@@ -28,15 +28,13 @@ impl From<JsonString> for Identity {
 
 impl From<String> for Identity {
     fn from(s: String) -> Identity {
-        // use RawString as the identity coming in as a string is not yet Content for historical
-        // reasons
-        Identity::from(JsonString::from(RawString::from(s)))
+        Identity::from(JsonString::from(s))
     }
 }
 
 impl From<Identity> for String {
     fn from(identity: Identity) -> String {
-        String::from(RawString::from(identity.0))
+        String::from(identity.0)
     }
 }
 

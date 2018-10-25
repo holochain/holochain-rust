@@ -277,6 +277,7 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_agent::Agent;
+    use holochain_core_types::json::RawString;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
     };
@@ -595,10 +596,12 @@ pub mod tests {
             ),
         );
 
-        let instance = test_instance(dna);
-        assert!(instance.is_ok());
-        let instance = instance.unwrap();
-        assert!(instance.state().nucleus().has_initialized());
+        let maybe_instance = test_instance(dna);
+
+        match maybe_instance {
+            Ok(instance) => assert!(instance.state().nucleus().has_initialized()),
+            Err(e) => panic!(e),
+        }
     }
 
     #[test]
@@ -612,10 +615,10 @@ pub mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 6
                 )
                 (data (i32.const 0)
-                    "1337"
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )
@@ -625,7 +628,7 @@ pub mod tests {
 
         let instance = test_instance(dna);
         assert!(instance.is_err());
-        assert_eq!(instance.err().unwrap(), "1337");
+        assert_eq!(instance.err().unwrap(), String::from(RawString::from(1337)));
     }
 
     /// Committing a DnaEntry to source chain should work

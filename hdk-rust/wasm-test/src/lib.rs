@@ -10,7 +10,7 @@ extern crate boolinator;
 use boolinator::Boolinator;
 use hdk::globals::G_MEM_STACK;
 use holochain_wasm_utils::{
-    error::RibosomeErrorCode,
+    holochain_core_types::error::RibosomeErrorCode,
     memory_serialization::*, memory_allocation::*
 };
 use hdk::RibosomeError;

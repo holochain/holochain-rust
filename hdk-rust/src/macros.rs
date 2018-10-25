@@ -4,7 +4,7 @@ macro_rules! load_json {
         let maybe_input =
             ::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
         if let Err(_) = maybe_input {
-            return ::holochain_wasm_utils::error::RibosomeErrorCode::ArgumentDeserializationFailed
+            return ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
                 as u32;
         }
         maybe_input

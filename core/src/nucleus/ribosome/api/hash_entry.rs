@@ -1,22 +1,25 @@
-use holochain_core_types::{
-    entry_type::EntryType, entry::Entry,
-    hash::HashString,
-};
+use holochain_core_types::{entry::Entry, entry_type::EntryType, hash::HashString};
+use holochain_dna::Dna;
 use holochain_wasm_utils::api_serialization::HashEntryArgs;
+use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_dna::Dna;
-use multihash::Hash as Multihash;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
-    let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| Some(RuntimeValue::I32(holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32)))?;
+    let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
+        Some(RuntimeValue::I32(
+            holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
+        ))
+    })?;
     // Check if AppEntry is a valid AppEntryType
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
-            return Err(Some(RuntimeValue::I32(holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32)));
+            return Err(Some(RuntimeValue::I32(
+                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
+            )));
         }
     }
     // Done
@@ -38,7 +41,13 @@ pub fn invoke_hash_entry(
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
     // Check if entry_type is valid
-    let dna = runtime.context.state().unwrap().nucleus().dna().expect("Should have DNA");
+    let dna = runtime
+        .context
+        .state()
+        .unwrap()
+        .nucleus()
+        .dna()
+        .expect("Should have DNA");
     let maybe_entry_type = get_entry_type(&dna, &input.entry_type_name);
     if let Err(err) = maybe_entry_type {
         return Ok(err);

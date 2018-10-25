@@ -6,18 +6,17 @@ pub mod commit;
 pub mod debug;
 pub mod get_entry;
 pub mod get_links;
+pub mod hash_entry;
 pub mod init_globals;
 pub mod link_entries;
 pub mod query;
-pub mod hash_entry;
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 use nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        get_entry::invoke_get_entry, get_links::invoke_get_links,
+        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
         init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
-        hash_entry::invoke_hash_entry,
     },
     Defn, Runtime,
 };

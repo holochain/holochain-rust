@@ -289,12 +289,7 @@ fn can_check_query() {
 fn can_check_hash_app_entry() {
     let (mut hc, _) = start_holochain_instance();
 
-    let result = hc.call(
-        "test_zome",
-        "test_cap",
-        "check_hash_app_entry",
-        r#"{}"#,
-    );
+    let result = hc.call("test_zome", "test_cap", "check_hash_app_entry", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
@@ -306,16 +301,11 @@ fn can_check_hash_app_entry() {
 fn can_check_hash_sys_entry() {
     let (mut hc, _) = start_holochain_instance();
 
-    let _result = hc.call(
-        "test_zome",
-        "test_cap",
-        "check_hash_sys_entry",
-        r#"{}"#,
-    );
+    let _result = hc.call("test_zome", "test_cap", "check_hash_sys_entry", r#"{}"#);
     // TODO
-//    assert!(result.is_ok(), "result = {:?}", result);
-//    assert_eq!(
-//        result.unwrap(),
-//        r#"{"result":"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966"}"#,
-//    );
+    //    assert!(result.is_ok(), "result = {:?}", result);
+    //    assert_eq!(
+    //        result.unwrap(),
+    //        r#"{"result":"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966"}"#,
+    //    );
 }

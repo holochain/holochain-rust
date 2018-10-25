@@ -223,7 +223,9 @@ pub fn test_sys_entry() -> Entry {
 }
 
 pub fn test_sys_entry_address() -> Address {
-    Address::from(String::from("QmUZ3wsC4sVdJZK2AC8Ji4HZRfkFSH2cYE6FntmfWKF8GV"))
+    Address::from(String::from(
+        "QmUZ3wsC4sVdJZK2AC8Ji4HZRfkFSH2cYE6FntmfWKF8GV",
+    ))
 }
 
 #[cfg_attr(tarpaulin, skip)]

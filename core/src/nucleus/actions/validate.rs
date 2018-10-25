@@ -104,9 +104,7 @@ impl Future for ValidationFuture {
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
-                Some(Err(e)) => {
-                    Err(HolochainError::ValidationFailed(e.clone()))
-                }
+                Some(Err(e)) => Err(HolochainError::ValidationFailed(e.clone())),
                 None => Ok(futures::Async::Pending),
             }
         } else {

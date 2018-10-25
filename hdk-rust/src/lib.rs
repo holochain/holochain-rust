@@ -14,8 +14,7 @@ pub extern crate holochain_wasm_utils;
 pub mod globals;
 pub mod init_globals;
 pub mod macros;
-use serde::Serialize;
-use serde::Serializer;
+use serde::{Serialize, Serializer};
 
 use self::RibosomeError::*;
 use globals::*;
@@ -132,7 +131,8 @@ pub enum RibosomeError {
 impl Serialize for RibosomeError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-    S: Serializer, {
+        S: Serializer,
+    {
         serializer.serialize_str(&match self {
             RibosomeFailed(ref error_desc) => error_desc.to_owned(),
             FunctionNotImplemented => String::from("Function not implemented"),
@@ -144,7 +144,9 @@ impl Serialize for RibosomeError {
 
 impl From<RibosomeError> for JsonString {
     fn from(ribosome_error: RibosomeError) -> JsonString {
-        JsonString::from(serde_json::to_string(&ribosome_error).expect("could not Jsonify RibosomeError"))
+        JsonString::from(
+            serde_json::to_string(&ribosome_error).expect("could not Jsonify RibosomeError"),
+        )
         // let err_str = match ribosome_error {
         //     RibosomeFailed(error_desc) => error_desc.clone(),
         //     FunctionNotImplemented => "Function not implemented".to_string(),
@@ -323,8 +325,8 @@ pub fn commit_entry(serialized_entry: &SerializedEntry) -> Result<HashString, Ri
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result = load_json(encoded_allocation_of_result as u32);
 
-    if let Err(err_str) = result {
-        return Err(RibosomeError::RibosomeFailed(err_str));
+    if let Err(err_raw_str) = result {
+        return Err(RibosomeError::RibosomeFailed(String::from(err_raw_str)));
     }
     let output: CommitEntryResult = result.unwrap();
 
@@ -390,8 +392,8 @@ pub fn get_entry(entry_address: Address) -> Result<Option<SerializedEntry>, Ribo
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result = load_json(encoded_allocation_of_result as u32);
-    if let Err(err_str) = result {
-        return Err(RibosomeError::RibosomeFailed(err_str));
+    if let Err(err_raw_str) = result {
+        return Err(RibosomeError::RibosomeFailed(String::from(err_raw_str)));
     }
     let get_entry_result: GetEntryResult = result.unwrap();
 

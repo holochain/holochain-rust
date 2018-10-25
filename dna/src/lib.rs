@@ -6,16 +6,19 @@
 //! # Examples
 //!
 //! ```
+//! extern crate holochain_core_types;
+//! extern crate holochain_dna;
 //! use holochain_dna::Dna;
+//! use holochain_core_types::json::JsonString;
 //!
 //! let name = String::from("My Holochain App");
 //!
 //! let mut dna = Dna::new();
 //! dna.name = name.clone();
 //!
-//! let json = dna.to_json();
+//! let json = JsonString::from(dna.clone());
 //!
-//! let dna2 = Dna::from_json_str(&json).unwrap();
+//! let dna2 = Dna::from(json);
 //! assert_eq!(name, dna2.name);
 //! ```
 

@@ -1,9 +1,9 @@
+#![feature(try_from)]
 extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-#[macro_use]
 extern crate serde_json;
 extern crate test_utils;
 
@@ -12,9 +12,12 @@ use holochain_core::{context::Context, logger::Logger, persister::SimplePersiste
 use holochain_core_api::Holochain;
 use holochain_core_types::{
     error::{HolochainError, *},
-    json::JsonString,
+    json::{JsonString, RawString},
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    convert::TryFrom,
+    sync::{Arc, Mutex},
+};
 use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
 
 #[derive(Clone, Debug)]
@@ -72,7 +75,8 @@ pub fn launch_hc_with_integration_test_wasm(
 fn can_return_error_report() {
     let (result, test_logger) = launch_hc_with_integration_test_wasm("test_error_report", r#"{}"#);
     // Verify result
-    let error_report = RibosomeErrorReport::from(result.clone().unwrap());
+    let error_report =
+        RibosomeErrorReport::from(JsonString::from(RawString::from(result.clone().unwrap())));
     assert_eq!("Zome assertion failed: `false`", error_report.description);
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
@@ -120,7 +124,7 @@ fn call_store_json_err() {
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(
         format!("{:?}", *test_logger),
-        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function \\\'test_store_json_err\\\' returned: Out of memory\"] }",
+        "TestLogger { log: [\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'test_store_json_err\\\' return code: Out of memory\"] }",
     );
 }
 
@@ -144,9 +148,7 @@ fn call_load_json_from_raw_err() {
         launch_hc_with_integration_test_wasm("test_load_json_from_raw_err", r#"{}"#);
     // Verify result
     assert_eq!(
-        JsonString::from(
-            json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string()
-        ),
+        JsonString::try_from(RibosomeErrorCode::ArgumentDeserializationFailed).unwrap(),
         result.unwrap()
     );
     // Verify logs

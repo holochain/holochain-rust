@@ -1,6 +1,7 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::{JsonString, RawString};
+use json::{AutoJsonString, JsonString, RawString};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{self, Error as SerdeError};
 use std::{
     convert::TryFrom,
@@ -151,16 +152,20 @@ impl From<RibosomeErrorReport> for String {
 
 impl From<JsonString> for RibosomeErrorReport {
     fn from(json_string: JsonString) -> RibosomeErrorReport {
-        serde_json::from_str(&String::from(json_string))
-            .expect("could not deserialize RibosomeErrorReport")
+        serde_json::from_str(&String::from(json_string.clone())).expect(&format!(
+            "could not deserialize RibosomeErrorReport: {:?}",
+            json_string
+        ))
     }
 }
 
-impl From<RibosomeErrorReport> for JsonString {
-    fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
-        JsonString::from(RawString::from(String::from(ribosome_error_report)))
-    }
-}
+impl AutoJsonString for RibosomeErrorReport {}
+
+// impl From<RibosomeErrorReport> for JsonString {
+//     fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
+//         JsonString::from(RawString::from(String::from(ribosome_error_report)))
+//     }
+// }
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
@@ -245,6 +250,27 @@ impl ToString for RibosomeErrorCode {
             RibosomeErrorCode::NotAnAllocation                 => "Not an allocation",
             RibosomeErrorCode::ZeroSizedAllocation             => "Zero-sized allocation",
         }.to_string()
+    }
+}
+
+impl AutoJsonString for RibosomeErrorCode {}
+
+impl Serialize for RibosomeErrorCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for RibosomeErrorCode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(RibosomeErrorCode::from_str(&s).expect("could not deserialize RibosomeErrorCode"))
     }
 }
 

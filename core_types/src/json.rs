@@ -1,5 +1,4 @@
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
@@ -88,7 +87,9 @@ pub trait AutoJsonString: Serialize + DeserializeOwned + Sized {}
 
 impl<T: AutoJsonString> From<T> for JsonString {
     fn from(auto_json_string: T) -> JsonString {
-        JsonString::from(serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"))
+        JsonString::from(
+            serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"),
+        )
     }
 }
 
@@ -102,7 +103,7 @@ impl<T: AutoJsonString> From<T> for JsonString {
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""
 /// RawString must not implement Serialize and Deserialize itself
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct RawString(serde_json::Value);
 
 impl From<&'static str> for RawString {

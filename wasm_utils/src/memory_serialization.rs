@@ -80,10 +80,10 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
             // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
             let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
                 serde_json::from_str(actual_str);
-            match maybe_error_report {
-                Err(_) => Err(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
-                Ok(error_report) => Err(error_report.description),
-            }
+            Err(match maybe_error_report {
+                Err(_) => RibosomeErrorCode::ArgumentDeserializationFailed.to_string(),
+                Ok(error_report) => error_report.description,
+            })
         }
     }
 }

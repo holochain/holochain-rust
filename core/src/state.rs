@@ -64,8 +64,10 @@ impl State {
                 .expect("Could not fetch from storage while loading state")
                 .expect("Could not find a DNA entry in storage while loading state")
         );
+        let mut nucleus_state = NucleusState::new();
+        nucleus_state.dna = Some(dna);
         State {
-            nucleus: Arc::new(NucleusState::new()),
+            nucleus: Arc::new(nucleus_state),
             agent: agent_state,
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             history: HashSet::new(),

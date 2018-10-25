@@ -99,7 +99,6 @@ impl State {
 
     fn deserialize_state(context: Arc<Context>, agent_json: String) -> HcResult<State> {
         let snapshot = serde_json::from_str::<AgentStateSnapshot>(&agent_json)?;
-        let cas = &(*context).clone().file_storage;
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(cas.clone()),
             snapshot.top_chain_header(),

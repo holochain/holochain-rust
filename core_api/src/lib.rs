@@ -194,7 +194,7 @@ mod tests {
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new())),
+                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),

@@ -46,7 +46,7 @@ fn main() {
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new())),
+        Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
         EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
     ).expect("context is supposed to be created");

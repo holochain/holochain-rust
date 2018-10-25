@@ -21,12 +21,12 @@ pub struct SimplePersister {
 
 impl Persister for SimplePersister {
     fn save(&mut self, state: State)->Result<(),HolochainError> {
-        let mut f = OpenOptions::new().write(true).create(true).open(self.file_path)?;
+        let mut f = OpenOptions::new().write(true).create(true).open(self.file_path.clone())?;
         let json = State::serialize_state(state)?;
         Ok(f.write_all(json.as_bytes())?)
     }
     fn load(&self,context:Arc<Context>) -> Result<Option<State>, HolochainError> {
-        let mut f = File::open(self.file_path)?;
+        let mut f = File::open(self.file_path.clone())?;
         let mut json = String::new();
         f.read_to_string(&mut json)?;
         let state = State::deserialize_state(context,json)?;
@@ -35,8 +35,8 @@ impl Persister for SimplePersister {
 }
 
 impl SimplePersister {
-    pub fn new() -> Self {
-        SimplePersister { state: None }
+    pub fn new(file:String) -> Self {
+        SimplePersister { state: None, file_path:file}
     }
 }
 
@@ -45,10 +45,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_instantiate() {
-        let store = SimplePersister::new();
-
-        assert_eq!(store.load(), Ok(None));
+    fn sound_trip_test() 
+    {
     }
 
     // TODO write a persister.save() test

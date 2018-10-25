@@ -27,7 +27,7 @@ use std::{
     io::prelude::*,
     sync::{Arc, Mutex},
 };
-use tempfile::tempdir;
+use tempfile::{tempfile,tempdir};
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
@@ -169,7 +169,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
             Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
@@ -219,7 +219,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
         Context::new(
             agent,
             logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap(),

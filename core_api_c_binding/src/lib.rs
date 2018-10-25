@@ -65,12 +65,13 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = Agent::from("c_bob".to_string());
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
+    let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new())),
+        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
         FilesystemStorage::new(&cas_path).unwrap(),
         EavFileStorage::new(eav_path).unwrap(),
     )

@@ -325,7 +325,7 @@ pub mod tests {
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new())),
+                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
@@ -353,7 +353,7 @@ pub mod tests {
             Context::new_with_channels(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 action_channel.clone(),
                 observer_channel.clone(),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -367,7 +367,7 @@ pub mod tests {
         let mut context = Context::new(
             Agent::from("Florence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();

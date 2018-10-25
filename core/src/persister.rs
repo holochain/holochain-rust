@@ -1,6 +1,7 @@
 use holochain_core_types::error::HolochainError;
 use state::State;
-use std::fs::OpenOptions;
+use std::{fs::{File,OpenOptions},sync::Arc,io::{Read,Write}};
+use context::Context;
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send {
@@ -20,16 +21,16 @@ pub struct SimplePersister {
 
 impl Persister for SimplePersister {
     fn save(&mut self, state: State)->Result<(),HolochainError> {
-        let mut f = OpenOptions::new().write(true).create(file_path).open(self.file_path);
-        let json = State::deserialize_state(state)?;
+        let mut f = OpenOptions::new().write(true).create(true).open(self.file_path)?;
+        let json = State::serialize_state(state)?;
         Ok(f.write_all(json.as_bytes())?)
     }
     fn load(&self,context:Arc<Context>) -> Result<Option<State>, HolochainError> {
-        let mut f = File::open(filename)?;
+        let mut f = File::open(self.file_path)?;
         let mut json = String::new();
         f.read_to_string(&mut json)?;
-        let agent = AgentStateSnapshot::deserialize_state(context,json)?;
-        Ok(State::new_with_agent(arc,agent))
+        let state = State::deserialize_state(context,json)?;
+        Ok(Some(state))
     }
 }
 

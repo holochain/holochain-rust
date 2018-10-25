@@ -23,6 +23,7 @@ impl Persister for SimplePersister {
     fn save(&mut self, state: State)->Result<(),HolochainError> {
         let mut f = OpenOptions::new().write(true).create(true).open(self.file_path.clone())?;
         let json = State::serialize_state(state)?;
+        println!("serizlia state{:?}",json);
         Ok(f.write_all(json.as_bytes())?)
     }
     fn load(&self,context:Arc<Context>) -> Result<Option<State>, HolochainError> {
@@ -44,23 +45,22 @@ impl SimplePersister {
 mod tests {
     extern crate tempfile;
     use super::*;
-    use self::tempfile::{tempdir,tempfile};
+    use self::tempfile::tempdir;
     use test_utils::create_test_context;
-    use instance::tests::test_context;
+    use instance::tests::test_context_with_agent_state;
     #[test]
     fn persistance_round_trip() 
     {
-        let tempdir = tempdir().unwrap().path().join("test");
-        let tempfile = tempdir.to_str().unwrap();
-        let context = test_context("bob");
-        File::create(tempfile.clone()).unwrap();
+        let dir = tempdir().unwrap();
+        let temp_path = dir.path().join("test");
+        let tempfile = temp_path.to_str().unwrap();
+        let context = test_context_with_agent_state();
+        File::create(temp_path.clone()).unwrap();
         let mut persistance  = SimplePersister::new(tempfile.to_string());
-        let state = State::new(context.clone());
+        let state = context.state().unwrap().clone();
         persistance.save(state.clone()).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();
         assert_eq!(state,state_from_file )
 
     }
-
-    // TODO write a persister.save() test
 }

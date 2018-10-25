@@ -94,7 +94,7 @@ impl State {
         let agent = &*(state.agent());
         let top_chain = agent
             .top_chain_header()
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not deserialize".to_string()))?;
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
         Ok(serde_json::to_string(&AgentStateSnapshot::new(top_chain))?)
     }
 

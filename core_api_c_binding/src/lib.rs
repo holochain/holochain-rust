@@ -52,6 +52,7 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
     let context = get_context(&path);
 
+
     match context {
         Ok(con) => match Holochain::load(path, Arc::new(con)) {
             Ok(hc) => Box::into_raw(Box::new(hc)),

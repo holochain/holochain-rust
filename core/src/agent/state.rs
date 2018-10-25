@@ -194,20 +194,21 @@ fn reduce_commit_entry(
     let chain_header = create_new_chain_header(&entry, state);
 
     fn response(
-        context: Arc<Context>,
         state: &mut AgentState,
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
         state.chain.content_storage().add(entry)?;
         state.chain.content_storage().add(chain_header)?;
-        let agent = AgentStateSnapshot::new(chain_header.clone());
-        state.chain.content_storage().add(&agent)?;
-
         Ok(entry.address())
     }
-    let result = response(_context, state, &entry, &chain_header);
+    let result = response( state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
+    let con = _context.clone();
+    let global_state = con.state().unwrap().clone();
+    let mut persis_lock = _context.clone().persister.clone();
+    let mut persister = &mut *persis_lock.lock().unwrap();
+    persister.save(global_state);
 
     state
         .actions

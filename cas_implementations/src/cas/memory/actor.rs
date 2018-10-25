@@ -7,7 +7,7 @@ use riker::actors::*;
 use snowflake;
 use std::collections::HashMap;
 
-const ACTOR_ID_ROOT: &'static str = "/memory_storage_actor/";
+const ACTOR_ID_ROOT: &str = "/memory_storage_actor/";
 
 fn actor_id() -> String {
     format!(

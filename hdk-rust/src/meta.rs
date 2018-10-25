@@ -6,6 +6,7 @@ use holochain_wasm_utils::{
     holochain_core_types::error::RibosomeErrorCode,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
+use serde_json;
 use std::collections::HashMap;
 
 trait Ribosome {
@@ -126,9 +127,7 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
         "capabilities": capabilities,
     })).expect("Can't serialize DNA");
 
-    unsafe {
-        return store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32;
-    }
+    unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32 }
 }
 
 #[cfg(test)]

@@ -8,9 +8,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::{Entry, ToEntry},
-    entry_type::EntryType,
+    entry::Entry,
     error::HolochainError,
     json::ToJson,
     keys::Keys,
@@ -20,11 +18,7 @@ use holochain_core_types::{
 
 use serde_json;
 
-use serde::{
-    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
-    ser::{Serialize, SerializeStruct, Serializer},
-};
-use std::{collections::HashMap, fmt, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -188,6 +182,8 @@ pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> Chain
 /// action reduction to hang
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
 /// @see https://github.com/holochain/holochain-rust/issues/222
+/// @TODO Better error handling in the state persister section
+/// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
@@ -209,9 +205,11 @@ fn reduce_commit_entry(
     let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
     let con = _context.clone();
+
+    #[allow(unused_must_use)]
     con.state().map(|global_state_lock| {
-        let mut persis_lock = _context.clone().persister.clone();
-        let mut persister = &mut *persis_lock.lock().unwrap();
+        let persis_lock = _context.clone().persister.clone();
+        let persister = &mut *persis_lock.lock().unwrap();
         persister.save(global_state_lock.clone());
     });
 

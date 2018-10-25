@@ -6,9 +6,3 @@ pub struct ZomeFnCallArgs {
     pub fn_name: String,
     pub fn_args: String,
 }
-
-
-#[derive(Deserialize, Default, Debug, Serialize)]
-pub struct ZomeFnCallResult {
-    pub result_json_str: String,
-}

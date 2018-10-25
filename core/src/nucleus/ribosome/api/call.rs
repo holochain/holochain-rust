@@ -7,22 +7,14 @@ use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
     ZomeFnCall,
 };
+use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-/// Struct for input data received when Call API function is invoked
-#[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
-pub struct ZomeCallArgs {
-    pub zome_name: String,
-    pub cap_name: String,
-    pub fn_name: String,
-    pub fn_args: String,
-}
-
-// ZomeCallArgs to ZomeFnCall
+// ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
-    fn from_args(args: ZomeCallArgs) -> Self {
+    fn from_args(args: ZomeFnCallArgs) -> Self {
         ZomeFnCall::new(
             &args.zome_name,
             &args.cap_name,
@@ -45,13 +37,13 @@ pub fn invoke_call(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
+    let input: ZomeFnCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
-    // ZomeCallArgs to ZomeFnCall
+    // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(input);
 
     // Don't allow recursive calls
@@ -96,7 +88,8 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_str) => runtime.store_utf8(&json_str),
-        Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
+        // TODO send the holochain error instead
+        Err(_hc_err) => ribosome_error_code!(Unspecified),
     }
 }
 
@@ -203,7 +196,7 @@ pub mod tests {
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
-        let args = ZomeCallArgs {
+        let args = ZomeFnCallArgs {
             zome_name: "zome_name".to_string(),
             cap_name: "cap_name".to_string(),
             fn_name: "fn_name".to_string(),
@@ -216,7 +209,7 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
-        let args = ZomeCallArgs {
+        let args = ZomeFnCallArgs {
             zome_name: test_zome_name(),
             cap_name: test_capability(),
             fn_name: test_function_name(),

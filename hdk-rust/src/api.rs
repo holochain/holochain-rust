@@ -7,7 +7,7 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
-        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs, ZomeFnCallResult,
+        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::hash::HashString,
     memory_allocation::*,

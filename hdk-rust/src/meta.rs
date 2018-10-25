@@ -1,9 +1,12 @@
 use entry_definition::ValidatingEntryType;
+use globals::G_MEM_STACK;
+use holochain_dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
     holochain_core_types::error::RibosomeErrorCode,
-    memory_serialization::{load_json, load_string},
+    memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
+use std::collections::HashMap;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -30,6 +33,7 @@ impl ZomeDefinition {
 #[allow(improper_ctypes)]
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
+    fn __list_capabilities() -> HashMap<String, Capability>;
 }
 
 #[no_mangle]
@@ -98,6 +102,32 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
                 Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
             }
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
+    ::global_fns::init_global_memory(encoded_allocation_of_input);
+
+    let mut zd = ZomeDefinition::new();
+    unsafe {
+        zome_setup(&mut zd);
+    }
+
+    let mut entry_types = HashMap::new();
+    for entry_type in zd.entry_types {
+        entry_types.insert(entry_type.name, entry_type.entry_type_definition);
+    }
+
+    let capabilities = unsafe { __list_capabilities() };
+
+    let json_string = serde_json::to_string(&json!({
+        "entry_types": entry_types,
+        "capabilities": capabilities,
+    })).expect("Can't serialize DNA");
+
+    unsafe {
+        return store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32;
     }
 }
 

@@ -23,7 +23,7 @@ pub fn invoke_debug(
 pub mod tests {
     use holochain_core_types::{
         error::RibosomeReturnCode,
-        json::{JsonString, RawString},
+        json::{JsonString},
     };
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function_runtime, ZomeApiFunction},

@@ -118,7 +118,7 @@ mod tests {
             ExampleAddressableContent::from_content(&JsonString::from(RawString::from("example")));
         let attribute = String::from("favourite-badge");
         let value_content: Content =
-            CrudStatus::from_content(&JsonString::from(RawString::from("2"))).content();
+            CrudStatus::from_content(&JsonString::from(CrudStatus::REJECTED)).content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
@@ -153,29 +153,29 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(RawString::from("1")),
+            JsonString::from(CrudStatus::LIVE),
             CrudStatus::LIVE,
-            Address::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG"),
+            Address::from("QmWZ1VcQ7MzQfbevGGkpZXidjmcwwzq3Ssx2bZCkrnaY8z"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(RawString::from("2")),
+            JsonString::from(CrudStatus::REJECTED),
             CrudStatus::REJECTED,
-            Address::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg"),
+            Address::from("QmNsbuCbwifcJ8T4MBJmPi2U3MRmSwbizU471R7djP3W4B"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(RawString::from("4")),
+            JsonString::from(CrudStatus::DELETED),
             CrudStatus::DELETED,
-            Address::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm"),
+            Address::from("QmX6xSz9Tvubevsp1EDBa796TipmhoVTUgs3NgX4bPFrab"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(RawString::from("8")),
+            JsonString::from(CrudStatus::MODIFIED),
             CrudStatus::MODIFIED,
-            Address::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi"),
+            Address::from("Qmc26xWbNbTxmq49kK2CooB63MSQyRSxn2LqGdURYhVnsm"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(RawString::from("16")),
+            JsonString::from(CrudStatus::LOCKED),
             CrudStatus::LOCKED,
-            Address::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a"),
+            Address::from("QmPFzUQmR1ST3ZqSifvKueSN4NRPxMeA1JzsZCav6Uv8BT"),
         );
     }
 

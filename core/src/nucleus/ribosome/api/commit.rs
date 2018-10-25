@@ -51,7 +51,7 @@ pub fn invoke_commit_app_entry(
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(e) => {
-            println!("yyy: {:?}", e);
+            println!("failed to deserialize: {:?}", e);
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

@@ -156,7 +156,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Ok\":{\"entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}")
+        JsonString::from("{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}")
     );
 
     // test the case with a bad hash
@@ -170,7 +170,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Ok\":{\"entry\":null}}")
+        JsonString::from("{\"Ok\":null}")
     );
 }
 

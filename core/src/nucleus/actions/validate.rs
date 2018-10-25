@@ -105,7 +105,6 @@ impl Future for ValidationFuture {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
                 Some(Err(e)) => {
-                    println!("nnnn: {:?}", e);
                     Err(HolochainError::ValidationFailed(e.clone()))
                 }
                 None => Ok(futures::Async::Pending),

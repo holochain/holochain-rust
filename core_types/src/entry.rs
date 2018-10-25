@@ -149,7 +149,7 @@ pub fn test_entry_value() -> JsonString {
 }
 
 pub fn test_entry_content() -> Content {
-    Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
+    Content::from(r#"{"value":"\"test entry value\"","entry_type":"testEntryType"}"#)
 }
 
 /// dummy entry content, same as test_entry_value()
@@ -180,12 +180,12 @@ pub fn test_entry() -> Entry {
 pub fn test_serialized_entry() -> SerializedEntry {
     SerializedEntry {
         value: String::from(test_entry_value()),
-        entry_type: String::from(test_entry_content()),
+        entry_type: String::from(test_entry_type()),
     }
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from(RawString::from(""))
+    JsonString::from("{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}")
 }
 
 /// the correct hash for test_entry()
@@ -223,7 +223,7 @@ pub fn test_sys_entry() -> Entry {
 }
 
 pub fn test_sys_entry_address() -> Address {
-    Address::from("QmWePdZYQrYFBUkBy1GPyCCUf8UmkmptsjtcVqZJ9Tzdse".to_string())
+    Address::from(String::from("QmUZ3wsC4sVdJZK2AC8Ji4HZRfkFSH2cYE6FntmfWKF8GV"))
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -306,8 +306,8 @@ pub mod tests {
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"value\":\"{}\",\"entry_type\":\"AgentId\"}}",
-            test_sys_entry_address(),
+            "{{\"value\":\"\\\"{}\\\"\",\"entry_type\":\"%agent_id\"}}",
+            String::from(test_sys_entry_address()),
         ));
         assert_eq!(
             expected,

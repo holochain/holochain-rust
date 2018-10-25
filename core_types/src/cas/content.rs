@@ -166,7 +166,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<ExampleAddressableContent>(
             JsonString::from(RawString::from("foo")),
             ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo"))),
-            Address::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
+            Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }
 
@@ -176,7 +176,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<OtherExampleAddressableContent>(
             JsonString::from(RawString::from("foo")),
             OtherExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo"))),
-            Address::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
+            Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }
 

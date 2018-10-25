@@ -21,12 +21,15 @@ macro_rules! load_json {
 /// # extern crate serde_json;
 /// # #[macro_use] extern crate serde_derive;
 /// # use hdk::globals::G_MEM_STACK;
-/// # use holochain_wasm_utils::error::RibosomeReturnCode;
+/// # use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+/// # use holochain_wasm_utils::holochain_core_types::json::AutoJsonString;
 /// # fn main() {
-/// #[derive(Serialize)]
+/// #[derive(Serialize, Deserialize)]
 /// struct CreatePostResponse {
 ///     author: String,
 /// }
+///
+/// impl AutoJsonString for CreatePostResponse {}
 ///
 /// zome_functions! {
 ///     create_post: |author: String, content: String| {

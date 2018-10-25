@@ -1,3 +1,4 @@
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json;
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -55,27 +56,48 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
+impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(match result {
-                Ok(t) => {
-                    let json_string: JsonString = t.into();
-                    format!("{{\"Ok\":{}}}", String::from(json_string))
-                },
-                Err(e) => {
-                    let json_string: JsonString = e.into();
-                    format!("{{\"Err\":{}}}", String::from(json_string))
-                }
-            }
-        )
+        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
     }
 }
+//
+// impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
+//     fn from(result: Result<T, E>) -> JsonString {
+//         JsonString::from(match result {
+//                 Ok(t) => {
+//                     let json_string: JsonString = t.into();
+//                     format!("{{\"Ok\":{}}}", String::from(json_string))
+//                 },
+//                 Err(e) => {
+//                     let json_string: JsonString = e.into();
+//                     format!("{{\"Err\":{}}}", String::from(json_string))
+//                 }
+//             }
+//         )
+//     }
+// }
 
 impl Display for JsonString {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", String::from(self),)
     }
 }
+
+pub trait AutoJsonString: Serialize + DeserializeOwned + Sized {}
+
+impl<T: AutoJsonString> From<T> for JsonString {
+    fn from(auto_json_string: T) -> JsonString {
+        JsonString::from(serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"))
+    }
+}
+
+// @TODO make this work!
+// impl<T: AutoJsonString> From<JsonString> for T {
+//     fn from(json_string: JsonString) -> T {
+//         serde_json::from_str(&String::from(json_string)).expect("could not deserialize from JsonString")
+//     }
+// }
 
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""

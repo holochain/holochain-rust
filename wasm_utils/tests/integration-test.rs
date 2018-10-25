@@ -129,7 +129,7 @@ fn call_load_json_from_raw_ok() {
     let (result, test_logger) =
         launch_hc_with_integration_test_wasm("test_load_json_from_raw_ok", r#"{}"#);
     // Verify result
-    assert_eq!(JsonString::from(""), result.unwrap());
+    assert_eq!(JsonString::from("Success"), result.unwrap());
     // Verify logs
     let test_logger = test_logger.lock().unwrap();
     assert_eq!(

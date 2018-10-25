@@ -267,6 +267,14 @@ pub mod tests {
 
         (i32.const 7)
     )
+
+    (func
+        (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
                     canonical_name

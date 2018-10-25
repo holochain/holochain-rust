@@ -24,7 +24,7 @@ impl ToString for CrudStatus {
         // don't do self.bits().to_string() because that spits out values for default() and all()
         // only explicit statuses are safe as strings
         // the expectation is that strings will be stored, referenced and parsed
-        match self.to_owned() {
+        match *self {
             CrudStatus::LIVE => "1",
             CrudStatus::REJECTED => "2",
             CrudStatus::DELETED => "4",

@@ -19,7 +19,7 @@ pub fn invoke_init_globals(
         dna_hash: HashString::from(""),
         agent_id_str: runtime.context.agent.to_string(),
         // TODO #233 - Implement agent pub key hash
-        agent_key_hash: HashString::encode_from_str("FIXME-agent_key_hash", Multihash::SHA2256),
+        agent_address: HashString::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
@@ -44,6 +44,7 @@ pub fn invoke_init_globals(
             if found_entries.len() > 0 {
                 globals.agent_latest_hash = found_entries[0].clone();
                 globals.agent_initial_hash = found_entries.pop().unwrap();
+                globals.agent_address = globals.agent_latest_hash.clone();
             }
         }
     };
@@ -70,8 +71,8 @@ pub mod tests {
         call_result.pop(); // Remove trailing character
         let globals: ZomeApiGlobals = serde_json::from_str(&call_result).unwrap();
         assert_eq!(globals.dna_name, "TestApp");
-        // TODO #233 - Implement agent pub key hash
-        // assert_eq!(obj.agent_key_hash, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
+        // TODO #233 - Implement agent address
+        // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
         assert_eq!(globals.agent_id_str, "jane");
         assert_eq!(
             globals.agent_initial_hash,

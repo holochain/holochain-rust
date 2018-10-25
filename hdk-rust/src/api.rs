@@ -35,7 +35,7 @@ lazy_static! {
   /// The hash of your public key.
   /// This is your node address on the DHT.
   /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref AGENT_KEY_HASH: &'static HashString = &GLOBALS.agent_key_hash;
+  pub static ref AGENT_ADDRESS: &'static HashString = &GLOBALS.agent_address;
 
   /// The hash of the first identity entry on your chain (The second entry on your chain).
   /// This is your peer's identity on the DHT.

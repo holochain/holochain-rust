@@ -6,7 +6,13 @@ use agent::{
 use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_core_types::{
+    cas::{content::*, storage::ContentAddressableStorage},
+    entry::*,
+    entry_type::EntryType,
+    error::{HcResult, HolochainError},
+};
+use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
 use std::{collections::HashSet, sync::Arc};
@@ -45,8 +51,33 @@ impl State {
 
         let cas = &(*context).file_storage;
         let eav = &(*context).eav_storage;
+
+        fn get_dna(
+            agent_state: &Arc<AgentState>,
+            cas: &FilesystemStorage,
+        ) -> Result<Dna, HolochainError> {
+            let dna_entry_header = agent_state
+                .chain()
+                .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
+                .last()
+                .ok_or(HolochainError::ErrorGeneric(
+                    "No DNA entry found in source chain while creating state from agent"
+                        .to_string(),
+                ))?;
+
+            Ok(Dna::from_entry(
+                &cas.fetch(dna_entry_header.entry_address())?
+                    .ok_or(HolochainError::ErrorGeneric(
+                        "No DNA entry found in storage while creating state from agent".to_string(),
+                    ))?,
+            ))
+        }
+
+        let mut nucleus_state = NucleusState::new();
+        nucleus_state.dna = get_dna(&agent_state, cas).ok();
+
         State {
-            nucleus: Arc::new(NucleusState::new()),
+            nucleus: Arc::new(nucleus_state),
             agent: agent_state,
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             history: HashSet::new(),

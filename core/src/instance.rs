@@ -187,6 +187,16 @@ impl Instance {
         }
     }
 
+    pub fn from_state(state: State) -> Self {
+        let (tx_action, _) = sync_channel(1);
+        let (tx_observer, _) = sync_channel(1);
+        Instance {
+            state: Arc::new(RwLock::new(state)),
+            action_channel: tx_action,
+            observer_channel: tx_observer,
+        }
+    }
+
     pub fn state(&self) -> RwLockReadGuard<State> {
         self.state
             .read()

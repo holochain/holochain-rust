@@ -57,17 +57,16 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
 
 impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&match result {
+        JsonString::from(match result {
                 Ok(t) => {
                     let json_string: JsonString = t.into();
-                    Ok(String::from(json_string))
-                }
+                    format!("{{\"Ok\":{}}}", String::from(json_string))
+                },
                 Err(e) => {
                     let json_string: JsonString = e.into();
-                    Err(String::from(json_string))
+                    format!("{{\"Err\":{}}}", String::from(json_string))
                 }
-            }).expect("could not serialize Result"),
+            }
         )
     }
 }

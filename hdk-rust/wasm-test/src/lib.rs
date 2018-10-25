@@ -15,6 +15,7 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
         hash::HashString,
+        entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
@@ -179,6 +180,63 @@ fn handle_links_roundtrip() -> serde_json::Value {
     }
 }
 
+fn handle_check_query() -> serde_json::Value {
+    // Query DNA entry
+    let result = hdk::query(&EntryType::Dna.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query AgentId entry
+    let result = hdk::query(&EntryType::AgentId.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entry
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry1"
+    })).unwrap();
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entries
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry2"
+    })).unwrap();
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry3"
+    })).unwrap();
+
+    let result = hdk::query("testEntryType", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 3);
+
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+
+    json!(result.unwrap())
+}
+
+fn handle_check_hash_app_entry() -> serde_json::Value {
+    // Setup
+    let entry_value = json!({
+        "stuff": "entry1"
+    });
+    let commit_hash = hdk::commit_entry("testEntryType", entry_value.clone()).unwrap();
+    // Check bad entry type name
+    let result = hdk::hash_entry("bad", entry_value.clone());
+    assert!(result.is_err());
+    // Check good entry type name
+    let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
+    assert!(commit_hash == good_hash);
+    json!({"result": good_hash})
+}
+
+fn handle_check_hash_sys_entry() -> serde_json::Value {
+    // TODO
+    json!({"result": "FIXME"})
+}
+
 #[derive(Serialize, Deserialize)]
 struct TweetResponse {
     first: String,
@@ -267,6 +325,24 @@ define_zome! {
                 inputs: | |,
                 outputs: |result: serde_json::Value|,
                 handler: handle_links_roundtrip
+            }
+
+            check_query: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_query
+            }
+
+            check_hash_app_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_app_entry
+            }
+
+            check_hash_sys_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_sys_entry
             }
 
             send_tweet: {

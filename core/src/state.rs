@@ -6,7 +6,16 @@ use agent::{
 use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_core_types::{
+    cas::{
+        content::*,
+        storage::ContentAddressableStorage,
+    },
+    entry::*,
+    entry_type::EntryType,
+    error::{HcResult, HolochainError},
+};
+use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
 use std::{collections::HashSet, sync::Arc};
@@ -45,6 +54,16 @@ impl State {
 
         let cas = &(*context).file_storage;
         let eav = &(*context).eav_storage;
+        let dna_entry_header = agent_state.chain()
+            .iter_type(&agent_state.top_chain_header(),
+                       &EntryType::Dna)
+            .last()
+            .expect("Could not find a DNA entry header in source chain while loading state");
+        let dna: Dna = Dna::from_entry(
+            &cas.fetch(dna_entry_header.entry_address())
+                .expect("Could not fetch from storage while loading state")
+                .expect("Could not find a DNA entry in storage while loading state")
+        );
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: agent_state,

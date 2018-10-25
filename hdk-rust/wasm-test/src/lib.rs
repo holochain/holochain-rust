@@ -15,6 +15,7 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
         hash::HashString,
+        entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
@@ -79,7 +80,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
+#[derive(Deserialize, Serialize, Default)]
+struct EntryStruct {
+    stuff: String
+}
+
 //
+
 fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: String) -> serde_json::Value {
     let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
     let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
@@ -91,8 +98,8 @@ fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: Strin
     }
 }
 
-fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
-    let res = hdk::get_entry(entry_hash,GetEntryOptions{});
+fn handle_check_get_entry_result(entry_hash: HashString) -> serde_json::Value {
+    let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
     match res {
         Ok(result) => match result.status {
             GetResultStatus::Found => {
@@ -106,6 +113,17 @@ fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
         }
         Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}),
         Err(_) => unreachable!(),
+    }
+}
+
+fn handle_check_get_entry(entry_hash: HashString) -> serde_json::Value {
+    let result : Result<Option<EntryStruct>,ZomeApiError> = hdk::get_entry(entry_hash);
+    match result {
+        Ok(e) => match e {
+            Some(entry_value) => json!(entry_value),
+            None => json!(null),
+        },
+        Err(err) => json!({"get entry Err": err.to_string()}),
     }
 }
 
@@ -160,6 +178,63 @@ fn handle_links_roundtrip() -> serde_json::Value {
         Ok(result) => json!({"links": result.links}),
         Err(error) => json!({"error": error}),
     }
+}
+
+fn handle_check_query() -> serde_json::Value {
+    // Query DNA entry
+    let result = hdk::query(&EntryType::Dna.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query AgentId entry
+    let result = hdk::query(&EntryType::AgentId.to_string(), 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entry
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry1"
+    })).unwrap();
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 1);
+
+    // Query Zome entries
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry2"
+    })).unwrap();
+    let _ = hdk::commit_entry("testEntryType", json!({
+        "stuff": "entry3"
+    })).unwrap();
+
+    let result = hdk::query("testEntryType", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().len() == 3);
+
+    let result = hdk::query("testEntryType", 1);
+    assert!(result.is_ok());
+
+    json!(result.unwrap())
+}
+
+fn handle_check_hash_app_entry() -> serde_json::Value {
+    // Setup
+    let entry_value = json!({
+        "stuff": "entry1"
+    });
+    let commit_hash = hdk::commit_entry("testEntryType", entry_value.clone()).unwrap();
+    // Check bad entry type name
+    let result = hdk::hash_entry("bad", entry_value.clone());
+    assert!(result.is_err());
+    // Check good entry type name
+    let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
+    assert!(commit_hash == good_hash);
+    json!({"result": good_hash})
+}
+
+fn handle_check_hash_sys_entry() -> serde_json::Value {
+    // TODO
+    json!({"result": "FIXME"})
 }
 
 #[derive(Serialize, Deserialize)]
@@ -228,6 +303,12 @@ define_zome! {
                 handler: handle_check_get_entry
             }
 
+            check_get_entry_result: {
+                inputs: |entry_hash: HashString|,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_get_entry_result
+            }
+
             commit_validation_package_tester: {
                 inputs: | |,
                 outputs: |result: serde_json::Value|,
@@ -246,6 +327,24 @@ define_zome! {
                 handler: handle_links_roundtrip
             }
 
+            check_query: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_query
+            }
+
+            check_hash_app_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_app_entry
+            }
+
+            check_hash_sys_entry: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_hash_sys_entry
+            }
+
             send_tweet: {
                 inputs: |author: String, content: String|,
                 outputs: |response: TweetResponse|,
@@ -254,4 +353,3 @@ define_zome! {
         }
     }
 }
-

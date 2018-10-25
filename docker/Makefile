@@ -118,7 +118,9 @@ install_ci: core_toolchain
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain
-	$(CARGO_TOOLS) install mdbook --force --vers "0.2.2";
+	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
+		$(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
+	fi
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}

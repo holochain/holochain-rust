@@ -544,17 +544,23 @@ mod test {
     /// test that call() returns error for invalid arguments
     fn test_call_invalid() {
         // check whether function implemented
-        let result = call("", "", json!(""));
+        let result = call("", "", "", json!(""));
         assert_ne!(Some(RibosomeError::FunctionNotImplemented), result.err());
 
         // test empty zome name parameter
-        let result = call("", "test", json!("test"));
+        let result = call("", "test", "", json!("test"));
+        assert!(result.is_err());
+        // FIXME with proper error value
+        // assert_eq!(Some( ?? ), result.err());
+
+        // test empty capability name parameter
+        let result = call("", "test", "", json!("test"));
         assert!(result.is_err());
         // FIXME with proper error value
         // assert_eq!(Some( ?? ), result.err());
 
         // test empty function name parameter
-        let result = call("test", "", json!("test"));
+        let result = call("test", "", "", json!("test"));
         assert!(result.is_err());
         // FIXME with proper error value
         // assert_eq!(Some( ?? ), result.err());
@@ -564,7 +570,7 @@ mod test {
     /// test that call() returns value for valid arguments
     fn test_call_valid() {
         // check whether function implemented
-        let result = call("", "", json!(""));
+        let result = call("", "", "", json!(""));
         assert_ne!(Some(RibosomeError::FunctionNotImplemented), result.err());
 
         /*** FIXME

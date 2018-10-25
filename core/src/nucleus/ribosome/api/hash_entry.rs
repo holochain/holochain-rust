@@ -1,4 +1,4 @@
-use holochain_core_types::{entry::Entry, entry_type::EntryType, hash::HashString};
+use holochain_core_types::{self, entry::Entry, entry_type::EntryType, hash::HashString};
 use holochain_dna::Dna;
 use holochain_wasm_utils::api_serialization::HashEntryArgs;
 use multihash::Hash as Multihash;

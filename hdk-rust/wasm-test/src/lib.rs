@@ -229,13 +229,43 @@ fn handle_check_hash_app_entry() -> serde_json::Value {
     // Check good entry type name
     let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
     assert!(commit_hash == good_hash);
-    json!({"result": good_hash})
+    json!(good_hash)
 }
 
 fn handle_check_hash_sys_entry() -> serde_json::Value {
     // TODO
     json!({"result": "FIXME"})
 }
+
+fn handle_check_call() -> serde_json::Value {
+    let empty_dumpty = json!({});
+    hdk::debug(&format!("empty_dumpty = {:?}", empty_dumpty)).ok();
+    let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty);
+    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
+    let tmp = maybe_hash.unwrap();
+    let hash: &str = serde_json::from_str(&tmp).unwrap();
+    hdk::debug(&format!("hash = {}", hash)).ok();
+    json!(hash)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct HashStruct {
+    address: String,
+}
+
+fn handle_check_call_with_args() -> serde_json::Value {
+    let arg_str = r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#;
+    let args = serde_json::from_str::<serde_json::Value>(arg_str).unwrap();
+    // let args =  json!(arg_str);
+    hdk::debug(&format!("args = {:?}", args)).ok();
+    let maybe_hash = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args);
+    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
+    let tmp = maybe_hash.unwrap();
+    let hash: HashStruct = serde_json::from_str(&tmp).unwrap();
+    hdk::debug(&format!("hash = {:?}", hash)).ok();
+    json!(hash)
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct TweetResponse {
@@ -327,16 +357,28 @@ define_zome! {
                 handler: handle_links_roundtrip
             }
 
-            check_query: {
+            check_call: {
                 inputs: | |,
                 outputs: |result: serde_json::Value|,
-                handler: handle_check_query
+                handler: handle_check_call
+            }
+
+            check_call_with_args: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_call_with_args
             }
 
             check_hash_app_entry: {
                 inputs: | |,
                 outputs: |result: serde_json::Value|,
                 handler: handle_check_hash_app_entry
+            }
+
+            check_query: {
+                inputs: | |,
+                outputs: |result: serde_json::Value|,
+                handler: handle_check_query
             }
 
             check_hash_sys_entry: {

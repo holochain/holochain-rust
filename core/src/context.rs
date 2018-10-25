@@ -81,7 +81,7 @@ impl Context {
         Ok(())
     }
 
-    pub(crate) fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
         self.state = Some(state);
     }
 
@@ -115,7 +115,7 @@ mod tests {
         let mut maybe_context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();
@@ -137,7 +137,7 @@ mod tests {
         let mut context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();

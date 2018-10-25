@@ -4,18 +4,27 @@ use context::Context;
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    entry::Entry,
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    entry::{Entry, ToEntry},
+    entry_type::EntryType,
     error::HolochainError,
     json::ToJson,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
-use std::{collections::HashMap, sync::Arc};
+
+use serde_json;
+
+use serde::{
+    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
+    ser::{Serialize, SerializeStruct, Serializer},
+};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -30,6 +39,17 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentStateSnapshot {
+    top_chain_header: ChainHeader,
+}
+
+impl AgentStateSnapshot {
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
+    }
+}
+
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
@@ -38,6 +58,18 @@ impl AgentState {
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
+        }
+    }
+
+    pub fn new_with_top_chain_header(
+        chain: ChainStore<FilesystemStorage>,
+        chain_header: ChainHeader,
+    ) -> AgentState {
+        AgentState {
+            keys: None,
+            actions: HashMap::new(),
+            chain,
+            top_chain_header: Some(chain_header),
         }
     }
 
@@ -61,7 +93,40 @@ impl AgentState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl AgentStateSnapshot {
+    pub fn new(chain_header: ChainHeader) -> AgentStateSnapshot {
+        AgentStateSnapshot {
+            top_chain_header: chain_header,
+        }
+    }
+    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(header_str)
+    }
+}
+
+impl ToJson for AgentStateSnapshot {
+    fn to_json(&self) -> Result<String, HolochainError> {
+        Ok(serde_json::to_string(self)?)
+    }
+}
+
+impl AddressableContent for AgentStateSnapshot {
+    fn content(&self) -> Content {
+        self.to_json()
+            .expect("could not Jsonify ChainHeader as Content")
+    }
+
+    fn from_content(content: &Content) -> Self {
+        AgentStateSnapshot::from_json_str(content)
+            .expect("could not read Json as valid ChainHeader Content")
+    }
+
+    fn address(&self) -> Address {
+        Address::from("AgentState")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -143,6 +208,12 @@ fn reduce_commit_entry(
     }
     let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
+    let con = _context.clone();
+    con.state().map(|global_state_lock| {
+        let mut persis_lock = _context.clone().persister.clone();
+        let mut persister = &mut *persis_lock.lock().unwrap();
+        persister.save(global_state_lock.clone());
+    });
 
     state
         .actions
@@ -200,16 +271,23 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
+    extern crate tempfile;
+    use self::tempfile::tempdir;
+    use super::{
+        reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
+    };
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
+    use agent::chain_store::{tests::test_chain_store, ChainStore};
+    use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
+        chain_header::test_chain_header,
         entry::{test_entry, test_entry_address},
         error::HolochainError,
         json::ToJson,
     };
     use instance::tests::test_context;
+    use serde_json;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -329,6 +407,15 @@ pub mod tests {
                 .to_json()
                 .unwrap(),
         );
+    }
+
+    #[test]
+    pub fn serialize_round_trip_agent_state() {
+        let header = test_chain_header();
+        let agent_snap = AgentStateSnapshot::new(header);
+        let json = serde_json::to_string(&agent_snap).unwrap();
+        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(agent_snap.address(), agent_from_json.address());
     }
 
     #[test]

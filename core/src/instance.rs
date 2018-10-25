@@ -275,13 +275,19 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::state::ActionResponse;
+    use agent::{
+        chain_store::ChainStore,
+        state::{ActionResponse, AgentState},
+    };
     use context::Context;
     use futures::executor::block_on;
     use holochain_agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::ToEntry, entry_type::EntryType,
+        cas::content::AddressableContent,
+        chain_header::{test_chain_header, ChainHeader},
+        entry::ToEntry,
+        entry_type::EntryType,
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -291,6 +297,7 @@ pub mod tests {
     };
     use persister::SimplePersister;
     use state::State;
+
     use std::{
         sync::{
             mpsc::{channel, sync_channel},
@@ -328,7 +335,7 @@ pub mod tests {
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new())),
+                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
@@ -356,7 +363,7 @@ pub mod tests {
             Context::new_with_channels(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new())),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 action_channel.clone(),
                 observer_channel.clone(),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -370,11 +377,30 @@ pub mod tests {
         let mut context = Context::new(
             Agent::from("Florence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        context.set_state(global_state.clone());
+        Arc::new(context)
+    }
+
+    pub fn test_context_with_agent_state() -> Arc<Context> {
+        let file_system =
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
+        let mut context = Context::new(
+            Agent::from("Florence".to_string()),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+            file_system.clone(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+        ).unwrap();
+        let chain_store = ChainStore::new(file_system);
+        let chain_header = test_chain_header();
+        let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
+        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
+        let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

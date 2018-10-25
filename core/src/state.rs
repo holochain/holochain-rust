@@ -1,9 +1,14 @@
 use action::ActionWrapper;
-use agent::{chain_store::ChainStore, state::AgentState};
+use agent::{
+    chain_store::ChainStore,
+    state::{AgentState, AgentStateSnapshot},
+};
 use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_core_types::error::{HcResult, HolochainError};
 use nucleus::state::NucleusState;
+use serde_json;
 use std::{collections::HashSet, sync::Arc};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
@@ -29,6 +34,20 @@ impl State {
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
+            dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
+            history: HashSet::new(),
+        }
+    }
+
+    pub fn new_with_agent(context: Arc<Context>, agent_state: Arc<AgentState>) -> Self {
+        // @TODO file table
+        // @see https://github.com/holochain/holochain-rust/pull/246
+
+        let cas = &(*context).file_storage;
+        let eav = &(*context).eav_storage;
+        State {
+            nucleus: Arc::new(NucleusState::new()),
+            agent: agent_state,
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             history: HashSet::new(),
         }
@@ -68,6 +87,27 @@ impl State {
 
     pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage, EavFileStorage>> {
         Arc::clone(&self.dht)
+    }
+
+    pub fn serialize_state(state: State) -> HcResult<String> {
+        let agent = &*(state.agent());
+        let top_chain = agent
+            .top_chain_header()
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
+        Ok(serde_json::to_string(&AgentStateSnapshot::new(top_chain))?)
+    }
+
+    pub fn deserialize_state(context: Arc<Context>, agent_json: String) -> HcResult<State> {
+        let snapshot = serde_json::from_str::<AgentStateSnapshot>(&agent_json)?;
+        let cas = &(context).file_storage;
+        let agent_state = AgentState::new_with_top_chain_header(
+            ChainStore::new(cas.clone()),
+            snapshot.top_chain_header().clone(),
+        );
+        Ok(State::new_with_agent(
+            context.clone(),
+            Arc::new(agent_state),
+        ))
     }
 }
 

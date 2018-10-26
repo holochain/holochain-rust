@@ -10,7 +10,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
-    json::{default_from_json_string, default_to_json_string, JsonString},
+    json::*,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
@@ -96,7 +96,7 @@ impl AgentStateSnapshot {
     }
 }
 
-impl From<AgentStateSnapshot> for JsonString {
+impl TryFrom<AgentStateSnapshot> for JsonString {
     fn from(v: AgentStateSnapshot) -> JsonString {
         default_to_json_string(v)
     }

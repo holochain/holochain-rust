@@ -61,7 +61,7 @@ pub mod tests {
             content::{ExampleAddressableContent, OtherExampleAddressableContent},
             storage::StorageTestSuite,
         },
-        json::{JsonString, RawString},
+        json::{RawString},
     };
 
     pub fn test_memory_storage() -> MemoryStorage {

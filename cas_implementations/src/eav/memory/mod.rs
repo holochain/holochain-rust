@@ -47,16 +47,16 @@ pub mod tests {
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
-        json::{JsonString, RawString},
+        json::{RawString},
     };
 
     #[test]
     fn memory_eav_round_trip() {
         let entity_content =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+            ExampleAddressableContent::from_content(&RawString::from("foo").into());
         let attribute = "favourite-color".to_string();
         let value_content =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+            ExampleAddressableContent::from_content(&RawString::from("blue").into());
         EavTestSuite::test_round_trip(
             EavMemoryStorage::new().expect("could not construct new eav memory storage"),
             entity_content,

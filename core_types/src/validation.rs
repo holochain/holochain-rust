@@ -1,6 +1,6 @@
 extern crate serde_json;
 use chain_header::ChainHeader;
-use convert::TryFrom;
+use std::convert::TryFrom;
 use entry::SerializedEntry;
 use error::{HcResult, HolochainError};
 use hash::HashString;

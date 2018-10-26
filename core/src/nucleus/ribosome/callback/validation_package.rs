@@ -1,7 +1,8 @@
 extern crate serde_json;
 use context::Context;
+use std::convert::TryFrom;
 use holochain_core_types::{
-    convert::TryFrom, entry_type::EntryType, error::HolochainError, json::JsonString,
+    entry_type::EntryType, error::HolochainError, json::JsonString,
     validation::ValidationPackageDefinition,
 };
 use nucleus::{

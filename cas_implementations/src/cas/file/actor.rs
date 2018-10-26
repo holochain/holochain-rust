@@ -66,7 +66,7 @@ impl FilesystemStorageActor {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;
-        Ok(write(self.address_to_path(address), content)?)
+        Ok(write(self.address_to_path(address), content.to_string())?)
     }
 
     /// filesystem CAS contains. NOT thread safe.

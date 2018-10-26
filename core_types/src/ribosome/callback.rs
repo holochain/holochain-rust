@@ -1,4 +1,4 @@
-use convert::TryFrom;
+use std::convert::TryFrom;
 use entry::{Entry, SerializedEntry};
 use error::{HolochainError, RibosomeReturnCode};
 use json::*;

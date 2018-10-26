@@ -17,8 +17,9 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
-use serde::de::DeserializeOwned;
 use serde_json;
+use std::convert::TryInto;
+use holochain_core_types::entry::Entry;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -176,7 +177,7 @@ pub enum BundleOnClose {
 
 /// Prints a string through the stdout of the running service, and also
 /// writes that string to the logger in the execution context
-pub fn debug<J: Into<JsonString>>(msg: J) -> ZomeApiResult<()> {
+pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
     if let Err(err_code) = maybe_allocation_of_input {
@@ -283,23 +284,17 @@ pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<HashStr
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
-where
-    T: DeserializeOwned,
+pub fn get_entry(address: HashString) -> Result<Option<Entry>, ZomeApiError>
 {
-    let res = get_entry_result(address, GetEntryOptions {});
-    match res {
-        Ok(result) => match result.status {
-            GetResultStatus::Found => {
-                let maybe_entry_value: Result<T, _> = serde_json::from_str(&result.entry);
-                match maybe_entry_value {
-                    Ok(entry_value) => Ok(Some(entry_value)),
-                    Err(err) => Err(ZomeApiError::Internal(err.to_string())),
-                }
+    let result = get_entry_result(address, GetEntryOptions {})?;
+    match result.status {
+        GetResultStatus::Found => {
+            match result.maybe_serialized_entry {
+                Some(serialized_entry) => Ok(Some(Entry::from(serialized_entry))),
+                None => Err(ZomeApiError::Internal("Missing found Entry".into())),
             }
-            GetResultStatus::NotFound => Ok(None),
         },
-        Err(err) => Err(err),
+        GetResultStatus::NotFound => Ok(None),
     }
 }
 
@@ -315,12 +310,7 @@ pub fn get_entry_result(
     }
 
     // Put args in struct and serialize into memory
-    let input = GetEntryArgs { address: address };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(ZomeApiError::Internal(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
+    let allocation_of_input = store_as_json(&mut mem_stack, GetEntryArgs { address: address })?;
 
     // Call WASMI-able get_entry
     let encoded_allocation_of_result: u32;
@@ -328,13 +318,9 @@ pub fn get_entry_result(
         encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_json(encoded_allocation_of_result as u32);
-    if let Err(err_str) = result {
-        return Err(ZomeApiError::Internal(err_str));
-    }
-    let result: GetEntryResult = result.unwrap();
+    let result: GetEntryResult = load_json(encoded_allocation_of_result as u32)?;
 
-    // Free result & input allocations and all allocations made inside commit()
+    // Free result & input allocations and all allocations made inside get_entry_result()
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");

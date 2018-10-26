@@ -1,6 +1,7 @@
 use self::ZomeApiError::*;
 use holochain_core_types::json::JsonString;
 use std::{error::Error, fmt};
+use holochain_core_types::error::RibosomeErrorCode;
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 
@@ -17,6 +18,18 @@ pub enum ZomeApiError {
 impl From<ZomeApiError> for JsonString {
     fn from(zome_api_error: ZomeApiError) -> JsonString {
         JsonString::from(json!({ "error": zome_api_error }))
+    }
+}
+
+impl From<String> for ZomeApiError {
+    fn from(s: String) -> ZomeApiError {
+        ZomeApiError::Internal(s)
+    }
+}
+
+impl From<RibosomeErrorCode> for ZomeApiError {
+    fn from(ribosome_error_code: RibosomeErrorCode) -> ZomeApiError {
+        ZomeApiError::from(ribosome_error_code.to_string())
     }
 }
 

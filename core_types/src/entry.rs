@@ -1,10 +1,13 @@
+use error::error::HcResult;
+use error::HolochainError;
+use json::*;
+use std::convert::TryFrom;
 use cas::content::{Address, AddressableContent, Content};
 use entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
 use json::{JsonString, RawString};
-use serde_json;
 use snowflake;
 use std::ops::Deref;
 
@@ -63,45 +66,14 @@ impl SerializedEntry {
     }
 }
 
+// converting an Entry to SerializedEntry can never fail because it simply converts the fields
+// to strings
 impl From<Entry> for SerializedEntry {
     fn from(entry: Entry) -> SerializedEntry {
         SerializedEntry {
             value: String::from(entry.value()),
             entry_type: String::from(entry.entry_type().to_owned()),
         }
-    }
-}
-
-impl From<SerializedEntry> for JsonString {
-    fn from(serialized_entry: SerializedEntry) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&serialized_entry).expect("could not Jsonify SerializedEntry"),
-        )
-    }
-}
-
-// impl From<Entry> for JsonString {
-//     fn from(entry: Entry) -> JsonString {
-//         JsonString::from(SerializedEntry::from(entry))
-//     }
-// }
-
-impl From<JsonString> for SerializedEntry {
-    fn from(json_string: JsonString) -> SerializedEntry {
-        serde_json::from_str(&String::from(json_string))
-            .expect("could not deserialize SerializedEntry")
-    }
-}
-
-impl From<Option<SerializedEntry>> for JsonString {
-    fn from(maybe_serialized_entry: Option<SerializedEntry>) -> JsonString {
-        JsonString::from(format!(
-            "{{\"entry\":{}}}",
-            String::from(match maybe_serialized_entry {
-                Some(serialized_entry) => JsonString::from(serialized_entry),
-                None => JsonString::null(),
-            }),
-        ))
     }
 }
 
@@ -114,23 +86,51 @@ impl From<SerializedEntry> for Entry {
     }
 }
 
+/// converting a SerializedEntry to JSON should never fail because it is a simple struct of strings
+impl From<SerializedEntry> for JsonString {
+    fn from(v: SerializedEntry) -> JsonString {
+        default_to_json(v)
+    }
+}
+
+/// restoring a JsonString to SerializedEntry can fail
+impl TryFrom<JsonString> for SerializedEntry {
+    type Error = HolochainError;
+    fn try_from(json_string: JsonString) -> HcResult<Self> {
+        default_try_from_json(json_string)
+    }
+}
+
+// impl TryFrom<Option<SerializedEntry>> for JsonString {
+//     type Error = HolochainError;
+//     fn try_from(maybe_serialized_entry: Option<SerializedEntry>) -> JsonResult {
+//         Ok(JsonString::from(format!(
+//             "{{\"entry\":{}}}",
+//             String::from(match maybe_serialized_entry {
+//                 Some(serialized_entry) => JsonString::try_from(serialized_entry)?,
+//                 None => JsonString::null(),
+//             }),
+//         )))
+//     }
+// }
+
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
         SerializedEntry::from(self.to_owned()).content()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(SerializedEntry::from(content.to_owned()))
+        Self::from(SerializedEntry::try_from(content.to_owned()).expect("failed to restore Entry content"))
     }
 }
 
 impl AddressableContent for SerializedEntry {
     fn content(&self) -> Content {
-        Content::from(self.to_owned())
+        Content::try_from(self.to_owned()).unwrap()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(content.to_owned())
+        Self::try_from(content.to_owned()).unwrap()
     }
 }
 

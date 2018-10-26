@@ -1,4 +1,5 @@
-use holochain_core_types::{convert::TryFrom, error::HolochainError, json::*};
+use holochain_core_types::{error::HolochainError, json::*};
+use std::convert::TryFrom;
 
 /// Struct for input data received when Zome API function call() is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]

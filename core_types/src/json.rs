@@ -1,4 +1,4 @@
-use convert::TryFrom;
+use std::convert::TryFrom;
 use error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
@@ -90,6 +90,12 @@ pub fn default_try_to_json<S: Serialize + Debug>(s: S) -> JsonResult {
     }
 }
 
+/// should only be used with From<S>
+/// i.e. when failure should be impossible so an unwrap is ok
+pub fn default_to_json<S: Serialize + Debug>(s: S) -> JsonString {
+    default_try_to_json(s).unwrap()
+}
+
 // standard boilerplate:
 // impl TryFrom<JsonString> for T {
 //     type Error = HolochainError;
@@ -114,8 +120,9 @@ impl Display for JsonString {
 
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""
-/// RawString must not implement Serialize and Deserialize itself
-#[derive(PartialEq, Debug, Clone)]
+/// RawString must not implement Serialize because it should always convert to JsonString with from
+/// RawString can implement Deserialize because JsonString uses default serde to step down
+#[derive(PartialEq, Debug, Clone, Deserialize)]
 pub struct RawString(serde_json::Value);
 
 impl From<&'static str> for RawString {

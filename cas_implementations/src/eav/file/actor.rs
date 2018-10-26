@@ -168,7 +168,7 @@ impl EavFileStorageActor {
             .into_iter()
             .filter(|e| e.is_ok())
             .map(|eav_content| {
-                EntityAttributeValue::from_content(&JsonString::from(eav_content.unwrap()))
+                EntityAttributeValue::from_content(&eav_content.unwrap().into())
             })
             .collect())
     }

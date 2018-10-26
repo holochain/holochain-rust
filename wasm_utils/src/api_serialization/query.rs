@@ -1,4 +1,5 @@
 use holochain_core_types::hash::HashString;
+use holochain_core_types::json::*;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryArgs {
@@ -6,7 +7,10 @@ pub struct QueryArgs {
     pub limit: u32,
 }
 
-#[derive(Deserialize, Default, Debug, Serialize)]
-pub struct QueryResult {
-    pub hashes: Vec<HashString>,
+impl From<QueryArgs> for JsonString {
+    fn from(v: QueryArgs) -> JsonString {
+        default_to_json(v)
+    }
 }
+
+pub type QueryResult = Vec<HashString>;

@@ -9,7 +9,6 @@ use serde::Deserialize;
 use serde_json;
 use std::{ffi::CStr, os::raw::c_char, slice};
 use std::convert::TryInto;
-use std::convert::TryFrom;
 
 //-------------------------------------------------------------------------------------------------
 // Raw

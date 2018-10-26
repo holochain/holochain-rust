@@ -1,5 +1,8 @@
-use holochain_core_types::{cas::content::Address, entry::SerializedEntry, json::JsonString};
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::error::HcResult;
+use holochain_core_types::{cas::content::Address, entry::SerializedEntry, json::*};
 use serde_json;
+use std::convert::TryFrom;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct GetEntryArgs {
@@ -62,9 +65,14 @@ impl From<JsonString> for GetResultStatus {
 }
 
 impl From<GetEntryResult> for JsonString {
-    fn from(get_entry_result: GetEntryResult) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&get_entry_result).expect("could not Jsonify GetEntryResult"),
-        )
+    fn from(v: GetEntryResult) -> JsonString {
+        default_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for GetEntryResult {
+    type Error = HolochainError;
+    fn try_from(json_string: JsonString) -> HcResult<GetEntryResult> {
+        default_try_from_json(json_string)
     }
 }

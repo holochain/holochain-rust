@@ -26,8 +26,9 @@ pub fn invoke_link_entries(
     let task_result: Result<(), HolochainError> =
         block_on(add_link(&input.to_link(), &runtime.context));
 
-    let result = LinkEntriesResult {
+    let result = ZomeApiInternalResult {
         ok: task_result.is_ok(),
+        value: JsonString::null(),
         error: task_result
             .map_err(|holochain_error| holochain_error.to_string())
             .err()

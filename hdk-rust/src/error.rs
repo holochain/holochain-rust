@@ -2,8 +2,25 @@ use self::ZomeApiError::*;
 use holochain_core_types::json::JsonString;
 use std::{error::Error, fmt};
 use holochain_core_types::error::RibosomeErrorCode;
+use std::convert::TryFrom;
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+#[derive(Deserialize, Default, Debug)]
+pub struct ZomeApiInternalResult<T> {
+    pub ok: bool,
+    pub value: T,
+    pub error: String,
+}
+
+impl<T: TryFrom<JsonString>> From<ZomeApiInternalResult<T>> for Result<T, ZomeApiError> {
+    fn from(result: ZomeApiInternalResult<T>) -> Self {
+        if result.ok {
+            Ok(T::try_from(JsonString::from(result.value))?)
+        } else {
+            Err(ZomeApiError::from(result.error))
+        }
+    }
+}
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.

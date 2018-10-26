@@ -1,3 +1,5 @@
+use holochain_core_types::json::default_to_json_string;
+use holochain_core_types::json::default_from_json_string;
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
@@ -17,7 +19,6 @@ use holochain_core_types::{
 };
 use serde_json;
 use std::{collections::HashMap, sync::Arc};
-use holochain_core_types::json::AutoJsonString;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -97,11 +98,15 @@ impl AgentStateSnapshot {
     }
 }
 
-impl AutoJsonString for AgentStateSnapshot {}
+impl From<AgentStateSnapshot> for JsonString {
+    fn from(v: AgentStateSnapshot) -> JsonString {
+        default_to_json_string(v)
+    }
+}
 
 impl From<JsonString> for AgentStateSnapshot {
-    fn from(json_string: JsonString) -> AgentStateSnapshot {
-        serde_json::from_str(&String::from(json_string)).expect("could not deserialize AgentStateSnapshot")
+    fn from(json_string: JsonString) -> Self {
+        default_from_json_string(json_string)
     }
 }
 

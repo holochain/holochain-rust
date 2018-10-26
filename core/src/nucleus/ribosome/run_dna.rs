@@ -2,6 +2,7 @@ use context::Context;
 use holochain_core_types::error::{
     HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode,
 };
+use holochain_core_types::json::JsonString;
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
@@ -135,13 +136,13 @@ pub fn run_dna(
     // Handle result returned by called zome function
     let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
     let return_log_msg: String;
-    let return_result: HcResult<String>;
+    let return_result: HcResult<JsonString>;
     match maybe_allocation {
         // Nothing in memory, return result depending on return_code received.
         Err(return_code) => {
             return_log_msg = return_code.to_string();
             return_result = match return_code {
-                RibosomeReturnCode::Success => Ok(String::new()),
+                RibosomeReturnCode::Success => Ok(JsonString::null()),
                 RibosomeReturnCode::Failure(err_code) => {
                     Err(HolochainError::RibosomeFailed(err_code.to_string()))
                 }
@@ -158,7 +159,7 @@ pub fn run_dna(
                 }
                 Ok(json_str) => {
                     return_log_msg = json_str.clone();
-                    return_result = Ok(json_str);
+                    return_result = Ok(JsonString::from(json_str));
                 }
             }
         }

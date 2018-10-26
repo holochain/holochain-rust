@@ -1,4 +1,6 @@
-use holochain_core_types::json::default_to_json_string;
+use holochain_core_types::json::*;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::convert::TryFrom;
 
 /// Struct for input data received when Zome API function call() is invoked
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
@@ -9,8 +11,9 @@ pub struct ZomeFnCallArgs {
     pub fn_args: String,
 }
 
-impl From<ZomeFnCallArgs> for JsonString {
-    fn from(zome_fn_call_args: ZomeFnCallArgs) -> JsonString {
-        default_to_json_string(zome_fn_call_args)
+impl TryFrom<ZomeFnCallArgs> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: ZomeFnCallArgs) -> JsonResult {
+        default_try_to_json(v)
     }
 }

@@ -93,7 +93,7 @@ fn run_validation_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => match call_result.is_empty() {
+        Ok(call_result) => match call_result.is_null() {
             true => CallbackResult::Pass,
             false => CallbackResult::Fail(call_result),
         },

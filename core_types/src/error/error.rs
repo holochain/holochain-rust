@@ -1,9 +1,7 @@
-use json::default_from_json_string;
-use json::default_to_json_string;
+use json::*;
 use self::HolochainError::*;
 use error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::{JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Error as SerdeError};
 use std::{
@@ -124,17 +122,19 @@ impl From<RibosomeErrorReport> for String {
     }
 }
 
-impl From<RibosomeErrorReport> for JsonString {
-    fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
-        default_to_json_string(ribosome_error_report)
+impl TryFrom<RibosomeErrorReport> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: RibosomeErrorReport) -> JsonResult {
+        default_try_to_json(v)
     }
 }
 
-impl From<JsonString> for RibosomeErrorReport {
-    fn from(json_string: JsonString) -> RibosomeErrorReport {
-        default_from_json_string(json_string)
-    }
-}
+// impl TryFrom<JsonString> for RibosomeErrorReport {
+//     type Error = HolochainError;
+//     fn try_from(j: JsonString) -> JsonResult {
+//         default_try_from_json(j)
+//     }
+// }
 
 // impl From<RibosomeErrorReport> for JsonString {
 //     fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
@@ -230,9 +230,10 @@ impl ToString for RibosomeErrorCode {
     }
 }
 
-impl From<RibosomeErrorCode> for JsonString {
-    fn from(ribosome_error_code: RibosomeErrorCode) -> JsonString {
-        default_to_json_string(ribosome_error_code)
+impl TryFrom<RibosomeErrorCode> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: RibosomeErrorCode) -> JsonResult {
+        default_try_to_json(v)
     }
 }
 

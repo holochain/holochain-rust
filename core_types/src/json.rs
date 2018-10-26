@@ -1,8 +1,11 @@
+use convert::TryFrom;
 use serde::de::DeserializeOwned;
 use serde::{Serialize};
 use serde_json;
+use error::HolochainError;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::fmt::Debug;
+use error::HcResult;
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -16,9 +19,14 @@ use std::fmt::Debug;
 pub struct JsonString(String);
 
 impl JsonString {
-    /// represents None when implementing From<Option<Foo>>
-    pub fn none() -> JsonString {
+    /// a null JSON value
+    /// e.g. represents None when implementing From<Option<Foo>>
+    pub fn null() -> JsonString {
         JsonString::from("null")
+    }
+
+    pub fn is_null(&self) -> bool {
+        self == &Self::null()
     }
 
     /// achieves the same outcome as serde_json::to_vec()
@@ -69,53 +77,41 @@ impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
     }
 }
 
-pub fn default_to_json_string<S: Serialize + Debug>(s: S) -> JsonString {
-    JsonString::from(serde_json::to_string(&s).expect(&format!("could not serialize: {:?}", s)))
-}
+pub type JsonResult = Result<JsonString, HolochainError>;
 
-pub fn default_from_json_string<D: DeserializeOwned>(json_string: JsonString) -> D {
-    serde_json::from_str(&String::from(&json_string)).expect(&format!("could not deserialize: {:?}", json_string))
-}
-
-//
-// impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
-//     fn from(result: Result<T, E>) -> JsonString {
-//         JsonString::from(match result {
-//                 Ok(t) => {
-//                     let json_string: JsonString = t.into();
-//                     format!("{{\"Ok\":{}}}", String::from(json_string))
-//                 },
-//                 Err(e) => {
-//                     let json_string: JsonString = e.into();
-//                     format!("{{\"Err\":{}}}", String::from(json_string))
-//                 }
-//             }
-//         )
+/// standard boilerplate:
+// impl TryFrom<T> for JsonString {
+//     type Error = HolochainError;
+//     fn try_from(v: T) -> JsonResult {
+//         default_try_to_json(v)
 //     }
 // }
+pub fn default_try_to_json<S: Serialize + Debug>(s: S) -> JsonResult {
+    match serde_json::to_string(&s) {
+        Ok(s) => Ok(JsonString::from(s)),
+        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+    }
+}
+
+// standard boilerplate:
+// impl TryFrom<JsonString> for T {
+//     type Error = HolochainError;
+//     fn try_from(j: JsonString) -> HcResult<Self> {
+//         default_try_from_json(j)
+//     }
+// }
+pub fn default_try_from_json<D: DeserializeOwned>(json_string: JsonString) -> Result<D, HolochainError> {
+    match serde_json::from_str(&String::from(&json_string)) {
+        Ok(d) => Ok(d),
+        Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+    }
+}
 
 impl Display for JsonString {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", String::from(self),)
     }
 }
-
-// pub trait AutoJsonString: Serialize + DeserializeOwned + Sized {}
-
-// impl<T: AutoJsonString> From<T> for JsonString {
-//     fn from(auto_json_string: T) -> JsonString {
-//         JsonString::from(
-//             serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"),
-//         )
-//     }
-// }
-
-// @TODO make this work!
-// impl<T: AutoJsonString> From<JsonString> for T {
-//     fn from(json_string: JsonString) -> T {
-//         serde_json::from_str(&String::from(json_string)).expect("could not deserialize from JsonString")
-//     }
-// }
 
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""
@@ -158,25 +154,23 @@ impl From<RawString> for String {
             raw_string
                 .0
                 .as_str()
-                .expect("could not extract inner string for RawString"),
+                .expect(&format!("could not extract inner string for RawString: {:?}", &raw_string)),
         )
     }
 }
 
+/// it should always be possible to Jsonify RawString, if not something is very wrong
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
-        JsonString::from(serde_json::to_string(&raw_string.0).expect("could not Jsonify RawString"))
+        JsonString::from(serde_json::to_string(&raw_string.0).expect(&format!("could not Jsonify RawString: {:?}", &raw_string)))
     }
 }
 
-impl From<JsonString> for RawString {
-    fn from(json_string: JsonString) -> RawString {
-        RawString(
-            serde_json::from_str(&String::from(json_string.clone())).expect(&format!(
-                "could not deserialize JsonString: {:?}",
-                json_string
-            )),
-        )
+/// converting a JsonString to RawString can fail if the JsonString is not a serialized string
+impl TryFrom<JsonString> for RawString {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> HcResult<Self> {
+        default_try_from_json(j)
     }
 }
 

@@ -36,3 +36,4 @@ pub mod ribosome;
 pub mod signature;
 pub mod time;
 pub mod validation;
+pub mod convert;

@@ -99,7 +99,7 @@ impl From<Option<SerializedEntry>> for JsonString {
             "{{\"entry\":{}}}",
             String::from(match maybe_serialized_entry {
                 Some(serialized_entry) => JsonString::from(serialized_entry),
-                None => JsonString::none(),
+                None => JsonString::null(),
             }),
         ))
     }

@@ -1,8 +1,9 @@
-use json::default_to_json_string;
+use convert::TryFrom;
+use error::HolochainError;
+use json::*;
 use validation::ValidationPackageDefinition;
 use entry::{Entry, SerializedEntry};
 use error::RibosomeReturnCode;
-use json::JsonString;
 use serde_json;
 
 #[derive(Debug)]
@@ -34,12 +35,12 @@ pub enum CallbackResult {
     ValidationPackageDefinition(ValidationPackageDefinition),
 }
 
-impl From<CallbackResult> for JsonString {
-    fn from(callback_result: CallbackResult) -> JsonString {
-        default_to_json_string(callback_result)
+impl TryFrom<CallbackResult> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: CallbackResult) -> JsonResult {
+        default_try_to_json(v)
     }
 }
-
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {

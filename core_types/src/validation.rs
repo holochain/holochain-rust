@@ -1,9 +1,11 @@
 extern crate serde_json;
-use json::default_to_json_string;
+use error::HolochainError;
 use chain_header::ChainHeader;
 use entry::SerializedEntry;
 use hash::HashString;
-use json::JsonString;
+use json::*;
+use convert::TryFrom;
+use error::HcResult;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ValidationPackage {
@@ -33,9 +35,17 @@ pub enum ValidationPackageDefinition {
     Custom(String), //sending something custom
 }
 
-impl From<ValidationPackageDefinition> for JsonString {
-    fn from(validation_package_definition: ValidationPackageDefinition) -> JsonString {
-        default_to_json_string(validation_package_definition)
+impl TryFrom<ValidationPackageDefinition> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: ValidationPackageDefinition) -> JsonResult {
+        default_try_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for ValidationPackageDefinition {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> HcResult<Self> {
+        default_try_from_json(j)
     }
 }
 

@@ -83,8 +83,8 @@ pub mod tests {
         let (cas, _dir) = test_file_cas();
         let test_suite = StorageTestSuite::new(cas);
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            JsonString::from(RawString::from("foo")),
-            JsonString::from(RawString::from("bar")),
+            RawString::from("foo").into(),
+            RawString::from("bar").into(),
         );
     }
 

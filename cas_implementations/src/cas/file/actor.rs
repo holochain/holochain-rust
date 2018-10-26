@@ -3,7 +3,6 @@ use holochain_core_types::{
     cas::content::{Address, Content},
     error::HolochainError,
     file_validation,
-    json::JsonString,
 };
 use riker::actors::*;
 use std::{
@@ -78,9 +77,9 @@ impl FilesystemStorageActor {
     /// filesystem CAS fetch. NOT thread safe.
     fn unthreadable_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         if self.unthreadable_contains(&address)? {
-            Ok(Some(Content::from(read_to_string(
+            Ok(Some(read_to_string(
                 self.address_to_path(address),
-            )?)))
+            )?.into()))
         } else {
             Ok(None)
         }

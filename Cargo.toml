@@ -1,6 +1,14 @@
-[package]
-name = "holochain-beta"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+[workspace]
 
-[dependencies]
+members = [
+  "agent",
+  "core_api",
+  "core_api_c_binding",
+  "core",
+  "dna",
+  "dna_c_binding",
+  "net",
+  "test_bin",
+  "net_ipc",
+  "hdk-rust",
+]

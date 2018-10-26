@@ -1,0 +1,16 @@
+[package]
+name = "holochain_net_ipc"
+version = "0.1.0"
+authors = ["neonphog <neonphog@gmail.com>"]
+
+[dependencies]
+failure = "0.1.1"
+lazy_static = "1.0"
+rmp-serde = "0.13.7"
+serde = "1.0"
+serde_bytes = "0.10.4"
+serde_derive = "1.0"
+zmq = "0.8.2"
+
+[dev-dependencies]
+libc = "0.2.42"

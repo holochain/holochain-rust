@@ -1,0 +1,21 @@
+[package]
+name = "debug"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = 'z'
+
+[workspace]
+members = []
+
+[dependencies]
+holochain_wasm_utils = { path = "../../../../wasm_utils"}
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }

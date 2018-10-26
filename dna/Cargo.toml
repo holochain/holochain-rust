@@ -1,0 +1,12 @@
+[package]
+name = "holochain_dna"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+holochain_core_types = { path = "../core_types" }
+base64 = "0.9.2"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+uuid = { version = "0.6.5", features = ["v4"] }

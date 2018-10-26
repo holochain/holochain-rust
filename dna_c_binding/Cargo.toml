@@ -1,0 +1,11 @@
+[package]
+name = "holochain_dna_c_binding"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+name = "holochain_dna_c_binding"
+crate-type = ["staticlib"]
+
+[dependencies]
+holochain_dna = { path = "../dna" }

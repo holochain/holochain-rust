@@ -1,6 +1,6 @@
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::{AutoJsonString, JsonString, RawString};
+use json::{AutoJsonString, JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{self, Error as SerdeError};
 use std::{

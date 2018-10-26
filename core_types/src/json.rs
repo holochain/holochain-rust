@@ -1,11 +1,8 @@
 use convert::TryFrom;
-use serde::de::DeserializeOwned;
-use serde::{Serialize};
+use error::{HcResult, HolochainError};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
-use error::HolochainError;
-use std::fmt::{Display, Formatter, Result as FmtResult};
-use std::fmt::Debug;
-use error::HcResult;
+use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -100,7 +97,9 @@ pub fn default_try_to_json<S: Serialize + Debug>(s: S) -> JsonResult {
 //         default_try_from_json(j)
 //     }
 // }
-pub fn default_try_from_json<D: DeserializeOwned>(json_string: JsonString) -> Result<D, HolochainError> {
+pub fn default_try_from_json<D: DeserializeOwned>(
+    json_string: JsonString,
+) -> Result<D, HolochainError> {
     match serde_json::from_str(&String::from(&json_string)) {
         Ok(d) => Ok(d),
         Err(e) => Err(HolochainError::SerializationError(e.to_string())),
@@ -150,19 +149,20 @@ impl From<RawString> for String {
         // this will panic if RawString does not contain a string!
         // use JsonString::from(...) to stringify numbers or other values
         // @see raw_from_number_test()
-        String::from(
-            raw_string
-                .0
-                .as_str()
-                .expect(&format!("could not extract inner string for RawString: {:?}", &raw_string)),
-        )
+        String::from(raw_string.0.as_str().expect(&format!(
+            "could not extract inner string for RawString: {:?}",
+            &raw_string
+        )))
     }
 }
 
 /// it should always be possible to Jsonify RawString, if not something is very wrong
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
-        JsonString::from(serde_json::to_string(&raw_string.0).expect(&format!("could not Jsonify RawString: {:?}", &raw_string)))
+        JsonString::from(
+            serde_json::to_string(&raw_string.0)
+                .expect(&format!("could not Jsonify RawString: {:?}", &raw_string)),
+        )
     }
 }
 

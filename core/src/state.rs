@@ -7,7 +7,7 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
-    cas::{storage::ContentAddressableStorage},
+    cas::storage::ContentAddressableStorage,
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},

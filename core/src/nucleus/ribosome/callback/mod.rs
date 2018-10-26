@@ -7,9 +7,7 @@ pub mod validate_entry;
 pub mod validation_package;
 
 use context::Context;
-use holochain_core_types::{
-    ribosome::callback::{CallbackParams, CallbackResult},
-};
+use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{

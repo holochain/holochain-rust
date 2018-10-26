@@ -11,19 +11,15 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 
-use nucleus::ribosome::runtime::Runtime;
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use nucleus::{
-    ribosome::{
-        api::{
-            call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-            get_entry::invoke_get_entry, init_globals::invoke_init_globals, get_links::invoke_get_links,
-            link_entries::invoke_link_entries,
-            hash_entry::invoke_hash_entry,
-            query::invoke_query,
-        },
-        Defn,
+use nucleus::ribosome::{
+    api::{
+        call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
+        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
+        init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
     },
+    runtime::Runtime,
+    Defn,
 };
 use num_traits::FromPrimitive;
 use std::str::FromStr;

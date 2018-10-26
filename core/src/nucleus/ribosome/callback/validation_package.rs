@@ -1,7 +1,9 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{entry_type::EntryType, error::HolochainError};
-use holochain_core_types::validation::ValidationPackageDefinition;
+use holochain_core_types::{
+    convert::TryFrom, entry_type::EntryType, error::HolochainError, json::JsonString,
+    validation::ValidationPackageDefinition,
+};
 use nucleus::{
     ribosome::{
         self,
@@ -10,8 +12,6 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
-use holochain_core_types::convert::TryFrom;
-use holochain_core_types::json::JsonString;
 
 pub fn get_validation_package_definition(
     entry_type: EntryType,

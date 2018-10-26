@@ -1,18 +1,19 @@
-use holochain_wasm_utils::api_serialization::commit::CommitEntryResult;
 use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
+        commit::CommitEntryResult,
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::{LinkEntriesArgs, LinkEntriesResult},
         HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
     },
-    holochain_core_types::hash::HashString,
-    holochain_core_types::json::JsonString,
-    holochain_core_types::json::RawString,
-    holochain_core_types::entry::SerializedEntry,
+    holochain_core_types::{
+        entry::SerializedEntry,
+        hash::HashString,
+        json::{JsonString, RawString},
+    },
     memory_allocation::*,
     memory_serialization::*,
 };

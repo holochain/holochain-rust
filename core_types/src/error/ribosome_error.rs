@@ -19,7 +19,8 @@ macro_rules! zome_assert {
 macro_rules! ribosome_error_code {
     ($s:ident) => {
         Ok(Some(RuntimeValue::I32(
-            ::holochain_wasm_utils::holochain_core_types::error::error::RibosomeErrorCode::$s as i32,
+            ::holochain_wasm_utils::holochain_core_types::error::error::RibosomeErrorCode::$s
+                as i32,
         )))
     };
 }

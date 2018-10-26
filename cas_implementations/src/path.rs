@@ -21,8 +21,7 @@ pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
 #[cfg(test)]
 pub mod tests {
     use path::storage_path;
-    use std::path::Path;
-    use std::path::MAIN_SEPARATOR;
+    use std::path::{Path, MAIN_SEPARATOR};
 
     #[test]
     fn test_storage_path() {

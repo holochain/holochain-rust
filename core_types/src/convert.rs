@@ -27,7 +27,9 @@ pub trait TryFrom<T>: Sized {
 }
 
 // TryFrom implies TryInto
-impl<T, U> TryInto<U> for T where U: TryFrom<T>
+impl<T, U> TryInto<U> for T
+where
+    U: TryFrom<T>,
 {
     type Error = U::Error;
 
@@ -40,7 +42,10 @@ pub enum Infallible {}
 
 // Infallible conversions are semantically equivalent to fallible conversions
 // with an uninhabited error type.
-impl<T, U> TryFrom<U> for T where T: From<U> {
+impl<T, U> TryFrom<U> for T
+where
+    T: From<U>,
+{
     type Error = Infallible;
 
     fn try_from(value: U) -> Result<Self, Self::Error> {

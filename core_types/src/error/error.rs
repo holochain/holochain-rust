@@ -1,9 +1,9 @@
-use json::*;
 use self::HolochainError::*;
 use error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use json::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{Error as SerdeError};
+use serde_json::Error as SerdeError;
 use std::{
     convert::TryFrom,
     error::Error,

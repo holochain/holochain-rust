@@ -1,6 +1,7 @@
-use holochain_core_types::{cas::content::Address, hash::HashString, json::JsonString};
+use holochain_core_types::{
+    cas::content::Address, entry::SerializedEntry, hash::HashString, json::JsonString,
+};
 use serde_json;
-use holochain_core_types::entry::SerializedEntry;
 
 pub type CommitEntryArgs = SerializedEntry;
 

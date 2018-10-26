@@ -295,10 +295,10 @@ pub mod tests {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent,
-        json::{JsonString, RawString},
         chain_header::{test_chain_header, ChainHeader},
         entry::ToEntry,
         entry_type::EntryType,
+        json::{JsonString, RawString},
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;

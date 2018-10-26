@@ -5,9 +5,9 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent, entry::Entry, entry_type::EntryType, error::HolochainError,
-    hash::HashString, validation::ValidationData, ribosome::callback::CallbackResult,
+    hash::HashString, ribosome::callback::CallbackResult, validation::ValidationData,
 };
-use nucleus::ribosome::callback::{self};
+use nucleus::ribosome::callback;
 use snowflake;
 use std::{sync::Arc, thread};
 

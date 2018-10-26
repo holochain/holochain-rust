@@ -6,8 +6,10 @@ pub mod state;
 
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
-use holochain_core_types::error::{DnaError, HcResult, HolochainError};
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{
+    error::{DnaError, HcResult, HolochainError},
+    json::JsonString,
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
@@ -34,7 +36,12 @@ pub struct ZomeFnCall {
 }
 
 impl ZomeFnCall {
-    pub fn new<J: Into<JsonString>>(zome: &str, capability: &str, function: &str, parameters: J) -> Self {
+    pub fn new<J: Into<JsonString>>(
+        zome: &str,
+        capability: &str,
+        function: &str,
+        parameters: J,
+    ) -> Self {
         ZomeFnCall {
             // @TODO can we defer to the ActionWrapper id?
             // @see https://github.com/holochain/holochain-rust/issues/198

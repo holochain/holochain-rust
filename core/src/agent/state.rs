@@ -1,5 +1,3 @@
-use holochain_core_types::json::default_to_json_string;
-use holochain_core_types::json::default_from_json_string;
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
@@ -12,7 +10,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
-    json::JsonString,
+    json::{default_from_json_string, default_to_json_string, JsonString},
     keys::Keys,
     signature::Signature,
     time::Iso8601,
@@ -270,7 +268,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{test_entry, expected_entry_address, SerializedEntry},
+        entry::{expected_entry_address, test_entry, SerializedEntry},
         error::HolochainError,
         json::JsonString,
     };

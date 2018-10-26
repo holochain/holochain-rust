@@ -102,7 +102,7 @@ mod tests {
     };
 
     pub fn test_identity_value() -> Content {
-        JsonString::from(RawString::from("bob"))
+        RawString::from("bob").into()
     }
 
     pub fn test_identity() -> Identity {
@@ -128,13 +128,13 @@ mod tests {
     #[test]
     /// show ToString implementation for Identity
     fn identity_to_string_test() {
-        assert_eq!(test_identity_value(), JsonString::from(test_identity()));
+        assert_eq!(test_identity_value(), test_identity().into());
     }
 
     #[test]
     /// show ToString implementation for Agent
     fn agent_to_string_test() {
-        assert_eq!(test_identity_value(), JsonString::from(test_agent()));
+        assert_eq!(test_identity_value(), test_agent().into());
     }
 
     #[test]
@@ -157,7 +157,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            JsonString::from("{\"value\":\"\\\"bob\\\"\",\"entry_type\":\"%agent_id\"}");
+            Content::from("{\"value\":\"\\\"bob\\\"\",\"entry_type\":\"%agent_id\"}");
         // content()
         assert_eq!(expected_content, test_agent().content(),);
 

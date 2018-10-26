@@ -1,10 +1,9 @@
 use convert::TryFrom;
-use error::HolochainError;
-use json::*;
-use validation::ValidationPackageDefinition;
 use entry::{Entry, SerializedEntry};
-use error::RibosomeReturnCode;
+use error::{HolochainError, RibosomeReturnCode};
+use json::*;
 use serde_json;
+use validation::ValidationPackageDefinition;
 
 #[derive(Debug)]
 pub enum CallbackParams {

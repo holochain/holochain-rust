@@ -1,6 +1,5 @@
 use context::Context;
-use holochain_core_types::error::RibosomeReturnCode;
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{error::RibosomeReturnCode, json::JsonString};
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn},

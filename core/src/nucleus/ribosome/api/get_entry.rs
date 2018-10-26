@@ -203,10 +203,12 @@ mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}"),
+            JsonString::from(
+                format!(
+                    r#"{{"address":"{}","validation_failure":""}}"#,
+                    test_entry().address()
+                ) + "\u{0}"
+            ),
         );
 
         let get_call = ZomeFnCall::new(

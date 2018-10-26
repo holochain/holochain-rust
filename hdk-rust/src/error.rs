@@ -16,7 +16,7 @@ pub enum ZomeApiError {
 
 impl From<ZomeApiError> for JsonString {
     fn from(zome_api_error: ZomeApiError) -> JsonString {
-        JsonString::from(json!({"error": zome_api_error}))
+        JsonString::from(json!({ "error": zome_api_error }))
     }
 }
 

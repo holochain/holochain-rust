@@ -2,17 +2,12 @@ use agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
+    entry::{Entry, SerializedEntry},
+    error::HolochainError,
+    hash::HashString,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use holochain_core_types::validation::EntryAction;
-use holochain_core_types::validation::EntryLifecycle;
-use holochain_core_types::validation::ValidationData;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::hash::HashString;
-use holochain_wasm_utils::api_serialization::{
-    commit::CommitEntryResult,
-};
+use holochain_wasm_utils::api_serialization::commit::CommitEntryResult;
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
     ribosome::Runtime,
@@ -119,10 +114,12 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}"),
+            JsonString::from(
+                format!(
+                    r#"{{"address":"{}","validation_failure":""}}"#,
+                    test_entry().address()
+                ) + "\u{0}"
+            ),
         );
     }
 

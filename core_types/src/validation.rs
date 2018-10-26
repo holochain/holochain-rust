@@ -1,11 +1,10 @@
 extern crate serde_json;
-use error::HolochainError;
 use chain_header::ChainHeader;
+use convert::TryFrom;
 use entry::SerializedEntry;
+use error::{HcResult, HolochainError};
 use hash::HashString;
 use json::*;
-use convert::TryFrom;
-use error::HcResult;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ValidationPackage {

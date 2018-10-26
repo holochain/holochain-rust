@@ -1,10 +1,10 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::memory::MemoryStorage;
+use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
@@ -17,6 +17,7 @@ use holochain_core_types::{
 };
 use serde_json;
 use std::{collections::HashMap, sync::Arc};
+use holochain_core_types::json::AutoJsonString;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -27,18 +28,41 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<MemoryStorage>,
+    chain: ChainStore<FilesystemStorage>,
     top_chain_header: Option<ChainHeader>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentStateSnapshot {
+    top_chain_header: ChainHeader,
+}
+
+impl AgentStateSnapshot {
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
+    }
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<MemoryStorage>) -> AgentState {
+    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
+        }
+    }
+
+    pub fn new_with_top_chain_header(
+        chain: ChainStore<FilesystemStorage>,
+        chain_header: ChainHeader,
+    ) -> AgentState {
+        AgentState {
+            keys: None,
+            actions: HashMap::new(),
+            chain,
+            top_chain_header: Some(chain_header),
         }
     }
 
@@ -53,7 +77,7 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<MemoryStorage> {
+    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
         self.chain.clone()
     }
 
@@ -62,7 +86,40 @@ impl AgentState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+impl AgentStateSnapshot {
+    pub fn new(chain_header: ChainHeader) -> AgentStateSnapshot {
+        AgentStateSnapshot {
+            top_chain_header: chain_header,
+        }
+    }
+    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(header_str)
+    }
+}
+
+impl AutoJsonString for AgentStateSnapshot {}
+
+impl From<JsonString> for AgentStateSnapshot {
+    fn from(json_string: JsonString) -> AgentStateSnapshot {
+        serde_json::from_str(&String::from(json_string)).expect("could not deserialize AgentStateSnapshot")
+    }
+}
+
+impl AddressableContent for AgentStateSnapshot {
+    fn content(&self) -> Content {
+        JsonString::from(self.to_owned())
+    }
+
+    fn from_content(content: &Content) -> Self {
+        Self::from(content.to_owned())
+    }
+
+    fn address(&self) -> Address {
+        Address::from("AgentState")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -83,12 +140,34 @@ impl From<ActionResponse> for JsonString {
     }
 }
 
+pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+    ChainHeader::new(
+        &entry.entry_type(),
+        &entry.address(),
+        // @TODO signatures
+        &Signature::from(""),
+        &agent_state
+            .top_chain_header
+            .clone()
+            .and_then(|chain_header| Some(chain_header.address())),
+        &agent_state
+            .chain()
+            .iter_type(&agent_state.top_chain_header, &entry.entry_type())
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.address())),
+        // @TODO timestamp
+        &Iso8601::from(""),
+    )
+}
+
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
 /// @TODO is there a way to reduce that doesn't block indefinitely on callback fns?
 /// @see https://github.com/holochain/holochain-rust/issues/222
+/// @TODO Better error handling in the state persister section
+/// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
     _context: Arc<Context>,
     state: &mut AgentState,
@@ -96,29 +175,8 @@ fn reduce_commit_entry(
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
+    let chain_header = create_new_chain_header(&entry, state);
 
-    // @TODO validation dispatch should go here rather than upstream in invoke_commit
-    // @see https://github.com/holochain/holochain-rust/issues/256
-
-    let chain_header = ChainHeader::new(
-        &entry.entry_type(),
-        &entry.address(),
-        // @TODO signatures
-        &Signature::from(""),
-        &state
-            .top_chain_header
-            .clone()
-            .and_then(|chain_header| Some(chain_header.address())),
-        &state
-            .chain()
-            .iter_type(&state.top_chain_header, &entry.entry_type())
-            .nth(0)
-            .and_then(|chain_header| Some(chain_header.address())),
-        // @TODO timestamp
-        &Iso8601::from(""),
-    );
-
-    // @TODO adding the entry to the CAS should happen elsewhere.
     fn response(
         state: &mut AgentState,
         entry: &Entry,
@@ -128,12 +186,20 @@ fn reduce_commit_entry(
         state.chain.content_storage().add(chain_header)?;
         Ok(entry.address())
     }
-    let res = response(state, &entry, &chain_header);
+    let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
+    let con = _context.clone();
+
+    #[allow(unused_must_use)]
+    con.state().map(|global_state_lock| {
+        let persis_lock = _context.clone().persister.clone();
+        let persister = &mut *persis_lock.lock().unwrap();
+        persister.save(global_state_lock.clone());
+    });
 
     state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(res));
+        .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
 
 /// do a get action against an agent state
@@ -147,11 +213,10 @@ fn reduce_get_entry(
     let address = unwrap_to!(action => Action::GetEntry);
 
     let result: Option<Entry> = state
-        .chain
+        .chain()
         .content_storage()
         .fetch(&address)
         .expect("could not fetch from CAS");
-
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
@@ -189,16 +254,23 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState};
+    extern crate tempfile;
+    use self::tempfile::tempdir;
+    use super::{
+        reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
+    };
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
+    use agent::chain_store::{tests::test_chain_store, ChainStore};
+    use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{expected_entry_address, test_entry, SerializedEntry},
+        chain_header::test_chain_header,
+        entry::{test_entry, expected_entry_address, SerializedEntry},
         error::HolochainError,
         json::JsonString,
     };
     use instance::tests::test_context;
+    use serde_json;
     use std::{collections::HashMap, sync::Arc};
 
     /// dummy agent state
@@ -325,6 +397,15 @@ pub mod tests {
                 "some error"
             )))),
         );
+    }
+
+    #[test]
+    pub fn serialize_round_trip_agent_state() {
+        let header = test_chain_header();
+        let agent_snap = AgentStateSnapshot::new(header);
+        let json = serde_json::to_string(&agent_snap).unwrap();
+        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(agent_snap.address(), agent_from_json.address());
     }
 
     #[test]

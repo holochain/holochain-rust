@@ -1,22 +1,23 @@
-//! File for holding all internal/private globals used by the zome api library
+//! Holds the internal/private globals used by the zome api library.
+//! Also contains the functions declarations of the external functions provided by the Ribosome.
 
-use holochain_wasm_utils::memory_allocation::SinglePageStack;
-use init_globals::{init_globals, AppGlobals};
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
+use init_globals::init_globals;
 
 // Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;
 
-// Internal global for retrieving all app globals
+// Internal global for retrieving all Zome API globals
 lazy_static! {
-    pub(crate) static ref APP_GLOBALS: AppGlobals = init_globals();
+    pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals();
 }
 
-// Invokable functions in the ribosome
+// Invokable functions in the Ribosome
 // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
 #[allow(dead_code)]
 extern "C" {
     pub(crate) fn hc_property(encoded_allocation_of_input: u32) -> u32;
-    pub(crate) fn hc_make_hash(encoded_allocation_of_input: u32) -> u32;
+    pub(crate) fn hc_hash_entry(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_debug(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_call(encoded_allocation_of_input: u32) -> u32;
     pub(crate) fn hc_sign(encoded_allocation_of_input: u32) -> u32;

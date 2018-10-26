@@ -1,8 +1,11 @@
+use json::default_from_json_string;
+use json::default_to_json_string;
 use self::HolochainError::*;
+use error::DnaError;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::{AutoJsonString, JsonString};
+use json::{JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{self, Error as SerdeError};
+use serde_json::{Error as SerdeError};
 use std::{
     convert::TryFrom,
     error::Error,
@@ -12,20 +15,19 @@ use std::{
 };
 
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize)]
 pub enum HolochainError {
     ErrorGeneric(String),
-    InstanceNotActive,
-    InstanceActive,
     NotImplemented,
     LoggingError,
     DnaMissing,
-    DnaError(DnaError),
+    Dna(DnaError),
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
     ValidationFailed(String),
+    RibosomeFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -57,16 +59,15 @@ impl Error for HolochainError {
         match self {
             ErrorGeneric(err_msg) => &err_msg,
             NotImplemented => "not implemented",
-            InstanceNotActive => "the instance is not active",
-            InstanceActive => "the instance is active",
             LoggingError => "logging failed",
             DnaMissing => "DNA is missing",
-            DnaError(dna_err) => dna_err.description(),
+            Dna(dna_err) => dna_err.description(),
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
             ValidationFailed(fail_msg) => &fail_msg,
+            RibosomeFailed(fail_msg) => &fail_msg,
         }
     }
 }
@@ -98,34 +99,7 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize)]
-pub enum DnaError {
-    ZomeNotFound(String),
-    CapabilityNotFound(String),
-    ZomeFunctionNotFound(String),
-}
-
-impl Error for DnaError {
-    fn description(&self) -> &str {
-        match self {
-            DnaError::ZomeNotFound(err_msg) => &err_msg,
-            DnaError::CapabilityNotFound(err_msg) => &err_msg,
-            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
-        }
-    }
-}
-
-impl fmt::Display for DnaError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct RibosomeErrorReport {
     pub description: String,
     pub file_name: String,
@@ -150,16 +124,17 @@ impl From<RibosomeErrorReport> for String {
     }
 }
 
-impl From<JsonString> for RibosomeErrorReport {
-    fn from(json_string: JsonString) -> RibosomeErrorReport {
-        serde_json::from_str(&String::from(json_string.clone())).expect(&format!(
-            "could not deserialize RibosomeErrorReport: {:?}",
-            json_string
-        ))
+impl From<RibosomeErrorReport> for JsonString {
+    fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
+        default_to_json_string(ribosome_error_report)
     }
 }
 
-impl AutoJsonString for RibosomeErrorReport {}
+impl From<JsonString> for RibosomeErrorReport {
+    fn from(json_string: JsonString) -> RibosomeErrorReport {
+        default_from_json_string(json_string)
+    }
+}
 
 // impl From<RibosomeErrorReport> for JsonString {
 //     fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
@@ -200,6 +175,7 @@ pub enum RibosomeErrorCode {
     ResponseSerializationFailed     = 7 << 16,
     NotAnAllocation                 = 8 << 16,
     ZeroSizedAllocation             = 9 << 16,
+    UnknownEntryType                = 10 << 16,
 }
 
 impl ToString for RibosomeReturnCode {
@@ -249,11 +225,16 @@ impl ToString for RibosomeErrorCode {
             RibosomeErrorCode::ResponseSerializationFailed     => "Response serialization failed",
             RibosomeErrorCode::NotAnAllocation                 => "Not an allocation",
             RibosomeErrorCode::ZeroSizedAllocation             => "Zero-sized allocation",
+            RibosomeErrorCode::UnknownEntryType                => "Unknown entry type",
         }.to_string()
     }
 }
 
-impl AutoJsonString for RibosomeErrorCode {}
+impl From<RibosomeErrorCode> for JsonString {
+    fn from(ribosome_error_code: RibosomeErrorCode) -> JsonString {
+        default_to_json_string(ribosome_error_code)
+    }
+}
 
 impl Serialize for RibosomeErrorCode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -322,6 +303,7 @@ impl RibosomeErrorCode {
             7 => RibosomeErrorCode::ResponseSerializationFailed,
             8 => RibosomeErrorCode::NotAnAllocation,
             9 => RibosomeErrorCode::ZeroSizedAllocation,
+            10 => RibosomeErrorCode::UnknownEntryType,
             1 | _ => RibosomeErrorCode::Unspecified,
         }
     }
@@ -396,23 +378,18 @@ mod tests {
         for (input, output) in vec![
             (HolochainError::ErrorGeneric(String::from("foo")), "foo"),
             (HolochainError::NotImplemented, "not implemented"),
-            (
-                HolochainError::InstanceNotActive,
-                "the instance is not active",
-            ),
-            (HolochainError::InstanceActive, "the instance is active"),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
             (
-                HolochainError::DnaError(DnaError::ZomeNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::ZomeNotFound(String::from("foo"))),
                 "foo",
             ),
             (
-                HolochainError::DnaError(DnaError::CapabilityNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::CapabilityNotFound(String::from("foo"))),
                 "foo",
             ),
             (
-                HolochainError::DnaError(DnaError::ZomeFunctionNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::ZomeFunctionNotFound(String::from("foo"))),
                 "foo",
             ),
             (HolochainError::IoError(String::from("foo")), "foo"),

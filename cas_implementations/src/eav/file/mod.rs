@@ -8,7 +8,7 @@ use holochain_core_types::{
 use riker::actors::*;
 use std::collections::HashSet;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EavFileStorage {
     actor: ActorRef<Protocol>,
 }
@@ -41,7 +41,8 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
 #[cfg(test)]
 pub mod tests {
-
+    extern crate tempfile;
+    use self::tempfile::tempdir;
     use eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{
@@ -50,7 +51,6 @@ pub mod tests {
         },
         json::{JsonString, RawString},
     };
-    use tempfile::tempdir;
 
     #[test]
     fn file_eav_round_trip() {

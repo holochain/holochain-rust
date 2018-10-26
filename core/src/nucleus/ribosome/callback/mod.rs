@@ -4,24 +4,23 @@
 pub mod genesis;
 pub mod receive;
 pub mod validate_entry;
+pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{
-    error::RibosomeReturnCode,
     ribosome::callback::{CallbackParams, CallbackResult},
 };
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
         self,
-        api::Runtime,
         callback::{genesis::genesis, receive::receive},
         Defn,
     },
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{convert::TryFrom, str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -112,29 +111,32 @@ impl Defn for Callback {
     }
 }
 
-pub(crate) fn runtime_callback_result(runtime: Runtime) -> CallbackResult {
-    let maybe_return_code = RibosomeReturnCode::try_from(runtime.result.clone());
-    match maybe_return_code {
-        Ok(return_code) => CallbackResult::from(return_code),
-        Err(_) => CallbackResult::from(runtime.result),
-    }
-}
+// pub(crate) fn runtime_callback_result(runtime: Runtime) -> CallbackResult {
+//     let maybe_return_code = RibosomeReturnCode::try_from(runtime.result.clone());
+//     match maybe_return_code {
+//         Ok(return_code) => CallbackResult::from(return_code),
+//         Err(_) => CallbackResult::from(runtime.result),
+//     }
+// }
 
 pub(crate) fn run_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) -> CallbackResult {
-    match ribosome::api::call(
-        &app_name,
+    match ribosome::run_dna(
+        &dna_name,
         context,
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(runtime) => runtime_callback_result(runtime),
-        // Ok(runtime) => CallbackResult::from(runtime.result),
+        Ok(call_result) => if call_result.is_empty() {
+            CallbackResult::Pass
+        } else {
+            CallbackResult::Fail(call_result)
+        },
         Err(_) => CallbackResult::NotImplemented,
     }
 }
@@ -168,6 +170,12 @@ pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
         }
     }
     dna
+}
+
+pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
+    let dna = get_dna(context).expect("Callback called without DNA set!");
+    dna.get_wasm_from_zome_name(zome)
+        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
 }
 
 pub fn call(

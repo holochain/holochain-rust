@@ -95,8 +95,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
-  return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
+  store_as_json_into_encoded_allocation(&mut mem_stack, hdk_commit(&mut mem_stack, "testEntryType", "hello"));
 }
 
 /// Function called by Holochain Instance
@@ -106,6 +105,11 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  let output = hdk_commit_fail(&mut mem_stack);
-  return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
+  store_as_json_into_encoded_allocation(&mut mem_stack, hdk_commit_fail(&mut mem_stack));
+}
+
+#[no_mangle]
+pub extern fn __hdk_get_validation_package_for_entry_type(encoded_allocation_of_input: usize) -> i32 {
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+  store_string_into_encoded_allocation(&mut mem_stack, "\"ChainFull\"")
 }

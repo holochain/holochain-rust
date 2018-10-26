@@ -11,7 +11,7 @@
 //! use holochain_dna::Dna;
 //! use holochain_core_types::json::JsonString;
 //!
-//! let name = String::from("My Holochain App");
+//! let name = String::from("My Holochain DNA");
 //!
 //! let mut dna = Dna::new();
 //! dna.name = name.clone();
@@ -38,7 +38,6 @@ pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    cas::content::AddressableContent,
     entry::{Entry, ToEntry},
     entry_type::EntryType,
     error::DnaError,
@@ -248,7 +247,7 @@ impl ToEntry for Dna {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        Dna::from(entry.content().to_owned())
+        Dna::from(entry.value().to_owned())
     }
 }
 

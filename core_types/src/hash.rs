@@ -1,7 +1,6 @@
 use json::JsonString;
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
-use serde::Serialize;
 use serde_json;
 use std::fmt;
 
@@ -54,9 +53,9 @@ impl HashString {
         HashString::encode_from_bytes(s.as_bytes(), hash_type)
     }
 
-    /// magic all in one fn, take a serializable something + hash type and get a hashed b58 string back
-    pub fn encode_from_serializable<S: Serialize>(s: S, hash_type: Hash) -> HashString {
-        HashString::encode_from_str(&serde_json::to_string(&s).unwrap(), hash_type)
+    /// magic all in one fn, take a JsonString + hash type and get a hashed b58 string back
+    pub fn encode_from_json_string(json_string: JsonString, hash_type: Hash) -> HashString {
+        HashString::encode_from_str(&String::from(json_string), hash_type)
     }
 }
 

@@ -2,27 +2,19 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use holochain_core_types::error::HolochainError;
 use holochain_dna::zome::capabilities::Membrane;
+use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call, ribosome::api::Runtime,
-    state::NucleusState, ZomeFnCall,
+    get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
+    ZomeFnCall,
 };
 use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
-/// Struct for input data received when Call API function is invoked
-#[derive(Deserialize, Default, Clone, PartialEq, Eq, Hash, Debug, Serialize)]
-pub struct ZomeCallArgs {
-    pub zome_name: String,
-    pub cap_name: String,
-    pub fn_name: String,
-    pub fn_args: String,
-}
-
-// ZomeCallArgs to ZomeFnCall
+// ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
-    fn from_args(args: ZomeCallArgs) -> Self {
+    fn from_args(args: ZomeFnCallArgs) -> Self {
         ZomeFnCall::new(
             &args.zome_name,
             &args.cap_name,
@@ -45,13 +37,13 @@ pub fn invoke_call(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
-    let input: ZomeCallArgs = match serde_json::from_str(&args_str) {
+    let input: ZomeFnCallArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
-    // ZomeCallArgs to ZomeFnCall
+    // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(input);
 
     // Don't allow recursive calls
@@ -95,8 +87,9 @@ pub fn invoke_call(
 
     // action_result should be a json str of the result of the zome function called
     match action_result {
-        Ok(json_string) => runtime.store_json_string(json_string),
-        Err(_) => ribosome_error_code!(ReceivedWrongActionResult),
+        Ok(json_string) => runtime.store_as_json_string(json_string),
+        // TODO send the holochain error instead
+        Err(_hc_err) => ribosome_error_code!(Unspecified),
     }
 }
 
@@ -170,13 +163,16 @@ pub(crate) fn reduce_call(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate tempfile;
     extern crate test_utils;
     extern crate wabt;
 
+    use self::tempfile::tempdir;
     use super::*;
     use context::Context;
     use holochain_agent::Agent;
     use holochain_core_types::{error::DnaError, json::JsonString};
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
@@ -200,7 +196,7 @@ pub mod tests {
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
-        let args = ZomeCallArgs {
+        let args = ZomeFnCallArgs {
             zome_name: "zome_name".to_string(),
             cap_name: "cap_name".to_string(),
             fn_name: "fn_name".to_string(),
@@ -213,7 +209,7 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
-        let args = ZomeCallArgs {
+        let args = ZomeFnCallArgs {
             zome_name: test_zome_name(),
             cap_name: test_capability(),
             fn_name: test_function_name(),
@@ -226,11 +222,16 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
-        Arc::new(Context::new(
-            Agent::from("alex".to_string()),
-            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        ))
+        Arc::new(
+            Context::new(
+                Agent::from("alex".to_string()),
+                Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            ).unwrap(),
+        )
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -290,7 +291,7 @@ pub mod tests {
     #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::DnaError(DnaError::ZomeNotFound(
+        let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
         ))));
         test_reduce_call(dna, expected);

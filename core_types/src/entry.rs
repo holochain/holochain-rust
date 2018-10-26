@@ -163,6 +163,10 @@ pub fn test_entry_value_a() -> JsonString {
 pub fn test_entry_value_b() -> JsonString {
     JsonString::from(RawString::from("other test entry value"))
 }
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_entry_value_c() -> JsonString {
+    RawString::from("value C").into()
+}
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry_value() -> JsonString {
@@ -204,6 +208,9 @@ pub fn test_entry_a() -> Entry {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
     Entry::new(&test_entry_type_b(), &test_entry_value_b())
+}
+pub fn test_entry_c() -> Entry {
+    Entry::new(&test_entry_type_b(), &test_entry_value_c())
 }
 
 /// dummy entry with unique string content

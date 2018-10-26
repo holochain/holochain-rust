@@ -1,3 +1,5 @@
+use json::default_to_json_string;
+use validation::ValidationPackageDefinition;
 use entry::{Entry, SerializedEntry};
 use error::RibosomeReturnCode;
 use json::JsonString;
@@ -29,7 +31,15 @@ pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+    ValidationPackageDefinition(ValidationPackageDefinition),
 }
+
+impl From<CallbackResult> for JsonString {
+    fn from(callback_result: CallbackResult) -> JsonString {
+        default_to_json_string(callback_result)
+    }
+}
+
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
@@ -39,14 +49,6 @@ impl From<JsonString> for CallbackResult {
             Ok(callback_result) => callback_result,
             Err(_) => CallbackResult::Fail(String::from(json_string)),
         }
-    }
-}
-
-impl From<CallbackResult> for JsonString {
-    fn from(callback_result: CallbackResult) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&callback_result).expect("could not Jsonify CallbackResult"),
-        )
     }
 }
 

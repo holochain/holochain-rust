@@ -1,7 +1,7 @@
 use futures::executor::block_on;
 use holochain_core_types::entry::SerializedEntry;
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::api::Runtime};
+use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -31,7 +31,7 @@ pub fn invoke_get_entry(
                 Some(entry) => GetEntryResult::found(SerializedEntry::from(entry)),
                 None => GetEntryResult::not_found(),
             };
-            runtime.store_json_string(result)
+            runtime.store_as_json_string(result)
         }
     }
 }
@@ -48,10 +48,12 @@ mod tests {
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
-        ribosome::api::{
-            call,
-            commit::tests::test_commit_args_bytes,
-            tests::{test_capability, test_parameters, test_zome_name},
+        ribosome::{
+            self,
+            api::{
+                commit::tests::test_commit_args_bytes,
+                tests::{test_capability, test_parameters, test_zome_name},
+            },
         },
         ZomeFnCall,
     };
@@ -122,7 +124,32 @@ mod tests {
     )
 
     (func
-        (export "validate_testEntryType")
+        (export "__hdk_validate_app_entry")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__list_capabilities")
         (param $allocation i32)
         (result i32)
 
@@ -166,7 +193,7 @@ mod tests {
             "commit_dispatch",
             &test_parameters(),
         );
-        let commit_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -175,13 +202,11 @@ mod tests {
         ).expect("test should be callable");
 
         assert_eq!(
-            commit_runtime.result,
-            JsonString::from(
-                format!(
-                    r#"{{"address":"{}","validation_failure":""}}"#,
-                    test_entry().address()
-                ) + "\u{0}"
-            ),
+            call_result,
+            JsonString::from(format!(
+                r#"{{"address":"{}","validation_failure":""}}"#,
+                test_entry().address()
+            ) + "\u{0}"),
         );
 
         let get_call = ZomeFnCall::new(
@@ -190,7 +215,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -201,7 +226,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"maybe_serialized_entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}\u{0}");
 
-        assert_eq!(JsonString::from(expected), get_runtime.result);
+        assert_eq!(JsonString::from(expected), call_result);
     }
 
     #[test]
@@ -234,7 +259,7 @@ mod tests {
             "get_dispatch",
             &test_parameters(),
         );
-        let get_runtime = call(
+        let call_result = ribosome::run_dna(
             &dna.name.to_string(),
             Arc::clone(&context),
             wasm.clone(),
@@ -245,7 +270,7 @@ mod tests {
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"maybe_serialized_entry\":null}\u{0}");
 
-        assert_eq!(JsonString::from(expected), get_runtime.result);
+        assert_eq!(JsonString::from(expected), call_result);
     }
 
 }

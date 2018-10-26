@@ -8,7 +8,7 @@ INCLUDEPATH += .
 LIBS += -L../../target/debug/ -lholochain_dna_c_binding -ldl
 QT += testlib
 QT -= gui
-CONFIG += console
+CONFIG += console c++11
 CONFIG -= app_bundle
 
 # Input

@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 /// represents a single Key
 /// e.g. private + public keys would be two Key structs
 pub struct Key {}
@@ -10,7 +10,7 @@ impl Key {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 /// represents a set of Keys for an agent
 /// includes both public and private keys
 /// also includes the node id of the agent with these keys

@@ -53,7 +53,7 @@ pub mod tests {
         let entry = link_list_entry.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
@@ -86,7 +86,7 @@ pub mod tests {
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
-        let instance = Instance::new();
+        let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);

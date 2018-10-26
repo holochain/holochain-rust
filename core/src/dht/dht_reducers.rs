@@ -5,8 +5,9 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    eav::EntityAttributeValueStorage,
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
     entry::Entry,
+    error::HolochainError,
 };
 use std::sync::Arc;
 
@@ -49,7 +50,7 @@ where
         Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
-        Action::GetLinks(_) => Some(reduce_get_links),
+        //Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
     }
 }
@@ -190,18 +191,40 @@ where
 //
 pub(crate) fn reduce_add_link<CAS, EAVS>(
     _context: Arc<Context>,
-    _old_store: &DhtStore<CAS, EAVS>,
-    _action_wrapper: &ActionWrapper,
+    old_store: &DhtStore<CAS, EAVS>,
+    action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore<CAS, EAVS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
     EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
 {
-    // FIXME
-    None
+    // Get Action's input data
+    let action = action_wrapper.action();
+    let link = unwrap_to!(action => Action::AddLink);
+
+    let mut new_store = (*old_store).clone();
+
+    if !old_store.content_storage().contains(link.base()).unwrap() {
+        new_store.add_link_actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "Base for link not found",
+            ))),
+        );
+        return Some(new_store);
+    }
+
+    let eav =
+        EntityAttributeValue::new(link.base(), &format!("link:{}", link.tag()), link.target());
+
+    let result = new_store.meta_storage_mut().add_eav(&eav);
+    new_store
+        .add_link_actions_mut()
+        .insert(action_wrapper.clone(), result);
+    Some(new_store)
 }
 
-//
+#[allow(dead_code)]
 pub(crate) fn reduce_get_links<CAS, EAVS>(
     _context: Arc<Context>,
     _old_store: &DhtStore<CAS, EAVS>,
@@ -218,19 +241,26 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use dht::dht_reducers::commit_sys_entry;
+    use action::{Action, ActionWrapper};
+    use dht::{
+        dht_reducers::{commit_sys_entry, reduce},
+        dht_store::DhtStore,
+    };
+    use holochain_cas_implementations::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        eav::EntityAttributeValueStorage,
         entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        links_entry::Link,
     };
     use instance::tests::test_context;
     use state::test_store;
-    use std::sync::Arc;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     fn commit_sys_entry_test() {
         let context = test_context("bob");
-        let store = test_store();
+        let store = test_store(context.clone());
         let entry = test_entry();
 
         let unpublishable_entry = test_unpublishable_entry();
@@ -269,6 +299,77 @@ pub mod tests {
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
         );
+    }
+
+    #[test]
+    fn can_add_links() {
+        let context = test_context("bob");
+        let store = test_store(context.clone());
+        let entry = test_entry();
+
+        let locked_state = Arc::new(RwLock::new(store));
+
+        let mut context = (*context).clone();
+        context.set_state(locked_state.clone());
+        let _ = context.file_storage.add(&entry);
+        let context = Arc::new(context);
+
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+
+        let new_dht_store: DhtStore<_, EavFileStorage>;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+
+        let fetched = new_dht_store
+            .meta_storage()
+            .fetch_eav(Some(entry.address()), None, None);
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 1);
+        let eav = hash_set.iter().nth(0).unwrap();
+        assert_eq!(eav.entity(), *link.base());
+        assert_eq!(eav.value(), *link.target());
+        assert_eq!(eav.attribute(), format!("link:{}", link.tag()));
+    }
+
+    #[test]
+    fn does_not_add_link_for_missing_base() {
+        let context = test_context("bob");
+        let store = test_store(context.clone());
+        let entry = test_entry();
+
+        let locked_state = Arc::new(RwLock::new(store));
+
+        let mut context = (*context).clone();
+        context.set_state(locked_state.clone());
+        let context = Arc::new(context);
+
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+
+        let new_dht_store: DhtStore<_, EavFileStorage>;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+
+        let fetched = new_dht_store
+            .meta_storage()
+            .fetch_eav(Some(entry.address()), None, None);
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 0);
+
+        let result = new_dht_store.add_link_actions().get(&action).unwrap();
+
+        assert!(result.is_err());
     }
 
 }

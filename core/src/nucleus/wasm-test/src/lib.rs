@@ -1,7 +1,13 @@
 extern crate holochain_wasm_utils;
+<<<<<<< HEAD
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+=======
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+>>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
 
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
@@ -55,4 +61,23 @@ pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
   hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
   i32::from(RibosomeReturnCode::Success)
+}
+
+//-------------------------------------------------------------------------------------------------
+//  More tests
+//-------------------------------------------------------------------------------------------------
+
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
+struct TestStruct {
+  value: String,
+}
+
+#[no_mangle]
+pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: usize) -> i32 {
+  let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+  let fish = store_json_into_encoded_allocation(&mut mem_stack, TestStruct {
+    value: "fish".to_string(),
+  });
+  hdk_debug(&mut mem_stack, "disruptive debug log");
+  fish
 }

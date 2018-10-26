@@ -20,7 +20,11 @@ pub enum GetResultStatus {
     NotFound,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+// empty for now, need to implement get options
+#[derive(Deserialize, Debug, Serialize)]
+pub struct GetEntryOptions {}
+
+#[derive(Deserialize, Debug, Serialize)]
 pub struct GetEntryResult {
     pub status: GetResultStatus,
     pub maybe_serialized_entry: Option<SerializedEntry>,

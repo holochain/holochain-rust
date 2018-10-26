@@ -1,6 +1,8 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::{Serialize};
 use serde_json;
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::fmt::Debug;
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -28,6 +30,12 @@ impl JsonString {
 impl From<String> for JsonString {
     fn from(s: String) -> JsonString {
         JsonString(s)
+    }
+}
+
+impl From<serde_json::Value> for JsonString {
+    fn from(v: serde_json::Value) -> JsonString {
+        JsonString::from(v.to_string())
     }
 }
 
@@ -60,6 +68,15 @@ impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
     }
 }
+
+pub fn default_to_json_string<S: Serialize + Debug>(s: S) -> JsonString {
+    JsonString::from(serde_json::to_string(&s).expect(&format!("could not serialize: {:?}", s)))
+}
+
+pub fn default_from_json_string<D: DeserializeOwned>(json_string: JsonString) -> D {
+    serde_json::from_str(&String::from(&json_string)).expect(&format!("could not deserialize: {:?}", json_string))
+}
+
 //
 // impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
 //     fn from(result: Result<T, E>) -> JsonString {
@@ -83,15 +100,15 @@ impl Display for JsonString {
     }
 }
 
-pub trait AutoJsonString: Serialize + DeserializeOwned + Sized {}
+// pub trait AutoJsonString: Serialize + DeserializeOwned + Sized {}
 
-impl<T: AutoJsonString> From<T> for JsonString {
-    fn from(auto_json_string: T) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"),
-        )
-    }
-}
+// impl<T: AutoJsonString> From<T> for JsonString {
+//     fn from(auto_json_string: T) -> JsonString {
+//         JsonString::from(
+//             serde_json::to_string(&auto_json_string).expect("could not serialize for JsonString"),
+//         )
+//     }
+// }
 
 // @TODO make this work!
 // impl<T: AutoJsonString> From<JsonString> for T {
@@ -188,6 +205,15 @@ pub mod tests {
         );
 
         assert_eq!(String::from("foo"), String::from(&JsonString::from("foo")),);
+    }
+
+    #[test]
+    /// show From<serde_json::Value> for JsonString
+    fn json_from_serde_test() {
+        assert_eq!(
+            String::from("\"foo\""),
+            String::from(JsonString::from(json!("foo"))),
+        );
     }
 
     #[test]

@@ -106,7 +106,7 @@ impl EavFileStorageActor {
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let mut f = File::create(address_path)?;
-        writeln!(f, "{}", String::from(eav.content()))?;
+        writeln!(f, "{}", eav.content())?;
         Ok(())
     }
 

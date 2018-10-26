@@ -72,8 +72,8 @@ pub mod tests {
     fn memory_round_trip() {
         let test_suite = StorageTestSuite::new(test_memory_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            JsonString::from(RawString::from("foo")),
-            JsonString::from(RawString::from("bar")),
+            RawString::from("foo").into(),
+            RawString::from("bar").into(),
         );
     }
 

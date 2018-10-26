@@ -4,7 +4,6 @@ use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
     file_validation,
-    json::JsonString,
 };
 use riker::actors::*;
 use std::{

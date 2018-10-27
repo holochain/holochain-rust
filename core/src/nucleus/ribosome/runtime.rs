@@ -22,11 +22,11 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    /// Load a string stored in wasm memory.
+    /// Load a JsonString stored in wasm memory.
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.
     /// Returns the utf8 string.
-    pub fn load_utf8_from_args(&self, args: &RuntimeArgs) -> String {
+    pub fn load_json_string_from_args(&self, args: &RuntimeArgs) -> JsonString {
         // @TODO don't panic in WASM
         // @see https://github.com/holochain/holochain-rust/issues/159
         assert_eq!(1, args.len());
@@ -36,7 +36,7 @@ impl Runtime {
         let maybe_allocation = decode_encoded_allocation(encoded_allocation);
         let allocation = match maybe_allocation {
             // Handle empty allocation edge case
-            Err(RibosomeReturnCode::Success) => return String::new(),
+            Err(RibosomeReturnCode::Success) => return JsonString::null(),
             // Handle error code
             Err(_) => panic!("received error code instead of valid encoded allocation"),
             // Handle normal allocation
@@ -48,7 +48,7 @@ impl Runtime {
         String::from_utf8(bin_arg)
             // @TODO don't panic in WASM
             // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap()
+            .unwrap().into()
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.

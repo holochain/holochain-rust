@@ -1,9 +1,6 @@
-use holochain_core_types::{self, entry::Entry, entry_type::EntryType, hash::HashString};
+use holochain_core_types::{self, entry::Entry, entry::SerializedEntry, entry_type::EntryType, hash::HashString};
 use holochain_dna::Dna;
-use holochain_wasm_utils::api_serialization::HashEntryArgs;
-use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
-use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -35,8 +32,8 @@ pub fn invoke_hash_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: HashEntryArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_from_args(&args);
+    let serialized_entry = match SerializedEntry::try_from(&args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
@@ -48,14 +45,13 @@ pub fn invoke_hash_entry(
         .nucleus()
         .dna()
         .expect("Should have DNA");
-    let maybe_entry_type = get_entry_type(&dna, &input.entry_type_name);
+    let maybe_entry_type = get_entry_type(&dna, &serialized_entry.entry_type_name);
     if let Err(err) = maybe_entry_type {
         return Ok(err);
     }
     let entry_type = maybe_entry_type.unwrap();
-    let entry = Entry::new(&entry_type, &input.entry_value);
-    // Perform hash
-    let hash = HashString::encode_from_serializable(&entry, Multihash::SHA2256);
+    let entry = Entry::from(serialized_entry);
+
     // Return result
-    runtime.store_utf8(&String::from(hash))
+    runtime.store_json(entry.address())
 }

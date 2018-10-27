@@ -1,9 +1,10 @@
 use futures::executor::block_on;
 use holochain_core_types::entry::SerializedEntry;
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult};
 use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
-use serde_json;
+use holochain_core_types::cas::content::Address;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::convert::TryFrom;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -14,15 +15,15 @@ pub fn invoke_get_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let res_entry: Result<GetEntryArgs, _> = serde_json::from_str(&args_str);
+    let args_str = runtime.load_json_string_from_args(&args);
+    let res_entry = Address::try_from(args_str);
     // Exit on error
     if res_entry.is_err() {
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
-    let input = res_entry.unwrap();
+    let address = res_entry.unwrap();
 
-    let future = get_entry(&runtime.context, input.address);
+    let future = get_entry(&runtime.context, address);
     let result = block_on(future);
     match result {
         Err(_) => ribosome_error_code!(Unspecified),

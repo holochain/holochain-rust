@@ -97,6 +97,98 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
+/// Error for DNA developers to use in their zome code.
+/// They do not have to send this error back to Ribosome unless its an InternalError.
+#[derive(Debug, Serialize)]
+pub enum ZomeApiError {
+    Internal(String),
+    FunctionNotImplemented,
+    HashNotFound,
+    ValidationFailed(String),
+}
+
+impl From<ZomeApiError> for HolochainError {
+    fn from(zome_api_error: ZomeApiError) -> Self {
+        match zome_api_error {
+            ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
+            _ => HolochainError::RibosomeFailed(zome_api_error.description().into()),
+        }
+    }
+}
+
+impl From<!> for ZomeApiError {
+    fn from(_: !) -> Self {
+        unreachable!();
+    }
+}
+
+impl From<ZomeApiError> for JsonString {
+    fn from(zome_api_error: ZomeApiError) -> JsonString {
+        JsonString::from(json!({ "error": zome_api_error }))
+    }
+}
+
+impl From<String> for ZomeApiError {
+    fn from(s: String) -> ZomeApiError {
+        ZomeApiError::Internal(s)
+    }
+}
+
+impl From<RibosomeErrorCode> for ZomeApiError {
+    fn from(ribosome_error_code: RibosomeErrorCode) -> ZomeApiError {
+        ZomeApiError::from(ribosome_error_code.to_string())
+    }
+}
+
+impl Error for ZomeApiError {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    fn description(&self) -> &str {
+        match self {
+            ZomeApiError::Internal(msg)           => &msg,
+            ZomeApiError::FunctionNotImplemented  => "Function not implemented",
+            ZomeApiError::HashNotFound            => "Hash not found",
+            ZomeApiError::ValidationFailed(msg)   => &msg,
+        }
+    }
+}
+
+impl fmt::Display for ZomeApiError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // @TODO seems weird to use debug for display
+        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
+        // what is the right way to do this?
+        // @see https://github.com/holochain/holochain-rust/issues/223
+        write!(f, "{:?}", self)
+    }
+}
+
+pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+#[derive(Deserialize, Default, Debug)]
+pub struct ZomeApiInternalResult {
+    pub ok: bool,
+    pub value: String,
+    pub error: String,
+}
+
+impl ZomeApiInternalResult {
+    pub fn success<J: Into<JsonString>>(value: J) -> ZomeApiInternalResult {
+        let json_string: JsonString = value.into();
+        ZomeApiInternalResult {
+            ok: true,
+            value: json_string.into(),
+            error: String::new(),
+        }
+    }
+
+    pub fn failure(error_string: &str) -> ZomeApiInternalResult {
+        ZomeApiInternalResult {
+            ok: false,
+            value: JsonString::null().into(),
+            error: error_string.into(),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct RibosomeErrorReport {
     pub description: String,
@@ -128,19 +220,6 @@ impl TryFrom<RibosomeErrorReport> for JsonString {
         default_try_to_json(v)
     }
 }
-
-// impl TryFrom<JsonString> for RibosomeErrorReport {
-//     type Error = HolochainError;
-//     fn try_from(j: JsonString) -> JsonResult {
-//         default_try_from_json(j)
-//     }
-// }
-
-// impl From<RibosomeErrorReport> for JsonString {
-//     fn from(ribosome_error_report: RibosomeErrorReport) -> JsonString {
-//         JsonString::from(RawString::from(String::from(ribosome_error_report)))
-//     }
-// }
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.

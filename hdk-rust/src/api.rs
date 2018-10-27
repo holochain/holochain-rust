@@ -1,6 +1,6 @@
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
-use error::ZomeApiInternalResult;
-use error::{ZomeApiError, ZomeApiResult};
+use holochain_core_types::error::ZomeApiInternalResult;
+use holochain_core_types::error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -258,7 +258,11 @@ pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<HashStr
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using

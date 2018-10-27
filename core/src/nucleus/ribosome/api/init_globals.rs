@@ -3,6 +3,7 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::json::JsonString;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32

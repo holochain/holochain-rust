@@ -1,7 +1,10 @@
+use std::convert::TryFrom;
+use json::default_try_from_json;
+use error::error::HolochainError;
+use json::default_to_json;
 use json::JsonString;
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
-use serde_json;
 use std::fmt;
 
 // HashString newtype for String
@@ -33,8 +36,15 @@ impl<'a> From<&'a str> for HashString {
 }
 
 impl From<HashString> for JsonString {
-    fn from(hash_string: HashString) -> JsonString {
-        JsonString::from(serde_json::to_string(&hash_string).expect("could not Jsonify HashString"))
+    fn from(v: HashString) -> Self {
+        default_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for HashString {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }
 

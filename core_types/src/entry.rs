@@ -1,6 +1,6 @@
-use error::error::HcResult;
 use error::HolochainError;
 use json::*;
+use error::error::HcResult;
 use std::convert::TryFrom;
 use cas::content::{Address, AddressableContent, Content};
 use entry_type::{

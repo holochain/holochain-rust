@@ -14,13 +14,13 @@ pub fn invoke_query(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: QueryArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let query = match QueryArgs::try_from(args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
     // Get entry_type
-    let maybe_entry_type = EntryType::from_str(&input.entry_type_name);
+    let maybe_entry_type = EntryType::from_str(&query.entry_type_name);
     if maybe_entry_type.is_err() {
         return ribosome_error_code!(UnknownEntryType);
     }
@@ -30,9 +30,9 @@ pub fn invoke_query(
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let result = agent.chain().query(&Some(top), entry_type, input.limit);
+    let result = agent.chain().query(&Some(top), entry_type, query.limit);
     // Return result
-    let query_result = QueryResult { hashes: result };
-    let json = serde_json::to_string(&query_result).expect("Could not serialize QueryResult");
-    runtime.store_utf8(&json)
+    // let query_result = QueryResult { hashes: result };
+    // let json = serde_json::to_string(&query_result).expect("Could not serialize QueryResult");
+    runtime.store_as_json_string(result)
 }

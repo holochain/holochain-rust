@@ -17,6 +17,7 @@ use holochain_core_types::{
 };
 use serde_json;
 use std::{collections::HashMap, sync::Arc};
+use std::convert::TryFrom;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -96,15 +97,16 @@ impl AgentStateSnapshot {
     }
 }
 
-impl TryFrom<AgentStateSnapshot> for JsonString {
-    fn from(v: AgentStateSnapshot) -> JsonString {
-        default_to_json_string(v)
+impl From<AgentStateSnapshot> for JsonString {
+    fn from(v: AgentStateSnapshot) -> Self {
+        default_to_json(v)
     }
 }
 
-impl From<JsonString> for AgentStateSnapshot {
-    fn from(json_string: JsonString) -> Self {
-        default_from_json_string(json_string)
+impl TryFrom<JsonString> for AgentStateSnapshot {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }
 

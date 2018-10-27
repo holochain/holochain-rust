@@ -1,9 +1,10 @@
 use dht::actions::add_link::*;
 use futures::executor::block_on;
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs, LinkEntriesResult};
+use holochain_core_types::error::ZomeApiInternalResult;
+use holochain_core_types::json::JsonString;
+use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs};
 use nucleus::ribosome::Runtime;
-use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::LinkEntries function code
@@ -15,8 +16,8 @@ pub fn invoke_link_entries(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: LinkEntriesArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_from_args(&args);
+    let input = match LinkEntriesArgs::try_from(args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
@@ -26,18 +27,12 @@ pub fn invoke_link_entries(
     let task_result: Result<(), HolochainError> =
         block_on(add_link(&input.to_link(), &runtime.context));
 
-    let result = ZomeApiInternalResult {
-        ok: task_result.is_ok(),
-        value: JsonString::null(),
-        error: task_result
-            .map_err(|holochain_error| holochain_error.to_string())
-            .err()
-            .unwrap_or(String::from("")),
+    let result = match task_result {
+        Ok(_) => ZomeApiInternalResult::success(JsonString::null()),
+        Err(e) => ZomeApiInternalResult::failure(e.to_string()),
     };
 
-    let json = serde_json::to_string(&result).expect("Could not serialize LinkEntriesResult");
-
-    runtime.store_utf8(&json)
+    runtime.store_as_json_string(result)
 }
 
 #[cfg(test)]

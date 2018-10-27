@@ -133,7 +133,7 @@ pub(crate) fn run_callback(
         Ok(call_result) => if call_result.is_empty() {
             CallbackResult::Pass
         } else {
-            CallbackResult::Fail(call_result)
+            CallbackResult::Fail(call_result.to_string())
         },
         Err(_) => CallbackResult::NotImplemented,
     }
@@ -186,7 +186,7 @@ pub fn call(
         zome,
         &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
-        &params.to_string(),
+        params.into(),
     );
 
     let dna = get_dna(&context).expect("Callback called without DNA set!");

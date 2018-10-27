@@ -77,7 +77,7 @@ fn build_validation_call(
         &zome_name,
         "no capability, since this is an entry validation call",
         "__hdk_validate_app_entry",
-        &params,
+        params.into(),
     ))
 }
 
@@ -96,7 +96,7 @@ fn run_validation_callback(
     ) {
         Ok(call_result) => match call_result.is_null() {
             true => CallbackResult::Pass,
-            false => CallbackResult::Fail(call_result),
+            false => CallbackResult::Fail(call_result.to_string()),
         },
         // TODO: have "not matching schema" be its own error
         Err(HolochainError::RibosomeFailed(error_string)) => {

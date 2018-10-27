@@ -11,7 +11,7 @@ use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use nucleus::ribosome::callback::{self, CallbackResult};
+use holochain_core_types::ribosome::callback::CallbackResult;
 use snowflake;
 use std::{sync::Arc, thread};
 

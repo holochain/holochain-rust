@@ -7,12 +7,11 @@ use holochain_core_types::{
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use holochain_wasm_utils::api_serialization::commit::CommitEntryResult;
+use holochain_core_types::error::ZomeApiInternalResult;
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
     ribosome::Runtime,
 };
-use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -24,8 +23,8 @@ pub fn invoke_commit_app_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let serialized_entry: SerializedEntry = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_from_args(&args);
+    let serialized_entry = match SerializedEntry::try_from(args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(e) => {
@@ -62,9 +61,9 @@ pub fn invoke_commit_app_entry(
     );
 
     let result = match task_result {
-        Ok(address) => CommitEntryResult::success(address),
+        Ok(address) => ZomeApiInternalResult::success(address),
         Err(HolochainError::ValidationFailed(fail_string)) => {
-            CommitEntryResult::failure(fail_string)
+            ZomeApiInternalResult::failure(fail_string)
         }
         Err(error_string) => {
             let error_report = ribosome_error_report!(format!(
@@ -72,7 +71,7 @@ pub fn invoke_commit_app_entry(
                 error_string
             ));
 
-            CommitEntryResult::failure(String::from(error_report))
+            ZomeApiInternalResult::failure(String::from(error_report))
             // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
             // Ok(error_string)
         }

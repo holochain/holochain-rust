@@ -1,21 +1,8 @@
 use holochain_core_types::error::HolochainError;
 use holochain_core_types::error::HcResult;
-use holochain_core_types::{cas::content::Address, entry::SerializedEntry, json::*};
+use holochain_core_types::{entry::SerializedEntry, json::*};
 use serde_json;
 use std::convert::TryFrom;
-
-#[derive(Deserialize, Default, Debug, Serialize)]
-pub struct GetEntryArgs {
-    pub address: Address,
-}
-
-impl From<GetEntryArgs> for JsonString {
-    fn from(get_entry_args: GetEntryArgs) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&get_entry_args).expect("could not Jsonify GetEntryArgs"),
-        )
-    }
-}
 
 #[derive(Deserialize, Debug, Serialize)]
 pub enum GetResultStatus {

@@ -10,7 +10,7 @@ pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    let payload = runtime.load_utf8_from_args(args);
+    let payload = runtime.load_json_from_args(args);
     println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level
     runtime

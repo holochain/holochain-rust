@@ -1,10 +1,10 @@
 extern crate serde_json;
 use chain_header::ChainHeader;
 use std::convert::TryFrom;
-use entry::SerializedEntry;
 use error::{HcResult, HolochainError};
 use hash::HashString;
 use json::*;
+use entry::SerializedEntry;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ValidationPackage {
@@ -12,6 +12,12 @@ pub struct ValidationPackage {
     pub source_chain_entries: Option<Vec<SerializedEntry>>,
     pub source_chain_headers: Option<Vec<ChainHeader>>,
     pub custom: Option<String>,
+}
+
+impl From<ValidationPackage> for JsonString {
+    fn from(v: ValidationPackage) -> Self {
+        default_to_json(v)
+    }
 }
 
 impl ValidationPackage {

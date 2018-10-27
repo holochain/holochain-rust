@@ -40,11 +40,6 @@ zome logic to Holochain core functionality and often has side effects. The
 return value of the Rust function is passed back to the zome code as the return
 of the zome API function.
 
-## Reference
-
-Note: Full reference is available in language-specific API Reference documentation.
-(TODO add links)
-
 ### Property
 
 Canonical name: `property`

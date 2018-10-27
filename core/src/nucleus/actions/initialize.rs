@@ -69,6 +69,31 @@ pub fn initialize_application(
             };
         }
 
+        // Commit AgentId to chain
+        let agent_id_entry = context_clone.agent.to_entry();
+        let agent_id_commit = block_on(commit_entry(
+            agent_id_entry,
+            &context_clone.action_channel.clone(),
+            &context_clone,
+        ));
+
+        // Let initialization fail if AgentId could not be committed.
+        // Currently this cannot happen since ToEntry for Agent always creates
+        // an entry from an Agent object. So I can't create a test for the code below.
+        // Hence skipping it for codecov for now but leaving it in for resilience.
+        #[cfg_attr(tarpaulin, skip)]
+        {
+            if agent_id_commit.is_err() {
+                context_clone
+                    .action_channel
+                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                        Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
+                    )))
+                    .expect("Action channel not usable in initialize_application()");
+                return;
+            };
+        }
+
         // map genesis across every zome
         let results: Vec<_> = dna
             .zomes

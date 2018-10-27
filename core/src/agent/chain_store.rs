@@ -1,8 +1,10 @@
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage, chain_header::ChainHeader, entry_type::EntryType,
+    cas::{content::Address, storage::ContentAddressableStorage},
+    chain_header::ChainHeader,
+    entry_type::EntryType,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ChainStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
@@ -37,6 +39,22 @@ where
             self.iter(start_chain_header)
                 .find(|chain_header| chain_header.entry_type() == entry_type),
         )
+    }
+
+    pub fn query(
+        &self,
+        start_chain_header: &Option<ChainHeader>,
+        entry_type: EntryType,
+        limit: u32,
+    ) -> Vec<Address> {
+        let mut result: Vec<Address> = Vec::new();
+        for header in self.iter_type(start_chain_header, &entry_type) {
+            result.push(header.entry_address().clone());
+            if limit != 0 && result.len() as u32 >= limit {
+                break;
+            }
+        }
+        result
     }
 }
 
@@ -139,8 +157,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         chain_header::{test_chain_header, ChainHeader},
-        entry::{test_entry, test_entry_b},
-        signature::{test_signature, test_signature_b},
+        entry::{test_entry, test_entry_b, test_entry_c},
+        signature::{test_signature, test_signature_b, test_signature_c},
         time::test_iso_8601,
     };
 
@@ -261,4 +279,63 @@ pub mod tests {
         }
         assert_eq!(expected, found);
     }
+
+    #[test]
+    /// show query() implementation
+    fn query_test() {
+        let chain_store = test_chain_store();
+
+        let chain_header_a = test_chain_header();
+        let entry = test_entry_b();
+        let chain_header_b = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_signature_b(),
+            &Some(chain_header_a.address()),
+            &None,
+            &test_iso_8601(),
+        );
+        let entry = test_entry_c();
+        let chain_header_c = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_signature_c(),
+            &Some(chain_header_b.address()),
+            &Some(chain_header_b.address()),
+            &test_iso_8601(),
+        );
+
+        chain_store
+            .content_storage()
+            .add(&chain_header_a)
+            .expect("could not add header to cas");
+        chain_store
+            .content_storage()
+            .add(&chain_header_b)
+            .expect("could not add header to cas");
+        chain_store
+            .content_storage()
+            .add(&chain_header_c)
+            .expect("could not add header to cas");
+
+        let found = chain_store.query(
+            &Some(chain_header_c.clone()),
+            entry.entry_type().to_owned(),
+            0,
+        );
+        let expected = vec![
+            chain_header_c.entry_address().clone(),
+            chain_header_b.entry_address().clone(),
+        ];
+        assert_eq!(expected, found);
+
+        let found = chain_store.query(
+            &Some(chain_header_c.clone()),
+            entry.entry_type().to_owned(),
+            1,
+        );
+        let expected = vec![chain_header_c.entry_address().clone()];
+        assert_eq!(expected, found);
+    }
+
 }

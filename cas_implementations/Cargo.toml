@@ -1,12 +1,13 @@
 [package]
 name = "holochain_cas_implementations"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 serde="1"
 serde_derive="1"
 serde_json="1"
+serde_test="1"
 multihash = "0.8.0"
 holochain_core_types = { path = "../core_types" }
 riker = "0.1.7"

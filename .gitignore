@@ -9,6 +9,8 @@ core_api/wasm-test/round_trip/target
 core_api/wasm-test/commit/target
 core/src/nucleus/ribosome/target
 core/src/nucleus/wasm-test/target
+core/src/nucleus/actions/wasm-test/target
+net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig
 

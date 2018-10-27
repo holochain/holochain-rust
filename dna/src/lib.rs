@@ -8,7 +8,7 @@
 //! ```
 //! use holochain_dna::Dna;
 //!
-//! let name = String::from("My Holochain App");
+//! let name = String::from("My Holochain DNA");
 //!
 //! let mut dna = Dna::new();
 //! dna.name = name.clone();
@@ -264,7 +264,7 @@ impl ToEntry for Dna {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return Dna::from_json_str(&entry.content()).expect("entry is not a valid Dna Entry");
+        Dna::from_json_str(&entry.value()).expect("entry is not a valid Dna Entry")
     }
 }
 

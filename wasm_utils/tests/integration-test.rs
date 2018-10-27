@@ -9,19 +9,10 @@ extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_agent::Agent;
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_core::{
-    context::Context, logger::Logger, nucleus::ZomeFnResult, persister::SimplePersister,
-};
-use holochain_core_api::Holochain;
-use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::error::*;
-use std::sync::{Arc, Mutex};
-
-use tempfile::tempdir;
-use test_utils::{create_test_cap_with_fn_name, create_test_dna_with_cap, create_wasm_from_file};
-
+use holochain_core::logger::Logger;
+use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
+use holochain_core_types::error::{HolochainError, RibosomeErrorCode, RibosomeErrorReport};
+use test_utils::hc_setup_and_call_zome_fn;
 #[derive(Clone, Debug)]
 pub struct TestLogger {
     pub log: Vec<String>,
@@ -31,41 +22,16 @@ impl Logger for TestLogger {
     fn log(&mut self, msg: String) {
         self.log.push(msg);
     }
+
+    fn dump(&self) -> String {
+        format!("{:?}", self.log)
+    }
 }
 
-/// create a test context and TestLogger pair so we can use the logger in assertions
-pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::from(agent_name.to_string());
-    let logger = Arc::new(Mutex::new(TestLogger { log: Vec::new() }));
-
-    Arc::new(
-        Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap(),
-    )
-}
-
-// Function called at start of all unit tests:
-//   Startup holochain and do a call on the specified wasm function.
-pub fn call_zome_function_with_hc(fn_name: &str) -> ZomeFnResult {
-    // Setup the holochain instance
-    let wasm = create_wasm_from_file(
+fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<String> {
+    hc_setup_and_call_zome_fn(
         "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-    );
-    let capability = create_test_cap_with_fn_name(fn_name);
-    let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-
-    let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
-
-    // Run the holochain instance
-    hc.start().expect("couldn't start");
-    // Call the exposed wasm function
-    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+        fn_name)
 }
 
 #[test]
@@ -98,7 +64,9 @@ fn call_store_as_json_obj_ok() {
 fn call_store_string_err() {
     let call_result = call_zome_function_with_hc("test_store_string_err");
     assert_eq!(
-        HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
+        HolochainInstanceError::from(HolochainError::RibosomeFailed(
+            RibosomeErrorCode::OutOfMemory.to_string()
+        )),
         call_result.err().unwrap(),
     );
 }
@@ -107,7 +75,9 @@ fn call_store_string_err() {
 fn call_store_as_json_err() {
     let call_result = call_zome_function_with_hc("test_store_as_json_err");
     assert_eq!(
-        HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.to_string()),
+        HolochainInstanceError::from(HolochainError::RibosomeFailed(
+            RibosomeErrorCode::OutOfMemory.to_string()
+        )),
         call_result.err().unwrap(),
     );
 }
@@ -149,4 +119,28 @@ fn call_load_string_ok() {
 fn call_load_string_err() {
     let call_result = call_zome_function_with_hc("test_load_string_err");
     assert_eq!("Unspecified", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_strings() {
+    let call_result = call_zome_function_with_hc("test_stacked_strings");
+    assert_eq!("first", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_json_str() {
+    let call_result = call_zome_function_with_hc("test_stacked_json_str");
+    assert_eq!("\"first\"", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_json_obj() {
+    let call_result = call_zome_function_with_hc("test_stacked_json_obj");
+    assert_eq!("{\"value\":\"first\"}", call_result.unwrap());
+}
+
+#[test]
+fn call_stacked_mix() {
+    let call_result = call_zome_function_with_hc("test_stacked_mix");
+    assert_eq!("third", call_result.unwrap());
 }

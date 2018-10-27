@@ -1,44 +1,6 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use std::fmt;
 
-/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
-/// Will panic! if out or memory or other serialization error occured.
-#[macro_export]
-macro_rules! zome_assert {
-    ($stack:ident, $cond:expr) => {
-        if !$cond {
-            let error_report = ribosome_error_report!(format!(
-                r#"Zome assertion failed: `{}`"#,
-                stringify!($cond)
-            ));
-            let res = store_as_json(&mut $stack, error_report);
-            return res.unwrap().encode();
-        }
-    };
-}
-
-/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
-#[macro_export]
-macro_rules! ribosome_error_code {
-    ($s:ident) => {
-        Ok(Some(RuntimeValue::I32(
-            ::holochain_wasm_utils::error::RibosomeErrorCode::$s as i32,
-        )))
-    };
-}
-
-/// Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
-#[macro_export]
-macro_rules! ribosome_error_report {
-    ($s:expr) => {
-        ::holochain_wasm_utils::error::RibosomeErrorReport {
-            description: $s.to_string(),
-            file_name: file!().to_string(),
-            line: line!().to_string(),
-        }
-    };
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct RibosomeErrorReport {
     pub description: String,
@@ -82,6 +44,7 @@ pub enum RibosomeErrorCode {
     ResponseSerializationFailed     = 7 << 16,
     NotAnAllocation                 = 8 << 16,
     ZeroSizedAllocation             = 9 << 16,
+    UnknownEntryType                = 10 << 16,
 }
 
 impl ToString for RibosomeReturnCode {
@@ -106,6 +69,7 @@ impl ToString for RibosomeErrorCode {
             ResponseSerializationFailed     => "Response serialization failed",
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
+            UnknownEntryType                => "Unknown entry type",
         }.to_string()
     }
 }
@@ -135,6 +99,7 @@ impl RibosomeErrorCode {
             7 => ResponseSerializationFailed,
             8 => NotAnAllocation,
             9 => ZeroSizedAllocation,
+            10 => UnknownEntryType,
             1 | _ => Unspecified,
         }
     }

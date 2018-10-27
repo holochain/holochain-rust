@@ -1,7 +1,8 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, get_links_args::GetLinksArgs, links_entry::Link,
+    cas::content::Address, entry::Entry, error::HolochainError, links_entry::Link,
+    validation::ValidationPackage,
 };
 use holochain_dna::Dna;
 use nucleus::{
@@ -77,7 +78,7 @@ pub enum Action {
     /// link to add
     AddLink(Link),
     /// get links from entry address and attribute-name
-    GetLinks(GetLinksArgs),
+    //GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),
@@ -99,6 +100,13 @@ pub enum Action {
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
     ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
+
+    ReturnValidationPackage(
+        (
+            snowflake::ProcessUniqueId,
+            Result<ValidationPackage, HolochainError>,
+        ),
+    ),
 }
 
 /// function signature for action handler functions

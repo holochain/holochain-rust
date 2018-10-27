@@ -9,6 +9,11 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
+use serde::{
+    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
+    ser::{Serialize, SerializeStruct, Serializer},
+};
+use std::fmt;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
@@ -16,9 +21,9 @@ pub struct FilesystemStorage {
 }
 
 impl FilesystemStorage {
-    pub fn new(dir_path: &str) -> Result<FilesystemStorage, HolochainError> {
+    pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
-            actor: FilesystemStorageActor::new_ref(dir_path)?,
+            actor: FilesystemStorageActor::new_ref(path)?,
         })
     }
 }
@@ -55,7 +60,10 @@ impl ContentAddressableStorage for FilesystemStorage {
 
 #[cfg(test)]
 pub mod tests {
+    extern crate serde_test;
     extern crate tempfile;
+    use self::serde_test::{assert_tokens, Token};
+    use serde_json;
 
     use self::tempfile::{tempdir, TempDir};
     use cas::file::FilesystemStorage;

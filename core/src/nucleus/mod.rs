@@ -206,14 +206,14 @@ pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,
     zome_call: ZomeFnCall,
     wasm: &DnaWasm,
-    app_name: String,
+    dna_name: String,
 ) {
     let code = wasm.code.clone();
 
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            &app_name,
+            &dna_name,
             context.clone(),
             code,
             &zome_call,
@@ -277,7 +277,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::ZomeNotFound(format!(
+                HolochainError::Dna(DnaError::ZomeNotFound(format!(
                     "Zome '{}' not found",
                     fn_call.zome_name.clone()
                 ))),
@@ -292,7 +292,7 @@ fn reduce_execute_zome_function(
             dispatch_error_result(
                 &context.action_channel,
                 &fn_call,
-                HolochainError::DnaError(DnaError::CapabilityNotFound(format!(
+                HolochainError::Dna(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
                     fn_call.cap_name.clone(),
                     fn_call.zome_name.clone()
@@ -311,7 +311,7 @@ fn reduce_execute_zome_function(
         dispatch_error_result(
             &context.action_channel,
             &fn_call,
-            HolochainError::DnaError(DnaError::ZomeFunctionNotFound(format!(
+            HolochainError::Dna(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found",
                 fn_call.fn_name.clone()
             ))),
@@ -358,6 +358,18 @@ fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
+fn reduce_return_validation_package(
+    _context: Arc<Context>,
+    state: &mut NucleusState,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let (id, maybe_validation_package) = unwrap_to!(action => Action::ReturnValidationPackage);
+    state
+        .validation_packages
+        .insert(id.clone(), maybe_validation_package.clone());
+}
+
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
@@ -367,6 +379,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
+        Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         _ => None,
     }
 }
@@ -399,7 +412,7 @@ fn get_capability_with_zome_call(
     match res {
         Err(e) => Err(ExecuteZomeFnResponse::new(
             zome_call.clone(),
-            Err(HolochainError::DnaError(e)),
+            Err(HolochainError::Dna(e)),
         )),
         Ok(cap) => Ok(cap.clone()),
     }
@@ -589,11 +602,8 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
 
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
-        match result {
-            // Result 1337 from WASM (as string)
-            Ok(val) => assert_eq!(val, "1337"),
-            Err(err) => assert_eq!(err, HolochainError::InstanceActive),
-        }
+        assert!(result.is_ok());
+        assert_eq!("1337", result.unwrap());
     }
 
     #[test]
@@ -639,7 +649,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(DnaError::ZomeFunctionNotFound(err))) => {
+            Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
                 assert_eq!(err, "Zome function \'xxx\' not found")
             }
             _ => assert!(false),
@@ -658,9 +668,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => {
-                assert_eq!(err.description(), "Zome 'xxx' not found")
-            }
+            Err(HolochainError::Dna(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 
@@ -670,7 +678,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::DnaError(err)) => assert_eq!(
+            Err(HolochainError::Dna(err)) => assert_eq!(
                 err.description(),
                 "Capability 'xxx' not found in Zome 'test_zome'"
             ),

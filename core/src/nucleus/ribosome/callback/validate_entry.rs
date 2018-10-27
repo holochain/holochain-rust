@@ -1,12 +1,14 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{entry::Entry, entry_type::EntryType, error::HolochainError};
+use holochain_core_types::{
+    entry::Entry, entry_type::EntryType, error::HolochainError, validation::ValidationData,
+};
 use holochain_dna::wasm::DnaWasm;
-use holochain_wasm_utils::api_serialization::validation::ValidationData;
+use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use nucleus::{
     ribosome::{
         self,
-        callback::{get_dna, CallbackResult},
+        callback::{get_dna, get_wasm, CallbackResult},
     },
     ZomeFnCall,
 };
@@ -64,35 +66,18 @@ fn build_validation_call(
     zome_name: String,
     validation_data: ValidationData,
 ) -> Result<ZomeFnCall, HolochainError> {
-    let function_name = format!("validate_{}", entry_type.to_string());
+    let params = serde_json::to_string(&EntryValidationArgs {
+        entry_type,
+        entry: entry.to_string(),
+        validation_data,
+    }).expect("EntryValidationArgs could not be turned into JSON?!");
 
-    let validation_data_json = serde_json::to_value(&validation_data)
-        .expect("ValidationData could not be turned into JSON?!");
-
-    // Trying to interpret entry as json object
-    let serialization_result: Result<serde_json::Value, _> = serde_json::from_str(&*entry)
-        .or_else(|_| {
-            // If it can't be parsed as object, treat it as a string by adding quotation marks:
-            serde_json::from_str(&format!("\"{}\"", &*entry))
-        })
-        .or_else(|error| {
-            let msg = format!("Error trying to serialize entry '{}', {:?}", *entry, error);
-            Err(HolochainError::new(&msg))
-        });
-
-    serialization_result.and_then(|entry_json| {
-        let params = serde_json::to_string(&json!({
-            "entry": entry_json,
-            "ctx": validation_data_json,
-        })).expect("Params object could not be turned into JSON?!");
-
-        Ok(ZomeFnCall::new(
-            &zome_name,
-            "no capability, since this is an entry validation call",
-            &function_name,
-            &params,
-        ))
-    })
+    Ok(ZomeFnCall::new(
+        &zome_name,
+        "no capability, since this is an entry validation call",
+        "__hdk_validate_app_entry",
+        &params,
+    ))
 }
 
 fn run_validation_callback(
@@ -112,17 +97,14 @@ fn run_validation_callback(
             true => CallbackResult::Pass,
             false => CallbackResult::Fail(call_result),
         },
-        Err(_) => CallbackResult::NotImplemented,
-    }
-}
-
-fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
-    let dna = get_dna(context).expect("Callback called without DNA set!");
-    dna.get_wasm_from_zome_name(zome).and_then(|wasm| {
-        if wasm.code.len() > 0 {
-            Some(wasm.clone())
-        } else {
-            None
+        // TODO: have "not matching schema" be its own error
+        Err(HolochainError::RibosomeFailed(error_string)) => {
+            if error_string == "Argument deserialization failed" {
+                CallbackResult::Fail(String::from("JSON object does not match entry schema"))
+            } else {
+                CallbackResult::Fail(error_string)
+            }
         }
-    })
+        Err(error) => CallbackResult::Fail(error.to_string()),
+    }
 }

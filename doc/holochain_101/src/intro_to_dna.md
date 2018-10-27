@@ -17,7 +17,7 @@ JSON is usually used for configuration and static data, but in the case of Holoc
 
 As previously mentioned, you do not need to edit this "master" DNA file directly. Holochain command line tools can be used to build it from your raw files. 
 
-[TODO link to command line tools 'package' command]
+[Learn more about the package command which fulfills this function](https://github.com/holochain/holochain-cmd#usage)
 
 ## Configuration
 

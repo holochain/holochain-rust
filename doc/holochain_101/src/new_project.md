@@ -19,3 +19,5 @@ hc init your_app_name
 This has created a new folder in which you have the beginnings of a Holochain app.
 
 TODO: document clarified folder structure here and use to illustrate an overview of app development
+
+Suggestion:  If you get an  ```hc: command not found``` from the terminal then try `hcdev init your_app_name`

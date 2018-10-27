@@ -22,7 +22,7 @@ pub struct ValidatingEntryType {
 /// for use within the [define_zome](macro.define_zome.html) macro.
 /// It has 6 component parts:
 /// 1. name: `name` is simply the descriptive name of the entry type, such as "post", or "user".
-///      It is what must be given as the `entry_type_name` argument when calling `commit_entry` and the other data read/write functions.
+///      It is what must be given as the `entry_type_name` argument when calling [commit_entry](fn.commit_entry.html) and the other data read/write functions.
 /// 2. description: `description` is something that is primarily for human readers of your code, just describe this entry type
 /// 3. sharing: `sharing` defines what distribution over the DHT, or not, occurs with entries of this type, possible values
 ///      are defined in the [Sharing](../holochain_dna/zome/entry_types/enum.Sharing.html) enum
@@ -31,7 +31,7 @@ pub struct ValidatingEntryType {
 ///      when attempting to validate entries of this type.
 ///      Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
 /// 6. validation: `validation` is a callback function which will be called any time that a 
-///      source chain action is taken relating to this entry type, such as `commit_entry`, `update_entry`, `remove_entry`.
+///      source chain action is taken relating to this entry type, such as [commit_entry](fn.commit_entry.html), [update_entry](fn.update_entry.html), [remove_entry](fn.remove_entry.html).
 ///      It always expects two arguments, the first of which is the entry attempting to be validated,
 ///      the second is the validation `context`, which offers a variety of metadata useful for validation.
 /// # Examples

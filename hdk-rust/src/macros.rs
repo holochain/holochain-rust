@@ -14,7 +14,7 @@ macro_rules! load_json {
 
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
-/// The `define_zome` macro has 3 general parts:
+/// The `define_zome` macro has 3 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
 /// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA. 
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and

@@ -25,11 +25,11 @@ pub struct ValidatingEntryType {
 ///      It is what must be given as the `entry_type_name` argument when calling `commit_entry` and the other data read/write functions.
 /// 2. description: `description` is something that is primarily for human readers of your code, just describe this entry type
 /// 3. sharing: `sharing` defines what distribution over the DHT, or not, occurs with entries of this type, possible values
-///      are defined in the [Sharing](/0.0.1/holochain_dna/zome/entry_types/enum.Sharing.html) enum
+///      are defined in the [Sharing](../holochain_dna/zome/entry_types/enum.Sharing.html) enum
 /// 4. native_type: `native_type` references a given Rust struct, which provides a clear schema for entries of this type.
 /// 5. validation_package: `validation_package` is a special identifier, which declares which data is required from peers
 ///      when attempting to validate entries of this type.
-///      Possible values are found within [ValidationPackageDefinition](/0.0.1//hdk/enum.ValidationPackageDefinition.html)
+///      Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
 /// 6. validation: `validation` is a callback function which will be called any time that a 
 ///      source chain action is taken relating to this entry type, such as `commit_entry`, `update_entry`, `remove_entry`.
 ///      It always expects two arguments, the first of which is the entry attempting to be validated,

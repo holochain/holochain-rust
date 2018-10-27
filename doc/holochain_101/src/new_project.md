@@ -19,3 +19,5 @@ hc init your_app_name
 This has created a new folder in which you have the beginnings of a Holochain app.
 
 TODO: document clarified folder structure here and use to illustrate an overview of app development
+
+clarification of how to add a holochain back end to an existing project

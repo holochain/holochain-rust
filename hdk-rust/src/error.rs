@@ -6,7 +6,7 @@ pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
@@ -39,5 +39,15 @@ impl fmt::Display for ZomeApiError {
         // what is the right way to do this?
         // @see https://github.com/holochain/holochain-rust/issues/223
         write!(f, "{:?}", self)
+    }
+}
+
+impl PartialEq<String> for ZomeApiError {
+    fn eq(&self, failure_msg: &String) -> bool {
+        match self {
+            Internal(msg) => msg == failure_msg,
+            ValidationFailed(msg) => msg == failure_msg,
+            _ => false,
+        }
     }
 }

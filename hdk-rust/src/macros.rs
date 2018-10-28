@@ -16,14 +16,14 @@ macro_rules! load_json {
 /// macro in the main library file in their Zome.
 /// The `define_zome` macro has 3 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
-/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA. 
+/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
 /// 3. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
 ///     `functions` must be a tree structure where the first children are `capabilities`
 ///     and the children of those `capabilities` are actual function definitions.
 /// # Examples
-/// 
+///
 /// ```rust
 /// #[macro_use]
 /// extern crate hdk;
@@ -33,13 +33,13 @@ macro_rules! load_json {
 /// #[macro_use]
 /// extern crate serde_json;
 /// extern crate boolinator;
-/// 
+///
 /// #[derive(Serialize, Deserialize)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
 /// }
-/// 
+///
 /// fn handle_hash_post(content: String) -> serde_json::Value {
 ///     let maybe_address = hdk::hash_entry("post", json!({
 ///         "content": content,
@@ -52,7 +52,7 @@ macro_rules! load_json {
 ///         Err(hdk_error) => hdk_error.to_json(),
 ///     }
 /// }
-/// 
+///
 /// define_zome! {
 ///     entries: [
 ///         entry!(
@@ -71,11 +71,11 @@ macro_rules! load_json {
 ///             }
 ///         )
 ///     ]
-/// 
+///
 ///     genesis: || {
 ///         Ok(())
 ///     }
-/// 
+///
 ///     functions: {
 ///         // "main" is the name of the capability
 ///         // "Public" is the access setting of the capability

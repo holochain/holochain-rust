@@ -94,7 +94,7 @@ fn call_load_json_from_raw_ok() {
 fn call_load_json_from_raw_err() {
     let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
     assert_eq!(
-        json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string(),
+        "\"Ribosome(ArgumentDeserializationFailed)\"",
         call_result.unwrap()
     );
 }
@@ -108,7 +108,8 @@ fn call_load_json_ok() {
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
-    assert_eq!("\"Unspecified\"", call_result.unwrap());
+    assert!(call_result.is_err());
+    assert_eq!("Unspecified", call_result.err().unwrap().description());
 }
 
 #[test]

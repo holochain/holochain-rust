@@ -101,11 +101,7 @@ impl ToJson for HolochainError {
 
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.description())
     }
 }
 
@@ -171,7 +167,7 @@ mod tests {
     /// test that we can convert an error to a string
     fn to_string() {
         let err = HolochainError::new("foo");
-        assert_eq!(r#"ErrorGeneric("foo")"#, err.to_string());
+        assert_eq!("foo", err.to_string());
     }
 
     #[test]

@@ -5,16 +5,20 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
-        get_links::{GetLinksArgs, GetLinksResult},
-        link_entries::{LinkEntriesArgs, LinkEntriesResult},
+        get_links::GetLinksArgs,
+        link_entries::LinkEntriesArgs,
         HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
     },
-    holochain_core_types::hash::HashString,
+    holochain_core_types::{
+        hash::HashString,
+        error::{CoreError, RibosomeReturnCode},
+    },
     memory_allocation::*,
     memory_serialization::*,
 };
 use serde::de::DeserializeOwned;
 use serde_json;
+use std::{os::raw::c_char, error::Error};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -337,21 +341,13 @@ pub fn link_entries<S: Into<String>>(
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: LinkEntriesResult = load_json(encoded_allocation_of_result as u32)
-        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
-
+    let result = check_for_ribosome_error(encoded_allocation_of_result);
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
-    if result.ok {
-        Ok(())
-    } else {
-        Err(ZomeApiError::Internal(result.error))
-    }
+    // Done
+    result
 }
 
 /// Not Yet Available
@@ -425,38 +421,31 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
-/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
-/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function `link_entries`.
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
+/// Consumes two values, the first of which is the address of an entry, `base`,
+/// and the second of which is a string, `tag`, used to describe the relationship between the `base`
+/// and other entries you wish to lookup. Returns a list of addresses of other entries which matched
+/// as being linked by the given `tag`.
+/// Links are created in the first place using the Zome API function `link_entries`.
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<HashString>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
-
     // Put args in struct and serialize into memory
     let input = GetLinksArgs {
         entry_address: base.clone(),
         tag: tag.into(),
     };
-
     let allocation_of_input = store_as_json(&mut mem_stack, input)
         .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
-
+    // Call Ribosome
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: GetLinksResult = load_json(encoded_allocation_of_result as u32)
-        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
-
-    // Free result & input allocations and all allocations made inside commit()
+    // Deserialize complex result stored in memory
+    let result: Result<Vec<HashString>, String> = load_json(encoded_allocation_of_result as u32);
+    // Free result & input allocations and any allocations made in Ribosome
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
-    if result.ok {
-        Ok(result)
-    } else {
-        Err(ZomeApiError::Internal(result.error))
-    }
+    // Done
+    result.map_err(|err_str| ZomeApiError::Internal(err_str))
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.
@@ -496,4 +485,28 @@ pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiR
 /// Not Yet Available
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
+}
+
+//--------------------------------------------------------------------------------------------------
+// Helpers
+//--------------------------------------------------------------------------------------------------
+
+pub fn check_for_ribosome_error(encoded_allocation: u32) -> Result<(), ZomeApiError> {
+    // Check for error from Ribosome
+    let rib_result = decode_encoded_allocation(encoded_allocation);
+    match rib_result {
+        // Expecting a 'Success' return code
+        Err(ret_code) => match ret_code {
+            RibosomeReturnCode::Success => Ok(()),
+            RibosomeReturnCode::Failure(err_code) => Err(ZomeApiError::Internal(err_code.to_string())),
+        },
+        // If we have an allocation, than it should be a CoreError
+        Ok(allocation) => {
+            let maybe_err: Result<CoreError, String> = load_json_from_raw(allocation.offset() as *mut c_char);
+            match maybe_err {
+                Err(err_str) => Err(ZomeApiError::Internal(err_str)),
+                Ok(core_err) => Err(ZomeApiError::Internal(core_err.description().to_string())),
+            }
+        },
+    }
 }

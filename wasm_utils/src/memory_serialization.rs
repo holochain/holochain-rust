@@ -1,10 +1,10 @@
-use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::error::{RibosomeErrorCode, CoreError};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{ffi::CStr, os::raw::c_char, slice};
+use std::{ffi::CStr, os::raw::c_char, slice, error::Error};
 
 //-------------------------------------------------------------------------------------------------
 // Raw
@@ -112,11 +112,11 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
         Ok(obj) => Ok(obj),
         Err(_) => {
             // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
-            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
+            let maybe_core_err: Result<CoreError, serde_json::Error> =
                 serde_json::from_str(stored_str);
-            match maybe_error_report {
+            match maybe_core_err {
                 Err(_) => Err(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
-                Ok(error_report) => Err(error_report.description),
+                Ok(core_err) => Err(core_err.description().to_string()),
             }
         }
     }

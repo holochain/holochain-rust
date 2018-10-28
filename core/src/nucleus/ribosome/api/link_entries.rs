@@ -1,19 +1,16 @@
 use dht::actions::add_link::*;
 use futures::executor::block_on;
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs, LinkEntriesResult};
-use nucleus::ribosome::Runtime;
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use nucleus::ribosome::{Runtime, api::ZomeApiResult};
 use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
-/// Returns a serialized LinkEntriesResult
-pub fn invoke_link_entries(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+/// Returns 'Success' return code on success.
+pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
     let input: LinkEntriesArgs = match serde_json::from_str(&args_str) {
@@ -21,22 +18,14 @@ pub fn invoke_link_entries(
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
-
-    // Wait for future to be resolved
+    // Wait for add_link() future to be resolved
     let task_result: Result<(), HolochainError> =
         block_on(add_link(&input.to_link(), &runtime.context));
-
-    let result = LinkEntriesResult {
-        ok: task_result.is_ok(),
-        error: task_result
-            .map_err(|holochain_error| holochain_error.to_string())
-            .err()
-            .unwrap_or(String::from("")),
-    };
-
-    let json = serde_json::to_string(&result).expect("Could not serialize LinkEntriesResult");
-
-    runtime.store_utf8(&json)
+    // Write result in wasm memory
+    match task_result {
+        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
+        Ok(()) => ribosome_success!(),
+    }
 }
 
 #[cfg(test)]

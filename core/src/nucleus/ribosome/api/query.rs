@@ -1,18 +1,15 @@
 use holochain_core_types::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryResult};
-use nucleus::ribosome::Runtime;
+use nucleus::ribosome::{Runtime, api::ZomeApiResult};
 use serde_json;
 use std::str::FromStr;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: ?
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_query(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
     let input: QueryArgs = match serde_json::from_str(&args_str) {
@@ -31,8 +28,6 @@ pub fn invoke_query(
         .top_chain_header()
         .expect("Should have genesis entries.");
     let result = agent.chain().query(&Some(top), entry_type, input.limit);
-    // Return result
-    let query_result = QueryResult { hashes: result };
-    let json = serde_json::to_string(&query_result).expect("Could not serialize QueryResult");
-    runtime.store_utf8(&json)
+    // Write result in wasm memory
+    runtime.store_as_json( QueryResult { hashes: result })
 }

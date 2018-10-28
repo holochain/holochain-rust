@@ -175,7 +175,7 @@ fn handle_links_roundtrip() -> serde_json::Value {
     hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
 
     match hdk::get_links(&entry1_hash, "test-tag") {
-        Ok(result) => json!({"links": result.links}),
+        Ok(links) => json!({"links": links}),
         Err(error) => json!({"error": error}),
     }
 }

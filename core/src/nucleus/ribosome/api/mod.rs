@@ -25,6 +25,8 @@ use std::str::FromStr;
 
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
+pub type ZomeApiResult = Result<Option<RuntimeValue>, Trap>;
+
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
 //--------------------------------------------------------------------------------------------------
@@ -132,15 +134,14 @@ impl FromStr for ZomeApiFunction {
 }
 
 /// does nothing, escape hatch so the compiler can enforce exhaustive matching in as_fn
-fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-    // Return Ribosome Success Code
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
+    ribosome_success!()
 }
 
 impl ZomeApiFunction {
     // cannot test this because PartialEq is not implemented for fns
     #[cfg_attr(tarpaulin, skip)]
-    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> ZomeApiResult) {
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
         // @see: https://github.com/holochain/holochain-rust/issues/324
 

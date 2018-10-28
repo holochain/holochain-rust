@@ -1,24 +1,4 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
-use std::fmt;
-
-#[derive(Deserialize, Serialize)]
-pub struct RibosomeErrorReport {
-    pub description: String,
-    pub file_name: String,
-    pub line: String,
-    // TODO #395 - Add advance error debugging info
-    // pub stack_trace: Backtrace
-}
-
-impl fmt::Display for RibosomeErrorReport {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Ribosome error: {}\n  --> {}:{}\n",
-            self.description, self.file_name, self.line,
-        )
-    }
-}
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
@@ -130,24 +110,5 @@ pub mod tests {
             RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
-    }
-
-    #[test]
-    fn ribosome_error_report_to_string() {
-        let description = "This is a unit test error description";
-        let report = RibosomeErrorReport {
-            description: description.to_string(),
-            file_name: file!().to_string(),
-            line: line!().to_string(),
-        };
-
-        assert_ne!(
-            report.to_string(),
-            RibosomeErrorReport {
-                description: description.to_string(),
-                file_name: file!().to_string(),
-                line: line!().to_string(),
-            }.to_string(),
-        );
     }
 }

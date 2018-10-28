@@ -9,6 +9,65 @@ use std::{
     io::{self, Error as IoError},
 };
 
+//--------------------------------------------------------------------------------------------------
+// CoreError
+//--------------------------------------------------------------------------------------------------
+
+impl ToJson for CoreError {
+    fn to_json(&self) -> HcResult<String> {
+        Ok(serde_json::to_string(self)?)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Hash, Eq)]
+pub struct CoreError {
+    pub kind: HolochainError,
+    pub file: String,
+    pub line: String,
+    // TODO #395 - Add advance error debugging info
+    // pub stack_trace: Backtrace
+}
+
+// user inner error
+impl Error for CoreError {
+    fn description(&self) -> &str {
+        self.kind.description()
+    }
+    fn cause(&self) -> Option<&Error> {
+        self.kind.cause()
+    }
+
+}
+impl CoreError {
+    pub fn new(err: HolochainError) -> Self {
+        CoreError {
+            kind: err,
+            file: String::new(),
+            line: String::new(),
+        }
+    }
+
+    // TODO - get the u32 error code from a CoreError
+    //    pub fn code(&self) -> u32 {
+    //        u32::from(self.kind.code()) << 16 as u32
+    //    }
+}
+
+impl fmt::Display for CoreError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Holochain Core error: {}\n  --> {}:{}\n",
+            self.description(), self.file, self.line,
+        )
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// HolochainError
+//--------------------------------------------------------------------------------------------------
+
+/// TODO rename to CoreErrorKind
 /// Enum holding all Holochain specific errors
 #[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize)]
 pub enum HolochainError {
@@ -183,5 +242,24 @@ mod tests {
         ] {
             assert_eq!(output, input.description());
         }
+    }
+
+    #[test]
+    fn core_error_to_string() {
+        let error = HolochainError::ErrorGeneric("This is a unit test error description".to_string());
+        let report = CoreError {
+            kind: error.clone(),
+            file: file!().to_string(),
+            line: line!().to_string(),
+        };
+
+        assert_ne!(
+            report.to_string(),
+            CoreError {
+                kind: error,
+                file: file!().to_string(),
+                line: line!().to_string(),
+            }.to_string(),
+        );
     }
 }

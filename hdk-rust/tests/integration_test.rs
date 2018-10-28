@@ -194,7 +194,7 @@ fn can_invalidate_invalid_commit() {
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
-        "{\"error\":\"\\\"validation failed: FAIL content is not allowed\\\"\"}",
+        "{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}",
         result.unwrap()
     );
 }

@@ -141,8 +141,17 @@ Caller can request additional metadata on the entry such as type or sources
 
 Canonical name: `get_links`
 
-Not yet available, but you will see
-updates here: [LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.get_links.html)
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.get_links.html)
+
+### Link Entries
+
+Canonical name: `link_entries`
+
+Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.link_entries.html)
 
 ### Remove Entry
 

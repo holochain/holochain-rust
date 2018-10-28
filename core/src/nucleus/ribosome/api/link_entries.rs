@@ -37,6 +37,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        error::CoreError,
     };
     use holochain_wasm_utils::api_serialization::{commit::CommitEntryArgs, link_entries::*};
     use instance::tests::{test_context_and_logger, test_instance};
@@ -77,15 +78,15 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present() {
-        let (call_result, _) = test_zome_api_function(
+        let (mut call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
         );
-
+        call_result.pop(); // Remove trailing character
+        let core_err: CoreError = serde_json::from_str(&call_result).expect("valid CoreError json str");
         assert_eq!(
-            call_result,
-            r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
-                + "\u{0}",
+            "ErrorGeneric(\"Base for link not found\")",
+            core_err.kind.to_string(),
         );
     }
 

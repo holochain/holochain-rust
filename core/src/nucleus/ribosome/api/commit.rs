@@ -104,7 +104,7 @@ pub mod tests {
         assert_eq!(
             call_result,
             format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
+                r#"{{"address":"{}"}}"#,
                 test_entry().address()
             ) + "\u{0}",
         );

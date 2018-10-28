@@ -239,12 +239,9 @@ fn handle_check_hash_sys_entry() -> serde_json::Value {
 
 fn handle_check_call() -> serde_json::Value {
     let empty_dumpty = json!({});
-    hdk::debug(&format!("empty_dumpty = {:?}", empty_dumpty)).ok();
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty);
-    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
     let tmp = maybe_hash.unwrap();
     let hash: &str = serde_json::from_str(&tmp).unwrap();
-    hdk::debug(&format!("hash = {}", hash)).ok();
     json!(hash)
 }
 
@@ -257,12 +254,9 @@ fn handle_check_call_with_args() -> serde_json::Value {
     let arg_str = r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#;
     let args = serde_json::from_str::<serde_json::Value>(arg_str).unwrap();
     // let args =  json!(arg_str);
-    hdk::debug(&format!("args = {:?}", args)).ok();
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args);
-    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
     let tmp = maybe_hash.unwrap();
     let hash: HashStruct = serde_json::from_str(&tmp).unwrap();
-    hdk::debug(&format!("hash = {:?}", hash)).ok();
     json!(hash)
 }
 

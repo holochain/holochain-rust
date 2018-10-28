@@ -61,7 +61,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
 
     match task_result {
         Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
-        Ok(address) => runtime.store_as_json(CommitEntryResult::success(address)),
+        Ok(address) => runtime.store_as_json(CommitEntryResult::new(address)),
     }
 }
 

@@ -7,18 +7,18 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::GetLinksArgs,
         link_entries::LinkEntriesArgs,
-        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
+        HashEntryArgs, QueryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
-        error::{CoreError, RibosomeReturnCode},
+        error::{CoreError, HolochainError, RibosomeReturnCode},
     },
     memory_allocation::*,
     memory_serialization::*,
 };
 use serde::de::DeserializeOwned;
 use serde_json;
-use std::{os::raw::c_char, error::Error};
+use std::os::raw::c_char;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -195,18 +195,12 @@ pub fn call<S: Into<String>>(
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result = load_string(encoded_allocation_of_result as u32);
-
-    if let Err(err_str) = result {
-        return Err(ZomeApiError::Internal(err_str));
-    }
-    let output = result.unwrap();
-
-    // Free result & input allocations and all allocations made inside commit()
+    // Free result & input allocations.
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    Ok(output)
+    result.map_err(| err_code| ZomeApiError::Internal(err_code.to_string()))
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -221,7 +215,6 @@ pub fn commit_entry(
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
-
     // Put args in struct and serialize into memory
     let input = CommitEntryArgs {
         entry_type_name: entry_type_name.to_string(),
@@ -233,29 +226,24 @@ pub fn commit_entry(
     }
     let allocation_of_input = maybe_allocation_of_input.unwrap();
 
-    // Call WASMI-able commit
+    // Call Ribosome's commit_entry()
     let encoded_allocation_of_result: u32;
     unsafe {
         encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as u32);
     }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
+    // Deserialize complex result stored in wasm memory
     let result = load_json(encoded_allocation_of_result as u32);
-
-    if let Err(err_str) = result {
-        return Err(ZomeApiError::Internal(err_str));
-    }
-    let output: CommitEntryResult = result.unwrap();
-
-    // Free result & input allocations and all allocations made inside commit()
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
-    if output.validation_failure.len() > 0 {
-        Err(ZomeApiError::ValidationFailed(output.validation_failure))
-    } else {
-        Ok(HashString::from(output.address))
-    }
+    // Done
+    result
+        .map(|output: CommitEntryResult| HashString::from(output.address))
+        .map_err(|hc_err| match hc_err {
+            HolochainError::ValidationFailed(msg) => ZomeApiError::ValidationFailed(msg),
+            _ => ZomeApiError::Internal(hc_err.to_string()),
+        })
 }
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
@@ -290,7 +278,6 @@ pub fn get_entry_result(
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
-
     // Put args in struct and serialize into memory
     let input = GetEntryArgs { address: address };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
@@ -298,25 +285,19 @@ pub fn get_entry_result(
         return Err(ZomeApiError::Internal(err_code.to_string()));
     }
     let allocation_of_input = maybe_allocation_of_input.unwrap();
-
-    // Call WASMI-able get_entry
+    // Call Ribosome get_entry()
     let encoded_allocation_of_result: u32;
     unsafe {
         encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
     }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
+    // Deserialize complex result stored in memory
     let result = load_json(encoded_allocation_of_result as u32);
-    if let Err(err_str) = result {
-        return Err(ZomeApiError::Internal(err_str));
-    }
-    let result: GetEntryResult = result.unwrap();
-
-    // Free result & input allocations and all allocations made inside commit()
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
-    Ok(result)
+    // Done
+    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
@@ -342,7 +323,7 @@ pub fn link_entries<S: Into<String>>(
     let encoded_allocation_of_result: u32 =
         unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
     let result = check_for_ribosome_error(encoded_allocation_of_result);
-    // Free result & input allocations and all allocations made inside commit()
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
@@ -378,13 +359,15 @@ pub fn hash_entry<S: Into<String>>(
     let encoded_allocation_of_result: u32 =
         unsafe { hc_hash_entry(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32)
-        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
-    // Free result & input allocations and all allocations made inside commit()
+    let result = load_string(encoded_allocation_of_result as u32);
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-    Ok(HashString::from(result))
+    // Done
+    result
+        .map(|hash_str| HashString::from(hash_str))
+        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))
 }
 
 /// Not Yet Available
@@ -439,13 +422,13 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory
-    let result: Result<Vec<HashString>, String> = load_json(encoded_allocation_of_result as u32);
-    // Free result & input allocations and any allocations made in Ribosome
+    let result: Result<Vec<HashString>, HolochainError> = load_json(encoded_allocation_of_result as u32);
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result.map_err(|err_str| ZomeApiError::Internal(err_str))
+    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.
@@ -462,14 +445,14 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>
         .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
     let encoded_allocation_of_result: u32 =
         unsafe { hc_query(allocation_of_input.encode() as u32) };
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: QueryResult = load_json(encoded_allocation_of_result as u32)
-        .map_err(|err_str| ZomeApiError::Internal(err_str))?;
-    // Free result & input allocations and all allocations made inside commit()
+    // Deserialize complex result stored in memory
+    let result: Result<Vec<HashString>, HolochainError> = load_json(encoded_allocation_of_result as u32);
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-    Ok(result.hashes)
+    // Done
+    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
 }
 
 /// Not Yet Available
@@ -502,10 +485,10 @@ pub fn check_for_ribosome_error(encoded_allocation: u32) -> Result<(), ZomeApiEr
         },
         // If we have an allocation, than it should be a CoreError
         Ok(allocation) => {
-            let maybe_err: Result<CoreError, String> = load_json_from_raw(allocation.offset() as *mut c_char);
+            let maybe_err: Result<CoreError, HolochainError> = load_json_from_raw(allocation.offset() as *mut c_char);
             match maybe_err {
-                Err(err_str) => Err(ZomeApiError::Internal(err_str)),
-                Ok(core_err) => Err(ZomeApiError::Internal(core_err.description().to_string())),
+                Err(hc_err) => Err(ZomeApiError::Internal(hc_err.to_string())),
+                Ok(core_err) => Err(ZomeApiError::Internal(core_err.to_string())),
             }
         },
     }

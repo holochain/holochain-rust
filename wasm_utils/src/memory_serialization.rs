@@ -1,10 +1,10 @@
-use holochain_core_types::error::{RibosomeErrorCode, CoreError};
+use holochain_core_types::error::{RibosomeErrorCode, HolochainError, RibosomeReturnCode};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{ffi::CStr, os::raw::c_char, slice, error::Error};
+use std::{ffi::CStr, os::raw::c_char, slice};
 
 //-------------------------------------------------------------------------------------------------
 // Raw
@@ -56,11 +56,14 @@ pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str
 }
 
 /// Retrieve a stored string from an encoded allocation.
-/// Return error string if encoded_allocation is invalid.
-pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
+/// Return error code if encoded_allocation is invalid.
+pub fn load_string(encoded_allocation: u32) -> Result<String, RibosomeErrorCode> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
-        Err(return_code) => Err(return_code.to_string()),
+        Err(return_code) => match return_code {
+            RibosomeReturnCode::Success => Err(RibosomeErrorCode::ZeroSizedAllocation),
+            RibosomeReturnCode::Failure(err_code) => Err(err_code),
+        },
         Ok(allocation) => Ok(load_str_from_raw(allocation.offset() as *mut c_char).to_string()),
     }
 }
@@ -92,10 +95,13 @@ pub fn store_json_into_encoded_allocation<T: Serialize>(
 
 /// Retrieve a stored data struct from an encoded allocation.
 /// Return error string if encoded_allocation is invalid.
-pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, String> {
+pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, HolochainError> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
-        Err(return_code) => Err(return_code.to_string()),
+        Err(return_code) => match return_code {
+            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(RibosomeErrorCode::ZeroSizedAllocation)),
+            RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code)),
+        },
         Ok(allocation) => load_json_from_raw(allocation.offset() as *mut c_char),
     }
 }
@@ -105,18 +111,18 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, S
 /// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
-pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
+pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, HolochainError> {
     let stored_str = load_str_from_raw(ptr_data);
     let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(stored_str);
     match maybe_obj {
         Ok(obj) => Ok(obj),
         Err(_) => {
             // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
-            let maybe_core_err: Result<CoreError, serde_json::Error> =
+            let maybe_hc_err: Result<HolochainError, serde_json::Error> =
                 serde_json::from_str(stored_str);
-            match maybe_core_err {
-                Err(_) => Err(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
-                Ok(core_err) => Err(core_err.description().to_string()),
+            match maybe_hc_err {
+                Err(_) => Err(HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)),
+                Ok(hc_err) => Err(hc_err),
             }
         }
     }

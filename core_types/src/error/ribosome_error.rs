@@ -12,7 +12,7 @@ pub enum RibosomeReturnCode {
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,
@@ -37,8 +37,8 @@ impl ToString for RibosomeReturnCode {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-impl ToString for RibosomeErrorCode {
-    fn to_string(&self) -> String {
+impl RibosomeErrorCode {
+    pub fn to_str(&self) -> &str {
         match self {
             Unspecified                     => "Unspecified",
             ArgumentDeserializationFailed   => "Argument deserialization failed",
@@ -50,10 +50,15 @@ impl ToString for RibosomeErrorCode {
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
-        }.to_string()
+        }
     }
 }
 
+impl ToString for RibosomeErrorCode {
+    fn to_string(&self) -> String {
+        self.to_str().to_string()
+    }
+}
 impl RibosomeReturnCode {
     pub fn from_error(err_code: RibosomeErrorCode) -> Self {
         Failure(err_code)

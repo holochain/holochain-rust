@@ -1,5 +1,5 @@
 use self::HolochainError::*;
-use error::DnaError;
+use error::{DnaError, RibosomeErrorCode};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
 use serde_json::Error as SerdeError;
@@ -19,7 +19,7 @@ impl ToJson for CoreError {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Hash, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct CoreError {
     pub kind: HolochainError,
     pub file: String,
@@ -69,7 +69,7 @@ impl fmt::Display for CoreError {
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain specific errors
-#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented,
@@ -81,6 +81,7 @@ pub enum HolochainError {
     InvalidOperationOnSysEntry,
     DoesNotHaveCapabilityToken,
     ValidationFailed(String),
+    Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
 }
 
@@ -121,6 +122,7 @@ impl Error for HolochainError {
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
             ValidationFailed(fail_msg) => &fail_msg,
+            Ribosome(err_code) => err_code.to_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
         }
     }

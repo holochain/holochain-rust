@@ -192,9 +192,9 @@ fn can_invalidate_invalid_commit() {
         r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
     );
     println!("\t result = {:?}", result);
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
-        "{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}",
+        "{\"error\":\"\\\"validation failed: FAIL content is not allowed\\\"\"}",
         result.unwrap()
     );
 }

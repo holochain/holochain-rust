@@ -56,8 +56,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
-    if let Err(err_str) = result {
-        hdk::debug(&format!("ERROR: {:?}", err_str)).expect("debug() must work");
+    if let Err(hc_err) = result {
+        hdk::debug(&format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 

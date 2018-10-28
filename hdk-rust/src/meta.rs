@@ -50,9 +50,8 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 
     // Deserialize input
     let maybe_name = load_string(encoded_allocation_of_input);
-    if maybe_name.is_err() {
-        return ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
-            as u32;
+    if let Err(err_code) = maybe_name {
+        return err_code as u32;
     }
     let name: String = maybe_name.unwrap();
 
@@ -80,9 +79,8 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
     // Deserialize input
     let maybe_name = load_json(encoded_allocation_of_input);
-    if maybe_name.is_err() {
-        return ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
-            as u32;
+    if let Err(hc_err) = maybe_name {
+        return ::global_fns::store_and_return_output(hc_err);
     }
     let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
 

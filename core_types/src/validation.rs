@@ -40,10 +40,9 @@ pub enum ValidationPackageDefinition {
     Custom(String), //sending something custom
 }
 
-impl TryFrom<ValidationPackageDefinition> for JsonString {
-    type Error = HolochainError;
-    fn try_from(v: ValidationPackageDefinition) -> JsonResult {
-        default_try_to_json(v)
+impl From<ValidationPackageDefinition> for JsonString {
+    fn from(v: ValidationPackageDefinition) -> JsonString {
+        default_to_json(v)
     }
 }
 

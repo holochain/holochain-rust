@@ -138,10 +138,8 @@ pub enum ActionResponse {
 }
 
 impl From<ActionResponse> for JsonString {
-    fn from(action_response: ActionResponse) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&action_response).expect("could not Jsonify ActionResponse"),
-        )
+    fn from(v: ActionResponse) -> JsonString {
+        default_to_json(v)
     }
 }
 

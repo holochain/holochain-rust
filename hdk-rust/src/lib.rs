@@ -36,7 +36,7 @@ use self::RibosomeError::*;
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    api_serialization::get_entry::{GetEntryArgs, GetEntryResult, GetResultStatus},
+    api_serialization::get_entry::{GetEntryResult, GetResultStatus},
     holochain_core_types::{
         cas::content::Address, entry::SerializedEntry, hash::HashString, json::JsonString,
     },

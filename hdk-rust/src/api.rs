@@ -5,7 +5,7 @@ use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryArgs, GetEntryOptions, GetResultStatus},
+        get_entry::{GetEntryOptions, GetResultStatus},
         get_links::{GetLinksArgs},
         link_entries::{LinkEntriesArgs},
         QueryArgs, ZomeFnCallArgs,

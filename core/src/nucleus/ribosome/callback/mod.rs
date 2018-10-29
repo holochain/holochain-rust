@@ -6,6 +6,7 @@ pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
+use holochain_core_types::error::RibosomeReturnCode;
 use context::Context;
 use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
@@ -17,6 +18,7 @@ use nucleus::{
     },
     ZomeFnCall,
 };
+use std::convert::TryFrom;
 use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
@@ -130,10 +132,12 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => if call_result.is_empty() {
-            CallbackResult::Pass
-        } else {
-            CallbackResult::Fail(call_result.to_string())
+        Ok(call_result) => {
+            let maybe_return_code = RibosomeReturnCode::try_from(call_result.clone());
+            match maybe_return_code {
+                Ok(return_code) => CallbackResult::from(return_code),
+                Err(_) => CallbackResult::from(call_result),
+            }
         },
         Err(_) => CallbackResult::NotImplemented,
     }
@@ -180,13 +184,13 @@ pub fn call(
     context: Arc<Context>,
     zome: &str,
     function: &Callback,
-    params: &CallbackParams,
+    params: CallbackParams,
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
         &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
-        params.into(),
+        params,
     );
 
     let dna = get_dna(&context).expect("Callback called without DNA set!");

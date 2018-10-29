@@ -64,6 +64,14 @@ impl SerializedEntry {
             value: value.to_owned(),
         }
     }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn entry_type(&self) -> String {
+        self.entry_type.clone()
+    }
 }
 
 // converting an Entry to SerializedEntry can never fail because it simply converts the fields

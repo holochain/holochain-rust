@@ -1,8 +1,10 @@
-use holochain_core_types::{self, entry::Entry, entry::SerializedEntry, entry_type::EntryType, hash::HashString};
+use holochain_core_types::{self, entry::Entry, entry::SerializedEntry, entry_type::EntryType};
 use holochain_dna::Dna;
 use nucleus::ribosome::Runtime;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::cas::content::AddressableContent;
+use std::convert::TryFrom;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
@@ -32,8 +34,8 @@ pub fn invoke_hash_entry(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_json_from_args(&args);
-    let serialized_entry = match SerializedEntry::try_from(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let serialized_entry = match SerializedEntry::try_from(args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
@@ -45,7 +47,7 @@ pub fn invoke_hash_entry(
         .nucleus()
         .dna()
         .expect("Should have DNA");
-    let maybe_entry_type = get_entry_type(&dna, &serialized_entry.entry_type_name);
+    let maybe_entry_type = get_entry_type(&dna, &serialized_entry.entry_type());
     if let Err(err) = maybe_entry_type {
         return Ok(err);
     }
@@ -53,5 +55,5 @@ pub fn invoke_hash_entry(
     let entry = Entry::from(serialized_entry);
 
     // Return result
-    runtime.store_json(entry.address())
+    runtime.store_as_json_string(entry.address())
 }

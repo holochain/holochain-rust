@@ -1,6 +1,5 @@
-use std::convert::TryFrom;
 use entry::{Entry, SerializedEntry};
-use error::{HolochainError, RibosomeReturnCode};
+use error::{RibosomeReturnCode};
 use json::*;
 use serde_json;
 use validation::ValidationPackageDefinition;
@@ -34,10 +33,9 @@ pub enum CallbackResult {
     ValidationPackageDefinition(ValidationPackageDefinition),
 }
 
-impl TryFrom<CallbackResult> for JsonString {
-    type Error = HolochainError;
-    fn try_from(v: CallbackResult) -> JsonResult {
-        default_try_to_json(v)
+impl From<CallbackResult> for JsonString {
+    fn from(v: CallbackResult) -> Self {
+        default_to_json(v)
     }
 }
 

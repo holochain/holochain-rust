@@ -293,7 +293,7 @@ pub fn get_entry_result(
     }
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, GetEntryArgs { address: address })?;
+    let allocation_of_input = store_as_json(&mut mem_stack, address)?;
 
     // Call WASMI-able get_entry
     let encoded_allocation_of_result: u32;
@@ -308,7 +308,11 @@ pub fn get_entry_result(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
@@ -339,7 +343,11 @@ pub fn link_entries<S: Into<String>>(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available
@@ -372,7 +380,11 @@ pub fn hash_entry<S: Into<String>>(serialized_entry: &SerializedEntry) -> ZomeAp
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available
@@ -432,7 +444,11 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ge
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.
@@ -457,7 +473,11 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    result.into()
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available

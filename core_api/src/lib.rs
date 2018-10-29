@@ -154,11 +154,7 @@ impl Holochain {
         cap: &str,
         fn_name: &str,
         params: &str,
-<<<<<<< HEAD
-    ) -> Result<JsonString, HolochainError> {
-=======
-    ) -> HolochainResult<String> {
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
+    ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
@@ -193,15 +189,12 @@ mod tests {
     };
     use holochain_core_types::error::RibosomeReturnCode;
     use holochain_dna::Dna;
-<<<<<<< HEAD
     use std::{
         convert::TryFrom,
         sync::{Arc, Mutex},
     };
-=======
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
@@ -236,19 +229,6 @@ mod tests {
         let (context, test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
 
-<<<<<<< HEAD
-        match result {
-            Ok(hc) => {
-                assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
-                assert!(!hc.active);
-                assert_eq!(String::from(hc.context.agent.to_owned()), "bob".to_string());
-                assert!(hc.instance.state().nucleus().has_initialized());
-                let test_logger = test_logger.lock().unwrap();
-                assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
-            }
-            Err(_) => assert!(false),
-        };
-=======
         assert!(result.is_ok());
         let hc = result.unwrap();
 
@@ -258,7 +238,6 @@ mod tests {
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
     }
 
     #[test]

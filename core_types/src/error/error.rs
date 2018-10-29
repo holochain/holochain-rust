@@ -116,6 +116,15 @@ impl From<ZomeApiError> for HolochainError {
     }
 }
 
+impl From<HolochainError> for ZomeApiError {
+    fn from(holochain_error: HolochainError) -> Self {
+        match holochain_error {
+            HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
+            _ => ZomeApiError::Internal(holochain_error.description().into()),
+        }
+    }
+}
+
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();
@@ -163,7 +172,7 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
-#[derive(Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ZomeApiInternalResult {
     pub ok: bool,
     pub value: String,
@@ -186,6 +195,12 @@ impl ZomeApiInternalResult {
             value: JsonString::null().into(),
             error: error_string.into(),
         }
+    }
+}
+
+impl From<ZomeApiInternalResult> for JsonString {
+    fn from(v: ZomeApiInternalResult) -> Self {
+        default_to_json(v)
     }
 }
 
@@ -214,10 +229,9 @@ impl From<RibosomeErrorReport> for String {
     }
 }
 
-impl TryFrom<RibosomeErrorReport> for JsonString {
-    type Error = HolochainError;
-    fn try_from(v: RibosomeErrorReport) -> JsonResult {
-        default_try_to_json(v)
+impl From<RibosomeErrorReport> for JsonString {
+    fn from(v: RibosomeErrorReport) -> Self {
+        default_to_json(v)
     }
 }
 

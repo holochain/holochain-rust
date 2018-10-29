@@ -14,7 +14,6 @@
 pub extern crate serde;
 #[macro_use]
 extern crate serde_json;
-extern crate serde_derive;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
@@ -23,7 +22,7 @@ pub extern crate holochain_core_types;
 pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
-mod api;
+pub mod api;
 pub mod entry_definition;
 pub mod global_fns;
 pub mod globals;
@@ -36,9 +35,8 @@ use self::RibosomeError::*;
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    api_serialization::get_entry::{GetEntryResult, GetResultStatus},
     holochain_core_types::{
-        cas::content::Address, entry::SerializedEntry, hash::HashString, json::JsonString,
+        hash::HashString, json::JsonString,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -214,16 +212,6 @@ pub fn make_hash<S: Into<String>>(
 }
 
 /// FIXME DOC
-pub fn call<S: Into<String>>(
-    _zome_name: S,
-    _function_name: S,
-    _arguments: serde_json::Value,
-) -> Result<serde_json::Value, RibosomeError> {
-    // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
-}
-
-/// FIXME DOC
 pub fn sign<S: Into<String>>(_doc: S) -> Result<String, RibosomeError> {
     // FIXME
     Err(RibosomeError::FunctionNotImplemented)
@@ -261,56 +249,6 @@ pub fn remove_entry<S: Into<String>>(
     _entry: HashString,
     _message: S,
 ) -> Result<HashString, RibosomeError> {
-    // FIXME
-    Err(RibosomeError::FunctionNotImplemented)
-}
-
-/// implements access to low-level WASM hc_get_entry
-pub fn get_entry(entry_address: Address) -> Result<Option<SerializedEntry>, RibosomeError> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-
-    // Put args in struct and serialize into memory
-    let input = GetEntryArgs {
-        address: entry_address,
-    };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(RibosomeError::RibosomeFailed(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
-
-    // Call WASMI-able get_entry
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
-    }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_json(encoded_allocation_of_result as u32);
-    if let Err(err_raw_str) = result {
-        return Err(RibosomeError::RibosomeFailed(String::from(err_raw_str)));
-    }
-    let get_entry_result: GetEntryResult = result.unwrap();
-
-    // Free result & input allocations and all allocations made inside commit()
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-
-    match get_entry_result.status {
-        GetResultStatus::Found => Ok(get_entry_result.maybe_serialized_entry),
-        GetResultStatus::NotFound => Ok(None),
-    }
-}
-
-/// FIXME DOC
-pub fn link_entries<S: Into<String>>(
-    _base: HashString,
-    _target: HashString,
-    _tag: S,
-) -> Result<(), RibosomeError> {
     // FIXME
     Err(RibosomeError::FunctionNotImplemented)
 }

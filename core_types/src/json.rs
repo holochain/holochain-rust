@@ -112,6 +112,13 @@ pub fn default_try_from_json<D: DeserializeOwned>(
     }
 }
 
+impl TryFrom<JsonString> for () {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 impl Display for JsonString {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", String::from(self),)

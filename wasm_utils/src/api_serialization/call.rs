@@ -10,9 +10,15 @@ pub struct ZomeFnCallArgs {
     pub fn_args: String,
 }
 
-impl TryFrom<ZomeFnCallArgs> for JsonString {
+impl From<ZomeFnCallArgs> for JsonString {
+    fn from(v: ZomeFnCallArgs) -> Self {
+        default_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for ZomeFnCallArgs {
     type Error = HolochainError;
-    fn try_from(v: ZomeFnCallArgs) -> JsonResult {
-        default_try_to_json(v)
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }

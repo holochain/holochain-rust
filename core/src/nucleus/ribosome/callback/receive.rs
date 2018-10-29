@@ -8,7 +8,7 @@ pub fn receive(
     context: Arc<Context>,
     zome: &str,
     // we ignore params for genesis
-    params: &CallbackParams,
+    params: CallbackParams,
 ) -> CallbackResult {
     call(context, zome, &Callback::Receive, params)
 }

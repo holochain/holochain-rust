@@ -1,9 +1,9 @@
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
 use nucleus::ribosome::Runtime;
-use serde_json;
 use std::collections::HashSet;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::convert::TryFrom;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -14,8 +14,8 @@ pub fn invoke_get_links(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: GetLinksArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match GetLinksArgs::try_from(args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };

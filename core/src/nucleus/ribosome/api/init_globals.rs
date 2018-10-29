@@ -17,7 +17,7 @@ pub fn invoke_init_globals(
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
         dna_hash: HashString::from(""),
-        agent_id_str: runtime.context.agent.to_string(),
+        agent_id_str: String::from(runtime.context.agent),
         // TODO #233 - Implement agent pub key hash
         agent_address: HashString::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
@@ -51,7 +51,7 @@ pub fn invoke_init_globals(
     };
 
     // Store it in wasm memory
-    return runtime.store_json_string(globals);
+    return runtime.store_as_json_string(globals);
 }
 
 #[cfg(test)]

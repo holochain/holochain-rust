@@ -14,6 +14,8 @@ use holochain_core_types::{
 use holochain_core_types::ribosome::callback::CallbackResult;
 use snowflake;
 use std::{sync::Arc, thread};
+use nucleus::ribosome::callback::validation_package::get_validation_package_definition;
+use holochain_core_types::entry::SerializedEntry;
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -27,13 +29,13 @@ pub fn build_validation_package(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry.entry_type().as_str())
+        .get_zome_name_for_entry_type(&String::from(entry.entry_type().to_owned()))
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
-                entry.entry_type().as_str()
-            ))));;
+                String::from(entry.entry_type().to_owned())
+            ))));
         }
         Some(_) => {
             let id = id.clone();
@@ -57,7 +59,7 @@ pub fn build_validation_package(
 
             thread::spawn(move || {
                 let maybe_callback_result =
-                    callback::validation_package::get_validation_package_definition(
+                    get_validation_package_definition(
                         entry.entry_type().clone(),
                         context.clone(),
                     );
@@ -82,7 +84,7 @@ pub fn build_validation_package(
                             ChainEntries => {
                                 let mut package = ValidationPackage::only_header(entry_header);
                                 package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context));
+                                    Some(all_public_chain_entries(&context).into_iter().map(|entry| SerializedEntry::from(entry)).collect());
                                 package
                             }
                             ChainHeaders => {
@@ -94,7 +96,7 @@ pub fn build_validation_package(
                             ChainFull => {
                                 let mut package = ValidationPackage::only_header(entry_header);
                                 package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context));
+                                    Some(all_public_chain_entries(&context).into_iter().map(|entry| SerializedEntry::from(entry)).collect());
                                 package.source_chain_headers =
                                     Some(all_public_chain_headers(&context));
                                 package

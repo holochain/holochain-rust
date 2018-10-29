@@ -6,6 +6,7 @@ use holochain_core_types::json::JsonString;
 use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs};
 use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::convert::TryFrom;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -16,7 +17,7 @@ pub fn invoke_link_entries(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_json_from_args(&args);
+    let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str) {
         Ok(entry_input) => entry_input,
         // Exit on error
@@ -29,7 +30,7 @@ pub fn invoke_link_entries(
 
     let result = match task_result {
         Ok(_) => ZomeApiInternalResult::success(JsonString::null()),
-        Err(e) => ZomeApiInternalResult::failure(e.to_string()),
+        Err(e) => ZomeApiInternalResult::failure(&e.to_string()),
     };
 
     runtime.store_as_json_string(result)

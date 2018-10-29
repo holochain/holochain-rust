@@ -48,6 +48,13 @@ impl TryFrom<JsonString> for HashString {
     }
 }
 
+impl TryFrom<JsonString> for Vec<HashString> {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())

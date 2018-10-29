@@ -116,7 +116,7 @@ impl AddressableContent for AgentStateSnapshot {
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(content.to_owned())
+        Self::try_from(content.to_owned()).expect("could not deserialized content")
     }
 
     fn address(&self) -> Address {
@@ -288,7 +288,7 @@ pub mod tests {
 
     /// dummy action response for a successful get as test_entry()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(SerializedEntry::from(test_entry())))
+        ActionResponse::GetEntry(Some(test_entry().into()))
     }
 
     #[test]

@@ -8,9 +8,9 @@ use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
     ZomeFnCall,
 };
-use serde_json;
 use std::sync::{mpsc::channel, Arc};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::convert::TryFrom;
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
@@ -19,7 +19,7 @@ impl ZomeFnCall {
             &args.zome_name,
             &args.cap_name,
             &args.fn_name,
-            &args.fn_args,
+            args.fn_args,
         )
     }
 }
@@ -36,8 +36,8 @@ pub fn invoke_call(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: ZomeFnCallArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match ZomeFnCallArgs::try_from(args_str) {
         Ok(input) => input,
         // Exit on error
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),

@@ -1,15 +1,12 @@
-use error::HolochainError;
-use json::*;
-use error::error::HcResult;
-use std::convert::TryFrom;
 use cas::content::{Address, AddressableContent, Content};
 use entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
-use json::{JsonString, RawString};
+use error::{error::HcResult, HolochainError};
+use json::{JsonString, RawString, *};
 use snowflake;
-use std::ops::Deref;
+use std::{convert::TryFrom, ops::Deref};
 
 pub type EntryValue = JsonString;
 
@@ -132,7 +129,9 @@ impl AddressableContent for Entry {
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(SerializedEntry::try_from(content.to_owned()).expect("failed to restore Entry content"))
+        Self::from(
+            SerializedEntry::try_from(content.to_owned()).expect("failed to restore Entry content"),
+        )
     }
 }
 
@@ -322,7 +321,10 @@ pub mod tests {
             expected,
             JsonString::from(SerializedEntry::from(entry.clone()))
         );
-        assert_eq!(entry, Entry::from(SerializedEntry::try_from(expected.clone()).unwrap()));
+        assert_eq!(
+            entry,
+            Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
+        );
         assert_eq!(entry, Entry::from(SerializedEntry::from(entry.clone())));
 
         let sys_entry = test_sys_entry();

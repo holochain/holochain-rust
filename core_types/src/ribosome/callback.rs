@@ -1,5 +1,5 @@
-use entry::{SerializedEntry};
-use error::{RibosomeReturnCode};
+use entry::SerializedEntry;
+use error::RibosomeReturnCode;
 use json::*;
 use serde_json;
 use validation::ValidationPackageDefinition;

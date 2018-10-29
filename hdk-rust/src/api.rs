@@ -1,14 +1,16 @@
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
-use holochain_core_types::error::ZomeApiInternalResult;
-use holochain_core_types::error::{ZomeApiError, ZomeApiResult};
 use globals::*;
+use holochain_core_types::{
+    cas::content::Address,
+    entry::Entry,
+    error::{ZomeApiError, ZomeApiInternalResult, ZomeApiResult},
+};
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, GetResultStatus},
-        get_links::{GetLinksArgs},
-        link_entries::{LinkEntriesArgs},
-        QueryArgs, ZomeFnCallArgs,
+        get_entry::{GetEntryOptions, GetEntryResult, GetResultStatus},
+        get_links::{GetLinksArgs, GetLinksResult},
+        link_entries::LinkEntriesArgs,
+        QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::{
         entry::SerializedEntry,
@@ -20,9 +22,6 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::convert::TryInto;
-use holochain_core_types::entry::Entry;
-use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
-use holochain_wasm_utils::api_serialization::QueryResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -210,12 +209,15 @@ pub fn call<S: Into<String>>(
     }
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, ZomeFnCallArgs {
-        zome_name: zome_name.into(),
-        cap_name: cap_name.into(),
-        fn_name: fn_name.into(),
-        fn_args: String::from(fn_args),
-    })?;
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        ZomeFnCallArgs {
+            zome_name: zome_name.into(),
+            cap_name: cap_name.into(),
+            fn_name: fn_name.into(),
+            fn_args: String::from(fn_args),
+        },
+    )?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result: u32;
@@ -237,7 +239,7 @@ pub fn call<S: Into<String>>(
 /// will have to pass the defined validation rules for that entry type.
 /// If the entry type is defined as public, will also publish the entry to the DHT.
 /// Returns either an address of the committed entry as a string, or an error.
-pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<HashString> {
+pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -267,15 +269,12 @@ pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<HashStr
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry(address: HashString) -> Result<Option<Entry>, ZomeApiError>
-{
+pub fn get_entry(address: HashString) -> Result<Option<Entry>, ZomeApiError> {
     let result = get_entry_result(address, GetEntryOptions {})?;
     match result.status {
-        GetResultStatus::Found => {
-            match result.maybe_serialized_entry {
-                Some(serialized_entry) => Ok(Some(Entry::from(serialized_entry))),
-                None => Err(ZomeApiError::Internal("Missing found Entry".into())),
-            }
+        GetResultStatus::Found => match result.maybe_serialized_entry {
+            Some(serialized_entry) => Ok(Some(Entry::from(serialized_entry))),
+            None => Err(ZomeApiError::Internal("Missing found Entry".into())),
         },
         GetResultStatus::NotFound => Ok(None),
     }
@@ -326,11 +325,14 @@ pub fn link_entries<S: Into<String>>(
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, LinkEntriesArgs {
-        base: base.clone(),
-        target: target.clone(),
-        tag: tag.into(),
-    })?;
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        LinkEntriesArgs {
+            base: base.clone(),
+            target: target.clone(),
+            tag: tag.into(),
+        },
+    )?;
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
@@ -363,7 +365,9 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
 /// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
-pub fn hash_entry<S: Into<String>>(serialized_entry: &SerializedEntry) -> ZomeApiResult<HashString> {
+pub fn hash_entry<S: Into<String>>(
+    serialized_entry: &SerializedEntry,
+) -> ZomeApiResult<HashString> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
@@ -428,10 +432,13 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ge
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, GetLinksArgs {
-        entry_address: base.clone(),
-        tag: tag.into(),
-    })?;
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        GetLinksArgs {
+            entry_address: base.clone(),
+            tag: tag.into(),
+        },
+    )?;
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
@@ -458,10 +465,13 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, QueryArgs {
-        entry_type_name: entry_type_name.to_string(),
-        limit: limit,
-    })?;
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        QueryArgs {
+            entry_type_name: entry_type_name.to_string(),
+            limit: limit,
+        },
+    )?;
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_query(allocation_of_input.encode() as u32) };

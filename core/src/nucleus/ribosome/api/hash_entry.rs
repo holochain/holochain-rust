@@ -1,10 +1,13 @@
-use holochain_core_types::{self, entry::Entry, entry::SerializedEntry, entry_type::EntryType};
+use holochain_core_types::{
+    self,
+    cas::content::AddressableContent,
+    entry::{Entry, SerializedEntry},
+    entry_type::EntryType,
+};
 use holochain_dna::Dna;
 use nucleus::ribosome::Runtime;
-use std::str::FromStr;
+use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::cas::content::AddressableContent;
-use std::convert::TryFrom;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {

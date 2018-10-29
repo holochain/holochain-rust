@@ -6,9 +6,11 @@ pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
-use holochain_core_types::error::RibosomeReturnCode;
 use context::Context;
-use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
+use holochain_core_types::{
+    error::RibosomeReturnCode,
+    ribosome::callback::{CallbackParams, CallbackResult},
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -18,9 +20,8 @@ use nucleus::{
     },
     ZomeFnCall,
 };
-use std::convert::TryFrom;
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use std::{convert::TryFrom, str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -138,7 +139,7 @@ pub(crate) fn run_callback(
                 Ok(return_code) => CallbackResult::from(return_code),
                 Err(_) => CallbackResult::from(call_result),
             }
-        },
+        }
         Err(_) => CallbackResult::NotImplemented,
     }
 }

@@ -3,17 +3,16 @@ use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
-    error::HolochainError,
+    error::{HolochainError, ZomeApiInternalResult},
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use holochain_core_types::error::ZomeApiInternalResult;
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
     ribosome::Runtime,
 };
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32

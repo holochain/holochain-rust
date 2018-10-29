@@ -7,15 +7,14 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
+    ribosome::callback::CallbackResult,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use holochain_core_types::ribosome::callback::CallbackResult;
+use nucleus::ribosome::callback::validation_package::get_validation_package_definition;
 use snowflake;
 use std::{sync::Arc, thread};
-use nucleus::ribosome::callback::validation_package::get_validation_package_definition;
-use holochain_core_types::entry::SerializedEntry;
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -59,10 +58,7 @@ pub fn build_validation_package(
 
             thread::spawn(move || {
                 let maybe_callback_result =
-                    get_validation_package_definition(
-                        entry.entry_type().clone(),
-                        context.clone(),
-                    );
+                    get_validation_package_definition(entry.entry_type().clone(), context.clone());
 
                 let maybe_validation_package = maybe_callback_result
                     .and_then(|callback_result| match callback_result {
@@ -83,8 +79,12 @@ pub fn build_validation_package(
                             Entry => ValidationPackage::only_header(entry_header),
                             ChainEntries => {
                                 let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context).into_iter().map(|entry| SerializedEntry::from(entry)).collect());
+                                package.source_chain_entries = Some(
+                                    all_public_chain_entries(&context)
+                                        .into_iter()
+                                        .map(|entry| SerializedEntry::from(entry))
+                                        .collect(),
+                                );
                                 package
                             }
                             ChainHeaders => {
@@ -95,8 +95,12 @@ pub fn build_validation_package(
                             }
                             ChainFull => {
                                 let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context).into_iter().map(|entry| SerializedEntry::from(entry)).collect());
+                                package.source_chain_entries = Some(
+                                    all_public_chain_entries(&context)
+                                        .into_iter()
+                                        .map(|entry| SerializedEntry::from(entry))
+                                        .collect(),
+                                );
                                 package.source_chain_headers =
                                     Some(all_public_chain_headers(&context));
                                 package
@@ -247,7 +251,12 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(all_public_chain_entries(&context).into_iter().map(|entry| entry.serialize()).collect()),
+            source_chain_entries: Some(
+                all_public_chain_entries(&context)
+                    .into_iter()
+                    .map(|entry| entry.serialize())
+                    .collect(),
+            ),
             source_chain_headers: None,
             custom: None,
         };
@@ -301,7 +310,12 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(all_public_chain_entries(&context).into_iter().map(|entry| entry.serialize()).collect()),
+            source_chain_entries: Some(
+                all_public_chain_entries(&context)
+                    .into_iter()
+                    .map(|entry| entry.serialize())
+                    .collect(),
+            ),
             source_chain_headers: Some(all_public_chain_headers(&context)),
             custom: None,
         };

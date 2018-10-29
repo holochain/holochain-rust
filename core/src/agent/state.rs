@@ -16,8 +16,7 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use std::{collections::HashMap, sync::Arc};
-use std::convert::TryFrom;
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.

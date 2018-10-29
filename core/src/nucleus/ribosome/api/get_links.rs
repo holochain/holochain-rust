@@ -1,9 +1,8 @@
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
 use nucleus::ribosome::Runtime;
-use std::collections::HashSet;
+use std::{collections::HashSet, convert::TryFrom};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use std::convert::TryFrom;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -53,7 +52,8 @@ pub mod tests {
     use dht::actions::add_link::add_link;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::Address, entry::Entry, entry_type::test_entry_type, links_entry::Link,
+        cas::content::Address, entry::Entry, entry_type::test_entry_type, json::JsonString,
+        links_entry::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use instance::tests::{test_context_and_logger, test_instance};
@@ -62,7 +62,6 @@ pub mod tests {
         Defn,
     };
     use serde_json;
-    use holochain_core_types::json::JsonString;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
@@ -92,7 +91,10 @@ pub mod tests {
 
         let mut entry_hashes: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::new(&test_entry_type(), &JsonString::from(format!("entry{} value", i)));
+            let entry = Entry::new(
+                &test_entry_type(),
+                &JsonString::from(format!("entry{} value", i)),
+            );
             let hash = block_on(commit_entry(
                 entry,
                 &initialized_context.action_channel.clone(),
@@ -116,15 +118,19 @@ pub mod tests {
         );
 
         let ordering1: bool = call_result
-            == JsonString::from(format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[1], entry_hashes[2]
-            ) + "\u{0}");
+            == JsonString::from(
+                format!(
+                    r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
+                    entry_hashes[1], entry_hashes[2]
+                ) + "\u{0}",
+            );
         let ordering2: bool = call_result
-            == JsonString::from(format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[2], entry_hashes[1]
-            ) + "\u{0}");
+            == JsonString::from(
+                format!(
+                    r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
+                    entry_hashes[2], entry_hashes[1]
+                ) + "\u{0}",
+            );
 
         assert!(ordering1 || ordering2);
 

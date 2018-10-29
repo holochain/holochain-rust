@@ -2,15 +2,16 @@ extern crate holochain_agent;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate wabt;
-extern crate holochain_core_types;
 
 use holochain_agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_api::{error::HolochainResult, Holochain};
+use holochain_core_types::json::JsonString;
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
@@ -30,7 +31,6 @@ use std::{
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
-use holochain_core_types::json::JsonString;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {

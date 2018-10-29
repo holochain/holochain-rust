@@ -1,6 +1,8 @@
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::error::HcResult;
-use holochain_core_types::{entry::SerializedEntry, json::*};
+use holochain_core_types::{
+    entry::SerializedEntry,
+    error::{HcResult, HolochainError},
+    json::*,
+};
 use serde_json;
 use std::convert::TryFrom;
 

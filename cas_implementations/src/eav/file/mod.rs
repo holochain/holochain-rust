@@ -49,7 +49,7 @@ pub mod tests {
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
-        json::{RawString},
+        json::RawString,
     };
 
     #[test]

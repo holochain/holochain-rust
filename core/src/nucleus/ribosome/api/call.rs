@@ -8,19 +8,16 @@ use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
     ZomeFnCall,
 };
-use std::sync::{mpsc::channel, Arc};
+use std::{
+    convert::TryFrom,
+    sync::{mpsc::channel, Arc},
+};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use std::convert::TryFrom;
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(
-            &args.zome_name,
-            &args.cap_name,
-            &args.fn_name,
-            args.fn_args,
-        )
+        ZomeFnCall::new(&args.zome_name, &args.cap_name, &args.fn_name, args.fn_args)
     }
 }
 

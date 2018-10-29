@@ -65,7 +65,7 @@ pub mod tests {
             content::{ExampleAddressableContent, OtherExampleAddressableContent},
             storage::StorageTestSuite,
         },
-        json::{RawString},
+        json::RawString,
     };
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {

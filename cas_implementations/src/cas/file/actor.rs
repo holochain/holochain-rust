@@ -77,9 +77,7 @@ impl FilesystemStorageActor {
     /// filesystem CAS fetch. NOT thread safe.
     fn unthreadable_fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         if self.unthreadable_contains(&address)? {
-            Ok(Some(read_to_string(
-                self.address_to_path(address),
-            )?.into()))
+            Ok(Some(read_to_string(self.address_to_path(address))?.into()))
         } else {
             Ok(None)
         }

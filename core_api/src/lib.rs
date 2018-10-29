@@ -80,7 +80,7 @@ use holochain_core::{
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
-use std::sync::{Arc};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -559,6 +559,9 @@ mod tests {
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
             "debug_stacked_hello",
         );
-        assert_eq!(JsonString::from("{\"value\":\"fish\"}"), call_result.unwrap());
+        assert_eq!(
+            JsonString::from("{\"value\":\"fish\"}"),
+            call_result.unwrap()
+        );
     }
 }

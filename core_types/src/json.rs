@@ -1,8 +1,10 @@
-use std::convert::TryFrom;
 use error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
-use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use std::{
+    convert::TryFrom,
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+};
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data

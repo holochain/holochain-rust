@@ -1,8 +1,7 @@
 use holochain_core_types::entry_type::EntryType;
-use holochain_wasm_utils::api_serialization::{QueryArgs};
+use holochain_wasm_utils::api_serialization::QueryArgs;
 use nucleus::ribosome::Runtime;
-use std::convert::TryFrom;
-use std::str::FromStr;
+use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::query function code

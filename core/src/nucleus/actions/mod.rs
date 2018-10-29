@@ -10,7 +10,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent, chain_header::ChainHeader, entry::Entry,
-        entry_type::EntryType,
+        entry_type::EntryType, json::JsonString,
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
     use instance::{
@@ -19,7 +19,6 @@ pub mod tests {
     };
     use std::sync::Arc;
     use test_utils::*;
-    use holochain_core_types::json::JsonString;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {

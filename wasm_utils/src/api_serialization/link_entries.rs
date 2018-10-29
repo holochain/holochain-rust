@@ -1,6 +1,6 @@
-use holochain_core_types::{cas::content::Address, links_entry::Link};
-use holochain_core_types::json::*;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    cas::content::Address, error::HolochainError, json::*, links_entry::Link,
+};
 use std::convert::TryFrom;
 
 #[derive(Deserialize, Default, Debug, Serialize)]

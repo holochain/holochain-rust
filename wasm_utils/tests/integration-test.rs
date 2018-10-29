@@ -1,22 +1,20 @@
 #![feature(try_from)]
 extern crate holochain_agent;
+extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
-extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
 
 use holochain_core::logger::Logger;
 use holochain_core_types::{
-    error::{HolochainError},
+    error::HolochainError,
     json::{JsonString, RawString},
 };
-use std::{
-    convert::TryFrom,
-};
+use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
@@ -46,8 +44,7 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
 #[test]
 fn can_return_error_report() {
     let call_result = call_zome_function_with_hc("test_error_report");
-    let error_report =
-        RibosomeErrorReport::try_from(call_result.clone().unwrap()).unwrap();
+    let error_report = RibosomeErrorReport::try_from(call_result.clone().unwrap()).unwrap();
     assert_eq!("Zome assertion failed: `false`", error_report.description);
 }
 
@@ -60,13 +57,19 @@ fn call_store_string_ok() {
 #[test]
 fn call_store_as_json_str_ok() {
     let call_result = call_zome_function_with_hc("test_store_as_json_str_ok");
-    assert_eq!(JsonString::from(RawString::from("fish")), call_result.unwrap());
+    assert_eq!(
+        JsonString::from(RawString::from("fish")),
+        call_result.unwrap()
+    );
 }
 
 #[test]
 fn call_store_as_json_obj_ok() {
     let call_result = call_zome_function_with_hc("test_store_as_json_obj_ok");
-    assert_eq!(JsonString::from("{\"value\":\"fish\"}"), call_result.unwrap());
+    assert_eq!(
+        JsonString::from("{\"value\":\"fish\"}"),
+        call_result.unwrap()
+    );
 }
 
 #[test]
@@ -109,13 +112,19 @@ fn call_load_json_from_raw_err() {
 #[test]
 fn call_load_json_ok() {
     let call_result = call_zome_function_with_hc("test_load_json_ok");
-    assert_eq!(JsonString::from("{\"value\":\"fish\"}"), call_result.unwrap());
+    assert_eq!(
+        JsonString::from("{\"value\":\"fish\"}"),
+        call_result.unwrap()
+    );
 }
 
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
-    assert_eq!(JsonString::from(RawString::from("Unspecified")), call_result.unwrap());
+    assert_eq!(
+        JsonString::from(RawString::from("Unspecified")),
+        call_result.unwrap()
+    );
 }
 
 #[test]
@@ -139,13 +148,19 @@ fn call_stacked_strings() {
 #[test]
 fn call_stacked_json_str() {
     let call_result = call_zome_function_with_hc("test_stacked_json_str");
-    assert_eq!(JsonString::from(RawString::from("first")), call_result.unwrap());
+    assert_eq!(
+        JsonString::from(RawString::from("first")),
+        call_result.unwrap()
+    );
 }
 
 #[test]
 fn call_stacked_json_obj() {
     let call_result = call_zome_function_with_hc("test_stacked_json_obj");
-    assert_eq!(JsonString::from("{\"value\":\"first\"}"), call_result.unwrap());
+    assert_eq!(
+        JsonString::from("{\"value\":\"first\"}"),
+        call_result.unwrap()
+    );
 }
 
 #[test]

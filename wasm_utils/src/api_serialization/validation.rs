@@ -1,5 +1,4 @@
-use holochain_core_types::validation::ValidationData;
-use holochain_core_types::json::*;
+use holochain_core_types::{json::*, validation::ValidationData};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct EntryValidationArgs {

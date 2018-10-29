@@ -7,8 +7,7 @@ use memory_allocation::{
 };
 use serde::Deserialize;
 use serde_json;
-use std::{ffi::CStr, os::raw::c_char, slice};
-use std::convert::TryInto;
+use std::{convert::TryInto, ffi::CStr, os::raw::c_char, slice};
 
 //-------------------------------------------------------------------------------------------------
 // Raw
@@ -78,7 +77,9 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let j: JsonString = jsonable.try_into().map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+    let j: JsonString = jsonable
+        .try_into()
+        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {

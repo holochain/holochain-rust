@@ -1,9 +1,9 @@
 use futures::executor::block_on;
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use holochain_core_types::cas::content::Address;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
+use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -43,7 +43,9 @@ mod tests {
 
     use self::wabt::Wat2Wasm;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, json::JsonString,
+        cas::content::{Address, AddressableContent},
+        entry::test_entry,
+        json::JsonString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -57,7 +59,6 @@ mod tests {
         ZomeFnCall,
     };
     use std::sync::Arc;
-    use holochain_core_types::cas::content::Address;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {

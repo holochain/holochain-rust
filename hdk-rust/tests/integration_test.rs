@@ -173,7 +173,10 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from("{\"stuff\":\"non fail\"}"));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"stuff\":\"non fail\"}")
+    );
 
     let result = hc.call(
         "test_zome",
@@ -199,7 +202,10 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from("{\"got back no entry\":true}"));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"got back no entry\":true}")
+    );
 
     // test the case with a bad hash
     let result = hc.call(
@@ -331,7 +337,9 @@ fn can_check_hash_app_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(RawString::from("QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966")),
+        JsonString::from(RawString::from(
+            "QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966"
+        )),
     );
 }
 

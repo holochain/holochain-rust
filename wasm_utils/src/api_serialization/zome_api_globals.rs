@@ -1,6 +1,4 @@
-use holochain_core_types::hash::HashString;
-use holochain_core_types::json::*;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, hash::HashString, json::*};
 use std::convert::TryFrom;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]

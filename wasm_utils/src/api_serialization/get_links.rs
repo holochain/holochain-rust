@@ -1,7 +1,5 @@
-use holochain_core_types::cas::content::Address;
-use holochain_core_types::json::*;
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 use std::convert::TryFrom;
-use holochain_core_types::error::HolochainError;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksArgs {

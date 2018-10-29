@@ -1,12 +1,13 @@
 use dht::actions::add_link::*;
 use futures::executor::block_on;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::error::ZomeApiInternalResult;
-use holochain_core_types::json::JsonString;
-use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs};
+use holochain_core_types::{
+    error::{HolochainError, ZomeApiInternalResult},
+    json::JsonString,
+};
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use nucleus::ribosome::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -44,7 +45,7 @@ pub mod tests {
     use agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry,
+        cas::content::AddressableContent, entry::test_entry, json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
     use instance::tests::{test_context_and_logger, test_instance};
@@ -52,7 +53,6 @@ pub mod tests {
         api::{tests::*, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::json::JsonString;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -84,8 +84,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
-                + "\u{0}"),
+            JsonString::from(
+                r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
+                    + "\u{0}"
+            ),
         );
     }
 

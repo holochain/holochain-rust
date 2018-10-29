@@ -1,11 +1,8 @@
-use std::convert::TryFrom;
-use json::default_try_from_json;
 use error::error::HolochainError;
-use json::default_to_json;
-use json::JsonString;
+use json::{default_to_json, default_try_from_json, JsonString};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
-use std::fmt;
+use std::{convert::TryFrom, fmt};
 
 // HashString newtype for String
 #[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
@@ -151,7 +148,8 @@ pub mod tests {
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            HashString::encode_from_json_string(JsonString::from(Foo { foo: 5 }), Hash::SHA2256).to_string(),
+            HashString::encode_from_json_string(JsonString::from(Foo { foo: 5 }), Hash::SHA2256)
+                .to_string(),
         );
     }
 }

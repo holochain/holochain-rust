@@ -52,5 +52,5 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let input = load_json(encoded_allocation_of_input as u32).unwrap();
     let output = test_inner(input);
-    return store_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
+    return store_as_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));
 }

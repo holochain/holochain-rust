@@ -308,8 +308,10 @@ mod tests {
             &[0x42],
             Err(IpcError::GenericError {
                 error: "test".to_string(),
-            }.into()),
-        ).unwrap();
+            }
+            .into()),
+        )
+        .unwrap();
         assert_eq!(1, ipc.priv_test_sent_count());
         let mut sent = ipc.priv_test_next_sent();
         assert_eq!(3, sent.len());

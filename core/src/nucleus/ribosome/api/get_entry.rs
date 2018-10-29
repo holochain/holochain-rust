@@ -205,7 +205,8 @@ mod tests {
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             call_result,
@@ -227,7 +228,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
@@ -271,7 +273,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         let mut expected = "".to_owned();
         expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");

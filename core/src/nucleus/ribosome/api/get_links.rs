@@ -39,7 +39,8 @@ pub fn invoke_get_links(
             .map_err(|holochain_error| holochain_error.to_string())
             .err()
             .unwrap_or(String::from("")),
-    }).expect("Could not serialize GetLinksResult");
+    })
+    .expect("Could not serialize GetLinksResult");
 
     runtime.store_utf8(&json)
 }
@@ -96,7 +97,8 @@ pub mod tests {
                 entry,
                 &initialized_context.action_channel.clone(),
                 &initialized_context,
-            )).expect("Could not commit entry for testing");
+            ))
+            .expect("Could not commit entry for testing");
             entry_hashes.push(hash);
         }
 

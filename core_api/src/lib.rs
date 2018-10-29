@@ -211,7 +211,8 @@ mod tests {
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )

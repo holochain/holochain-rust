@@ -147,7 +147,8 @@ pub mod tests {
                 description: description.to_string(),
                 file_name: file!().to_string(),
                 line: line!().to_string(),
-            }.to_string(),
+            }
+            .to_string(),
         );
     }
 }

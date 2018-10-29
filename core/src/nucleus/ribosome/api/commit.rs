@@ -56,10 +56,17 @@ pub fn invoke_commit_app_entry(
                     entry_type.clone(),
                     entry.clone(),
                     validation_data,
-                    &runtime.context)
+                    &runtime.context,
+                )
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
+            .and_then(|_| {
+                commit_entry(
+                    entry.clone(),
+                    &runtime.context.action_channel,
+                    &runtime.context,
+                )
+            }),
     );
 
     let maybe_json = match task_result {

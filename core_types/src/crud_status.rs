@@ -31,7 +31,8 @@ impl ToString for CrudStatus {
             CrudStatus::MODIFIED => "8",
             CrudStatus::LOCKED => "16",
             _ => unreachable!(),
-        }.to_string()
+        }
+        .to_string()
     }
 }
 

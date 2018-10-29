@@ -97,7 +97,9 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                self.content_storage
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
             });
         previous
     }
@@ -142,7 +144,9 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                self.content_storage
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
             });
         previous
     }

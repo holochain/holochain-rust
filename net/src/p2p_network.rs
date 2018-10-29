@@ -70,7 +70,8 @@ pub trait P2pNetwork {
         let r = self.exec_raw_json(
             &(json!({
                 "method": "getState"
-            }).to_string()),
+            })
+            .to_string()),
             None,
         )?;
         if "pending" == r {
@@ -89,7 +90,8 @@ pub trait P2pNetwork {
         self.exec_raw_json(
             &(json!({
                 "method": "getDefaultConfig"
-            }).to_string()),
+            })
+            .to_string()),
             None,
         )
     }
@@ -158,7 +160,8 @@ pub trait P2pNetwork {
         self.exec_raw_json(
             &(json!({
                 "method": "dhtOnHoldCallback"
-            }).to_string()),
+            })
+            .to_string()),
             Some(Box::new(move |input| {
                 if cb(input)? {
                     return Ok("true".to_string());
@@ -438,7 +441,8 @@ mod tests {
                 &(json!({
                 "genomeHash": "blabla",
                 "payload": "blabla",
-            }).to_string()),
+            })
+                .to_string()),
             )?;
             assert_eq!("true".to_string(), res);
             Ok("undefined".to_string())
@@ -458,7 +462,8 @@ mod tests {
                 &(json!({
                 "genomeHash": "blabla",
                 "payload": "blabla",
-            }).to_string()),
+            })
+                .to_string()),
             )?;
             assert_eq!("false".to_string(), res);
             Ok("undefined".to_string())

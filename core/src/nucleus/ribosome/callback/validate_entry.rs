@@ -70,7 +70,8 @@ fn build_validation_call(
         entry_type,
         entry: entry.to_string(),
         validation_data,
-    }).expect("EntryValidationArgs could not be turned into JSON?!");
+    })
+    .expect("EntryValidationArgs could not be turned into JSON?!");
 
     Ok(ZomeFnCall::new(
         &zome_name,

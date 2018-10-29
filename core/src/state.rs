@@ -66,10 +66,11 @@ impl State {
                 ))?;
 
             Ok(Dna::from_entry(
-                &cas.fetch(dna_entry_header.entry_address())?
-                    .ok_or(HolochainError::ErrorGeneric(
+                &cas.fetch(dna_entry_header.entry_address())?.ok_or(
+                    HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
-                    ))?,
+                    ),
+                )?,
             ))
         }
 

@@ -176,7 +176,8 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
-            ).unwrap(),
+            )
+            .unwrap(),
         ),
         logger,
     )
@@ -225,6 +226,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap(),
+        )
+        .unwrap(),
     );
 }

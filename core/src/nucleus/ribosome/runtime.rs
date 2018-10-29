@@ -76,7 +76,6 @@ impl Runtime {
     // Stack any Serializable data as a json for the Zome to read as a returned value.
     pub fn store_as_json<T: serde::Serialize>(&mut self, data: T) -> ZomeApiResult {
         let maybe_json = serde_json::to_string(&data);
-        // Done
         match maybe_json {
             Err(_) => ribosome_error_code!(ResponseSerializationFailed),
             Ok(json) => self.store_utf8(&json),

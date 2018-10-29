@@ -85,7 +85,7 @@ pub mod tests {
         call_result.pop(); // Remove trailing character
         let core_err: CoreError = serde_json::from_str(&call_result).expect("valid CoreError json str");
         assert_eq!(
-            "ErrorGeneric(\"Base for link not found\")",
+            "Base for link not found",
             core_err.kind.to_string(),
         );
     }

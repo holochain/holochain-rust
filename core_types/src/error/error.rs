@@ -13,12 +13,11 @@ use std::{
 // CoreError
 //--------------------------------------------------------------------------------------------------
 
-impl ToJson for CoreError {
-    fn to_json(&self) -> HcResult<String> {
-        Ok(serde_json::to_string(self)?)
-    }
-}
-
+/// Holochain Core Error struct
+/// Any Error in Core should be wrapped in a CoreError so it can be passed to the Zome
+/// and back to the Holochain Instance via wasm memory.
+/// Follows the Error + ErrorKind pattern
+/// Holds extra debugging info for indicating where in code ther error occured.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct CoreError {
     pub kind: HolochainError,
@@ -28,7 +27,7 @@ pub struct CoreError {
     // pub stack_trace: Backtrace
 }
 
-// user inner error
+// Error trait by using the inner Error
 impl Error for CoreError {
     fn description(&self) -> &str {
         self.kind.description()
@@ -39,9 +38,9 @@ impl Error for CoreError {
 
 }
 impl CoreError {
-    pub fn new(err: HolochainError) -> Self {
+    pub fn new(hc_err: HolochainError) -> Self {
         CoreError {
-            kind: err,
+            kind: hc_err,
             file: String::new(),
             line: String::new(),
         }
@@ -63,12 +62,18 @@ impl fmt::Display for CoreError {
     }
 }
 
+impl ToJson for CoreError {
+    fn to_json(&self) -> HcResult<String> {
+        Ok(serde_json::to_string(self)?)
+    }
+}
+
 //--------------------------------------------------------------------------------------------------
 // HolochainError
 //--------------------------------------------------------------------------------------------------
 
 /// TODO rename to CoreErrorKind
-/// Enum holding all Holochain specific errors
+/// Enum holding all Holochain Core errors
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),

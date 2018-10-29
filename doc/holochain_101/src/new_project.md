@@ -2,7 +2,7 @@
 
 The command line tools discussed in the last article can be used to easily create a new folder on your computer, that contains all the initial folders and files needed for a Holochain application. 
 
-You will typically want to start a new Holochain application this way, since creating them all by hand would waste your time.  If you are adding a holochain back end to an existing project, then you will typically follow these same steps. 
+You will typically want to create a new project folder for a Holochain application this way.  This one approach will suit the creation of a new holochain powered app or adding holochain into an existing application. 
 
 In your terminal, change directories to one where you wish to initialize a new Holochain app. The command will create a new folder within the current directory for your app.
 

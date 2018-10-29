@@ -2,28 +2,29 @@
 extern crate hdk;
 extern crate holochain_wasm_utils;
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
 
 use boolinator::Boolinator;
-use hdk::{globals::G_MEM_STACK, error::ZomeApiError};
+use hdk::globals::G_MEM_STACK;
+use holochain_wasm_utils::holochain_core_types::error::ZomeApiError;
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
-use hdk::RibosomeError;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::entry::SerializedEntry;
-use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::{
-    memory_allocation::*, memory_serialization::*,
     holochain_core_types::{
         error::RibosomeErrorCode,
+        error::RibosomeReturnCode,
         hash::HashString,
         entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
 use hdk::holochain_dna::zome::entry_types::Sharing;
+use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 
 #[no_mangle]
 pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
@@ -95,31 +96,17 @@ struct EntryStruct {
     stuff: String
 }
 
-//
-zome_functions! {
-    check_commit_entry_macro: |entry_type: String, value: String| {
-        let serialized_entry = SerializedEntry::new(&entry_type, &value);
-        let res = hdk::commit_entry(&serialized_entry);
-        hdk::debug(format!("res: {:?}", res)).expect("debug() must work");
-        res
-    }
-}
+fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
+    let serialized_entry = SerializedEntry::new(&entry_type, &value);
+    let res = hdk::commit_entry(&serialized_entry);
+    hdk::debug(format!("res: {:?}", res)).expect("debug() must work");
 
-zome_functions! {
-    check_get_entry: |entry_address: Address| {
-        hdk::get_entry(entry_address)
-    }
-}
-
-fn handle_check_commit_entry_macro(entry_type_name: String, entry_content: String) -> serde_json::Value {
-    let entry_content = serde_json::from_str::<serde_json::Value>(&entry_content);
-    let res = hdk::commit_entry(&entry_type_name, entry_content.unwrap());
-    match res {
+    JsonString::from(match res {
         Ok(hash_str) => json!({ "address": hash_str }),
         Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
         Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
         Err(_) => unreachable!(),
-    }
+    })
 }
 
 fn handle_check_get_entry_result(entry_hash: HashString) -> serde_json::Value {
@@ -198,13 +185,13 @@ fn handle_links_roundtrip() -> serde_json::Value {
     hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag").expect("Can't link?!");
     hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
 
-    match hdk::get_links(&entry1_hash, "test-tag") {
-        Ok(result) => json!({"links": result.links}),
-        Err(error) => json!({"error": error}),
-    }
+    JsonString::from(match hdk::get_links(&entry1_hash, "test-tag") {
+        Ok(result) => format!("{{\"links\": {}}}", result.links),
+        Err(error) => format!("{{\"error\": {}}}", error),
+    })
 }
 
-fn handle_check_query() -> serde_json::Value {
+fn handle_check_query() -> JsonString {
     // Query DNA entry
     let result = hdk::query(&EntryType::Dna.to_string(), 0);
     assert!(result.is_ok());
@@ -238,14 +225,14 @@ fn handle_check_query() -> serde_json::Value {
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());
 
-    json!(result.unwrap())
+    JsonString::from(result.unwrap())
 }
 
-fn handle_check_hash_app_entry() -> serde_json::Value {
+fn handle_check_hash_app_entry() -> JsonString {
     // Setup
-    let entry_value = json!({
+    let entry_value = JsonString::from(json!({
         "stuff": "entry1"
-    });
+    }));
     let commit_hash = hdk::commit_entry("testEntryType", entry_value.clone()).unwrap();
     // Check bad entry type name
     let result = hdk::hash_entry("bad", entry_value.clone());
@@ -253,7 +240,7 @@ fn handle_check_hash_app_entry() -> serde_json::Value {
     // Check good entry type name
     let good_hash = hdk::hash_entry("testEntryType", entry_value).unwrap();
     assert!(commit_hash == good_hash);
-    json!(good_hash)
+    JsonString::from(good_hash)
 }
 
 fn handle_check_hash_sys_entry() -> serde_json::Value {
@@ -303,33 +290,12 @@ impl From<TweetResponse> for JsonString {
     }
 }
 
-zome_functions! {
-    send_tweet: |author: String, content: String| {
-        TweetResponse { first: author,  second: content}
-    }
-
 fn handle_send_tweet(author: String, content: String) -> TweetResponse {
     TweetResponse { first: author,  second: content}
 }
 
 #[derive(Serialize, Deserialize)]
-// struct TestEntryType {
-//     stuff: String,
-// }
 struct TestEntryType(String);
-
-// #[derive(Serialize, Deserialize)]
-// struct TestEntryTypeB(String);
-
-validations! {
-    [ENTRY] validate_testEntryType {
-        [hdk::ValidationPackage::Entry]
-        |entry: TestEntryType, _ctx: hdk::ValidationData| {
-            (entry.0 != "FAIL")
-                .ok_or_else(|| "FAIL content is not allowed".to_string())
-        }
-    }
-}
 
 define_zome! {
     entries: [
@@ -344,7 +310,7 @@ define_zome! {
             },
 
             validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
-                (entry.stuff != "FAIL")
+                (entry.0 != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
         ),
@@ -370,8 +336,8 @@ define_zome! {
     functions: {
         test (Public) {
             check_commit_entry_macro: {
-                inputs: |entry_type_name: String, entry_content: String|,
-                outputs: |result: serde_json::Value|,
+                inputs: |entry_type: String, value: String|,
+                outputs: |result: JsonString|,
                 handler: handle_check_commit_entry_macro
             }
 

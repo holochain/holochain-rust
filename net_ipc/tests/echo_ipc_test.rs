@@ -149,7 +149,13 @@ impl TestFrame {
         );
     }
 
+    #[cfg(windows)]
+    fn destroy(mut self) {
+        // TODO find a windows equivalent to kill()
+    }
+
     /// cleanup both the nodejs echo-server and the ipc client connection
+    #[cfg(not(windows))]
     fn destroy(mut self) {
         println!("attempting to kill echo server");
         unsafe {

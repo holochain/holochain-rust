@@ -139,7 +139,7 @@ pub mod tests {
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
     #[no_mangle]
-    fn __list_capabilities() -> HashMap<String, Capability> {
+    pub fn __list_capabilities() -> HashMap<String, Capability> {
         HashMap::new()
     }
 }

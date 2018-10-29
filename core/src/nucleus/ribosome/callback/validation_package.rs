@@ -2,7 +2,7 @@ extern crate serde_json;
 use context::Context;
 use std::convert::TryFrom;
 use holochain_core_types::{
-    entry_type::EntryType, error::HolochainError, json::JsonString,
+    entry_type::EntryType, error::HolochainError,
     validation::ValidationPackageDefinition,
 };
 use nucleus::{
@@ -38,7 +38,7 @@ pub fn get_validation_package_definition(
                     &zome_name,
                     "no capability, since this is an entry validation call",
                     "__hdk_get_validation_package_for_entry_type",
-                    JsonString::from(app_entry_type),
+                    app_entry_type.clone(),
                 ),
                 Some(app_entry_type.into_bytes()),
             )?;

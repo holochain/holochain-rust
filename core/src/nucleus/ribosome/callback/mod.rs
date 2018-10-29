@@ -184,7 +184,7 @@ pub fn call(
     context: Arc<Context>,
     zome: &str,
     function: &Callback,
-    params: CallbackParams,
+    params: &CallbackParams,
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,

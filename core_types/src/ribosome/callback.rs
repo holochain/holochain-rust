@@ -1,13 +1,13 @@
-use entry::{Entry, SerializedEntry};
+use entry::{SerializedEntry};
 use error::{RibosomeReturnCode};
 use json::*;
 use serde_json;
 use validation::ValidationPackageDefinition;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(Entry),
+    ValidateCommit(SerializedEntry),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,
@@ -17,11 +17,24 @@ impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
             CallbackParams::Genesis => String::new(),
-            CallbackParams::ValidateCommit(entry) => {
-                String::from(JsonString::from(SerializedEntry::from(entry.to_owned())))
+            CallbackParams::ValidateCommit(serialized_entry) => {
+                String::from(JsonString::from(serialized_entry.to_owned()))
             }
             CallbackParams::Receive => String::new(),
         }
+    }
+}
+
+impl From<CallbackParams> for JsonString {
+    fn from(v: CallbackParams) -> Self {
+        default_to_json(v)
+    }
+}
+// @TODO
+// no idea why this is needed!
+impl<'a> From<&'a CallbackParams> for JsonString {
+    fn from(v: &CallbackParams) -> Self {
+        default_to_json(v.to_owned())
     }
 }
 

@@ -191,10 +191,11 @@ impl TryFrom<JsonString> for RawString {
 #[cfg(test)]
 pub mod tests {
     use json::{JsonString, RawString};
+    use std::convert::TryFrom;
 
     #[test]
     fn json_none_test() {
-        assert_eq!(String::from("null"), String::from(JsonString::none()),);
+        assert_eq!(String::from("null"), String::from(JsonString::null()),);
     }
 
     #[test]
@@ -258,7 +259,7 @@ pub mod tests {
     /// show From<JsonString> for RawString
     fn raw_from_json_test() {
         assert_eq!(
-            String::from(RawString::from(JsonString::from("\"foo\""))),
+            String::from(RawString::try_from(JsonString::from("\"foo\"")).unwrap()),
             String::from("foo"),
         );
     }

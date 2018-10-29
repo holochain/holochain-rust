@@ -80,7 +80,7 @@ use holochain_core::{
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -114,7 +114,6 @@ impl Holochain {
     }
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut new_context = (*context).clone();
         let persister = SimplePersister::new(format!("{}/state", path));
         let loaded_state = persister
             .load(context.clone())
@@ -158,7 +157,7 @@ impl Holochain {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, &params);
+        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -193,7 +192,6 @@ mod tests {
         convert::TryFrom,
         sync::{Arc, Mutex},
     };
-    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
@@ -234,7 +232,7 @@ mod tests {
 
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(hc.context.agent.to_string(), "bob".to_string());
+        assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -495,25 +493,16 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-<<<<<<< HEAD
+
         assert_eq!(
             RibosomeReturnCode::Success,
             RibosomeReturnCode::try_from(result.unwrap())
                 .expect("could not deserialize RibosomeResultCode")
         );
-
-        let test_logger = test_logger.lock().unwrap();
-        assert_eq!(
-            format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'debug_hello\\\' return code: Success\"]",
-=======
-        assert!(result.unwrap().is_empty());
-
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
             "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
             format!("{:?}", test_logger.log),
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
         );
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
@@ -543,28 +532,18 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
-<<<<<<< HEAD
         // Expect Success as result
         println!("result = {:?}", result);
         assert_eq!(
             RibosomeReturnCode::Success,
             RibosomeReturnCode::try_from(result.unwrap()).unwrap()
         );
-=======
-        // Expect a string as result
-        assert!(result.unwrap().is_empty());
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
 
         let test_logger = test_logger.lock().unwrap();
 
         assert_eq!(
-<<<<<<< HEAD
-            format!("{:?}", *test_logger),
-            "[\"TestApp instantiated\", \"Zome Function did not allocate memory: \\\'debug_multiple\\\' return code: Success\"]",
-=======
             "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
             format!("{:?}", test_logger.log),
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
         );
 
         // Check in holochain instance's history that the deb event has been processed
@@ -580,6 +559,6 @@ mod tests {
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
             "debug_stacked_hello",
         );
-        assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
+        assert_eq!(JsonString::from("{\"value\":\"fish\"}"), call_result.unwrap());
     }
 }

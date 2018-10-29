@@ -44,14 +44,15 @@ pub mod tests {
     use agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        cas::content::AddressableContent, entry::test_entry,
     };
-    use holochain_wasm_utils::api_serialization::{commit::CommitEntryArgs, link_entries::*};
+    use holochain_wasm_utils::api_serialization::link_entries::*;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::json::JsonString;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -70,16 +71,7 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let args = CommitEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        JsonString::from(test_entry().serialize()).into_bytes()
     }
 
     #[test]
@@ -92,8 +84,8 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
-                + "\u{0}",
+            JsonString::from(r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
+                + "\u{0}"),
         );
     }
 
@@ -128,7 +120,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            r#"{"ok":true,"error":""}"#.to_string() + "\u{0}",
+            JsonString::from(r#"{"ok":true,"error":""}"#.to_string() + "\u{0}"),
         );
     }
 

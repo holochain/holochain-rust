@@ -51,7 +51,6 @@ pub fn invoke_hash_entry(
     if let Err(err) = maybe_entry_type {
         return Ok(err);
     }
-    let entry_type = maybe_entry_type.unwrap();
     let entry = Entry::from(serialized_entry);
 
     // Return result

@@ -5,6 +5,7 @@ extern crate holochain_core_api;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate wabt;
+extern crate holochain_core_types;
 
 use holochain_agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -29,6 +30,7 @@ use std::{
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
+use holochain_core_types::json::JsonString;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
@@ -198,7 +200,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<String> {
+pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let capability = create_test_cap_with_fn_name(fn_name);

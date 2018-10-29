@@ -92,7 +92,7 @@ pub mod tests {
         json::JsonString,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
 

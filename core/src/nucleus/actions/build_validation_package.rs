@@ -247,7 +247,7 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(all_public_chain_entries(&context)),
+            source_chain_entries: Some(all_public_chain_entries(&context).into_iter().map(|entry| entry.serialize()).collect()),
             source_chain_headers: None,
             custom: None,
         };
@@ -301,7 +301,7 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(all_public_chain_entries(&context)),
+            source_chain_entries: Some(all_public_chain_entries(&context).into_iter().map(|entry| entry.serialize()).collect()),
             source_chain_headers: Some(all_public_chain_headers(&context)),
             custom: None,
         };

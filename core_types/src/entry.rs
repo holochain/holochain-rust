@@ -36,6 +36,10 @@ impl Entry {
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
     }
+
+    pub fn serialize(&self) -> SerializedEntry {
+        SerializedEntry::from(self.clone())
+    }
 }
 
 pub trait ToEntry {
@@ -296,7 +300,7 @@ pub mod tests {
     fn entry_from_string_test() {
         assert_eq!(
             test_entry(),
-            Entry::from(SerializedEntry::from(test_serialized_entry().content()))
+            Entry::from(SerializedEntry::try_from(test_serialized_entry().content()).unwrap())
         );
     }
 
@@ -318,7 +322,7 @@ pub mod tests {
             expected,
             JsonString::from(SerializedEntry::from(entry.clone()))
         );
-        assert_eq!(entry, Entry::from(SerializedEntry::from(expected.clone())));
+        assert_eq!(entry, Entry::from(SerializedEntry::try_from(expected.clone()).unwrap()));
         assert_eq!(entry, Entry::from(SerializedEntry::from(entry.clone())));
 
         let sys_entry = test_sys_entry();
@@ -332,7 +336,7 @@ pub mod tests {
         );
         assert_eq!(
             &sys_entry,
-            &Entry::from(SerializedEntry::from(expected.clone()))
+            &Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
         );
         assert_eq!(
             &sys_entry,

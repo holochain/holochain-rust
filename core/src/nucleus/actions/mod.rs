@@ -19,6 +19,7 @@ pub mod tests {
     };
     use std::sync::Arc;
     use test_utils::*;
+    use holochain_core_types::json::JsonString;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
@@ -60,7 +61,7 @@ pub mod tests {
     pub fn test_entry_package_entry() -> Entry {
         Entry::new(
             &EntryType::App(String::from("package_entry")),
-            &String::from("test value"),
+            &JsonString::from("test value"),
         )
     }
 
@@ -68,7 +69,7 @@ pub mod tests {
     pub fn test_entry_package_chain_entries() -> Entry {
         Entry::new(
             &EntryType::App(String::from("package_chain_entries")),
-            &String::from("test value"),
+            &JsonString::from("test value"),
         )
     }
 
@@ -76,7 +77,7 @@ pub mod tests {
     pub fn test_entry_package_chain_headers() -> Entry {
         Entry::new(
             &EntryType::App(String::from("package_chain_headers")),
-            &String::from("test value"),
+            &JsonString::from("test value"),
         )
     }
 
@@ -84,7 +85,7 @@ pub mod tests {
     pub fn test_entry_package_chain_full() -> Entry {
         Entry::new(
             &EntryType::App(String::from("package_chain_full")),
-            &String::from("test value"),
+            &JsonString::from("test value"),
         )
     }
 

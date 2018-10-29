@@ -235,6 +235,13 @@ impl From<RibosomeErrorReport> for JsonString {
     }
 }
 
+impl TryFrom<JsonString> for RibosomeErrorReport {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation

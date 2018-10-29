@@ -42,9 +42,8 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
-    use super::GetEntryArgs;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, hash::HashString, json::JsonString,
+        cas::content::AddressableContent, entry::test_entry, json::JsonString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -57,23 +56,17 @@ mod tests {
         },
         ZomeFnCall,
     };
-    use serde_json;
     use std::sync::Arc;
+    use holochain_core_types::cas::content::Address;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        let args = GetEntryArgs {
-            address: test_entry().address().into(),
-        };
-        serde_json::to_string(&args).unwrap().into_bytes()
+        JsonString::from(test_entry().address()).into_bytes()
     }
 
     /// dummy get args from standard test entry
     pub fn test_get_args_unknown() -> Vec<u8> {
-        let args = GetEntryArgs {
-            address: HashString::from(String::from("xxxxxxxxx")),
-        };
-        serde_json::to_string(&args).unwrap().into_bytes()
+        JsonString::from(Address::from("xxxxxxxxx")).into_bytes()
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -191,7 +184,7 @@ mod tests {
             &test_zome_name(),
             &test_capability(),
             "commit_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
@@ -215,7 +208,7 @@ mod tests {
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
@@ -259,7 +252,7 @@ mod tests {
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),

@@ -1,4 +1,3 @@
-extern crate backtrace;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
@@ -7,7 +6,7 @@ extern crate tempfile;
 extern crate test_utils;
 
 use holochain_core_api::*;
-<<<<<<< HEAD
+
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{test_entry_a, Entry, SerializedEntry},
@@ -15,13 +14,10 @@ use holochain_core_types::{
     hash::HashString,
     json::{JsonString, RawString},
 };
-use holochain_dna::zome::capabilities::{Capability, FnDeclaration};
-=======
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,
 };
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
@@ -77,7 +73,6 @@ fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
-<<<<<<< HEAD
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
@@ -86,9 +81,6 @@ fn can_use_globals() {
         "result = {:?}",
         result
     );
-=======
-    assert!(result.clone().unwrap().is_empty(), "result = {:?}", result);
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
 }
 
 #[test]
@@ -181,7 +173,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
+    assert_eq!(result.unwrap(), JsonString::from("{\"stuff\":\"non fail\"}"));
 
     let result = hc.call(
         "test_zome",
@@ -207,7 +199,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
+    assert_eq!(result.unwrap(), JsonString::from("{\"got back no entry\":true}"));
 
     // test the case with a bad hash
     let result = hc.call(
@@ -218,11 +210,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-<<<<<<< HEAD
     assert_eq!(result.unwrap(), JsonString::from("{\"Ok\":null}"));
-=======
-    assert_eq!(result.unwrap(), "null");
->>>>>>> da8059ec89cfc40bb22f543dba06c32e7fd60ba6
 }
 
 #[test]
@@ -262,7 +250,7 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
     );
     let result = hc.call(
         "test_zome",
@@ -273,7 +261,7 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
     );
 
     //
@@ -304,7 +292,7 @@ fn can_link_entries() {
 
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), r#"{"ok":true}"#);
+    assert_eq!(result.unwrap(), JsonString::from(r#"{"ok":true}"#));
 }
 
 #[test]
@@ -313,8 +301,8 @@ fn can_roundtrip_links() {
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let result_string = result.unwrap();
-    let ordering1: bool = result_string == r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#;
-    let ordering2: bool = result_string == r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#;
+    let ordering1: bool = result_string == JsonString::from(r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#);
+    let ordering2: bool = result_string == JsonString::from(r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#);
     assert!(ordering1 || ordering2);
 }
 
@@ -331,7 +319,7 @@ fn can_check_query() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]"#,
+        JsonString::from(r#"["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]"#),
     );
 }
 
@@ -343,7 +331,7 @@ fn can_check_hash_app_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
+        JsonString::from(RawString::from("QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966")),
     );
 }
 
@@ -368,7 +356,7 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
+        JsonString::from("\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\""),
     );
 }
 
@@ -381,6 +369,6 @@ fn can_check_call_with_args() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
     );
 }

@@ -77,7 +77,7 @@ fn build_validation_call(
         &zome_name,
         "no capability, since this is an entry validation call",
         "__hdk_validate_app_entry",
-        params.into(),
+        params,
     ))
 }
 

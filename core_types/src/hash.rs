@@ -138,14 +138,20 @@ pub mod tests {
     #[test]
     /// known hash for a serializable something
     fn can_serialize_to_b58_hash() {
-        #[derive(Serialize)]
+        #[derive(Serialize, Debug)]
         struct Foo {
             foo: u8,
         };
 
+        impl From<Foo> for JsonString {
+            fn from(v: Foo) -> Self {
+                default_to_json(v)
+            }
+        }
+
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            HashString::encode_from_serializable(Foo { foo: 5 }, Hash::SHA2256).to_string(),
+            HashString::encode_from_json_string(JsonString::from(Foo { foo: 5 }), Hash::SHA2256).to_string(),
         );
     }
 }

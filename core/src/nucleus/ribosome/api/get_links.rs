@@ -62,6 +62,7 @@ pub mod tests {
         Defn,
     };
     use serde_json;
+    use holochain_core_types::json::JsonString;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
@@ -91,7 +92,7 @@ pub mod tests {
 
         let mut entry_hashes: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::new(&test_entry_type(), &format!("entry{} value", i));
+            let entry = Entry::new(&test_entry_type(), &JsonString::from(format!("entry{} value", i)));
             let hash = block_on(commit_entry(
                 entry,
                 &initialized_context.action_channel.clone(),
@@ -115,15 +116,15 @@ pub mod tests {
         );
 
         let ordering1: bool = call_result
-            == format!(
+            == JsonString::from(format!(
                 r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
                 entry_hashes[1], entry_hashes[2]
-            ) + "\u{0}";
+            ) + "\u{0}");
         let ordering2: bool = call_result
-            == format!(
+            == JsonString::from(format!(
                 r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
                 entry_hashes[2], entry_hashes[1]
-            ) + "\u{0}";
+            ) + "\u{0}");
 
         assert!(ordering1 || ordering2);
 
@@ -137,7 +138,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            r#"{"ok":true,"links":[],"error":""}"#.to_string() + "\u{0}",
+            JsonString::from(r#"{"ok":true,"links":[],"error":""}"#.to_string() + "\u{0}"),
         );
     }
 

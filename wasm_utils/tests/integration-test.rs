@@ -94,7 +94,7 @@ fn call_load_json_from_raw_ok() {
 fn call_load_json_from_raw_err() {
     let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
     assert_eq!(
-        "\"Ribosome(ArgumentDeserializationFailed)\"",
+        "\"Argument deserialization failed\"",
         call_result.unwrap()
     );
 }

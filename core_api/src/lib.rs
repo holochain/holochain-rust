@@ -455,8 +455,8 @@ mod tests {
         // Expect normal OK result with hash
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
+            "{\"Err\":\"Argument deserialization failed\"}",
             result.ok().unwrap(),
-            "{\"Err\":\"Ribosome(ArgumentDeserializationFailed)\"}",
         );
 
         // Check in holochain instance's history that the commit event has been processed

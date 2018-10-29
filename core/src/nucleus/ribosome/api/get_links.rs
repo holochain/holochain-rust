@@ -118,7 +118,7 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "other-tag"),
         );
 
-        assert_eq!("", call_result);
+        assert_eq!("[]\u{0}", call_result);
     }
 
 }

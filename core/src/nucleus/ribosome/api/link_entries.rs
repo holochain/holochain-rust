@@ -119,10 +119,7 @@ pub mod tests {
             test_link_args_bytes(),
         );
 
-        assert_eq!(
-            call_result,
-            r#"{"ok":true,"error":""}"#.to_string() + "\u{0}",
-        );
+        assert_eq!("", call_result);
     }
 
 }

@@ -104,19 +104,11 @@ pub mod tests {
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
+        println!("call_result = '{:?}'", call_result);
+        let ordering1= format!(r#"["{}","{}"]"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
+        let ordering2= format!(r#"["{}","{}"]"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
 
-        let ordering1: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[1], entry_hashes[2]
-            ) + "\u{0}";
-        let ordering2: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[2], entry_hashes[1]
-            ) + "\u{0}";
-
-        assert!(ordering1 || ordering2);
+        assert!(call_result == ordering1 || call_result == ordering2);
 
         let call_result = test_zome_api_function_call(
             &dna_name,
@@ -126,10 +118,7 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "other-tag"),
         );
 
-        assert_eq!(
-            call_result,
-            r#"{"ok":true,"links":[],"error":""}"#.to_string() + "\u{0}",
-        );
+        assert_eq!("", call_result);
     }
 
 }

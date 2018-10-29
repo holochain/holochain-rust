@@ -22,7 +22,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_json;
 
-pub mod actor;
 pub mod cas;
 pub mod eav;
 pub mod path;

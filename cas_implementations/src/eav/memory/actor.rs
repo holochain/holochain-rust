@@ -1,5 +1,5 @@
-use actor::{Protocol, SYS};
 use holochain_core_types::{
+    actor::{Protocol, SYS},
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
 };

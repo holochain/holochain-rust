@@ -9,7 +9,12 @@
 //! necessarily bound to Holochain.
 
 extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 extern crate multihash;
+extern crate riker;
+extern crate riker_default;
+extern crate riker_patterns;
 extern crate rust_base58;
 extern crate serde;
 extern crate serde_json;
@@ -19,6 +24,7 @@ extern crate bitflags;
 
 #[macro_use]
 extern crate serde_derive;
+pub mod actor;
 pub mod cas;
 pub mod chain_header;
 pub mod crud_status;

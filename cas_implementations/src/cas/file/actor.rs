@@ -1,5 +1,5 @@
-use super::super::super::actor::{Protocol, SYS};
 use holochain_core_types::{
+    actor::{Protocol, SYS},
     cas::content::{Address, Content},
     error::HolochainError,
     file_validation,

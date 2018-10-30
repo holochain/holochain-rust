@@ -54,7 +54,10 @@ macro_rules! define_zome {
                 $genesis_expr
             }
 
-            $crate::global_fns::store_and_return_output(execute())
+            match execute() {
+                Ok(_) => 0,
+                Err(e) => $crate::global_fns::store_and_return_output($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
+            }
         }
 
         use $crate::holochain_dna::zome::capabilities::Capability;

@@ -98,7 +98,7 @@ mod tests {
     use super::*;
     use holochain_core_types::{
         cas::content::Content,
-        json::{JsonString, RawString},
+        json::RawString,
     };
 
     pub fn test_identity_value() -> Content {

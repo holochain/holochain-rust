@@ -68,7 +68,7 @@ pub mod tests {
     /// test that bytes passed to debug end up in the log
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
-        let (mut call_result, _) =
+        let (call_result, _) =
             test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         // call_result.pop(); // Remove trailing character
         let globals = ZomeApiGlobals::try_from(call_result).unwrap();

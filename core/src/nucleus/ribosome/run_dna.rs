@@ -158,6 +158,7 @@ pub fn run_dna(
                     return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
                 }
                 Ok(json_str) => {
+                    println!("hii!");
                     return_log_msg = json_str.clone();
                     return_result = Ok(JsonString::from(json_str));
                 }
@@ -172,5 +173,6 @@ pub fn run_dna(
             zome_call.fn_name, return_log_msg,
         ))
         .expect("Logger should work");
+    println!("{:?} {:?}", zome_call.fn_name, return_log_msg);
     return return_result;
 }

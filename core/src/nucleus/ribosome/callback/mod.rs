@@ -6,6 +6,9 @@ pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
+use serde_json;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::json::JsonString;
 use context::Context;
 use holochain_core_types::{
     error::RibosomeReturnCode,
@@ -112,14 +115,6 @@ impl Defn for Callback {
     }
 }
 
-// pub(crate) fn runtime_callback_result(runtime: Runtime) -> CallbackResult {
-//     let maybe_return_code = RibosomeReturnCode::try_from(runtime.result.clone());
-//     match maybe_return_code {
-//         Ok(return_code) => CallbackResult::from(return_code),
-//         Err(_) => CallbackResult::from(runtime.result),
-//     }
-// }
-
 pub(crate) fn run_callback(
     context: Arc<Context>,
     fc: ZomeFnCall,
@@ -133,13 +128,11 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => {
-            let maybe_return_code = RibosomeReturnCode::try_from(call_result.clone());
-            match maybe_return_code {
-                Ok(return_code) => CallbackResult::from(return_code),
-                Err(_) => CallbackResult::from(call_result),
-            }
-        }
+        Ok(call_result) => if call_result.is_null() {
+            CallbackResult::Pass
+        } else {
+            CallbackResult::Fail(call_result.to_string())
+        },
         Err(_) => CallbackResult::NotImplemented,
     }
 }

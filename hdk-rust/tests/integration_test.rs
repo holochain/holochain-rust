@@ -252,23 +252,23 @@ fn has_populated_validation_data() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "\"non fail\"" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+        JsonString::from(r#"{"address":"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249"}"#),
     );
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "\"non fail\"" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+        JsonString::from(r#"{"address":"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249"}"#),
     );
 
     //
@@ -284,7 +284,7 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
 
     assert_eq!(
-        "{\"validation failed\":\"\\\"{\\\\\\\"package\\\\\\\":{\\\\\\\"chain_header\\\\\\\":{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"validation_package_tester\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmdvEzbGrn5MoFmqZZPs91qNKsinuQJfxmge41FUK24CyG\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRTcDaeHzqUnR7WcfBWByNNUreYGppec11jy2MG2dkfCy\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},\\\\\\\"source_chain_entries\\\\\\\":[{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}},{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}}],\\\\\\\"source_chain_headers\\\\\\\":[{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"link_same_type\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRJxWBUyFh7rfMAFjJE99GN9oAy8F6RxPpdJjLKBfuU3M\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"}],\\\\\\\"custom\\\\\\\":null},\\\\\\\"sources\\\\\\\":[\\\\\\\"<insert your agent key here>\\\\\\\"],\\\\\\\"lifecycle\\\\\\\":\\\\\\\"Chain\\\\\\\",\\\\\\\"action\\\\\\\":\\\\\\\"Commit\\\\\\\"}\\\"\"}".into(),
+        JsonString::from("{\"error\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmfKDVPY9qUDSEniikwAG12Hv1UQvHaLAtHoVJyWW9rUc7\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmfPqB8AyAm2XPTGnjQdWQ3V7GFPZ6d6ZRijNKesDxtUZS\\\",\\\"link_same_type\\\":\\\"QmfPqB8AyAm2XPTGnjQdWQ3V7GFPZ6d6ZRijNKesDxtUZS\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSNJ9taUc2jSW7VbuptpK5LZUmVYn5aDBhciNsgYzSLy6\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmbqUW92wheCaRAEeAh1KgCxgzmaxaBodaoncczkYfgSMS\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}"),
         result.unwrap(),
     );
 }

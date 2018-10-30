@@ -14,6 +14,7 @@ use hdk::globals::G_MEM_STACK;
 use holochain_wasm_utils::holochain_core_types::error::ZomeApiError;
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
+use holochain_wasm_utils::holochain_core_types::json::RawString;
 use holochain_wasm_utils::holochain_core_types::entry::SerializedEntry;
 use holochain_wasm_utils::holochain_core_types::entry::Entry;
 use holochain_wasm_utils::{
@@ -144,9 +145,7 @@ fn handle_check_get_entry(entry_hash: HashString) -> JsonString {
 }
 
 fn handle_commit_validation_package_tester() -> JsonString {
-    let res = hdk::commit_entry(&Entry::new(&"validation_package_tester".into(), &json!({
-        "stuff": "test"
-    }).into()));
+    let res = hdk::commit_entry(&Entry::new(&"validation_package_tester".into(), &RawString::from("test").into()));
     match res {
         Ok(hash_str) => json!({ "address": hash_str }),
         Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),

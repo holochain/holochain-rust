@@ -19,7 +19,8 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry {
+    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry
+    {
         Entry {
             entry_type: entry_type.to_owned(),
             value: value.to_owned(),
@@ -72,6 +73,10 @@ impl SerializedEntry {
 
     pub fn entry_type(&self) -> String {
         self.entry_type.clone()
+    }
+
+    pub fn deserialize(&self) -> Entry {
+        Entry::from(self.clone())
     }
 }
 

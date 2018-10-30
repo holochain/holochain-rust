@@ -13,7 +13,6 @@ use holochain_wasm_utils::{
         QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::{
-        entry::SerializedEntry,
         hash::HashString,
         json::{JsonString, RawString},
     },
@@ -202,7 +201,7 @@ pub fn call<S: Into<String>>(
     cap_name: S,
     fn_name: S,
     fn_args: JsonString,
-) -> ZomeApiResult<String> {
+) -> ZomeApiResult<JsonString> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -232,20 +231,20 @@ pub fn call<S: Into<String>>(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    Ok(result)
+    Ok(result.into())
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
 /// will have to pass the defined validation rules for that entry type.
 /// If the entry type is defined as public, will also publish the entry to the DHT.
 /// Returns either an address of the committed entry as a string, or an error.
-pub fn commit_entry(serialized_entry: &SerializedEntry) -> ZomeApiResult<Address> {
+pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let allocation_of_input = store_as_json(&mut mem_stack, serialized_entry.to_owned())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result: u32;
@@ -365,13 +364,13 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
 /// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
-pub fn hash_entry<S: Into<String>>(
-    serialized_entry: &SerializedEntry,
+pub fn hash_entry(
+    entry: &Entry,
 ) -> ZomeApiResult<HashString> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, serialized_entry.to_owned())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_hash_entry(allocation_of_input.encode() as u32) };

@@ -261,6 +261,15 @@ impl From<RibosomeReturnCode> for i32 {
     }
 }
 
+impl From<RibosomeReturnCode> for u32 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Failure(code) => code as i32 as u32,
+        }
+    }
+}
+
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq)]

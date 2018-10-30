@@ -125,7 +125,8 @@ macro_rules! define_zome {
                     let input: InputStruct = maybe_input.unwrap();
 
                     // Macro'd function body
-                    fn execute(params: InputStruct) -> impl ::serde::Serialize {
+                    // @TODO trait bound this as TryInto<JsonString>
+                    fn execute(params: InputStruct) -> $crate::holochain_wasm_utils::holochain_core_types::json::JsonString {
                         let InputStruct { $($input_param_name),* } = params;
 
                         $handler_path($($input_param_name),*)

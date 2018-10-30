@@ -153,7 +153,6 @@ impl TestFrame {
             cb_result, msg
         );
     }
-    
     /// cleanup both the nodejs echo-server and the ipc client connection
     #[cfg(not(windows))]
     fn destroy(mut self) {

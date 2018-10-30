@@ -35,9 +35,7 @@ use self::RibosomeError::*;
 use globals::*;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    holochain_core_types::{json::JsonString},
-    memory_allocation::*,
-    memory_serialization::*,
+    holochain_core_types::json::JsonString, memory_allocation::*, memory_serialization::*,
 };
 
 pub mod meta;

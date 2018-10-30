@@ -364,9 +364,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
 /// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
-pub fn hash_entry(
-    entry: &Entry,
-) -> ZomeApiResult<HashString> {
+pub fn hash_entry(entry: &Entry) -> ZomeApiResult<HashString> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory

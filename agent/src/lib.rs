@@ -96,10 +96,7 @@ impl AddressableContent for Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_core_types::{
-        cas::content::Content,
-        json::RawString,
-    };
+    use holochain_core_types::{cas::content::Content, json::RawString};
 
     pub fn test_identity_value() -> Content {
         RawString::from("bob").into()

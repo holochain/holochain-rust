@@ -19,8 +19,7 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry
-    {
+    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry {
         Entry {
             entry_type: entry_type.to_owned(),
             value: value.to_owned(),

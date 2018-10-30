@@ -61,7 +61,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     );
 
     let (context, test_logger) = test_context_and_logger("alex");
-    let mut hc = Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
+    let mut hc =
+        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
     // Run the holochain instance
     hc.start().expect("couldn't start");

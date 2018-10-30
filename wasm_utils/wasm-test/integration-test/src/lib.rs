@@ -53,10 +53,8 @@ pub extern "C" fn test_error_report(_: u32) -> u32 {
 //    0
 //}
 
-// Can't do zome_assert!() while testing store_json() since it internally uses store_json() !
-// so using normal assert! even if we get unhelpful Trap::Unreachable error message.
 #[no_mangle]
-pub extern "C" fn test_store_json_ok(_: u32) -> u32 {
+pub extern "C" fn test_store_string_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let s = "fish";
     assert_eq!(0, stack.top());
@@ -82,7 +80,7 @@ pub extern "C" fn test_store_as_json_obj_ok(_: u32) -> u32 {
         value: "fish".to_string(),
     };
     assert_eq!(0, stack.top());
-    let res = store_json(&mut stack, obj.clone());
+    let res = store_as_json(&mut stack, obj.clone());
     assert_eq!(json!(obj).to_string().len(), stack.top() as usize);
     res.unwrap().encode()
 }
@@ -108,7 +106,7 @@ pub extern "C" fn test_store_as_json_err(_: u32) -> u32 {
     let obj = TestStruct {
         value: "fish".to_string(),
     };
-    let res = store_json(&mut stack, obj.clone());
+    let res = store_as_json(&mut stack, obj.clone());
     assert!(res.is_err());
     res.err().unwrap() as u32
 }
@@ -119,7 +117,7 @@ pub extern "C" fn test_load_json_from_raw_ok(_: u32) -> u32 {
     let obj = TestStruct {
         value: "fish".to_string(),
     };
-    let res = store_json(&mut stack, obj.clone());
+    let res = store_as_json(&mut stack, obj.clone());
     let ptr = res.unwrap().offset() as *mut c_char;
     let res = load_json_from_raw(ptr);
     assert!(obj == res.unwrap());
@@ -133,11 +131,11 @@ pub extern "C" fn test_load_json_from_raw_err(_: u32) -> u32 {
         value: "fish".to_string(),
     };
     assert_eq!(0, stack.top());
-    let store_res = store_json(&mut stack, obj.clone());
+    let store_res = store_as_json(&mut stack, obj.clone());
     let ptr = store_res.clone().unwrap().offset() as *mut c_char;
     let load_res: Result<OtherTestStruct, String> = load_json_from_raw(ptr);
     zome_assert!(stack, load_res.is_err());
-    let store_err_res = store_json(&mut stack, RawString::from(load_res.err().unwrap().clone()));
+    let store_err_res = store_as_json(&mut stack, RawString::from(load_res.err().unwrap().clone()));
     store_err_res.unwrap().encode()
 }
 
@@ -146,7 +144,7 @@ pub extern "C" fn test_load_json_ok(_: u32) -> u32 {
     let encoded = test_store_as_json_obj_ok(0);
     let mut stack = SinglePageStack::from_encoded_allocation(encoded).unwrap();
     let res: Result<TestStruct, String> = load_json(encoded);
-    let res = store_json(&mut stack, res.unwrap().clone());
+    let res = store_as_json(&mut stack, res.unwrap().clone());
     res.unwrap().encode()
 }
 
@@ -155,7 +153,7 @@ pub extern "C" fn test_load_json_err(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let res: Result<TestStruct, String> = load_json(1 << 16);
     zome_assert!(stack, res.is_err());
-    let res = store_json(&mut stack, RawString::from(res.err().unwrap().clone()));
+    let res = store_as_json(&mut stack, RawString::from(res.err().unwrap().clone()));
     res.unwrap().encode()
 }
 

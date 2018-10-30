@@ -243,49 +243,49 @@ fn can_invalidate_invalid_commit() {
 #[test]
 fn has_populated_validation_data() {
     let (mut hc, _) = start_holochain_instance();
+
     //
-    // //
-    // // Add two entries to chain to have something to check ValidationData on
-    // //
-    // let result = hc.call(
-    //     "test_zome",
-    //     "test_cap",
-    //     "check_commit_entry_macro",
-    //     r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
-    // );
-    // assert!(result.is_ok(), "\t result = {:?}", result);
-    // assert_eq!(
-    //     result.unwrap(),
-    //     JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
-    // );
-    // let result = hc.call(
-    //     "test_zome",
-    //     "test_cap",
-    //     "check_commit_entry_macro",
-    //     r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
-    // );
-    // assert!(result.is_ok(), "\t result = {:?}", result);
-    // assert_eq!(
-    //     result.unwrap(),
-    //     JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
-    // );
+    // Add two entries to chain to have something to check ValidationData on
     //
-    // //
-    // // Expect the commit in this zome function to fail with a serialized ValidationData struct
-    // //
-    // let result = hc.call(
-    //     "test_zome",
-    //     "test_cap",
-    //     "commit_validation_package_tester",
-    //     r#"{}"#,
-    // );
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_commit_entry_macro",
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+    );
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+    );
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_commit_entry_macro",
+        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+    );
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+    );
+
     //
-    // assert!(result.is_ok(), "\t result = {:?}", result);
+    // Expect the commit in this zome function to fail with a serialized ValidationData struct
     //
-    // assert_eq!(
-    //     "{\"validation failed\":\"\\\"{\\\\\\\"package\\\\\\\":{\\\\\\\"chain_header\\\\\\\":{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"validation_package_tester\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmdvEzbGrn5MoFmqZZPs91qNKsinuQJfxmge41FUK24CyG\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRTcDaeHzqUnR7WcfBWByNNUreYGppec11jy2MG2dkfCy\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},\\\\\\\"source_chain_entries\\\\\\\":[{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}},{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}}],\\\\\\\"source_chain_headers\\\\\\\":[{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"link_same_type\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRJxWBUyFh7rfMAFjJE99GN9oAy8F6RxPpdJjLKBfuU3M\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"}],\\\\\\\"custom\\\\\\\":null},\\\\\\\"sources\\\\\\\":[\\\\\\\"<insert your agent key here>\\\\\\\"],\\\\\\\"lifecycle\\\\\\\":\\\\\\\"Chain\\\\\\\",\\\\\\\"action\\\\\\\":\\\\\\\"Commit\\\\\\\"}\\\"\"}".into(),
-    //     result.unwrap(),
-    // );
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "commit_validation_package_tester",
+        r#"{}"#,
+    );
+
+    assert!(result.is_ok(), "\t result = {:?}", result);
+
+    assert_eq!(
+        "{\"validation failed\":\"\\\"{\\\\\\\"package\\\\\\\":{\\\\\\\"chain_header\\\\\\\":{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"validation_package_tester\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmdvEzbGrn5MoFmqZZPs91qNKsinuQJfxmge41FUK24CyG\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRTcDaeHzqUnR7WcfBWByNNUreYGppec11jy2MG2dkfCy\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},\\\\\\\"source_chain_entries\\\\\\\":[{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}},{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}}],\\\\\\\"source_chain_headers\\\\\\\":[{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"link_same_type\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRJxWBUyFh7rfMAFjJE99GN9oAy8F6RxPpdJjLKBfuU3M\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"}],\\\\\\\"custom\\\\\\\":null},\\\\\\\"sources\\\\\\\":[\\\\\\\"<insert your agent key here>\\\\\\\"],\\\\\\\"lifecycle\\\\\\\":\\\\\\\"Chain\\\\\\\",\\\\\\\"action\\\\\\\":\\\\\\\"Commit\\\\\\\"}\\\"\"}".into(),
+        result.unwrap(),
+    );
 }
 
 #[test]

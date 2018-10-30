@@ -133,6 +133,7 @@ mod tests {
 
     #[test]
     #[should_panic]
+    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let mut context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),

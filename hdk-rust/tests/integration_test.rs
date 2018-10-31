@@ -327,7 +327,7 @@ fn can_check_query() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]"#),
+        JsonString::from(r#"["QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"]"#),
     );
 }
 

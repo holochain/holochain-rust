@@ -178,6 +178,7 @@ fn handle_links_roundtrip() -> JsonString {
 fn handle_check_query() -> JsonString {
     // Query DNA entry
     let result = hdk::query(&EntryType::Dna.to_string(), 0);
+
     assert!(result.is_ok());
     assert!(result.unwrap().len() == 1);
 

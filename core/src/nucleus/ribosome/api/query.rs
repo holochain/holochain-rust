@@ -3,6 +3,7 @@ use holochain_wasm_utils::api_serialization::QueryArgs;
 use nucleus::ribosome::Runtime;
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::error::ZomeApiInternalResult;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -34,5 +35,5 @@ pub fn invoke_query(
 
     let result = agent.chain().query(&Some(top), entry_type, query.limit);
     // Return result
-    runtime.store_as_json_string(result)
+    runtime.store_as_json_string(ZomeApiInternalResult::success(result))
 }

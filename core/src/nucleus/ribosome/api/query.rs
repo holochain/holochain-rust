@@ -29,5 +29,5 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         .expect("Should have genesis entries.");
     let addresses = agent.chain().query(&Some(top), entry_type, input.limit);
     // Write result in wasm memory
-    runtime.store_as_json(QueryResult{ addresses })
+    runtime.store_as_json(QueryResult { addresses })
 }

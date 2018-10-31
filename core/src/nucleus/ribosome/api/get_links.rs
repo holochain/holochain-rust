@@ -104,12 +104,22 @@ pub mod tests {
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
-        let ordering1 = format!(r#"{{"addresses":["{}","{}"]}}"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
-        let ordering2 = format!(r#"{{"addresses":["{}","{}"]}}"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
+        let ordering1 = format!(
+            r#"{{"addresses":["{}","{}"]}}"#,
+            entry_hashes[1],
+            entry_hashes[2],
+        ) + "\u{0}";
+        let ordering2 = format!(
+            r#"{{"addresses":["{}","{}"]}}"#,
+            entry_hashes[2],
+            entry_hashes[1],
+        ) + "\u{0}";
         assert!(
             call_result == ordering1 || call_result == ordering2,
             "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
-            call_result, ordering1, ordering2,
+            call_result,
+            ordering1,
+            ordering2,
         );
 
         let call_result = test_zome_api_function_call(

@@ -7,8 +7,7 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
-        HashEntryArgs, ZomeFnCallArgs,
-        QueryResult, QueryArgs,
+        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::{
         error::{CoreError, HolochainError, RibosomeReturnCode},

@@ -1,5 +1,5 @@
 use holochain_core_types::entry_type::EntryType;
-use holochain_wasm_utils::api_serialization::QueryArgs;
+use holochain_wasm_utils::api_serialization::{QueryArgs, QueryResult};
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use std::str::FromStr;
@@ -29,5 +29,5 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         .expect("Should have genesis entries.");
     let addresses = agent.chain().query(&Some(top), entry_type, input.limit);
     // Write result in wasm memory
-    runtime.store_as_json(addresses)
+    runtime.store_as_json(QueryResult{ addresses })
 }

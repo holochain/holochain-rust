@@ -5,9 +5,10 @@ use holochain_wasm_utils::{
     api_serialization::{
         commit::{CommitEntryArgs, CommitEntryResult},
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
-        get_links::GetLinksArgs,
+        get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
-        HashEntryArgs, QueryArgs, ZomeFnCallArgs,
+        HashEntryArgs, ZomeFnCallArgs,
+        QueryResult, QueryArgs,
     },
     holochain_core_types::{
         error::{CoreError, HolochainError, RibosomeReturnCode},
@@ -409,7 +410,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// and other entries you wish to lookup. Returns a list of addresses of other entries which matched
 /// as being linked by the given `tag`.
 /// Links are created in the first place using the Zome API function `link_entries`.
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<HashString>> {
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
     let input = GetLinksArgs {
@@ -422,7 +423,7 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory
-    let result: Result<Vec<HashString>, HolochainError> =
+    let result: Result<GetLinksResult, HolochainError> =
         load_json(encoded_allocation_of_result as u32);
     // Free result & input allocations
     mem_stack
@@ -435,7 +436,7 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
-pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>> {
+pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
     let input = QueryArgs {
@@ -447,7 +448,7 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>
     let encoded_allocation_of_result: u32 =
         unsafe { hc_query(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory
-    let result: Result<Vec<HashString>, HolochainError> =
+    let result: Result<QueryResult, HolochainError> =
         load_json(encoded_allocation_of_result as u32);
     // Free result & input allocations
     mem_stack

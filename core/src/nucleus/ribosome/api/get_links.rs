@@ -1,5 +1,5 @@
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -26,11 +26,11 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     match maybe_links {
         Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
         Ok(links) => {
-            let vec_links = links
+            let addresses = links
                 .iter()
                 .map(|eav| eav.value())
                 .collect::<Vec<Address>>();
-            runtime.store_as_json(vec_links)
+            runtime.store_as_json(GetLinksResult { addresses })
         }
     }
 }
@@ -104,11 +104,13 @@ pub mod tests {
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
-        println!("call_result = '{:?}'", call_result);
-        let ordering1 = format!(r#"["{}","{}"]"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
-        let ordering2 = format!(r#"["{}","{}"]"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
-
-        assert!(call_result == ordering1 || call_result == ordering2);
+        let ordering1 = format!(r#"{{"addresses":["{}","{}"]}}"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
+        let ordering2 = format!(r#"{{"addresses":["{}","{}"]}}"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
+        assert!(
+            call_result == ordering1 || call_result == ordering2,
+            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+            call_result, ordering1, ordering2,
+        );
 
         let call_result = test_zome_api_function_call(
             &dna_name,
@@ -118,7 +120,7 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "other-tag"),
         );
 
-        assert_eq!("[]\u{0}", call_result);
+        assert_eq!("{\"addresses\":[]}\u{0}", call_result);
     }
 
 }

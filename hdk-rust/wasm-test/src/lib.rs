@@ -175,7 +175,7 @@ fn handle_links_roundtrip() -> serde_json::Value {
     hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
 
     match hdk::get_links(&entry1_hash, "test-tag") {
-        Ok(links) => json!({"links": links}),
+        Ok(result) => json!({"links": result.addresses}),
         Err(error) => json!({"error": error}),
     }
 }
@@ -184,12 +184,17 @@ fn handle_check_query() -> serde_json::Value {
     // Query DNA entry
     let result = hdk::query(&EntryType::Dna.to_string(), 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query AgentId entry
     let result = hdk::query(&EntryType::AgentId.to_string(), 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
+
+    // Query unknown entry
+    let result = hdk::query("bad_type", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().addresses.len() == 0);
 
     // Query Zome entry
     let _ = hdk::commit_entry("testEntryType", json!({
@@ -197,7 +202,7 @@ fn handle_check_query() -> serde_json::Value {
     })).unwrap();
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query Zome entries
     let _ = hdk::commit_entry("testEntryType", json!({
@@ -209,7 +214,7 @@ fn handle_check_query() -> serde_json::Value {
 
     let result = hdk::query("testEntryType", 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 3);
+    assert!(result.unwrap().addresses.len() == 3);
 
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());

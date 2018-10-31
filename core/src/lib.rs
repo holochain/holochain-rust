@@ -31,6 +31,7 @@ extern crate holochain_core_types;
 
 pub mod action;
 pub mod agent;
+pub mod container;
 pub mod context;
 pub mod dht;
 pub mod instance;
@@ -40,4 +41,3 @@ pub mod logger;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
-pub mod Container;

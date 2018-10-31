@@ -247,14 +247,14 @@ fn can_invalidate_invalid_commit() {
         "check_commit_entry_macro",
         &String::from(JsonString::from(SerializedEntry::from(Entry::new(
             &test_entry_type(),
-            &JsonString::from(RawString::from("FAIL")),
+            &JsonString::from("{\"stuff\":\"FAIL\"}"),
         )))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":\"Validation failed: FAIL content is not allowed\"}"),
+        JsonString::from("{\"error\":{\"Internal\":\"FAIL content is not allowed\"}}"),
     );
 }
 

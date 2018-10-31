@@ -140,7 +140,6 @@ pub fn run_dna(
     match maybe_allocation {
         // Nothing in memory, return result depending on return_code received.
         Err(return_code) => {
-            println!("nothing in memory");
             return_log_msg = return_code.to_string();
             return_result = match return_code {
                 RibosomeReturnCode::Success => Ok(JsonString::null()),
@@ -153,7 +152,6 @@ pub fn run_dna(
         Ok(valid_allocation) => {
             let result = runtime.memory_manager.read(valid_allocation);
             let maybe_zome_result = String::from_utf8(result);
-            println!("valid allocation {:?}", maybe_zome_result);
             match maybe_zome_result {
                 Err(err) => {
                     return_log_msg = err.to_string();
@@ -174,6 +172,5 @@ pub fn run_dna(
             zome_call.fn_name, return_log_msg,
         ))
         .expect("Logger should work");
-    println!("{:?} {:?}", zome_call.fn_name, return_log_msg);
     return return_result;
 }

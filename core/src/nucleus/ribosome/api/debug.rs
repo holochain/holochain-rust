@@ -11,7 +11,7 @@ pub fn invoke_debug(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let payload = runtime.load_json_string_from_args(args);
-    println!("foo: {}", payload);
+    println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level
     runtime
         .context

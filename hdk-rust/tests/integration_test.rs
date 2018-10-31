@@ -365,7 +365,7 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\""),
+        JsonString::from("\"QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa\""),
     );
 }
 

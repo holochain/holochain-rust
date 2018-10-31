@@ -12,7 +12,6 @@ use holochain_core_types::error::ZomeApiInternalResult;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
-        println!("fooz");
         Some(RuntimeValue::I32(
             holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
         ))
@@ -21,7 +20,6 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
-            println!("barz");
             return Err(Some(RuntimeValue::I32(
                 holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
             )));

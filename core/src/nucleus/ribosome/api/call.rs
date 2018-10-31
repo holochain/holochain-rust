@@ -82,6 +82,8 @@ pub fn invoke_call(
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
         .expect("observer dropped before done");
 
+    println!("call: {:?}", action_result);
+
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_string) => runtime.store_as_json_string(json_string),

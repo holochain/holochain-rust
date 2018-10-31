@@ -370,8 +370,6 @@ pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    debug(format!("hash_entry: {:?}", entry)).unwrap();
-
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
 
@@ -382,8 +380,6 @@ pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-
-    debug(format!("hash_entry: {:?}", result)).unwrap();
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack

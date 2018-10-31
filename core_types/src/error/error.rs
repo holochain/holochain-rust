@@ -172,6 +172,7 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ZomeApiInternalResult {
     pub ok: bool,

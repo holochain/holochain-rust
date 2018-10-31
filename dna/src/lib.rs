@@ -205,11 +205,6 @@ impl Dna {
         // Browse through the zomes
         for (_zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
-                println!(
-                    "{:?} {:?}",
-                    zome.entry_types.clone(),
-                    entry_type_name.clone()
-                );
                 if *zome_entry_type_name == entry_type_name {
                     return Some(entry_type_def);
                 }

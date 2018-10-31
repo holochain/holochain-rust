@@ -24,6 +24,7 @@ use holochain_wasm_utils::{
         entry_type::EntryType,
     },
 };
+use std::convert::TryInto;
 use holochain_wasm_utils::holochain_core_types::json::default_try_from_json;
 use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 use std::convert::TryFrom;
@@ -220,19 +221,19 @@ fn handle_check_hash_app_entry() -> JsonString {
     }
 
     // Check bad entry type name
-    // let bad_result = hdk::hash_entry(&Entry::new(&"bad".into(), &entry_value.clone()));
-    // if !bad_result.is_err() {
-    //     return bad_result.into();
-    // }
+    let bad_result = hdk::hash_entry(&Entry::new(&"bad".into(), &entry_value.clone()));
+    if !bad_result.is_err() {
+        return bad_result.into();
+    }
 
     // Check good entry type name
     let hash_result = hdk::hash_entry(&entry);
-    let ret: ZomeApiResult<Address> = if commit_result == hash_result {
-        hash_result
+
+    if commit_result == hash_result {
+        JsonString::from(hash_result.unwrap());
     } else {
-        Err(ZomeApiError::from(format!("commit result: {:?} hash result: {:?}", commit_result, hash_result))).into()
-    };
-    ret.into()
+        JsonString::from(ZomeApiError::from(format!("commit result: {:?} hash result: {:?}", commit_result, hash_result))))
+    }
 }
 
 fn handle_check_hash_sys_entry() -> JsonString {
@@ -246,9 +247,10 @@ fn handle_check_call() -> JsonString {
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty.into());
     hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
     let tmp = maybe_hash.unwrap();
-    let hash = Address::try_from(tmp).unwrap();
-    hdk::debug(format!("hash = {}", hash)).ok();
-    hash.into()
+    tmp.into()
+    // let hash: ZomeApiResult<Address> = tmp.try_into().unwrap();
+    // hdk::debug(format!("hash = {}", hash)).ok();
+    // hash.into()
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -31,6 +31,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetRes
 use hdk::holochain_dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
+use holochain_wasm_utils::holochain_core_types::error::ZomeApiResult;
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -94,15 +95,7 @@ struct EntryStruct {
 
 fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
     let entry = Entry::new(&entry_type.into(), &value.into());
-    let res = hdk::commit_entry(&entry);
-    hdk::debug(format!("res: {:?}", res)).expect("debug() must work");
-
-    JsonString::from(match res {
-        Ok(hash_str) => json!({ "address": hash_str }),
-        Err(ZomeApiError::ValidationFailed(msg)) => json!({ "validation failed": msg}),
-        Err(ZomeApiError::Internal(err_str)) => json!({ "error": err_str}),
-        Err(_) => unreachable!(),
-    })
+    hdk::commit_entry(&entry).into()
 }
 
 fn handle_check_get_entry_result(entry_hash: HashString) -> JsonString {
@@ -217,17 +210,29 @@ fn handle_check_query() -> JsonString {
 
 fn handle_check_hash_app_entry() -> JsonString {
     // Setup
-    let entry_value = JsonString::from(json!({
-        "stuff": "entry1"
-    }));
-    let commit_hash = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &entry_value.clone())).unwrap();
+    let entry_value = JsonString::from(TestEntryType{stuff: "entry1".into()});
+    let entry_type = EntryType::from("testEntryType");
+    let entry = Entry::new(&entry_type, &entry_value);
+
+    let commit_result = hdk::commit_entry(&entry);
+    if commit_result.is_err() {
+        return commit_result.into();
+    }
+
     // Check bad entry type name
-    let result = hdk::hash_entry(&Entry::new(&"bad".into(), &entry_value.clone()));
-    assert!(result.is_err());
+    // let bad_result = hdk::hash_entry(&Entry::new(&"bad".into(), &entry_value.clone()));
+    // if !bad_result.is_err() {
+    //     return bad_result.into();
+    // }
+
     // Check good entry type name
-    let good_hash = hdk::hash_entry(&Entry::new(&"testEntryType".into(), &entry_value)).unwrap();
-    assert!(commit_hash == good_hash);
-    good_hash.into()
+    let hash_result = hdk::hash_entry(&entry);
+    let ret: ZomeApiResult<Address> = if commit_result == hash_result {
+        hash_result
+    } else {
+        Err(ZomeApiError::from(format!("commit result: {:?} hash result: {:?}", commit_result, hash_result))).into()
+    };
+    ret.into()
 }
 
 fn handle_check_hash_sys_entry() -> JsonString {
@@ -294,9 +299,15 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
     TweetResponse { first: author,  second: content}.into()
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TestEntryType {
     stuff: String,
+}
+
+impl From<TestEntryType> for JsonString {
+    fn from(v: TestEntryType) -> Self {
+        default_to_json(v)
+    }
 }
 
 define_zome! {

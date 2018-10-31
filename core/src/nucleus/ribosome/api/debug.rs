@@ -1,4 +1,3 @@
-use holochain_core_types::error::RibosomeReturnCode;
 use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 

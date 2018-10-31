@@ -497,7 +497,7 @@ mod tests {
         assert_eq!(
             RibosomeReturnCode::Success,
             RibosomeReturnCode::try_from(result.unwrap())
-                .expect("could not deserialize RibosomeResultCode")
+                .expect("could not deserialize RibosomeReturnCode")
         );
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(

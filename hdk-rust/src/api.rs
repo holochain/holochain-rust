@@ -364,17 +364,26 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
 /// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
-pub fn hash_entry(entry: &Entry) -> ZomeApiResult<HashString> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
+
+    debug(format!("hash_entry: {:?}", entry)).unwrap();
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
 
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_hash_entry(allocation_of_input.encode() as u32) };
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_hash_entry(allocation_of_input.encode() as u32);
+    }
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+
+    debug(format!("hash_entry: {:?}", result)).unwrap();
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack

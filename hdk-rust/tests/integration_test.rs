@@ -274,7 +274,7 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"}"#),
+        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
     );
     let result = hc.call(
         "test_zome",
@@ -285,7 +285,7 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"}"#),
+        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
     );
 
     //
@@ -325,6 +325,7 @@ fn can_roundtrip_links() {
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let result_string = result.unwrap();
+    println!("can_roundtrip_links result_string: {:?}", result_string);
     let ordering1: bool = result_string == JsonString::from(r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#);
     let ordering2: bool = result_string == JsonString::from(r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#);
     assert!(ordering1 || ordering2);

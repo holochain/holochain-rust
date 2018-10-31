@@ -2,7 +2,7 @@ use dht::actions::add_link::*;
 use futures::executor::block_on;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -83,11 +83,9 @@ pub mod tests {
             test_link_args_bytes(),
         );
         call_result.pop(); // Remove trailing character
-        let core_err: CoreError = serde_json::from_str(&call_result).expect("valid CoreError json str");
-        assert_eq!(
-            "Base for link not found",
-            core_err.kind.to_string(),
-        );
+        let core_err: CoreError =
+            serde_json::from_str(&call_result).expect("valid CoreError json str");
+        assert_eq!("Base for link not found", core_err.kind.to_string(),);
     }
 
     #[test]

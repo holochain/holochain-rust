@@ -1,6 +1,6 @@
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -31,7 +31,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
                 .map(|eav| eav.value())
                 .collect::<Vec<Address>>();
             runtime.store_as_json(vec_links)
-        },
+        }
     }
 }
 
@@ -105,8 +105,8 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
         println!("call_result = '{:?}'", call_result);
-        let ordering1= format!(r#"["{}","{}"]"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
-        let ordering2= format!(r#"["{}","{}"]"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
+        let ordering1 = format!(r#"["{}","{}"]"#, entry_hashes[1], entry_hashes[2]) + "\u{0}";
+        let ordering2 = format!(r#"["{}","{}"]"#, entry_hashes[2], entry_hashes[1]) + "\u{0}";
 
         assert!(call_result == ordering1 || call_result == ordering2);
 

@@ -1,4 +1,4 @@
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code

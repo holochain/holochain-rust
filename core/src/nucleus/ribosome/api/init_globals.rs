@@ -1,7 +1,7 @@
 use holochain_core_types::{entry_type::EntryType, hash::HashString};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code

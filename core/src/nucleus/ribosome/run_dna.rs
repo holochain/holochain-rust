@@ -159,7 +159,8 @@ pub fn run_dna(
                 Ok(json_string) => {
                     // Check if its a HolochainError
                     return_log_msg = json_string.clone();
-                    let de_res: Result<HolochainError, serde_json::Error> = serde_json::from_str(&json_string);
+                    let de_res: Result<HolochainError, serde_json::Error> =
+                        serde_json::from_str(&json_string);
                     return_result = match de_res {
                         Err(_) => Ok(json_string), // not a HolochainError so return normal result
                         Ok(hc_err) => Err(hc_err),

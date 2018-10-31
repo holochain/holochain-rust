@@ -35,7 +35,6 @@ impl Error for CoreError {
     fn cause(&self) -> Option<&Error> {
         self.kind.cause()
     }
-
 }
 impl CoreError {
     pub fn new(hc_err: HolochainError) -> Self {
@@ -57,7 +56,9 @@ impl fmt::Display for CoreError {
         write!(
             f,
             "Holochain Core error: {}\n  --> {}:{}\n",
-            self.description(), self.file, self.line,
+            self.description(),
+            self.file,
+            self.line,
         )
     }
 }
@@ -249,7 +250,8 @@ mod tests {
 
     #[test]
     fn core_error_to_string() {
-        let error = HolochainError::ErrorGeneric("This is a unit test error description".to_string());
+        let error =
+            HolochainError::ErrorGeneric("This is a unit test error description".to_string());
         let report = CoreError {
             kind: error.clone(),
             file: file!().to_string(),

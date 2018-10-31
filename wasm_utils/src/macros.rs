@@ -1,4 +1,3 @@
-
 /// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
 /// Will panic! if out or memory or other serialization error occured.
 #[macro_export]
@@ -17,9 +16,9 @@ macro_rules! zome_assert {
 
 #[macro_export]
 macro_rules! ribosome_success {
-    () => (
+    () => {
         Ok(Some(RuntimeValue::I32(0 as i32)))
-    )
+    };
 }
 
 /// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot

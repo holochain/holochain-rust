@@ -1,4 +1,6 @@
-use holochain_core_types::error::{RibosomeErrorCode, HolochainError, RibosomeReturnCode, CoreError};
+use holochain_core_types::error::{
+    CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode,
+};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
@@ -99,7 +101,9 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, H
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
         Err(return_code) => match return_code {
-            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(RibosomeErrorCode::ZeroSizedAllocation)),
+            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(
+                RibosomeErrorCode::ZeroSizedAllocation,
+            )),
             RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code)),
         },
         Ok(allocation) => load_json_from_raw(allocation.offset() as *mut c_char),
@@ -111,7 +115,9 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, H
 /// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
-pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, HolochainError> {
+pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
+    ptr_data: *mut c_char,
+) -> Result<T, HolochainError> {
     let stored_str = load_str_from_raw(ptr_data);
     let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(stored_str);
     match maybe_obj {
@@ -121,7 +127,9 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Resu
             let maybe_hc_err: Result<CoreError, serde_json::Error> =
                 serde_json::from_str(stored_str);
             match maybe_hc_err {
-                Err(_) => Err(HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)),
+                Err(_) => Err(HolochainError::Ribosome(
+                    RibosomeErrorCode::ArgumentDeserializationFailed,
+                )),
                 Ok(hc_err) => Err(hc_err.kind),
             }
         }

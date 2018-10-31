@@ -6,7 +6,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::{Runtime, api::ZomeApiResult},
+    ribosome::{api::ZomeApiResult, Runtime},
     state::NucleusState,
     ZomeFnCall,
 };

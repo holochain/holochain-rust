@@ -2,7 +2,7 @@ use holochain_core_types::{self, entry::Entry, entry_type::EntryType, hash::Hash
 use holochain_dna::Dna;
 use holochain_wasm_utils::api_serialization::HashEntryArgs;
 use multihash::Hash as Multihash;
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue};

@@ -49,7 +49,8 @@ pub mod tests {
             .entry_types
             .insert(String::from("package_chain_full"), EntryTypeDef::new());
 
-        let (instance, context) = test_instance_and_context(dna).expect("Could not create test instance");
+        let (instance, context) =
+            test_instance_and_context(dna).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
 
         (instance, initialized_context)

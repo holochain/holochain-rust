@@ -1,6 +1,6 @@
 use holochain_core_types::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::QueryArgs;
-use nucleus::ribosome::{Runtime, api::ZomeApiResult};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
 use std::str::FromStr;
 use wasmi::{RuntimeArgs, RuntimeValue};

@@ -11,7 +11,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
-    ribosome::{Runtime, api::ZomeApiResult},
+    ribosome::{api::ZomeApiResult, Runtime},
 };
 use serde_json;
 use std::str::FromStr;
@@ -103,10 +103,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            format!(
-                r#"{{"address":"{}"}}"#,
-                test_entry().address()
-            ) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
     }
 

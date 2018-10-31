@@ -1,8 +1,9 @@
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
-        let maybe_input =
-            $crate::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
+        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_json(
+            $encoded_allocation_of_input,
+        );
         if let Err(hc_err) = maybe_input {
             return $crate::global_fns::store_and_return_output(hc_err);
         }

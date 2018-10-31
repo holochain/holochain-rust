@@ -10,8 +10,8 @@ use holochain_wasm_utils::{
         HashEntryArgs, QueryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
-        hash::HashString,
         error::{CoreError, HolochainError, RibosomeReturnCode},
+        hash::HashString,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -200,7 +200,7 @@ pub fn call<S: Into<String>>(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result.map_err(| err_code| ZomeApiError::Internal(err_code.to_string()))
+    result.map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -422,7 +422,8 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory
-    let result: Result<Vec<HashString>, HolochainError> = load_json(encoded_allocation_of_result as u32);
+    let result: Result<Vec<HashString>, HolochainError> =
+        load_json(encoded_allocation_of_result as u32);
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
@@ -446,7 +447,8 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>
     let encoded_allocation_of_result: u32 =
         unsafe { hc_query(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory
-    let result: Result<Vec<HashString>, HolochainError> = load_json(encoded_allocation_of_result as u32);
+    let result: Result<Vec<HashString>, HolochainError> =
+        load_json(encoded_allocation_of_result as u32);
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
@@ -481,15 +483,18 @@ pub fn check_for_ribosome_error(encoded_allocation: u32) -> Result<(), ZomeApiEr
         // Expecting a 'Success' return code
         Err(ret_code) => match ret_code {
             RibosomeReturnCode::Success => Ok(()),
-            RibosomeReturnCode::Failure(err_code) => Err(ZomeApiError::Internal(err_code.to_string())),
+            RibosomeReturnCode::Failure(err_code) => {
+                Err(ZomeApiError::Internal(err_code.to_string()))
+            }
         },
         // If we have an allocation, than it should be a CoreError
         Ok(allocation) => {
-            let maybe_err: Result<CoreError, HolochainError> = load_json_from_raw(allocation.offset() as *mut c_char);
+            let maybe_err: Result<CoreError, HolochainError> =
+                load_json_from_raw(allocation.offset() as *mut c_char);
             match maybe_err {
                 Err(hc_err) => Err(ZomeApiError::Internal(hc_err.to_string())),
                 Ok(core_err) => Err(ZomeApiError::Internal(core_err.to_string())),
             }
-        },
+        }
     }
 }

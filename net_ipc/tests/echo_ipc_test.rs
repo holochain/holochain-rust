@@ -4,9 +4,13 @@ extern crate failure;
 extern crate holochain_net_ipc as net_ipc;
 extern crate libc;
 
-use net_ipc::{errors::*, ZmqIpcClient};
+#[allow(dead_code)]
+use net_ipc::errors::*;
+use net_ipc::ZmqIpcClient;
+#[allow(dead_code)]
 use std::sync::{Arc, Mutex};
 
+#[allow(dead_code)]
 /// do prep work and run the nodejs example echo-server.js
 fn run_nodejs_echo_server() -> std::process::Child {
     // make sure the git submodule is initialized
@@ -38,11 +42,12 @@ fn run_nodejs_echo_server() -> std::process::Child {
 }
 
 /// struct to help hold context for the callbacks
+#[allow(dead_code)]
 struct TestFrame {
     srv: std::process::Child,
     cli: ZmqIpcClient,
 }
-
+#[allow(dead_code)]
 impl TestFrame {
     /// create a new test frame
     fn new() -> TestFrame {
@@ -148,11 +153,12 @@ impl TestFrame {
             cb_result, msg
         );
     }
-
     /// cleanup both the nodejs echo-server and the ipc client connection
+    #[cfg(not(windows))]
     fn destroy(mut self) {
         println!("attempting to kill echo server");
         unsafe {
+            // TODO find a windows equivalent to kill()
             libc::kill(self.srv.id() as i32, libc::SIGTERM);
         }
         self.srv.wait().unwrap();
@@ -161,10 +167,19 @@ impl TestFrame {
         println!("attempting to kill zeromq context");
         self.cli.close().unwrap();
         ZmqIpcClient::destroy_context().unwrap();
-        println!("zemomq is off");
+        println!("zeromq is off");
     }
 }
 
+// Test that just makes sure the net_ipc crate is linkable
+#[test]
+fn can_be_linked() {
+    let cli = ZmqIpcClient::new().unwrap();
+    cli.close().unwrap();
+}
+
+// TODO make the test work for windows
+#[cfg(not(windows))]
 #[test]
 fn it_can_send_call_and_call_resp() {
     let mut frame = TestFrame::new();

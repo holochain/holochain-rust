@@ -215,7 +215,7 @@ where
     }
 
     let eav =
-        EntityAttributeValue::new(link.base(), &format!("link:{}", link.tag()), link.target());
+        EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
 
     let result = new_store.meta_storage_mut().add_eav(&eav);
     new_store
@@ -334,7 +334,7 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link:{}", link.tag()));
+        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
     }
 
     #[test]

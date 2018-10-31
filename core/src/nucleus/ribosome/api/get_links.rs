@@ -106,13 +106,11 @@ pub mod tests {
         );
         let ordering1 = format!(
             r#"{{"addresses":["{}","{}"]}}"#,
-            entry_hashes[1],
-            entry_hashes[2],
+            entry_hashes[1], entry_hashes[2],
         ) + "\u{0}";
         let ordering2 = format!(
             r#"{{"addresses":["{}","{}"]}}"#,
-            entry_hashes[2],
-            entry_hashes[1],
+            entry_hashes[2], entry_hashes[1],
         ) + "\u{0}";
         assert!(
             call_result == ordering1 || call_result == ordering2,

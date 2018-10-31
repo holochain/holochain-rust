@@ -94,16 +94,13 @@ fn can_commit_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry",
-        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(format!(
-            "{{\"address\":\"{}\"}}",
-            String::from(SerializedEntry::from(test_entry_a()).address())
-        )),
+        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
     );
 }
 
@@ -116,16 +113,13 @@ fn can_commit_entry_macro() {
         "test_cap",
         "check_commit_entry_macro",
         // this works because the macro names the args the same as the SerializedEntry fields
-        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(format!(
-            "{{\"Ok\":\"{}\"}}",
-            String::from(SerializedEntry::from(test_entry_a()).address())
-        )),
+        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
     );
 }
 

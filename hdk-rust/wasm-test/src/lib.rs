@@ -70,20 +70,11 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     hdk::debug(format!("SerializedEntry: {:?}", serialized_entry)).expect("debug() must work");
     let res = hdk::commit_entry(&serialized_entry.into());
 
-    let res_obj = match res {
-        Ok(hash_str) => {
-            hdk::debug(format!("SUCCESS: {:?}", hash_str.clone().to_string())).expect("debug() must work");
-            CommitOutputStruct {address: hash_str.to_string()}
-        },
-        Err(ZomeApiError::Internal(err_str)) => unsafe {
-            hdk::debug(format!("ERROR ZomeApiError: {:?}", err_str)).expect("debug() must work");
-            return store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), err_str) as u32;
-        },
-        Err(e) => {
-            hdk::debug(format!("ERROR unknown: {:?}", e)).expect("debug() must work");
-            unreachable!();
-        }
+    let res_obj: JsonString = match res {
+        Ok(hash) => hash.into(),
+        Err(e) => e.into(),
     };
+
     unsafe {
         return store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
     }

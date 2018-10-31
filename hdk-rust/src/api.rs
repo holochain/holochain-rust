@@ -1,3 +1,4 @@
+use holochain_core_types::entry::SerializedEntry;
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
@@ -7,7 +8,7 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResult, GetResultStatus},
+        get_entry::GetEntryOptions,
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, ZomeFnCallArgs,
@@ -268,23 +269,19 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
-pub fn get_entry(address: HashString) -> Result<Option<Entry>, ZomeApiError> {
-    let result = get_entry_result(address, GetEntryOptions {})?;
-    match result.status {
-        GetResultStatus::Found => match result.maybe_serialized_entry {
-            Some(serialized_entry) => Ok(Some(Entry::from(serialized_entry))),
-            None => Err(ZomeApiError::Internal("Missing found Entry".into())),
-        },
-        GetResultStatus::NotFound => Ok(None),
-    }
+pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+    Ok(get_entry_result(address, GetEntryOptions {})?
+        .and_then(|serialized_entry|
+            Some(serialized_entry.deserialize()))
+    )
 }
 
 /// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
 /// its address, and a the full options to specify exactly what data to return
 pub fn get_entry_result(
-    address: HashString,
+    address: Address,
     _options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
+) -> ZomeApiResult<Option<SerializedEntry>> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

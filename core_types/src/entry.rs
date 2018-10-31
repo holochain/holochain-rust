@@ -114,6 +114,19 @@ impl TryFrom<JsonString> for SerializedEntry {
     }
 }
 
+impl From<Option<SerializedEntry>> for JsonString {
+    fn from(v: Option<SerializedEntry>) -> JsonString {
+        default_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for Option<SerializedEntry> {
+    type Error = HolochainError;
+    fn try_from(json_string: JsonString) -> HcResult<Self> {
+        default_try_from_json(json_string)
+    }
+}
+
 // impl TryFrom<Option<SerializedEntry>> for JsonString {
 //     type Error = HolochainError;
 //     fn try_from(maybe_serialized_entry: Option<SerializedEntry>) -> JsonResult {

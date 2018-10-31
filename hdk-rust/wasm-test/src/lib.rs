@@ -28,7 +28,7 @@ use std::convert::TryInto;
 use holochain_wasm_utils::holochain_core_types::json::default_try_from_json;
 use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 use std::convert::TryFrom;
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetResultStatus};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions};
 use hdk::holochain_dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
@@ -93,31 +93,17 @@ fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonStr
     }
 }
 
-fn handle_check_get_entry_result(entry_hash: HashString) -> JsonString {
-    let res = hdk::get_entry_result(entry_hash,GetEntryOptions{});
-    match res {
-        Ok(result) => match result.status {
-            GetResultStatus::Found => {
-                match result.maybe_serialized_entry {
-                    Some(serialized_entry) => serialized_entry.into(),
-                    None => unreachable!(),
-                }
-            },
-            GetResultStatus::NotFound => json!({"got back no entry": true}).into(),
-        }
-        Err(ZomeApiError::Internal(err_str)) => json!({"get entry Err": err_str}).into(),
-        Err(_) => unreachable!(),
+fn handle_check_get_entry_result(entry_address: Address) -> JsonString {
+    match hdk::get_entry_result(entry_address, GetEntryOptions{}) {
+        Ok(result) => result.into(),
+        Err(e) => e.into(),
     }
 }
 
-fn handle_check_get_entry(entry_hash: HashString) -> JsonString {
-    let result : Result<Option<Entry>,ZomeApiError> = hdk::get_entry(entry_hash);
-    match result {
-        Ok(e) => match e {
-            Some(entry) => entry.serialize().into(),
-            None => JsonString::null(),
-        },
-        Err(err) => json!({"get entry Err": err.to_string()}).into(),
+fn handle_check_get_entry(entry_address: Address) -> JsonString {
+    match hdk::get_entry(entry_address) {
+        Ok(result) => result.and_then(|entry| Some(entry.serialize())).into(),
+        Err(e) => e.into(),
     }
 }
 
@@ -355,13 +341,13 @@ define_zome! {
             }
 
             check_get_entry: {
-                inputs: |entry_hash: HashString|,
+                inputs: |entry_address: Address|,
                 outputs: |result: JsonString|,
                 handler: handle_check_get_entry
             }
 
             check_get_entry_result: {
-                inputs: |entry_hash: HashString|,
+                inputs: |entry_address: Address|,
                 outputs: |result: JsonString|,
                 handler: handle_check_get_entry_result
             }

@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
+use holochain_core_types::error::ZomeApiInternalResult;
 use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -15,24 +15,20 @@ pub fn invoke_get_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let res_entry = Address::try_from(args_str);
+    let try_address = Address::try_from(args_str.clone());
     // Exit on error
-    if res_entry.is_err() {
+    if try_address.is_err() {
+        println!("invoke_get_entry failed to deserialize Address: {:?}", args_str);
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
-    let address = res_entry.unwrap();
+    let address = try_address.unwrap();
 
     let future = get_entry(&runtime.context, address);
     let result = block_on(future);
+
     match result {
+        Ok(maybe_entry) => runtime.store_as_json_string(ZomeApiInternalResult::success(maybe_entry.and_then(|entry| Some(entry.serialize())))),
         Err(_) => ribosome_error_code!(Unspecified),
-        Ok(maybe_entry) => {
-            let result = match maybe_entry {
-                Some(entry) => GetEntryResult::found(entry.into()),
-                None => GetEntryResult::not_found(),
-            };
-            runtime.store_as_json_string(result)
-        }
     }
 }
 

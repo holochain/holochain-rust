@@ -4,6 +4,7 @@ macro_rules! load_json {
         let maybe_input =
             $crate::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
         if maybe_input.is_err() {
+            println!("failed to deserialize input {:?}", maybe_input);
             return $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
                 as u32;
         }
@@ -113,7 +114,7 @@ macro_rules! define_zome {
                     $crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
                     // Macro'd InputStruct
-                    #[derive(Deserialize)]
+                    #[derive(Deserialize, Debug)]
                     struct InputStruct {
                         $($input_param_name : $input_param_type),*
                     }

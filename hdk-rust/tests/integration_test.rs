@@ -4,6 +4,8 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
+#[macro_use]
+extern crate serde_json;
 
 use holochain_core_api::*;
 
@@ -150,42 +152,50 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(SerializedEntry::from(test_entry_a()))),
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(format!(
-            "{{\"Ok\":\"{}\"}}",
-            String::from(SerializedEntry::from(test_entry_a()).address())
-        )),
+        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        r#"{"entry_hash":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#,
+        &String::from(
+            JsonString::from(
+                json!(
+                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                )
+            )
+        ),
     );
-    println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"stuff\":\"non fail\"}")
+        JsonString::from("{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}")
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        &format!("{{\"entry_address\":\"{}\"}}", test_entry_a().address()),
+        &String::from(
+            JsonString::from(
+                json!(
+                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                )
+            )
+        ),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
         JsonString::from(
-            "{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
+            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
         )
     );
 
@@ -194,13 +204,19 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        r#"{"entry_hash":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+        &String::from(
+            JsonString::from(
+                json!(
+                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                )
+            )
+        ),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"got back no entry\":true}")
+        JsonString::null()
     );
 
     // test the case with a bad hash
@@ -208,11 +224,17 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_get_entry",
-        r#"{"entry_address":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+        &String::from(
+            JsonString::from(
+                json!(
+                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                )
+            )
+        ),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from("{\"Ok\":null}"));
+    assert_eq!(result.unwrap(), JsonString::null());
 }
 
 #[test]

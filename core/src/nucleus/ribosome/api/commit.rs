@@ -24,11 +24,11 @@ pub fn invoke_commit_app_entry(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let serialized_entry = match SerializedEntry::try_from(args_str) {
+    let serialized_entry = match SerializedEntry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(e) => {
-            println!("failed to deserialize: {:?}", e);
+        Err(_) => {
+            println!("invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}", args_str);
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

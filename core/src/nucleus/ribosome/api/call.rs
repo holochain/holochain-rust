@@ -34,10 +34,15 @@ pub fn invoke_call(
 ) -> Result<Option<RuntimeValue>, Trap> {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let input = match ZomeFnCallArgs::try_from(args_str) {
+    println!("invoke_call args_str: {:?}", args_str);
+
+    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!("failed to deserialize: {:?}", args_str);
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
 
     // ZomeFnCallArgs to ZomeFnCall
@@ -82,7 +87,7 @@ pub fn invoke_call(
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
         .expect("observer dropped before done");
 
-    println!("call: {:?}", action_result);
+    println!("invoke_call action_result: {:?}", action_result);
 
     // action_result should be a json str of the result of the zome function called
     match action_result {

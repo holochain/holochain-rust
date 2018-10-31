@@ -300,7 +300,7 @@ fn can_link_entries() {
 
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(r#"{"ok":true}"#));
+    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
 #[test]

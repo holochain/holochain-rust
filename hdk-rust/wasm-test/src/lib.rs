@@ -138,23 +138,23 @@ fn handle_commit_validation_package_tester() -> JsonString {
 }
 
 fn handle_link_two_entries()-> JsonString {
-    let entry1 = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
+    let entry1_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
         "stuff": "entry1"
     }).into()));
-    let entry2 = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
-        "stuff": "entry2"
-    }).into()));
-    if entry1.is_err() {
-        return json!({"error": &format!("Could not commit entry: {}", entry1.err().unwrap().to_string())}).into()
-    }
-    if entry2.is_err() {
-        return json!({"error": &format!("Could not commit entry: {}", entry2.err().unwrap().to_string())}).into()
+
+    if entry1_result.is_err() {
+        return entry1_result.into()
     }
 
-    JsonString::from(match hdk::link_entries(&entry1.unwrap(), &entry2.unwrap(), "test-tag") {
-        Ok(()) => json!({"ok": true}),
-        Err(error) => json!({"error": error.to_string()}),
-    })
+    let entry2_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
+        "stuff": "entry2"
+    }).into()));
+
+    if entry2_result.is_err() {
+        return entry2_result.into()
+    }
+
+    hdk::link_entries(&entry1_result.unwrap(), &entry2_result.unwrap(), "test-tag").into()
 }
 
 fn handle_links_roundtrip() -> JsonString {
@@ -295,7 +295,9 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
 }
 
 #[derive(Serialize, Deserialize)]
-struct TestEntryType(String);
+struct TestEntryType {
+    stuff: String,
+}
 
 define_zome! {
     entries: [
@@ -310,7 +312,7 @@ define_zome! {
             },
 
             validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
-                (entry.0 != "FAIL")
+                (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
         ),

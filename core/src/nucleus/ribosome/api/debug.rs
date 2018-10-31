@@ -11,17 +11,14 @@ pub fn invoke_debug(
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
     let payload = runtime.load_json_string_from_args(args);
-    println!("{}", payload);
+    println!("foo: {}", payload);
     // TODO #502 - log in logger as DEBUG log-level
     runtime
         .context
         .log(&format!("zome_log:DEBUG: '{}'", payload))
         .expect("Logger should work");
 
-    // Return Ribosome Success Code
-    Ok(Some(RuntimeValue::I32(i32::from(
-        RibosomeReturnCode::Success,
-    ))))
+    runtime.store_as_json_string(payload)
 }
 
 #[cfg(test)]

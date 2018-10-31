@@ -8,8 +8,6 @@ pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{
-    error::{HolochainError, RibosomeReturnCode},
-    json::JsonString,
     ribosome::callback::{CallbackParams, CallbackResult},
 };
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
@@ -22,8 +20,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use serde_json;
-use std::{convert::TryFrom, str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str

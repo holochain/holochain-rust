@@ -20,7 +20,6 @@ use holochain_wasm_utils::holochain_core_types::entry::Entry;
 use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
-        error::RibosomeReturnCode,
         hash::HashString,
         entry_type::EntryType,
     },
@@ -34,18 +33,8 @@ use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 
 #[no_mangle]
-pub extern "C" fn check_global(encoded_allocation_of_input: u32) -> u32 {
-    hdk::global_fns::init_global_memory(encoded_allocation_of_input);
-    #[allow(unused_must_use)]
-    {
-        hdk::debug(hdk::DNA_NAME.to_owned());
-        hdk::debug(hdk::DNA_HASH.to_string());
-        hdk::debug(hdk::AGENT_ID_STR.to_owned());
-        hdk::debug(hdk::AGENT_ADDRESS.to_string());
-        hdk::debug(hdk::AGENT_INITIAL_HASH.to_string());
-        hdk::debug(hdk::AGENT_LATEST_HASH.to_string());
-    }
-    u32::from(RibosomeReturnCode::Success)
+pub extern "C" fn handle_check_global() -> JsonString {
+    hdk::AGENT_LATEST_HASH.clone().into()
 }
 
 #[derive(Deserialize, Serialize, Default)]
@@ -352,6 +341,12 @@ define_zome! {
 
     functions: {
         test (Public) {
+            check_global: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_check_global
+            }
+
             check_commit_entry_macro: {
                 inputs: |entry_type: String, value: String|,
                 outputs: |result: JsonString|,

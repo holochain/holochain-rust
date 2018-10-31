@@ -96,7 +96,10 @@ struct EntryStruct {
 
 fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
     let entry = Entry::new(&entry_type.into(), &value.into());
-    hdk::commit_entry(&entry).into()
+    match hdk::commit_entry(&entry) {
+        Ok(hash) => hash.into(),
+        Err(e) => e.into(),
+    }
 }
 
 fn handle_check_get_entry_result(entry_hash: HashString) -> JsonString {
@@ -230,9 +233,13 @@ fn handle_check_hash_app_entry() -> JsonString {
     let hash_result = hdk::hash_entry(&entry);
 
     if commit_result == hash_result {
-        JsonString::from(hash_result.unwrap());
+        JsonString::from(hash_result.unwrap())
     } else {
-        JsonString::from(ZomeApiError::from(format!("commit result: {:?} hash result: {:?}", commit_result, hash_result))))
+        JsonString::from(
+            ZomeApiError::from(
+                format!("commit result: {:?} hash result: {:?}", commit_result, hash_result)
+            )
+        )
     }
 }
 
@@ -246,42 +253,23 @@ fn handle_check_call() -> JsonString {
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty)).ok();
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty.into());
     hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
-    let tmp = maybe_hash.unwrap();
-    tmp.into()
-    // let hash: ZomeApiResult<Address> = tmp.try_into().unwrap();
-    // hdk::debug(format!("hash = {}", hash)).ok();
-    // hash.into()
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct HashStruct {
-    address: String,
-}
-
-impl From<HashStruct> for JsonString {
-    fn from(v: HashStruct) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for HashStruct {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
+    match maybe_hash {
+        Ok(hash) => hash.into(),
+        Err(e) => e.into(),
     }
 }
 
 fn handle_check_call_with_args() -> JsonString {
-    let arg_str = JsonString::from(r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#);
-    let args = SerializedEntry::try_from(arg_str).unwrap();
-    // let args =  json!(arg_str);
+    let args = hdk_test_entry().serialize();
     hdk::debug(format!("args = {:?}", args)).ok();
+
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args.into());
     hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
-    let tmp = maybe_hash.unwrap();
-    let hash = HashStruct::try_from(tmp).unwrap();
-    hdk::debug(format!("hash = {:?}", hash)).ok();
-    hash.into()
+
+    match maybe_hash {
+        Ok(hash) => hash.into(),
+        Err(e) => e.into(),
+    }
 }
 
 
@@ -304,6 +292,18 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
 #[derive(Serialize, Deserialize, Debug)]
 struct TestEntryType {
     stuff: String,
+}
+
+fn hdk_test_entry_type() -> EntryType {
+    EntryType::from("testEntryType")
+}
+
+fn hdk_test_entry_value() -> TestEntryType {
+    TestEntryType {stuff: "non fail".into()}
+}
+
+fn hdk_test_entry() -> Entry {
+    Entry::new(&hdk_test_entry_type(), &hdk_test_entry_value().into())
 }
 
 impl From<TestEntryType> for JsonString {

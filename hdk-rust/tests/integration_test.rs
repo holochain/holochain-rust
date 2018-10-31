@@ -20,6 +20,7 @@ use holochain_dna::zome::{
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;
+use holochain_core_types::cas::content::Address;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -365,7 +366,7 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("\"QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa\""),
+        JsonString::from(Address::from("QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa")),
     );
 }
 
@@ -378,6 +379,6 @@ fn can_check_call_with_args() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#),
+        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
     );
 }

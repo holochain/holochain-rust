@@ -90,7 +90,7 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
+                r#"{"ok":false,"value":"null","error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
                     + "\u{0}"
             ),
         );

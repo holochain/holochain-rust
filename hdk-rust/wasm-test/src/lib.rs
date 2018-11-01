@@ -180,10 +180,7 @@ fn handle_links_roundtrip() -> JsonString {
     };
     hdk::debug(format!("link_2: {:?}", link_2));
 
-    JsonString::from(match hdk::get_links(&entry1_hash, "test-tag") {
-        Ok(result) => format!("{{\"links\": {}}}", JsonString::from(result.links)),
-        Err(error) => format!("{{\"error\": {}}}", JsonString::from(error)),
-    })
+    hdk::get_links(&entry1_hash, "test-tag").into()
 }
 
 fn handle_check_query() -> JsonString {

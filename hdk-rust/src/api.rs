@@ -9,7 +9,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::GetEntryOptions,
-        get_links::{GetLinksArgs, GetLinksResult},
+        get_links::{GetLinksArgs},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, ZomeFnCallArgs,
     },
@@ -429,7 +429,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
 /// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
 /// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function `link_entries`.
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Address>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory

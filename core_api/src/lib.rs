@@ -248,7 +248,7 @@ mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 9
                 )
                 (data (i32.const 0)
                     "fail"
@@ -263,7 +263,7 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
-            HolochainInstanceError::from(HolochainError::ErrorGeneric("fail".to_string())),
+            HolochainInstanceError::from(HolochainError::ErrorGeneric("\"Genesis\"".to_string())),
             result.err().unwrap(),
         );
     }

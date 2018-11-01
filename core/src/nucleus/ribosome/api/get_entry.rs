@@ -55,6 +55,7 @@ mod tests {
         ZomeFnCall,
     };
     use std::sync::Arc;
+    use holochain_core_types::error::ZomeApiInternalResult;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -259,10 +260,13 @@ mod tests {
             Some(test_get_args_unknown()),
         ).expect("test should be callable");
 
-        let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"NotFound\",\"maybe_serialized_entry\":null}\u{0}");
-
-        assert_eq!(JsonString::from(expected), call_result);
+        assert_eq!(
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None)))
+                + "\u{0}"
+            ),
+            call_result,
+        );
     }
 
 }

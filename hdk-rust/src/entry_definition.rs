@@ -31,7 +31,7 @@ pub struct ValidatingEntryType {
 ///      when attempting to validate entries of this type.
 ///      Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
 /// 6. validation: `validation` is a callback function which will be called any time that a
-///      source chain action is taken relating to this entry type, such as [commit_entry](fn.commit_entry.html), [update_entry](fn.update_entry.html), [remove_entry](fn.remove_entry.html).
+///      (DHT) node processes or stores this entry, triggered through actions such as [commit_entry](fn.commit_entry.html), [update_entry](fn.update_entry.html), [remove_entry](fn.remove_entry.html).
 ///      It always expects two arguments, the first of which is the entry attempting to be validated,
 ///      the second is the validation `context`, which offers a variety of metadata useful for validation.
 /// # Examples

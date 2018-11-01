@@ -487,6 +487,7 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(hc.state().unwrap().history.len(), 4);
@@ -495,9 +496,8 @@ mod tests {
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
 
         assert_eq!(
-            RibosomeReturnCode::Success,
-            RibosomeReturnCode::try_from(result.unwrap())
-                .expect("could not deserialize RibosomeReturnCode")
+            Ok(JsonString::null()),
+            result,
         );
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
@@ -535,8 +535,8 @@ mod tests {
         // Expect Success as result
         println!("result = {:?}", result);
         assert_eq!(
-            RibosomeReturnCode::Success,
-            RibosomeReturnCode::try_from(result.unwrap()).unwrap()
+            Ok(JsonString::null()),
+            result,
         );
 
         let test_logger = test_logger.lock().unwrap();

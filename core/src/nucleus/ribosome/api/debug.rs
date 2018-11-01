@@ -44,13 +44,13 @@ pub mod tests {
     fn test_zome_api_function_debug() {
         let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
+        println!("test_zome_api_function_debug call_result: {:?}", call_result);
         assert_eq!(
-            RibosomeReturnCode::Success,
-            RibosomeReturnCode::try_from(call_result)
-                .expect("could not deserialize RibosomeReturnCode"),
+            JsonString::from(test_debug_string() + "\u{0}"),
+            call_result,
         );
         assert_eq!(
-            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
+            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: foo\\u{0}\"]"),
             JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
         );
     }

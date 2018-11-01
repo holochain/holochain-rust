@@ -58,6 +58,7 @@ pub mod tests {
         Defn,
     };
     use serde_json;
+    use holochain_core_types::error::ZomeApiInternalResult;
 
     /// dummy link_entries args from standard test entry
     pub fn test_link_args_bytes() -> Vec<u8> {
@@ -126,7 +127,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(r#"{"ok":true,"error":""}"#.to_string() + "\u{0}"),
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None)))
+                + "\u{0}"
+            ),
         );
     }
 

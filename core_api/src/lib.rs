@@ -80,7 +80,7 @@ use holochain_core::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
-use std::sync::{Arc};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {

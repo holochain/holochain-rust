@@ -274,7 +274,7 @@ pub mod tests {
         reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
     };
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::{tests::test_chain_store};
+    use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,

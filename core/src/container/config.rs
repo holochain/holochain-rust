@@ -1,8 +1,10 @@
 extern crate serde_derive;
 extern crate toml;
+use holochain_agent::{Agent, Identity};
 use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_dna::Dna;
 use serde::Deserialize;
-
+use std::{fs::File, io::prelude::*};
 
 pub struct StorageConfiguration {}
 
@@ -12,6 +14,12 @@ pub struct AgentConfiguration {
     key_file: Option<String>,
 }
 
+impl Into<Agent> for AgentConfiguration {
+    fn into(self) -> Agent {
+        Agent::new(Identity::new(self.id))
+    }
+}
+
 #[derive(Deserialize)]
 pub struct DNAConfiguration {
     id: String,
@@ -19,10 +27,22 @@ pub struct DNAConfiguration {
     hash: String,
 }
 
+impl Into<HcResult<Dna>> for DNAConfiguration {
+    fn into(self) -> HcResult<Dna> {
+        let mut f = File::open(self.file)
+            .map_err(|_| HolochainError::IoError(String::from("Could read from file")))?;
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)
+            .map_err(|_| HolochainError::IoError(String::from("Could read from file")))?;
+        Dna::from_json_str(&contents)
+            .map_err(|_| HolochainError::IoError(String::from("Could not create dna form json")))
+    }
+}
+
 #[derive(Deserialize)]
 pub struct InstanceConfiguration {
     id: String,
-     #[serde(rename = "DNA")]
+    #[serde(rename = "DNA")]
     dna: String,
 }
 

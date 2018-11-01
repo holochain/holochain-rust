@@ -1,9 +1,8 @@
-use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs};
+use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
+use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use nucleus::ribosome::Runtime;
 use std::{collections::HashSet, convert::TryFrom};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::error::ZomeApiInternalResult;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -18,7 +17,10 @@ pub fn invoke_get_links(
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            println!("invoke_get_links failed to deserialize GetLinksArgs: {:?}", args_str);
+            println!(
+                "invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+                args_str
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -31,7 +33,12 @@ pub fn invoke_get_links(
         .get_links(input.entry_address, input.tag);
 
     runtime.store_as_json_string(match get_links_result {
-        Ok(get_links) => ZomeApiInternalResult::success(get_links.iter().map(|eav| eav.value()).collect::<Vec<Address>>()),
+        Ok(get_links) => ZomeApiInternalResult::success(
+            get_links
+                .iter()
+                .map(|eav| eav.value())
+                .collect::<Vec<Address>>(),
+        ),
         Err(e) => ZomeApiInternalResult::failure(&e.to_string()),
     })
 }
@@ -119,11 +126,11 @@ pub mod tests {
         let ordering1: bool = call_result == expected;
 
         let expected = JsonString::from(
-                format!(
-                    r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
-                    entry_hashes[2], entry_hashes[1]
-                ) + "\u{0}",
-            );
+            format!(
+                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
+                entry_hashes[2], entry_hashes[1]
+            ) + "\u{0}",
+        );
         let ordering2: bool = call_result == expected;
 
         assert!(ordering1 || ordering2);

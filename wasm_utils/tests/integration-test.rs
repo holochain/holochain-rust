@@ -121,10 +121,7 @@ fn call_load_json_ok() {
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
-    assert_eq!(
-        JsonString::from("Unspecified"),
-        call_result.unwrap()
-    );
+    assert_eq!(JsonString::from("Unspecified"), call_result.unwrap());
 }
 
 #[test]
@@ -148,10 +145,7 @@ fn call_stacked_strings() {
 #[test]
 fn call_stacked_json_str() {
     let call_result = call_zome_function_with_hc("test_stacked_json_str");
-    assert_eq!(
-        JsonString::from("first"),
-        call_result.unwrap()
-    );
+    assert_eq!(JsonString::from("first"), call_result.unwrap());
 }
 
 #[test]

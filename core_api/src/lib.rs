@@ -463,7 +463,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
+            JsonString::from("{\"Err\":{\"Internal\":\"Argument deserialization failed\"}}"),
         );
 
         // Check in holochain instance's history that the commit event has been processed
@@ -495,10 +495,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
 
-        assert_eq!(
-            Ok(JsonString::null()),
-            result,
-        );
+        assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
             "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
@@ -534,10 +531,7 @@ mod tests {
 
         // Expect Success as result
         println!("result = {:?}", result);
-        assert_eq!(
-            Ok(JsonString::null()),
-            result,
-        );
+        assert_eq!(Ok(JsonString::null()), result,);
 
         let test_logger = test_logger.lock().unwrap();
 

@@ -10,7 +10,7 @@ extern crate serde_json;
 use holochain_core_api::*;
 
 use holochain_core_types::{
-    cas::content::AddressableContent,
+    cas::content::{Address, AddressableContent},
     entry::{test_entry_a, Entry, SerializedEntry},
     entry_type::test_entry_type,
     hash::HashString,
@@ -22,7 +22,6 @@ use holochain_dna::zome::{
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;
-use holochain_core_types::cas::content::Address;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -102,7 +101,9 @@ fn can_commit_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 }
 
@@ -121,7 +122,9 @@ fn can_commit_entry_macro() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 }
 
@@ -157,38 +160,34 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")),
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        &String::from(
-            JsonString::from(
-                json!(
+        &String::from(JsonString::from(json!(
                     {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
-                )
-            )
-        ),
+                ))),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}")
+        JsonString::from(
+            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
+        )
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        &String::from(
-            JsonString::from(
-                json!(
+        &String::from(JsonString::from(json!(
                     {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
-                )
-            )
-        ),
+                ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -204,33 +203,22 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        &String::from(
-            JsonString::from(
-                json!(
+        &String::from(JsonString::from(json!(
                     {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                )
-            )
-        ),
+                ))),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::null()
-    );
+    assert_eq!(result.unwrap(), JsonString::null());
 
     // test the case with a bad hash
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        &String::from(
-            JsonString::from(
-                json!(
+        &String::from(JsonString::from(json!(
                     {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                )
-            )
-        ),
+                ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -274,7 +262,9 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
+        JsonString::from(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        )),
     );
     let result = hc.call(
         "test_zome",
@@ -285,7 +275,9 @@ fn has_populated_validation_data() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
+        JsonString::from(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        )),
     );
 
     //
@@ -360,7 +352,9 @@ fn can_check_hash_app_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa")),
+        JsonString::from(Address::from(
+            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+        )),
     );
 }
 
@@ -385,7 +379,9 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa")),
+        JsonString::from(Address::from(
+            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+        )),
     );
 }
 
@@ -398,6 +394,8 @@ fn can_check_call_with_args() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")),
+        JsonString::from(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        )),
     );
 }

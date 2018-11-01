@@ -3,12 +3,12 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{Entry, SerializedEntry},
     entry_type::EntryType,
+    error::ZomeApiInternalResult,
 };
 use holochain_dna::Dna;
 use nucleus::ribosome::Runtime;
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::error::ZomeApiInternalResult;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {

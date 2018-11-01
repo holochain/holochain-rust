@@ -500,10 +500,7 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(
-            test_call_response().result(),
-            Ok(JsonString::from("foo")),
-        );
+        assert_eq!(test_call_response().result(), Ok(JsonString::from("foo")),);
     }
 
     #[test]

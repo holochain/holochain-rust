@@ -68,8 +68,10 @@ pub extern "C" fn test_store_as_json_str_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let s = "fish";
     assert_eq!(0, stack.top());
-    let res = store_as_json(&mut stack, s);
+
+    let res = store_as_json(&mut stack, RawString::from(s));
     assert_eq!(json!(s).to_string().len(), stack.top() as usize);
+
     res.unwrap().encode()
 }
 

@@ -1,3 +1,4 @@
+use holochain_core_types::error::RibosomeReturnCode;
 use nucleus::ribosome::Runtime;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
@@ -17,7 +18,9 @@ pub fn invoke_debug(
         .log(&format!("zome_log:DEBUG: '{}'", payload))
         .expect("Logger should work");
 
-    runtime.store_as_json_string(payload)
+    Ok(Some(RuntimeValue::I32(i32::from(
+        RibosomeReturnCode::Success,
+    ))))
 }
 
 #[cfg(test)]
@@ -44,13 +47,13 @@ pub mod tests {
     fn test_zome_api_function_debug() {
         let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        println!("test_zome_api_function_debug call_result: {:?}", call_result);
-        assert_eq!(
-            JsonString::from(test_debug_string() + "\u{0}"),
-            call_result,
+        println!(
+            "test_zome_api_function_debug call_result: {:?}",
+            call_result
         );
+        assert_eq!(JsonString::null(), call_result,);
         assert_eq!(
-            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: foo\\u{0}\"]"),
+            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
             JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
         );
     }

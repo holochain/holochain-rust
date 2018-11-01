@@ -28,7 +28,10 @@ pub fn invoke_commit_app_entry(
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            println!("invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}", args_str);
+            println!(
+                "invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}",
+                args_str
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -85,11 +88,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use holochain_core_types::error::ZomeApiInternalResult;
-    use holochain_core_types::cas::content::Address;
     use holochain_core_types::{
-        cas::content::AddressableContent,
+        cas::content::{Address, AddressableContent},
         entry::{test_entry, SerializedEntry},
+        error::ZomeApiInternalResult,
         json::JsonString,
     };
     use nucleus::ribosome::{
@@ -116,8 +118,9 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT"))))
-                + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT")
+                ))) + "\u{0}"
             ),
         );
     }

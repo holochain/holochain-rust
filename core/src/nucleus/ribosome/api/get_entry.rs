@@ -1,6 +1,5 @@
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
-use holochain_core_types::error::ZomeApiInternalResult;
+use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
 use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
@@ -18,7 +17,10 @@ pub fn invoke_get_entry(
     let try_address = Address::try_from(args_str.clone());
     // Exit on error
     if try_address.is_err() {
-        println!("invoke_get_entry failed to deserialize Address: {:?}", args_str);
+        println!(
+            "invoke_get_entry failed to deserialize Address: {:?}",
+            args_str
+        );
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let address = try_address.unwrap();
@@ -27,7 +29,9 @@ pub fn invoke_get_entry(
     let result = block_on(future);
 
     match result {
-        Ok(maybe_entry) => runtime.store_as_json_string(ZomeApiInternalResult::success(maybe_entry.and_then(|entry| Some(entry.serialize())))),
+        Ok(maybe_entry) => runtime.store_as_json_string(ZomeApiInternalResult::success(
+            maybe_entry.and_then(|entry| Some(entry.serialize())),
+        )),
         Err(_) => ribosome_error_code!(Unspecified),
     }
 }
@@ -41,6 +45,7 @@ mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::test_entry,
+        error::ZomeApiInternalResult,
         json::JsonString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
@@ -55,7 +60,6 @@ mod tests {
         ZomeFnCall,
     };
     use std::sync::Arc;
-    use holochain_core_types::error::ZomeApiInternalResult;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -195,8 +199,9 @@ mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(test_entry().address())))
-                + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    test_entry().address()
+                ))) + "\u{0}"
             ),
         );
 
@@ -216,8 +221,9 @@ mod tests {
 
         assert_eq!(
             JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(test_entry().serialize())))
-                + "\u{0}",
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    test_entry().serialize()
+                ))) + "\u{0}",
             ),
             call_result,
         );
@@ -263,8 +269,7 @@ mod tests {
 
         assert_eq!(
             JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None)))
-                + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
             ),
             call_result,
         );

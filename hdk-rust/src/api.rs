@@ -1,16 +1,13 @@
-use holochain_core_types::entry::SerializedEntry;
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::{ZomeApiError, ZomeApiInternalResult, ZomeApiResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::GetEntryOptions,
-        get_links::{GetLinksArgs},
-        link_entries::LinkEntriesArgs,
+        get_entry::GetEntryOptions, get_links::GetLinksArgs, link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -271,9 +268,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// its address.
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(get_entry_result(address, GetEntryOptions {})?
-        .and_then(|serialized_entry|
-            Some(serialized_entry.deserialize()))
-    )
+        .and_then(|serialized_entry| Some(serialized_entry.deserialize())))
 }
 
 /// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using

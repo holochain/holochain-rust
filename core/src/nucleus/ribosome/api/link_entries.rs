@@ -24,9 +24,12 @@ pub fn invoke_link_entries(
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            println!("invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}", args_str);
+            println!(
+                "invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
-        },
+        }
     };
 
     // Wait for future to be resolved
@@ -49,7 +52,8 @@ pub mod tests {
     use agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, json::JsonString,
+        cas::content::AddressableContent, entry::test_entry, error::ZomeApiInternalResult,
+        json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
     use instance::tests::{test_context_and_logger, test_instance};
@@ -58,7 +62,6 @@ pub mod tests {
         Defn,
     };
     use serde_json;
-    use holochain_core_types::error::ZomeApiInternalResult;
 
     /// dummy link_entries args from standard test entry
     pub fn test_link_args_bytes() -> Vec<u8> {
@@ -128,8 +131,7 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None)))
-                + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
             ),
         );
     }

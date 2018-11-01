@@ -1,7 +1,7 @@
 use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use nucleus::ribosome::Runtime;
-use std::{collections::HashSet, convert::TryFrom};
+use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 
 /// ZomeApiFunction::GetLinks function code

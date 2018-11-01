@@ -20,19 +20,13 @@ use holochain_wasm_utils::holochain_core_types::entry::Entry;
 use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
-        hash::HashString,
         entry_type::EntryType,
     },
 };
-use std::convert::TryInto;
-use holochain_wasm_utils::holochain_core_types::json::default_try_from_json;
-use holochain_wasm_utils::holochain_core_types::error::HolochainError;
-use std::convert::TryFrom;
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions};
 use hdk::holochain_dna::zome::entry_types::Sharing;
-use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::holochain_core_types::error::ZomeApiResult;
+use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -138,7 +132,6 @@ fn handle_link_two_entries()-> JsonString {
 }
 
 fn handle_links_roundtrip() -> JsonString {
-    hdk::debug("foo");
     let entry1_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
         stuff: "entry1".into(),
     }.into()));
@@ -146,7 +139,7 @@ fn handle_links_roundtrip() -> JsonString {
         Ok(hash) => hash,
         Err(_) => return entry1_hash_result.into(),
     };
-    hdk::debug(format!("entry1_hash: {:?}", entry1_hash));
+    hdk::debug(format!("entry1_hash: {:?}", entry1_hash)).unwrap();
 
     let entry2_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
         stuff: "entry2".into(),
@@ -155,7 +148,7 @@ fn handle_links_roundtrip() -> JsonString {
         Ok(hash) => hash,
         Err(_) => return entry2_hash_result.into(),
     };
-    hdk::debug(format!("entry2_hash: {:?}", entry2_hash));
+    hdk::debug(format!("entry2_hash: {:?}", entry2_hash)).unwrap();
 
     let entry3_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
         stuff: "entry3".into(),
@@ -164,21 +157,21 @@ fn handle_links_roundtrip() -> JsonString {
         Ok(hash) => hash,
         Err(_) => return entry3_hash_result.into(),
     };
-    hdk::debug(format!("entry3_hash: {:?}", entry3_hash));
+    hdk::debug(format!("entry3_hash: {:?}", entry3_hash)).unwrap();
 
     let link_1_result = hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag");
     let link_1 = match link_1_result {
         Ok(link) => link,
         Err(_) => return link_1_result.into(),
     };
-    hdk::debug(format!("link_1: {:?}", link_1));
+    hdk::debug(format!("link_1: {:?}", link_1)).unwrap();
 
     let link_2_result = hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag");
     let link_2 = match link_2_result {
         Ok(link) => link,
         Err(_) => return link_2_result.into(),
     };
-    hdk::debug(format!("link_2: {:?}", link_2));
+    hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
 
     hdk::get_links(&entry1_hash, "test-tag").into()
 }

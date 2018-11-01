@@ -336,6 +336,8 @@ pub fn link_entries<S: Into<String>>(
     // Deserialize complex result stored in memory and check for ERROR in encoding
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
 
+    println!("link_entries result {:?}", result);
+
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
         .deallocate(allocation_of_input)

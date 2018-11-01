@@ -17,12 +17,16 @@ pub fn invoke_link_entries(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
+    println!("invoke_link_entries");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let input = match LinkEntriesArgs::try_from(args_str) {
+    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!("invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}", args_str);
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        },
     };
 
     // Wait for future to be resolved

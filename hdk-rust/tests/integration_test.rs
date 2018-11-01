@@ -326,8 +326,8 @@ fn can_roundtrip_links() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     let result_string = result.unwrap();
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let ordering1: bool = result_string == JsonString::from(r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#);
-    let ordering2: bool = result_string == JsonString::from(r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#);
+    let ordering1: bool = result_string == JsonString::from("{\"links\": [\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\",\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\"]}");
+    let ordering2: bool = result_string == JsonString::from("{\"links\": [\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\",\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\"]}");
     assert!(ordering1 || ordering2);
 }
 

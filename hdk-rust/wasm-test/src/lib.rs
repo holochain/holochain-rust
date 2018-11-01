@@ -80,9 +80,15 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default, Debug)]
 struct EntryStruct {
     stuff: String
+}
+
+impl From<EntryStruct> for JsonString {
+    fn from(v: EntryStruct) -> Self {
+        default_to_json(v)
+    }
 }
 
 fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
@@ -132,19 +138,47 @@ fn handle_link_two_entries()-> JsonString {
 }
 
 fn handle_links_roundtrip() -> JsonString {
-    let entry1_hash = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
-        "stuff": "entry1"
-    }).into())).unwrap();
-    let entry2_hash = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
-        "stuff": "entry2"
-    }).into())).unwrap();
-    let entry3_hash = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
-        "stuff": "entry3"
-    }).into())).unwrap();
+    hdk::debug("foo");
+    let entry1_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
+        stuff: "entry1".into(),
+    }.into()));
+    let entry1_hash = match entry1_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry1_hash_result.into(),
+    };
+    hdk::debug(format!("entry1_hash: {:?}", entry1_hash));
 
+    let entry2_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
+        stuff: "entry2".into(),
+    }.into()));
+    let entry2_hash = match entry2_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry2_hash_result.into(),
+    };
+    hdk::debug(format!("entry2_hash: {:?}", entry2_hash));
 
-    hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag").expect("Can't link?!");
-    hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
+    let entry3_hash_result = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &EntryStruct{
+        stuff: "entry3".into(),
+    }.into()));
+    let entry3_hash = match entry3_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry3_hash_result.into(),
+    };
+    hdk::debug(format!("entry3_hash: {:?}", entry3_hash));
+
+    let link_1_result = hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag");
+    let link_1 = match link_1_result {
+        Ok(link) => link,
+        Err(_) => return link_1_result.into(),
+    };
+    hdk::debug(format!("link_1: {:?}", link_1));
+
+    let link_2_result = hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag");
+    let link_2 = match link_2_result {
+        Ok(link) => link,
+        Err(_) => return link_2_result.into(),
+    };
+    hdk::debug(format!("link_2: {:?}", link_2));
 
     JsonString::from(match hdk::get_links(&entry1_hash, "test-tag") {
         Ok(result) => format!("{{\"links\": {}}}", JsonString::from(result.links)),

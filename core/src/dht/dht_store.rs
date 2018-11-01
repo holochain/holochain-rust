@@ -81,7 +81,7 @@ where
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         self.meta_storage
-            .fetch_eav(Some(address), Some(format!("link:{}", tag)), None)
+            .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
     }
 
     // Getters (for reducers)

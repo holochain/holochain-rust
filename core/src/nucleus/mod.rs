@@ -502,7 +502,7 @@ pub mod tests {
     fn test_call_result_result() {
         assert_eq!(
             test_call_response().result(),
-            Ok(JsonString::from(RawString::from("foo"))),
+            Ok(JsonString::from("foo")),
         );
     }
 

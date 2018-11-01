@@ -85,6 +85,8 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use holochain_core_types::error::ZomeApiInternalResult;
+    use holochain_core_types::cas::content::Address;
     use holochain_core_types::{
         cas::content::AddressableContent,
         entry::{test_entry, SerializedEntry},
@@ -114,10 +116,8 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                format!(
-                    r#"{{"address":"{}","validation_failure":""}}"#,
-                    test_entry().address()
-                ) + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT"))))
+                + "\u{0}"
             ),
         );
     }

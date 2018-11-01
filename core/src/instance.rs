@@ -677,7 +677,7 @@ pub mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 6
+                    i32.const 9
                 )
                 (data (i32.const 0)
                     "1337.0"
@@ -692,7 +692,7 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from(1337)))
+            String::from(JsonString::from(RawString::from("Genesis")))
         );
     }
 

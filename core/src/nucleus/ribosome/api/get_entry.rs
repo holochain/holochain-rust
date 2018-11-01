@@ -195,10 +195,8 @@ mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                format!(
-                    r#"{{"address":"{}","validation_failure":""}}"#,
-                    test_entry().address()
-                ) + "\u{0}"
+                String::from(JsonString::from(ZomeApiInternalResult::success(test_entry().address())))
+                + "\u{0}"
             ),
         );
 
@@ -216,10 +214,13 @@ mod tests {
             Some(test_get_args_bytes()),
         ).expect("test should be callable");
 
-        let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"Found\",\"maybe_serialized_entry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}\u{0}");
-
-        assert_eq!(JsonString::from(expected), call_result);
+        assert_eq!(
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(test_entry().serialize())))
+                + "\u{0}",
+            ),
+            call_result,
+        );
     }
 
     #[test]

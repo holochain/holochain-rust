@@ -145,6 +145,14 @@ pub enum BundleOnClose {
 
 /// Prints a string through the stdout of the running service, and also
 /// writes that string to the logger in the execution context
+/// # Examples
+/// ```rust
+/// pub fn handle_some_function(content: String) -> serde_json::Value {
+///     // ...
+///     hdk::debug("write a message to the logs");
+///     // ...
+/// }
+/// ```
 pub fn debug(msg: &str) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
@@ -162,8 +170,98 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 }
 
 /// Call an exposed function from another zome.
-/// Arguments for the called function are passed as serde_json::Value.
-/// Returns the value that's returned by the given function as json str.
+/// Arguments for the called function are passed as `serde_json::Value`.
+/// Returns the value that's returned by the given function as a json str.
+/// # Examples
+/// In order to utilize `call`, you must have at least two separate Zomes.
+/// Here are two Zome examples, where one performs a `call` into the other.
+///
+/// This first one, is the one that is called into, with the Zome name `summer`.
+/// ```rust
+/// #[macro_use]
+/// extern crate hdk;
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// #[macro_use]
+/// extern crate serde_json;
+///
+/// fn handle_sum(num1: u32, num2: u32) -> serde_json::Value {
+///     let sum = num1 + num2;
+///     return json!({"sum": format!("{}",sum)});
+/// }
+///
+/// define_zome! {
+///     entries: []
+///
+///     genesis: || {
+///         Ok(())
+///     }
+///
+///     functions: {
+///         main (Public) {
+///             sum: {
+///                 inputs: |num1: u32, num2: u32|,
+///                 outputs: |sum: serde_json::Value|,
+///                 handler: handle_sum
+///             }
+///         }
+///     }
+/// }
+/// ```
+///
+/// This second one, is the one that performs the call into the `summer` Zome.
+/// ```rust
+/// #[macro_use]
+/// extern crate hdk;
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// #[macro_use]
+/// extern crate serde_json;
+///
+/// use hdk::holochain_core_types::hash::HashString;
+///
+/// fn handle_check_sum(num1: u32, num2: u32) -> serde_json::Value {
+///     #[derive(Serialize)]
+///     struct SumInput {
+///         num1: u32,
+///         num2: u32,
+///     };
+///     let call_input = SumInput {
+///         num1: num1,
+///         num2: num2,
+///     };
+///     let maybe_result = hdk::call(
+///         "summer",
+///         "main",
+///         "sum",
+///         serde_json::to_value(call_input).unwrap()
+///     );
+///     match maybe_result {
+///         Ok(result) => serde_json::from_str(&result).unwrap(),
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+///
+/// define_zome! {
+///     entries: []
+///
+///     genesis: || {
+///         Ok(())
+///     }
+///
+///     functions: {
+///         main (Public) {
+///             check_sum: {
+///                 inputs: |num1: u32, num2: u32|,
+///                 outputs: |sum: serde_json::Value|,
+///                 handler: handle_check_sum
+///             }
+///         }
+///     }
+/// }
+/// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
     cap_name: S,
@@ -207,6 +305,19 @@ pub fn call<S: Into<String>>(
 /// will have to pass the defined validation rules for that entry type.
 /// If the entry type is defined as public, will also publish the entry to the DHT.
 /// Returns either an address of the committed entry as a string, or an error.
+/// # Examples
+/// ```rust
+/// pub fn handle_create_post(content: String) -> serde_json::Value {
+///     let maybe_address = hdk::commit_entry("post", json!({
+///         "content": content,
+///         "date_created": "now"
+///     }));
+///     match maybe_address {
+///         Ok(post_address) => json!({"address": post_address}),
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+/// ```
 pub fn commit_entry(
     entry_type_name: &str,
     entry_value: serde_json::Value,
@@ -248,6 +359,23 @@ pub fn commit_entry(
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
+/// # Examples
+/// ```rust
+/// pub fn handle_get_post(post_address: HashString) -> serde_json::Value {
+///     // get_entry returns a Result<Option<T>, ZomeApiError>
+///     // where T is the type that you used to commit the entry, in this case a Blog
+///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
+///     // Otherwise its a Some(T) or a None
+///     let result : Result<Option<Post>,ZomeApiError> = hdk::get_entry(post_address);
+///     match result {
+///         // In the case we don't get an error
+///         // it might be an entry ...
+///         Ok(Some(post)) => json!(post),
+///         Ok(None) =>  json!({}),
+///         Err(err) => json!({"error deserializing post": err.to_string()}),
+///     }
+/// }
+/// ```
 pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
 where
     T: DeserializeOwned,
@@ -301,8 +429,31 @@ pub fn get_entry_result(
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
-/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries
+/// relationship between them, called a `tag`. Later, lists of entries can be looked up by using [get_links](fn.get_links.html). Entries
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
+/// # Examples
+/// ```rust
+/// pub fn handle_create_post(content: String) -> serde_json::Value {
+///     let maybe_address = hdk::commit_entry("post", json!({
+///         "content": content,
+///         "date_created": "now"
+///     }));
+///     match maybe_address {
+///         Ok(post_address) => {
+///             let link_result = hdk::link_entries(
+///                 &HashString::from(AGENT_ADDRESS.to_string()),
+///                 &post_address,
+///                 "authored_posts"
+///             );
+///             if link_result.is_err() {
+///                 return json!({"link error": link_result.err().unwrap()})
+///             }
+///             json!({"address": post_address})
+///         }
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+/// ```
 pub fn link_entries<S: Into<String>>(
     base: &HashString,
     target: &HashString,
@@ -342,8 +493,23 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 
 /// Reconstructs an address of the given entry data.
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
-/// to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`.
-/// This is often used to reconstruct an address of a `base` argument when calling `get_links`.
+/// to the [commit_entry](fn.commit_entry.html) function and by which it would be retrievable from the DHT using [get_entry](fn.get_entry.html).
+/// This is often used to reconstruct an address of a `base` argument when calling [get_links](fn.get_links.html).
+/// # Examples
+/// ```rust
+/// fn handle_hash_post(content: String) -> serde_json::Value {
+///     let maybe_address = hdk::hash_entry("post", json!({
+///         "content": content,
+///         "date_created": "now"
+///     }));
+///     match maybe_address {
+///         Ok(address) => {
+///             json!({"address": address})
+///         }
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+/// ```
 pub fn hash_entry<S: Into<String>>(
     entry_type_name: S,
     entry_value: serde_json::Value,
@@ -404,11 +570,19 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Consumes two values, the first of which is the address of an entry, `base`,
-/// and the second of which is a string, `tag`, used to describe the relationship between the `base`
-/// and other entries you wish to lookup. Returns a list of addresses of other entries which matched
-/// as being linked by the given `tag`.
-/// Links are created in the first place using the Zome API function `link_entries`.
+/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
+/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
+/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function [link_entries](fn.link_entries.html).
+/// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
+/// # Examples
+/// ```rust
+/// pub fn handle_posts_by_agent(agent: HashString) -> serde_json::Value {
+///     match hdk::get_links(&agent, "authored_posts") {
+///         Ok(result) => json!({"post_addresses": result.links}),
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+/// ```
 pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
@@ -435,7 +609,7 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ge
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
-pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
+pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
     let input = QueryArgs {

@@ -1,3 +1,4 @@
+#[doc(hidden)]
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
@@ -11,7 +12,87 @@ macro_rules! load_json {
     }};
 }
 
-/// A macro for describing zomes
+/// Every Zome must utilize the `define_zome`
+/// macro in the main library file in their Zome.
+/// The `define_zome` macro has 3 component parts:
+/// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
+/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
+///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
+///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
+/// 3. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
+///     `functions` must be a tree structure where the first children are `capabilities`
+///     and the children of those `capabilities` are actual function definitions.
+/// # Examples
+///
+/// ```rust
+/// #[macro_use]
+/// extern crate hdk;
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// #[macro_use]
+/// extern crate serde_json;
+/// extern crate boolinator;
+///
+/// #[derive(Serialize, Deserialize)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// fn handle_hash_post(content: String) -> serde_json::Value {
+///     let maybe_address = hdk::hash_entry("post", json!({
+///         "content": content,
+///         "date_created": "now"
+///     }));
+///     match maybe_address {
+///         Ok(address) => {
+///             json!({"address": address})
+///         }
+///         Err(hdk_error) => hdk_error.to_json(),
+///     }
+/// }
+///
+/// define_zome! {
+///     entries: [
+///         entry!(
+///             name: "post",
+///             description: "",
+///             sharing: Sharing::Public,
+///             native_type: Post,
+///         
+///             validation_package: || {
+///                 hdk::ValidationPackageDefinition::ChainFull
+///             },
+///         
+///             validation: |post: Post, _ctx: hdk::ValidationData| {
+///                 (post.content.len() < 280)
+///                     .ok_or_else(|| String::from("Content too long"))
+///             }
+///         )
+///     ]
+///
+///     genesis: || {
+///         Ok(())
+///     }
+///
+///     functions: {
+///         // "main" is the name of the capability
+///         // "Public" is the access setting of the capability
+///         main (Public) {
+///             // the name of this function, "hash_post" is the
+///             // one to give while performing a `call` method to this function.
+///             // the name of the handler function must be different than the
+///             // name of the Zome function.
+///             hash_post: {
+///                 inputs: |content: String|,
+///                 outputs: |post: serde_json::Value|,
+///                 handler: handle_hash_post
+///             }
+///         }
+///     }
+/// }
+/// ```
 #[macro_export]
 macro_rules! define_zome {
     (

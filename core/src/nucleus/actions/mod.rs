@@ -14,7 +14,7 @@ pub mod tests {
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
     use instance::{
-        tests::{test_context, test_instance},
+        tests::{test_context, test_instance, test_instance_and_context},
         Instance,
     };
     use std::sync::Arc;
@@ -49,8 +49,8 @@ pub mod tests {
             .entry_types
             .insert(String::from("package_chain_full"), EntryTypeDef::new());
 
-        let instance = test_instance(dna).expect("Could not create test instance");
-        let context = test_context("joan");
+        let (instance, context) =
+            test_instance_and_context(dna).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
 
         (instance, initialized_context)

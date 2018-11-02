@@ -12,9 +12,3 @@ impl LinkEntriesArgs {
         Link::new(&self.base, &self.target, &self.tag)
     }
 }
-
-#[derive(Deserialize, Default, Debug, Serialize)]
-pub struct LinkEntriesResult {
-    pub ok: bool,
-    pub error: String,
-}

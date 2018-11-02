@@ -80,7 +80,7 @@ use holochain_core::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -114,7 +114,6 @@ impl Holochain {
     }
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let mut new_context = (*context).clone();
         let persister = SimplePersister::new(format!("{}/state", path));
         let loaded_state = persister
             .load(context.clone())
@@ -455,8 +454,8 @@ mod tests {
         // Expect normal OK result with hash
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
+            "{\"Err\":\"Argument deserialization failed\"}",
             result.ok().unwrap(),
-            "{\"Err\":\"Argument deserialization failed\"}"
         );
 
         // Check in holochain instance's history that the commit event has been processed

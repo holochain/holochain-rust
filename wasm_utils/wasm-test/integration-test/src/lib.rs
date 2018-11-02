@@ -5,7 +5,10 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
+use holochain_wasm_utils::{
+    memory_allocation::*, memory_serialization::*,
+    holochain_core_types::error::HolochainError,
+};
 use std::os::raw::c_char;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
@@ -108,9 +111,9 @@ pub extern "C" fn test_load_json_from_raw_err(_: u32) -> u32 {
     };
     let store_res = store_as_json(&mut stack, obj.clone());
     let ptr = store_res.clone().unwrap().offset() as *mut c_char;
-    let load_res: Result<OtherTestStruct, String> = load_json_from_raw(ptr);
+    let load_res: Result<OtherTestStruct, HolochainError> = load_json_from_raw(ptr);
     zome_assert!(stack, load_res.is_err());
-    let store_err_res = store_as_json(&mut stack, load_res.err().unwrap().clone());
+    let store_err_res = store_as_json(&mut stack, load_res.err().unwrap().to_string());
     store_err_res.unwrap().encode()
 }
 
@@ -118,7 +121,7 @@ pub extern "C" fn test_load_json_from_raw_err(_: u32) -> u32 {
 pub extern "C" fn test_load_json_ok(_: u32) -> u32 {
     let encoded = test_store_as_json_obj_ok(0);
     let mut stack = SinglePageStack::from_encoded_allocation(encoded).unwrap();
-    let res: Result<TestStruct, String> = load_json(encoded);
+    let res: Result<TestStruct, HolochainError> = load_json(encoded);
     let res = store_as_json(&mut stack, res.unwrap().clone());
     res.unwrap().encode()
 }
@@ -126,7 +129,7 @@ pub extern "C" fn test_load_json_ok(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_load_json_err(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let res: Result<TestStruct, String> = load_json(1 << 16);
+    let res: Result<TestStruct, HolochainError> = load_json(1 << 16);
     zome_assert!(stack, res.is_err());
     let res = store_as_json(&mut stack, res.err().unwrap().clone());
     res.unwrap().encode()
@@ -136,7 +139,7 @@ pub extern "C" fn test_load_json_err(_: u32) -> u32 {
 pub extern "C" fn test_load_string_ok(_: u32) -> u32 {
     let encoded = test_store_string_ok(0);
     let mut stack = SinglePageStack::from_encoded_allocation(encoded).unwrap();
-    let res: Result<String, String> = load_string(encoded);
+    let res = load_string(encoded);
     let res = store_string(&mut stack, &res.unwrap());
     res.unwrap().encode()
 }
@@ -144,9 +147,9 @@ pub extern "C" fn test_load_string_ok(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_load_string_err(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let res: Result<String, String> = load_string(1 << 16);
+    let res = load_string(1 << 16);
     zome_assert!(stack, res.is_err());
-    let res = store_string(&mut stack, &res.err().unwrap().clone());
+    let res = store_string(&mut stack, &res.err().unwrap().to_string());
     res.unwrap().encode()
 }
 

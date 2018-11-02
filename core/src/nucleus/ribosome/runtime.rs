@@ -2,7 +2,11 @@ use context::Context;
 use holochain_core_types::error::RibosomeReturnCode;
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Defn},
+    ribosome::{
+        api::{ZomeApiFunction, ZomeApiResult},
+        memory::SinglePageManager,
+        Defn,
+    },
     ZomeFnCall,
 };
 use std::sync::Arc;
@@ -54,7 +58,7 @@ impl Runtime {
     /// Store a string in wasm memory.
     /// Input should be a a json string.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_utf8(&mut self, json_str: &str) -> Result<Option<RuntimeValue>, Trap> {
+    pub fn store_utf8(&mut self, json_str: &str) -> ZomeApiResult {
         // write str to runtime memory
         let mut s_bytes: Vec<_> = json_str.to_string().into_bytes();
         s_bytes.push(0); // Add string terminate character (important)
@@ -68,16 +72,21 @@ impl Runtime {
         // Return success in i32 format
         Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
     }
+
+    // Stack any Serializable data as a json for the Zome to read as a returned value.
+    pub fn store_as_json<T: serde::Serialize>(&mut self, data: T) -> ZomeApiResult {
+        let maybe_json = serde_json::to_string(&data);
+        match maybe_json {
+            Err(_) => ribosome_error_code!(ResponseSerializationFailed),
+            Ok(json) => self.store_utf8(&json),
+        }
+    }
 }
 
 // Correlate the indexes of core API functions with a call to the actual function
 // by implementing the Externals trait from Wasmi.
 impl Externals for Runtime {
-    fn invoke_index(
-        &mut self,
-        index: usize,
-        args: RuntimeArgs,
-    ) -> Result<Option<RuntimeValue>, Trap> {
+    fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> ZomeApiResult {
         let zf = ZomeApiFunction::from_index(index);
         match zf {
             ZomeApiFunction::MissingNo => panic!("unknown function index"),

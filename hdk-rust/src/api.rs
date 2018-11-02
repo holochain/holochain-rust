@@ -609,7 +609,7 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ge
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
-pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<Vec<HashString>> {
+pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
     let input = QueryArgs {

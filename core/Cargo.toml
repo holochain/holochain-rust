@@ -29,6 +29,6 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 
 
 [dev-dependencies]
-wabt = "0.4"
+wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }
 test_utils = { path = "../test_utils"}
 tempfile="3"

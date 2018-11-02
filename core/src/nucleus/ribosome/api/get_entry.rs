@@ -1,17 +1,17 @@
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
+use nucleus::{
+    actions::get_entry::get_entry,
+    ribosome::{api::ZomeApiResult, Runtime},
+};
 use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_entry(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
     let res_entry: Result<GetEntryArgs, _> = serde_json::from_str(&args_str);
@@ -24,20 +24,10 @@ pub fn invoke_get_entry(
     let future = get_entry(&runtime.context, input.address);
     let result = block_on(future);
     match result {
-        Err(_) => ribosome_error_code!(Unspecified),
+        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
         Ok(maybe_entry) => match maybe_entry {
-            Some(entry) => {
-                let result = GetEntryResult::found(entry.to_string());
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
-            None => {
-                let result = GetEntryResult::not_found();
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
+            Some(entry) => runtime.store_as_json(GetEntryResult::found(entry.to_string())),
+            None => runtime.store_as_json(GetEntryResult::not_found()),
         },
     }
 }
@@ -209,10 +199,7 @@ mod tests {
 
         assert_eq!(
             call_result,
-            format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}",
+            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
         );
 
         let get_call = ZomeFnCall::new(

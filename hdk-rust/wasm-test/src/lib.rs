@@ -56,8 +56,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
-    if let Err(err_str) = result {
-        hdk::debug(&format!("ERROR: {:?}", err_str)).expect("debug() must work");
+    if let Err(hc_err) = result {
+        hdk::debug(&format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
@@ -175,7 +175,7 @@ fn handle_links_roundtrip() -> serde_json::Value {
     hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag").expect("Can't link?!");
 
     match hdk::get_links(&entry1_hash, "test-tag") {
-        Ok(result) => json!({"links": result.links}),
+        Ok(result) => json!({"links": result.addresses}),
         Err(error) => json!({"error": error}),
     }
 }
@@ -184,12 +184,17 @@ fn handle_check_query() -> serde_json::Value {
     // Query DNA entry
     let result = hdk::query(&EntryType::Dna.to_string(), 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query AgentId entry
     let result = hdk::query(&EntryType::AgentId.to_string(), 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
+
+    // Query unknown entry
+    let result = hdk::query("bad_type", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().addresses.len() == 0);
 
     // Query Zome entry
     let _ = hdk::commit_entry("testEntryType", json!({
@@ -197,7 +202,7 @@ fn handle_check_query() -> serde_json::Value {
     })).unwrap();
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query Zome entries
     let _ = hdk::commit_entry("testEntryType", json!({
@@ -209,7 +214,7 @@ fn handle_check_query() -> serde_json::Value {
 
     let result = hdk::query("testEntryType", 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 3);
+    assert!(result.unwrap().addresses.len() == 3);
 
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());
@@ -239,12 +244,9 @@ fn handle_check_hash_sys_entry() -> serde_json::Value {
 
 fn handle_check_call() -> serde_json::Value {
     let empty_dumpty = json!({});
-    hdk::debug(&format!("empty_dumpty = {:?}", empty_dumpty)).ok();
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty);
-    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
     let tmp = maybe_hash.unwrap();
     let hash: &str = serde_json::from_str(&tmp).unwrap();
-    hdk::debug(&format!("hash = {}", hash)).ok();
     json!(hash)
 }
 
@@ -257,12 +259,9 @@ fn handle_check_call_with_args() -> serde_json::Value {
     let arg_str = r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#;
     let args = serde_json::from_str::<serde_json::Value>(arg_str).unwrap();
     // let args =  json!(arg_str);
-    hdk::debug(&format!("args = {:?}", args)).ok();
     let maybe_hash = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args);
-    hdk::debug(&format!("maybe_hash = {:?}", maybe_hash)).ok();
     let tmp = maybe_hash.unwrap();
     let hash: HashStruct = serde_json::from_str(&tmp).unwrap();
-    hdk::debug(&format!("hash = {:?}", hash)).ok();
     json!(hash)
 }
 

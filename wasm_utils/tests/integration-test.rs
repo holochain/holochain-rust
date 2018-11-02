@@ -11,8 +11,10 @@ extern crate test_utils;
 
 use holochain_core::logger::Logger;
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core_types::error::{HolochainError, RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
+use std::error::Error;
 use test_utils::hc_setup_and_call_zome_fn;
+
 #[derive(Clone, Debug)]
 pub struct TestLogger {
     pub log: Vec<String>,
@@ -35,11 +37,10 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<String> {
 }
 
 #[test]
-fn can_return_error_report() {
+fn can_return_core_error() {
     let call_result = call_zome_function_with_hc("test_error_report");
-    let error_report: RibosomeErrorReport =
-        serde_json::from_str(&call_result.clone().unwrap()).unwrap();
-    assert_eq!("Zome assertion failed: `false`", error_report.description);
+    let core_err: CoreError = serde_json::from_str(&call_result.clone().unwrap()).unwrap();
+    assert_eq!("Zome assertion failed: `false`", core_err.description());
 }
 
 #[test]
@@ -91,10 +92,7 @@ fn call_load_json_from_raw_ok() {
 #[test]
 fn call_load_json_from_raw_err() {
     let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
-    assert_eq!(
-        json!(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()).to_string(),
-        call_result.unwrap()
-    );
+    assert_eq!("\"Argument deserialization failed\"", call_result.unwrap());
 }
 
 #[test]
@@ -106,7 +104,8 @@ fn call_load_json_ok() {
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
-    assert_eq!("\"Unspecified\"", call_result.unwrap());
+    assert!(call_result.is_err());
+    assert_eq!("Unspecified", call_result.err().unwrap().description());
 }
 
 #[test]

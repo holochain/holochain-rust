@@ -1,47 +1,38 @@
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
-use nucleus::ribosome::Runtime;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use serde_json;
-use std::collections::HashSet;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_links(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_utf8_from_args(&args);
     let input: GetLinksArgs = match serde_json::from_str(&args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
-
-    let get_links_result = runtime
+    // Get links from DHT
+    let maybe_links = runtime
         .context
         .state()
         .unwrap()
         .dht()
         .get_links(input.entry_address, input.tag);
-
-    let json = serde_json::to_string(&GetLinksResult {
-        ok: get_links_result.is_ok(),
-        links: get_links_result
-            .clone()
-            .unwrap_or(HashSet::new())
-            .iter()
-            .map(|eav| eav.value())
-            .collect::<Vec<Address>>(),
-        error: get_links_result
-            .map_err(|holochain_error| holochain_error.to_string())
-            .err()
-            .unwrap_or(String::from("")),
-    }).expect("Could not serialize GetLinksResult");
-
-    runtime.store_utf8(&json)
+    // Write result in wasm memory
+    match maybe_links {
+        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
+        Ok(links) => {
+            let addresses = links
+                .iter()
+                .map(|eav| eav.value())
+                .collect::<Vec<Address>>();
+            runtime.store_as_json(GetLinksResult { addresses })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -113,19 +104,21 @@ pub mod tests {
             &wasm,
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
-
-        let ordering1: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[1], entry_hashes[2]
-            ) + "\u{0}";
-        let ordering2: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[2], entry_hashes[1]
-            ) + "\u{0}";
-
-        assert!(ordering1 || ordering2);
+        let ordering1 = format!(
+            r#"{{"addresses":["{}","{}"]}}"#,
+            entry_hashes[1], entry_hashes[2],
+        ) + "\u{0}";
+        let ordering2 = format!(
+            r#"{{"addresses":["{}","{}"]}}"#,
+            entry_hashes[2], entry_hashes[1],
+        ) + "\u{0}";
+        assert!(
+            call_result == ordering1 || call_result == ordering2,
+            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+            call_result,
+            ordering1,
+            ordering2,
+        );
 
         let call_result = test_zome_api_function_call(
             &dna_name,
@@ -135,10 +128,7 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "other-tag"),
         );
 
-        assert_eq!(
-            call_result,
-            r#"{"ok":true,"links":[],"error":""}"#.to_string() + "\u{0}",
-        );
+        assert_eq!("{\"addresses\":[]}\u{0}", call_result);
     }
 
 }

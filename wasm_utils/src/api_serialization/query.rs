@@ -1,4 +1,4 @@
-use holochain_core_types::hash::HashString;
+use holochain_core_types::cas::content::Address;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryArgs {
@@ -8,5 +8,5 @@ pub struct QueryArgs {
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryResult {
-    pub hashes: Vec<HashString>,
+    pub addresses: Vec<Address>,
 }

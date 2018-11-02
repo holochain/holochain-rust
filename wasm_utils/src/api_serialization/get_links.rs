@@ -8,7 +8,5 @@ pub struct GetLinksArgs {
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct GetLinksResult {
-    pub ok: bool,
-    pub links: Vec<Address>,
-    pub error: String,
+    pub addresses: Vec<Address>,
 }

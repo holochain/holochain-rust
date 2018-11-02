@@ -4,7 +4,8 @@ extern crate holochain_wasm_utils;
 use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::{
   api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
-  memory_allocation::*, memory_serialization::*
+  memory_allocation::*, memory_serialization::*,
+  holochain_core_types::error::HolochainError,
 };
 
 extern {
@@ -37,13 +38,13 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitEntryResult = load_json(encoded_allocation_of_result as u32)?;
-
-  // Free result & input allocations and all allocations made inside commit()
+  let result: Result<CommitEntryResult, HolochainError> = load_json(encoded_allocation_of_result as u32);
+  // Free result & input allocations
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
-
-  // Return hash
-  Ok(output.address.to_string())
+  // Done
+  result
+      .map(|entry| entry.address.to_string())
+      .map_err(|hc_err| hc_err.to_string())
 }
 
 
@@ -58,7 +59,6 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   // Put args in struct and serialize into memory
   let input = CommitEntryResult {
     address: HashString::from("whatever"),
-    validation_failure: String::from("")
   };
   let maybe_allocation =  store_as_json(mem_stack, input);
   if let Err(return_code) = maybe_allocation {
@@ -72,13 +72,13 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let output: CommitEntryResult = load_json(encoded_allocation_of_result as u32)?;
-
-  // Free result & input allocations and all allocations made inside commit()
+  let result: Result<CommitEntryResult, HolochainError> = load_json(encoded_allocation_of_result as u32);
+  // Free result & input allocations
   mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
-
-  // Return hash
-  Ok(output.address.to_string())
+  // Done
+  result
+      .map(|entry| entry.address.to_string())
+      .map_err(|hc_err| hc_err.to_string())
 }
 
 

@@ -1,18 +1,14 @@
 use holochain_core_types::{entry_type::EntryType, hash::HashString};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
-use nucleus::ribosome::Runtime;
-use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_init_globals(
-    runtime: &mut Runtime,
-    _args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
@@ -49,7 +45,7 @@ pub fn invoke_init_globals(
         }
     };
     // Store it in wasm memory
-    return runtime.store_utf8(&serde_json::to_string(&globals).unwrap());
+    return runtime.store_as_json(globals);
 }
 
 #[cfg(test)]

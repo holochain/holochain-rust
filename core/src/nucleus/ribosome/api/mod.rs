@@ -333,7 +333,7 @@ pub mod tests {
         );
         ribosome::run_dna(
             &dna_name,
-            context,
+            Some(context),
             wasm.clone(),
             &zome_call,
             Some(args_bytes),

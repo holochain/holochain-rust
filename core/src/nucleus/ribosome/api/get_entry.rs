@@ -191,7 +191,7 @@ mod tests {
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
-            Arc::clone(&context),
+            Some(Arc::clone(&context)),
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
@@ -210,7 +210,7 @@ mod tests {
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
-            Arc::clone(&context),
+            Some(Arc::clone(&context)),
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
@@ -254,7 +254,7 @@ mod tests {
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
-            Arc::clone(&context),
+            Some(Arc::clone(&context)),
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),

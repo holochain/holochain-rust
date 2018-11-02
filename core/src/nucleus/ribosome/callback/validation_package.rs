@@ -28,7 +28,7 @@ pub fn get_validation_package_definition(
 
             let result = ribosome::run_dna(
                 &dna.name.clone(),
-                context,
+                Some(context),
                 wasm.code.clone(),
                 &ZomeFnCall::new(
                     &zome_name,

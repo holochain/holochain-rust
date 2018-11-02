@@ -144,7 +144,7 @@ pub(crate) fn run_callback(
 ) -> CallbackResult {
     match ribosome::run_dna(
         &dna_name,
-        context,
+        Some(context),
         wasm.code.clone(),
         &fc,
         Some(fc.clone().parameters.into_bytes()),

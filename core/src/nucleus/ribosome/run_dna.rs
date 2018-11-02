@@ -3,6 +3,7 @@ use holochain_core_types::error::{
     HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode,
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
+use instance::test_context;
 use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
     ZomeFnCall, ZomeFnResult,
@@ -18,7 +19,7 @@ use wasmi::{
 /// panics if wasm binary isn't valid.
 pub fn run_dna(
     dna_name: &str,
-    context: Arc<Context>,
+    context: Option<Arc<Context>>,
     wasm: Vec<u8>,
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
@@ -86,6 +87,7 @@ pub fn run_dna(
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
+    let context = context.unwrap_or(test_context("<unknown>"));
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: SinglePageManager::new(&wasm_instance),

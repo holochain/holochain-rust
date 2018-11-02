@@ -1,14 +1,20 @@
 use action::ActionWrapper;
 use context::Context;
+use holochain_agent::Agent;
+use logger::Logger;
+use persister::SimplePersister;
 use state::State;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
-        Arc, RwLock, RwLockReadGuard,
+        Arc, Mutex, RwLock, RwLockReadGuard,
     },
     thread,
     time::Duration,
 };
+use tempfile::tempdir;
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -278,11 +284,55 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
         .expect(DISPATCH_WITHOUT_CHANNELS);
 }
 
+
+#[derive(Clone, Debug)]
+pub struct TestLogger {
+    pub log: Vec<String>,
+}
+
+impl Logger for TestLogger {
+    fn log(&mut self, msg: String) {
+        self.log.push(msg);
+    }
+    fn dump(&self) -> String {
+        format!("{:?}", self.log)
+    }
+}
+
+/// create a test logger
+pub fn test_logger() -> Arc<Mutex<TestLogger>> {
+    Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
+}
+
+/// create a test context and TestLogger pair so we can use the logger in assertions
+pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    let agent = Agent::from(agent_name.to_owned());
+    let logger = test_logger();
+    (
+        Arc::new(
+            Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            ).unwrap(),
+        ),
+        logger,
+    )
+}
+
+/// create a test context
+pub fn test_context(agent_name: &str) -> Arc<Context> {
+    let (context, _) = test_context_and_logger(agent_name);
+    context
+}
+
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
     extern crate test_utils;
-    use self::tempfile::tempdir;
+    pub use super::{test_context_and_logger, test_context, test_logger, TestLogger};
     use super::*;
     use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
     use agent::{
@@ -291,8 +341,6 @@ pub mod tests {
     };
     use context::Context;
     use futures::executor::block_on;
-    use holochain_agent::Agent;
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::{test_chain_header, ChainHeader},
@@ -300,66 +348,19 @@ pub mod tests {
         entry_type::EntryType,
     };
     use holochain_dna::{zome::Zome, Dna};
-    use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,
         ribosome::{callback::Callback, Defn},
     };
-    use persister::SimplePersister;
     use state::State;
 
     use std::{
         sync::{
             mpsc::{channel, sync_channel},
-            Arc, Mutex,
         },
         thread::sleep,
         time::Duration,
     };
-
-    #[derive(Clone, Debug)]
-    pub struct TestLogger {
-        pub log: Vec<String>,
-    }
-
-    impl Logger for TestLogger {
-        fn log(&mut self, msg: String) {
-            self.log.push(msg);
-        }
-        fn dump(&self) -> String {
-            format!("{:?}", self.log)
-        }
-    }
-
-    /// create a test logger
-    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
-        Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
-    }
-
-    /// create a test context and TestLogger pair so we can use the logger in assertions
-    pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from(agent_name.to_owned());
-        let logger = test_logger();
-        (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                ).unwrap(),
-            ),
-            logger,
-        )
-    }
-
-    /// create a test context
-    pub fn test_context(agent_name: &str) -> Arc<Context> {
-        let (context, _) = test_context_and_logger(agent_name);
-        context
-    }
 
     /// create a test context
     pub fn test_context_with_channels(

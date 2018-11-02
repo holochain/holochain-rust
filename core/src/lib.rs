@@ -12,6 +12,7 @@ extern crate futures;
 extern crate snowflake;
 #[cfg(test)]
 extern crate test_utils;
+extern crate tempfile;
 extern crate wasmi;
 #[macro_use]
 extern crate unwrap_to;

@@ -68,11 +68,6 @@ pub mod tests {
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
         println!("{:?}", call_result);
 
-        // Remove trailing character
-        let mut call_result = String::from(call_result);
-        call_result.pop();
-        let call_result = JsonString::from(call_result);
-
         let globals = ZomeApiGlobals::try_from(call_result).unwrap();
         assert_eq!(globals.dna_name, "TestApp");
         // TODO #233 - Implement agent address

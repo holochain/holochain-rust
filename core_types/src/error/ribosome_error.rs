@@ -1,3 +1,13 @@
+use std::str::FromStr;
+use serde::Deserializer;
+use serde::Serializer;
+use serde::Deserialize;
+use serde::Serialize;
+use json::JsonResult;
+use json::default_try_to_json;
+use error::error::HolochainError;
+use json::JsonString;
+use std::convert::TryFrom;
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
@@ -10,9 +20,74 @@ pub enum RibosomeReturnCode {
     Failure(RibosomeErrorCode),
 }
 
+impl From<RibosomeReturnCode> for i32 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Failure(code) => code as i32,
+        }
+    }
+}
+
+impl From<RibosomeReturnCode> for u32 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Failure(code) => code as i32 as u32,
+        }
+    }
+}
+
+impl ToString for RibosomeReturnCode {
+    fn to_string(&self) -> String {
+        match self {
+            Success => "Success".to_string(),
+            Failure(code) => code.to_string(),
+        }
+    }
+}
+
+impl FromStr for RibosomeReturnCode {
+    type Err = HolochainError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.as_ref() {
+            "Success" => RibosomeReturnCode::Success,
+            _ => RibosomeReturnCode::Failure(s.parse()?),
+        })
+    }
+}
+
+impl From<RibosomeReturnCode> for JsonString {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> JsonString {
+        JsonString::from(ribosome_return_code.to_string())
+    }
+}
+
+impl TryFrom<JsonString> for RibosomeReturnCode {
+    type Error = HolochainError;
+
+    fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
+        String::from(json_string).parse()
+    }
+}
+
+impl RibosomeReturnCode {
+    pub fn from_error(err_code: RibosomeErrorCode) -> Self {
+        Failure(err_code)
+    }
+
+    pub fn from_offset(offset: u16) -> Self {
+        match offset {
+            0 => Success,
+            _ => Failure(RibosomeErrorCode::from_offset(offset)),
+        }
+    }
+}
+
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,
@@ -27,18 +102,9 @@ pub enum RibosomeErrorCode {
     UnknownEntryType                = 10 << 16,
 }
 
-impl ToString for RibosomeReturnCode {
-    fn to_string(&self) -> String {
-        match self {
-            Success => "Success".to_string(),
-            Failure(code) => code.to_string(),
-        }
-    }
-}
-
 #[cfg_attr(rustfmt, rustfmt_skip)]
 impl RibosomeErrorCode {
-    pub fn to_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Unspecified                     => "Unspecified",
             ArgumentDeserializationFailed   => "Argument deserialization failed",
@@ -54,21 +120,16 @@ impl RibosomeErrorCode {
     }
 }
 
-impl ToString for RibosomeErrorCode {
-    fn to_string(&self) -> String {
-        self.to_str().to_string()
+impl TryFrom<RibosomeErrorCode> for JsonString {
+    type Error = HolochainError;
+    fn try_from(v: RibosomeErrorCode) -> JsonResult {
+        default_try_to_json(v)
     }
 }
-impl RibosomeReturnCode {
-    pub fn from_error(err_code: RibosomeErrorCode) -> Self {
-        Failure(err_code)
-    }
 
-    pub fn from_offset(offset: u16) -> Self {
-        match offset {
-            0 => Success,
-            _ => Failure(RibosomeErrorCode::from_offset(offset)),
-        }
+impl ToString for RibosomeErrorCode {
+    fn to_string(&self) -> String {
+        self.as_str().to_string()
     }
 }
 
@@ -93,6 +154,48 @@ impl RibosomeErrorCode {
         match ret_code {
             Success => unreachable!(),
             Failure(rib_err) => rib_err,
+        }
+    }
+}
+
+impl Serialize for RibosomeErrorCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for RibosomeErrorCode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(RibosomeErrorCode::from_str(&s).expect("could not deserialize RibosomeErrorCode"))
+    }
+}
+
+impl FromStr for RibosomeErrorCode {
+    type Err = HolochainError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.as_ref() {
+            "Unspecified" => Ok(RibosomeErrorCode::Unspecified),
+            "Argument deserialization failed" => {
+                Ok(RibosomeErrorCode::ArgumentDeserializationFailed)
+            }
+            "Out of memory" => Ok(RibosomeErrorCode::OutOfMemory),
+            "Received wrong action result" => Ok(RibosomeErrorCode::ReceivedWrongActionResult),
+            "Callback failed" => Ok(RibosomeErrorCode::CallbackFailed),
+            "Recursive call forbidden" => Ok(RibosomeErrorCode::RecursiveCallForbidden),
+            "Response serialization failed" => Ok(RibosomeErrorCode::ResponseSerializationFailed),
+            "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
+            "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
+            _ => Err(HolochainError::ErrorGeneric(String::from(
+                "Unknown RibosomeErrorCode",
+            ))),
         }
     }
 }

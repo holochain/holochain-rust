@@ -16,7 +16,7 @@ use holochain_core_types::{
 use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
+use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode, ZomeApiInternalResult};
 use std::error::Error;
 use test_utils::hc_setup_and_call_zome_fn;
 
@@ -44,7 +44,8 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
 #[test]
 fn can_return_core_error() {
     let call_result = call_zome_function_with_hc("test_error_report");
-    let core_err = CoreError::try_from(call_result.clone().unwrap()).unwrap();
+    let result = ZomeApiInternalResult::try_from(call_result.unwrap()).unwrap();
+    let core_err = CoreError::try_from(result).unwrap();
     assert_eq!("Zome assertion failed: `false`", core_err.description());
 }
 

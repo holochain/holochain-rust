@@ -10,5 +10,5 @@ holochain_core_api = { path = "../core_api" }
 holochain_agent = { path = "../agent" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
-wabt = "0.4"
+wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }
 tempfile = "3"

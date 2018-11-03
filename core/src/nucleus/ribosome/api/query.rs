@@ -8,10 +8,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: ?
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_query(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let query = match QueryArgs::try_from(args_str) {
@@ -32,7 +29,7 @@ pub fn invoke_query(
         .top_chain_header()
         .expect("Should have genesis entries.");
 
-    let result = agent.chain().query(&Some(top), entry_type, query.limit);
+    let addresses = agent.chain().query(&Some(top), entry_type, query.limit);
     // Return result
-    runtime.store_as_json_string(ZomeApiInternalResult::success(result))
+    runtime.store_as_json_string(ZomeApiInternalResult::success(addresses))
 }

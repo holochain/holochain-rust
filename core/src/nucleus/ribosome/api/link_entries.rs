@@ -12,11 +12,10 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
-/// Returns a serialized LinkEntriesResult
 pub fn invoke_link_entries(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+) -> ZomeApiResult {
     println!("invoke_link_entries");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
@@ -31,14 +30,13 @@ pub fn invoke_link_entries(
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
-    // Wait for future to be resolved
+    // Wait for add_link() future to be resolved
     let task_result: Result<(), HolochainError> =
         block_on(add_link(&input.to_link(), &runtime.context));
 
     let result = match task_result {
         Ok(_) => ZomeApiInternalResult::success(JsonString::null()),
-        Err(e) => ZomeApiInternalResult::failure(&e.to_string()),
+        Err(e) => ZomeApiInternalResult::failure(core_error!(e)),
     };
 
     runtime.store_as_json_string(result)
@@ -85,7 +83,7 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present() {
-        let (call_result, _) = test_zome_api_function(
+        let (mut call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
         );
@@ -97,6 +95,11 @@ pub mod tests {
                     + "\u{0}"
             ),
         );
+
+        // call_result.pop(); // Remove trailing character
+        let core_err: CoreError =
+            serde_json::from_str(&call_result).expect("valid CoreError json str");
+        assert_eq!("Base for link not found", core_err.kind.to_string(),);
     }
 
     #[test]

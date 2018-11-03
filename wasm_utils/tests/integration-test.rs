@@ -18,6 +18,8 @@ use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
+use std::error::Error;
 use test_utils::hc_setup_and_call_zome_fn;
 
 #[derive(Clone, Debug)]
@@ -42,10 +44,10 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
 }
 
 #[test]
-fn can_return_error_report() {
+fn can_return_core_error() {
     let call_result = call_zome_function_with_hc("test_error_report");
-    let error_report = RibosomeErrorReport::try_from(call_result.clone().unwrap()).unwrap();
-    assert_eq!("Zome assertion failed: `false`", error_report.description);
+    let core_err = CoreError::try_from(call_result.clone().unwrap()).unwrap();
+    assert_eq!("Zome assertion failed: `false`", core_err.description());
 }
 
 #[test]
@@ -121,6 +123,7 @@ fn call_load_json_ok() {
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
+    assert!(call_result.is_err());
     assert_eq!(JsonString::from("Unspecified"), call_result.unwrap());
 }
 

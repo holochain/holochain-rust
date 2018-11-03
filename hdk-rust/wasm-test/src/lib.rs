@@ -55,8 +55,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
 
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
-    if let Err(err_str) = result {
-        hdk::debug(format!("ERROR ArgumentDeserializationFailed: {:?}", err_str)).expect("debug() must work");
+    if let Err(hc_err) = result {
+        hdk::debug(&format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
@@ -181,12 +181,17 @@ fn handle_check_query() -> JsonString {
     let result = hdk::query(&EntryType::Dna.to_string(), 0);
 
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query AgentId entry
     let result = hdk::query(&EntryType::AgentId.to_string(), 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
+
+    // Query unknown entry
+    let result = hdk::query("bad_type", 0);
+    assert!(result.is_ok());
+    assert!(result.unwrap().addresses.len() == 0);
 
     // Query Zome entry
     let _ = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
@@ -194,7 +199,7 @@ fn handle_check_query() -> JsonString {
     }).into())).unwrap();
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 1);
+    assert!(result.unwrap().addresses.len() == 1);
 
     // Query Zome entries
     let _ = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
@@ -206,7 +211,7 @@ fn handle_check_query() -> JsonString {
 
     let result = hdk::query("testEntryType", 0);
     assert!(result.is_ok());
-    assert!(result.unwrap().len() == 3);
+    assert!(result.unwrap().addresses.len() == 3);
 
     let result = hdk::query("testEntryType", 1);
     assert!(result.is_ok());

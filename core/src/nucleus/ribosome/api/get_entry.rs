@@ -3,15 +3,19 @@ use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
 use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
+use nucleus::{
+    actions::get_entry::get_entry,
+    ribosome::{api::ZomeApiResult, Runtime},
+};
+use serde_json;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_entry(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
@@ -32,7 +36,7 @@ pub fn invoke_get_entry(
         Ok(maybe_entry) => runtime.store_as_json_string(ZomeApiInternalResult::success(
             maybe_entry.and_then(|entry| Some(entry.serialize())),
         )),
-        Err(_) => ribosome_error_code!(Unspecified),
+        Err(hc_err) => runtime.store_as_json_string(core_error!(hc_err)),
     }
 }
 

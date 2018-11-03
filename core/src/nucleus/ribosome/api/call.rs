@@ -5,7 +5,9 @@ use holochain_dna::zome::capabilities::Membrane;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
+    get_capability_with_zome_call, launch_zome_fn_call,
+    ribosome::{api::ZomeApiResult, Runtime},
+    state::NucleusState,
     ZomeFnCall,
 };
 use std::{
@@ -28,10 +30,7 @@ impl ZomeFnCall {
 /// Launch an Action::Call with newly formed ZomeFnCall
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_call(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     println!("invoke_call args_str: {:?}", args_str);
@@ -92,8 +91,7 @@ pub fn invoke_call(
     // action_result should be a json str of the result of the zome function called
     match action_result {
         Ok(json_string) => runtime.store_as_json_string(json_string),
-        // TODO send the holochain error instead
-        Err(_hc_err) => ribosome_error_code!(Unspecified),
+        Err(hc_err) => runtime.store_as_json_string(core_error!(hc_err)),
     }
 }
 

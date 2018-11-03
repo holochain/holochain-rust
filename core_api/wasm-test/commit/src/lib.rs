@@ -3,7 +3,9 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 
 use holochain_wasm_utils::{
-  memory_allocation::*, memory_serialization::*
+  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
+  memory_allocation::*, memory_serialization::*,
+  holochain_core_types::error::HolochainError,
 };
 use holochain_core_types::json::JsonString;
 use holochain_core_types::entry::SerializedEntry;
@@ -62,11 +64,7 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
   -> Result<Address, ZomeApiError>
 {
   // Put args in struct and serialize into memory
-  let input = ZomeApiInternalResult {
-    ok: false,
-    value: String::from(JsonString::from(Address::from("whatever"))),
-    error: String::from("")
-  };
+  let input = ZomeApiInternalResult::failure(Address::from("whatever"));
   let allocation_of_input =  store_as_json(mem_stack, input)?;
 
   // Call WASMI-able commit

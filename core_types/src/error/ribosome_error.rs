@@ -1,38 +1,119 @@
-/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
-/// Will panic! if out or memory or other serialization error occured.
-#[macro_export]
-macro_rules! zome_assert {
-    ($stack:ident, $cond:expr) => {
-        if !$cond {
-            let error_report = ribosome_error_report!(format!(
-                r#"Zome assertion failed: `{}`"#,
-                stringify!($cond)
-            ));
-            let res = store_json(&mut $stack, error_report);
-            return res.unwrap().encode();
-        }
-    };
+use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
+
+/// Enum of all possible RETURN codes that a Zome API Function could return.
+/// Represents an encoded allocation of zero length with the return code as offset.
+/// @see SinglePageAllocation
+#[repr(u32)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum RibosomeReturnCode {
+    Success,
+    Failure(RibosomeErrorCode),
 }
 
-/// Macro for creating a RibosomeErrorCode as a RuntimeValue Result-Option on the spot
-#[macro_export]
-macro_rules! ribosome_error_code {
-    ($s:ident) => {
-        Ok(Some(RuntimeValue::I32(
-            ::holochain_wasm_utils::holochain_core_types::error::error::RibosomeErrorCode::$s
-                as i32,
-        )))
-    };
+/// Enum of all possible ERROR codes that a Zome API Function could return.
+#[repr(u32)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+pub enum RibosomeErrorCode {
+    Unspecified                     = 1 << 16,
+    ArgumentDeserializationFailed   = 2 << 16,
+    OutOfMemory                     = 3 << 16,
+    ReceivedWrongActionResult       = 4 << 16,
+    CallbackFailed                  = 5 << 16,
+    RecursiveCallForbidden          = 6 << 16,
+    ResponseSerializationFailed     = 7 << 16,
+    NotAnAllocation                 = 8 << 16,
+    ZeroSizedAllocation             = 9 << 16,
+    UnknownEntryType                = 10 << 16,
 }
 
-/// Macro for creating a RibosomeErrorReport on the spot with file!() and line!()
-#[macro_export]
-macro_rules! ribosome_error_report {
-    ($s:expr) => {
-        ::holochain_wasm_utils::holochain_core_types::error::error::RibosomeErrorReport {
-            description: $s.to_string(),
-            file_name: file!().to_string(),
-            line: line!().to_string(),
+impl ToString for RibosomeReturnCode {
+    fn to_string(&self) -> String {
+        match self {
+            Success => "Success".to_string(),
+            Failure(code) => code.to_string(),
         }
-    };
+    }
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+impl RibosomeErrorCode {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Unspecified                     => "Unspecified",
+            ArgumentDeserializationFailed   => "Argument deserialization failed",
+            OutOfMemory                     => "Out of memory",
+            ReceivedWrongActionResult       => "Received wrong action result",
+            CallbackFailed                  => "Callback failed",
+            RecursiveCallForbidden          => "Recursive call forbidden",
+            ResponseSerializationFailed     => "Response serialization failed",
+            NotAnAllocation                 => "Not an allocation",
+            ZeroSizedAllocation             => "Zero-sized allocation",
+            UnknownEntryType                => "Unknown entry type",
+        }
+    }
+}
+
+impl ToString for RibosomeErrorCode {
+    fn to_string(&self) -> String {
+        self.to_str().to_string()
+    }
+}
+impl RibosomeReturnCode {
+    pub fn from_error(err_code: RibosomeErrorCode) -> Self {
+        Failure(err_code)
+    }
+
+    pub fn from_offset(offset: u16) -> Self {
+        match offset {
+            0 => Success,
+            _ => Failure(RibosomeErrorCode::from_offset(offset)),
+        }
+    }
+}
+
+impl RibosomeErrorCode {
+    pub fn from_offset(offset: u16) -> Self {
+        match offset {
+            0 => unreachable!(),
+            2 => ArgumentDeserializationFailed,
+            3 => OutOfMemory,
+            4 => ReceivedWrongActionResult,
+            5 => CallbackFailed,
+            6 => RecursiveCallForbidden,
+            7 => ResponseSerializationFailed,
+            8 => NotAnAllocation,
+            9 => ZeroSizedAllocation,
+            10 => UnknownEntryType,
+            1 | _ => Unspecified,
+        }
+    }
+
+    pub fn from_return_code(ret_code: RibosomeReturnCode) -> Self {
+        match ret_code {
+            Success => unreachable!(),
+            Failure(rib_err) => rib_err,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn ribosome_return_code_round_trip() {
+        let oom =
+            RibosomeReturnCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
+        assert_eq!(Failure(RibosomeErrorCode::OutOfMemory), oom);
+        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+    }
+
+    #[test]
+    fn ribosome_error_code_round_trip() {
+        let oom =
+            RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
+        assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
+        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+    }
 }

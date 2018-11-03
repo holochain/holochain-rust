@@ -239,7 +239,7 @@ fn can_invalidate_invalid_commit() {
         )))),
     );
     println!("\t result = {:?}", result);
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
         JsonString::from("{\"error\":{\"Internal\":\"FAIL content is not allowed\"}}"),
@@ -315,8 +315,9 @@ fn can_link_entries() {
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance();
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
+
     println!("can_roundtrip_links result_string: {:?}", result_string);
     let expected = JsonString::from("{\"Ok\":[\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\",\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\"]}");
     let ordering1: bool = result_string == expected;
@@ -324,7 +325,7 @@ fn can_roundtrip_links() {
     let expected = JsonString::from("{\"Ok\":[\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\",\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\"]}");
     let ordering2: bool = result_string == expected;
 
-    assert!(ordering1 || ordering2);
+    assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }
 
 #[test]
@@ -340,7 +341,7 @@ fn can_check_query() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(r#"["QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"]"#),
+        JsonString::from(vec![Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx")]),
     );
 }
 

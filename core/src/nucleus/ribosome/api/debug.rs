@@ -9,7 +9,7 @@ use wasmi::{RuntimeArgs, RuntimeValue, Trap};
 pub fn invoke_debug(
     runtime: &mut Runtime,
     args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+) -> ZomeApiResult {
     let payload = runtime.load_json_string_from_args(args);
     println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level
@@ -17,10 +17,8 @@ pub fn invoke_debug(
         .context
         .log(&format!("zome_log:DEBUG: '{}'", payload))
         .expect("Logger should work");
-
-    Ok(Some(RuntimeValue::I32(i32::from(
-        RibosomeReturnCode::Success,
-    ))))
+    // Done
+    ribosome_success!()
 }
 
 #[cfg(test)]

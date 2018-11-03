@@ -9,19 +9,17 @@ use holochain_core_types::{
 };
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
-    ribosome::Runtime,
+    ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_commit_app_entry(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let serialized_entry = match SerializedEntry::try_from(args_str.clone()) {
@@ -65,19 +63,7 @@ pub fn invoke_commit_app_entry(
 
     let result = match task_result {
         Ok(address) => ZomeApiInternalResult::success(address),
-        Err(HolochainError::ValidationFailed(fail_string)) => {
-            ZomeApiInternalResult::failure(&fail_string)
-        }
-        Err(error_string) => {
-            let error_report = ribosome_error_report!(format!(
-                "Call to `hc_commit_entry()` failed: {}",
-                error_string
-            ));
-
-            ZomeApiInternalResult::failure(&String::from(error_report))
-            // TODO #394 - In release return error_string directly and not a RibosomeErrorReport
-            // Ok(error_string)
-        }
+        Err(e) => ZomeApiInternalResult::failure(core_error!(e)),
     };
 
     runtime.store_as_json_string(result)

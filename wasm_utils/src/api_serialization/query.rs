@@ -1,5 +1,6 @@
 use holochain_core_types::{error::HolochainError, hash::HashString, json::*};
 use std::convert::TryFrom;
+use holochain_core_types::cas::content::Address;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryArgs {
@@ -20,4 +21,4 @@ impl TryFrom<JsonString> for QueryArgs {
     }
 }
 
-pub type QueryResult = Vec<HashString>;
+pub type QueryResult = Vec<Address>;

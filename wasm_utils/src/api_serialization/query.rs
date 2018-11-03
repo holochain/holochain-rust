@@ -1,4 +1,4 @@
-use holochain_core_types::{error::HolochainError, hash::HashString, json::*};
+use holochain_core_types::{error::HolochainError, json::*};
 use std::convert::TryFrom;
 use holochain_core_types::cas::content::Address;
 

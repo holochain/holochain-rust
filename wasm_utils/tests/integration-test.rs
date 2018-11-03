@@ -11,13 +11,11 @@ extern crate test_utils;
 
 use holochain_core::logger::Logger;
 use holochain_core_types::{
-    error::HolochainError,
     json::{JsonString, RawString},
 };
 use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core_types::error::RibosomeErrorCode;
 use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
 use std::error::Error;
 use test_utils::hc_setup_and_call_zome_fn;

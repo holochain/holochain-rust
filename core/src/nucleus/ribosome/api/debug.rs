@@ -1,6 +1,6 @@
-use holochain_core_types::error::RibosomeReturnCode;
 use nucleus::ribosome::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
+use nucleus::ribosome::api::ZomeApiResult;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -23,12 +23,11 @@ pub fn invoke_debug(
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::{error::RibosomeReturnCode, json::JsonString};
+    use holochain_core_types::json::JsonString;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use std::convert::TryFrom;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {

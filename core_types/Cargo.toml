@@ -12,6 +12,7 @@ futures-preview = "0.2.2"
 rust-base58 = "0.0.4"
 snowflake = "1.2"
 bitflags = "1.0"
+holochain_core_types_derive = { path = "../core_types_derive" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

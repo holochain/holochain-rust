@@ -19,6 +19,8 @@ extern crate serde_json;
 extern crate snowflake;
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 #[macro_use]
 extern crate serde_derive;

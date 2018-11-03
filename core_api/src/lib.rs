@@ -186,10 +186,8 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::error::RibosomeReturnCode;
     use holochain_dna::Dna;
     use std::{
-        convert::TryFrom,
         sync::{Arc, Mutex},
     };
     use tempfile::tempdir;

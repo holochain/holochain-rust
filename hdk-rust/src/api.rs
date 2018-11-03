@@ -2,7 +2,7 @@ use globals::*;
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
-    error::{ZomeApiError, ZomeApiInternalResult, ZomeApiResult},
+    error::{ZomeApiError, ZomeApiInternalResult, ZomeApiResult, RibosomeReturnCode, CoreError, HolochainError},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{

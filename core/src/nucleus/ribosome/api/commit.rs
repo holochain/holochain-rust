@@ -12,7 +12,7 @@ use nucleus::{
     ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -75,7 +75,7 @@ pub mod tests {
     extern crate wabt;
 
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
+        cas::content::Address,
         entry::{test_entry, SerializedEntry},
         error::ZomeApiInternalResult,
         json::JsonString,

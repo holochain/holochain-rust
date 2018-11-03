@@ -78,13 +78,19 @@ impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
 
 pub type JsonResult = Result<JsonString, HolochainError>;
 
-/// standard boilerplate:
-// impl TryFrom<T> for JsonString {
-//     type Error = HolochainError;
-//     fn try_from(v: T) -> JsonResult {
-//         default_try_to_json(v)
-//     }
-// }
+impl TryFrom<JsonString> for () {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
+impl Display for JsonString {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", String::from(self),)
+    }
+}
+
 pub fn default_try_to_json<S: Serialize + Debug>(s: S) -> JsonResult {
     match serde_json::to_string(&s) {
         Ok(s) => Ok(JsonString::from(s)),
@@ -114,18 +120,7 @@ pub fn default_try_from_json<D: DeserializeOwned>(
     }
 }
 
-impl TryFrom<JsonString> for () {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
-}
-
-impl Display for JsonString {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", String::from(self),)
-    }
-}
+pub trait DefaultJson: Serialize + DeserializeOwned + TryFrom<JsonString> + Into<JsonString> {}
 
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""

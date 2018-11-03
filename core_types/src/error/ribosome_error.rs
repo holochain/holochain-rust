@@ -3,9 +3,7 @@ use serde::Deserializer;
 use serde::Serializer;
 use serde::Deserialize;
 use serde::Serialize;
-use json::JsonResult;
-use json::default_try_to_json;
-use error::error::HolochainError;
+use error::HolochainError;
 use json::JsonString;
 use std::convert::TryFrom;
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
@@ -87,7 +85,7 @@ impl RibosomeReturnCode {
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,
@@ -120,12 +118,12 @@ impl RibosomeErrorCode {
     }
 }
 
-impl TryFrom<RibosomeErrorCode> for JsonString {
-    type Error = HolochainError;
-    fn try_from(v: RibosomeErrorCode) -> JsonResult {
-        default_try_to_json(v)
-    }
-}
+// impl TryFrom<RibosomeErrorCode> for JsonString {
+//     type Error = HolochainError;
+//     fn try_from(v: RibosomeErrorCode) -> JsonResult {
+//         default_try_to_json(v)
+//     }
+// }
 
 impl ToString for RibosomeErrorCode {
     fn to_string(&self) -> String {

@@ -2,7 +2,8 @@ use holochain_core_types::{entry_type::EntryType, error::ZomeApiInternalResult};
 use holochain_wasm_utils::api_serialization::QueryArgs;
 use nucleus::ribosome::Runtime;
 use std::{convert::TryFrom, str::FromStr};
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
+use nucleus::ribosome::api::ZomeApiResult;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u32

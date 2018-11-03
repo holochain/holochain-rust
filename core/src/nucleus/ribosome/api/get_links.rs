@@ -1,13 +1,10 @@
-use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
+use holochain_core_types::{error::ZomeApiInternalResult};
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use nucleus::ribosome::Runtime;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
-use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use serde_json;
 use wasmi::{RuntimeArgs, RuntimeValue};
+use nucleus::ribosome::{api::ZomeApiResult};
+use holochain_core_types::cas::content::Address;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -39,7 +36,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
             links
                 .iter()
                 .map(|eav| eav.value())
-                .collect::<GetLinksResult>(),
+                .collect::<Vec<Address>>(),
         ),
         Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
     })

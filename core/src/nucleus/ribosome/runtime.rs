@@ -10,7 +10,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
-use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 
 /// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
@@ -68,22 +68,9 @@ impl Runtime {
         let mut s_bytes: Vec<_> = j.into_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
-        let allocation_of_result = self.memory_manager.write(&s_bytes);
-        if allocation_of_result.is_err() {
-            return Err(Trap::new(TrapKind::MemoryAccessOutOfBounds));
-        }
-        let encoded_allocation = allocation_of_result.unwrap().encode();
-
-        // Return success in i32 format
-        Ok(Some(RuntimeValue::I32(encoded_allocation as i32)))
-    }
-
-    // Stack any Serializable data as a json for the Zome to read as a returned value.
-    pub fn store_as_json<T: serde::Serialize>(&mut self, data: T) -> ZomeApiResult {
-        let maybe_json = serde_json::to_string(&data);
-        match maybe_json {
-            Err(_) => ribosome_error_code!(ResponseSerializationFailed),
-            Ok(json) => self.store_utf8(&json),
+        match self.memory_manager.write(&s_bytes) {
+            Err(_) => ribosome_error_code!(NotAnAllocation),
+            Ok(allocation) => Ok(Some(RuntimeValue::I32(allocation.encode() as i32))),
         }
     }
 }

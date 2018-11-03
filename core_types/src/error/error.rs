@@ -18,7 +18,7 @@ use std::{
 /// and back to the Holochain Instance via wasm memory.
 /// Follows the Error + ErrorKind pattern
 /// Holds extra debugging info for indicating where in code ther error occured.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq, Eq, Hash)]
 pub struct CoreError {
     pub kind: HolochainError,
     pub file: String,
@@ -240,15 +240,16 @@ impl ZomeApiInternalResult {
         ZomeApiInternalResult {
             ok: true,
             value: json_string.into(),
-            error: String::new(),
+            error: JsonString::null().into(),
         }
     }
 
-    pub fn failure(error_string: &str) -> ZomeApiInternalResult {
+    pub fn failure<J: Into<JsonString>>(value: J) -> ZomeApiInternalResult {
+        let json_string: JsonString = value.into();
         ZomeApiInternalResult {
             ok: false,
             value: JsonString::null().into(),
-            error: error_string.into(),
+            error: json_string.into(),
         }
     }
 }

@@ -7,7 +7,8 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use nucleus::ribosome::Runtime;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
+use nucleus::ribosome::api::ZomeApiResult;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -60,6 +61,7 @@ pub mod tests {
         Defn,
     };
     use serde_json;
+    use holochain_core_types::error::CoreError;
 
     /// dummy link_entries args from standard test entry
     pub fn test_link_args_bytes() -> Vec<u8> {

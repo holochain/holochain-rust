@@ -10,11 +10,11 @@ extern crate serde_json;
 use holochain_core_api::*;
 
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::{test_entry_a, Entry, SerializedEntry},
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
     entry_type::test_entry_type,
     hash::HashString,
-    json::{JsonString, RawString},
+    json::JsonString,
 };
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},

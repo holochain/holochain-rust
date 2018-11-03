@@ -14,7 +14,7 @@ use std::{
     convert::TryFrom,
     sync::{mpsc::channel, Arc},
 };
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {

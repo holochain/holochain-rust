@@ -1,5 +1,8 @@
+use holochain_core_types::error::CoreError;
 use holochain_core_types::{
     error::RibosomeErrorCode,
+    error::RibosomeReturnCode,
+    error::HolochainError,
     json::JsonString,
 };
 use memory_allocation::{

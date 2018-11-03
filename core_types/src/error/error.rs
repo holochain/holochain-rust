@@ -284,7 +284,7 @@ mod tests {
     fn test_to_json() {
         let err = HolochainError::new("foo");
         assert_eq!(
-            JsonString::from(r#"{"error":"foo"}"#),
+            JsonString::from("{\"ErrorGeneric\":\"foo\"}"),
             JsonString::from(err),
         );
     }

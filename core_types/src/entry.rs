@@ -246,9 +246,7 @@ pub fn test_entry_c() -> Entry {
 pub fn test_entry_unique() -> Entry {
     Entry::new(
         test_entry_type(),
-        RawString::from(
-            snowflake::ProcessUniqueId::new().to_string(),
-        ),
+        RawString::from(snowflake::ProcessUniqueId::new().to_string()),
     )
 }
 
@@ -265,7 +263,10 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::new(test_unpublishable_entry_type(), test_entry().value().to_owned())
+    Entry::new(
+        test_unpublishable_entry_type(),
+        test_entry().value().to_owned(),
+    )
 }
 
 #[cfg(test)]

@@ -1,15 +1,11 @@
-use nucleus::ribosome::Runtime;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::{RuntimeArgs, RuntimeValue};
-use nucleus::ribosome::api::ZomeApiResult;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_debug(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> ZomeApiResult {
+pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let payload = runtime.load_json_string_from_args(args);
     println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level

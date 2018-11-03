@@ -1,8 +1,5 @@
-use holochain_core_types::error::CoreError;
 use holochain_core_types::{
-    error::RibosomeErrorCode,
-    error::RibosomeReturnCode,
-    error::HolochainError,
+    error::{CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
     json::JsonString,
 };
 use memory_allocation::{
@@ -135,7 +132,9 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
                 serde_json::from_str(stored_str);
 
             Err(match maybe_hc_err {
-                Err(_) => HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed),
+                Err(_) => {
+                    HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
+                }
                 Ok(hc_err) => hc_err.kind,
             })
         }

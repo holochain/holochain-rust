@@ -59,10 +59,7 @@ impl Runtime {
     /// Note that From<T> for JsonString automatically implements Into
     /// Input should be a a json string.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
-    pub fn store_as_json_string<J: Into<JsonString>>(
-        &mut self,
-        jsonable: J,
-    ) -> ZomeApiResult {
+    pub fn store_as_json_string<J: Into<JsonString>>(&mut self, jsonable: J) -> ZomeApiResult {
         let j: JsonString = jsonable.into();
         // write str to runtime memory
         let mut s_bytes: Vec<_> = j.into_bytes();

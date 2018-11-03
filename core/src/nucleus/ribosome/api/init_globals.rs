@@ -1,8 +1,8 @@
 use holochain_core_types::{entry_type::EntryType, hash::HashString, json::JsonString};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
-use wasmi::RuntimeArgs;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -53,7 +53,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 #[cfg(test)]
 pub mod tests {
     use holochain_agent::Agent;
-    use holochain_core_types::{cas::content::AddressableContent};
+    use holochain_core_types::cas::content::AddressableContent;
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},

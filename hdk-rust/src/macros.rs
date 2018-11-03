@@ -25,6 +25,7 @@ macro_rules! load_json {
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -33,25 +34,35 @@ macro_rules! load_json {
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # extern crate boolinator;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_dna;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_dna::zome::entry_types::Sharing;
+///
+/// # use boolinator::Boolinator;
 ///
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::hash_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
-///         Ok(address) => {
-///             json!({"address": address})
-///         }
-///         Err(hdk_error) => hdk_error.to_json(),
+/// fn handle_hash_post(content: String) -> JsonString {
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::hash_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
 ///

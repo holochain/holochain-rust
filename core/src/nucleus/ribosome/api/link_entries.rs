@@ -5,18 +5,14 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use nucleus::ribosome::Runtime;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use nucleus::ribosome::api::ZomeApiResult;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
-pub fn invoke_link_entries(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> ZomeApiResult {
+pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     println!("invoke_link_entries");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
@@ -51,7 +47,9 @@ pub mod tests {
     use agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, error::ZomeApiInternalResult,
+        cas::content::AddressableContent,
+        entry::test_entry,
+        error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
@@ -61,7 +59,6 @@ pub mod tests {
         Defn,
     };
     use serde_json;
-    use holochain_core_types::error::CoreError;
     use std::convert::TryFrom;
 
     /// dummy link_entries args from standard test entry
@@ -98,7 +95,8 @@ pub mod tests {
             ),
         );
 
-        let result = ZomeApiInternalResult::try_from(call_result).expect("valid ZomeApiInternalResult JsonString");
+        let result = ZomeApiInternalResult::try_from(call_result)
+            .expect("valid ZomeApiInternalResult JsonString");
 
         let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
         assert_eq!("Base for link not found", core_err.kind.to_string(),);

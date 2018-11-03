@@ -13,11 +13,8 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_core_types::json::default_try_from_json;
 use holochain_core::logger::Logger;
-use holochain_core_types::{
-    json::{JsonString, RawString},
-};
+use holochain_core_types::json::{default_try_from_json, JsonString, RawString};
 use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
@@ -140,7 +137,7 @@ fn call_load_json_err_test() {
                 Err(e) => assert_eq!(HolochainError::Ribosome(RibosomeErrorCode::Unspecified), e),
                 Ok(_) => unreachable!(),
             }
-        },
+        }
         Err(_) => unreachable!(),
     }
 }

@@ -125,7 +125,10 @@ pub fn default_try_from_json<D: DeserializeOwned>(
     }
 }
 
-pub trait DefaultJson: Serialize + DeserializeOwned + TryFrom<JsonString> + Into<JsonString> {}
+pub trait DefaultJson:
+    Serialize + DeserializeOwned + TryFrom<JsonString> + Into<JsonString>
+{
+}
 
 /// generic type to facilitate Jsonifying values directly
 /// JsonString simply wraps String and str as-is but will Jsonify RawString("foo") as "\"foo\""

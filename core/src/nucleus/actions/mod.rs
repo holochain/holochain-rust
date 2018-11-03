@@ -13,10 +13,7 @@ pub mod tests {
         entry_type::EntryType, json::JsonString,
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
-    use instance::{
-        tests::test_instance_and_context,
-        Instance,
-    };
+    use instance::{tests::test_instance_and_context, Instance};
     use std::sync::Arc;
     use test_utils::*;
 

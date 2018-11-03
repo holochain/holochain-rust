@@ -14,7 +14,6 @@ use nucleus::{
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: CommitArgs

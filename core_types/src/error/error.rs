@@ -55,9 +55,10 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
     type Error = HolochainError;
     fn try_from(zome_api_internal_result: ZomeApiInternalResult) -> Result<Self, Self::Error> {
         if zome_api_internal_result.ok {
-            Err(HolochainError::ErrorGeneric("Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into()))
-        }
-        else {
+            Err(HolochainError::ErrorGeneric(
+                "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
+            ))
+        } else {
             CoreError::try_from(JsonString::from(zome_api_internal_result.error))
         }
     }

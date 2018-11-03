@@ -5,7 +5,9 @@ use rust_base58::ToBase58;
 use std::{convert::TryFrom, fmt};
 
 // HashString newtype for String
-#[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, Hash)]
+#[derive(
+    PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, Hash,
+)]
 pub struct HashString(String);
 
 impl fmt::Display for HashString {

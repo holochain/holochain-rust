@@ -6,9 +6,9 @@ use holochain_core_types::{
     error::ZomeApiInternalResult,
 };
 use holochain_dna::Dna;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {

@@ -1,11 +1,11 @@
 use futures::executor::block_on;
 use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
+use nucleus::{
+    actions::get_entry::get_entry,
+    ribosome::{api::ZomeApiResult, Runtime},
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use nucleus::{
-    ribosome::{api::ZomeApiResult},
-};
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32

@@ -187,9 +187,7 @@ mod tests {
         persister::SimplePersister,
     };
     use holochain_dna::Dna;
-    use std::{
-        sync::{Arc, Mutex},
-    };
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,

@@ -1,6 +1,5 @@
-use holochain_core_types::{error::HolochainError, json::*};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 use std::convert::TryFrom;
-use holochain_core_types::cas::content::Address;
 
 #[derive(Deserialize, Default, Debug, Serialize)]
 pub struct QueryArgs {

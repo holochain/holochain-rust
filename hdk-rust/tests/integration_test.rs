@@ -341,7 +341,9 @@ fn can_check_query() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(vec![Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx")]),
+        JsonString::from(vec![Address::from(
+            "QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx",
+        )]),
     );
 }
 

@@ -1,10 +1,8 @@
-use holochain_core_types::{error::ZomeApiInternalResult};
+use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
-use nucleus::ribosome::Runtime;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use nucleus::ribosome::{api::ZomeApiResult};
-use holochain_core_types::cas::content::Address;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32

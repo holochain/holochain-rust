@@ -1,12 +1,8 @@
-use std::str::FromStr;
-use serde::Deserializer;
-use serde::Serializer;
-use serde::Deserialize;
-use serde::Serialize;
+use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use error::HolochainError;
 use json::JsonString;
-use std::convert::TryFrom;
-use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::{convert::TryFrom, str::FromStr};
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.

@@ -116,28 +116,26 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
 
-        let expected = JsonString::from(
+        let expected_1 = JsonString::from(
             format!(
                 r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
                 entry_hashes[1], entry_hashes[2]
             ) + "\u{0}",
         );
-        let ordering1: bool = call_result == expected;
 
-        let expected = JsonString::from(
+        let expected_2 = JsonString::from(
             format!(
                 r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
                 entry_hashes[2], entry_hashes[1]
             ) + "\u{0}",
         );
-        let ordering2: bool = call_result == expected;
 
         assert!(
-            call_result == ordering1 || call_result == ordering2,
+            call_result == expected_1 || call_result == expected_2,
             "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
             call_result,
-            ordering1,
-            ordering2,
+            expected_1,
+            expected_2,
         );
 
         let call_result = test_zome_api_function_call(

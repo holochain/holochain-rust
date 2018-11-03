@@ -12,23 +12,22 @@ fn impl_default_json_macro(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         impl From<#name> for JsonString {
             fn from(v: #name) -> JsonString {
-                // ::holochain_core_types::json::default_from_json(v)
                 match ::serde_json::to_string(&v) {
                     Ok(s) => Ok(JsonString::from(s)),
                     Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-                }.unwrap()
+                }.expect(&format!("could not Jsonify {}: {:?}", stringify!(#name), v))
             }
         }
 
-        // impl TryFrom<JsonString> for #name {
-        //     type Error = ::holochain_core_types::error::HolochainError;
-        //     fn try_from(json_string: ::holochain_core_types::json::JsonString) -> Result<Self, Self::Error> {
-        //         match ::serde_json::from_str(&String::from(&json_string)) {
-        //             Ok(d) => Ok(d),
-        //             Err(e) => Err(::holochain_core_types::error::HolochainError::SerializationError(e.to_string())),
-        //         }
-        //     }
-        // }
+        impl ::std::convert::TryFrom<JsonString> for #name {
+            type Error = HolochainError;
+            fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
+                match ::serde_json::from_str(&String::from(&json_string)) {
+                    Ok(d) => Ok(d),
+                    Err(e) => Err(HolochainError::SerializationError(e.to_string())),
+                }
+            }
+        }
 
     };
     // panic!(gen.to_string());

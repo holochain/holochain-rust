@@ -209,17 +209,20 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// This first one, is the one that is called into, with the Zome name `summer`.
 /// ```rust
-/// #[macro_use]
-/// extern crate hdk;
-/// extern crate serde;
-/// #[macro_use]
-/// extern crate serde_derive;
-/// #[macro_use]
-/// extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # use hdk::holochain_core_types::json::JsonString;
 ///
-/// fn handle_sum(num1: u32, num2: u32) -> serde_json::Value {
+/// # fn main() {
+///
+/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
 ///     let sum = num1 + num2;
-///     return json!({"sum": format!("{}",sum)});
+///     return json!({"sum": format!("{}",sum)}).into();
 /// }
 ///
 /// define_zome! {
@@ -233,28 +236,37 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: serde_json::Value|,
+///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
 ///         }
 ///     }
 /// }
+///
+/// # }
 /// ```
 ///
 /// This second one, is the one that performs the call into the `summer` Zome.
 /// ```rust
-/// #[macro_use]
-/// extern crate hdk;
-/// extern crate serde;
-/// #[macro_use]
-/// extern crate serde_derive;
-/// #[macro_use]
-/// extern crate serde_json;
+/// # #![feature(try_from)]
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
 ///
-/// use hdk::holochain_core_types::hash::HashString;
+/// # use hdk::holochain_core_types::hash::HashString;
+/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::HolochainError;
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> serde_json::Value {
-///     #[derive(Serialize)]
+/// # fn main() {
+///
+/// fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
+///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
 ///         num1: u32,
 ///         num2: u32,
@@ -267,11 +279,11 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         "summer",
 ///         "main",
 ///         "sum",
-///         serde_json::to_value(call_input).unwrap()
+///         call_input.into()
 ///     );
 ///     match maybe_result {
-///         Ok(result) => serde_json::from_str(&result).unwrap(),
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Ok(result) => result.into(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
 ///
@@ -286,12 +298,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: serde_json::Value|,
+///                 outputs: |sum: JsonString|,
 ///                 handler: handle_check_sum
 ///             }
 ///         }
 ///     }
 /// }
+///
+/// # }
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,

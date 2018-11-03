@@ -7,8 +7,6 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 pub extern crate holochain_core_types;
-#[macro_use]
-pub extern crate holochain_core_types_derive;
 
 pub mod api_serialization;
 pub mod macros;

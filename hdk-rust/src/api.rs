@@ -338,16 +338,41 @@ pub fn call<S: Into<String>>(
 /// Returns either an address of the committed entry as a string, or an error.
 /// # Examples
 /// ```rust
-/// pub fn handle_create_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::commit_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
-///         Ok(post_address) => json!({"address": post_address}),
-///         Err(hdk_error) => hdk_error.to_json(),
-///     }
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
 /// }
+///
+/// pub fn handle_create_post(content: String) -> JsonString {
+///
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::commit_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(e) => e.into(),
+///     }
+///
+/// }
+///
+/// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;

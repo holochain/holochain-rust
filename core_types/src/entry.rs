@@ -19,10 +19,10 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(entry_type: &EntryType, value: &JsonString) -> Entry {
+    pub fn new<J: Into<JsonString>>(entry_type: EntryType, value: J) -> Entry {
         Entry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
+            entry_type,
+            value: value.into(),
         }
     }
 
@@ -206,7 +206,7 @@ pub fn test_sys_entry_value() -> JsonString {
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
-    Entry::new(&test_entry_type(), &test_entry_value())
+    Entry::new(test_entry_type(), test_entry_value())
 }
 
 pub fn test_serialized_entry() -> SerializedEntry {
@@ -235,26 +235,26 @@ pub fn test_entry_a() -> Entry {
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_value_b())
+    Entry::new(test_entry_type_b(), test_entry_value_b())
 }
 pub fn test_entry_c() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_value_c())
+    Entry::new(test_entry_type_b(), test_entry_value_c())
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
     Entry::new(
-        &test_entry_type(),
-        &JsonString::from(RawString::from(
+        test_entry_type(),
+        RawString::from(
             snowflake::ProcessUniqueId::new().to_string(),
-        )),
+        ),
     )
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
-    Entry::new(&test_sys_entry_type(), &test_sys_entry_value())
+    Entry::new(test_sys_entry_type(), test_sys_entry_value())
 }
 
 pub fn test_sys_entry_address() -> Address {
@@ -265,7 +265,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::new(&test_unpublishable_entry_type(), &test_entry().value())
+    Entry::new(test_unpublishable_entry_type(), test_entry().value().to_owned())
 }
 
 #[cfg(test)]

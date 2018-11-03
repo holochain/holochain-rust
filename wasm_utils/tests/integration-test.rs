@@ -21,7 +21,7 @@ use holochain_core_types::{
 use std::convert::TryFrom;
 
 use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode, ZomeApiInternalResult};
+use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
 use std::error::Error;
 use test_utils::hc_setup_and_call_zome_fn;
 

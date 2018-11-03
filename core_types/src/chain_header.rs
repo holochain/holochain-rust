@@ -114,7 +114,7 @@ impl From<JsonString> for ChainHeader {
 //
 impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::ChainHeader, &JsonString::from(self.to_owned()))
+        Entry::new(EntryType::ChainHeader, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {

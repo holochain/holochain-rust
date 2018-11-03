@@ -74,7 +74,7 @@ impl From<Agent> for JsonString {
 
 impl ToEntry for Agent {
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::AgentId, &JsonString::from(self.to_owned()))
+        Entry::new(EntryType::AgentId, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -139,14 +139,14 @@ mod tests {
     fn agent_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::AgentId, &test_identity_value()),
+            Entry::new(EntryType::AgentId, test_identity_value()),
             test_agent().to_entry(),
         );
 
         // from_entry()
         assert_eq!(
             test_agent(),
-            Agent::from_entry(&Entry::new(&EntryType::AgentId, &test_identity_value())),
+            Agent::from_entry(&Entry::new(EntryType::AgentId, test_identity_value())),
         );
     }
 

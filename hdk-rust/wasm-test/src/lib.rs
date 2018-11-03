@@ -89,7 +89,7 @@ impl From<EntryStruct> for JsonString {
 fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
     let entry = Entry::new(&entry_type.into(), &value.into());
     match hdk::commit_entry(&entry) {
-        Ok(hash) => hash.into(),
+        Ok(address) => address.into(),
         Err(e) => e.into(),
     }
 }

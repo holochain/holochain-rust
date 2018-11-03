@@ -243,7 +243,7 @@ impl From<Dna> for JsonString {
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(&EntryType::Dna, &JsonString::from(self.to_owned()))
+        Entry::new(EntryType::Dna, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {

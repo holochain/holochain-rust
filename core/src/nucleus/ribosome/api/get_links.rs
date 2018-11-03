@@ -91,8 +91,8 @@ pub mod tests {
         let mut entry_hashes: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::new(
-                &test_entry_type(),
-                &JsonString::from(format!("entry{} value", i)),
+                test_entry_type(),
+                JsonString::from(format!("entry{} value", i)),
             );
             let hash = block_on(commit_entry(
                 entry,

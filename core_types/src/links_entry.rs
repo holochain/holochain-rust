@@ -96,7 +96,7 @@ impl From<JsonString> for LinkEntry {
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::Link, &JsonString::from(self.to_owned()))
+        Entry::new(EntryType::Link, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -144,7 +144,7 @@ impl From<JsonString> for LinkListEntry {
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::LinkList, &JsonString::from(self.to_owned()))
+        Entry::new(EntryType::LinkList, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -257,7 +257,7 @@ pub mod tests {
     fn link_entry_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::Link, &test_link_entry_json_string()),
+            Entry::new(EntryType::Link, test_link_entry_json_string()),
             test_link_entry().to_entry(),
         );
 

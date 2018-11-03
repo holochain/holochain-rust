@@ -234,8 +234,8 @@ fn can_invalidate_invalid_commit() {
         "test_cap",
         "check_commit_entry_macro",
         &String::from(JsonString::from(SerializedEntry::from(Entry::new(
-            &test_entry_type(),
-            &JsonString::from("{\"stuff\":\"FAIL\"}"),
+            test_entry_type(),
+            JsonString::from("{\"stuff\":\"FAIL\"}"),
         )))),
     );
     println!("\t result = {:?}", result);

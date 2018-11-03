@@ -12,6 +12,7 @@ lazy_static = "1.1.0"
 holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_dna = { path = "../dna" }
 holochain_core_types = { path = "../core_types" }
+holochain_core_types_derive = { path = "../core_types_derive" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils" }

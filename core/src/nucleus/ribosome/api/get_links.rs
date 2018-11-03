@@ -118,14 +118,14 @@ pub mod tests {
 
         let expected_1 = JsonString::from(
             format!(
-                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
+                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
                 entry_hashes[1], entry_hashes[2]
             ) + "\u{0}",
         );
 
         let expected_2 = JsonString::from(
             format!(
-                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":""}}"#,
+                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
                 entry_hashes[2], entry_hashes[1]
             ) + "\u{0}",
         );
@@ -148,7 +148,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(String::from(r#"{"ok":true,"value":"[]","error":""}"#) + "\u{0}"),
+            JsonString::from(String::from(r#"{"ok":true,"value":"[]","error":"null"}"#) + "\u{0}"),
         );
     }
 

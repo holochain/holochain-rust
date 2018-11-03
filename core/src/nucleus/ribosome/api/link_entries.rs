@@ -94,13 +94,13 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                r#"{"ok":false,"value":"null","error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
-                    + "\u{0}"
+                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/api/link_entries.rs\\\",\\\"line\\\":\\\"40\\\"}\"}\u{0}"
             ),
         );
 
-        // call_result.pop(); // Remove trailing character
-        let core_err = CoreError::try_from(call_result).expect("valid CoreError json str");
+        let result = ZomeApiInternalResult::try_from(call_result).expect("valid ZomeApiInternalResult JsonString");
+
+        let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
         assert_eq!("Base for link not found", core_err.kind.to_string(),);
     }
 

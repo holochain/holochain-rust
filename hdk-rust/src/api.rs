@@ -179,11 +179,20 @@ pub enum BundleOnClose {
 /// writes that string to the logger in the execution context
 /// # Examples
 /// ```rust
-/// pub fn handle_some_function(content: String) -> serde_json::Value {
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> JsonString {
 ///     // ...
 ///     hdk::debug("write a message to the logs");
 ///     // ...
+///     "whatever".into()
 /// }
+///
+/// # }
 /// ```
 pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
@@ -420,20 +429,22 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// its address.
 /// # Examples
 /// ```rust
-/// pub fn handle_get_post(post_address: HashString) -> serde_json::Value {
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+/// # fn main() {
+/// pub fn handle_get_post(post_address: Address) -> JsonString {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>
 ///     // where T is the type that you used to commit the entry, in this case a Blog
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
-///     let result : Result<Option<Post>,ZomeApiError> = hdk::get_entry(post_address);
-///     match result {
-///         // In the case we don't get an error
-///         // it might be an entry ...
-///         Ok(Some(post)) => json!(post),
-///         Ok(None) =>  json!({}),
-///         Err(err) => json!({"error deserializing post": err.to_string()}),
+///     match hdk::get_entry(post_address) {
+///         Ok(maybe_post) => maybe_post.and_then(|entry| Some(entry.serialize())).into(),
+///         Err(e) => e.into(),
 ///     }
 /// }
+/// # }
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(get_entry_result(address, GetEntryOptions {})?

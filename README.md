@@ -60,17 +60,9 @@ There is a work-in-progress book of documentation being written about `holochain
 
 ## Installation & Usage
 
-Please note that this repository, with its installation instructions, is not useful to install if you fall into one of the following two categories:
+**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/app-spec-rust/releases/tag/v0.0.1-dev-preview
 
-If you are developing Holochain applications, you will want to instead install both:
-- the [`hc` command line tool](https://github.com/holochain/holochain-cmd)
-- the [`hcshell` test runner](https://github.com/holochain/holosqape#hcshell)
-These will help create and test Holochain DNA packages suitable for running in a Holochain service.
-You may also wish to look into the [hdk-rust](./hdk-rust) folder within this repository, to read on about the use of the HDK for Zome development.
-
-If you are a Holochain end-user, either you will install DNA packages into a Holochain hApp's service like [HoloSqape](https://github.com/holochain/holosqape), or your application will come with them built in.
-
-**The following instructions are for Holochain Core & HDK Developers Only**
+**The following instructions are for developing Holochain Core or the HDK itself**
 
 There are two approaches to building and testing Holochain, using `make` or using `docker`:
 

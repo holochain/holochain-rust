@@ -23,10 +23,11 @@ use holochain_wasm_utils::{
         entry_type::EntryType,
     },
 };
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions};
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
 use hdk::holochain_dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::holochain_core_types::json::default_to_json;
+use holochain_wasm_utils::holochain_core_types::error::ZomeApiResult;
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -56,7 +57,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     // Deserialize and check for an encoded error
     let result = load_json(encoded_allocation_of_input as u32);
     if let Err(hc_err) = result {
-        hdk::debug(&format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
+        hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
@@ -177,29 +178,40 @@ fn handle_links_roundtrip() -> JsonString {
 }
 
 fn handle_check_query() -> JsonString {
-    // Query DNA entry
-    let result = hdk::query(&EntryType::Dna.to_string(), 0);
+    fn err(s: &str) -> ZomeApiResult<Address> {
+        Err(ZomeApiError::Internal(s.to_owned()))
+    }
 
-    assert!(result.is_ok());
-    assert!(result.unwrap().addresses.len() == 1);
+    // Query DNA entry
+    let addresses = hdk::query(&EntryType::Dna.to_string(), 0).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("Dna Addresses not length 1").into();
+    }
 
     // Query AgentId entry
-    let result = hdk::query(&EntryType::AgentId.to_string(), 0);
-    assert!(result.is_ok());
-    assert!(result.unwrap().addresses.len() == 1);
+    let addresses = hdk::query(&EntryType::AgentId.to_string(), 0).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("AgentId Addresses not length 1").into();
+    }
 
     // Query unknown entry
-    let result = hdk::query("bad_type", 0);
-    assert!(result.is_ok());
-    assert!(result.unwrap().addresses.len() == 0);
+    let addresses = hdk::query("bad_type", 0).unwrap();
+
+    if !addresses.len() == 0 {
+        return err("bad_type Addresses not length 1").into();
+    }
 
     // Query Zome entry
     let _ = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
         "stuff": "entry1"
     }).into())).unwrap();
-    let result = hdk::query("testEntryType", 1);
-    assert!(result.is_ok());
-    assert!(result.unwrap().addresses.len() == 1);
+    let addresses = hdk::query("testEntryType", 1).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("testEntryType Addresses not length 1").into();
+    }
 
     // Query Zome entries
     let _ = hdk::commit_entry(&Entry::new(&"testEntryType".into(), &json!({
@@ -209,14 +221,13 @@ fn handle_check_query() -> JsonString {
         "stuff": "entry3"
     }).into())).unwrap();
 
-    let result = hdk::query("testEntryType", 0);
-    assert!(result.is_ok());
-    assert!(result.unwrap().addresses.len() == 3);
+    let addresses = hdk::query("testEntryType", 0).unwrap();
 
-    let result = hdk::query("testEntryType", 1);
-    assert!(result.is_ok());
+    if !addresses.len() == 3 {
+        return err("testEntryType Addresses not length 3").into();
+    }
 
-    result.unwrap().into()
+    hdk::query("testEntryType", 1).unwrap().into()
 }
 
 fn handle_check_hash_app_entry() -> JsonString {

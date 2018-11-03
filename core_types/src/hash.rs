@@ -1,11 +1,11 @@
 use error::error::HolochainError;
-use json::{default_to_json, default_try_from_json, JsonString};
+use json::{default_try_from_json, JsonString};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use std::{convert::TryFrom, fmt};
 
 // HashString newtype for String
-#[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
+#[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, Hash)]
 pub struct HashString(String);
 
 impl fmt::Display for HashString {
@@ -29,19 +29,6 @@ impl From<HashString> for String {
 impl<'a> From<&'a str> for HashString {
     fn from(s: &str) -> HashString {
         HashString::from(s.to_string())
-    }
-}
-
-impl From<HashString> for JsonString {
-    fn from(v: HashString) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for HashString {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
     }
 }
 
@@ -135,16 +122,10 @@ pub mod tests {
     #[test]
     /// known hash for a serializable something
     fn can_serialize_to_b58_hash() {
-        #[derive(Serialize, Debug)]
+        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
         struct Foo {
             foo: u8,
         };
-
-        impl From<Foo> for JsonString {
-            fn from(v: Foo) -> Self {
-                default_to_json(v)
-            }
-        }
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",

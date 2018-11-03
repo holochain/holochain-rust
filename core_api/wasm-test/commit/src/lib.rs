@@ -3,9 +3,7 @@ extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 
 use holochain_wasm_utils::{
-  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
   memory_allocation::*, memory_serialization::*,
-  holochain_core_types::error::HolochainError,
 };
 use holochain_core_types::json::JsonString;
 use holochain_core_types::entry::SerializedEntry;

@@ -158,7 +158,9 @@ pub extern "C" fn test_load_json_err(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let res: Result<TestStruct, HolochainError> = load_json(1 << 16);
     zome_assert!(stack, res.is_err());
-    let res = store_as_json(&mut stack, res.err().unwrap().clone());
+    // let res = store_as_json(&mut stack, res.err().unwrap().clone());
+    // res.unwrap().encode()
+    let res = store_as_json(&mut stack, res);
     res.unwrap().encode()
 }
 

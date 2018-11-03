@@ -12,7 +12,7 @@ mod call;
 pub mod get_entry;
 pub mod get_links;
 pub mod link_entries;
-mod query;
+pub mod query;
 pub mod validation;
 mod zome_api_globals;
 

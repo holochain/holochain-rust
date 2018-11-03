@@ -122,6 +122,7 @@ fn call_load_json_ok() {
 #[test]
 fn call_load_json_err() {
     let call_result = call_zome_function_with_hc("test_load_json_err");
+    println!("{:?}", call_result);
     assert!(call_result.is_err());
     assert_eq!(JsonString::from("Unspecified"), call_result.unwrap());
 }

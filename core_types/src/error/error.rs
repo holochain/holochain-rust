@@ -268,44 +268,6 @@ impl From<ZomeApiInternalResult> for JsonString {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct RibosomeErrorReport {
-    pub description: String,
-    pub file_name: String,
-    pub line: String,
-    // TODO #395 - Add advance error debugging info
-    // pub stack_trace: Backtrace
-}
-
-impl fmt::Display for RibosomeErrorReport {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Ribosome error: {}\n  --> {}:{}\n",
-            self.description, self.file_name, self.line,
-        )
-    }
-}
-
-impl From<RibosomeErrorReport> for String {
-    fn from(ribosome_error_report: RibosomeErrorReport) -> String {
-        ribosome_error_report.to_string()
-    }
-}
-
-impl From<RibosomeErrorReport> for JsonString {
-    fn from(v: RibosomeErrorReport) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for RibosomeErrorReport {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
-}
-
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation

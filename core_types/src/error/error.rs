@@ -81,7 +81,7 @@ impl fmt::Display for CoreError {
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain Core errors
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented,
@@ -102,12 +102,6 @@ pub type HcResult<T> = Result<T, HolochainError>;
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
-    }
-}
-
-impl From<HolochainError> for JsonString {
-    fn from(error: HolochainError) -> JsonString {
-        JsonString::from(format!("{{\"error\":\"{}\"}}", error.description()))
     }
 }
 

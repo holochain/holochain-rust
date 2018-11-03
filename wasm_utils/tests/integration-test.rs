@@ -4,11 +4,16 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate holochain_core_types_derive;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;
 
+use holochain_core_types::json::default_try_from_json;
 use holochain_core::logger::Logger;
 use holochain_core_types::{
     json::{JsonString, RawString},
@@ -120,11 +125,25 @@ fn call_load_json_ok() {
 }
 
 #[test]
-fn call_load_json_err() {
-    let call_result = call_zome_function_with_hc("test_load_json_err");
-    println!("{:?}", call_result);
-    assert!(call_result.is_err());
-    assert_eq!(JsonString::from("Unspecified"), call_result.unwrap());
+fn call_load_json_err_test() {
+    #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+    struct TestStruct {
+        value: String,
+    }
+    type TestResult = Result<TestStruct, HolochainError>;
+
+    let try_result = call_zome_function_with_hc("test_load_json_err");
+    println!("{:?}", try_result);
+    match try_result {
+        Ok(result) => {
+            let test_result: TestResult = default_try_from_json(result).unwrap();
+            match test_result {
+                Err(e) => assert_eq!(HolochainError::Ribosome(RibosomeErrorCode::Unspecified), e),
+                Ok(_) => unreachable!(),
+            }
+        },
+        Err(_) => unreachable!(),
+    }
 }
 
 #[test]

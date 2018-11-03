@@ -40,7 +40,7 @@ lazy_static! {
   /// The hash of your public key.
   /// This is your node address on the DHT.
   /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref AGENT_ADDRESS: &'static HashString = &GLOBALS.agent_address;
+  pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
 
   /// The hash of the first identity entry on your chain (The second entry on your chain).
   /// This is your peer's identity on the DHT.
@@ -488,26 +488,49 @@ pub fn get_entry_result(
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 /// # Examples
 /// ```rust
-/// pub fn handle_create_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::commit_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
+/// # use hdk::AGENT_ADDRESS;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// pub fn handle_link_entries(content: String) -> JsonString {
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::commit_entry(&post_entry) {
 ///         Ok(post_address) => {
-///             let link_result = hdk::link_entries(
-///                 &HashString::from(AGENT_ADDRESS.to_string()),
+///              match hdk::link_entries(
+///                 &AGENT_ADDRESS,
 ///                 &post_address,
 ///                 "authored_posts"
-///             );
-///             if link_result.is_err() {
-///                 return json!({"link error": link_result.err().unwrap()})
+///             ) {
+///                 Ok(link_address) => post_address.into(),
+///                 Err(e) => e.into(),
 ///             }
-///             json!({"address": post_address})
 ///         }
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
+/// # }
 /// ```
 pub fn link_entries<S: Into<String>>(
     base: &HashString,
@@ -558,18 +581,41 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is often used to reconstruct an address of a `base` argument when calling [get_links](fn.get_links.html).
 /// # Examples
 /// ```rust
-/// fn handle_hash_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::hash_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
-///         Ok(address) => {
-///             json!({"address": address})
-///         }
-///         Err(hdk_error) => hdk_error.to_json(),
-///     }
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
 /// }
+///
+/// fn handle_hash_post(content: String) -> JsonString {
+///
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::hash_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(hdk_error) => hdk_error.into(),
+///     }
+///
+/// }
+///
+/// # }
 /// ```
 pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
@@ -638,12 +684,19 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
 /// # Examples
 /// ```rust
-/// pub fn handle_posts_by_agent(agent: HashString) -> serde_json::Value {
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+///
+/// # fn main() {
+/// pub fn handle_posts_by_agent(agent: Address) -> JsonString {
 ///     match hdk::get_links(&agent, "authored_posts") {
-///         Ok(result) => json!({"post_addresses": result.links}),
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Ok(result) => result.into(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
+/// # }
 /// ```
 pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Address>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };

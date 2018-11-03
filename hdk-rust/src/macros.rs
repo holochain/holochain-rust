@@ -25,14 +25,16 @@ macro_rules! load_json {
 /// # Examples
 ///
 /// ```rust
-/// #[macro_use]
-/// extern crate hdk;
-/// extern crate serde;
-/// #[macro_use]
-/// extern crate serde_derive;
-/// #[macro_use]
-/// extern crate serde_json;
-/// extern crate boolinator;
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # extern crate boolinator;
+///
+/// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize)]
 /// pub struct Post {
@@ -92,6 +94,8 @@ macro_rules! load_json {
 ///         }
 ///     }
 /// }
+///
+/// # }
 /// ```
 #[macro_export]
 macro_rules! define_zome {

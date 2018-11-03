@@ -21,3 +21,4 @@ holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
 holochain_core_types = { path = "../core_types" }
 tempfile = "3"
+boolinator = "2.4"

@@ -5,8 +5,6 @@ members = [
   "core_api",
   "core_api_c_binding",
   "core",
-  "core_types",
-  "core_types_derive",
   "dna",
   "dna_c_binding",
   "net",

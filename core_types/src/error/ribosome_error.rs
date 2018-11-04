@@ -114,13 +114,6 @@ impl RibosomeErrorCode {
     }
 }
 
-// impl TryFrom<RibosomeErrorCode> for JsonString {
-//     type Error = HolochainError;
-//     fn try_from(v: RibosomeErrorCode) -> JsonResult {
-//         default_try_to_json(v)
-//     }
-// }
-
 impl ToString for RibosomeErrorCode {
     fn to_string(&self) -> String {
         self.as_str().to_string()

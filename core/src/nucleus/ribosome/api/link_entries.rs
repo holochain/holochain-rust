@@ -13,7 +13,6 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    println!("invoke_link_entries");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str.clone()) {
@@ -82,7 +81,7 @@ pub mod tests {
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
-    fn errors_if_base_is_not_present() {
+    fn errors_if_base_is_not_present_test() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
@@ -91,7 +90,7 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/api/link_entries.rs\\\",\\\"line\\\":\\\"40\\\"}\"}\u{0}"
+                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/api/link_entries.rs\\\",\\\"line\\\":\\\"35\\\"}\"}\u{0}"
             ),
         );
 

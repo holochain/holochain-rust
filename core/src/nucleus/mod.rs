@@ -474,7 +474,7 @@ pub mod tests {
 
     /// dummy function result
     pub fn test_call_response() -> ExecuteZomeFnResponse {
-        ExecuteZomeFnResponse::new(test_zome_call(), Ok(JsonString::from("foo")))
+        ExecuteZomeFnResponse::new(test_zome_call(), Ok("foo".into()))
     }
 
     #[test]
@@ -492,7 +492,7 @@ pub mod tests {
     fn test_zome_call_result() {
         let zome_call = test_zome_call();
         let call_result =
-            ExecuteZomeFnResponse::new(zome_call.clone(), Ok(JsonString::from("foo")));
+            ExecuteZomeFnResponse::new(zome_call.clone(), Ok("foo".into()));
 
         assert_eq!(call_result.call(), zome_call);
     }
@@ -500,7 +500,7 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(test_call_response().result(), Ok(JsonString::from("foo")),);
+        assert_eq!(test_call_response().result(), Ok("foo".into()),);
     }
 
     #[test]

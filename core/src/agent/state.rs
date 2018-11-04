@@ -31,7 +31,7 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct AgentStateSnapshot {
     top_chain_header: ChainHeader,
 }
@@ -96,22 +96,9 @@ impl AgentStateSnapshot {
     }
 }
 
-impl From<AgentStateSnapshot> for JsonString {
-    fn from(v: AgentStateSnapshot) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for AgentStateSnapshot {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
-}
-
 impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
-        JsonString::from(self.to_owned())
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
@@ -119,11 +106,11 @@ impl AddressableContent for AgentStateSnapshot {
     }
 
     fn address(&self) -> Address {
-        Address::from("AgentState")
+        "AgentState".into()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -134,12 +121,6 @@ pub enum ActionResponse {
     GetEntry(Option<SerializedEntry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<SerializedEntry, HolochainError>),
-}
-
-impl From<ActionResponse> for JsonString {
-    fn from(v: ActionResponse) -> JsonString {
-        default_to_json(v)
-    }
 }
 
 pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
@@ -214,17 +195,18 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
 
-    let result: Option<Entry> = state
+    let result: Option<SerializedEntry> = state
         .chain()
         .content_storage()
-        .fetch(&address)
-        .expect("could not fetch from CAS");
+        .fetch::<Entry>(&address)
+        .expect("could not fetch from CAS")
+        .and_then(|entry| Some(entry.into()));
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
     state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::GetEntry(result.clone().and_then(|entry| Some(entry.into()))),
+        action_wrapper.to_owned(),
+        ActionResponse::GetEntry(result.to_owned()),
     );
 }
 

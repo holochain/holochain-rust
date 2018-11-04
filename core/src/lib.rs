@@ -28,6 +28,8 @@ extern crate holochain_net;
 extern crate holochain_wasm_utils;
 extern crate holochain_cas_implementations;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 pub mod action;
 pub mod agent;

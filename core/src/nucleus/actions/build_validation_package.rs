@@ -7,7 +7,7 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
     ribosome::callback::CallbackResult,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
@@ -28,7 +28,7 @@ pub fn build_validation_package(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(&String::from(entry.entry_type().to_owned()))
+        .get_zome_name_for_entry_type(&entry.entry_type().to_string())
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
@@ -82,7 +82,7 @@ pub fn build_validation_package(
                                 package.source_chain_entries = Some(
                                     all_public_chain_entries(&context)
                                         .into_iter()
-                                        .map(|entry| SerializedEntry::from(entry))
+                                        .map(|entry| entry.into())
                                         .collect(),
                                 );
                                 package
@@ -98,7 +98,7 @@ pub fn build_validation_package(
                                 package.source_chain_entries = Some(
                                     all_public_chain_entries(&context)
                                         .into_iter()
-                                        .map(|entry| SerializedEntry::from(entry))
+                                        .map(|entry| entry.into())
                                         .collect(),
                                 );
                                 package.source_chain_headers =
@@ -254,7 +254,7 @@ mod tests {
             source_chain_entries: Some(
                 all_public_chain_entries(&context)
                     .into_iter()
-                    .map(|entry| entry.serialize())
+                    .map(|entry| entry.into())
                     .collect(),
             ),
             source_chain_headers: None,
@@ -313,7 +313,7 @@ mod tests {
             source_chain_entries: Some(
                 all_public_chain_entries(&context)
                     .into_iter()
-                    .map(|entry| entry.serialize())
+                    .map(|entry| entry.into())
                     .collect(),
             ),
             source_chain_headers: Some(all_public_chain_headers(&context)),

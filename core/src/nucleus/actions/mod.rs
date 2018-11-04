@@ -57,7 +57,7 @@ pub mod tests {
     pub fn test_entry_package_entry() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_entry")),
-            JsonString::from("test value"),
+            "test value",
         )
     }
 
@@ -65,7 +65,7 @@ pub mod tests {
     pub fn test_entry_package_chain_entries() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_entries")),
-            JsonString::from("test value"),
+            "test value",
         )
     }
 
@@ -73,7 +73,7 @@ pub mod tests {
     pub fn test_entry_package_chain_headers() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_headers")),
-            JsonString::from("test value"),
+            "test value",
         )
     }
 
@@ -81,7 +81,7 @@ pub mod tests {
     pub fn test_entry_package_chain_full() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_full")),
-            JsonString::from("test value"),
+            "test value",
         )
     }
 

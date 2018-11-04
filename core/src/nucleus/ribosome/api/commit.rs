@@ -3,7 +3,7 @@ use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
-    error::{HolochainError, ZomeApiInternalResult},
+    error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
@@ -60,12 +60,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    let result = match task_result {
-        Ok(address) => ZomeApiInternalResult::success(address),
-        Err(e) => ZomeApiInternalResult::failure(core_error!(e)),
-    };
-
-    runtime.store_as_json_string(result)
+    runtime.store_result(task_result)
 }
 
 #[cfg(test)]

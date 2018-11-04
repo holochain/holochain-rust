@@ -55,10 +55,7 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_entry")),
-            "test value",
-        )
+        Entry::new(EntryType::App(String::from("package_entry")), "test value")
     }
 
     #[cfg_attr(tarpaulin, skip)]

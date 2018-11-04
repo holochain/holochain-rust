@@ -13,6 +13,7 @@ use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
     entry_type::test_entry_type,
+    error::ZomeApiInternalResult,
     hash::HashString,
     json::JsonString,
 };
@@ -242,7 +243,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/api/commit.rs\\\",\\\"line\\\":\\\"65\\\"}\"}}"),
+        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}}"),
     );
 }
 
@@ -382,9 +383,9 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
+        JsonString::from(ZomeApiInternalResult::success(Address::from(
             "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
-        )),
+        ))),
     );
 }
 
@@ -397,8 +398,8 @@ fn can_check_call_with_args() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
+        JsonString::from(ZomeApiInternalResult::success(Address::from(
             "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        )),
+        ))),
     );
 }

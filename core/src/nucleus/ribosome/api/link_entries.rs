@@ -27,15 +27,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         }
     };
     // Wait for add_link() future to be resolved
-    let task_result: Result<(), HolochainError> =
-        block_on(add_link(&input.to_link(), &runtime.context));
-
-    let result = match task_result {
-        Ok(_) => ZomeApiInternalResult::success(JsonString::null()),
-        Err(e) => ZomeApiInternalResult::failure(core_error!(e)),
-    };
-
-    runtime.store_as_json_string(result)
+    let result = block_on(add_link(&input.to_link(), &runtime.context));
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -90,7 +83,7 @@ pub mod tests {
         assert_eq!(
             call_result,
             JsonString::from(
-                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/api/link_entries.rs\\\",\\\"line\\\":\\\"35\\\"}\"}\u{0}"
+                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}"
             ),
         );
 

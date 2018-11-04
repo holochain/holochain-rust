@@ -160,7 +160,7 @@ impl From<FutureCanceled> for HolochainError {
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,

@@ -83,6 +83,12 @@ impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
 
 pub type JsonResult = Result<JsonString, HolochainError>;
 
+impl From<()> for JsonString {
+    fn from(_: ()) -> Self {
+        default_to_json(())
+    }
+}
+
 impl TryFrom<JsonString> for () {
     type Error = HolochainError;
     fn try_from(j: JsonString) -> Result<Self, Self::Error> {

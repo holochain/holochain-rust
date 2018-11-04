@@ -491,8 +491,7 @@ pub mod tests {
     /// test access to function result's function call
     fn test_zome_call_result() {
         let zome_call = test_zome_call();
-        let call_result =
-            ExecuteZomeFnResponse::new(zome_call.clone(), Ok("foo".into()));
+        let call_result = ExecuteZomeFnResponse::new(zome_call.clone(), Ok("foo".into()));
 
         assert_eq!(call_result.call(), zome_call);
     }

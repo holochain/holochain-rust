@@ -1,5 +1,5 @@
 use futures::executor::block_on;
-use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
+use holochain_core_types::cas::content::Address;
 use nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
@@ -28,12 +28,10 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let future = get_entry(&runtime.context, address);
     let result = block_on(future);
 
-    match result {
-        Ok(maybe_entry) => runtime.store_as_json_string(ZomeApiInternalResult::success(
-            maybe_entry.and_then(|entry| Some(entry.serialize())),
-        )),
-        Err(hc_err) => runtime.store_as_json_string(core_error!(hc_err)),
-    }
+    runtime.store_result(match result {
+        Ok(maybe_entry) => Ok(maybe_entry.and_then(|entry| Some(entry.serialize()))),
+        Err(hc_err) => Err(hc_err),
+    })
 }
 
 #[cfg(test)]

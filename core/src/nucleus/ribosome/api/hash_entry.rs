@@ -55,5 +55,5 @@ pub fn invoke_hash_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRe
     let entry = Entry::from(serialized_entry);
 
     // Return result
-    runtime.store_as_json_string(ZomeApiInternalResult::success(entry.address()))
+    runtime.store_result(Ok(entry.address()))
 }

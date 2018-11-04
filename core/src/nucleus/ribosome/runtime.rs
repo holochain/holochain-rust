@@ -1,5 +1,8 @@
 use context::Context;
-use holochain_core_types::{error::RibosomeReturnCode, json::JsonString};
+use holochain_core_types::{
+    error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+    json::JsonString,
+};
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
     ribosome::{
@@ -69,6 +72,16 @@ impl Runtime {
             Err(_) => ribosome_error_code!(NotAnAllocation),
             Ok(allocation) => Ok(Some(RuntimeValue::I32(allocation.encode() as i32))),
         }
+    }
+
+    pub fn store_result<J: Into<JsonString>>(
+        &mut self,
+        result: Result<J, HolochainError>,
+    ) -> ZomeApiResult {
+        self.store_as_json_string(match result {
+            Ok(address) => ZomeApiInternalResult::success(address),
+            Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
+        })
     }
 }
 

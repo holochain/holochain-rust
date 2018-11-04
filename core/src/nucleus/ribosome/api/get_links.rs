@@ -29,14 +29,12 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         .dht()
         .get_links(input.entry_address, input.tag);
 
-    runtime.store_as_json_string(match maybe_links {
-        Ok(links) => ZomeApiInternalResult::success(
-            links
-                .iter()
-                .map(|eav| eav.value())
-                .collect::<Vec<Address>>(),
-        ),
-        Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
+    runtime.store_result(match maybe_links {
+        Ok(links) => Ok(links
+            .iter()
+            .map(|eav| eav.value())
+            .collect::<Vec<Address>>()),
+        Err(hc_err) => Err(hc_err),
     })
 }
 

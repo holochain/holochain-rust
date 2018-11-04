@@ -22,3 +22,7 @@ cobertura.xml
 !/Makefile
 # symlinked Makefile for docker hub
 !/docker/Makefile
+
+# Things being generated on the FS that should not be
+Agent Name
+*/foo

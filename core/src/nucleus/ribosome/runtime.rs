@@ -79,7 +79,7 @@ impl Runtime {
         result: Result<J, HolochainError>,
     ) -> ZomeApiResult {
         self.store_as_json_string(match result {
-            Ok(address) => ZomeApiInternalResult::success(address),
+            Ok(value) => ZomeApiInternalResult::success(value),
             Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
         })
     }

@@ -4,9 +4,9 @@ use error::{HcResult, HolochainError};
 use json::JsonString;
 use std::{
     collections::HashSet,
+    convert::TryInto,
     sync::{Arc, RwLock},
 };
-use std::convert::TryInto;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -46,7 +46,10 @@ impl AddressableContent for EntityAttributeValue {
     }
 
     fn from_content(content: &Content) -> Self {
-        content.to_owned().try_into().expect("failed to deserialize EntityAttributeValue from Content")
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize EntityAttributeValue from Content")
     }
 }
 

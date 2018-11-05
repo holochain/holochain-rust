@@ -6,7 +6,10 @@ use entry_type::{
 use error::{error::HcResult, HolochainError};
 use json::{JsonString, RawString, *};
 use snowflake;
-use std::{convert::TryFrom, ops::Deref};
+use std::{
+    convert::{TryFrom, TryInto},
+    ops::Deref,
+};
 
 pub type EntryValue = JsonString;
 
@@ -52,7 +55,7 @@ impl PartialEq for Entry {
 
 /// entries are double serialized!
 /// this struct facilitates the outer serialization
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct SerializedEntry {
     value: String,
     entry_type: String,
@@ -99,21 +102,6 @@ impl From<SerializedEntry> for Entry {
     }
 }
 
-/// converting a SerializedEntry to JSON should never fail because it is a simple struct of strings
-impl From<SerializedEntry> for JsonString {
-    fn from(v: SerializedEntry) -> JsonString {
-        default_to_json(v)
-    }
-}
-
-/// restoring a JsonString to SerializedEntry can fail
-impl TryFrom<JsonString> for SerializedEntry {
-    type Error = HolochainError;
-    fn try_from(json_string: JsonString) -> HcResult<Self> {
-        default_try_from_json(json_string)
-    }
-}
-
 impl From<Option<SerializedEntry>> for JsonString {
     fn from(v: Option<SerializedEntry>) -> JsonString {
         default_to_json(v)
@@ -127,38 +115,28 @@ impl TryFrom<JsonString> for Option<SerializedEntry> {
     }
 }
 
-// impl TryFrom<Option<SerializedEntry>> for JsonString {
-//     type Error = HolochainError;
-//     fn try_from(maybe_serialized_entry: Option<SerializedEntry>) -> JsonResult {
-//         Ok(JsonString::from(format!(
-//             "{{\"entry\":{}}}",
-//             String::from(match maybe_serialized_entry {
-//                 Some(serialized_entry) => JsonString::try_from(serialized_entry)?,
-//                 None => JsonString::null(),
-//             }),
-//         )))
-//     }
-// }
-
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        SerializedEntry::from(self.to_owned()).content()
+        self.serialize().content()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(
-            SerializedEntry::try_from(content.to_owned()).expect("failed to restore Entry content"),
-        )
+        SerializedEntry::try_from(content.to_owned())
+            .expect("failed to restore Entry content")
+            .into()
     }
 }
 
 impl AddressableContent for SerializedEntry {
     fn content(&self) -> Content {
-        Content::try_from(self.to_owned()).unwrap()
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::try_from(content.to_owned()).unwrap()
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize SerializedEntry from Content")
     }
 }
 

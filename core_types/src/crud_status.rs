@@ -1,5 +1,5 @@
-use error::error::HolochainError;
 use cas::content::{AddressableContent, Content};
+use error::error::HolochainError;
 use json::JsonString;
 use std::convert::TryInto;
 
@@ -63,7 +63,10 @@ impl AddressableContent for CrudStatus {
     }
 
     fn from_content(content: &Content) -> Self {
-        content.to_owned().try_into().expect("failed to deserialize CrudStatus from Content")
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize CrudStatus from Content")
     }
 }
 

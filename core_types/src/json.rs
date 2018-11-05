@@ -102,26 +102,31 @@ impl Display for JsonString {
     }
 }
 
-pub fn default_try_to_json<S: Serialize + Debug>(s: S) -> JsonResult {
-    match serde_json::to_string(&s) {
+/// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]
+/// should only be used with From<S> for JsonString
+/// i.e. when failure should be impossible so an expect is ok
+/// this is always true for serializable structs/enums
+/// standard boilerplate:
+/// impl From<MyStruct> for JsonString {
+///     fn from(v: MyStruct) -> Self {
+///         default_to_json(v)
+///     }
+/// }
+pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
+    match serde_json::to_string(&v) {
         Ok(s) => Ok(JsonString::from(s)),
         Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
+    }.expect(&format!("could not Jsonify: {:?}", v))
 }
 
-/// should only be used with From<S>
-/// i.e. when failure should be impossible so an unwrap is ok
-pub fn default_to_json<S: Serialize + Debug>(s: S) -> JsonString {
-    default_try_to_json(s).unwrap()
-}
-
-// standard boilerplate:
-// impl TryFrom<JsonString> for T {
-//     type Error = HolochainError;
-//     fn try_from(j: JsonString) -> HcResult<Self> {
-//         default_try_from_json(j)
-//     }
-// }
+/// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]
+/// standard boilerplate should include HolochainError as the Error:
+/// impl TryFrom<JsonString> for T {
+///     type Error = HolochainError;
+///     fn try_from(j: JsonString) -> HcResult<Self> {
+///         default_try_from_json(j)
+///     }
+/// }
 pub fn default_try_from_json<D: DeserializeOwned>(
     json_string: JsonString,
 ) -> Result<D, HolochainError> {

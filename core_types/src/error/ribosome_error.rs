@@ -151,6 +151,8 @@ impl RibosomeErrorCode {
     }
 }
 
+// @TODO review this serialization, can it be an i32 instead of a full string?
+// @see https://github.com/holochain/holochain-rust/issues/591
 impl Serialize for RibosomeErrorCode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

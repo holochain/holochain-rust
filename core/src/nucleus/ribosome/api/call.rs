@@ -81,11 +81,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    runtime.store_result(
-        receiver
-            .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
-            .expect("observer dropped before done"),
-    )
+    let result = receiver
+        .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
+        .expect("observer dropped before done");
+    runtime.store_result(result)
 }
 
 /// Reduce Call Action

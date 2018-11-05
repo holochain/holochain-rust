@@ -659,11 +659,10 @@ pub mod tests {
         );
 
         let maybe_instance = test_instance(dna);
+        assert!(maybe_instance.is_ok());
 
-        match maybe_instance {
-            Ok(instance) => assert!(instance.state().nucleus().has_initialized()),
-            Err(e) => panic!(e),
-        }
+        let instance = maybe_instance.unwrap();
+        assert!(instance.state().nucleus().has_initialized());
     }
 
     #[test]

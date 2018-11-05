@@ -7,7 +7,7 @@ use holochain_wasm_utils::{
 };
 use holochain_core_types::{
   json::JsonString, entry::SerializedEntry,
-  error::{ZomeApiInternalResult, RibosomeErrorCode}, cas::content::Address,
+  error::ZomeApiInternalResult, cas::content::Address,
 };
 use std::convert::TryInto;
 

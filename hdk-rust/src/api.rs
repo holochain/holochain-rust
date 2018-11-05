@@ -3,10 +3,10 @@ use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
     error::{
-        CoreError, HolochainError, RibosomeReturnCode, ZomeApiError, ZomeApiInternalResult,
-        ZomeApiResult,
+        CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult,
     },
 };
+use error::ZomeApiError;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
@@ -22,6 +22,7 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::{convert::TryInto, os::raw::c_char};
+use error::ZomeApiResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES

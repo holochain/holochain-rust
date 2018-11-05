@@ -15,6 +15,8 @@ pub extern crate serde;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
@@ -22,6 +24,7 @@ pub extern crate holochain_core_types;
 pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
+pub mod error;
 pub mod api;
 pub mod entry_definition;
 pub mod global_fns;

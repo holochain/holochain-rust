@@ -208,6 +208,7 @@ impl TryFrom<JsonString> for RawString {
 pub mod tests {
     use json::{JsonString, RawString};
     use std::convert::TryFrom;
+    use serde_json;
 
     #[test]
     fn json_none_test() {
@@ -237,7 +238,7 @@ pub mod tests {
     fn json_from_serde_test() {
         assert_eq!(
             String::from("\"foo\""),
-            String::from(JsonString::from(json!("foo"))),
+            String::from(JsonString::from(serde_json::Value::from("foo"))),
         );
     }
 

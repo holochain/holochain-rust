@@ -3,7 +3,7 @@
 //! Remember to free all dna objects and returned strings.
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
-
+#![feature(try_from)]
 extern crate holochain_core_types;
 extern crate holochain_dna;
 
@@ -13,6 +13,7 @@ use std::{
     os::raw::c_char,
     panic::catch_unwind,
 };
+use std::convert::TryFrom;
 
 use holochain_core_types::json::JsonString;
 
@@ -30,7 +31,7 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     match catch_unwind(|| {
         let json = unsafe { CStr::from_ptr(buf).to_string_lossy().into_owned() };
 
-        let dna = Dna::from(JsonString::from(json));
+        let dna = Dna::try_from(JsonString::from(json)).expect("could not restore DNA from JSON");
 
         Box::into_raw(Box::new(dna))
     }) {
@@ -368,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_holochain_dna_get_zome_names() {
-        let mut dna = Dna::from(JsonString::from(
+        let mut dna = Dna::try_from(JsonString::from(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -415,7 +416,7 @@ mod tests {
                     }
                 }
             }"#,
-        ));
+        )).unwrap();
 
         let mut cnames = CStringVec {
             len: 0,

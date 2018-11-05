@@ -3,9 +3,11 @@
 //! It is automatically called at startup of each Zome function call.
 
 use holochain_core_types::{
-    error::{ZomeApiError, ZomeApiInternalResult, ZomeApiResult},
+    error::ZomeApiInternalResult,
     json::JsonString,
 };
+use error::ZomeApiError;
+use error::ZomeApiResult;
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 use std::convert::TryInto;
 

@@ -14,7 +14,6 @@ extern crate futures;
 extern crate multihash;
 extern crate rust_base58;
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 extern crate snowflake;
 #[macro_use]

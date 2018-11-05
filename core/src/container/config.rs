@@ -6,8 +6,6 @@ use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{fs::File, io::prelude::*};
 
-pub struct StorageConfiguration {}
-
 #[derive(Deserialize, Clone)]
 pub struct AgentConfiguration {
     id: String,
@@ -53,6 +51,23 @@ pub struct Configuration {
     dnas: Option<Vec<DNAConfiguration>>,
 }
 
+pub struct LoggerConfiguration {
+    logger_type: String,
+    file: String,
+}
+
+pub struct ContextConfiguration {
+    agent: String,
+}
+
+#[derive(Deserialize)]
+pub struct StorageConfiguration {
+    storage_type: String,
+    username: Option<String>,
+    password: Option<String>,
+    url: Option<String>,
+    path: Option<String>,
+}
 #[derive(Deserialize)]
 pub struct Bridges {
     id: String,

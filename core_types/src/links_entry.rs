@@ -143,6 +143,7 @@ pub mod tests {
     use entry_type::EntryType;
     use json::JsonString;
     use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
+    use std::convert::TryFrom;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")

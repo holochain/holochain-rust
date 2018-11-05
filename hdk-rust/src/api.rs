@@ -72,7 +72,7 @@ impl From<AGENT_ID_STR> for JsonString {
 }
 impl From<AGENT_ADDRESS> for JsonString {
     fn from(agent_address: AGENT_ADDRESS) -> JsonString {
-        JsonString::from(HashString::from(agent_address.to_string()))
+        JsonString::from(Address::from(agent_address.to_string()))
     }
 }
 impl From<AGENT_INITIAL_HASH> for JsonString {

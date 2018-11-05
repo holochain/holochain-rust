@@ -10,7 +10,10 @@ pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
 
+/// ignore api_serialization because it is nothing but structs to hold serialization
+#[cfg_attr(tarpaulin, skip)]
 pub mod api_serialization;
+
 pub mod macros;
 pub mod memory_allocation;
 pub mod memory_serialization;

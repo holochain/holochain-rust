@@ -222,7 +222,7 @@ pub struct EavTestSuite;
 
 impl EavTestSuite {
     pub fn test_round_trip(
-        mut eav_storage: impl EntityAttributeValueStorage,
+        mut eav_storage: impl EntityAttributeValueStorage + Clone,
         entity_content: impl AddressableContent,
         attribute: String,
         value_content: impl AddressableContent,

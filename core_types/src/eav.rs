@@ -88,7 +88,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage: Clone {
+pub trait EntityAttributeValueStorage {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -107,6 +107,7 @@ pub trait EntityAttributeValueStorage: Clone {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
+#[derive(Clone)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: HashSet<EntityAttributeValue>,
 }
@@ -209,9 +210,9 @@ pub fn test_eav_address() -> Address {
 }
 
 pub fn eav_round_trip_test_runner(
-    entity_content: impl AddressableContent,
+    entity_content: impl AddressableContent + Clone,
     attribute: String,
-    value_content: impl AddressableContent,
+    value_content: impl AddressableContent + Clone,
 ) {
     let eav = EntityAttributeValue::new(
         &entity_content.address(),

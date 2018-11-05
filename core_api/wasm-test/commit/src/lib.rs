@@ -76,11 +76,6 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
       .deallocate(allocation_of_input)
       .expect("deallocate failed");
 
-  // if result.ok {
-  //     Ok(JsonString::from(result.value).try_into()?)
-  // } else {
-  //     Err(ZomeApiError::from(result.error))
-  // }
   match JsonString::from(result.value).try_into() {
       Ok(address) => Ok(address),
       Err(hc_err) => Err(hc_err.into()),

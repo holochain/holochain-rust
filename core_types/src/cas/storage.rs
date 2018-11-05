@@ -63,10 +63,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         address: &Address,
     ) -> Result<Option<AC>, HolochainError> {
         let content = self.content.read().unwrap().unthreadable_fetch(address)?;
-        Ok(match content {
-            Some(c) => Some(AC::from_content(&c)),
-            None => None,
-        })
+        Ok(content.and_then(|c| Some(AC::from_content(&c))))
     }
 }
 

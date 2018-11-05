@@ -206,27 +206,23 @@ impl TryFrom<JsonString> for RawString {
 
 #[cfg(test)]
 pub mod tests {
+    use error::HolochainError;
     use json::{JsonString, RawString};
     use serde_json;
     use std::convert::TryFrom;
-    use error::HolochainError;
 
     #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq, Clone)]
-    struct DeriveTest {foo: String}
+    struct DeriveTest {
+        foo: String,
+    }
 
     #[test]
     fn default_json_round_trip_test() {
-        let test = DeriveTest{foo: "bar".into()};
+        let test = DeriveTest { foo: "bar".into() };
         let expected = JsonString::from("{\"foo\":\"bar\"}");
-        assert_eq!(
-            expected,
-            JsonString::from(test.clone()),
-        );
+        assert_eq!(expected, JsonString::from(test.clone()),);
 
-        assert_eq!(
-            &DeriveTest::try_from(expected).unwrap(),
-            &test,
-        );
+        assert_eq!(&DeriveTest::try_from(expected).unwrap(), &test,);
 
         assert_eq!(
             test.clone(),

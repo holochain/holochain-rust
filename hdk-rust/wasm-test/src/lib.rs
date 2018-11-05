@@ -8,10 +8,13 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::globals::G_MEM_STACK;
-use holochain_wasm_utils::holochain_core_types::error::ZomeApiError;
+use hdk::error::ZomeApiError;
+use hdk::error::ZomeApiResult;
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
@@ -26,7 +29,6 @@ use holochain_wasm_utils::{
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
 use hdk::holochain_dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::holochain_core_types::error::ZomeApiResult;
 use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 
 #[no_mangle]

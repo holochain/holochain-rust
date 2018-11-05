@@ -1,8 +1,6 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate serde_derive;
 
 use holochain_wasm_utils::{
   memory_allocation::*, memory_serialization::*,
@@ -12,18 +10,10 @@ use holochain_core_types::entry::SerializedEntry;
 use holochain_core_types::error::ZomeApiInternalResult;
 use holochain_core_types::cas::content::Address;
 use std::convert::TryInto;
+use holochain_core_types::error::RibosomeErrorCode;
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
-}
-
-/// Copy of ZomeApiError from HDK
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum ZomeApiError {
-    Internal(String),
-    FunctionNotImplemented,
-    HashNotFound,
-    ValidationFailed(String),
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -33,7 +23,7 @@ pub enum ZomeApiError {
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
 fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_value: &str)
-  -> Result<Address, ZomeApiError>
+  -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
   let serialized_entry = SerializedEntry::new(
@@ -55,10 +45,9 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
       .deallocate(allocation_of_input)
       .expect("deallocate failed");
 
-  if result.ok {
-      Ok(JsonString::from(result.value).try_into()?)
-  } else {
-      Err(ZomeApiError::from(result.error))
+  match JsonString::from(result.value).try_into() {
+      Ok(address) => Ok(address),
+      Err(hc_err) => Err(hc_err.into()),
   }
 }
 
@@ -69,7 +58,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
 
 // Simulate error in commit function by inputing output struct as input
 fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
-  -> Result<Address, ZomeApiError>
+  -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
   let input = ZomeApiInternalResult::failure(Address::from("whatever"));
@@ -88,10 +77,14 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
       .deallocate(allocation_of_input)
       .expect("deallocate failed");
 
-  if result.ok {
-      Ok(JsonString::from(result.value).try_into()?)
-  } else {
-      Err(ZomeApiError::from(result.error))
+  // if result.ok {
+  //     Ok(JsonString::from(result.value).try_into()?)
+  // } else {
+  //     Err(ZomeApiError::from(result.error))
+  // }
+  match JsonString::from(result.value).try_into() {
+      Ok(address) => Ok(address),
+      Err(hc_err) => Err(hc_err.into()),
   }
 }
 

@@ -1,9 +1,12 @@
+#![feature(try_from)]
 #[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate holochain_core_types_derive;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
 
@@ -13,12 +16,12 @@ use holochain_wasm_utils::{
 };
 use std::os::raw::c_char;
 
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize, DefaultJson)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
     value: String,
 }
 
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize, DefaultJson)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct OtherTestStruct {
     other: String,
 }

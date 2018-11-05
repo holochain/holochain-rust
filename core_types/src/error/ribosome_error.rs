@@ -120,6 +120,12 @@ impl ToString for RibosomeErrorCode {
     }
 }
 
+impl From<RibosomeErrorCode> for String {
+    fn from(ribosome_error_code: RibosomeErrorCode) -> Self {
+        ribosome_error_code.to_string()
+    }
+}
+
 impl RibosomeErrorCode {
     pub fn from_offset(offset: u16) -> Self {
         match offset {

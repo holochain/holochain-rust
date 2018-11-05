@@ -53,14 +53,15 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 #[cfg(test)]
 pub mod tests {
     use holochain_agent::Agent;
-    use holochain_core_types::{cas::content::AddressableContent, error::ZomeApiInternalResult};
+    use holochain_core_types::{
+        cas::content::AddressableContent, error::ZomeApiInternalResult, json::JsonString,
+    };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
     use std::convert::TryFrom;
-    use holochain_core_types::json::JsonString;
 
     #[test]
     /// test that bytes passed to debug end up in the log
@@ -70,7 +71,8 @@ pub mod tests {
         println!("{:?}", call_result);
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
-        let globals = ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
+        let globals =
+            ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
         // TODO #233 - Implement agent address

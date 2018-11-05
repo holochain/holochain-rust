@@ -230,7 +230,11 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
         encoded_allocation_of_result = hc_debug(allocation_of_input.encode());
     }
 
-    encoded_allocation_of_result_to_zome_result(&mut mem_stack, allocation_of_input, encoded_allocation_of_result)
+    encoded_allocation_of_result_to_zome_result(
+        &mut mem_stack,
+        allocation_of_input,
+        encoded_allocation_of_result,
+    )
 }
 
 /// Call an exposed function from another zome.

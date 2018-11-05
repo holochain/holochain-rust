@@ -1,4 +1,4 @@
-use holochain_core_types::{cas::content::Address, error::ZomeApiInternalResult};
+use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;

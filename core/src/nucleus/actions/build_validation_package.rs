@@ -9,10 +9,11 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
-    ribosome::callback::CallbackResult,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use nucleus::ribosome::callback::validation_package::get_validation_package_definition;
+use nucleus::ribosome::callback::{
+    validation_package::get_validation_package_definition, CallbackResult,
+};
 use snowflake;
 use std::{sync::Arc, thread};
 

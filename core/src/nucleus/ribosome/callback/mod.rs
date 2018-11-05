@@ -7,7 +7,12 @@ pub mod validate_entry;
 pub mod validation_package;
 
 use context::Context;
-use holochain_core_types::ribosome::callback::{CallbackParams, CallbackResult};
+use holochain_core_types::{
+    entry::SerializedEntry,
+    error::{HolochainError, RibosomeReturnCode},
+    json::{default_to_json, JsonString},
+    validation::ValidationPackageDefinition,
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -18,6 +23,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
+use serde_json;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
@@ -105,6 +111,70 @@ impl Defn for Callback {
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => ReservedCapabilityNames::Communication,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, DefaultJson)]
+pub enum CallbackParams {
+    Genesis,
+    ValidateCommit(SerializedEntry),
+    // @TODO call this from somewhere
+    // @see https://github.com/holochain/holochain-rust/issues/201
+    Receive,
+}
+
+impl ToString for CallbackParams {
+    fn to_string(&self) -> String {
+        match self {
+            CallbackParams::Genesis => String::new(),
+            CallbackParams::ValidateCommit(serialized_entry) => {
+                String::from(JsonString::from(serialized_entry.to_owned()))
+            }
+            CallbackParams::Receive => String::new(),
+        }
+    }
+}
+
+// no idea why this is needed!
+impl<'a> From<&'a CallbackParams> for JsonString {
+    fn from(v: &CallbackParams) -> Self {
+        default_to_json(v.to_owned())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum CallbackResult {
+    Pass,
+    Fail(String),
+    NotImplemented,
+    ValidationPackageDefinition(ValidationPackageDefinition),
+}
+
+impl From<CallbackResult> for JsonString {
+    fn from(v: CallbackResult) -> Self {
+        default_to_json(v)
+    }
+}
+
+impl From<JsonString> for CallbackResult {
+    fn from(json_string: JsonString) -> CallbackResult {
+        let try: Result<CallbackResult, serde_json::Error> =
+            serde_json::from_str(&String::from(json_string.clone()));
+        match try {
+            Ok(callback_result) => callback_result,
+            Err(_) => CallbackResult::Fail(String::from(json_string)),
+        }
+    }
+}
+
+impl From<RibosomeReturnCode> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+        match ribosome_return_code {
+            RibosomeReturnCode::Failure(ribosome_error_code) => {
+                CallbackResult::Fail(ribosome_error_code.to_string())
+            }
+            RibosomeReturnCode::Success => CallbackResult::Pass,
         }
     }
 }

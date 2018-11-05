@@ -1,9 +1,5 @@
 use dht::actions::add_link::*;
 use futures::executor::block_on;
-use holochain_core_types::{
-    error::{HolochainError, ZomeApiInternalResult},
-    json::JsonString,
-};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;

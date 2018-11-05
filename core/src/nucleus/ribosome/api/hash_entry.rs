@@ -3,7 +3,6 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{Entry, SerializedEntry},
     entry_type::EntryType,
-    error::ZomeApiInternalResult,
 };
 use holochain_dna::Dna;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};

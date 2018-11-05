@@ -2,12 +2,8 @@
 //! which initializes the Zome API Globals with the values it receives from the Ribosome.
 //! It is automatically called at startup of each Zome function call.
 
-use holochain_core_types::{
-    error::ZomeApiInternalResult,
-    json::JsonString,
-};
-use error::ZomeApiError;
-use error::ZomeApiResult;
+use error::{ZomeApiError, ZomeApiResult};
+use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 use std::convert::TryInto;
 

@@ -224,7 +224,8 @@ macro_rules! define_zome {
                     let input: InputStruct = maybe_input.unwrap();
 
                     // Macro'd function body
-                    // @TODO trait bound this as TryInto<JsonString>
+                    // @TODO trait bound this as Into<JsonString>
+                    // @see https://github.com/holochain/holochain-rust/issues/588
                     fn execute(params: InputStruct) -> $crate::holochain_wasm_utils::holochain_core_types::json::JsonString {
                         let InputStruct { $($input_param_name),* } = params;
 

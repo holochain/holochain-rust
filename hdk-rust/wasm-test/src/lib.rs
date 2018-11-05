@@ -26,8 +26,8 @@ use holochain_wasm_utils::{
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
 use hdk::holochain_dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::error::ZomeApiResult;
+use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -75,15 +75,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
-#[derive(Deserialize, Serialize, Default, Debug)]
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct EntryStruct {
     stuff: String
-}
-
-impl From<EntryStruct> for JsonString {
-    fn from(v: EntryStruct) -> Self {
-        default_to_json(v)
-    }
 }
 
 fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
@@ -291,23 +285,17 @@ fn handle_check_call_with_args() -> JsonString {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TweetResponse {
     first: String,
     second: String,
-}
-
-impl From<TweetResponse> for JsonString {
-    fn from(v: TweetResponse) -> Self {
-        default_to_json(v)
-    }
 }
 
 fn handle_send_tweet(author: String, content: String) -> JsonString {
     TweetResponse { first: author,  second: content}.into()
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
     stuff: String,
 }
@@ -322,12 +310,6 @@ fn hdk_test_entry_value() -> TestEntryType {
 
 fn hdk_test_entry() -> Entry {
     Entry::new(hdk_test_entry_type(), hdk_test_entry_value())
-}
-
-impl From<TestEntryType> for JsonString {
-    fn from(v: TestEntryType) -> Self {
-        default_to_json(v)
-    }
 }
 
 define_zome! {

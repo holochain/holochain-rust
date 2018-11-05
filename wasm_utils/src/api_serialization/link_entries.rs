@@ -1,26 +1,12 @@
 use holochain_core_types::{
     cas::content::Address, error::HolochainError, json::*, links_entry::Link,
 };
-use std::convert::TryFrom;
 
-#[derive(Deserialize, Default, Debug, Serialize)]
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct LinkEntriesArgs {
     pub base: Address,
     pub target: Address,
     pub tag: String,
-}
-
-impl From<LinkEntriesArgs> for JsonString {
-    fn from(v: LinkEntriesArgs) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for LinkEntriesArgs {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
 }
 
 impl LinkEntriesArgs {

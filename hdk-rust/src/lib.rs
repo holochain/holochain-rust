@@ -24,9 +24,9 @@ pub extern crate holochain_core_types;
 pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
-pub mod error;
 pub mod api;
 pub mod entry_definition;
+pub mod error;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;
@@ -36,6 +36,7 @@ use std::convert::TryInto;
 
 use self::RibosomeError::*;
 use globals::*;
+use holochain_core_types::json::default_to_json;
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     holochain_core_types::json::JsonString, memory_allocation::*, memory_serialization::*,
@@ -92,9 +93,7 @@ impl Serialize for RibosomeError {
 }
 
 impl From<RibosomeError> for JsonString {
-    fn from(ribosome_error: RibosomeError) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&ribosome_error).expect("could not Jsonify RibosomeError"),
-        )
+    fn from(v: RibosomeError) -> Self {
+        default_to_json(v)
     }
 }

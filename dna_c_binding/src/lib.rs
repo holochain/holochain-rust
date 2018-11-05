@@ -9,11 +9,11 @@ extern crate holochain_dna;
 
 use holochain_dna::Dna;
 use std::{
+    convert::TryFrom,
     ffi::{CStr, CString},
     os::raw::c_char,
     panic::catch_unwind,
 };
-use std::convert::TryFrom;
 
 use holochain_core_types::json::JsonString;
 

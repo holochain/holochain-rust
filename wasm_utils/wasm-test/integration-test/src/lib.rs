@@ -13,26 +13,14 @@ use holochain_wasm_utils::{
 };
 use std::os::raw::c_char;
 
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, DefaultJson)]
 struct TestStruct {
     value: String,
 }
 
-impl From<TestStruct> for JsonString {
-    fn from(test_struct: TestStruct) -> JsonString {
-        JsonString::from(serde_json::to_string(&test_struct).expect("failed to Jsonify TestStruct"))
-    }
-}
-
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, DefaultJson)]
 struct OtherTestStruct {
     other: String,
-}
-
-impl From<OtherTestStruct> for JsonString {
-    fn from(other_test_struct: OtherTestStruct) -> JsonString {
-        JsonString::from(serde_json::to_string(&other_test_struct).expect("failed to Jsonify OtherTestStruct"))
-    }
 }
 
 #[no_mangle]

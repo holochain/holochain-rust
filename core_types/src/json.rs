@@ -207,8 +207,8 @@ impl TryFrom<JsonString> for RawString {
 #[cfg(test)]
 pub mod tests {
     use json::{JsonString, RawString};
-    use std::convert::TryFrom;
     use serde_json;
+    use std::convert::TryFrom;
 
     #[test]
     fn json_none_test() {

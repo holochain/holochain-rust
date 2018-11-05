@@ -1,13 +1,14 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
+extern crate hdk;
 
 use holochain_wasm_utils::{
   memory_allocation::*, memory_serialization::*,
 };
 use holochain_core_types::json::JsonString;
 use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::error::ZomeApiError;
+use hdk::error::ZomeApiError;
 use holochain_core_types::error::ZomeApiInternalResult;
 use holochain_core_types::cas::content::Address;
 use std::convert::TryInto;
@@ -17,7 +18,7 @@ extern {
 }
 
 //-------------------------------------------------------------------------------------------------
-// HC Commit Function Call - Succesful
+// HC Commit Function Call - Succesfull
 //-------------------------------------------------------------------------------------------------
 
 /// Call HC API COMMIT function with proper input struct

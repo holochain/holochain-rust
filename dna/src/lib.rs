@@ -6,10 +6,12 @@
 //! # Examples
 //!
 //! ```
+//! #![feature(try_from)]
 //! extern crate holochain_core_types;
 //! extern crate holochain_dna;
 //! use holochain_dna::Dna;
 //! use holochain_core_types::json::JsonString;
+//! use std::convert::TryFrom;
 //!
 //! let name = String::from("My Holochain DNA");
 //!
@@ -18,7 +20,7 @@
 //!
 //! let json = JsonString::from(dna.clone());
 //!
-//! let dna2 = Dna::from(json);
+//! let dna2 = Dna::try_from(json).expect("could not restore DNA from JSON");
 //! assert_eq!(name, dna2.name);
 //! ```
 #![feature(try_from)]
@@ -42,12 +44,10 @@ pub mod zome;
 use holochain_core_types::{
     entry::{Entry, ToEntry},
     entry_type::EntryType,
-    error::DnaError,
+    error::{DnaError, HolochainError},
     json::JsonString,
 };
-use holochain_core_types::error::HolochainError;
-use std::convert::TryInto;
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
 
@@ -239,7 +239,11 @@ impl ToEntry for Dna {
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        entry.value().to_owned().try_into().expect("could not convert Entry into Dna")
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry into Dna")
     }
 }
 
@@ -247,8 +251,8 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
-    use zome::tests::test_zome;
     use std::convert::TryFrom;
+    use zome::tests::test_zome;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 

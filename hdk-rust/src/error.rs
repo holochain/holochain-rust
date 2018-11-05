@@ -1,7 +1,8 @@
+use holochain_core_types::{
+    error::{HolochainError, RibosomeErrorCode},
+    json::JsonString,
+};
 use std::{error::Error, fmt};
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::error::RibosomeErrorCode;
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.

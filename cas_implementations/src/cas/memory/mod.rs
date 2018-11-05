@@ -53,9 +53,12 @@ impl ContentAddressableStorage for MemoryStorage {
 #[cfg(test)]
 pub mod tests {
     use cas::memory::MemoryStorage;
-    use holochain_core_types::cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::StorageTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::StorageTestSuite,
+        },
+        json::RawString,
     };
 
     pub fn test_memory_storage() -> MemoryStorage {
@@ -66,8 +69,8 @@ pub mod tests {
     fn memory_round_trip() {
         let test_suite = StorageTestSuite::new(test_memory_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            RawString::from("foo").into(),
+            RawString::from("bar").into(),
         );
     }
 

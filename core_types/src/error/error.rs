@@ -1,8 +1,8 @@
 use self::HolochainError::*;
 use error::{DnaError, RibosomeErrorCode};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::ToJson;
-use serde_json::{self, Error as SerdeError};
+use json::*;
+use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
@@ -18,7 +18,7 @@ use std::{
 /// and back to the Holochain Instance via wasm memory.
 /// Follows the Error + ErrorKind pattern
 /// Holds extra debugging info for indicating where in code ther error occured.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq, Eq, Hash)]
 pub struct CoreError {
     pub kind: HolochainError,
     pub file: String,
@@ -51,6 +51,19 @@ impl CoreError {
     //    }
 }
 
+impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
+    type Error = HolochainError;
+    fn try_from(zome_api_internal_result: ZomeApiInternalResult) -> Result<Self, Self::Error> {
+        if zome_api_internal_result.ok {
+            Err(HolochainError::ErrorGeneric(
+                "Attempted to deserialize CoreError from a non-error ZomeApiInternalResult".into(),
+            ))
+        } else {
+            CoreError::try_from(JsonString::from(zome_api_internal_result.error))
+        }
+    }
+}
+
 impl fmt::Display for CoreError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -63,19 +76,13 @@ impl fmt::Display for CoreError {
     }
 }
 
-impl ToJson for CoreError {
-    fn to_json(&self) -> HcResult<String> {
-        Ok(serde_json::to_string(self)?)
-    }
-}
-
 //--------------------------------------------------------------------------------------------------
 // HolochainError
 //--------------------------------------------------------------------------------------------------
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain Core errors
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented,
@@ -99,12 +106,6 @@ impl HolochainError {
     }
 }
 
-impl ToJson for HolochainError {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(format!("{{\"error\":\"{}\"}}", self.description()))
-    }
-}
-
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.description())
@@ -124,9 +125,15 @@ impl Error for HolochainError {
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
             DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
             ValidationFailed(fail_msg) => &fail_msg,
-            Ribosome(err_code) => err_code.to_str(),
+            Ribosome(err_code) => err_code.as_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
         }
+    }
+}
+
+impl From<HolochainError> for String {
+    fn from(holochain_error: HolochainError) -> Self {
+        holochain_error.to_string()
     }
 }
 
@@ -157,6 +164,33 @@ impl From<FutureCanceled> for HolochainError {
     }
 }
 
+#[derive(Serialize, Deserialize, Default, Debug, DefaultJson)]
+pub struct ZomeApiInternalResult {
+    pub ok: bool,
+    pub value: String,
+    pub error: String,
+}
+
+impl ZomeApiInternalResult {
+    pub fn success<J: Into<JsonString>>(value: J) -> ZomeApiInternalResult {
+        let json_string: JsonString = value.into();
+        ZomeApiInternalResult {
+            ok: true,
+            value: json_string.into(),
+            error: JsonString::null().into(),
+        }
+    }
+
+    pub fn failure<J: Into<JsonString>>(value: J) -> ZomeApiInternalResult {
+        let json_string: JsonString = value.into();
+        ZomeApiInternalResult {
+            ok: false,
+            value: JsonString::null().into(),
+            error: json_string.into(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,7 +214,10 @@ mod tests {
     /// test that we can convert an error to valid JSON
     fn test_to_json() {
         let err = HolochainError::new("foo");
-        assert_eq!(r#"{"error":"foo"}"#, err.to_json().unwrap());
+        assert_eq!(
+            JsonString::from("{\"ErrorGeneric\":\"foo\"}"),
+            JsonString::from(err),
+        );
     }
 
     #[test]

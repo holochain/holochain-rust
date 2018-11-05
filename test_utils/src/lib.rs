@@ -2,6 +2,7 @@ extern crate holochain_agent;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate wabt;
@@ -10,6 +11,7 @@ use holochain_agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_api::{error::HolochainResult, Holochain};
+use holochain_core_types::json::JsonString;
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
@@ -45,10 +47,10 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
             (module
                 (memory (;0;) 17)
                 (func (export "main") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 6
                 )
                 (data (i32.const 0)
-                    "1337"
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )
@@ -198,7 +200,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<String> {
+pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let capability = create_test_cap_with_fn_name(fn_name);

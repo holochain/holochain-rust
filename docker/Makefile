@@ -9,8 +9,8 @@ all: main
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
-CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
+CARGO = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))

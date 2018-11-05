@@ -1,6 +1,6 @@
-use holochain_core_types::hash::HashString;
+use holochain_core_types::{error::HolochainError, hash::HashString, json::*};
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson)]
 pub struct ZomeApiGlobals {
     pub dna_name: String,
     pub dna_hash: HashString,

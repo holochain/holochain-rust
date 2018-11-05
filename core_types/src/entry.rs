@@ -3,27 +3,42 @@ use entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
-use error::HolochainError;
-use json::{FromJson, ToJson};
-use serde_json;
+use error::{error::HcResult, HolochainError};
+use json::{JsonString, RawString, *};
 use snowflake;
-use std::ops::Deref;
+use std::{
+    convert::{TryFrom, TryInto},
+    ops::Deref,
+};
+
+pub type EntryValue = JsonString;
 
 /// Structure holding actual data in a source chain "Item"
-/// data is stored as a JSON string
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// data is stored as a JsonString
+#[derive(Clone, Debug)]
 pub struct Entry {
-    value: String,
+    value: EntryValue,
     entry_type: EntryType,
 }
 
 impl Entry {
+    pub fn new<J: Into<JsonString>>(entry_type: EntryType, value: J) -> Entry {
+        Entry {
+            entry_type,
+            value: value.into(),
+        }
+    }
+
     pub fn value(&self) -> &Content {
         &self.value
     }
 
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
+    }
+
+    pub fn serialize(&self) -> SerializedEntry {
+        SerializedEntry::from(self.clone())
     }
 }
 
@@ -38,51 +53,90 @@ impl PartialEq for Entry {
     }
 }
 
-impl From<String> for Entry {
-    fn from(string: String) -> Self {
-        Entry::from_content(&string)
+/// entries are double serialized!
+/// this struct facilitates the outer serialization
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
+pub struct SerializedEntry {
+    value: String,
+    entry_type: String,
+}
+
+impl SerializedEntry {
+    pub fn new(entry_type: &str, value: &str) -> SerializedEntry {
+        SerializedEntry {
+            entry_type: entry_type.to_owned(),
+            value: value.to_owned(),
+        }
+    }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn entry_type(&self) -> String {
+        self.entry_type.clone()
+    }
+
+    pub fn deserialize(&self) -> Entry {
+        Entry::from(self.clone())
     }
 }
 
-impl From<Entry> for String {
-    fn from(entry: Entry) -> Self {
-        entry.content()
+// converting an Entry to SerializedEntry can never fail because it simply converts the fields
+// to strings
+impl From<Entry> for SerializedEntry {
+    fn from(entry: Entry) -> SerializedEntry {
+        SerializedEntry {
+            value: String::from(entry.value()),
+            entry_type: String::from(entry.entry_type().to_owned()),
+        }
+    }
+}
+
+impl From<SerializedEntry> for Entry {
+    fn from(serialized_entry: SerializedEntry) -> Entry {
+        Entry {
+            value: JsonString::from(serialized_entry.value),
+            entry_type: EntryType::from(serialized_entry.entry_type),
+        }
+    }
+}
+
+impl From<Option<SerializedEntry>> for JsonString {
+    fn from(v: Option<SerializedEntry>) -> JsonString {
+        default_to_json(v)
+    }
+}
+
+impl TryFrom<JsonString> for Option<SerializedEntry> {
+    type Error = HolochainError;
+    fn try_from(json_string: JsonString) -> HcResult<Self> {
+        default_try_from_json(json_string)
     }
 }
 
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not convert Entry to Json Content")
+        self.serialize().content()
     }
 
     fn from_content(content: &Content) -> Self {
-        Entry::from_json(&content.to_string()).expect("could not convert Json Content to Entry")
+        SerializedEntry::try_from(content.to_owned())
+            .expect("failed to restore Entry content")
+            .into()
     }
 }
 
-impl Entry {
-    pub fn new(entry_type: &EntryType, value: &Content) -> Entry {
-        Entry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
-        }
+impl AddressableContent for SerializedEntry {
+    fn content(&self) -> Content {
+        self.to_owned().into()
     }
-}
 
-impl ToJson for Entry {
-    /// @TODO return canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(&self)?)
-    }
-}
-
-impl FromJson for Entry {
-    /// @TODO accept canonical JSON
-    /// @see https://github.com/holochain/holochain-rust/issues/75
-    fn from_json(s: &str) -> Result<Self, HolochainError> {
-        Ok(serde_json::from_str(s)?)
+    fn from_content(content: &Content) -> Self {
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize SerializedEntry from Content")
     }
 }
 
@@ -96,47 +150,58 @@ impl Deref for Entry {
 
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value() -> String {
-    "test entry value".into()
+pub fn test_entry_value() -> JsonString {
+    JsonString::from(RawString::from("test entry value"))
 }
 
 pub fn test_entry_content() -> Content {
-    Content::from("{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}")
+    Content::from(r#"{"value":"\"test entry value\"","entry_type":"testEntryType"}"#)
 }
 
-/// dummy entry content, same as test_entry_content()
+/// dummy entry content, same as test_entry_value()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_a() -> String {
+pub fn test_entry_value_a() -> JsonString {
     test_entry_value()
 }
 
-/// dummy entry content, differs from test_entry_content()
+/// dummy entry content, differs from test_entry_value()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_b() -> String {
-    "other test entry value".into()
+pub fn test_entry_value_b() -> JsonString {
+    JsonString::from(RawString::from("other test entry value"))
 }
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_value_c() -> String {
-    "value C".into()
+pub fn test_entry_value_c() -> JsonString {
+    RawString::from("value C").into()
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_value() -> String {
+pub fn test_sys_entry_value() -> JsonString {
     // looks like a believable hash
     // sys entries are hashy right?
-    test_entry_value().address().into()
+    JsonString::from(RawString::from(String::from(test_entry_value().address())))
 }
 
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
-    Entry::new(&test_entry_type(), &test_entry_value())
+    Entry::new(test_entry_type(), test_entry_value())
+}
+
+pub fn test_serialized_entry() -> SerializedEntry {
+    SerializedEntry {
+        value: String::from(test_entry_value()),
+        entry_type: String::from(test_entry_type()),
+    }
+}
+
+pub fn expected_serialized_entry_content() -> JsonString {
+    JsonString::from("{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}")
 }
 
 /// the correct hash for test_entry()
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_entry_address() -> Address {
-    Address::from("QmW6oc9WdGJFf2C789biPLKbRWS1XD2sHrH5kYZVKqSwSr".to_string())
+pub fn expected_entry_address() -> Address {
+    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT".to_string())
 }
 
 /// dummy entry, same as test_entry()
@@ -148,33 +213,38 @@ pub fn test_entry_a() -> Entry {
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_value_b())
+    Entry::new(test_entry_type_b(), test_entry_value_b())
 }
 pub fn test_entry_c() -> Entry {
-    Entry::new(&test_entry_type_b(), &test_entry_value_c())
+    Entry::new(test_entry_type_b(), test_entry_value_c())
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
     Entry::new(
-        &test_entry_type(),
-        &snowflake::ProcessUniqueId::new().to_string(),
+        test_entry_type(),
+        RawString::from(snowflake::ProcessUniqueId::new().to_string()),
     )
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
-    Entry::new(&test_sys_entry_type(), &test_sys_entry_value())
+    Entry::new(test_sys_entry_type(), test_sys_entry_value())
 }
 
 pub fn test_sys_entry_address() -> Address {
-    Address::from("QmWePdZYQrYFBUkBy1GPyCCUf8UmkmptsjtcVqZJ9Tzdse".to_string())
+    Address::from(String::from(
+        "QmUZ3wsC4sVdJZK2AC8Ji4HZRfkFSH2cYE6FntmfWKF8GV",
+    ))
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::new(&test_unpublishable_entry_type(), &test_entry().value())
+    Entry::new(
+        test_unpublishable_entry_type(),
+        test_entry().value().to_owned(),
+    )
 }
 
 #[cfg(test)]
@@ -184,8 +254,7 @@ pub mod tests {
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use entry::{test_entry_address, Entry};
-    use json::{FromJson, ToJson};
+    use entry::{expected_entry_address, Entry};
 
     #[test]
     /// tests for PartialEq
@@ -203,19 +272,31 @@ pub mod tests {
     #[test]
     /// test entry.address() against a known value
     fn known_address() {
-        assert_eq!(test_entry_address(), test_entry().address());
+        assert_eq!(expected_entry_address(), test_entry().address());
     }
 
     #[test]
-    /// show From<Entry> for String
-    fn string_from_entry_test() {
-        assert_eq!(test_entry().content(), String::from(test_entry()));
+    /// show From<Entry> for SerializedEntry
+    fn serialized_entry_from_entry_test() {
+        assert_eq!(test_serialized_entry(), SerializedEntry::from(test_entry()));
     }
 
     #[test]
-    /// show From<String> for Entry
+    /// show From<SerializedEntry> for JsonString
+    fn json_string_from_entry_test() {
+        assert_eq!(
+            test_entry().content(),
+            JsonString::from(SerializedEntry::from(test_entry()))
+        );
+    }
+
+    #[test]
+    /// show From<SerializedEntry> for Entry
     fn entry_from_string_test() {
-        assert_eq!(test_entry(), Entry::from(test_entry().content()));
+        assert_eq!(
+            test_entry(),
+            Entry::from(SerializedEntry::try_from(test_serialized_entry().content()).unwrap())
+        );
     }
 
     #[test]
@@ -231,21 +312,33 @@ pub mod tests {
     /// test that we can round trip through JSON
     fn json_round_trip() {
         let entry = test_entry();
-        let expected = test_entry_content();
-        assert_eq!(expected, entry.to_json().unwrap());
-        assert_eq!(entry, Entry::from_json(&expected).unwrap());
-        assert_eq!(entry, Entry::from_json(&entry.to_json().unwrap()).unwrap());
+        let expected = expected_serialized_entry_content();
+        assert_eq!(
+            expected,
+            JsonString::from(SerializedEntry::from(entry.clone()))
+        );
+        assert_eq!(
+            entry,
+            Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
+        );
+        assert_eq!(entry, Entry::from(SerializedEntry::from(entry.clone())));
 
         let sys_entry = test_sys_entry();
-        let expected = format!(
-            "{{\"value\":\"{}\",\"entry_type\":\"AgentId\"}}",
-            test_sys_entry_address(),
-        );
-        assert_eq!(expected, sys_entry.to_json().unwrap());
-        assert_eq!(sys_entry, Entry::from_json(&expected).unwrap());
+        let expected = JsonString::from(format!(
+            "{{\"value\":\"\\\"{}\\\"\",\"entry_type\":\"%agent_id\"}}",
+            String::from(test_sys_entry_address()),
+        ));
         assert_eq!(
-            sys_entry,
-            Entry::from_json(&sys_entry.to_json().unwrap()).unwrap()
+            expected,
+            JsonString::from(SerializedEntry::from(sys_entry.clone()))
+        );
+        assert_eq!(
+            &sys_entry,
+            &Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
+        );
+        assert_eq!(
+            &sys_entry,
+            &Entry::from(SerializedEntry::from(sys_entry.clone())),
         );
     }
 
@@ -256,7 +349,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<Entry>(
             test_entry_content(),
             test_entry(),
-            String::from(test_entry_address()),
+            expected_entry_address(),
         );
     }
 

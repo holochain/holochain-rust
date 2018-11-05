@@ -1,36 +1,35 @@
+#![feature(try_from)]
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 
-use holochain_core_types::hash::HashString;
 use holochain_wasm_utils::{
-  api_serialization::commit::{CommitEntryArgs, CommitEntryResult},
   memory_allocation::*, memory_serialization::*,
-  holochain_core_types::error::HolochainError,
 };
+use holochain_core_types::{
+  json::JsonString, entry::SerializedEntry,
+  error::ZomeApiInternalResult, cas::content::Address,
+};
+use std::convert::TryInto;
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
 }
 
 //-------------------------------------------------------------------------------------------------
-// HC Commit Function Call - Succesful
+// HC Commit Function Call - Successful
 //-------------------------------------------------------------------------------------------------
 
 /// Call HC API COMMIT function with proper input struct
 /// return hash of entry added source chain
 fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_value: &str)
-  -> Result<String, String>
+  -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitEntryArgs {
-    entry_type_name: entry_type_name.to_owned(),
-    entry_value: entry_value.to_owned(),
-  };
-  let maybe_allocation =  store_as_json(mem_stack, input);
-  if let Err(return_code) = maybe_allocation {
-    return Err(return_code.to_string());
-  }
-  let allocation_of_input = maybe_allocation.unwrap();
+  let serialized_entry = SerializedEntry::new(
+    entry_type_name,
+    entry_value,
+  );
+  let allocation_of_input =  store_as_json(mem_stack, JsonString::from(serialized_entry))?;
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
@@ -38,13 +37,17 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let result: Result<CommitEntryResult, HolochainError> = load_json(encoded_allocation_of_result as u32);
-  // Free result & input allocations
-  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
-  // Done
-  result
-      .map(|entry| entry.address.to_string())
-      .map_err(|hc_err| hc_err.to_string())
+  let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+
+  // Free result & input allocations and all allocations made inside commit()
+  mem_stack
+      .deallocate(allocation_of_input)
+      .expect("deallocate failed");
+
+  match JsonString::from(result.value).try_into() {
+      Ok(address) => Ok(address),
+      Err(hc_err) => Err(hc_err.into()),
+  }
 }
 
 
@@ -54,17 +57,11 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
 
 // Simulate error in commit function by inputing output struct as input
 fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
-  -> Result<String, String>
+  -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
-  let input = CommitEntryResult {
-    address: HashString::from("whatever"),
-  };
-  let maybe_allocation =  store_as_json(mem_stack, input);
-  if let Err(return_code) = maybe_allocation {
-    return Err(return_code.to_string());
-  }
-  let allocation_of_input = maybe_allocation.unwrap();
+  let input = ZomeApiInternalResult::failure(Address::from("whatever"));
+  let allocation_of_input =  store_as_json(mem_stack, input)?;
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;
@@ -72,13 +69,17 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
     encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as i32);
   }
   // Deserialize complex result stored in memory
-  let result: Result<CommitEntryResult, HolochainError> = load_json(encoded_allocation_of_result as u32);
-  // Free result & input allocations
-  mem_stack.deallocate(allocation_of_input).expect("deallocate failed");
-  // Done
-  result
-      .map(|entry| entry.address.to_string())
-      .map_err(|hc_err| hc_err.to_string())
+  let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+
+  // Free result & input allocations and all allocations made inside commit()
+  mem_stack
+      .deallocate(allocation_of_input)
+      .expect("deallocate failed");
+
+  match JsonString::from(result.value).try_into() {
+      Ok(address) => Ok(address),
+      Err(hc_err) => Err(hc_err.into()),
+  }
 }
 
 
@@ -93,8 +94,8 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
 #[no_mangle]
 pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  let output = hdk_commit(&mut mem_stack, "testEntryType", "hello");
-  return store_json_into_encoded_allocation(&mut mem_stack, output);
+  let result = hdk_commit(&mut mem_stack, "testEntryType", "hello");
+  store_as_json_into_encoded_allocation(&mut mem_stack, result)
 }
 
 /// Function called by Holochain Instance
@@ -104,8 +105,8 @@ pub extern "C" fn test(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn test_fail(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  let output = hdk_commit_fail(&mut mem_stack);
-  return store_json_into_encoded_allocation(&mut mem_stack, output);
+  let result = hdk_commit_fail(&mut mem_stack);
+  store_as_json_into_encoded_allocation(&mut mem_stack, result)
 }
 
 #[no_mangle]

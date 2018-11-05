@@ -2,9 +2,9 @@ use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry, Entry, ToEntry};
 use entry_type::{test_entry_type, EntryType};
 use error::HolochainError;
-use json::ToJson;
-use serde_json;
+use json::JsonString;
 use signature::{test_signature, Signature};
+use std::convert::{TryFrom, TryInto};
 use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"
@@ -13,7 +13,7 @@ use time::{test_iso_8601, Iso8601};
 // @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
@@ -63,10 +63,6 @@ impl ChainHeader {
         }
     }
 
-    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
-        serde_json::from_str(header_str)
-    }
-
     /// entry_type getter
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
@@ -98,36 +94,28 @@ impl ChainHeader {
     }
 }
 
-impl ToJson for ChainHeader {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(self)?)
-    }
-}
-
 //
 impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
-        Entry::new(
-            &EntryType::ChainHeader,
-            &self.to_json().expect("entry should be valid"),
-        )
+        Entry::new(EntryType::ChainHeader, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return ChainHeader::from_json_str(&entry.value())
-            .expect("entry is not a valid ChainHeader Entry");
+        ChainHeader::try_from(entry.value().to_owned())
+            .expect("could not deserialize ChainHeader from Entry")
     }
 }
 
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not Jsonify ChainHeader as Content")
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        ChainHeader::from_json_str(content)
-            .expect("could not read Json as valid ChainHeader Content")
+        content
+            .to_owned()
+            .try_into()
+            .expect("could not deserialize ChainHeader from Content")
     }
 }
 

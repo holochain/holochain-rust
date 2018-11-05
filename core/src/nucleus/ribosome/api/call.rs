@@ -10,19 +10,16 @@ use nucleus::{
     state::NucleusState,
     ZomeFnCall,
 };
-use serde_json;
-use std::sync::{mpsc::channel, Arc};
+use std::{
+    convert::TryFrom,
+    sync::{mpsc::channel, Arc},
+};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(
-            &args.zome_name,
-            &args.cap_name,
-            &args.fn_name,
-            &args.fn_args,
-        )
+        ZomeFnCall::new(&args.zome_name, &args.cap_name, &args.fn_name, args.fn_args)
     }
 }
 
@@ -35,11 +32,15 @@ impl ZomeFnCall {
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: ZomeFnCallArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!("invoke_call failed to deserialize: {:?}", args_str);
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
 
     // ZomeFnCallArgs to ZomeFnCall
@@ -80,15 +81,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    let action_result = receiver
+    let result = receiver
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
         .expect("observer dropped before done");
-
-    // action_result should be a json str of the result of the zome function called
-    match action_result {
-        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
-        Ok(json_str) => runtime.store_utf8(&json_str),
-    }
+    runtime.store_result(result)
 }
 
 /// Reduce Call Action
@@ -170,7 +166,7 @@ pub mod tests {
     use context::Context;
     use holochain_agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::error::DnaError;
+    use holochain_core_types::{error::DnaError, json::JsonString};
     use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
@@ -235,7 +231,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
         dna: Dna,
-        expected: Result<Result<String, HolochainError>, RecvTimeoutError>,
+        expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let context = create_context();
 

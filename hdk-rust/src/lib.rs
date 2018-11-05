@@ -31,69 +31,10 @@ pub mod global_fns;
 pub mod globals;
 pub mod init_globals;
 pub mod macros;
-use serde::{Serialize, Serializer};
-use std::convert::TryInto;
 
-use self::RibosomeError::*;
-use globals::*;
-use holochain_core_types::json::default_to_json;
 pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::{
-    holochain_core_types::json::JsonString, memory_allocation::*, memory_serialization::*,
-};
 
 pub mod meta;
 
 pub use api::*;
 pub use holochain_core_types::validation::*;
-
-pub fn init_memory_stack(encoded_allocation_of_input: u32) {
-    // Actual program
-    // Init memory stack
-    unsafe {
-        G_MEM_STACK =
-            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
-    }
-}
-
-pub fn serialize_wasm_output<J: TryInto<JsonString>>(jsonable: J) -> u32 {
-    // Serialize output in WASM memory
-    unsafe { store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), jsonable) as u32 }
-}
-
-//--------------------------------------------------------------------------------------------------
-// SYSTEM CONSTS
-//--------------------------------------------------------------------------------------------------
-/*
-// HC.Version
-const VERSION: u16 = 1;
-const VERSION_STR: &'static str = "1";
-*/
-// HC.HashNotFound
-#[derive(Debug)]
-pub enum RibosomeError {
-    RibosomeFailed(String),
-    FunctionNotImplemented,
-    HashNotFound,
-    ValidationFailed(String),
-}
-
-impl Serialize for RibosomeError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&match self {
-            RibosomeFailed(ref error_desc) => error_desc.to_owned(),
-            FunctionNotImplemented => String::from("Function not implemented"),
-            HashNotFound => String::from("Hash not found"),
-            ValidationFailed(ref msg) => format!("Validation failed: {}", msg),
-        })
-    }
-}
-
-impl From<RibosomeError> for JsonString {
-    fn from(v: RibosomeError) -> Self {
-        default_to_json(v)
-    }
-}

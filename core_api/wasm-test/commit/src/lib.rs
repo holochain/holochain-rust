@@ -10,7 +10,6 @@ use holochain_core_types::entry::SerializedEntry;
 use holochain_core_types::error::ZomeApiInternalResult;
 use holochain_core_types::cas::content::Address;
 use std::convert::TryInto;
-use holochain_core_types::error::RibosomeErrorCode;
 
 extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;

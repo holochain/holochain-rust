@@ -1,4 +1,5 @@
 #![recursion_limit = "128"]
+#![cfg_attr(tarpaulin, skip)]
 
 extern crate proc_macro;
 extern crate syn;

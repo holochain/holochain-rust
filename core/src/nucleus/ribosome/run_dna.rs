@@ -8,7 +8,6 @@ use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
     ZomeFnCall, ZomeFnResult,
 };
-use serde_json;
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,

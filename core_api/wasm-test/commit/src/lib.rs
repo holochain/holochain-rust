@@ -1,14 +1,14 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
-extern crate hdk;
+#[macro_use]
+extern crate serde_derive;
 
 use holochain_wasm_utils::{
   memory_allocation::*, memory_serialization::*,
 };
 use holochain_core_types::json::JsonString;
 use holochain_core_types::entry::SerializedEntry;
-use hdk::error::ZomeApiError;
 use holochain_core_types::error::ZomeApiInternalResult;
 use holochain_core_types::cas::content::Address;
 use std::convert::TryInto;
@@ -17,8 +17,17 @@ extern {
   fn hc_commit_entry(encoded_allocation_of_input: i32) -> i32;
 }
 
+/// Copy of ZomeApiError from HDK
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum ZomeApiError {
+    Internal(String),
+    FunctionNotImplemented,
+    HashNotFound,
+    ValidationFailed(String),
+}
+
 //-------------------------------------------------------------------------------------------------
-// HC Commit Function Call - Succesfull
+// HC Commit Function Call - Successful
 //-------------------------------------------------------------------------------------------------
 
 /// Call HC API COMMIT function with proper input struct

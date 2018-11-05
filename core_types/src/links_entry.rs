@@ -1,9 +1,9 @@
 use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
-use json::JsonString;
-use serde_json;
 use error::HolochainError;
+use json::JsonString;
+use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -52,7 +52,7 @@ pub enum LinkActionKind {
     DELETE,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkEntry {
     action_kind: LinkActionKind,
     link: Link,
@@ -90,7 +90,11 @@ impl ToEntry for LinkEntry {
 
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::Link, entry.entry_type());
-        LinkEntry::from(entry.value().to_owned())
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry to LinkEntry")
     }
 }
 
@@ -123,7 +127,11 @@ impl ToEntry for LinkListEntry {
 
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::LinkList, entry.entry_type());
-        LinkListEntry::from(entry.value().to_owned())
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry to LinkListEntry")
     }
 }
 

@@ -30,7 +30,6 @@ fn impl_default_json_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
 
     };
-    // panic!(gen.to_string());
     gen.into()
 }
 

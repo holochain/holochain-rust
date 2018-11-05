@@ -106,13 +106,10 @@ pub fn initialize_application(
             _ => false,
         });
 
-        let maybe_error = match fail_result {
-            Some(result) => match result {
-                CallbackResult::Fail(error_string) => Some(error_string.clone()),
-                _ => None,
-            },
-            None => None,
-        };
+        let maybe_error = fail_result.and_then(|result| match result {
+            CallbackResult::Fail(error_string) => Some(error_string.clone()),
+            _ => None,
+        });
 
         context_clone
             .action_channel

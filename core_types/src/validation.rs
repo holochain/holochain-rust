@@ -1,23 +1,16 @@
 extern crate serde_json;
 use chain_header::ChainHeader;
 use entry::SerializedEntry;
-use error::{HcResult, HolochainError};
+use error::HolochainError;
 use hash::HashString;
-use json::*;
-use std::convert::TryFrom;
+use json::JsonString;
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
     pub chain_header: Option<ChainHeader>,
     pub source_chain_entries: Option<Vec<SerializedEntry>>,
     pub source_chain_headers: Option<Vec<ChainHeader>>,
     pub custom: Option<String>,
-}
-
-impl From<ValidationPackage> for JsonString {
-    fn from(v: ValidationPackage) -> Self {
-        default_to_json(v)
-    }
 }
 
 impl ValidationPackage {
@@ -31,26 +24,13 @@ impl ValidationPackage {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
     Entry,          //sending only the entry
     ChainEntries,   //sending all (public?) source chain entries
     ChainHeaders,   //sending all source chain headers
     ChainFull,      //sending the whole chain, entries and headers
     Custom(String), //sending something custom
-}
-
-impl From<ValidationPackageDefinition> for JsonString {
-    fn from(v: ValidationPackageDefinition) -> JsonString {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for ValidationPackageDefinition {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> HcResult<Self> {
-        default_try_from_json(j)
-    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

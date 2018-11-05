@@ -3,6 +3,7 @@ use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use json::JsonString;
 use serde_json;
+use error::HolochainError;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -10,7 +11,7 @@ use serde_json;
 
 type LinkTag = String;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 pub struct Link {
     base: Address,
     target: Address,
@@ -81,18 +82,6 @@ impl LinkEntry {
     }
 }
 
-impl From<LinkEntry> for JsonString {
-    fn from(link_entry: LinkEntry) -> JsonString {
-        JsonString::from(serde_json::to_string(&link_entry).expect("LinkEntry failed to serialize"))
-    }
-}
-
-impl From<JsonString> for LinkEntry {
-    fn from(json_string: JsonString) -> LinkEntry {
-        serde_json::from_str(&String::from(json_string)).expect("LinkEntry failed to deserialize")
-    }
-}
-
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
@@ -109,7 +98,7 @@ impl ToEntry for LinkEntry {
 // LinkListEntry
 //-------------------------------------------------------------------------------------------------
 //
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson)]
 pub struct LinkListEntry {
     links: Vec<Link>,
 }
@@ -123,21 +112,6 @@ impl LinkListEntry {
 
     pub fn links(&self) -> &Vec<Link> {
         &self.links
-    }
-}
-
-impl From<LinkListEntry> for JsonString {
-    fn from(link_list_entry: LinkListEntry) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&link_list_entry).expect("LinkListEntry failed to serialize"),
-        )
-    }
-}
-
-impl From<JsonString> for LinkListEntry {
-    fn from(json_string: JsonString) -> LinkListEntry {
-        serde_json::from_str(&String::from(json_string))
-            .expect("LinkListEntry failed to deserialize")
     }
 }
 

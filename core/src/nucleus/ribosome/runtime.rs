@@ -12,6 +12,8 @@ use nucleus::{
     },
     ZomeFnCall,
 };
+use serde;
+use serde_json;
 use std::sync::Arc;
 use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 

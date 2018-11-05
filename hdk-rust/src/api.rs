@@ -21,10 +21,7 @@ use holochain_wasm_utils::{
     memory_serialization::*,
 };
 use serde_json;
-use std::{
-    convert::{TryFrom, TryInto},
-    os::raw::c_char,
-};
+use std::{convert::TryInto, os::raw::c_char};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -180,27 +177,6 @@ pub enum BundleOnClose {
 // API FUNCTIONS
 //--------------------------------------------------------------------------------------------------
 
-pub fn encoded_allocation_of_result_to_zome_result<
-    T: TryFrom<JsonString, Error = HolochainError>,
->(
-    mem_stack: &mut SinglePageStack,
-    allocation_of_input: SinglePageAllocation,
-    encoded_allocation_of_result: u32,
-) -> ZomeApiResult<T> {
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
-}
-
 /// Prints a string through the stdout of the running service, and also
 /// writes that string to the logger in the execution context
 /// # Examples
@@ -225,16 +201,15 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 
     let allocation_of_input = store_as_json(&mut mem_stack, msg)?;
 
-    let encoded_allocation_of_result: u32;
     unsafe {
-        encoded_allocation_of_result = hc_debug(allocation_of_input.encode());
+        hc_debug(allocation_of_input.encode());
     }
 
-    encoded_allocation_of_result_to_zome_result(
-        &mut mem_stack,
-        allocation_of_input,
-        encoded_allocation_of_result,
-    )
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("should be able to deallocate input that has been allocated on memory stack");
+
+    Ok(())
 }
 
 /// Call an exposed function from another zome.

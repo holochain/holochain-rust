@@ -229,7 +229,7 @@ pub mod tests {
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
         assert_eq!(
-            LinkEntry::from(test_link_entry_json_string()),
+            LinkEntry::try_from(test_link_entry_json_string()).unwrap(),
             test_link_entry(),
         );
     }

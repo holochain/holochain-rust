@@ -69,7 +69,7 @@ impl Runtime {
         s_bytes.push(0); // Add string terminate character (important)
 
         match self.memory_manager.write(&s_bytes) {
-            Err(_) => ribosome_error_code!(NotAnAllocation),
+            Err(_) => ribosome_error_code!(Unspecified),
             Ok(allocation) => Ok(Some(RuntimeValue::I32(allocation.encode() as i32))),
         }
     }

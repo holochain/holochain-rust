@@ -2,7 +2,7 @@ use self::HolochainError::*;
 use error::{DnaError, RibosomeErrorCode};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use json::ToJson;
-use serde_json::Error as SerdeError;
+use serde_json::{self, Error as SerdeError};
 use std::{
     error::Error,
     fmt,

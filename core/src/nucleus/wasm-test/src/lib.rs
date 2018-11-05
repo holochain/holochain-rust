@@ -1,11 +1,14 @@
+#![feature(try_from)]
 extern crate holochain_wasm_utils;
+use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
-use holochain_wasm_utils::holochain_core_types::json::default_to_json;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
@@ -65,15 +68,9 @@ pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
 //  More tests
 //-------------------------------------------------------------------------------------------------
 
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
   value: String,
-}
-
-impl From<TestStruct> for JsonString {
-    fn from(v: TestStruct) -> Self {
-        default_to_json(v)
-    }
 }
 
 #[no_mangle]

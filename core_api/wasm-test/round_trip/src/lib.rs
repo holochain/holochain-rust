@@ -1,11 +1,14 @@
+#![feature(try_from)]
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
+use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
-
 
 //--------------------------------------------------------------------------------------------------
 // Test function
@@ -17,18 +20,11 @@ struct InputStruct {
     input_str_val: String,
 }
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Deserialize, Debug, DefaultJson)]
 struct OutputStruct {
     input_int_val_plus2: u8,
     input_str_val_plus_dog: String,
 }
-
-impl From<OutputStruct> for JsonString {
-    fn from(output_struct: OutputStruct) -> JsonString {
-        JsonString::from(serde_json::to_string(&output_struct).expect("could not Jsonify OutputStruct"))
-    }
-}
-
 
 /// Create output out of some modification of input
 fn test_inner(input: InputStruct) -> OutputStruct {
@@ -37,7 +33,6 @@ fn test_inner(input: InputStruct) -> OutputStruct {
         input_str_val_plus_dog: format!("{}.puppy", input.input_str_val),
     }
 }
-
 
 //--------------------------------------------------------------------------------------------------
 //  Exported functions with required signature (=pointer to serialized complex parameter)

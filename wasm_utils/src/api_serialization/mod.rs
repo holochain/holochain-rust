@@ -1,3 +1,5 @@
+!#[cfg_attr(tarpaulin, skip)]
+
 mod call;
 /// This module holds structs for all arguments and return types
 /// that get serialized and deserialized between core native and

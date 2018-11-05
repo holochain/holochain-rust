@@ -7,7 +7,7 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::{content::AddressableContent, storage::ContentAddressableStorage},
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
@@ -80,12 +80,8 @@ pub fn build_validation_package(
                             Entry => ValidationPackage::only_header(entry_header),
                             ChainEntries => {
                                 let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_entries = Some(
-                                    all_public_chain_entries(&context)
-                                        .into_iter()
-                                        .map(|entry| entry.into())
-                                        .collect(),
-                                );
+                                package.source_chain_entries =
+                                    Some(all_public_chain_entries(&context));
                                 package
                             }
                             ChainHeaders => {
@@ -96,12 +92,8 @@ pub fn build_validation_package(
                             }
                             ChainFull => {
                                 let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_entries = Some(
-                                    all_public_chain_entries(&context)
-                                        .into_iter()
-                                        .map(|entry| entry.into())
-                                        .collect(),
-                                );
+                                package.source_chain_entries =
+                                    Some(all_public_chain_entries(&context));
                                 package.source_chain_headers =
                                     Some(all_public_chain_headers(&context));
                                 package
@@ -139,7 +131,7 @@ fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
         .find(|ref header| *header.entry_address() == entry.address())
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
+fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
@@ -150,7 +142,9 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
                 .content_storage()
                 .fetch(chain_header.entry_address())
                 .expect("Could not fetch from CAS");
-            entry.expect("Could not find entry in CAS for existing chain header")
+            entry
+                .expect("Could not find entry in CAS for existing chain header")
+                .into()
         })
         .collect::<Vec<_>>()
 }
@@ -252,12 +246,7 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(
-                all_public_chain_entries(&context)
-                    .into_iter()
-                    .map(|entry| entry.into())
-                    .collect(),
-            ),
+            source_chain_entries: Some(all_public_chain_entries(&context)),
             source_chain_headers: None,
             custom: None,
         };
@@ -311,12 +300,7 @@ mod tests {
 
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
-            source_chain_entries: Some(
-                all_public_chain_entries(&context)
-                    .into_iter()
-                    .map(|entry| entry.into())
-                    .collect(),
-            ),
+            source_chain_entries: Some(all_public_chain_entries(&context)),
             source_chain_headers: Some(all_public_chain_headers(&context)),
             custom: None,
         };

@@ -69,7 +69,7 @@ impl Runtime {
         s_bytes.push(0); // Add string terminate character (important)
 
         match self.memory_manager.write(&s_bytes) {
-            Err(_) => ribosome_error_code!(NotAnAllocation),
+            Err(_) => ribosome_error_code!(Unspecified),
             Ok(allocation) => Ok(Some(RuntimeValue::I32(allocation.encode() as i32))),
         }
     }
@@ -79,7 +79,7 @@ impl Runtime {
         result: Result<J, HolochainError>,
     ) -> ZomeApiResult {
         self.store_as_json_string(match result {
-            Ok(address) => ZomeApiInternalResult::success(address),
+            Ok(value) => ZomeApiInternalResult::success(value),
             Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
         })
     }

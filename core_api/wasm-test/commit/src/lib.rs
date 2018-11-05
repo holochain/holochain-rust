@@ -5,10 +5,10 @@ extern crate holochain_wasm_utils;
 use holochain_wasm_utils::{
   memory_allocation::*, memory_serialization::*,
 };
-use holochain_core_types::json::JsonString;
-use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::error::ZomeApiInternalResult;
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{
+  json::JsonString, entry::SerializedEntry,
+  error::{ZomeApiInternalResult, RibosomeErrorCode}, cas::content::Address,
+};
 use std::convert::TryInto;
 
 extern {
@@ -76,11 +76,6 @@ fn hdk_commit_fail(mem_stack: &mut SinglePageStack)
       .deallocate(allocation_of_input)
       .expect("deallocate failed");
 
-  // if result.ok {
-  //     Ok(JsonString::from(result.value).try_into()?)
-  // } else {
-  //     Err(ZomeApiError::from(result.error))
-  // }
   match JsonString::from(result.value).try_into() {
       Ok(address) => Ok(address),
       Err(hc_err) => Err(hc_err.into()),

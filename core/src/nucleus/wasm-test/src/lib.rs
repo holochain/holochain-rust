@@ -1,9 +1,9 @@
 #![feature(try_from)]
 extern crate holochain_wasm_utils;
-use holochain_wasm_utils::holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::holochain_core_types::json::JsonString;
-use holochain_wasm_utils::holochain_core_types::json::RawString;
-use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+use holochain_wasm_utils::holochain_core_types::{
+  error::{HolochainError, RibosomeReturnCode},
+  json::{JsonString, RawString}
+};
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;

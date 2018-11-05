@@ -1,6 +1,7 @@
+use error::error::HolochainError;
 use cas::content::{AddressableContent, Content};
 use json::JsonString;
-use serde_json;
+use std::convert::TryInto;
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -8,7 +9,7 @@ pub const STATUS_NAME: &str = "crud-status";
 pub const LINK_NAME: &str = "crud-link";
 
 bitflags! {
-    #[derive(Default, Serialize, Deserialize)]
+    #[derive(Default, Serialize, Deserialize, DefaultJson)]
     /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
     /// statuses are represented as bitflags so we can easily build masks for filtering lookups
     pub struct CrudStatus: u8 {
@@ -56,25 +57,13 @@ impl From<String> for CrudStatus {
     }
 }
 
-impl From<CrudStatus> for JsonString {
-    fn from(crud_status: CrudStatus) -> JsonString {
-        JsonString::from(serde_json::to_string(&crud_status).expect("failed to Jsonify CrudStatus"))
-    }
-}
-
-impl From<JsonString> for CrudStatus {
-    fn from(json_string: JsonString) -> CrudStatus {
-        serde_json::from_str(&String::from(json_string)).expect("failed to deserialize CrudStatus")
-    }
-}
-
 impl AddressableContent for CrudStatus {
     fn content(&self) -> Content {
-        Content::from(self.to_owned())
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(content.to_owned())
+        content.to_owned().try_into().expect("failed to deserialize CrudStatus from Content")
     }
 }
 

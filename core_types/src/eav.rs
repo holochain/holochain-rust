@@ -2,11 +2,11 @@ use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
 use json::JsonString;
-use serde_json;
 use std::{
     collections::HashSet,
     sync::{Arc, RwLock},
 };
+use std::convert::TryInto;
 
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
@@ -31,7 +31,7 @@ pub type Value = Address;
 // source agent asserting the meta
 // type Source ...
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -40,28 +40,13 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
-impl From<EntityAttributeValue> for JsonString {
-    fn from(eav: EntityAttributeValue) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&eav).expect("failed to Jsonify EntityAttributeValue"),
-        )
-    }
-}
-
-impl From<JsonString> for EntityAttributeValue {
-    fn from(json_string: JsonString) -> EntityAttributeValue {
-        serde_json::from_str(&String::from(json_string))
-            .expect("failed to deserialize EntityAttributeValue")
-    }
-}
-
 impl AddressableContent for EntityAttributeValue {
     fn content(&self) -> Content {
-        Content::from(self.to_owned())
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        Self::from(content.to_owned())
+        content.to_owned().try_into().expect("failed to deserialize EntityAttributeValue from Content")
     }
 }
 

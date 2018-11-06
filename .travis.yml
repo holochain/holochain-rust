@@ -24,6 +24,7 @@ jobs:
       os: windows
       language: shell
       script:
+        - powershell
         - SET LIBZMQ_PREFIX=%CD%\\vendor\\zmq
         - SET PATH=%LIBZMQ_PREFIX%;%PATH%
          cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all

@@ -24,8 +24,8 @@ jobs:
       os: windows
       language: shell
       script:
-        - LIBZMQ_PREFIX=vendor\\zmq
-        - $PATH=$LIBZMQ_PREFIX:$PATH
+        - LIBZMQ_PREFIX=`pwd`/vendor/zmq
+        - PATH=$LIBZMQ_PREFIX:$PATH
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         #- cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
 #    - name: "C binding tests"

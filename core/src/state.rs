@@ -11,6 +11,7 @@ use holochain_core_types::{
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},
+    eav::EntityAttributeValueStorage
 };
 use holochain_dna::Dna;
 use nucleus::state::NucleusState;
@@ -24,7 +25,7 @@ use std::{collections::HashSet, sync::Arc};
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
-    dht: Arc<DhtStore<FilesystemStorage, EavFileStorage>>,
+    dht: Arc<DhtStore<FilesystemStorage>>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -36,11 +37,11 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
 
         let cas = &(*context).file_storage;
-        let eav = &(*context).eav_storage;
+        let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
-            dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
+            dht: Arc::new(DhtStore::new(cas.clone(), eav)),
             history: HashSet::new(),
         }
     }
@@ -116,7 +117,7 @@ impl State {
         Arc::clone(&self.agent)
     }
 
-    pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage, EavFileStorage>> {
+    pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage>> {
         Arc::clone(&self.dht)
     }
 

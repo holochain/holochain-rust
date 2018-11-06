@@ -33,28 +33,28 @@ impl Network {
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug, PartialEq)]
-pub struct DhtStore<CAS, EAVS>
+pub struct DhtStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // Storages holding local shard data
     content_storage: CAS,
-    meta_storage: EAVS,
+    meta_storage: Box<dyn EntityAttributeValueStorage>,
     // Placeholder network module
     network: Network,
 
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
-impl<CAS, EAVS> DhtStore<CAS, EAVS>
+impl<CAS> DhtStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // LifeCycle
     // =========
-    pub fn new(content_storage: CAS, meta_storage: EAVS) -> Self {
+    pub fn new(content_storage: CAS, meta_storage:Box<dyn EntityAttributeValueStorage>) -> Self {
         let network = Network {};
         DhtStore {
             content_storage,
@@ -92,11 +92,11 @@ where
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage
     }
-    pub fn meta_storage(&self) -> EAVS {
-        self.meta_storage.clone()
+    pub fn meta_storage(&self) -> &EntityAttributeValueStorage {
+        &*self.meta_storage.clone()
     }
-    pub(crate) fn meta_storage_mut(&mut self) -> &mut EAVS {
-        &mut self.meta_storage
+    pub(crate) fn meta_storage_mut(&mut self) -> &mut EntityAttributeValueStorage {
+        &mut *self.meta_storage.clone()
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network

@@ -12,19 +12,19 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
-type DhtReducer<CAS, EAVS> =
-    fn(Arc<Context>, &DhtStore<CAS, EAVS>, &ActionWrapper) -> Option<DhtStore<CAS, EAVS>>;
+type DhtReducer<CAS> =
+    fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce<CAS, EAVS>(
+pub fn reduce<CAS>(
     context: Arc<Context>,
-    old_store: Arc<DhtStore<CAS, EAVS>>,
+    old_store: Arc<DhtStore<CAS>>,
     action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore<CAS, EAVS>>
+) -> Arc<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
@@ -41,10 +41,10 @@ where
 }
 
 /// Maps incoming action to the correct reducer
-fn resolve_reducer<CAS, EAVS>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS, EAVS>>
+fn resolve_reducer<CAS>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -56,14 +56,14 @@ where
 }
 
 //
-pub(crate) fn commit_sys_entry<CAS, EAVS>(
+pub(crate) fn commit_sys_entry<CAS>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore<CAS>,
     entry: &Entry,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // system entry type must be publishable
     if !entry.entry_type().to_owned().can_publish() {
@@ -81,14 +81,14 @@ where
 }
 
 //
-pub(crate) fn commit_app_entry<CAS, EAVS>(
+pub(crate) fn commit_app_entry<CAS>(
     context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore<CAS>,
     entry: &Entry,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
@@ -124,14 +124,14 @@ where
 }
 
 //
-pub(crate) fn reduce_commit_entry<CAS, EAVS>(
+pub(crate) fn reduce_commit_entry<CAS>(
     context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore<CAS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
@@ -154,14 +154,14 @@ where
 }
 
 //
-pub(crate) fn reduce_get_entry_from_network<CAS, EAVS>(
+pub(crate) fn reduce_get_entry_from_network<CAS>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore<CAS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // Get Action's input data
     let action = action_wrapper.action();
@@ -189,14 +189,14 @@ where
 }
 
 //
-pub(crate) fn reduce_add_link<CAS, EAVS>(
+pub(crate) fn reduce_add_link<CAS>(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore<CAS>,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // Get Action's input data
     let action = action_wrapper.action();
@@ -225,14 +225,14 @@ where
 }
 
 #[allow(dead_code)]
-pub(crate) fn reduce_get_links<CAS, EAVS>(
+pub(crate) fn reduce_get_links<CAS>(
     _context: Arc<Context>,
-    _old_store: &DhtStore<CAS, EAVS>,
+    _old_store: &DhtStore<CAS>,
     _action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
+) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
+    
 {
     // FIXME
     None

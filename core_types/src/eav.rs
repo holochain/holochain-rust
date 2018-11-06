@@ -1,4 +1,3 @@
-extern crate objekt;
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
@@ -8,6 +7,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use std::fmt::Debug;
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
 /// defines relationships between AddressableContent values
@@ -89,7 +89,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage: objekt::Clone {
+pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -108,7 +108,9 @@ pub trait EntityAttributeValueStorage: objekt::Clone {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
-#[derive(Clone)]
+clone_trait_object!(EntityAttributeValueStorage);
+
+#[derive(Clone,Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: HashSet<EntityAttributeValue>,
 }
@@ -152,7 +154,15 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 }
 
-#[derive(Clone)]
+
+
+impl PartialEq for EntityAttributeValueStorage {
+    fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
+        false
+    }
+}
+
+#[derive(Clone,Debug)]
 pub struct ExampleEntityAttributeValueStorage {
     content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }

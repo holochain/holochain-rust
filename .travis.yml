@@ -7,7 +7,7 @@ branches:
 
 jobs:
   include:
-    - name: "windows build"
+    - name: "windows build wasm32"
       os: windows
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
@@ -20,9 +20,13 @@ jobs:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+    - name: "windows build all"
+      os: windows
+      language: sh
       script:
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
-      #script:
+        - build.bat
+      script:
+        #- cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         #- cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
     - name: "C binding tests"
       dist: trusty

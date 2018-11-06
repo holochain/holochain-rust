@@ -291,12 +291,11 @@ pub mod tests {
     };
     use context::Context;
     use futures::executor::block_on;
-    use holochain_core_types::entry::agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::ToEntry,
+        entry::{agent::Agent, ToEntry},
         entry_type::EntryType,
         json::{JsonString, RawString},
     };

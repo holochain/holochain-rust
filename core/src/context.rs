@@ -1,6 +1,5 @@
 use action::ActionWrapper;
-use holochain_core_types::entry::agent::Agent;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{entry::agent::Agent, error::HolochainError};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -99,11 +98,11 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use holochain_core_types::entry::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
-    use holochain_core_types::entry::agent::Agent;
 
     #[test]
     fn default_buffer_size_test() {

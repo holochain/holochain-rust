@@ -5,10 +5,10 @@ extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 
-use holochain_core_types::entry::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
 use holochain_core_api::*;
+use holochain_core_types::entry::agent::Agent;
 use holochain_dna::Dna;
 use std::{
     env,

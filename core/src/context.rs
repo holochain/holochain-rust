@@ -117,7 +117,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+            Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());

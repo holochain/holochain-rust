@@ -318,15 +318,17 @@ pub mod tests {
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_, EavFileStorage>;
+        let new_dht_store: DhtStore<_>;
         {
             let state = locked_state.read().unwrap();
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-
-        let fetched = new_dht_store
-            .meta_storage()
+        let storage = new_dht_store
+            .meta_storage();
+        let fetched = storage
+            .lock()
+            .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());
@@ -353,15 +355,17 @@ pub mod tests {
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_, EavFileStorage>;
+        let new_dht_store: DhtStore<_>;
         {
             let state = locked_state.read().unwrap();
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-
-        let fetched = new_dht_store
-            .meta_storage()
+        let storage = new_dht_store
+            .meta_storage();
+        let fetched = storage
+            .lock()
+            .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());

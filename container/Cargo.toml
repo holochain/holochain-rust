@@ -1,0 +1,9 @@
+[package]
+name = "holochain_container"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+holochain_dna = { path = "../dna" }
+holochain_agent = { path = "../agent" }
+holochain_core = { path = "../core" }

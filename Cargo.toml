@@ -2,6 +2,7 @@
 
 members = [
   "agent",
+  "container",
   "core_api",
   "core_api_c_binding",
   "core",

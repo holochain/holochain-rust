@@ -12,8 +12,7 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
-type DhtReducer<CAS> =
-    fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
+type DhtReducer<CAS> = fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
@@ -24,7 +23,6 @@ pub fn reduce<CAS>(
 ) -> Arc<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
@@ -44,7 +42,6 @@ where
 fn resolve_reducer<CAS>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -63,7 +60,6 @@ pub(crate) fn commit_sys_entry<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // system entry type must be publishable
     if !entry.entry_type().to_owned().can_publish() {
@@ -88,7 +84,6 @@ pub(crate) fn commit_app_entry<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
@@ -131,7 +126,6 @@ pub(crate) fn reduce_commit_entry<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
@@ -161,7 +155,6 @@ pub(crate) fn reduce_get_entry_from_network<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // Get Action's input data
     let action = action_wrapper.action();
@@ -196,7 +189,6 @@ pub(crate) fn reduce_add_link<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // Get Action's input data
     let action = action_wrapper.action();
@@ -233,7 +225,6 @@ pub(crate) fn reduce_get_links<CAS>(
 ) -> Option<DhtStore<CAS>>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // FIXME
     None
@@ -324,8 +315,7 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        let storage = new_dht_store
-            .meta_storage();
+        let storage = new_dht_store.meta_storage();
         let fetched = storage
             .lock()
             .unwrap()
@@ -361,8 +351,7 @@ pub mod tests {
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-        let storage = new_dht_store
-            .meta_storage();
+        let storage = new_dht_store.meta_storage();
         let fetched = storage
             .lock()
             .unwrap()

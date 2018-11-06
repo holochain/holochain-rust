@@ -348,7 +348,11 @@ pub mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                    Arc::new(Mutex::new(
+                        EavFileStorage::new(
+                            tempdir().unwrap().path().to_str().unwrap().to_string(),
+                        ).unwrap(),
+                    )),
                 ).unwrap(),
             ),
             logger,
@@ -377,7 +381,10 @@ pub mod tests {
                 action_channel.clone(),
                 observer_channel.clone(),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                Arc::new(Mutex::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                )),
             ).unwrap(),
         )
     }
@@ -388,7 +395,10 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            Arc::new(Mutex::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -403,7 +413,10 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             file_system.clone(),
-            Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            Arc::new(Mutex::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
         ).unwrap();
         let chain_store = ChainStore::new(file_system);
         let chain_header = test_chain_header();

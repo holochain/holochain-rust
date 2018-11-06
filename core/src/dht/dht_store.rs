@@ -9,8 +9,10 @@ use holochain_core_types::{
     hash::HashString,
     links_entry::Link,
 };
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc,Mutex};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::{Arc, Mutex},
+};
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -37,7 +39,6 @@ impl Network {
 pub struct DhtStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // Storages holding local shard data
     content_storage: CAS,
@@ -48,23 +49,28 @@ where
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
-impl<CAS> PartialEq for DhtStore<CAS> where CAS: ContentAddressableStorage + Sized + Clone + PartialEq {
+impl<CAS> PartialEq for DhtStore<CAS>
+where
+    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+{
     fn eq(&self, other: &DhtStore<CAS>) -> bool {
-        self.content_storage == other.content_storage &&
-        self.network == other.network &&
-        self.add_link_actions == other.add_link_actions &&
-        *self.meta_storage.lock().unwrap() == *other.meta_storage.lock().unwrap()
+        self.content_storage == other.content_storage
+            && self.network == other.network
+            && self.add_link_actions == other.add_link_actions
+            && *self.meta_storage.lock().unwrap() == *other.meta_storage.lock().unwrap()
     }
 }
 
 impl<CAS> DhtStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    
 {
     // LifeCycle
     // =========
-    pub fn new(content_storage: CAS, meta_storage:Arc<Mutex<EntityAttributeValueStorage>>) -> Self {
+    pub fn new(
+        content_storage: CAS,
+        meta_storage: Arc<Mutex<EntityAttributeValueStorage>>,
+    ) -> Self {
         let network = Network {};
         DhtStore {
             content_storage,
@@ -90,8 +96,11 @@ where
         address: HashString,
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage
-            .lock().unwrap().fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
+        self.meta_storage.lock().unwrap().fetch_eav(
+            Some(address),
+            Some(format!("link__{}", tag)),
+            None,
+        )
     }
 
     // Getters (for reducers)

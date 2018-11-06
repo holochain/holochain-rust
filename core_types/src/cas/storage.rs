@@ -14,7 +14,7 @@ use std::{
 /// implements storage in memory or persistently
 /// anything implementing AddressableContent can be added and fetched by address
 /// CAS is append only
-pub trait ContentAddressableStorage: Clone + Send + Sync {
+pub trait ContentAddressableStorage: objekt::Clone + Send + Sync {
     /// adds AddressableContent to the ContentAddressableStorage by its Address as Content
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError>;
     /// true if the Address is in the Store, false otherwise.

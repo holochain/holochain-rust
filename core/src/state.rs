@@ -8,10 +8,10 @@ use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
+    eav::EntityAttributeValueStorage,
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},
-    eav::EntityAttributeValueStorage
 };
 use holochain_dna::Dna;
 use nucleus::state::NucleusState;

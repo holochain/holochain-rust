@@ -1,6 +1,6 @@
 use action::ActionWrapper;
 use holochain_agent::Agent;
-use holochain_core_types::{error::HolochainError,eav::EntityAttributeValueStorage};
+use holochain_core_types::{eav::EntityAttributeValueStorage, error::HolochainError};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -117,7 +117,10 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            Arc::new(Mutex::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());

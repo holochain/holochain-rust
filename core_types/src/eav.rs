@@ -108,12 +108,11 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
-    
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: HashSet<EntityAttributeValue>,
 }
@@ -157,17 +156,13 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 }
 
-
-
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
-        self.fetch_eav(None,None,None) == other.fetch_eav(None,None,None)
+        self.fetch_eav(None, None, None) == other.fetch_eav(None, None, None)
     }
 }
 
-
-
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
     content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }

@@ -208,7 +208,11 @@ mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                    Arc::new(Mutex::new(
+                        EavFileStorage::new(
+                            tempdir().unwrap().path().to_str().unwrap().to_string(),
+                        ).unwrap(),
+                    )),
                 ).unwrap(),
             ),
             logger,

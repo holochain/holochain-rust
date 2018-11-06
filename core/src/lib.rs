@@ -33,8 +33,10 @@ extern crate holochain_core_types_derive;
 
 pub mod action;
 pub mod agent;
+pub mod api;
 pub mod context;
 pub mod dht;
+pub mod error;
 pub mod instance;
 #[cfg(test)]
 pub mod link_tests;
@@ -42,5 +44,3 @@ pub mod logger;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
-pub mod api;
-pub mod error;

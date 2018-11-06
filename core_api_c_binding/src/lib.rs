@@ -8,9 +8,7 @@ extern crate holochain_dna;
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
-use holochain_core::{
-    context::Context, api::Holochain,
-};
+use holochain_core::{api::Holochain, context::Context};
 use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;

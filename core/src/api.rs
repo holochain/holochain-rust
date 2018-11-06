@@ -1,13 +1,12 @@
-
+use context::Context;
 use error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
-use context::Context;
-use    instance::Instance;
-use    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall};
-use   persister::{Persister, SimplePersister};
-use    state::State;
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
+use instance::Instance;
+use nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall};
+use persister::{Persister, SimplePersister};
+use state::State;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -102,25 +101,25 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_cas_implementations;
     extern crate holochain_agent;
+    extern crate holochain_cas_implementations;
     extern crate tempfile;
 
-    use super::*;
-    use self::holochain_cas_implementations::{
-        cas::file::FilesystemStorage, eav::file::EavFileStorage,
+    use self::{
+        holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage},
+        tempfile::tempdir,
     };
+    use super::*;
     use context::Context;
+    use holochain_dna::Dna;
+    use instance::tests::{create_test_logger, TestLogger};
     use nucleus::ribosome::{callback::Callback, Defn};
     use persister::SimplePersister;
-    use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
-    use self::tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
-    use instance::tests::{TestLogger, create_test_logger};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -159,7 +158,10 @@ mod tests {
         assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "TestLogger { log: [\"TestApp instantiated\"] }");
+        assert_eq!(
+            format!("{:?}", *test_logger),
+            "TestLogger { log: [\"TestApp instantiated\"] }"
+        );
     }
 
     #[test]

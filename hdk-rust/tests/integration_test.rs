@@ -6,6 +6,7 @@ extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
 
+use holochain_core::api::Holochain;
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
@@ -14,7 +15,6 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-use holochain_core::api::Holochain;
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,

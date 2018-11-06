@@ -164,7 +164,6 @@ impl ZomeApiFunction {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
     use holochain_core_types::json::JsonString;

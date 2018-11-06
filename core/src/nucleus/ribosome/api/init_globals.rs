@@ -52,7 +52,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_agent::Agent;
+    use holochain_core_types::entry::agent::Agent;
     use holochain_core_types::{
         cas::content::AddressableContent, error::ZomeApiInternalResult, json::JsonString,
     };

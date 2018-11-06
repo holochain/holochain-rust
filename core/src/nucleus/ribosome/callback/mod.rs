@@ -267,7 +267,6 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;

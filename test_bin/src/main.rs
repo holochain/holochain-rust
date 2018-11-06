@@ -1,11 +1,11 @@
-extern crate holochain_agent;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 
-use holochain_agent::Agent;
+use holochain_core_types::entry::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
 use holochain_core_api::*;

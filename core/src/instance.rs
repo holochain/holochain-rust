@@ -291,7 +291,7 @@ pub mod tests {
     };
     use context::Context;
     use futures::executor::block_on;
-    use holochain_agent::Agent;
+    use holochain_core_types::entry::agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent,

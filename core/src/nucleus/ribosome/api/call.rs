@@ -164,7 +164,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use context::Context;
-    use holochain_agent::Agent;
+    use holochain_core_types::entry::agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{error::DnaError, json::JsonString};
     use holochain_dna::{zome::capabilities::Capability, Dna};

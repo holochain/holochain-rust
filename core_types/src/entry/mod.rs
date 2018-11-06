@@ -10,6 +10,7 @@ use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
 };
+pub mod agent;
 
 pub type EntryValue = JsonString;
 

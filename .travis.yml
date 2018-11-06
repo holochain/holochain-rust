@@ -22,11 +22,14 @@ jobs:
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
     - name: "windows build all"
       os: windows
+      stage: install
       language: shell
       script:
         - LIBZMQ_PREFIX=`pwd`/vendor/zmq
         - PATH=$LIBZMQ_PREFIX:$PATH
+      stage: compile
       language: rust
+      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         #- cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all

@@ -1,13 +1,10 @@
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
-
-use holochain_core_api::*;
 
 use holochain_core_types::{
     cas::content::Address,
@@ -17,6 +14,7 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
+use holochain_core::api::Holochain;
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,
@@ -227,6 +225,7 @@ fn can_get_entry() {
 }
 
 #[test]
+#[cfg(not(windows))] // TODO test fails on windows because file path has different seperator
 fn can_invalidate_invalid_commit() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function

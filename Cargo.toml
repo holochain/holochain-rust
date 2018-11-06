@@ -2,14 +2,13 @@
 
 members = [
   "agent",
-  "core_api",
   "core_api_c_binding",
   "core",
   "dna",
   "dna_c_binding",
   "net",
   "test_bin",
-  "net_ipc",
+  #"net_ipc",
   "hdk-rust",
 ]
 exclude = ["test_utils"]

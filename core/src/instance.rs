@@ -333,14 +333,14 @@ pub mod tests {
     }
 
     /// create a test logger
-    pub fn test_logger() -> Arc<Mutex<TestLogger>> {
+    pub fn create_test_logger() -> Arc<Mutex<TestLogger>> {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = Agent::from(agent_name.to_owned());
-        let logger = test_logger();
+        let logger = create_test_logger();
         (
             Arc::new(
                 Context::new(
@@ -369,7 +369,7 @@ pub mod tests {
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
         let agent = Agent::from(agent_name.to_owned());
-        let logger = test_logger();
+        let logger = create_test_logger();
         Arc::new(
             Context::new_with_channels(
                 agent,
@@ -387,7 +387,7 @@ pub mod tests {
     pub fn test_context_with_state() -> Arc<Context> {
         let mut context = Context::new(
             Agent::from("Florence".to_string()),
-            test_logger(),
+            create_test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
@@ -402,7 +402,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let mut context = Context::new(
             Agent::from("Florence".to_string()),
-            test_logger(),
+            create_test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             file_system.clone(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),

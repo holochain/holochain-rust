@@ -100,7 +100,7 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use instance::tests::test_logger;
+    use instance::tests::create_test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex};
@@ -114,7 +114,7 @@ mod tests {
     fn test_state() {
         let mut maybe_context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),
-            test_logger(),
+            create_test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
@@ -137,7 +137,7 @@ mod tests {
     fn test_deadlock() {
         let mut context = Context::new(
             holochain_agent::Agent::from("Terence".to_string()),
-            test_logger(),
+            create_test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),

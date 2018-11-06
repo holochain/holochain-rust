@@ -1,83 +1,11 @@
-//! `holochain_core_api` is a library for instantiating and using a holochain instance that
-//! runs a holochain DNA, DHT and source chain.
-//!
-//! # Examples
-//!
-//! ``` rust
-//! extern crate holochain_core;
-//! extern crate holochain_core_api;
-//! extern crate holochain_dna;
-//! extern crate holochain_agent;
-//! extern crate holochain_cas_implementations;
-//! extern crate tempfile;
-//! use holochain_core_api::*;
-//! use holochain_dna::Dna;
-//! use holochain_agent::Agent;
-//! use std::sync::{Arc, Mutex};
-//! use holochain_core::context::Context;
-//! use holochain_core::logger::SimpleLogger;
-//! use holochain_core::persister::SimplePersister;
-//! use self::holochain_cas_implementations::{
-//!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-//! };
-//! use tempfile::tempdir;
-//!
-//! // instantiate a new holochain instance
-//!
-//! // need to get to something like this:
-//! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
-//!
-//! // but for now:
-//! let dna = Dna::new();
-//! let agent = Agent::from("bob".to_string());
-//! let context = Context::new(
-//!     agent,
-//!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new(String::from("Agent Name")))),
-//!     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-//!     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-//!  ).unwrap();
-//! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
-//!
-//! // start up the holochain instance
-//! hc.start().expect("couldn't start the holochain instance");
-//!
-//! // call a function in the zome code
-//! hc.call("test_zome","test_cap","some_fn","{}");
-//!
-//! // get the state
-//! {
-//!     let state = hc.state();
-//!
-//!     // do some other stuff with the state here
-//!     // ...
-//! }
-//!
-//! // stop the holochain instance
-//! hc.stop().expect("couldn't stop the holochain instance");
-//!
-//!```
-#![feature(try_from)]
-extern crate futures;
-extern crate holochain_agent;
-extern crate holochain_core;
-extern crate holochain_core_types;
-extern crate holochain_dna;
-extern crate tempfile;
-#[cfg(test)]
-extern crate test_utils;
-
-pub mod error;
 
 use error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
-use holochain_core::{
-    context::Context,
-    instance::Instance,
-    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
-    persister::{Persister, SimplePersister},
-    state::State,
-};
+use context::Context;
+use    instance::Instance;
+use    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall};
+use   persister::{Persister, SimplePersister};
+use    state::State;
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
 use std::sync::Arc;
@@ -175,32 +103,32 @@ impl Holochain {
 #[cfg(test)]
 mod tests {
     extern crate holochain_cas_implementations;
+    extern crate holochain_agent;
+    extern crate tempfile;
 
+    use super::*;
     use self::holochain_cas_implementations::{
         cas::file::FilesystemStorage, eav::file::EavFileStorage,
     };
-    use super::*;
-    extern crate holochain_agent;
-    use holochain_core::{
-        context::Context,
-        nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
-    };
+    use context::Context;
+    use nucleus::ribosome::{callback::Callback, Defn};
+    use persister::SimplePersister;
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
-    use tempfile::tempdir;
+    use self::tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
+    use instance::tests::{TestLogger, create_test_logger};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
+    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = holochain_agent::Agent::from(agent_name.to_string());
-        let logger = test_utils::test_logger();
+        let logger = create_test_logger();
         (
             Arc::new(
                 Context::new(
@@ -231,7 +159,7 @@ mod tests {
         assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+        assert_eq!(format!("{:?}", *test_logger), "TestLogger { log: [\"TestApp instantiated\"] }");
     }
 
     #[test]

@@ -1,15 +1,22 @@
-dist: trusty
-
 # https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
 # we build all PRs already, don't need redundant branch builds
 branches:
   only:
     - master
     - develop
+    - travis-windows
 
 jobs:
   include:
+    - name: "windows build"
+      os: windows
+      language: rust
+      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+      script:
+      - cargo build --verbose --all
+      - cargo test --verbose --all
     - name: "C binding tests"
+      dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
 
@@ -33,6 +40,7 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Standard tests + code coverage"
+      dist: trusty
       language: node_js
       node_js:
         - "8"
@@ -73,6 +81,7 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Formatting & clippy"
+      dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
 
@@ -113,6 +122,7 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Mdbook Build"
+      dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
       env:

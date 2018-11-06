@@ -154,8 +154,13 @@ wasm_build: ensure_wasm_target
 build: core_toolchain wasm_build
 	$(CARGO) build --all
 
+.PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
 	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk
+
+.PHONY: code_coverage_crate
+code_coverage_crate: core_toolchain wasm_build install_ci
+	$(CARGO) tarpaulin --timeout 600 --skip-clean -v -p $(CRATE)
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check

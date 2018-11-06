@@ -55,24 +55,41 @@ pub mod tests {
     #[test]
     /// show ToString for HolochainInstanceError
     fn holochain_instance_error_description_test() {
-        for (i, o) in vec![(HolochainInstanceError::InstanceNotActiveYet, "Holochain instance is not active yet."),
-                           (HolochainInstanceError::InstanceAlreadyActive, "Holochain instance is already active."),
-                           (HolochainInstanceError::InternalFailure(HolochainError::DnaMissing), "DNA is missing"),
-                           ] {
-            assert_eq!(
-                i.description(),
-                o,
-            );
+        for (i, o) in vec![
+            (
+                HolochainInstanceError::InstanceNotActiveYet,
+                "Holochain instance is not active yet.",
+            ),
+            (
+                HolochainInstanceError::InstanceAlreadyActive,
+                "Holochain instance is already active.",
+            ),
+            (
+                HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
+                "DNA is missing",
+            ),
+        ] {
+            assert_eq!(i.description(), o,);
         }
     }
 
     #[test]
     /// show ToString for HolochainInstanceError
     fn holochain_instance_error_to_string_test() {
-        for (i, o) in vec![(HolochainInstanceError::InstanceNotActiveYet, "Holochain instance is not active yet."),
-                           (HolochainInstanceError::InstanceAlreadyActive, "Holochain instance is already active."),
-                           (HolochainInstanceError::InternalFailure(HolochainError::DnaMissing), "DNA is missing"),
-                           ] {
+        for (i, o) in vec![
+            (
+                HolochainInstanceError::InstanceNotActiveYet,
+                "Holochain instance is not active yet.",
+            ),
+            (
+                HolochainInstanceError::InstanceAlreadyActive,
+                "Holochain instance is already active.",
+            ),
+            (
+                HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
+                "DNA is missing",
+            ),
+        ] {
             assert_eq!(
                 i.to_string(),
                 format!("Holochain Instance Error: {}", o).to_string(),

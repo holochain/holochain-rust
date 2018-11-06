@@ -7,6 +7,8 @@
 //! Note: This is already quite big. Maybe break the CAS and EAV traits
 //! out into their separate crate as well since those are generic and not
 //! necessarily bound to Holochain.
+#![feature(try_from)]
+#![feature(never_type)]
 
 extern crate futures;
 extern crate multihash;
@@ -16,6 +18,8 @@ extern crate serde_json;
 extern crate snowflake;
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 #[macro_use]
 extern crate serde_derive;

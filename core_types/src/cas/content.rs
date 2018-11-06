@@ -1,5 +1,6 @@
 use cas::storage::ContentAddressableStorage;
 use hash::HashString;
+use json::JsonString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
 
@@ -7,9 +8,10 @@ use std::fmt::{Debug, Write};
 /// ideally would be the Content but pragmatically must be Address
 /// consider what would happen if we had multi GB addresses...
 pub type Address = HashString;
-/// the Content is a String
+
+/// the Content is a JsonString
 /// this is the only way to be confident in persisting all Rust types across all backends
-pub type Content = String;
+pub type Content = JsonString;
 
 /// can be stored as serialized content
 /// the content is the address, there is no "location" like a file system or URL
@@ -22,12 +24,16 @@ pub trait AddressableContent {
     /// it is recommended to implement an "address space" prefix for address algorithms that don't
     /// offer strong cryptographic guarantees like sha et. al.
     fn address(&self) -> Address {
-        Address::encode_from_str(&self.content(), Hash::SHA2256)
+        Address::encode_from_str(&String::from(self.content()), Hash::SHA2256)
     }
+
     /// the Content that would be stored in a ContentAddressableStorage
+    /// the default implementation covers anything that implements From<Foo> for JsonString
     fn content(&self) -> Content;
+
     /// restore/deserialize the original struct/type from serialized Content
-    fn from_content(&Content) -> Self
+    /// the default implementation covers anything that implements From<JsonString> for Foo
+    fn from_content(content: &Content) -> Self
     where
         Self: Sized;
 }
@@ -82,7 +88,7 @@ impl AddressableContent for OtherExampleAddressableContent {
     fn from_content(content: &Content) -> Self {
         OtherExampleAddressableContent {
             content: content.clone(),
-            address: Address::encode_from_str(&content, Hash::SHA2256),
+            address: Address::encode_from_str(&String::from(content), Hash::SHA2256),
         }
     }
 }
@@ -94,7 +100,7 @@ impl AddressableContentTestSuite {
     pub fn addressable_content_trait_test<T>(
         content: Content,
         expected_content: T,
-        address_string: String,
+        address: Address,
     ) where
         T: AddressableContent + Debug + PartialEq + Clone,
     {
@@ -102,7 +108,7 @@ impl AddressableContentTestSuite {
 
         assert_eq!(addressable_content, expected_content);
         assert_eq!(content, addressable_content.content());
-        assert_eq!(Address::from(address_string), addressable_content.address());
+        assert_eq!(address, addressable_content.address());
     }
 
     /// test that two different addressable contents would give them same thing
@@ -149,17 +155,18 @@ impl AddressableContentTestSuite {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{
-        AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
+        Address, AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
         OtherExampleAddressableContent,
     };
+    use json::{JsonString, RawString};
 
     #[test]
     /// test the first example
     fn example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<ExampleAddressableContent>(
-            String::from("foo"),
-            ExampleAddressableContent::from_content(&String::from("foo")),
-            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
+            JsonString::from(RawString::from("foo")),
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo"))),
+            Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }
 
@@ -167,9 +174,9 @@ pub mod tests {
     /// test the other example
     fn other_example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<OtherExampleAddressableContent>(
-            String::from("foo"),
-            OtherExampleAddressableContent::from_content(&String::from("foo")),
-            String::from("QmRJzsvyCQyizr73Gmms8ZRtvNxmgqumxc2KUp71dfEmoj"),
+            JsonString::from(RawString::from("foo")),
+            OtherExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo"))),
+            Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }
 
@@ -179,7 +186,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_contents_are_the_same_test::<
             ExampleAddressableContent,
             OtherExampleAddressableContent,
-        >(String::from("foo"));
+        >(JsonString::from(RawString::from("foo")));
     }
 
 }

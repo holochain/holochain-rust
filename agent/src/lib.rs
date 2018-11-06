@@ -1,63 +1,80 @@
 //! holochain_agent provides a library for managing holochain agent info, including identities, keys etc..
 extern crate holochain_core_types;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
 extern crate serde;
+extern crate serde_json;
 
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
     entry::{Entry, ToEntry},
     entry_type::EntryType,
+    json::JsonString,
 };
 
 /// Object holding an Agent's identity.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Identity(Content);
 
-impl Identity {
-    pub fn new(content: Content) -> Self {
-        Identity(content)
+impl From<Identity> for JsonString {
+    fn from(identity: Identity) -> JsonString {
+        identity.0
     }
 }
 
-impl ToString for Identity {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl From<JsonString> for Identity {
+    fn from(json_string: JsonString) -> Identity {
+        Identity(json_string)
     }
 }
 
 impl From<String> for Identity {
     fn from(s: String) -> Identity {
-        Identity::new(s)
+        Identity::from(JsonString::from(s))
+    }
+}
+
+impl From<Identity> for String {
+    fn from(identity: Identity) -> String {
+        String::from(identity.0)
     }
 }
 
 /// Object holding all Agent's data.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Agent(Identity);
-
-impl Agent {
-    pub fn new(id: Identity) -> Self {
-        Agent(id)
-    }
-}
-
-impl ToString for Agent {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
 
 impl From<String> for Agent {
     fn from(s: String) -> Agent {
-        Agent::new(Identity::from(s))
+        Agent::from(Identity::from(s))
+    }
+}
+
+impl From<Agent> for String {
+    fn from(agent: Agent) -> String {
+        String::from(agent.0)
+    }
+}
+
+impl From<Identity> for Agent {
+    fn from(identity: Identity) -> Agent {
+        Agent(identity)
+    }
+}
+
+impl From<JsonString> for Agent {
+    fn from(json_string: JsonString) -> Agent {
+        Agent::from(Identity::from(json_string))
+    }
+}
+
+impl From<Agent> for JsonString {
+    fn from(agent: Agent) -> JsonString {
+        (agent.0).0
     }
 }
 
 impl ToEntry for Agent {
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::AgentId, &self.to_string())
+        Entry::new(EntryType::AgentId, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
@@ -79,10 +96,10 @@ impl AddressableContent for Agent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_core_types::cas::content::Content;
+    use holochain_core_types::{cas::content::Content, json::RawString};
 
     pub fn test_identity_value() -> Content {
-        "bob".to_string()
+        RawString::from("bob").into()
     }
 
     pub fn test_identity() -> Identity {
@@ -108,13 +125,13 @@ mod tests {
     #[test]
     /// show ToString implementation for Identity
     fn identity_to_string_test() {
-        assert_eq!(test_identity_value(), test_identity().to_string(),);
+        assert_eq!(test_identity_value(), test_identity().into());
     }
 
     #[test]
     /// show ToString implementation for Agent
     fn agent_to_string_test() {
-        assert_eq!(test_identity_value(), test_agent().to_string(),)
+        assert_eq!(test_identity_value(), test_agent().into());
     }
 
     #[test]
@@ -122,21 +139,22 @@ mod tests {
     fn agent_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::AgentId, &test_identity_value()),
+            Entry::new(EntryType::AgentId, test_identity_value()),
             test_agent().to_entry(),
         );
 
         // from_entry()
         assert_eq!(
             test_agent(),
-            Agent::from_entry(&Entry::new(&EntryType::AgentId, &test_identity_value())),
+            Agent::from_entry(&Entry::new(EntryType::AgentId, test_identity_value())),
         );
     }
 
     #[test]
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
-        let expected_content = String::from("{\"value\":\"bob\",\"entry_type\":\"AgentId\"}");
+        let expected_content =
+            Content::from("{\"value\":\"\\\"bob\\\"\",\"entry_type\":\"%agent_id\"}");
         // content()
         assert_eq!(expected_content, test_agent().content(),);
 

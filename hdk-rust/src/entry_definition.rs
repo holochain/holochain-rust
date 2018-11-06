@@ -38,13 +38,17 @@ pub struct ValidatingEntryType {
 /// The following is a standalone Rust file that exports a function which can be called
 /// to get a `ValidatingEntryType` of a "post".
 /// ```rust
-/// use boolinator::*;
-/// use hdk::{
-///   self,
-///   entry_definition::ValidatingEntryType,
-///   holochain_dna::zome::entry_types::Sharing
-/// };
-/// use serde_json;
+/// # extern crate boolinator;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # use boolinator::*;
+/// # use hdk::entry_definition::ValidatingEntryType;
+/// # use hdk::holochain_dna::zome::entry_types::Sharing;
+///
+/// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize)]
 /// pub struct Post {
@@ -69,6 +73,8 @@ pub struct ValidatingEntryType {
 ///         }
 ///     )
 /// }
+///
+/// # }
 /// ```
 
 #[macro_export]

@@ -57,7 +57,7 @@
 //! hc.stop().expect("couldn't stop the holochain instance");
 //!
 //!```
-
+#![feature(try_from)]
 extern crate futures;
 extern crate holochain_agent;
 extern crate holochain_core;
@@ -78,7 +78,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
 use std::sync::Arc;
 
@@ -153,11 +153,11 @@ impl Holochain {
         cap: &str,
         fn_name: &str,
         params: &str,
-    ) -> HolochainResult<String> {
+    ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, &params);
+        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -227,7 +227,7 @@ mod tests {
 
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(hc.context.agent.to_string(), "bob".to_string());
+        assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -243,7 +243,7 @@ mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 9
                 )
                 (data (i32.const 0)
                     "fail"
@@ -258,7 +258,7 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
-            HolochainInstanceError::from(HolochainError::ErrorGeneric("fail".to_string())),
+            HolochainInstanceError::from(HolochainError::ErrorGeneric("\"Genesis\"".to_string())),
             result.err().unwrap(),
         );
     }
@@ -355,7 +355,10 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call("test_zome", "test_cap", "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
-        assert_eq!(result.ok().unwrap(), "{\"holo\":\"world\"}")
+        assert_eq!(
+            result.ok().unwrap(),
+            JsonString::from("{\"holo\":\"world\"}")
+        );
     }
 
     #[test]
@@ -391,7 +394,7 @@ mod tests {
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
-            r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#
+            JsonString::from(r#"{"input_int_val_plus2":4,"input_str_val_plus_dog":"fish.puppy"}"#),
         );
     }
 
@@ -418,9 +421,10 @@ mod tests {
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
+        // @TODO fragile test!
         assert_ne!(
             result.clone().ok().unwrap(),
-            "{\"Err\":\"Argument deserialization failed\"}"
+            JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
         );
 
         // Check in holochain instance's history that the commit event has been processed
@@ -449,12 +453,13 @@ mod tests {
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
+        println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
-            "{\"Err\":\"Argument deserialization failed\"}",
             result.ok().unwrap(),
+            JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
         // Check in holochain instance's history that the commit event has been processed
@@ -478,14 +483,15 @@ mod tests {
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
+
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
-        assert!(result.unwrap().is_empty());
 
+        assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
             "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
@@ -519,10 +525,12 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
 
-        // Expect a string as result
-        assert!(result.unwrap().is_empty());
+        // Expect Success as result
+        println!("result = {:?}", result);
+        assert_eq!(Ok(JsonString::null()), result,);
 
         let test_logger = test_logger.lock().unwrap();
+
         assert_eq!(
             "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
             format!("{:?}", test_logger.log),
@@ -541,6 +549,9 @@ mod tests {
             "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
             "debug_stacked_hello",
         );
-        assert_eq!("{\"value\":\"fish\"}", call_result.unwrap());
+        assert_eq!(
+            JsonString::from("{\"value\":\"fish\"}"),
+            call_result.unwrap()
+        );
     }
 }

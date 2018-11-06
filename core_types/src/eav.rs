@@ -1,9 +1,10 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
-use serde_json;
+use json::JsonString;
 use std::{
     collections::HashSet,
+    convert::TryInto,
     sync::{Arc, RwLock},
 };
 
@@ -31,7 +32,7 @@ pub type Value = Address;
 // source agent asserting the meta
 // type Source ...
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -42,13 +43,14 @@ pub struct EntityAttributeValue {
 
 impl AddressableContent for EntityAttributeValue {
     fn content(&self) -> Content {
-        serde_json::to_string(self)
-            .expect("could not serialize EntityAttributeValue to Json Content")
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        serde_json::from_str(content)
-            .expect("could not deserialize Json Content to EntityAttributeValue")
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize EntityAttributeValue from Content")
     }
 }
 
@@ -293,6 +295,7 @@ pub mod tests {
         },
     };
     use eav::EntityAttributeValue;
+    use json::RawString;
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
@@ -301,9 +304,11 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity = ExampleAddressableContent::from_content(&"foo".to_string());
+        let entity =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
         let attribute = "favourite-color".to_string();
-        let value = ExampleAddressableContent::from_content(&"blue".to_string());
+        let value =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }
@@ -331,7 +336,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<EntityAttributeValue>(
             test_eav_content(),
             test_eav(),
-            String::from(test_eav_address()),
+            test_eav_address(),
         );
     }
 

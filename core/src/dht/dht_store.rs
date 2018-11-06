@@ -10,6 +10,7 @@ use holochain_core_types::{
     links_entry::Link,
 };
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc,Mutex};
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -32,7 +33,7 @@ impl Network {
 
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct DhtStore<CAS>
 where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
@@ -40,11 +41,19 @@ where
 {
     // Storages holding local shard data
     content_storage: CAS,
-    meta_storage: Box<dyn EntityAttributeValueStorage>,
+    meta_storage: Arc<Mutex<EntityAttributeValueStorage>>,
     // Placeholder network module
     network: Network,
 
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
+}
+
+impl<CAS> PartialEq for DhtStore<CAS> where CAS: ContentAddressableStorage + Sized + Clone + PartialEq {
+    fn eq(&self, other: &DhtStore<CAS>) -> bool {
+        self.content_storage == other.content_storage &&
+        self.network == other.network &&
+        self.add_link_actions == other.add_link_actions
+    }
 }
 
 impl<CAS> DhtStore<CAS>
@@ -54,7 +63,7 @@ where
 {
     // LifeCycle
     // =========
-    pub fn new(content_storage: CAS, meta_storage:Box<dyn EntityAttributeValueStorage>) -> Self {
+    pub fn new(content_storage: CAS, meta_storage:Arc<Mutex<EntityAttributeValueStorage>>) -> Self {
         let network = Network {};
         DhtStore {
             content_storage,
@@ -81,7 +90,7 @@ where
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         self.meta_storage
-            .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
+            .lock().unwrap().fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
     }
 
     // Getters (for reducers)
@@ -92,11 +101,8 @@ where
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage
     }
-    pub fn meta_storage(&self) -> &EntityAttributeValueStorage {
-        &*self.meta_storage.clone()
-    }
-    pub(crate) fn meta_storage_mut(&mut self) -> &mut EntityAttributeValueStorage {
-        &mut *self.meta_storage.clone()
+    pub(crate) fn meta_storage(&self) -> Arc<Mutex<EntityAttributeValueStorage>> {
+        self.meta_storage.clone()
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network

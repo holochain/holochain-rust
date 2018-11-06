@@ -217,7 +217,8 @@ where
     let eav =
         EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
 
-    let result = new_store.meta_storage_mut().add_eav(&eav);
+    let storage = new_store.meta_storage();
+    let result = storage.lock().unwrap().add_eav(&eav);
     new_store
         .add_link_actions_mut()
         .insert(action_wrapper.clone(), result);

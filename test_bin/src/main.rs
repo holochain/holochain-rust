@@ -48,7 +48,7 @@ fn main() {
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
+        Arc::new(Mutex::new(EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap())),
     ).expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

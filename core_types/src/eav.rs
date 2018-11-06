@@ -162,6 +162,8 @@ impl PartialEq for EntityAttributeValueStorage {
     }
 }
 
+
+
 #[derive(Clone,Debug)]
 pub struct ExampleEntityAttributeValueStorage {
     content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,

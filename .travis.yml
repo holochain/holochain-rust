@@ -26,6 +26,8 @@ jobs:
       script:
         - LIBZMQ_PREFIX=`pwd`/vendor/zmq
         - PATH=$LIBZMQ_PREFIX:$PATH
+      language: rust
+      script:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         #- cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
 #    - name: "C binding tests"

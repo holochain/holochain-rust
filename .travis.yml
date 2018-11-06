@@ -12,8 +12,10 @@ jobs:
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
+      - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
+      - build.bat
       - cargo build --verbose --all
-      - cargo test --verbose --all
+      #- cargo test --verbose --all
     - name: "C binding tests"
       dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943

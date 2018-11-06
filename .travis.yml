@@ -22,7 +22,7 @@ jobs:
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
     - name: "windows build all"
       os: windows
-      #language: sh
+      language: sh
       script:
         - SET LIBZMQ_PREFIX=%CD%\\vendor\\zmq
         - SET PATH=%LIBZMQ_PREFIX%;%PATH%

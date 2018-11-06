@@ -52,7 +52,8 @@ impl<CAS> PartialEq for DhtStore<CAS> where CAS: ContentAddressableStorage + Siz
     fn eq(&self, other: &DhtStore<CAS>) -> bool {
         self.content_storage == other.content_storage &&
         self.network == other.network &&
-        self.add_link_actions == other.add_link_actions
+        self.add_link_actions == other.add_link_actions &&
+        *self.meta_storage.lock().unwrap() == *other.meta_storage.lock().unwrap()
     }
 }
 

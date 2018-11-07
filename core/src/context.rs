@@ -25,7 +25,7 @@ pub struct Context {
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
     pub file_storage: FilesystemStorage,
-    pub eav_storage: Arc<Mutex<EntityAttributeValueStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
 }
 
 impl Context {
@@ -38,7 +38,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         cas: FilesystemStorage,
-        eav: Arc<Mutex<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -61,7 +61,7 @@ impl Context {
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
         cas: FilesystemStorage,
-        eav: Arc<Mutex<EntityAttributeValueStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent,
@@ -103,7 +103,7 @@ mod tests {
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn default_buffer_size_test() {
@@ -117,7 +117,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(
+            Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
@@ -143,7 +143,7 @@ mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(
+            Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),

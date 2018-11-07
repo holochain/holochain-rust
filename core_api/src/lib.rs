@@ -80,7 +80,7 @@ use holochain_core::{
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -208,7 +208,7 @@ mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    Arc::new(Mutex::new(
+                    Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),

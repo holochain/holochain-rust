@@ -11,7 +11,7 @@ use holochain_core_types::{
 };
 use std::{
     collections::{HashMap, HashSet},
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 // Placeholder network module
@@ -42,7 +42,7 @@ where
 {
     // Storages holding local shard data
     content_storage: CAS,
-    meta_storage: Arc<Mutex<EntityAttributeValueStorage>>,
+    meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     // Placeholder network module
     network: Network,
 
@@ -54,10 +54,16 @@ where
     CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
 {
     fn eq(&self, other: &DhtStore<CAS>) -> bool {
+        let self_storage = &self.meta_storage.clone();
+        let self_meta_dht = &*self_storage.read().unwrap();
+        println!("self meta dht");
+        let other_storage = &other.meta_storage;
+        let other_meta = &*other_storage.read().unwrap();
+        println!("other meta");
         self.content_storage == other.content_storage
             && self.network == other.network
             && self.add_link_actions == other.add_link_actions
-            && *self.meta_storage.lock().unwrap() == *other.meta_storage.lock().unwrap()
+            && self_meta_dht == other_meta
     }
 }
 
@@ -69,7 +75,7 @@ where
     // =========
     pub fn new(
         content_storage: CAS,
-        meta_storage: Arc<Mutex<EntityAttributeValueStorage>>,
+        meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Self {
         let network = Network {};
         DhtStore {
@@ -96,7 +102,7 @@ where
         address: HashString,
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage.lock().unwrap().fetch_eav(
+        self.meta_storage.read().unwrap().fetch_eav(
             Some(address),
             Some(format!("link__{}", tag)),
             None,
@@ -111,7 +117,7 @@ where
     pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
         &mut self.content_storage
     }
-    pub(crate) fn meta_storage(&self) -> Arc<Mutex<EntityAttributeValueStorage>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()
     }
     pub(crate) fn network(&self) -> &Network {

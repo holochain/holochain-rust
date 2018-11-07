@@ -12,7 +12,7 @@ use holochain_core_api::*;
 use holochain_dna::Dna;
 use std::{
     env,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
 
 use tempfile::tempdir;
@@ -48,7 +48,7 @@ fn main() {
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        Arc::new(Mutex::new(
+        Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
     ).expect("context is supposed to be created");

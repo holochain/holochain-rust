@@ -210,7 +210,7 @@ where
         EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
 
     let storage = new_store.meta_storage();
-    let result = storage.lock().unwrap().add_eav(&eav);
+    let result = storage.write().unwrap().add_eav(&eav);
     new_store
         .add_link_actions_mut()
         .insert(action_wrapper.clone(), result);
@@ -317,7 +317,7 @@ pub mod tests {
         }
         let storage = new_dht_store.meta_storage();
         let fetched = storage
-            .lock()
+            .read()
             .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 
@@ -353,7 +353,7 @@ pub mod tests {
         }
         let storage = new_dht_store.meta_storage();
         let fetched = storage
-            .lock()
+            .read()
             .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 

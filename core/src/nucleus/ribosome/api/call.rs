@@ -12,7 +12,7 @@ use nucleus::{
 };
 use std::{
     convert::TryFrom,
-    sync::{mpsc::channel, Arc},
+    sync::{mpsc::channel, Arc, RwLock},
 };
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -222,7 +222,7 @@ pub mod tests {
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                Arc::new(Mutex::new(
+                Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),

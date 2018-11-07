@@ -27,7 +27,7 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex,RwLock},
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -176,7 +176,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
             ).unwrap(),
         ),
         logger,
@@ -225,7 +225,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
         ).unwrap(),
     );
 }

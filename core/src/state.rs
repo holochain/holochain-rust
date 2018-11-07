@@ -51,7 +51,7 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
 
         let cas = &(*context).file_storage;
-        let eav = &(*context).eav_storage;
+        let eav = context.eav_storage.clone();
 
         fn get_dna(
             agent_state: &Arc<AgentState>,
@@ -76,7 +76,6 @@ impl State {
 
         let mut nucleus_state = NucleusState::new();
         nucleus_state.dna = get_dna(&agent_state, cas).ok();
-
         State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,

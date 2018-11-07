@@ -20,7 +20,7 @@ use holochain_core::{logger::Logger, persister::SimplePersister};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
-    sync::Mutex,
+    sync::{Mutex, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -73,7 +73,7 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(agent_path))),
         FilesystemStorage::new(&cas_path)?,
-        Arc::new(Mutex::new(EavFileStorage::new(eav_path)?)),
+        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )
 }
 

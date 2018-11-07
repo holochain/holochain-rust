@@ -348,7 +348,7 @@ pub mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    Arc::new(Mutex::new(
+                    Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),
@@ -381,7 +381,7 @@ pub mod tests {
                 action_channel.clone(),
                 observer_channel.clone(),
                 FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                Arc::new(Mutex::new(
+                Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
@@ -395,7 +395,7 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            Arc::new(Mutex::new(
+            Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
@@ -413,7 +413,7 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             file_system.clone(),
-            Arc::new(Mutex::new(
+            Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),

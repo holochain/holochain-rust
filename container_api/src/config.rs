@@ -1,5 +1,3 @@
-extern crate serde_derive;
-extern crate toml;
 use holochain_agent::{Agent, Identity};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_dna::Dna;

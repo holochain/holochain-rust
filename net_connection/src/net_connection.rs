@@ -117,7 +117,7 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        assert_eq!("test".to_string(), res.as_json_string());
+        assert_eq!("test".to_string(), String::from(res.as_json_string()));
 
         con.stop().unwrap();
     }
@@ -138,7 +138,7 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        assert_eq!("tick".to_string(), res.as_json_string());
+        assert_eq!("tick".to_string(), String::from(res.as_json_string()));
 
         con.stop().unwrap();
     }

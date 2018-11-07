@@ -149,7 +149,7 @@ mod tests {
         loop {
             let tmp = receiver.recv().unwrap();
 
-            if &(tmp.as_json_string()) == "tick" {
+            if &(String::from(tmp.as_json_string())) == "tick" {
                 continue;
             } else {
                 res = tmp;
@@ -157,7 +157,7 @@ mod tests {
             }
         }
 
-        assert_eq!("test".to_string(), res.as_json_string());
+        assert_eq!("test".to_string(), String::from(res.as_json_string()));
 
         con.stop().unwrap();
     }
@@ -176,7 +176,7 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        assert_eq!("tick".to_string(), res.as_json_string());
+        assert_eq!("tick".to_string(), String::from(res.as_json_string()));
 
         con.stop().unwrap();
     }

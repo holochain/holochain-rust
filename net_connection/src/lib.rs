@@ -1,3 +1,5 @@
+#![feature(try_from)]
+
 //! Provides a lightweight concurrency abstraction for holochain
 //! networking / p2p layer
 //! see holochain_net_ipc for a specific implementation, and
@@ -7,6 +9,8 @@ extern crate byteorder;
 #[macro_use]
 extern crate failure;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 extern crate rmp;
 extern crate rmp_serde;
 extern crate serde;

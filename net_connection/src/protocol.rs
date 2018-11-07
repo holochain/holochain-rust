@@ -36,7 +36,7 @@ impl<'a> From<&'a Protocol> for NamedBinaryData {
             },
             Protocol::Json(j) => NamedBinaryData {
                 name: b"json".to_vec(),
-                data: String::from(j).as_bytes().to_vec(),
+                data: String::from(j).into_bytes(),
             },
             Protocol::Ping(p) => NamedBinaryData {
                 name: b"ping".to_vec(),
@@ -101,12 +101,6 @@ impl From<String> for Protocol {
     }
 }
 
-impl From<Protocol> for String {
-    fn from(p: Protocol) -> String {
-        p.as_json_string()
-    }
-}
-
 /// local macro for creating is_* and as_* functions on Protocol
 /// (DRY some boilerplate)
 macro_rules! simple_access {
@@ -140,9 +134,9 @@ impl Protocol {
     }
 
     /// get a json string straight out of the Protocol enum
-    pub fn as_json_string(&self) -> String {
+    pub fn as_json_string(&self) -> JsonString {
         if let Protocol::Json(data) = self {
-            String::from(data)
+            String::from(data).into()
         } else {
             panic!("as_json_string called with bad type");
         }
@@ -232,7 +226,7 @@ mod tests {
 
         assert!(res.is_json());
 
-        let res = String::from(res);
+        let res = String::from(res.as_json_string());
 
         assert_eq!(json_str, res);
     }

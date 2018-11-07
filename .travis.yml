@@ -36,10 +36,14 @@ jobs:
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         #- echo %cd%
-        #- set LIBZMQ_PREFIX=%CD%\vendor\zmq
+        - set LIBZMQ_PREFIX=%CD%\vendor\zmq
         #- set PATH=$LIBZMQ_PREFIX$PATH
-        - LIBZMQ_PREFIX=`pwd`/vendor/zmq
+        - echo $LIBZMQ_PREFIX
+        - echo %LIBZMQ_PREFIX%
+        #- LIBZMQ_PREFIX=`pwd`/vendor/zmq
         - PATH=$PATH:$LIBZMQ_PREFIX
+        - echo $PATH
+        - echo %PATH%
         #- set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         # Note to self: It seems PYTHON_EXECUTABLE has to be defined by cmake somehow

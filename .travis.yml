@@ -38,7 +38,7 @@ jobs:
         - PATH=$PATH:$LIBZMQ_PREFIX
         #- set LIBZMQ_PREFIX=%CD%\vendor\zmq
         #- set PATH=$LIBZMQ_PREFIX$PATH
-        - echo $LIBZMQ_PREFIX
+        #- echo $LIBZMQ_PREFIX
         - echo $PATH
         #- set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all

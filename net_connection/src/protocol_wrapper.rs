@@ -320,15 +320,20 @@ mod tests {
 
     #[test]
     fn it_can_convert_weird_state() {
-        let w: ProtocolWrapper = Protocol::Json(json!({
+        let w: ProtocolWrapper = Protocol::Json(
+            json!({
             "method": "state",
             "bindings": [null],
-        }).into()).into();
-        assert_eq!(w, ProtocolWrapper::State(StateData {
-            state: "undefined".to_string(),
-            id: "undefined".to_string(),
-            bindings: vec!["undefined".to_string()],
-        }));
+        }).into(),
+        ).into();
+        assert_eq!(
+            w,
+            ProtocolWrapper::State(StateData {
+                state: "undefined".to_string(),
+                id: "undefined".to_string(),
+                bindings: vec!["undefined".to_string()],
+            })
+        );
     }
 
     #[test]

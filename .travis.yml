@@ -33,7 +33,9 @@ jobs:
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         # Note: cygwin term
-        - LIBZMQ_PREFIX=`pwd`/vendor/zmq
+        #- LIBZMQ_PREFIX=`pwd`/vendor/zmq
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+        - set LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         - echo $LIBZMQ_PREFIX
         - PATH=$PATH:$LIBZMQ_PREFIX
         #- set LIBZMQ_PREFIX=%CD%\vendor\zmq

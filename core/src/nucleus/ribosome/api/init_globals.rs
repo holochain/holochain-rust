@@ -52,9 +52,9 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_agent::Agent;
     use holochain_core_types::{
-        cas::content::AddressableContent, error::ZomeApiInternalResult, json::JsonString,
+        cas::content::AddressableContent, entry::agent::Agent, error::ZomeApiInternalResult,
+        json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use nucleus::ribosome::{

@@ -4,15 +4,15 @@
 //! # Examples
 //!
 //! ``` rust
+//! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_core_api;
 //! extern crate holochain_dna;
-//! extern crate holochain_agent;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_core_api::*;
 //! use holochain_dna::Dna;
-//! use holochain_agent::Agent;
+//! use holochain_core_types::entry::agent::Agent;
 //! use std::sync::{Arc, Mutex};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -59,7 +59,6 @@
 //!```
 #![feature(try_from)]
 extern crate futures;
-extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
@@ -180,12 +179,12 @@ mod tests {
         cas::file::FilesystemStorage, eav::file::EavFileStorage,
     };
     use super::*;
-    extern crate holochain_agent;
     use holochain_core::{
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
+    use holochain_core_types::entry::agent::Agent;
     use holochain_dna::Dna;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
@@ -199,7 +198,7 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = holochain_agent::Agent::from(agent_name.to_string());
+        let agent = Agent::from(agent_name.to_string());
         let logger = test_utils::test_logger();
         (
             Arc::new(

@@ -44,17 +44,20 @@ where
     pub fn query(
         &self,
         start_chain_header: &Option<ChainHeader>,
-        entry_type: EntryType,
+        entry_type: &EntryType,
+        start: u32,
         limit: u32,
     ) -> Vec<Address> {
-        let mut result: Vec<Address> = Vec::new();
-        for header in self.iter_type(start_chain_header, &entry_type) {
-            result.push(header.entry_address().clone());
-            if limit != 0 && result.len() as u32 >= limit {
-                break;
-            }
+        let base_iter = self
+            .iter_type(start_chain_header, entry_type)
+            .map(|header| header.entry_address().clone())
+            .skip(start as usize);
+
+        if limit > 0 {
+            base_iter.take(limit as usize).collect()
+        } else {
+            base_iter.collect()
         }
-        result
     }
 }
 
@@ -97,7 +100,9 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                self.content_storage
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
             });
         previous
     }
@@ -142,7 +147,9 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                self.content_storage
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
             });
         previous
     }
@@ -318,22 +325,14 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(
-            &Some(chain_header_c.clone()),
-            entry.entry_type().to_owned(),
-            0,
-        );
+        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 0);
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(
-            &Some(chain_header_c.clone()),
-            entry.entry_type().to_owned(),
-            1,
-        );
+        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 1);
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

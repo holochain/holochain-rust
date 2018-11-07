@@ -1,13 +1,13 @@
 use context::Context;
-use holochain_core_types::error::{
-    HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode,
+use holochain_core_types::{
+    error::{HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
+    json::JsonString,
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use nucleus::{
     ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
     ZomeFnCall, ZomeFnResult,
 };
-use serde_json;
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
@@ -136,13 +136,13 @@ pub fn run_dna(
     // Handle result returned by called zome function
     let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
     let return_log_msg: String;
-    let return_result: HcResult<String>;
+    let return_result: HcResult<JsonString>;
     match maybe_allocation {
         // Nothing in memory, return result depending on return_code received.
         Err(return_code) => {
             return_log_msg = return_code.to_string();
             return_result = match return_code {
-                RibosomeReturnCode::Success => Ok(String::new()),
+                RibosomeReturnCode::Success => Ok(JsonString::null()),
                 RibosomeReturnCode::Failure(err_code) => {
                     Err(HolochainError::RibosomeFailed(err_code.to_string()))
                 }
@@ -157,15 +157,9 @@ pub fn run_dna(
                     return_log_msg = err.to_string();
                     return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
                 }
-                Ok(json_string) => {
-                    // Check if its a HolochainError
-                    return_log_msg = json_string.clone();
-                    let de_res: Result<HolochainError, serde_json::Error> =
-                        serde_json::from_str(&json_string);
-                    return_result = match de_res {
-                        Err(_) => Ok(json_string), // not a HolochainError so return normal result
-                        Ok(hc_err) => Err(hc_err),
-                    };
+                Ok(json_str) => {
+                    return_log_msg = json_str.clone();
+                    return_result = Ok(JsonString::from(json_str));
                 }
             }
         }

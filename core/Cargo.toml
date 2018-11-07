@@ -5,7 +5,6 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_dna = { path = "../dna" }
-holochain_agent = { path = "../agent" }
 holochain_net = { path = "../net" }
 chrono = "0.4"
 wasmi = "0.3"
@@ -25,6 +24,7 @@ num-derive = "0.2"
 config = "0.8"
 regex = "1"
 holochain_core_types = { path = "../core_types" }
+holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 
 

@@ -2,19 +2,16 @@ use agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
-    entry_type::EntryType,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use holochain_wasm_utils::api_serialization::commit::{CommitEntryArgs, CommitEntryResult};
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
     ribosome::{api::ZomeApiResult, Runtime},
 };
-use serde_json;
-use std::str::FromStr;
+use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -23,17 +20,21 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: CommitEntryArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let serialized_entry = match SerializedEntry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!(
+                "invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
 
     // Create Chain Entry
-    let entry_type =
-        EntryType::from_str(&input.entry_type_name).expect("could not create EntryType from str");
-    let entry = Entry::new(&entry_type, &input.entry_value);
+    let entry = Entry::from(serialized_entry);
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(
@@ -50,7 +51,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(
-                    entry_type.clone(),
+                    entry.entry_type().clone(),
                     entry.clone(),
                     validation_data,
                     &runtime.context)
@@ -59,10 +60,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             .and_then(|_| commit_entry(entry.clone(), &runtime.context.action_channel, &runtime.context)),
     );
 
-    match task_result {
-        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
-        Ok(address) => runtime.store_as_json(CommitEntryResult::new(address)),
-    }
+    runtime.store_result(task_result)
 }
 
 #[cfg(test)]
@@ -71,26 +69,22 @@ pub mod tests {
     extern crate wabt;
 
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        cas::content::Address,
+        entry::{test_entry, SerializedEntry},
+        error::ZomeApiInternalResult,
+        json::JsonString,
     };
     use nucleus::ribosome::{
-        api::{commit::CommitEntryArgs, tests::test_zome_api_function, ZomeApiFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use serde_json;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_entry_type();
         let entry = test_entry();
 
-        let args = CommitEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        let serialized_entry = SerializedEntry::from(entry);
+        JsonString::from(serialized_entry).into_bytes()
     }
 
     #[test]
@@ -103,7 +97,11 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            format!(r#"{{"address":"{}"}}"#, test_entry().address()) + "\u{0}",
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT")
+                ))) + "\u{0}"
+            ),
         );
     }
 

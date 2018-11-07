@@ -1,31 +1,30 @@
 use dht::actions::add_link::*;
 use futures::executor::block_on;
-use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use serde_json;
+use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
-/// Returns 'Success' return code on success.
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: LinkEntriesArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!(
+                "invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
     // Wait for add_link() future to be resolved
-    let task_result: Result<(), HolochainError> =
-        block_on(add_link(&input.to_link(), &runtime.context));
-    // Write result in wasm memory
-    match task_result {
-        Err(hc_err) => runtime.store_as_json(core_error!(hc_err)),
-        Ok(()) => ribosome_success!(),
-    }
+    let result = block_on(add_link(&input.to_link(), &runtime.context));
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -36,16 +35,19 @@ pub mod tests {
     use agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
-        error::CoreError,
+        cas::content::AddressableContent,
+        entry::test_entry,
+        error::{CoreError, ZomeApiInternalResult},
+        json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::{commit::CommitEntryArgs, link_entries::*};
+    use holochain_wasm_utils::api_serialization::link_entries::*;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
         Defn,
     };
     use serde_json;
+    use std::convert::TryFrom;
 
     /// dummy link_entries args from standard test entry
     pub fn test_link_args_bytes() -> Vec<u8> {
@@ -63,28 +65,28 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let args = CommitEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        JsonString::from(test_entry().serialize()).into_bytes()
     }
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
-    fn errors_if_base_is_not_present() {
-        let (mut call_result, _) = test_zome_api_function(
+    fn errors_if_base_is_not_present_test() {
+        let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
             test_link_args_bytes(),
         );
-        call_result.pop(); // Remove trailing character
-        let core_err: CoreError =
-            serde_json::from_str(&call_result).expect("valid CoreError json str");
+
+        assert_eq!(
+            call_result,
+            JsonString::from(
+                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}"
+            ),
+        );
+
+        let result = ZomeApiInternalResult::try_from(call_result)
+            .expect("valid ZomeApiInternalResult JsonString");
+
+        let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
         assert_eq!("Base for link not found", core_err.kind.to_string(),);
     }
 
@@ -117,7 +119,12 @@ pub mod tests {
             test_link_args_bytes(),
         );
 
-        assert_eq!("", call_result);
+        assert_eq!(
+            call_result,
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            ),
+        );
     }
 
 }

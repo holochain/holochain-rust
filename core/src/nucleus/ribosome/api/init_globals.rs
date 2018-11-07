@@ -1,4 +1,4 @@
-use holochain_core_types::{entry_type::EntryType, hash::HashString};
+use holochain_core_types::{entry_type::EntryType, hash::HashString, json::JsonString};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
@@ -13,18 +13,19 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
         dna_hash: HashString::from(""),
-        agent_id_str: runtime.context.agent.to_string(),
+        agent_id_str: String::from(runtime.context.agent.clone()),
         // TODO #233 - Implement agent pub key hash
         agent_address: HashString::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
+
     // Update fields
     if let Some(state) = runtime.context.state() {
         // Update dna_hash
         if let Some(dna) = state.nucleus().dna() {
             globals.dna_hash =
-                HashString::encode_from_serializable(dna.to_json(), Multihash::SHA2256);
+                HashString::encode_from_json_string(JsonString::from(dna), Multihash::SHA2256);
         }
         // Update agent hashes
         let maybe_top = state.agent().top_chain_header();
@@ -44,28 +45,35 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             }
         }
     };
+
     // Store it in wasm memory
-    return runtime.store_as_json(globals);
+    runtime.store_result(Ok(globals))
 }
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_agent::Agent;
-    use holochain_core_types::cas::content::AddressableContent;
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::agent::Agent, error::ZomeApiInternalResult,
+        json::JsonString,
+    };
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
+    use std::convert::TryFrom;
 
     #[test]
     /// test that bytes passed to debug end up in the log
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
-        let (mut call_result, _) =
-            test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
-        call_result.pop(); // Remove trailing character
-        let globals: ZomeApiGlobals = serde_json::from_str(&call_result).unwrap();
+        let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
+        println!("{:?}", call_result);
+
+        let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
+        let globals =
+            ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
+
         assert_eq!(globals.dna_name, "TestApp");
         // TODO #233 - Implement agent address
         // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");

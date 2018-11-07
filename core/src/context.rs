@@ -1,6 +1,5 @@
 use action::ActionWrapper;
-use holochain_agent::Agent;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{entry::agent::Agent, error::HolochainError};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -95,11 +94,11 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_agent;
     extern crate tempfile;
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use holochain_core_types::entry::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
@@ -113,7 +112,7 @@ mod tests {
     #[test]
     fn test_state() {
         let mut maybe_context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
+            Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -136,7 +135,7 @@ mod tests {
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let mut context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
+            Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),

@@ -18,7 +18,8 @@ use nucleus::ribosome::{
         get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
         init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
     },
-    Defn, Runtime,
+    runtime::Runtime,
+    Defn,
 };
 use num_traits::FromPrimitive;
 use std::str::FromStr;
@@ -163,9 +164,9 @@ impl ZomeApiFunction {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
+    use holochain_core_types::json::JsonString;
     extern crate test_utils;
     use super::ZomeApiFunction;
     use context::Context;
@@ -324,12 +325,12 @@ pub mod tests {
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> String {
+    ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
-            &test_parameters(),
+            test_parameters(),
         );
         ribosome::run_dna(
             &dna_name,
@@ -348,7 +349,7 @@ pub mod tests {
     pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Context>) {
+    ) -> (JsonString, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),

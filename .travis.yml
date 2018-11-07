@@ -24,7 +24,7 @@ jobs:
       os: windows
       #stage: install
       #language: shell
-      #env:
+      env:
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         #- PYTHON_EXECUTABLE='c/usr/bin/python.exe'
         #- PATH=$PATH:$LIBZMQ_PREFIX

@@ -9,13 +9,11 @@ mod call;
 ///
 /// For the case of HDK-rust we can use the exact same types by
 /// importing this module.
-pub mod commit;
 pub mod get_entry;
 pub mod get_links;
-mod hash_entry;
 pub mod link_entries;
-mod query;
+pub mod query;
 pub mod validation;
 mod zome_api_globals;
 
-pub use self::{call::*, hash_entry::*, query::*, zome_api_globals::*};
+pub use self::{call::*, query::*, zome_api_globals::*};

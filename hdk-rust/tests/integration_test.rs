@@ -1,10 +1,22 @@
 extern crate holochain_core;
 extern crate holochain_core_api;
+extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
+#[macro_use]
+extern crate serde_json;
 
 use holochain_core_api::*;
+
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
+    entry_type::test_entry_type,
+    error::ZomeApiInternalResult,
+    hash::HashString,
+    json::JsonString,
+};
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,
@@ -52,7 +64,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     );
 
     let (context, test_logger) = test_context_and_logger("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+    let mut hc =
+        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
@@ -64,24 +77,34 @@ fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
-    assert!(result.clone().unwrap().is_empty(), "result = {:?}", result);
+    assert_eq!(
+        result.clone(),
+        Ok(JsonString::from(HashString::from(
+            "QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA"
+        ))),
+        "result = {:?}",
+        result
+    );
 }
 
 #[test]
 fn can_commit_entry() {
     let (mut hc, _) = start_holochain_instance();
+
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 }
 
@@ -93,13 +116,16 @@ fn can_commit_entry_macro() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        // this works because the macro names the args the same as the SerializedEntry fields
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 }
 
@@ -114,7 +140,7 @@ fn can_round_trip() {
     );
     assert_eq!(
         result.unwrap(),
-        "{\"first\":\"bob\",\"second\":\"had a boring day\"}"
+        JsonString::from("{\"first\":\"bob\",\"second\":\"had a boring day\"}"),
     );
 
     let test_logger = test_logger.lock().unwrap();
@@ -130,55 +156,74 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "{\"address\":\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\"}"
+        JsonString::from(Address::from(
+            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        )),
     );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        r#"{"entry_hash":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#,
+        &String::from(JsonString::from(json!(
+                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                ))),
     );
-    println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(
+            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
+        )
+    );
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        r#"{"entry_hash":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#,
+        &String::from(JsonString::from(json!(
+                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"stuff\":\"non fail\"}");
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(
+            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
+        )
+    );
 
     // test the case with a bad hash
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        r#"{"entry_hash":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+        &String::from(JsonString::from(json!(
+                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                ))),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "{\"got back no entry\":true}");
+    assert_eq!(result.unwrap(), JsonString::null());
 
     // test the case with a bad hash
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        r#"{"entry_hash":"QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx"}"#,
+        &String::from(JsonString::from(json!(
+                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), "null");
+    assert_eq!(result.unwrap(), JsonString::null());
 }
 
 #[test]
@@ -189,13 +234,16 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"FAIL\"}" }"#,
+        &String::from(JsonString::from(SerializedEntry::from(Entry::new(
+            test_entry_type(),
+            JsonString::from("{\"stuff\":\"FAIL\"}"),
+        )))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
-        "{\"validation failed\":\"\\\"FAIL content is not allowed\\\"\"}",
-        result.unwrap()
+        result.unwrap(),
+        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}}"),
     );
 }
 
@@ -210,23 +258,27 @@ fn has_populated_validation_data() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        )),
     );
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type_name": "testEntryType", "entry_content": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        )),
     );
 
     //
@@ -246,8 +298,8 @@ fn has_populated_validation_data() {
     //
     /*
     assert_eq!(
-        "{\"validation failed\":\"\\\"{\\\\\\\"package\\\\\\\":{\\\\\\\"chain_header\\\\\\\":{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"validation_package_tester\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmdvEzbGrn5MoFmqZZPs91qNKsinuQJfxmge41FUK24CyG\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRTcDaeHzqUnR7WcfBWByNNUreYGppec11jy2MG2dkfCy\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},\\\\\\\"source_chain_entries\\\\\\\":[{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}},{\\\\\\\"value\\\\\\\":\\\\\\\"{\\\\\\\\\\\\\\\"stuff\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"non fail\\\\\\\\\\\\\\\"}\\\\\\\",\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"}}],\\\\\\\"source_chain_headers\\\\\\\":[{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"link_same_type\\\\\\\":\\\\\\\"QmWpg1UwT8RwSFdjXZ8TFMJKpCv1iqfkBkSeFzjfQNgfrP\\\\\\\",\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"},{\\\\\\\"entry_type\\\\\\\":{\\\\\\\"App\\\\\\\":\\\\\\\"testEntryType\\\\\\\"},\\\\\\\"entry_address\\\\\\\":\\\\\\\"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou\\\\\\\",\\\\\\\"entry_signature\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"link\\\\\\\":\\\\\\\"QmRJxWBUyFh7rfMAFjJE99GN9oAy8F6RxPpdJjLKBfuU3M\\\\\\\",\\\\\\\"link_same_type\\\\\\\":null,\\\\\\\"timestamp\\\\\\\":\\\\\\\"\\\\\\\"}],\\\\\\\"custom\\\\\\\":null},\\\\\\\"sources\\\\\\\":[\\\\\\\"<insert your agent key here>\\\\\\\"],\\\\\\\"lifecycle\\\\\\\":\\\\\\\"Chain\\\\\\\",\\\\\\\"action\\\\\\\":\\\\\\\"Commit\\\\\\\"}\\\"\"}",
-        result.unwrap()
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"package\\\":{\\\"chain_header\\\":{\\\"entry_type\\\":{\\\"App\\\":\\\"validation_package_tester\\\"},\\\"entry_address\\\":\\\"QmYQPp1fExXdKfmcmYTbkw88HnCr3DzMSFUZ4ncEd9iGBY\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmSQqKHPpYZbafF7PXPKx31UwAbNAmPVuSHHxcBoDcYsci\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},\\\"source_chain_entries\\\":[{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"\\\\\\\"non fail\\\\\\\"\\\",\\\"entry_type\\\":\\\"testEntryType\\\"},{\\\"value\\\":\\\"alex\\\",\\\"entry_type\\\":\\\"%agent_id\\\"}],\\\"source_chain_headers\\\":[{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"link_same_type\\\":\\\"QmRHUwiUuFJiMyRmKaA1U49fXEnT8qbZMoj2V9maa4Q3JE\\\",\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":{\\\"App\\\":\\\"testEntryType\\\"},\\\"entry_address\\\":\\\"QmXxdzM9uHiSfV1xDwUxMm5jX4rVU8jhtWVaeCzjkFW249\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmRYerwRRXYxmYoxq1LTZMVVRfjNMAeqmdELTNDxURtHEZ\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"},{\\\"entry_type\\\":\\\"AgentId\\\",\\\"entry_address\\\":\\\"QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA\\\",\\\"entry_signature\\\":\\\"\\\",\\\"link\\\":\\\"QmQJxUSfJe2QoxTyEwKQX9ypbkcNv3cw1vasGTx1CUpJFm\\\",\\\"link_same_type\\\":null,\\\"timestamp\\\":\\\"\\\"}],\\\"custom\\\":null},\\\"sources\\\":[\\\"<insert your agent key here>\\\"],\\\"lifecycle\\\":\\\"Chain\\\",\\\"action\\\":\\\"Commit\\\"}\"}}"),
+        result.unwrap(),
     );
     */}
 
@@ -257,7 +309,7 @@ fn can_link_entries() {
 
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), r#"{"ok":true}"#);
+    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
 #[test]
@@ -266,8 +318,14 @@ fn can_roundtrip_links() {
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
-    let ordering1: bool = result_string == r#"{"links":["QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2","QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog"]}"#;
-    let ordering2: bool = result_string == r#"{"links":["QmW6vfGv7fWMPQsgwd63HJhtoZmHTrf9MSNXCkG6LZxyog","QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2"]}"#;
+
+    println!("can_roundtrip_links result_string: {:?}", result_string);
+    let expected = JsonString::from("{\"Ok\":[\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\",\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\"]}");
+    let ordering1: bool = result_string == expected;
+
+    let expected = JsonString::from("{\"Ok\":[\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\",\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\"]}");
+    let ordering2: bool = result_string == expected;
+
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }
 
@@ -283,8 +341,10 @@ fn can_check_query() {
     );
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
-        "{\"addresses\":[\"QmStYP5FYC61PfKKMYZpqBSMRJCAUeuSS8Vuz4EQL5uvK2\"]}",
         result.unwrap(),
+        JsonString::from(vec![Address::from(
+            "QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx",
+        )]),
     );
 }
 
@@ -296,7 +356,9 @@ fn can_check_hash_app_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
+        JsonString::from(Address::from(
+            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+        )),
     );
 }
 
@@ -321,7 +383,9 @@ fn can_check_call() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        "\"QmYmZyvDda3ygMhNnEjx8p9Q1TonHG9xhpn9drCptRT966\"",
+        JsonString::from(ZomeApiInternalResult::success(Address::from(
+            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+        ))),
     );
 }
 
@@ -334,6 +398,8 @@ fn can_check_call_with_args() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        r#"{"address":"QmZi7c1G2qAN6Y5wxHDB9fLhSaSVBJe28ZVkiPraLEcvou"}"#
+        JsonString::from(ZomeApiInternalResult::success(Address::from(
+            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+        ))),
     );
 }

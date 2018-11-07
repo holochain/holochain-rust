@@ -1,24 +1,25 @@
 use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
+    error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+};
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        commit::{CommitEntryArgs, CommitEntryResult},
-        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, GetResultStatus},
-        get_links::{GetLinksArgs, GetLinksResult},
-        link_entries::LinkEntriesArgs,
-        HashEntryArgs, QueryArgs, QueryResult, ZomeFnCallArgs,
+        get_entry::GetEntryOptions, get_links::GetLinksArgs, link_entries::LinkEntriesArgs,
+        QueryArgs, QueryResult, ZomeFnCallArgs,
     },
     holochain_core_types::{
-        error::{CoreError, HolochainError, RibosomeReturnCode},
         hash::HashString,
+        json::{JsonString, RawString},
     },
     memory_allocation::*,
     memory_serialization::*,
 };
-use serde::de::DeserializeOwned;
 use serde_json;
-use std::os::raw::c_char;
+use std::{convert::TryInto, os::raw::c_char};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -39,7 +40,7 @@ lazy_static! {
   /// The hash of your public key.
   /// This is your node address on the DHT.
   /// It can be used for node-to-node messaging with `send` and `receive` functions.
-  pub static ref AGENT_ADDRESS: &'static HashString = &GLOBALS.agent_address;
+  pub static ref AGENT_ADDRESS: &'static Address = &GLOBALS.agent_address;
 
   /// The hash of the first identity entry on your chain (The second entry on your chain).
   /// This is your peer's identity on the DHT.
@@ -50,6 +51,37 @@ lazy_static! {
   /// Starts with the same value as AGENT_INITIAL_HASH.
   /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
   pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+}
+
+impl From<DNA_NAME> for JsonString {
+    fn from(dna_name: DNA_NAME) -> JsonString {
+        JsonString::from(RawString::from(dna_name.to_string()))
+    }
+}
+impl From<DNA_HASH> for JsonString {
+    fn from(dna_hash: DNA_HASH) -> JsonString {
+        JsonString::from(HashString::from(dna_hash.to_string()))
+    }
+}
+impl From<AGENT_ID_STR> for JsonString {
+    fn from(agent_id: AGENT_ID_STR) -> JsonString {
+        JsonString::from(RawString::from(agent_id.to_string()))
+    }
+}
+impl From<AGENT_ADDRESS> for JsonString {
+    fn from(agent_address: AGENT_ADDRESS) -> JsonString {
+        JsonString::from(Address::from(agent_address.to_string()))
+    }
+}
+impl From<AGENT_INITIAL_HASH> for JsonString {
+    fn from(agent_initial_hash: AGENT_INITIAL_HASH) -> JsonString {
+        JsonString::from(HashString::from(agent_initial_hash.to_string()))
+    }
+}
+impl From<AGENT_LATEST_HASH> for JsonString {
+    fn from(agent_latest_hash: AGENT_LATEST_HASH) -> JsonString {
+        JsonString::from(HashString::from(agent_latest_hash.to_string()))
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -147,30 +179,39 @@ pub enum BundleOnClose {
 /// writes that string to the logger in the execution context
 /// # Examples
 /// ```rust
-/// pub fn handle_some_function(content: String) -> serde_json::Value {
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> JsonString {
 ///     // ...
 ///     hdk::debug("write a message to the logs");
 ///     // ...
+///     "whatever".into()
 /// }
+///
+/// # }
 /// ```
-pub fn debug(msg: &str) -> ZomeApiResult<()> {
+pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, msg);
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(ZomeApiError::Internal(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
+
+    let allocation_of_input = store_as_json(&mut mem_stack, msg)?;
+
     unsafe {
         hc_debug(allocation_of_input.encode());
     }
+
     mem_stack
         .deallocate(allocation_of_input)
         .expect("should be able to deallocate input that has been allocated on memory stack");
+
     Ok(())
 }
 
 /// Call an exposed function from another zome.
-/// Arguments for the called function are passed as `serde_json::Value`.
+/// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
 /// In order to utilize `call`, you must have at least two separate Zomes.
@@ -178,17 +219,20 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 ///
 /// This first one, is the one that is called into, with the Zome name `summer`.
 /// ```rust
-/// #[macro_use]
-/// extern crate hdk;
-/// extern crate serde;
-/// #[macro_use]
-/// extern crate serde_derive;
-/// #[macro_use]
-/// extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # use hdk::holochain_core_types::json::JsonString;
 ///
-/// fn handle_sum(num1: u32, num2: u32) -> serde_json::Value {
+/// # fn main() {
+///
+/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
 ///     let sum = num1 + num2;
-///     return json!({"sum": format!("{}",sum)});
+///     return json!({"sum": format!("{}",sum)}).into();
 /// }
 ///
 /// define_zome! {
@@ -202,28 +246,37 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: serde_json::Value|,
+///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
 ///         }
 ///     }
 /// }
+///
+/// # }
 /// ```
 ///
 /// This second one, is the one that performs the call into the `summer` Zome.
 /// ```rust
-/// #[macro_use]
-/// extern crate hdk;
-/// extern crate serde;
-/// #[macro_use]
-/// extern crate serde_derive;
-/// #[macro_use]
-/// extern crate serde_json;
+/// # #![feature(try_from)]
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
 ///
-/// use hdk::holochain_core_types::hash::HashString;
+/// # use hdk::holochain_core_types::hash::HashString;
+/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::HolochainError;
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> serde_json::Value {
-///     #[derive(Serialize)]
+/// # fn main() {
+///
+/// fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
+///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
 ///         num1: u32,
 ///         num2: u32,
@@ -236,11 +289,11 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 ///         "summer",
 ///         "main",
 ///         "sum",
-///         serde_json::to_value(call_input).unwrap()
+///         call_input.into()
 ///     );
 ///     match maybe_result {
-///         Ok(result) => serde_json::from_str(&result).unwrap(),
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Ok(result) => result.into(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
 ///
@@ -255,36 +308,36 @@ pub fn debug(msg: &str) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: serde_json::Value|,
+///                 outputs: |sum: JsonString|,
 ///                 handler: handle_check_sum
 ///             }
 ///         }
 ///     }
 /// }
+///
+/// # }
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
     cap_name: S,
     fn_name: S,
-    fn_args: serde_json::Value,
-) -> ZomeApiResult<String> {
+    fn_args: JsonString,
+) -> ZomeApiResult<JsonString> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
     // Put args in struct and serialize into memory
-    let input = ZomeFnCallArgs {
-        zome_name: zome_name.into(),
-        cap_name: cap_name.into(),
-        fn_name: fn_name.into(),
-        fn_args: fn_args.to_string(),
-    };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input.clone());
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(ZomeApiError::Internal(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        ZomeFnCallArgs {
+            zome_name: zome_name.into(),
+            cap_name: cap_name.into(),
+            fn_name: fn_name.into(),
+            fn_args: String::from(fn_args),
+        },
+    )?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result: u32;
@@ -292,13 +345,15 @@ pub fn call<S: Into<String>>(
         encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
     }
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32);
+    let result = load_string(encoded_allocation_of_result as u32)?;
+
     // Free result & input allocations.
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
+
     // Done
-    result.map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))
+    Ok(result.into())
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -307,125 +362,126 @@ pub fn call<S: Into<String>>(
 /// Returns either an address of the committed entry as a string, or an error.
 /// # Examples
 /// ```rust
-/// pub fn handle_create_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::commit_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
-///         Ok(post_address) => json!({"address": post_address}),
-///         Err(hdk_error) => hdk_error.to_json(),
-///     }
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
 /// }
+///
+/// pub fn handle_create_post(content: String) -> JsonString {
+///
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::commit_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(e) => e.into(),
+///     }
+///
+/// }
+///
+/// # }
 /// ```
-pub fn commit_entry(
-    entry_type_name: &str,
-    entry_value: serde_json::Value,
-) -> ZomeApiResult<HashString> {
+pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
-    // Put args in struct and serialize into memory
-    let input = CommitEntryArgs {
-        entry_type_name: entry_type_name.to_string(),
-        entry_value: entry_value.to_string(),
-    };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(ZomeApiError::Internal(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
+
+    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
 
     // Call Ribosome's commit_entry()
     let encoded_allocation_of_result: u32;
     unsafe {
         encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as u32);
     }
+
     // Deserialize complex result stored in wasm memory
-    let result = load_json(encoded_allocation_of_result as u32);
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result
-        .map(|output: CommitEntryResult| HashString::from(output.address))
-        .map_err(|hc_err| match hc_err {
-            HolochainError::ValidationFailed(msg) => ZomeApiError::ValidationFailed(msg),
-            _ => ZomeApiError::Internal(hc_err.to_string()),
-        })
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Retrieves an entry from the local chain or the DHT, by looking it up using
 /// its address.
 /// # Examples
 /// ```rust
-/// pub fn handle_get_post(post_address: HashString) -> serde_json::Value {
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+/// # fn main() {
+/// pub fn handle_get_post(post_address: Address) -> JsonString {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>
 ///     // where T is the type that you used to commit the entry, in this case a Blog
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
-///     let result : Result<Option<Post>,ZomeApiError> = hdk::get_entry(post_address);
-///     match result {
-///         // In the case we don't get an error
-///         // it might be an entry ...
-///         Ok(Some(post)) => json!(post),
-///         Ok(None) =>  json!({}),
-///         Err(err) => json!({"error deserializing post": err.to_string()}),
+///     match hdk::get_entry(post_address) {
+///         Ok(maybe_post) => maybe_post.and_then(|entry| Some(entry.serialize())).into(),
+///         Err(e) => e.into(),
 ///     }
 /// }
+/// # }
 /// ```
-pub fn get_entry<T>(address: HashString) -> Result<Option<T>, ZomeApiError>
-where
-    T: DeserializeOwned,
-{
-    let res = get_entry_result(address, GetEntryOptions {});
-    match res {
-        Ok(result) => match result.status {
-            GetResultStatus::Found => {
-                let maybe_entry_value: Result<T, _> = serde_json::from_str(&result.entry);
-                match maybe_entry_value {
-                    Ok(entry_value) => Ok(Some(entry_value)),
-                    Err(err) => Err(ZomeApiError::Internal(err.to_string())),
-                }
-            }
-            GetResultStatus::NotFound => Ok(None),
-        },
-        Err(err) => Err(err),
-    }
+pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+    Ok(get_entry_result(address, GetEntryOptions {})?
+        .and_then(|serialized_entry| Some(serialized_entry.deserialize())))
 }
 
 /// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
 /// its address, and a the full options to specify exactly what data to return
 pub fn get_entry_result(
-    address: HashString,
+    address: Address,
     _options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
+) -> ZomeApiResult<Option<SerializedEntry>> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
     // Put args in struct and serialize into memory
-    let input = GetEntryArgs { address: address };
-    let maybe_allocation_of_input = store_as_json(&mut mem_stack, input);
-    if let Err(err_code) = maybe_allocation_of_input {
-        return Err(ZomeApiError::Internal(err_code.to_string()));
-    }
-    let allocation_of_input = maybe_allocation_of_input.unwrap();
-    // Call Ribosome get_entry()
+    let allocation_of_input = store_as_json(&mut mem_stack, address)?;
+
+    // Call WASMI-able get_entry
     let encoded_allocation_of_result: u32;
     unsafe {
         encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
     }
     // Deserialize complex result stored in memory
-    let result = load_json(encoded_allocation_of_result as u32);
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
@@ -433,26 +489,49 @@ pub fn get_entry_result(
 /// can only be looked up in the direction from the `base`, which is the first argument, to the `target`.
 /// # Examples
 /// ```rust
-/// pub fn handle_create_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::commit_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
+/// # use hdk::AGENT_ADDRESS;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// pub fn handle_link_entries(content: String) -> JsonString {
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::commit_entry(&post_entry) {
 ///         Ok(post_address) => {
-///             let link_result = hdk::link_entries(
-///                 &HashString::from(AGENT_ADDRESS.to_string()),
+///              match hdk::link_entries(
+///                 &AGENT_ADDRESS,
 ///                 &post_address,
 ///                 "authored_posts"
-///             );
-///             if link_result.is_err() {
-///                 return json!({"link error": link_result.err().unwrap()})
+///             ) {
+///                 Ok(link_address) => post_address.into(),
+///                 Err(e) => e.into(),
 ///             }
-///             json!({"address": post_address})
 ///         }
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
+/// # }
 /// ```
 pub fn link_entries<S: Into<String>>(
     base: &HashString,
@@ -462,24 +541,30 @@ pub fn link_entries<S: Into<String>>(
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let input = LinkEntriesArgs {
-        base: base.clone(),
-        target: target.clone(),
-        tag: tag.into(),
-    };
-
-    let allocation_of_input = store_as_json(&mut mem_stack, input)
-        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        LinkEntriesArgs {
+            base: base.clone(),
+            target: target.clone(),
+            tag: tag.into(),
+        },
+    )?;
 
     let encoded_allocation_of_result: u32 =
         unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
-    let result = check_for_ribosome_error(encoded_allocation_of_result);
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available
@@ -497,43 +582,67 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// This is often used to reconstruct an address of a `base` argument when calling [get_links](fn.get_links.html).
 /// # Examples
 /// ```rust
-/// fn handle_hash_post(content: String) -> serde_json::Value {
-///     let maybe_address = hdk::hash_entry("post", json!({
-///         "content": content,
-///         "date_created": "now"
-///     }));
-///     match maybe_address {
-///         Ok(address) => {
-///             json!({"address": address})
-///         }
-///         Err(hdk_error) => hdk_error.to_json(),
-///     }
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
 /// }
+///
+/// fn handle_hash_post(content: String) -> JsonString {
+///
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::hash_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(hdk_error) => hdk_error.into(),
+///     }
+///
+/// }
+///
+/// # }
 /// ```
-pub fn hash_entry<S: Into<String>>(
-    entry_type_name: S,
-    entry_value: serde_json::Value,
-) -> ZomeApiResult<HashString> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
     // Put args in struct and serialize into memory
-    let input = HashEntryArgs {
-        entry_type_name: entry_type_name.into(),
-        entry_value: entry_value.to_string(),
-    };
-    let allocation_of_input = store_as_json(&mut mem_stack, input)
-        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_hash_entry(allocation_of_input.encode() as u32) };
+    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_hash_entry(allocation_of_input.encode() as u32);
+    }
+
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32);
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result
-        .map(|hash_str| HashString::from(hash_str))
-        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available
@@ -576,59 +685,84 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
 /// # Examples
 /// ```rust
-/// pub fn handle_posts_by_agent(agent: HashString) -> serde_json::Value {
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+///
+/// # fn main() {
+/// pub fn handle_posts_by_agent(agent: Address) -> JsonString {
 ///     match hdk::get_links(&agent, "authored_posts") {
-///         Ok(result) => json!({"post_addresses": result.links}),
-///         Err(hdk_error) => hdk_error.to_json(),
+///         Ok(result) => result.into(),
+///         Err(hdk_error) => hdk_error.into(),
 ///     }
 /// }
+/// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<GetLinksResult> {
+pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Address>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
-    let input = GetLinksArgs {
-        entry_address: base.clone(),
-        tag: tag.into(),
-    };
-    let allocation_of_input = store_as_json(&mut mem_stack, input)
-        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
+
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        GetLinksArgs {
+            entry_address: base.clone(),
+            tag: tag.into(),
+        },
+    )?;
+
     // Call Ribosome
     let encoded_allocation_of_result: u32 =
         unsafe { hc_get_links(allocation_of_input.encode() as u32) };
+
     // Deserialize complex result stored in memory
-    let result: Result<GetLinksResult, HolochainError> =
-        load_json(encoded_allocation_of_result as u32);
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-    // Done
-    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
+
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
 pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
     // Put args in struct and serialize into memory
-    let input = QueryArgs {
-        entry_type_name: entry_type_name.to_string(),
-        limit: limit,
-    };
-    let allocation_of_input = store_as_json(&mut mem_stack, input)
-        .map_err(|err_code| ZomeApiError::Internal(err_code.to_string()))?;
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_query(allocation_of_input.encode() as u32) };
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        QueryArgs {
+            entry_type_name: entry_type_name.to_string(),
+            limit: limit,
+        },
+    )?;
+
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_query(allocation_of_input.encode() as u32);
+    }
     // Deserialize complex result stored in memory
-    let result: Result<QueryResult, HolochainError> =
-        load_json(encoded_allocation_of_result as u32);
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
     // Done
-    result.map_err(|hc_err| ZomeApiError::Internal(hc_err.to_string()))
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available

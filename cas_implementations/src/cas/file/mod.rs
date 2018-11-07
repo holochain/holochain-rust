@@ -9,11 +9,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use riker::actors::*;
-use serde::{
-    de::{self, Deserialize, Deserializer, MapAccess, Visitor},
-    ser::{Serialize, SerializeStruct, Serializer},
-};
-use std::fmt;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
@@ -60,14 +55,15 @@ impl ContentAddressableStorage for FilesystemStorage {
 pub mod tests {
     extern crate serde_test;
     extern crate tempfile;
-    use self::serde_test::{assert_tokens, Token};
-    use serde_json;
 
     use self::tempfile::{tempdir, TempDir};
     use cas::file::FilesystemStorage;
-    use holochain_core_types::cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::StorageTestSuite,
+    use holochain_core_types::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::StorageTestSuite,
+        },
+        json::RawString,
     };
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
@@ -85,8 +81,8 @@ pub mod tests {
         let (cas, _dir) = test_file_cas();
         let test_suite = StorageTestSuite::new(cas);
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            RawString::from("foo").into(),
+            RawString::from("bar").into(),
         );
     }
 

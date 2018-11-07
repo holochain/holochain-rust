@@ -1,8 +1,9 @@
 use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
-use serde_json;
-use std::string::ToString;
+use error::HolochainError;
+use json::JsonString;
+use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
 // Link
@@ -10,7 +11,7 @@ use std::string::ToString;
 
 type LinkTag = String;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 pub struct Link {
     base: Address,
     target: Address,
@@ -51,7 +52,7 @@ pub enum LinkActionKind {
     DELETE,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkEntry {
     action_kind: LinkActionKind,
     link: Link,
@@ -81,28 +82,19 @@ impl LinkEntry {
     }
 }
 
-impl ToString for LinkEntry {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("LinkEntry failed to serialize")
-    }
-}
-
-impl From<String> for LinkEntry {
-    fn from(s: String) -> LinkEntry {
-        serde_json::from_str(&s).expect("LinkEntry failed to deserialize")
-    }
-}
-
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        let json_array = serde_json::to_string(self).expect("LinkEntry should serialize");
-        Entry::new(&EntryType::Link, &json_array)
+        Entry::new(EntryType::Link, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::Link, entry.entry_type());
-        serde_json::from_str(&entry.value().to_owned()).expect("entry is not a valid LinkEntry")
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry to LinkEntry")
     }
 }
 
@@ -110,7 +102,7 @@ impl ToEntry for LinkEntry {
 // LinkListEntry
 //-------------------------------------------------------------------------------------------------
 //
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson)]
 pub struct LinkListEntry {
     links: Vec<Link>,
 }
@@ -127,27 +119,19 @@ impl LinkListEntry {
     }
 }
 
-impl ToString for LinkListEntry {
-    fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("LinkListEntry failed to serialize")
-    }
-}
-
-impl From<String> for LinkListEntry {
-    fn from(s: String) -> LinkListEntry {
-        serde_json::from_str(&s).expect("LinkListEntry failed to deserialize")
-    }
-}
-
 impl ToEntry for LinkListEntry {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        Entry::new(&EntryType::LinkList, &self.to_string())
+        Entry::new(EntryType::LinkList, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::LinkList, entry.entry_type());
-        LinkListEntry::from(entry.value().to_owned())
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry to LinkListEntry")
     }
 }
 
@@ -157,8 +141,9 @@ pub mod tests {
     use cas::content::AddressableContent;
     use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
     use entry_type::EntryType;
+    use json::JsonString;
     use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
-    use std::string::ToString;
+    use std::convert::TryFrom;
 
     pub fn test_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")
@@ -186,12 +171,12 @@ pub mod tests {
         )
     }
 
-    pub fn test_link_entry_string() -> String {
-        format!(
+    pub fn test_link_entry_json_string() -> JsonString {
+        JsonString::from(format!(
             "{{\"action_kind\":\"ADD\",\"link\":{{\"base\":\"{}\",\"target\":\"{}\",\"tag\":\"foo-tag\"}}}}",
             test_entry_a().address(),
             test_entry_b().address(),
-        )
+        ))
     }
 
     #[test]
@@ -235,13 +220,19 @@ pub mod tests {
     #[test]
     /// show ToString for LinkEntry
     fn link_entry_to_string_test() {
-        assert_eq!(test_link_entry_string(), test_link_entry().to_string(),);
+        assert_eq!(
+            test_link_entry_json_string(),
+            JsonString::from(test_link_entry()),
+        );
     }
 
     #[test]
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
-        assert_eq!(LinkEntry::from(test_link_entry_string()), test_link_entry(),);
+        assert_eq!(
+            LinkEntry::try_from(test_link_entry_json_string()).unwrap(),
+            test_link_entry(),
+        );
     }
 
     #[test]
@@ -249,7 +240,7 @@ pub mod tests {
     fn link_entry_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(&EntryType::Link, &test_link_entry_string()),
+            Entry::new(EntryType::Link, test_link_entry_json_string()),
             test_link_entry().to_entry(),
         );
 

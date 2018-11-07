@@ -72,15 +72,9 @@ impl FromStr for EntryType {
     }
 }
 
-impl Display for EntryType {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl EntryType {
-    pub fn as_str(&self) -> &str {
-        let ret = match *self {
+impl From<EntryType> for String {
+    fn from(entry_type: EntryType) -> String {
+        String::from(match entry_type {
             EntryType::App(ref s) => s,
             EntryType::AgentId => sys_prefix!("agent_id"),
             EntryType::Deletion => sys_prefix!("deletion"),
@@ -91,8 +85,25 @@ impl EntryType {
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::Migration => sys_prefix!("migration"),
             EntryType::AgentState => sys_prefix!("agent_state"),
-        };
-        ret
+        })
+    }
+}
+
+impl From<String> for EntryType {
+    fn from(s: String) -> EntryType {
+        EntryType::from_str(&s).expect("could not convert String to EntryType")
+    }
+}
+
+impl From<&'static str> for EntryType {
+    fn from(s: &str) -> EntryType {
+        EntryType::from(String::from(s))
+    }
+}
+
+impl Display for EntryType {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", String::from(self.to_owned()))
     }
 }
 
@@ -154,7 +165,9 @@ pub mod tests {
     fn entry_type_valid_app_name() {
         assert!(EntryType::has_valid_app_name("agent_id"));
         assert!(!EntryType::has_valid_app_name("%agent_id"));
-        assert!(!EntryType::has_valid_app_name(EntryType::AgentId.as_str()));
+        assert!(!EntryType::has_valid_app_name(&String::from(
+            EntryType::AgentId
+        )));
         assert!(!EntryType::has_valid_app_name(&String::new()));
         assert!(EntryType::has_valid_app_name("toto"));
         assert!(!EntryType::has_valid_app_name("%%"));
@@ -178,7 +191,7 @@ pub mod tests {
                 EntryType::from_str(type_str).expect("could not convert str to EntryType")
             );
 
-            assert_eq!(type_str, variant.as_str(),);
+            assert_eq!(type_str, &String::from(variant),);
         }
     }
 

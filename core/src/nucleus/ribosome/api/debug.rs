@@ -6,7 +6,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let payload = runtime.load_utf8_from_args(args);
+    let payload = runtime.load_json_string_from_args(args);
     println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level
     runtime
@@ -19,6 +19,7 @@ pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 
 #[cfg(test)]
 pub mod tests {
+    use holochain_core_types::json::JsonString;
     use nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
@@ -39,10 +40,14 @@ pub mod tests {
     fn test_zome_api_function_debug() {
         let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        assert!(call_result.is_empty());
+        println!(
+            "test_zome_api_function_debug call_result: {:?}",
+            call_result
+        );
+        assert_eq!(JsonString::null(), call_result,);
         assert_eq!(
-            "[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]",
-            format!("{}", (*context.logger.lock().unwrap()).dump()),
+            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
+            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
         );
     }
 }

@@ -23,7 +23,8 @@ jobs:
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      #install:
+      install:
+        - choco install python
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         # Note: cygwin term
@@ -31,9 +32,9 @@ jobs:
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         - echo $PATH
 
-        - python --version
-        - choco install python3
-        - python --version
+        #- python --version
+        #- choco install python3
+        #- python --version
         # Doesn't work: - set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
 
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown

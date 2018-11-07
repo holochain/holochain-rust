@@ -21,7 +21,6 @@ extern crate num_traits;
 extern crate regex;
 
 extern crate config;
-extern crate holochain_agent;
 extern crate holochain_dna;
 extern crate holochain_net;
 #[macro_use]

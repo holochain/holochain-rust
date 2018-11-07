@@ -22,18 +22,22 @@ jobs:
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
     - name: "windows build all"
       os: windows
-      stage: install
-      language: shell
-      script:
+      #stage: install
+      #language: shell
+      env:
         - LIBZMQ_PREFIX=`pwd`/vendor/zmq
-        - PATH=$LIBZMQ_PREFIX:$PATH
-      stage: compile
+        - PYTHON_EXECUTABLE='c/usr/bin/python.exe'
+        - PATH=%LIBZMQ_PREFIX%;%PATH%
+      #script:
+      #  - LIBZMQ_PREFIX=`pwd`/vendor/zmq
+      #  - PATH=$LIBZMQ_PREFIX:$PATH
+      #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
-        - echo %cd%
-        - set LIBZMQ_PREFIX=%CD%\vendor\zmq
-        - set PATH=%LIBZMQ_PREFIX%;"%PATH%"
+        #- echo %cd%
+        #- set LIBZMQ_PREFIX=%CD%\vendor\zmq
+        #- set PATH=%LIBZMQ_PREFIX%;"%PATH%"
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
 #    - name: "C binding tests"

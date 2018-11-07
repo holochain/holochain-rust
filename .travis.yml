@@ -25,9 +25,9 @@ jobs:
       #stage: install
       #language: shell
       env:
-        - LIBZMQ_PREFIX=`pwd`/vendor/zmq
+        - LIBZMQ_PREFIX=vendor/zmq
         - PYTHON_EXECUTABLE='c/usr/bin/python.exe'
-        - PATH=%LIBZMQ_PREFIX%;%PATH%
+        - PATH=$PATH:$LIBZMQ_PREFIX
       #script:
       #  - LIBZMQ_PREFIX=`pwd`/vendor/zmq
       #  - PATH=$LIBZMQ_PREFIX:$PATH

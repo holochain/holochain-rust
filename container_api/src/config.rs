@@ -186,8 +186,7 @@ id = "app spec instance"
 "#;
     let config = load_configuration::<Configuration>(toml).unwrap();
 
-    let dnas = config.dnas
-        .expect("expected agents returned");
+    let dnas = config.dnas.expect("expected agents returned");
     let dna_config = dnas.get(0).expect("expected at least 1 DNA");
     assert_eq!(dna_config.id, "app spec rust");
     assert_eq!(dna_config.file, "app-spec-rust.hcpkg");

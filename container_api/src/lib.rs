@@ -63,16 +63,16 @@ extern crate holochain_agent;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
-extern crate tempfile;
 extern crate serde;
+extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
 #[cfg(test)]
 extern crate test_utils;
+extern crate toml;
 
-pub mod error;
 pub mod config;
+pub mod error;
 
 use error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;

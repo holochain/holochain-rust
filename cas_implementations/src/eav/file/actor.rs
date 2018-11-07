@@ -166,7 +166,7 @@ impl EavFileStorageActor {
         Ok(entity_attribute_value_inter
             .into_iter()
             .filter(|e| e.is_ok())
-            .map(|eav_content| EntityAttributeValue::from_content(&eav_content.unwrap()))
+            .map(|eav_content| EntityAttributeValue::from_content(&eav_content.unwrap().into()))
             .collect())
     }
 }

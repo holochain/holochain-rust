@@ -1,5 +1,4 @@
 extern crate directories;
-extern crate holochain_agent;
 extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
@@ -15,8 +14,8 @@ use holochain_core_types::error::HolochainError;
 use holochain_dna::Dna;
 use std::sync::Arc;
 
-use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
+use holochain_core_types::entry::agent::Agent;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -132,7 +131,8 @@ pub unsafe extern "C" fn holochain_call(
         function.as_str(),
         parameters.as_str(),
     ) {
-        Ok(string_result) => {
+        Ok(json_string_result) => {
+            let string_result = String::from(json_string_result);
             let string_trim = string_result.trim_right_matches(char::from(0));
             match CString::new(string_trim) {
                 Ok(s) => s.into_raw(),

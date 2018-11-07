@@ -9,7 +9,7 @@ pub static mut G_MEM_STACK: Option<SinglePageStack> = None;
 
 // Internal global for retrieving all Zome API globals
 lazy_static! {
-    pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals();
+    pub(crate) static ref GLOBALS: ZomeApiGlobals = init_globals().unwrap();
 }
 
 // Invokable functions in the Ribosome

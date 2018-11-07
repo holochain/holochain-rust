@@ -1,17 +1,113 @@
+#[doc(hidden)]
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
-        let maybe_input =
-            $crate::holochain_wasm_utils::memory_serialization::load_json($encoded_allocation_of_input);
-        if maybe_input.is_err() {
-            return $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::ArgumentDeserializationFailed
-                as u32;
+        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_json(
+            $encoded_allocation_of_input,
+        );
+        if let Err(hc_err) = maybe_input {
+            return $crate::global_fns::store_and_return_output(hc_err);
         }
         maybe_input
     }};
 }
 
-/// A macro for describing zomes
+/// Every Zome must utilize the `define_zome`
+/// macro in the main library file in their Zome.
+/// The `define_zome` macro has 3 component parts:
+/// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
+/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
+///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
+///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
+/// 3. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
+///     `functions` must be a tree structure where the first children are `capabilities`
+///     and the children of those `capabilities` are actual function definitions.
+/// # Examples
+///
+/// ```rust
+/// # #![feature(try_from)]
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # extern crate boolinator;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_dna;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_dna::zome::entry_types::Sharing;
+///
+/// # use boolinator::Boolinator;
+///
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// fn handle_hash_post(content: String) -> JsonString {
+///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///         content,
+///         date_created: "now".into(),
+///     });
+///
+///     match hdk::hash_entry(&post_entry) {
+///         Ok(address) => address.into(),
+///         Err(hdk_error) => hdk_error.into(),
+///     }
+/// }
+///
+/// define_zome! {
+///     entries: [
+///         entry!(
+///             name: "post",
+///             description: "",
+///             sharing: Sharing::Public,
+///             native_type: Post,
+///
+///             validation_package: || {
+///                 hdk::ValidationPackageDefinition::ChainFull
+///             },
+///
+///             validation: |post: Post, _ctx: hdk::ValidationData| {
+///                 (post.content.len() < 280)
+///                     .ok_or_else(|| String::from("Content too long"))
+///             }
+///         )
+///     ]
+///
+///     genesis: || {
+///         Ok(())
+///     }
+///
+///     functions: {
+///         // "main" is the name of the capability
+///         // "Public" is the access setting of the capability
+///         main (Public) {
+///             // the name of this function, "hash_post" is the
+///             // one to give while performing a `call` method to this function.
+///             // the name of the handler function must be different than the
+///             // name of the Zome function.
+///             hash_post: {
+///                 inputs: |content: String|,
+///                 outputs: |post: serde_json::Value|,
+///                 handler: handle_hash_post
+///             }
+///         }
+///     }
+/// }
+///
+/// # }
+/// ```
 #[macro_export]
 macro_rules! define_zome {
     (
@@ -54,7 +150,10 @@ macro_rules! define_zome {
                 $genesis_expr
             }
 
-            $crate::global_fns::store_and_return_output(execute())
+            match execute() {
+                Ok(_) => 0,
+                Err(e) => $crate::global_fns::store_and_return_output($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
+            }
         }
 
         use $crate::holochain_dna::zome::capabilities::Capability;
@@ -110,7 +209,7 @@ macro_rules! define_zome {
                     $crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
                     // Macro'd InputStruct
-                    #[derive(Deserialize)]
+                    #[derive(Deserialize, Debug)]
                     struct InputStruct {
                         $($input_param_name : $input_param_type),*
                     }
@@ -125,7 +224,9 @@ macro_rules! define_zome {
                     let input: InputStruct = maybe_input.unwrap();
 
                     // Macro'd function body
-                    fn execute(params: InputStruct) -> impl ::serde::Serialize {
+                    // @TODO trait bound this as Into<JsonString>
+                    // @see https://github.com/holochain/holochain-rust/issues/588
+                    fn execute(params: InputStruct) -> $crate::holochain_wasm_utils::holochain_core_types::json::JsonString {
                         let InputStruct { $($input_param_name),* } = params;
 
                         $handler_path($($input_param_name),*)

@@ -1,5 +1,7 @@
-use holochain_agent::{Agent, Identity};
-use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_core_types::{
+    entry::agent::{Agent, Identity},
+    error::{HcResult, HolochainError}
+};
 use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{fs::File, io::prelude::*};

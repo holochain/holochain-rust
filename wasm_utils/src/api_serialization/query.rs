@@ -1,12 +1,9 @@
-use holochain_core_types::hash::HashString;
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 
-#[derive(Deserialize, Default, Debug, Serialize)]
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgs {
     pub entry_type_name: String,
     pub limit: u32,
 }
 
-#[derive(Deserialize, Default, Debug, Serialize)]
-pub struct QueryResult {
-    pub hashes: Vec<HashString>,
-}
+pub type QueryResult = Vec<Address>;

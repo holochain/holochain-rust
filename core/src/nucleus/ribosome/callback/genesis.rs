@@ -57,7 +57,7 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
         assert!(instance.is_err());
         let error = instance.err().unwrap();
-        assert_eq!("\u{0}".to_string(), error);
+        assert_eq!("\"".to_string(), error);
     }
 
 }

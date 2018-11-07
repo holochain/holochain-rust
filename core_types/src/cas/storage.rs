@@ -2,6 +2,7 @@ use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
+use json::RawString;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -62,10 +63,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         address: &Address,
     ) -> Result<Option<AC>, HolochainError> {
         let content = self.content.read().unwrap().unthreadable_fetch(address)?;
-        Ok(match content {
-            Some(c) => Some(AC::from_content(&c)),
-            None => None,
-        })
+        Ok(content.and_then(|c| Some(AC::from_content(&c))))
     }
 }
 
@@ -294,11 +292,15 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -309,7 +311,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -350,11 +352,16 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
+
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -365,7 +372,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -408,14 +415,15 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::{test_content_addressable_storage, StorageTestSuite},
     };
+    use json::{JsonString, RawString};
 
     /// show that content of different types can round trip through the same storage
     #[test]
     fn example_content_round_trip_test() {
         let test_suite = StorageTestSuite::new(test_content_addressable_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            JsonString::from(RawString::from("foo")),
+            JsonString::from(RawString::from("bar")),
         );
     }
 }

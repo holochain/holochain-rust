@@ -1,6 +1,8 @@
 extern crate serde_json;
 use context::Context;
-use holochain_core_types::{entry_type::EntryType, error::HolochainError};
+use holochain_core_types::{
+    entry_type::EntryType, error::HolochainError, validation::ValidationPackageDefinition,
+};
 use nucleus::{
     ribosome::{
         self,
@@ -8,7 +10,7 @@ use nucleus::{
     },
     ZomeFnCall,
 };
-use std::sync::Arc;
+use std::{convert::TryFrom, sync::Arc};
 
 pub fn get_validation_package_definition(
     entry_type: EntryType,
@@ -34,17 +36,17 @@ pub fn get_validation_package_definition(
                     &zome_name,
                     "no capability, since this is an entry validation call",
                     "__hdk_get_validation_package_for_entry_type",
-                    &app_entry_type,
+                    app_entry_type.clone(),
                 ),
                 Some(app_entry_type.into_bytes()),
             )?;
 
-            if result.is_empty() {
+            if result.is_null() {
                 Err(HolochainError::SerializationError(String::from(
                     "__hdk_get_validation_package_for_entry_type returned empty result",
                 )))
             } else {
-                match serde_json::from_str(&result) {
+                match ValidationPackageDefinition::try_from(result) {
                     Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
                     Err(_) => Err(HolochainError::SerializationError(String::from(
                         "validation_package result could not be deserialized as ValidationPackage",

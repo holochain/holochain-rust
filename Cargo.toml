@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-  "agent",
   "container",
   "container_api",
   "core_api_c_binding",
@@ -13,3 +12,4 @@ members = [
   "net_ipc",
   "hdk-rust",
 ]
+exclude = ["test_utils"]

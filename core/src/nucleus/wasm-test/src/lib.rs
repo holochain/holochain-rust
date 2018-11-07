@@ -1,7 +1,14 @@
+#![feature(try_from)]
 extern crate holochain_wasm_utils;
+use holochain_wasm_utils::holochain_core_types::{
+  error::{HolochainError, RibosomeReturnCode},
+  json::{JsonString, RawString}
+};
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 
@@ -15,9 +22,9 @@ extern {
 
 /// Call HC API DEBUG function with proper input struct: a string
 /// return error code
-fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
+fn hdk_debug(mem_stack: &mut SinglePageStack, json_string: &JsonString) {
   // Write input string on stack
-  let maybe_allocation =  store_as_json(mem_stack, s);
+  let maybe_allocation = store_as_json(mem_stack, json_string.to_owned());
   if let Err(_) = maybe_allocation {
     return;
   }
@@ -41,8 +48,8 @@ fn hdk_debug(mem_stack: &mut SinglePageStack, s: &str) {
 #[no_mangle]
 pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  hdk_debug(&mut mem_stack, "Hello world!");
-  return 0;
+  hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello world!")));
+  i32::from(RibosomeReturnCode::Success)
 }
 
 /// Function called by Holochain Instance
@@ -51,17 +58,17 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  hdk_debug(&mut mem_stack, "Hello");
-  hdk_debug(&mut mem_stack, "world");
-  hdk_debug(&mut mem_stack, "!");
-  return 0;
+  hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello")));
+  hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
+  hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
+  i32::from(RibosomeReturnCode::Success)
 }
 
 //-------------------------------------------------------------------------------------------------
 //  More tests
 //-------------------------------------------------------------------------------------------------
 
-#[derive(Serialize, Default, Clone, PartialEq, Deserialize)]
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
   value: String,
 }
@@ -69,9 +76,9 @@ struct TestStruct {
 #[no_mangle]
 pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: usize) -> i32 {
   let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
-  let fish = store_json_into_encoded_allocation(&mut mem_stack, TestStruct {
+  let fish = store_as_json_into_encoded_allocation(&mut mem_stack, TestStruct {
     value: "fish".to_string(),
   });
-  hdk_debug(&mut mem_stack, "disruptive debug log");
+  hdk_debug(&mut mem_stack, &JsonString::from("disruptive debug log"));
   fish
 }

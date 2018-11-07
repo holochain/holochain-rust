@@ -291,11 +291,13 @@ pub mod tests {
     };
     use context::Context;
     use futures::executor::block_on;
-    use holochain_agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
-        cas::content::AddressableContent, chain_header::test_chain_header, entry::ToEntry,
+        cas::content::AddressableContent,
+        chain_header::test_chain_header,
+        entry::{agent::Agent, ToEntry},
         entry_type::EntryType,
+        json::{JsonString, RawString},
     };
     use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
@@ -655,9 +657,10 @@ pub mod tests {
             ),
         );
 
-        let instance = test_instance(dna);
-        assert!(instance.is_ok());
-        let instance = instance.unwrap();
+        let maybe_instance = test_instance(dna);
+        assert!(maybe_instance.is_ok());
+
+        let instance = maybe_instance.unwrap();
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -672,10 +675,10 @@ pub mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 9
                 )
                 (data (i32.const 0)
-                    "1337"
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )
@@ -685,7 +688,10 @@ pub mod tests {
 
         let instance = test_instance(dna);
         assert!(instance.is_err());
-        assert_eq!(instance.err().unwrap(), "1337");
+        assert_eq!(
+            instance.err().unwrap(),
+            String::from(JsonString::from(RawString::from("Genesis")))
+        );
     }
 
     /// Committing a DnaEntry to source chain should work

@@ -1,10 +1,11 @@
 use holochain_core_types::{
     entry::agent::{Agent, Identity},
-    error::{HcResult, HolochainError}
+    error::{HcResult, HolochainError},
+    json::JsonString,
 };
 use holochain_dna::Dna;
 use serde::Deserialize;
-use std::{fs::File, io::prelude::*};
+use std::{convert::TryFrom, fs::File, io::prelude::*};
 
 #[derive(Deserialize)]
 pub struct Configuration {
@@ -28,7 +29,7 @@ pub struct AgentConfiguration {
 
 impl Into<Agent> for AgentConfiguration {
     fn into(self) -> Agent {
-        Agent::new(Identity::new(self.id))
+        Agent::from(Identity::from(self.id))
     }
 }
 
@@ -46,7 +47,7 @@ impl Into<HcResult<Dna>> for DNAConfiguration {
         let mut contents = String::new();
         f.read_to_string(&mut contents)
             .map_err(|_| HolochainError::IoError(String::from("Could read from file")))?;
-        Dna::from_json_str(&contents)
+        Dna::try_from(JsonString::from(contents))
             .map_err(|_| HolochainError::IoError(String::from("Could not create dna form json")))
     }
 }

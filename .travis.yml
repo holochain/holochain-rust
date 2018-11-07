@@ -23,21 +23,25 @@ jobs:
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      install:
-      - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
+      #install:
+      #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         # Note: cygwin term
         - echo $LIBZMQ_PREFIX
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         - echo $PATH
+
+        - python --version
+        - choco install python3
+        - python --version
         # Doesn't work: - set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
 
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
 
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
         # Note to self: It seems PYTHON_EXECUTABLE has to be defined by cmake somehow

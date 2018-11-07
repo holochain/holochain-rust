@@ -1,10 +1,10 @@
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_core_api::*;
+use holochain_container_api::*;
 use holochain_dna::zome::{
     capabilities::{Capability, FnDeclaration, Membrane},
     entry_types::EntryTypeDef,

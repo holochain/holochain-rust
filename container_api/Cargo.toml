@@ -1,5 +1,5 @@
 [package]
-name = "holochain_core_api"
+name = "holochain_container_api"
 version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 

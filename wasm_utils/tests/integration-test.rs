@@ -1,6 +1,6 @@
 extern crate holochain_agent;
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_wasm_utils;
 #[macro_use]
@@ -9,8 +9,8 @@ extern crate holochain_cas_implementations;
 extern crate tempfile;
 extern crate test_utils;
 
+use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::logger::Logger;
-use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::error::{HolochainError, RibosomeErrorCode, RibosomeErrorReport};
 use test_utils::hc_setup_and_call_zome_fn;
 #[derive(Clone, Debug)]

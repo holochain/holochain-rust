@@ -25,6 +25,7 @@ jobs:
       #stage: install
       #language: shell
       env:
+        # This works!
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         #- PYTHON_EXECUTABLE='c/usr/bin/python.exe'
         #- PATH=$PATH:$LIBZMQ_PREFIX
@@ -37,7 +38,7 @@ jobs:
         #- LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         #- set LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         - echo $LIBZMQ_PREFIX
-        - PATH=$PATH:$LIBZMQ_PREFIX
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         #- set LIBZMQ_PREFIX=%CD%\vendor\zmq
         #- set PATH=$LIBZMQ_PREFIX$PATH
         #- echo $LIBZMQ_PREFIX

@@ -5,7 +5,7 @@ use agent;
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::{content::AddressableContent, storage::ContentAddressableStorage},
+    cas::{content::{transform_content,AddressableContent}, storage::ContentAddressableStorage},
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
@@ -138,10 +138,10 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
         .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
         .map(|chain_header| {
-            let entry: Option<Entry> = chain
+            let entry: Option<Entry> = transform_content::<Entry>(chain
                 .content_storage()
                 .fetch(chain_header.entry_address())
-                .expect("Could not fetch from CAS");
+                .expect("Could not fetch from CAS"));
             entry
                 .expect("Could not find entry in CAS for existing chain header")
                 .into()

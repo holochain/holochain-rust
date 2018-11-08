@@ -2,7 +2,7 @@ extern crate serde_json;
 use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
+    cas::{content::{Address,transform_content}, storage::ContentAddressableStorage},
     entry::Entry,
     error::HolochainError,
 };
@@ -13,7 +13,8 @@ fn get_entry_from_dht_cas(
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let dht = context.state().unwrap().dht().content_storage();
-    dht.fetch(&address)
+    let result = dht.fetch(&address)?;
+    Ok(transform_content(result))
 }
 
 /// GetEntry Action Creator

@@ -3,7 +3,7 @@ use actor::{AskSelf, Protocol};
 use cas::file::actor::FilesystemStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent,Content},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
@@ -38,16 +38,14 @@ impl ContentAddressableStorage for FilesystemStorage {
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<AC: AddressableContent>(
+    fn fetch(
         &self,
         address: &Address,
-    ) -> Result<Option<AC>, HolochainError> {
+    ) -> Result<Option<Content>, HolochainError> {
         let response = self
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
-        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
-
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+        Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
     }
 }
 

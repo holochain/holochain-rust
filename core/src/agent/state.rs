@@ -4,7 +4,7 @@ use context::Context;
 use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent, Content},
+        content::{Address, AddressableContent, Content,transform_content},
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
@@ -195,11 +195,11 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
 
-    let result: Option<SerializedEntry> = state
+    let result: Option<SerializedEntry> = transform_content::<Entry>(state
         .chain()
         .content_storage()
-        .fetch::<Entry>(&address)
-        .expect("could not fetch from CAS")
+        .fetch(&address)
+        .expect("could not fetch from CAS"))
         .and_then(|entry| Some(entry.into()));
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

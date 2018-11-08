@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
+    cas::{content::{transform_content,Address}, storage::ContentAddressableStorage},
     chain_header::ChainHeader,
     entry_type::EntryType,
 };
@@ -97,7 +97,7 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                transform_content::<ChainHeader>(self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }
@@ -142,7 +142,7 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                transform_content::<ChainHeader>(self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }

@@ -8,6 +8,7 @@ use dht::dht_store::DhtStore;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
+    cas::content::transform_content,
     eav::EntityAttributeValueStorage,
     entry::*,
     entry_type::EntryType,
@@ -67,7 +68,7 @@ impl State {
                 ))?;
 
             Ok(Dna::from_entry(
-                &cas.fetch(dna_entry_header.entry_address())?
+                &transform_content::<Entry>(cas.fetch(dna_entry_header.entry_address())?)
                     .ok_or(HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
                     ))?,

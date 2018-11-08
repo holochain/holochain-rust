@@ -1,4 +1,4 @@
-use cas::content::{Address, AddressableContent, Content};
+use cas::content::{Address, AddressableContent, Content,transform_content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, Entry};
 use error::HolochainError;
@@ -23,7 +23,7 @@ pub trait ContentAddressableStorage: Clone + Send + Sync {
     /// returns Some AddressableContent if it is in the Store, else None
     /// AddressableContent::from_content() can be used to allow the compiler to infer the type
     /// @see the fetch implementation for ExampleCas in the cas module tests
-    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError>;
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
 }
 
 #[derive(Clone)]
@@ -58,12 +58,11 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         self.content.read().unwrap().unthreadable_contains(address)
     }
 
-    fn fetch<AC: AddressableContent>(
+    fn fetch(
         &self,
         address: &Address,
-    ) -> Result<Option<AC>, HolochainError> {
-        let content = self.content.read().unwrap().unthreadable_fetch(address)?;
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+    ) -> Result<Option<Content>, HolochainError> {
+        Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
     }
 }
 
@@ -138,7 +137,7 @@ where
             assert_eq!(Ok(false), cas.contains(&addressable_content.address()));
             assert_eq!(
                 Ok(None),
-                cas.fetch::<Addressable>(&addressable_content.address())
+                cas.fetch(&addressable_content.address())
             );
             assert_eq!(
                 Ok(false),
@@ -146,7 +145,7 @@ where
             );
             assert_eq!(
                 Ok(None),
-                cas.fetch::<OtherAddressable>(&other_addressable_content.address())
+                cas.fetch(&other_addressable_content.address())
             );
         }
 
@@ -185,7 +184,7 @@ where
             assert_eq!(
                 None,
                 thread_cas
-                    .fetch::<Entry>(&thread_entry.address())
+                    .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
             );
             tx1.send(true).unwrap();
@@ -209,9 +208,9 @@ where
             rx2.recv().unwrap();
             assert_eq!(
                 Some(thread_entry.clone()),
-                thread_cas
+                transform_content::<Entry>(thread_cas
                     .fetch(&thread_entry.address())
-                    .expect("could not fetch from cas")
+                    .expect("could not fetch from cas"))
             )
         });
 

@@ -16,12 +16,10 @@ jobs:
       before_install:
         - choco install python2
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-        - echo $PATH
       install:
         - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
-        - echo $PATH
         # Build WASMs
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
@@ -29,11 +27,8 @@ jobs:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-        # Build All
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --all
-        # Test All
-        # Note to self: It seems PYTHON_EXECUTABLE has to be defined by cmake somehow
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
+        # Build & test All
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --all
 
     - name: "C binding tests"
       dist: trusty

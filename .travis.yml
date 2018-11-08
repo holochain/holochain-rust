@@ -24,8 +24,8 @@ jobs:
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       python: 2.7
-      #install:
-        #- choco install python
+      install:
+        - choco install python2
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         - echo $PYTHON_VERSION

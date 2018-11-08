@@ -8,10 +8,9 @@ branches:
 jobs:
   include:
     - os: windows
-      language: sh
+      language: bash
       before_install:
         - which -a choco
-        - which -a python
         - choco install -y --verbose python2
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
         - python -m pip install --upgrade pip wheel

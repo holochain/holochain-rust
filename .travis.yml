@@ -9,9 +9,10 @@ jobs:
   include:
     - os: windows
       language: sh
-      python: "2.7"
       before_install:
-        - choco install python2 --verbose
+        - which -a choco
+        - which -a python
+        - choco install -y --verbose python2
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
         - python -m pip install --upgrade pip wheel
 
@@ -34,7 +35,6 @@ jobs:
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      python: "2.7"
       #install:
       #  - choco install python2
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc

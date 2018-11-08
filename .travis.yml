@@ -1,278 +1,175 @@
-language: python
-python:
-- "2.7"
-- "3.4"
-- "3.5"
-- "3.6"
-- "pypy3"
-matrix:
-  include:
-  - os: osx
-    language: sh
-    python: "3.7"
-    # Perform the manual steps on osx to install python3 and activate venv
-    before_install:
-    - brew update
-    - brew upgrade python3
-    - python3 -m pip install virtualenv
-    - virtualenv venv -p python3
-    - source venv/bin/activate
-  - os: windows
-    language: sh
-    python: "3.7"
-    before_install:
-    - choco install python3
-    - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
-    - python -m pip install --upgrade pip wheel
-  - os: windows
-    language: sh
-    python: "2.7"
-    before_install:
-    - choco install python2
-    - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-    - python -m pip install --upgrade pip wheel
-sudo: false
-install:
-# Get newer pip and whell for binary caching support
-- pip install --upgrade pip wheel
-- pip install -r requirements-test.txt
-script:
-- py.test --cov=translation_finder translation_finder
-- ./setup.py sdist
-- twine check dist/*
-after_script:
-- coverage xml
-- codecov
-- python-codacy-coverage
-cache: pip
-git:
-  depth: 10
-  submodules: false
+# https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
+# we build all PRs already, don't need redundant branch builds
+branches:
+  only:
+    - master
+    - develop
 
-## https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
-## we build all PRs already, don't need redundant branch builds
-#branches:
-#  only:
-#    - master
-#    - develop
-#
-#jobs:
-#  include:
-#    - os: windows
-#      language: sh
-#      python: "2.7"
-#      before_install:
-#        - choco install python2
-#        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-#        - python -m pip install --upgrade pip wheel
-#      script:
-#        - python --version
-#
-##    - name: "windows build wasm32"
-##      os: windows
-##      language: rust
-##      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-#      #script:
-#        #
-#    - name: "windows build all"
-#      os: windows
-#      #stage: install
-#      #language: shell
-#      env:
-#        # This works!
-#        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-#
-#        #- PYTHON_VERSION=2.7.11
-#        #- PYTHON_HOME='C:\\Python27'
-#
-#      #stage: compile
-#      language: rust
-#      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-#      install:
-#      #  - choco install python2
-#        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-#        - python --version
-#        #- python -m pip install --upgrade pip wheel
-#      #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
-#      script:
-#        # Note: cygwin term
-#
-#        #- choco --help
-#        #- choco install python2 --verbose --yes --execution-timeout=120
-#        - echo $PYTHON_VERSION
-#        - echo $PYTHON_HOME
-#        - echo $PYTHON_INCLUDE_DIRS
-#        - echo $PYTHON_LIBRARIES
-#
-#        # Note: This works!
-#        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
-#        - echo $PATH
-#
-#        - python --version
-#        #- choco install python3
-#        #- python --version
-#        # Doesn't work: - set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
-#
-#        # Build WASMs
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-##        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-#
-#        # Build All
-#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
-#
-#        # Test All
-#        # Note to self: It seems PYTHON_EXECUTABLE has to be defined by cmake somehow
-#        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
-#
-#
-##    - name: "C binding tests"
-##      dist: trusty
-##      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-##      language: bash
-##
-##      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-##      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-##      sudo: true
-##
-##      # manually cache as we manually install rustup
-##      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-##      cache:
-##        timeout: 1000
-##        directories:
-##          - $HOME/.cargo
-##          # faster to build this than manage a cache for the target
-##          # - $TRAVIS_BUILD_DIR/target
-##      install:
-##        - export PATH=$HOME/.cargo/bin:$PATH
-##      script:
-##        - make test_c_ci
-##      before_cache:
-##        - rm -rf $HOME/.cargo/registry/index
-##
-##    - name: "Standard tests + code coverage"
-##      dist: trusty
-##      language: node_js
-##      node_js:
-##        - "8"
-##
-##      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-##      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-##      sudo: true
-##
-##      # manually cache as we manually install rustup
-##      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-##      cache:
-##        timeout: 1000
-##        directories:
-##          - $HOME/.cargo
-##          - $TRAVIS_BUILD_DIR/target
-##      install:
-##        - export PATH=$HOME/.cargo/bin:$PATH
-##      script: make code_coverage
-##      after_success:
-##        - bash <(curl -s https://codecov.io/bash)
-##      before_cache:
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-##        - rm -rf $HOME/.cargo/registry/index
-##
-##    - name: "Formatting & clippy"
-##      dist: trusty
-##      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-##      language: bash
-##
-##      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-##      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-##      sudo: true
-##
-##      # manually cache as we manually install rustup
-##      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-##      cache:
-##        timeout: 1000
-##        directories:
-##          - $HOME/.cargo
-##          - $TRAVIS_BUILD_DIR/target
-##      install:
-##        - export PATH=$HOME/.cargo/bin:$PATH
-##      script:
-##        - make fmt_check
-##        # @see #431
-##        # - make clippy
-##      before_cache:
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-##        - rm -rf $HOME/.cargo/registry/index
-##
-##    - name: "Mdbook Build"
-##      dist: trusty
-##      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-##      language: bash
-##      env:
-##        - ENCRYPTION_LABEL: "30dd9296640e"
-##        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
-##
-##      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-##      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-##      sudo: true
-##
-##      # manually cache as we manually install rustup
-##      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-##      cache:
-##        timeout: 1000
-##        directories:
-##          - $HOME/.cargo
-##          - $TRAVIS_BUILD_DIR/target
-##      install:
-##        - export PATH=$HOME/.cargo/bin:$PATH
-##        - make install_mdbook
-##      script: ./travis-update-book.sh
-##      before_cache:
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-##        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-##        - rm -rf $HOME/.cargo/registry/index
+jobs:
+  include:
+    - name: "windows build all"
+      os: windows
+      env:
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      language: rust
+      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+      install:
+        - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
+      script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+        # Build WASMs
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # Build All
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
+    - name: "C binding tests"
+      dist: trusty
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          # faster to build this than manage a cache for the target
+          # - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make test_c_ci
+      before_cache:
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Standard tests + code coverage"
+      dist: trusty
+      language: node_js
+      node_js:
+        - "8"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script: make code_coverage
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+      before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Formatting & clippy"
+      dist: trusty
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make fmt_check
+        # @see #431
+        # - make clippy
+      before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Mdbook Build"
+      dist: trusty
+      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+      language: bash
+      env:
+        - ENCRYPTION_LABEL: "30dd9296640e"
+        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+        - make install_mdbook
+      script: ./travis-update-book.sh
+      before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index

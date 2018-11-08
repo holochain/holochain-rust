@@ -25,9 +25,9 @@ This is the home of the Holochain Rust libraries, being rewritten from [Go](http
 
 This `holochain-rust` repository implements three distinct yet overlapping aspects of the Holochain framework.
 
-1. The core Holochain functionality that executes applications
-2. A wrapper used to instantiate, manage, and run applications, called *container*
-3. A library and syntax for use in Rust based development of Zomes within applications, called Holochain Development Kit, *HDK*
+1. The core Holochain functionality that executes DNAs.
+2. A wrapper used to instantiate, manage, and run DNAs, called *container*
+3. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit, *HDK*
 
 Let's elaborate on these three aspects.
 

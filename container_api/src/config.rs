@@ -20,7 +20,7 @@ pub struct Configuration {
 impl Configuration {
     pub fn check_consistency(&self) -> Result<(), String> {
         if self.instances.is_none() {
-            return Ok(());
+            return Err("No instance found".to_string());
         }
         for ref instance in self.instances.as_ref().unwrap().iter() {
             self.agent_by_id(&instance.agent)
@@ -34,6 +34,16 @@ impl Configuration {
                     format!("DNA configuration \"{}\" not found, mentioned in instance \"{}\"", instance.dna, instance.id)
                     )?;
         }
+        for ref interface in self.interfaces.as_ref().unwrap().iter() {
+            for ref instance in interface.instances.iter() {
+                self.instance_by_id(&instance.id)
+                    .is_some()
+                    .ok_or_else(||
+                        format!("Instance configuration \"{}\" not found, mentioned in interface", instance.id)
+                    )?;
+            }
+        }
+
         Ok(())
     }
 
@@ -52,6 +62,17 @@ impl Configuration {
             )
             .and_then(|dna_config|
                 Some(dna_config.clone())
+            )
+    }
+
+    pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
+        self.instances
+            .as_ref()
+            .and_then(|instances|
+                instances.iter().find(|ic| &ic.id == id)
+            )
+            .and_then(|instance_config|
+                Some(instance_config.clone())
             )
     }
 }
@@ -85,7 +106,7 @@ impl TryFrom<DNAConfiguration> for Dna {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct InstanceConfiguration {
     id: String,
     dna: String,
@@ -94,14 +115,14 @@ pub struct InstanceConfiguration {
     storage: StorageConfiguration,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     logger_type: String,
     file: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct StorageConfiguration {
     #[serde(rename = "type")]
     storage_type: String,
@@ -283,5 +304,41 @@ path = "app_spec_storage"
 "#;
     let config = load_configuration::<Configuration>(toml).unwrap();
 
-    assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\""));
+    assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
+}
+
+#[test]
+fn test_incosistent_config_interface() {
+    let toml = r#"
+[[agent]]
+id = "test agent"
+name = "Holo Tester"
+key_file = "holo_tester.key"
+
+[[dna]]
+id = "app spec rust"
+file = "app-spec-rust.hcpkg"
+hash = "Qm328wyq38924y"
+
+[[instance]]
+id = "app spec instance"
+dna = "app spec rust"
+agent = "test agent"
+[instance.logger]
+type = "simple"
+file = "app_spec.log"
+[instance.storage]
+type = "file"
+path = "app_spec_storage"
+
+[[interface]]
+type = "websocket"
+port = 8888
+[[interface.instance]]
+id = "WRONG INSTANCE ID"
+
+"#;
+    let config = load_configuration::<Configuration>(toml).unwrap();
+
+    assert_eq!(config.check_consistency(), Err("Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface".to_string()));
 }

@@ -25,7 +25,7 @@ jobs:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
         # Build All
-        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --all
     - name: "C binding tests"
       dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943

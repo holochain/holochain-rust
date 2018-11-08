@@ -161,184 +161,188 @@ where
         .map_err(|_| HolochainError::IoError(String::from("Could not serialize toml")))
 }
 
-#[test]
-fn test_agent_load() {
-    let toml = r#"
-[[agents]]
-id = "bob"
-key_file="file/to/serialize"
+mod tests {
+    use super::*;
 
-[[agents]]
-id="alex"
-"#;
-    let agents = load_configuration::<Configuration>(toml)
-        .unwrap()
-        .agents
-        .expect("expected agents returned");
-    assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
-    assert_eq!(
-        agents
-            .get(0)
-            .expect("expected at least 2 agents")
-            .clone()
-            .key_file
-            .unwrap(),
-        "file/to/serialize"
-    );
-    assert_eq!(
-        agents.get(1).expect("expected at least 2 agents").id,
-        "alex"
-    );
-}
+    #[test]
+    fn test_agent_load() {
+        let toml = r#"
+    [[agents]]
+    id = "bob"
+    key_file="file/to/serialize"
 
-#[test]
-fn test_dna_load() {
-    let toml = r#"
-[[dnas]]
-id = "app spec rust"
-file = "app-spec-rust.hcpkg"
-hash = "Qm328wyq38924y"
-"#;
-    let dnas = load_configuration::<Configuration>(toml)
-        .unwrap()
-        .dnas
-        .expect("expected agents returned");
-    let dna_config = dnas.get(0).expect("expected at least 1 DNA");
-    assert_eq!(dna_config.id, "app spec rust");
-    assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
-    assert_eq!(dna_config.hash, "Qm328wyq38924y");
-}
+    [[agents]]
+    id="alex"
+    "#;
+        let agents = load_configuration::<Configuration>(toml)
+            .unwrap()
+            .agents
+            .expect("expected agents returned");
+        assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
+        assert_eq!(
+            agents
+                .get(0)
+                .expect("expected at least 2 agents")
+                .clone()
+                .key_file
+                .unwrap(),
+            "file/to/serialize"
+        );
+        assert_eq!(
+            agents.get(1).expect("expected at least 2 agents").id,
+            "alex"
+        );
+    }
 
-#[test]
-fn test_load_complete_config() {
-    let toml = r#"
-[[agents]]
-id = "test agent"
-name = "Holo Tester"
-key_file = "holo_tester.key"
+    #[test]
+    fn test_dna_load() {
+        let toml = r#"
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
+    "#;
+        let dnas = load_configuration::<Configuration>(toml)
+            .unwrap()
+            .dnas
+            .expect("expected agents returned");
+        let dna_config = dnas.get(0).expect("expected at least 1 DNA");
+        assert_eq!(dna_config.id, "app spec rust");
+        assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
+        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+    }
 
-[[dnas]]
-id = "app spec rust"
-file = "app-spec-rust.hcpkg"
-hash = "Qm328wyq38924y"
+    #[test]
+    fn test_load_complete_config() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
 
-[[instances]]
-id = "app spec instance"
-dna = "app spec rust"
-agent = "test agent"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
-[instances.storage]
-type = "file"
-path = "app_spec_storage"
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
 
-[[interfaces]]
-type = "websocket"
-port = 8888
-[[interfaces.instances]]
-id = "app spec instance"
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
 
-"#;
-    let config = load_configuration::<Configuration>(toml).unwrap();
+    [[interfaces]]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
 
-    assert_eq!(config.check_consistency(), Ok(()));
-    let dnas = config.dnas.expect("expected agents returned");
-    let dna_config = dnas.get(0).expect("expected at least 1 DNA");
-    assert_eq!(dna_config.id, "app spec rust");
-    assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
-    assert_eq!(dna_config.hash, "Qm328wyq38924y");
+    "#;
+        let config = load_configuration::<Configuration>(toml).unwrap();
 
-    let instances = config.instances.unwrap();
-    let instance_config = instances.get(0).unwrap();
-    assert_eq!(instance_config.id, "app spec instance");
-    assert_eq!(instance_config.dna, "app spec rust");
-    assert_eq!(instance_config.agent, "test agent");
-    let logger_config = &instance_config.logger;
-    assert_eq!(logger_config.logger_type, "simple");
-    assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
-    let storage_config = &instance_config.storage;
-    assert_eq!(storage_config.storage_type, "file");
-    assert_eq!(storage_config.path, Some(String::from("app_spec_storage")));
-    assert_eq!(storage_config.username, None);
-    assert_eq!(storage_config.password, None);
-    assert_eq!(storage_config.url, None);
+        assert_eq!(config.check_consistency(), Ok(()));
+        let dnas = config.dnas.expect("expected agents returned");
+        let dna_config = dnas.get(0).expect("expected at least 1 DNA");
+        assert_eq!(dna_config.id, "app spec rust");
+        assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
+        assert_eq!(dna_config.hash, "Qm328wyq38924y");
 
-    let interfaces = config.interfaces.unwrap();
-    let interface_config = interfaces.get(0).unwrap();
-    assert_eq!(interface_config.interface_type, "websocket");
-    assert_eq!(interface_config.port, Some(8888));
-    assert_eq!(interface_config.file, None);
-    assert_eq!(interface_config.admin, None);
-    let instance_ref = interface_config.instances.get(0).unwrap();
-    assert_eq!(instance_ref.id, "app spec instance");
+        let instances = config.instances.unwrap();
+        let instance_config = instances.get(0).unwrap();
+        assert_eq!(instance_config.id, "app spec instance");
+        assert_eq!(instance_config.dna, "app spec rust");
+        assert_eq!(instance_config.agent, "test agent");
+        let logger_config = &instance_config.logger;
+        assert_eq!(logger_config.logger_type, "simple");
+        assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
+        let storage_config = &instance_config.storage;
+        assert_eq!(storage_config.storage_type, "file");
+        assert_eq!(storage_config.path, Some(String::from("app_spec_storage")));
+        assert_eq!(storage_config.username, None);
+        assert_eq!(storage_config.password, None);
+        assert_eq!(storage_config.url, None);
 
-    assert_eq!(config.bridges, None);
-}
+        let interfaces = config.interfaces.unwrap();
+        let interface_config = interfaces.get(0).unwrap();
+        assert_eq!(interface_config.interface_type, "websocket");
+        assert_eq!(interface_config.port, Some(8888));
+        assert_eq!(interface_config.file, None);
+        assert_eq!(interface_config.admin, None);
+        let instance_ref = interface_config.instances.get(0).unwrap();
+        assert_eq!(instance_ref.id, "app spec instance");
+
+        assert_eq!(config.bridges, None);
+    }
 
 
-#[test]
-fn test_incosistent_config() {
-    let toml = r#"
-[[agent]]
-id = "test agent"
-name = "Holo Tester"
-key_file = "holo_tester.key"
+    #[test]
+    fn test_incosistent_config() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
 
-[[dna]]
-id = "app spec rust"
-file = "app-spec-rust.hcpkg"
-hash = "Qm328wyq38924y"
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
 
-[[instance]]
-id = "app spec instance"
-dna = "WRONG DNA ID"
-agent = "test agent"
-[instance.logger]
-type = "simple"
-file = "app_spec.log"
-[instance.storage]
-type = "file"
-path = "app_spec_storage"
+    [[instances]]
+    id = "app spec instance"
+    dna = "WRONG DNA ID"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
 
-"#;
-    let config = load_configuration::<Configuration>(toml).unwrap();
+    "#;
+        let config = load_configuration::<Configuration>(toml).unwrap();
 
-    assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
-}
+        assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
+    }
 
-#[test]
-fn test_incosistent_config_interface() {
-    let toml = r#"
-[[agent]]
-id = "test agent"
-name = "Holo Tester"
-key_file = "holo_tester.key"
+    #[test]
+    fn test_incosistent_config_interface() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
 
-[[dna]]
-id = "app spec rust"
-file = "app-spec-rust.hcpkg"
-hash = "Qm328wyq38924y"
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
 
-[[instance]]
-id = "app spec instance"
-dna = "app spec rust"
-agent = "test agent"
-[instance.logger]
-type = "simple"
-file = "app_spec.log"
-[instance.storage]
-type = "file"
-path = "app_spec_storage"
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
 
-[[interface]]
-type = "websocket"
-port = 8888
-[[interface.instance]]
-id = "WRONG INSTANCE ID"
+    [[interfaces]]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "WRONG INSTANCE ID"
 
-"#;
-    let config = load_configuration::<Configuration>(toml).unwrap();
+    "#;
+        let config = load_configuration::<Configuration>(toml).unwrap();
 
-    assert_eq!(config.check_consistency(), Err("Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface".to_string()));
+        assert_eq!(config.check_consistency(), Err("Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface".to_string()));
+    }
 }

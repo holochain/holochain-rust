@@ -8,11 +8,12 @@ branches:
 jobs:
   include:
     - os: windows
-      language: bash
+      language: python
+      python: "2.7"
       before_install:
-        - which -a choco
-        - choco install -y --verbose python2
+        - choco install -y python2
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+        - python --version
         - python -m pip install --upgrade pip wheel
 
 #    - name: "windows build wasm32"

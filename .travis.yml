@@ -11,7 +11,7 @@ jobs:
       language: sh
       python: "2.7"
       before_install:
-        - choco install python2
+        - choco install python2 --verbose
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
         - python -m pip install --upgrade pip wheel
 
@@ -39,6 +39,8 @@ jobs:
       #  - choco install python2
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
+        # Note: cygwin term
+
         #- choco --help
         #- choco install python2 --verbose --yes --execution-timeout=120
         - echo $PYTHON_VERSION
@@ -46,12 +48,11 @@ jobs:
         - echo $PYTHON_INCLUDE_DIRS
         - echo $PYTHON_LIBRARIES
 
-        # Note: cygwin term
-        - echo $LIBZMQ_PREFIX
+        # Note: This works!
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         - echo $PATH
 
-        #- python --version
+        - python --version
         #- choco install python3
         #- python --version
         # Doesn't work: - set PYTHON_EXECUTABLE=/c/usr/bin/python.exe

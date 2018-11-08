@@ -26,20 +26,25 @@ This is the home of the Holochain Rust libraries, being rewritten from [Go](http
 This `holochain-rust` repository implements three distinct yet overlapping aspects of the Holochain framework.
 
 1. The core Holochain functionality that executes applications
-2. A wrapper used to instantiate, manage, and run applications
-3. A library and syntax for use in Rust based development of Zomes within applications
+2. A wrapper used to instantiate, manage, and run applications, called *container*
+3. A library and syntax for use in Rust based development of Zomes within applications, called Holochain Development Kit, *HDK*
 
 Let's elaborate on these three aspects.
 
 ### 1 - core
 The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
 
-### 2 - core api
+### 2 - container api
 The first aspect only implements the logic for the execution of a single application. Meanwhile, there is a strong need to be able to load and instantiate multiple applications, and possibly even multiple instances of the same application. The [container_api](container_api) folder contains the code that implements this capability. Even then, this code must be employed within some other context to actually run it. Such a thing is called a Holochain "container".
 
 A container is a Holochain utility or service that manages and runs Holochain applications. The first such containers are the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container for test running.
 
-To implement a Rust based container, one could use the Rust crate exposed in [container_api](container_api). To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) code could be used, such as HoloSqape does.
+In order to develop a Rust based container toolset we added this crate [container_api](container_api).
+There is another crate [container](container) which is a wrapper around [container_api](container_api) that builds to an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.
+
+If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily. 
+
+To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
 
 ### 3 - HDK Rust
 Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. However, most languages will be easiest to use with some stub code to connect into the WASM runtime environment, because of some constraints with WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.

@@ -12,6 +12,7 @@ tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4.8"
+boolinator = "2.4"
 
 [dev-dependencies]
 holochain_cas_implementations = { path = "../cas_implementations" }

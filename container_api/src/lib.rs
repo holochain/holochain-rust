@@ -69,6 +69,7 @@ extern crate serde_derive;
 #[cfg(test)]
 extern crate test_utils;
 extern crate toml;
+extern crate boolinator;
 
 pub mod config;
 pub mod error;

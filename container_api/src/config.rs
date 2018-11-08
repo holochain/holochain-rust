@@ -6,6 +6,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
+use boolinator::*;
 
 #[derive(Deserialize)]
 pub struct Configuration {
@@ -14,6 +15,45 @@ pub struct Configuration {
     instances: Option<Vec<InstanceConfiguration>>,
     interfaces: Option<Vec<InterfaceConfiguration>>,
     bridges: Option<Vec<Bridge>>,
+}
+
+impl Configuration {
+    pub fn check_consistency(&self) -> Result<(), String> {
+        if self.instances.is_none() {
+            return Ok(());
+        }
+        for ref instance in self.instances.as_ref().unwrap().iter() {
+            self.agent_by_id(&instance.agent)
+                .is_some()
+                .ok_or_else(||
+                    format!("Agent configuration {} not found, mentioned in instance {}", instance.agent, instance.id)
+                    )?;
+            self.dna_by_id(&instance.dna)
+                .is_some()
+                .ok_or_else(||
+                    format!("DNA configuration \"{}\" not found, mentioned in instance \"{}\"", instance.dna, instance.id)
+                    )?;
+        }
+        Ok(())
+    }
+
+    pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
+        self.agents.as_ref().and_then(|agents| {
+            agents.iter().find(|ac| &ac.id == id)
+                .and_then(|agent_config| Some(agent_config.clone()))
+        })
+    }
+
+    pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
+        self.dnas
+            .as_ref()
+            .and_then(|dnas|
+                dnas.iter().find(|dc| &dc.id == id)
+            )
+            .and_then(|dna_config|
+                Some(dna_config.clone())
+            )
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -28,7 +68,7 @@ impl From<AgentConfiguration> for Agent {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct DNAConfiguration {
     id: String,
     file: String,
@@ -181,6 +221,7 @@ id = "app spec instance"
 "#;
     let config = load_configuration::<Configuration>(toml).unwrap();
 
+    assert_eq!(config.check_consistency(), Ok(()));
     let dnas = config.dnas.expect("expected agents returned");
     let dna_config = dnas.get(0).expect("expected at least 1 DNA");
     assert_eq!(dna_config.id, "app spec rust");
@@ -212,4 +253,35 @@ id = "app spec instance"
     assert_eq!(instance_ref.id, "app spec instance");
 
     assert_eq!(config.bridges, None);
+}
+
+
+#[test]
+fn test_incosistent_config() {
+    let toml = r#"
+[[agent]]
+id = "test agent"
+name = "Holo Tester"
+key_file = "holo_tester.key"
+
+[[dna]]
+id = "app spec rust"
+file = "app-spec-rust.hcpkg"
+hash = "Qm328wyq38924y"
+
+[[instance]]
+id = "app spec instance"
+dna = "WRONG DNA ID"
+agent = "test agent"
+[instance.logger]
+type = "simple"
+file = "app_spec.log"
+[instance.storage]
+type = "file"
+path = "app_spec_storage"
+
+"#;
+    let config = load_configuration::<Configuration>(toml).unwrap();
+
+    assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\""));
 }

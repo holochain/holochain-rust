@@ -9,15 +9,10 @@ use std::{convert::TryFrom, fs::File, io::prelude::*};
 
 #[derive(Deserialize)]
 pub struct Configuration {
-    #[serde(rename = "agent")]
     agents: Option<Vec<AgentConfiguration>>,
-    #[serde(rename = "dna")]
     dnas: Option<Vec<DNAConfiguration>>,
-    #[serde(rename = "instance")]
     instances: Option<Vec<InstanceConfiguration>>,
-    #[serde(rename = "interface")]
     interfaces: Option<Vec<InterfaceConfiguration>>,
-    #[serde(rename = "bridge")]
     bridges: Option<Vec<Bridge>>,
 }
 
@@ -85,7 +80,6 @@ pub struct InterfaceConfiguration {
     port: Option<u16>,
     file: Option<String>,
     admin: Option<bool>,
-    #[serde(rename = "instance")]
     instances: Vec<InstanceReferenceConfiguration>,
 }
 
@@ -111,11 +105,11 @@ where
 #[test]
 fn test_agent_load() {
     let toml = r#"
-[[agent]]
+[[agents]]
 id = "bob"
 key_file="file/to/serialize"
 
-[[agent]]
+[[agents]]
 id="alex"
 "#;
     let agents = load_configuration::<Configuration>(toml)
@@ -141,7 +135,7 @@ id="alex"
 #[test]
 fn test_dna_load() {
     let toml = r#"
-[[dna]]
+[[dnas]]
 id = "app spec rust"
 file = "app-spec-rust.hcpkg"
 hash = "Qm328wyq38924y"
@@ -159,31 +153,31 @@ hash = "Qm328wyq38924y"
 #[test]
 fn test_load_complete_config() {
     let toml = r#"
-[[agent]]
+[[agents]]
 id = "test agent"
 name = "Holo Tester"
 key_file = "holo_tester.key"
 
-[[dna]]
+[[dnas]]
 id = "app spec rust"
 file = "app-spec-rust.hcpkg"
 hash = "Qm328wyq38924y"
 
-[[instance]]
+[[instances]]
 id = "app spec instance"
 dna = "app spec rust"
 agent = "test agent"
-[instance.logger]
+[instances.logger]
 type = "simple"
 file = "app_spec.log"
-[instance.storage]
+[instances.storage]
 type = "file"
 path = "app_spec_storage"
 
-[[interface]]
+[[interfaces]]
 type = "websocket"
 port = 8888
-[[interface.instance]]
+[[interfaces.instances]]
 id = "app spec instance"
 
 "#;

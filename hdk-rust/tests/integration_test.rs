@@ -226,6 +226,7 @@ fn can_get_entry() {
 }
 
 #[test]
+#[cfg(not(windows))] // TODO does not work on windows because of different seperator
 fn can_invalidate_invalid_commit() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function

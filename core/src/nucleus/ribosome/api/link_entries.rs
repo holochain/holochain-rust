@@ -76,13 +76,6 @@ pub mod tests {
             test_link_args_bytes(),
         );
 
-        assert_eq!(
-            call_result,
-            JsonString::from(
-                "{\"ok\":false,\"value\":\"null\",\"error\":\"{\\\"kind\\\":{\\\"ErrorGeneric\\\":\\\"Base for link not found\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}"
-            ),
-        );
-
         let result = ZomeApiInternalResult::try_from(call_result)
             .expect("valid ZomeApiInternalResult JsonString");
 

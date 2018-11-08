@@ -10,11 +10,11 @@ use boolinator::*;
 
 #[derive(Deserialize)]
 pub struct Configuration {
-    agents: Option<Vec<AgentConfiguration>>,
-    dnas: Option<Vec<DNAConfiguration>>,
-    instances: Option<Vec<InstanceConfiguration>>,
-    interfaces: Option<Vec<InterfaceConfiguration>>,
-    bridges: Option<Vec<Bridge>>,
+    pub agents: Option<Vec<AgentConfiguration>>,
+    pub dnas: Option<Vec<DNAConfiguration>>,
+    pub instances: Option<Vec<InstanceConfiguration>>,
+    pub interfaces: Option<Vec<InterfaceConfiguration>>,
+    pub bridges: Option<Vec<Bridge>>,
 }
 
 impl Configuration {
@@ -34,13 +34,15 @@ impl Configuration {
                     format!("DNA configuration \"{}\" not found, mentioned in instance \"{}\"", instance.dna, instance.id)
                     )?;
         }
-        for ref interface in self.interfaces.as_ref().unwrap().iter() {
-            for ref instance in interface.instances.iter() {
-                self.instance_by_id(&instance.id)
-                    .is_some()
-                    .ok_or_else(||
-                        format!("Instance configuration \"{}\" not found, mentioned in interface", instance.id)
-                    )?;
+        if self.interfaces.is_some() {
+            for ref interface in self.interfaces.as_ref().unwrap().iter() {
+                for ref instance in interface.instances.iter() {
+                    self.instance_by_id(&instance.id)
+                        .is_some()
+                        .ok_or_else(||
+                            format!("Instance configuration \"{}\" not found, mentioned in interface", instance.id)
+                        )?;
+                }
             }
         }
 
@@ -79,8 +81,8 @@ impl Configuration {
 
 #[derive(Deserialize, Clone)]
 pub struct AgentConfiguration {
-    id: String,
-    key_file: Option<String>,
+    pub id: String,
+    pub key_file: Option<String>,
 }
 
 impl From<AgentConfiguration> for Agent {
@@ -91,9 +93,9 @@ impl From<AgentConfiguration> for Agent {
 
 #[derive(Deserialize, Clone)]
 pub struct DNAConfiguration {
-    id: String,
-    file: String,
-    hash: String,
+    pub id: String,
+    pub file: String,
+    pub hash: String,
 }
 
 impl TryFrom<DNAConfiguration> for Dna {
@@ -108,49 +110,49 @@ impl TryFrom<DNAConfiguration> for Dna {
 
 #[derive(Deserialize, Clone)]
 pub struct InstanceConfiguration {
-    id: String,
-    dna: String,
-    agent: String,
-    logger: LoggerConfiguration,
-    storage: StorageConfiguration,
+    pub id: String,
+    pub dna: String,
+    pub agent: String,
+    pub logger: LoggerConfiguration,
+    pub storage: StorageConfiguration,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
-    logger_type: String,
-    file: Option<String>,
+    pub logger_type: String,
+    pub file: Option<String>,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct StorageConfiguration {
     #[serde(rename = "type")]
-    storage_type: String,
-    username: Option<String>,
-    password: Option<String>,
-    url: Option<String>,
-    path: Option<String>,
+    pub storage_type: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub url: Option<String>,
+    pub path: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct InterfaceConfiguration {
     #[serde(rename = "type")]
-    interface_type: String,
-    port: Option<u16>,
-    file: Option<String>,
-    admin: Option<bool>,
-    instances: Vec<InstanceReferenceConfiguration>,
+    pub interface_type: String,
+    pub port: Option<u16>,
+    pub file: Option<String>,
+    pub admin: Option<bool>,
+    pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
 #[derive(Deserialize)]
 pub struct InstanceReferenceConfiguration {
-    id: String,
+    pub id: String,
 }
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct Bridge {
-    caller_id: String,
-    callee_id: String,
+    pub caller_id: String,
+    pub callee_id: String,
 }
 
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>

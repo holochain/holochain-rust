@@ -59,6 +59,7 @@
 //!```
 #![feature(try_from)]
 extern crate futures;
+extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
@@ -72,6 +73,7 @@ extern crate toml;
 extern crate boolinator;
 
 pub mod config;
+pub mod container;
 pub mod error;
 
 use error::{HolochainInstanceError, HolochainResult};

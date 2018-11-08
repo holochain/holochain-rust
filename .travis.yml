@@ -1,5 +1,3 @@
-dist: trusty
-
 # https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
 # we build all PRs already, don't need redundant branch builds
 branches:
@@ -9,7 +7,31 @@ branches:
 
 jobs:
   include:
+    - name: "windows build & test all"
+      os: windows
+      env:
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      language: rust
+      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+      before_install:
+        - choco install python2
+        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+      install:
+        - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
+      script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+        # Build WASMs
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/commit/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # Build & test All
+        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --all
+
     - name: "C binding tests"
+      dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
 
@@ -33,6 +55,7 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Standard tests + code coverage"
+      dist: trusty
       language: node_js
       node_js:
         - "8"
@@ -73,6 +96,7 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Formatting & clippy"
+      dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
 

@@ -5,8 +5,23 @@ branches:
     - master
     - develop
 
+language: python
+python:
+  - "2.7"
+  - "3.6"
+  
 jobs:
   include:
+    - os: windows
+      language: sh
+      python: "2.7"
+      before_install:
+        - choco install python2
+        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+        - python -m pip install --upgrade pip wheel
+      script:
+        - python --version
+
 #    - name: "windows build wasm32"
 #      os: windows
 #      language: rust
@@ -23,7 +38,7 @@ jobs:
 
         #- PYTHON_VERSION=2.7.11
         #- PYTHON_HOME='C:\\Python27'
-        
+
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc

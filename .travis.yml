@@ -7,35 +7,31 @@ branches:
 
 jobs:
   include:
-    - os: windows
-      language: bash
-      before_install:
-        - choco install -y python2
-        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-        - python --version
-        - python -m pip install --upgrade pip wheel
-
 #    - name: "windows build wasm32"
 #      os: windows
 #      language: rust
 #      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       #script:
         #
-    #- name: "windows build all"
-    # os: windows
-    - os: windows
+    - name: "windows build all"
+      os: windows
       #stage: install
       #language: shell
       env:
         # This works!
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+
         #- PYTHON_VERSION=2.7.11
         #- PYTHON_HOME='C:\\Python27'
+        
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      #install:
+      install:
       #  - choco install python2
+        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+        - python --version
+        #- python -m pip install --upgrade pip wheel
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
         # Note: cygwin term

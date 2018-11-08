@@ -19,17 +19,23 @@ jobs:
       env:
         # This works!
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-        #- PYTHON_EXECUTABLE='c/usr/bin/python.exe'
+        - PYTHON_VERSION=2.7.11
+        - PYTHON_HOME='C:\\Python27'
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      python: 2.7
-      install:
-        - choco install python2
+      python: "2.7"
+      #install:
+      #  - choco install python2
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
+        - choco --help
+        - choco install python2 --verbose --yes --execution-timeout=120
         - echo $PYTHON_VERSION
         - echo $PYTHON_HOME
+        - echo $PYTHON_INCLUDE_DIRS
+        - echo $PYTHON_LIBRARIES
+
         # Note: cygwin term
         - echo $LIBZMQ_PREFIX
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
@@ -40,6 +46,7 @@ jobs:
         #- python --version
         # Doesn't work: - set PYTHON_EXECUTABLE=/c/usr/bin/python.exe
 
+        # Build WASMs
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core_api/wasm-test/round_trip/Cargo.toml --release --target wasm32-unknown-unknown
@@ -47,9 +54,14 @@ jobs:
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 #        - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
 
+        # Build All
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --verbose --all
+
+        # Test All
         # Note to self: It seems PYTHON_EXECUTABLE has to be defined by cmake somehow
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --verbose --all
+
+
 #    - name: "C binding tests"
 #      dist: trusty
 #      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943

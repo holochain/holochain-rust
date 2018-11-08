@@ -51,33 +51,28 @@ impl NetConnectionThread {
             send_channel: sender,
             thread: thread::spawn(move || {
                 let mut us = 100_u64;
-                let mut worker = match worker_factory(handler) {
-                    Ok(w) => w,
-                    Err(e) => panic!("{:?}", e),
-                };
+                let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
 
                 while keep_running2.load(Ordering::Relaxed) {
                     let mut did_something = false;
-
-                    match receiver.try_recv() {
-                        Ok(data) => {
+                    receiver
+                        .try_recv()
+                        .and_then(|data| {
                             did_something = true;
-                            match worker.receive(data) {
-                                Ok(_) => (),
-                                Err(e) => panic!("{:?}", e),
-                            };
-                        }
-                        Err(_) => (),
-                    };
+                            worker.receive(data).unwrap_or_else(|e| panic!("{:?}", e));
+                            Ok(())
+                        })
+                        .unwrap_or(());
 
-                    match worker.tick() {
-                        Ok(b) => {
+                    worker
+                        .tick()
+                        .and_then(|b| {
                             if b {
                                 did_something = true;
                             }
-                        }
-                        Err(e) => panic!("{:?}", e),
-                    };
+                            Ok(())
+                        })
+                        .unwrap_or_else(|e| panic!("{:?}", e));
 
                     if did_something {
                         us = 100_u64;

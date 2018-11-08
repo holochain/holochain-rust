@@ -23,10 +23,13 @@ jobs:
       #stage: compile
       language: rust
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      install:
-        - choco install python
+      python: 2.7
+      #install:
+        #- choco install python
       #- rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
+        - echo $PYTHON_VERSION
+        - echo $PYTHON_HOME
         # Note: cygwin term
         - echo $LIBZMQ_PREFIX
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin

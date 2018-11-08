@@ -43,10 +43,10 @@ pub struct DNAConfiguration {
 impl Into<HcResult<Dna>> for DNAConfiguration {
     fn into(self) -> HcResult<Dna> {
         let mut f = File::open(self.file)
-            .map_err(|_| HolochainError::IoError(String::from("Could read from file")))?;
+            .map_err(|_| HolochainError::IoError(String::from("Could not read from file")))?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)
-            .map_err(|_| HolochainError::IoError(String::from("Could read from file")))?;
+            .map_err(|_| HolochainError::IoError(String::from("Could not read from file")))?;
         Dna::try_from(JsonString::from(contents))
             .map_err(|_| HolochainError::IoError(String::from("Could not create dna form json")))
     }

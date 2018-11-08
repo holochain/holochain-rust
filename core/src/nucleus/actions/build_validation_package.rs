@@ -140,6 +140,9 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
         .map(|chain_header| {
             let entry: Option<Entry> = transform_content::<Entry>(chain
                 .content_storage()
+                .clone()
+                .read()
+                .unwrap()
                 .fetch(chain_header.entry_address())
                 .expect("Could not fetch from CAS"));
             entry

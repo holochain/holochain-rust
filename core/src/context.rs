@@ -1,6 +1,6 @@
 use action::ActionWrapper;
 use holochain_agent::Agent;
-use holochain_core_types::{eav::EntityAttributeValueStorage, error::HolochainError};
+use holochain_core_types::{eav::EntityAttributeValueStorage,cas::storage::ContentAddressableStorage, error::HolochainError};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -24,7 +24,7 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
-    pub file_storage: FilesystemStorage,
+    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
 }
 
@@ -37,7 +37,7 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: FilesystemStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
@@ -60,7 +60,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
-        cas: FilesystemStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {

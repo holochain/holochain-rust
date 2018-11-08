@@ -47,6 +47,11 @@ impl ContentAddressableStorage for FilesystemStorage {
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
         Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
     }
+
+    fn get_id(&self) ->String
+    {
+        String::from("file-storage-system")
+    }
 }
 
 #[cfg(test)]

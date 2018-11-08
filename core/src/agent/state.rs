@@ -27,7 +27,7 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<FilesystemStorage>,
+    chain: ChainStore,
     top_chain_header: Option<ChainHeader>,
 }
 
@@ -44,7 +44,7 @@ impl AgentStateSnapshot {
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
+    pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -54,7 +54,7 @@ impl AgentState {
     }
 
     pub fn new_with_top_chain_header(
-        chain: ChainStore<FilesystemStorage>,
+        chain: ChainStore,
         chain_header: ChainHeader,
     ) -> AgentState {
         AgentState {
@@ -76,7 +76,7 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
+    pub fn chain(&self) -> ChainStore {
         self.chain.clone()
     }
 
@@ -165,8 +165,8 @@ fn reduce_commit_entry(
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
-        state.chain.content_storage().add(entry)?;
-        state.chain.content_storage().add(chain_header)?;
+        state.chain.content_storage().clone().write().unwrap().add(entry)?;
+        state.chain.content_storage().clone().write().unwrap().add(chain_header)?;
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
@@ -198,6 +198,9 @@ fn reduce_get_entry(
     let result: Option<SerializedEntry> = transform_content::<Entry>(state
         .chain()
         .content_storage()
+        .clone()
+        .read()
+        .unwrap()
         .fetch(&address)
         .expect("could not fetch from CAS"))
         .and_then(|entry| Some(entry.into()));

@@ -3,29 +3,33 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry_type::EntryType,
 };
+use std::sync::{Arc,RwLock};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ChainStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+#[derive(Debug,  Clone, Serialize, Deserialize)]
+pub struct ChainStore
 {
     // Storages holding local shard data
-    content_storage: CAS,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>
 }
 
-impl<CAS> ChainStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl PartialEq for ChainStore
 {
-    pub fn new(content_storage: CAS) -> Self {
+    fn eq(&self, other: &ChainStore) -> bool {
+        self.content_storage.clone().read().unwrap().get_id() == other.content_storage.clone().read().unwrap().get_id()
+    }
+}
+
+impl ChainStore
+{
+    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
     }
 
-    pub fn content_storage(&self) -> CAS {
+    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
 
-    pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator<CAS> {
+    pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
 
@@ -33,7 +37,7 @@ where
         &self,
         start_chain_header: &Option<ChainHeader>,
         entry_type: &EntryType,
-    ) -> ChainStoreTypeIterator<CAS> {
+    ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator::new(
             self.content_storage.clone(),
             self.iter(start_chain_header)
@@ -58,21 +62,17 @@ where
     }
 }
 
-pub struct ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+pub struct ChainStoreIterator
 {
-    content_storage: CAS,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl<CAS> ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl ChainStoreIterator
 {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: CAS, current: Option<ChainHeader>) -> ChainStoreIterator<CAS> {
+    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>, current: Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator {
             content_storage,
             current,
@@ -80,9 +80,7 @@ where
     }
 }
 
-impl<CAS> Iterator for ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl Iterator for ChainStoreIterator
 {
     type Item = ChainHeader;
 
@@ -97,27 +95,23 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>(self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                transform_content::<ChainHeader>(self.content_storage.clone().read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }
 }
 
-pub struct ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+pub struct ChainStoreTypeIterator
 {
-    content_storage: CAS,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl<CAS> ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl ChainStoreTypeIterator
 {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: CAS, current: Option<ChainHeader>) -> ChainStoreTypeIterator<CAS> {
+    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>, current: Option<ChainHeader>) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator {
             content_storage,
             current,
@@ -125,9 +119,7 @@ where
     }
 }
 
-impl<CAS> Iterator for ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl Iterator for ChainStoreTypeIterator
 {
     type Item = ChainHeader;
 
@@ -142,7 +134,7 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>(self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                transform_content::<ChainHeader>((*self.content_storage.clone().read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }

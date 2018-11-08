@@ -36,12 +36,10 @@ impl Network {
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug)]
-pub struct DhtStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+pub struct DhtStore
 {
     // Storages holding local shard data
-    content_storage: CAS,
+    content_storage: Arc<RwLock<ContentAddressableStorage>> ,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     // Placeholder network module
     network: Network,
@@ -49,32 +47,22 @@ where
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
-impl<CAS> PartialEq for DhtStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl PartialEq for DhtStore
 {
-    fn eq(&self, other: &DhtStore<CAS>) -> bool {
-        let self_storage = &self.meta_storage.clone();
-        let self_meta_dht = &*self_storage.read().unwrap();
-        println!("self meta dht");
-        let other_storage = &other.meta_storage;
-        let other_meta = &*other_storage.read().unwrap();
-        println!("other meta");
-        self.content_storage == other.content_storage
-            && self.network == other.network
+    fn eq(&self, other: &DhtStore) -> bool {
+            self.network == other.network
             && self.add_link_actions == other.add_link_actions
-            && self_meta_dht == other_meta
+            && &*self.meta_storage.clone().read().unwrap() == &*other.meta_storage.clone().read().unwrap()
+            && &*self.content_storage.clone().read().unwrap() == &*other.content_storage().clone().read().unwrap()
     }
 }
 
-impl<CAS> DhtStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+impl DhtStore
 {
     // LifeCycle
     // =========
     pub fn new(
-        content_storage: CAS,
+        content_storage: Arc<RwLock<ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Self {
         let network = Network {};
@@ -111,11 +99,8 @@ where
 
     // Getters (for reducers)
     // =======
-    pub fn content_storage(&self) -> CAS {
+    pub(crate) fn content_storage(&mut self) -> Arc<RwLock<ContentAddressableStorage>> {
         self.content_storage.clone()
-    }
-    pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
-        &mut self.content_storage
     }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()

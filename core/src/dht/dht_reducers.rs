@@ -12,17 +12,15 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
-type DhtReducer<CAS> = fn(Arc<Context>, &DhtStore<CAS>, &ActionWrapper) -> Option<DhtStore<CAS>>;
+type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce<CAS>(
+pub fn reduce(
     context: Arc<Context>,
-    old_store: Arc<DhtStore<CAS>>,
+    old_store: Arc<DhtStore>,
     action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Arc<DhtStore>
 {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
@@ -39,9 +37,7 @@ where
 }
 
 /// Maps incoming action to the correct reducer
-fn resolve_reducer<CAS>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer>
 {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -53,13 +49,11 @@ where
 }
 
 //
-pub(crate) fn commit_sys_entry<CAS>(
+pub(crate) fn commit_sys_entry(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore,
     entry: &Entry,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     // system entry type must be publishable
     if !entry.entry_type().to_owned().can_publish() {
@@ -67,7 +61,7 @@ where
     }
     // Add it local storage
     let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage_mut().add(entry);
+    let res = new_store.content_storage().clone().write().unwrap().add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
@@ -77,13 +71,11 @@ where
 }
 
 //
-pub(crate) fn commit_app_entry<CAS>(
+pub(crate) fn commit_app_entry(
     context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore,
     entry: &Entry,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
@@ -107,7 +99,7 @@ where
 
     // Add it to local storage...
     let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage_mut().add(entry);
+    let res = (*new_store.content_storage().clone().write().unwrap()).add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
@@ -119,20 +111,21 @@ where
 }
 
 //
-pub(crate) fn reduce_commit_entry<CAS>(
+pub(crate) fn reduce_commit_entry(
     context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
 
     // pre-condition: Must not already have entry in local storage
-    if old_store
+    if (*old_store
         .content_storage()
+        .clone()
+        .read()
+        .unwrap())
         .contains(&entry.address())
         .unwrap()
     {
@@ -148,19 +141,17 @@ where
 }
 
 //
-pub(crate) fn reduce_get_entry_from_network<CAS>(
+pub(crate) fn reduce_get_entry_from_network(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
     // pre-condition check: Look in local storage if it already has it.
-    if old_store.content_storage().contains(address).unwrap() {
+    if (*old_store.content_storage().read().unwrap()).contains(address).unwrap() {
         // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
@@ -173,7 +164,7 @@ where
             let entry = Entry::from_content(&content);
             let mut new_store = (*old_store).clone();
             // ...and add it to the local storage
-            let res = new_store.content_storage_mut().add(&entry);
+            let res = (*new_store.content_storage().clone().write().unwrap()).add(&entry);
             match res {
                 Err(_) => None,
                 Ok(()) => Some(new_store),
@@ -182,13 +173,11 @@ where
 }
 
 //
-pub(crate) fn reduce_add_link<CAS>(
+pub(crate) fn reduce_add_link(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS>,
+    old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     // Get Action's input data
     let action = action_wrapper.action();
@@ -196,7 +185,7 @@ where
 
     let mut new_store = (*old_store).clone();
 
-    if !old_store.content_storage().contains(link.base()).unwrap() {
+    if !(*old_store.content_storage().clone().read().unwrap()).contains(link.base()).unwrap() {
         new_store.add_link_actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -218,13 +207,11 @@ where
 }
 
 #[allow(dead_code)]
-pub(crate) fn reduce_get_links<CAS>(
+pub(crate) fn reduce_get_links(
     _context: Arc<Context>,
-    _old_store: &DhtStore<CAS>,
+    _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
+) -> Option<DhtStore>
 {
     // FIXME
     None

@@ -26,7 +26,7 @@ use std::{collections::HashSet, sync::Arc};
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
-    dht: Arc<DhtStore<FilesystemStorage>>,
+    dht: Arc<DhtStore>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -56,7 +56,7 @@ impl State {
 
         fn get_dna(
             agent_state: &Arc<AgentState>,
-            cas: &FilesystemStorage,
+            cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         ) -> Result<Dna, HolochainError> {
             let dna_entry_header = agent_state
                 .chain()
@@ -117,7 +117,7 @@ impl State {
         Arc::clone(&self.agent)
     }
 
-    pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage>> {
+    pub fn dht(&self) -> Arc<DhtStore> {
         Arc::clone(&self.dht)
     }
 

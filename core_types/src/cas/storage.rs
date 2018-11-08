@@ -14,7 +14,7 @@ use std::{
 /// implements storage in memory or persistently
 /// anything implementing AddressableContent can be added and fetched by address
 /// CAS is append only
-pub trait ContentAddressableStorage: Clone + Send + Sync {
+pub trait ContentAddressableStorage: objekt::Clone + Send + Sync + Debug {
     /// adds AddressableContent to the ContentAddressableStorage by its Address as Content
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError>;
     /// true if the Address is in the Store, false otherwise.
@@ -24,9 +24,20 @@ pub trait ContentAddressableStorage: Clone + Send + Sync {
     /// AddressableContent::from_content() can be used to allow the compiler to infer the type
     /// @see the fetch implementation for ExampleCas in the cas module tests
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
+
+    fn get_id(&self) -> String;
 }
 
-#[derive(Clone)]
+clone_trait_object!(ContentAddressableStorage);
+
+impl PartialEq for ContentAddressableStorage {
+    fn eq(&self, other: &ContentAddressableStorage) -> bool {
+        self.get_id() == other.get_id()
+    }
+}
+
+
+#[derive(Clone,Debug)]
 /// some struct to show an example ContentAddressableStorage implementation
 /// this is a thread-safe wrapper around the non-thread-safe implementation below
 /// @see ExampleContentAddressableStorageActor
@@ -64,8 +75,15 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
     ) -> Result<Option<Content>, HolochainError> {
         Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
     }
+
+    fn get_id(&self) ->String
+    {
+        String::from("example-storage")
+    }
 }
 
+
+#[derive(Debug)]
 /// Not thread-safe CAS implementation with a HashMap
 pub struct ExampleContentAddressableStorageContent {
     storage: HashMap<Address, Content>,
@@ -108,7 +126,7 @@ where
 
 impl<T> StorageTestSuite<T>
 where
-    T: ContentAddressableStorage + 'static,
+    T: ContentAddressableStorage + 'static + Clone,
 {
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite {

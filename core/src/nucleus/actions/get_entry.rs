@@ -13,7 +13,7 @@ fn get_entry_from_dht_cas(
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let dht = context.state().unwrap().dht().content_storage();
-    let result = dht.fetch(&address)?;
+    let result = dht.clone().read().unwrap().fetch(&address)?;
     Ok(transform_content(result))
 }
 

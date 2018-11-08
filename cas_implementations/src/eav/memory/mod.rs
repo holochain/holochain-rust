@@ -44,19 +44,20 @@ pub mod tests {
     use eav::memory::EavMemoryStorage;
     use holochain_core_types::{
         cas::{
-            content::{AddressableContent, ExampleAddressableContent},
+            content::ExampleAddressableContent,
             storage::EavTestSuite,
         },
         json::RawString,
     };
+    use holochain_core_types::cas::content::AddressableContent;
 
     #[test]
     fn memory_eav_round_trip() {
         let entity_content =
-            ExampleAddressableContent::from_content(&RawString::from("foo").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
         let attribute = "favourite-color".to_string();
         let value_content =
-            ExampleAddressableContent::from_content(&RawString::from("blue").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
         EavTestSuite::test_round_trip(
             EavMemoryStorage::new().expect("could not construct new eav memory storage"),
             entity_content,

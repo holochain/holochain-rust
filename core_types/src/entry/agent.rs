@@ -1,3 +1,4 @@
+use error::error::HolochainError;
 use cas::content::{AddressableContent, Content};
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
@@ -81,8 +82,8 @@ impl AddressableContent for Agent {
         self.to_entry().content()
     }
 
-    fn from_content(content: &Content) -> Self {
-        Agent::from_entry(&Entry::from_content(content))
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Agent::from_entry(&Entry::try_from_content(content)?))
     }
 }
 

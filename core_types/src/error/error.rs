@@ -146,6 +146,12 @@ fn reason_for_io_error(error: &IoError) -> String {
     }
 }
 
+impl<T> From<::std::sync::PoisonError<T>> for HolochainError {
+    fn from(error: ::std::sync::PoisonError<T>) -> Self {
+        HolochainError::ErrorGeneric(format!("sync poison error: {}", error))
+    }
+}
+
 impl From<IoError> for HolochainError {
     fn from(error: IoError) -> Self {
         HolochainError::IoError(reason_for_io_error(&error))

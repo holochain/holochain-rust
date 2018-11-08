@@ -45,9 +45,12 @@ impl ContentAddressableStorage for FilesystemStorage {
         let response = self
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
-        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        let maybe_content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
 
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+        match maybe_content {
+            Some(content) => Ok(Some(AC::try_from_content(&content)?)),
+            None => Ok(None),
+        }
     }
 }
 

@@ -3,6 +3,7 @@ use hash::HashString;
 use json::JsonString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
+use error::error::HolochainError;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -33,7 +34,7 @@ pub trait AddressableContent {
 
     /// restore/deserialize the original struct/type from serialized Content
     /// the default implementation covers anything that implements From<JsonString> for Foo
-    fn from_content(content: &Content) -> Self
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError>
     where
         Self: Sized;
 }
@@ -43,8 +44,8 @@ impl AddressableContent for Content {
         self.clone()
     }
 
-    fn from_content(content: &Content) -> Self {
-        content.clone()
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(content.clone())
     }
 }
 
@@ -60,10 +61,10 @@ impl AddressableContent for ExampleAddressableContent {
         self.content.clone()
     }
 
-    fn from_content(content: &Content) -> Self {
-        ExampleAddressableContent {
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(ExampleAddressableContent {
             content: content.clone(),
-        }
+        })
     }
 }
 
@@ -85,11 +86,11 @@ impl AddressableContent for OtherExampleAddressableContent {
         self.content.clone()
     }
 
-    fn from_content(content: &Content) -> Self {
-        OtherExampleAddressableContent {
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(OtherExampleAddressableContent {
             content: content.clone(),
             address: Address::encode_from_str(&String::from(content), Hash::SHA2256),
-        }
+        })
     }
 }
 
@@ -104,7 +105,7 @@ impl AddressableContentTestSuite {
     ) where
         T: AddressableContent + Debug + PartialEq + Clone,
     {
-        let addressable_content = T::from_content(&content);
+        let addressable_content = T::try_from_content(&content).expect("could not create AddressableContent from Content");
 
         assert_eq!(addressable_content, expected_content);
         assert_eq!(content, addressable_content.content());
@@ -117,8 +118,8 @@ impl AddressableContentTestSuite {
         T: AddressableContent + Debug + PartialEq + Clone,
         K: AddressableContent + Debug + PartialEq + Clone,
     {
-        let addressable_content = T::from_content(&content);
-        let other_addressable_content = K::from_content(&content);
+        let addressable_content = T::try_from_content(&content).expect("could not create AddressableContent from Content");
+        let other_addressable_content = K::try_from_content(&content).expect("could not create AddressableContent from Content");
 
         assert_eq!(
             addressable_content.content(),

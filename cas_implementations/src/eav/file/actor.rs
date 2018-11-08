@@ -1,6 +1,7 @@
 use actor::{Protocol, SYS};
 use holochain_core_types::{
     cas::content::AddressableContent,
+    cas::content::Content,
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
     file_validation,
@@ -158,16 +159,39 @@ impl EavFileStorageActor {
             .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)
             .clone();
         let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value);
+
         let attribute_value_inter = attribute_set.intersection(&value_set).cloned().collect();
         let entity_attribute_value_inter: HashSet<Result<String, HolochainError>> = entity_set
             .intersection(&attribute_value_inter)
             .cloned()
             .collect();
-        Ok(entity_attribute_value_inter
-            .into_iter()
-            .filter(|e| e.is_ok())
-            .map(|eav_content| EntityAttributeValue::from_content(&eav_content.unwrap().into()))
-            .collect())
+
+        let maybe_first_error = entity_attribute_value_inter.iter().find(|e| e.is_err());
+        if let Some(Err(first_error)) = maybe_first_error {
+            return Err(first_error.to_owned());
+        }
+        else {
+            let hopefully_eavs = entity_attribute_value_inter
+                .iter()
+                .cloned()
+                .map(|maybe_eav_content|
+                    // errors filtered out above... unwrap is safe.
+                    Content::from(maybe_eav_content.unwrap()),
+                )
+                .map(|content| EntityAttributeValue::try_from_content(&content))
+                .collect::<HashSet<HcResult<EntityAttributeValue>>>();
+
+            let maybe_first_error = hopefully_eavs.iter().find(|e| e.is_err());
+            if let Some(Err(first_error)) = maybe_first_error {
+                return Err(first_error.to_owned());
+            }
+            else {
+                Ok(hopefully_eavs.iter().cloned().map(|eav|
+                    // errors filtered out above... unwrap is safe
+                    eav.unwrap()
+                ).collect())
+            }
+        }
     }
 }
 

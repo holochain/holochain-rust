@@ -111,11 +111,10 @@ impl AddressableContent for ChainHeader {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
         content
             .to_owned()
             .try_into()
-            .expect("could not deserialize ChainHeader from Content")
     }
 }
 

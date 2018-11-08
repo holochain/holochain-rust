@@ -121,10 +121,9 @@ impl AddressableContent for Entry {
         self.serialize().content()
     }
 
-    fn from_content(content: &Content) -> Self {
-        SerializedEntry::try_from(content.to_owned())
-            .expect("failed to restore Entry content")
-            .into()
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(SerializedEntry::try_from(content.to_owned())?
+            .into())
     }
 }
 
@@ -133,11 +132,10 @@ impl AddressableContent for SerializedEntry {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
         content
             .to_owned()
             .try_into()
-            .expect("failed to deserialize SerializedEntry from Content")
     }
 }
 

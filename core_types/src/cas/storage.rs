@@ -62,8 +62,11 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         &self,
         address: &Address,
     ) -> Result<Option<AC>, HolochainError> {
-        let content = self.content.read().unwrap().unthreadable_fetch(address)?;
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+        let maybe_content = self.content.read()?.unthreadable_fetch(address)?;
+        match maybe_content {
+            Some(content) => Ok(Some(AC::try_from_content(&content)?)),
+            None => Ok(None),
+        }
     }
 }
 
@@ -128,8 +131,8 @@ where
         OtherAddressable: AddressableContent + Clone + PartialEq + Debug,
     {
         // based on associate type we call the right from_content function
-        let addressable_content = Addressable::from_content(&content);
-        let other_addressable_content = OtherAddressable::from_content(&other_content);
+        let addressable_content = Addressable::try_from_content(&content).expect("could not create AddressableContent from Content");
+        let other_addressable_content = OtherAddressable::try_from_content(&other_content).expect("could not create AddressableContent from Content");
 
         // do things that would definitely break if cloning would show inconsistent data
         let both_cas = vec![self.cas.clone(), self.cas_clone.clone()];
@@ -296,11 +299,11 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::from_content(&foo_content);
+        let one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
         // it can reference itself, why not?
-        let many_one = A::from_content(&foo_content);
-        let many_two = A::from_content(&bar_content);
-        let many_three = A::from_content(&baz_content);
+        let many_one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content).expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content).expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -311,7 +314,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::from_content(&foo_content);
+        let two = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -356,12 +359,12 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::from_content(&foo_content);
+        let one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
 
         // it can reference itself, why not?
-        let many_one = A::from_content(&foo_content);
-        let many_two = A::from_content(&bar_content);
-        let many_three = A::from_content(&baz_content);
+        let many_one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content).expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content).expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -372,7 +375,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::from_content(&foo_content);
+        let two = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(

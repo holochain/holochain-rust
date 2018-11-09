@@ -67,10 +67,10 @@ extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
+extern crate boolinator;
 #[cfg(test)]
 extern crate test_utils;
 extern crate toml;
-extern crate boolinator;
 
 pub mod config;
 pub mod container;

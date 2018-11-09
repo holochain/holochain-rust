@@ -1,3 +1,4 @@
+use boolinator::*;
 use holochain_core_types::{
     entry::agent::{Agent, Identity},
     error::{HcResult, HolochainError},
@@ -6,7 +7,6 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
-use boolinator::*;
 
 #[derive(Deserialize)]
 pub struct Configuration {
@@ -23,25 +23,28 @@ impl Configuration {
             return Err("No instance found".to_string());
         }
         for ref instance in self.instances.as_ref().unwrap().iter() {
-            self.agent_by_id(&instance.agent)
-                .is_some()
-                .ok_or_else(||
-                    format!("Agent configuration {} not found, mentioned in instance {}", instance.agent, instance.id)
-                    )?;
-            self.dna_by_id(&instance.dna)
-                .is_some()
-                .ok_or_else(||
-                    format!("DNA configuration \"{}\" not found, mentioned in instance \"{}\"", instance.dna, instance.id)
-                    )?;
+            self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
+                format!(
+                    "Agent configuration {} not found, mentioned in instance {}",
+                    instance.agent, instance.id
+                )
+            })?;
+            self.dna_by_id(&instance.dna).is_some().ok_or_else(|| {
+                format!(
+                    "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                    instance.dna, instance.id
+                )
+            })?;
         }
         if self.interfaces.is_some() {
             for ref interface in self.interfaces.as_ref().unwrap().iter() {
                 for ref instance in interface.instances.iter() {
-                    self.instance_by_id(&instance.id)
-                        .is_some()
-                        .ok_or_else(||
-                            format!("Instance configuration \"{}\" not found, mentioned in interface", instance.id)
-                        )?;
+                    self.instance_by_id(&instance.id).is_some().ok_or_else(|| {
+                        format!(
+                            "Instance configuration \"{}\" not found, mentioned in interface",
+                            instance.id
+                        )
+                    })?;
                 }
             }
         }
@@ -51,7 +54,9 @@ impl Configuration {
 
     pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
         self.agents.as_ref().and_then(|agents| {
-            agents.iter().find(|ac| &ac.id == id)
+            agents
+                .iter()
+                .find(|ac| &ac.id == id)
                 .and_then(|agent_config| Some(agent_config.clone()))
         })
     }
@@ -59,27 +64,22 @@ impl Configuration {
     pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
         self.dnas
             .as_ref()
-            .and_then(|dnas|
-                dnas.iter().find(|dc| &dc.id == id)
-            )
-            .and_then(|dna_config|
-                Some(dna_config.clone())
-            )
+            .and_then(|dnas| dnas.iter().find(|dc| &dc.id == id))
+            .and_then(|dna_config| Some(dna_config.clone()))
     }
 
     pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
         self.instances
             .as_ref()
-            .and_then(|instances|
-                instances.iter().find(|ic| &ic.id == id)
-            )
-            .and_then(|instance_config|
-                Some(instance_config.clone())
-            )
+            .and_then(|instances| instances.iter().find(|ic| &ic.id == id))
+            .and_then(|instance_config| Some(instance_config.clone()))
     }
 
     pub fn instance_ids(&self) -> Vec<String> {
-        self.instances.as_ref().unwrap().iter()
+        self.instances
+            .as_ref()
+            .unwrap()
+            .iter()
             .map(|instance| instance.id.clone())
             .collect::<Vec<String>>()
     }
@@ -287,7 +287,6 @@ mod tests {
         assert_eq!(config.bridges, None);
     }
 
-
     #[test]
     fn test_incosistent_config() {
         let toml = r#"
@@ -351,6 +350,12 @@ mod tests {
     "#;
         let config = load_configuration::<Configuration>(toml).unwrap();
 
-        assert_eq!(config.check_consistency(), Err("Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface".to_string()));
+        assert_eq!(
+            config.check_consistency(),
+            Err(
+                "Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface"
+                    .to_string()
+            )
+        );
     }
 }

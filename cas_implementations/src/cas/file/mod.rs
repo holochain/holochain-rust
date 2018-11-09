@@ -3,22 +3,26 @@ use actor::{AskSelf, Protocol};
 use cas::file::actor::FilesystemStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
 };
 use riker::actors::*;
 
+use uuid::Uuid;
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
+    id: Uuid,
 }
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
+            id: Uuid::new_v4(),
         })
     }
 }
@@ -38,16 +42,15 @@ impl ContentAddressableStorage for FilesystemStorage {
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<AC: AddressableContent>(
-        &self,
-        address: &Address,
-    ) -> Result<Option<AC>, HolochainError> {
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         let response = self
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
-        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
+        Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
+    }
 
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+    fn get_id(&self) -> Uuid {
+        self.id
     }
 }
 

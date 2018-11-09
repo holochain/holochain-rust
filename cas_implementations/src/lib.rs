@@ -17,6 +17,8 @@ extern crate unwrap_to;
 extern crate snowflake;
 extern crate walkdir;
 
+extern crate uuid;
+
 extern crate serde;
 extern crate serde_json;
 

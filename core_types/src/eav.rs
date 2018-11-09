@@ -8,6 +8,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use std::fmt::Debug;
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
 /// defines relationships between AddressableContent values
@@ -90,7 +91,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage: Clone {
+pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -109,6 +110,9 @@ pub trait EntityAttributeValueStorage: Clone {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
+clone_trait_object!(EntityAttributeValueStorage);
+
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: HashSet<EntityAttributeValue>,
 }
@@ -152,7 +156,13 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 }
 
-#[derive(Clone)]
+impl PartialEq for EntityAttributeValueStorage {
+    fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
+        self.fetch_eav(None, None, None) == other.fetch_eav(None, None, None)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
     content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }
@@ -211,9 +221,9 @@ pub fn test_eav_address() -> Address {
 }
 
 pub fn eav_round_trip_test_runner(
-    entity_content: impl AddressableContent,
+    entity_content: impl AddressableContent + Clone,
     attribute: String,
-    value_content: impl AddressableContent,
+    value_content: impl AddressableContent + Clone,
 ) {
     let eav = EntityAttributeValue::new(
         &entity_content.address(),

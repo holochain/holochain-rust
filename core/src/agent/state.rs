@@ -1,12 +1,8 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
+    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
@@ -16,7 +12,11 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -27,24 +27,13 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<FilesystemStorage>,
+    chain: ChainStore,
     top_chain_header: Option<ChainHeader>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
-pub struct AgentStateSnapshot {
-    top_chain_header: ChainHeader,
-}
-
-impl AgentStateSnapshot {
-    pub fn top_chain_header(&self) -> &ChainHeader {
-        &self.top_chain_header
-    }
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
+    pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -53,10 +42,7 @@ impl AgentState {
         }
     }
 
-    pub fn new_with_top_chain_header(
-        chain: ChainStore<FilesystemStorage>,
-        chain_header: ChainHeader,
-    ) -> AgentState {
+    pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -76,13 +62,18 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
+    pub fn chain(&self) -> ChainStore {
         self.chain.clone()
     }
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct AgentStateSnapshot {
+    top_chain_header: ChainHeader,
 }
 
 impl AgentStateSnapshot {
@@ -93,6 +84,9 @@ impl AgentStateSnapshot {
     }
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
+    }
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
     }
 }
 
@@ -165,8 +159,9 @@ fn reduce_commit_entry(
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
-        state.chain.content_storage().add(entry)?;
-        state.chain.content_storage().add(chain_header)?;
+        let storage = &state.chain.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(chain_header)?;
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
@@ -194,13 +189,14 @@ fn reduce_get_entry(
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
+    let storage = &state.chain().content_storage().clone();
+    let json = storage
+        .read()
+        .unwrap()
+        .fetch(&address)
+        .expect("could not fetch from CAS");
+    let result: Option<SerializedEntry> = json.and_then(|js| js.try_into().ok());
 
-    let result: Option<SerializedEntry> = state
-        .chain()
-        .content_storage()
-        .fetch::<Entry>(&address)
-        .expect("could not fetch from CAS")
-        .and_then(|entry| Some(entry.into()));
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
@@ -386,7 +382,7 @@ pub mod tests {
         let header = test_chain_header();
         let agent_snap = AgentStateSnapshot::new(header);
         let json = serde_json::to_string(&agent_snap).unwrap();
-        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        let agent_from_json = AgentStateSnapshot::from_json_str(&json).unwrap();
         assert_eq!(agent_snap.address(), agent_from_json.address());
     }
 

@@ -9,8 +9,8 @@ use holochain_core_types::{
     entry::{Entry,SerializedEntry},
     error::HolochainError,
 };
-use std::sync::Arc;
-use std::convert::{From,TryInto};
+use std::{sync::Arc,convert::TryInto};
+
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,
@@ -57,11 +57,13 @@ pub mod tests {
         let context = test_context_with_state();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(None), result);
-        context
+        let storage = &context
             .state()
             .unwrap()
             .dht()
             .content_storage()
+            .clone();
+        (*storage.write().unwrap())
             .add(&entry)
             .unwrap();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
@@ -74,11 +76,13 @@ pub mod tests {
         let context = test_context_with_state();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(None), block_on(future));
-        context
+        let storage = &context
             .state()
             .unwrap()
             .dht()
             .content_storage()
+            .clone();
+        (*storage.write().unwrap())
             .add(&entry)
             .unwrap();
         let future = super::get_entry(&context, entry.address());

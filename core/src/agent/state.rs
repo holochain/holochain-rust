@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},

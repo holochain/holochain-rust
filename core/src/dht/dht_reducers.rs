@@ -219,7 +219,6 @@ pub mod tests {
         dht_reducers::{commit_sys_entry, reduce},
         dht_store::DhtStore,
     };
-    use holochain_cas_implementations::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{content::AddressableContent, storage::ContentAddressableStorage},
         eav::EntityAttributeValueStorage,
@@ -242,13 +241,14 @@ pub mod tests {
             commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
         // test_entry is not sys so should do nothing
+        let storage = &store
+                .dht()
+                .content_storage().clone();
         assert_eq!(None, new_dht_store);
         assert_eq!(
             None,
-            store
-                .dht()
-                .content_storage()
-                .fetch::<Entry>(&entry.address())
+                (*storage.read().unwrap())
+                .fetch(&entry.address())
                 .expect("could not fetch from cas")
         );
 
@@ -256,21 +256,22 @@ pub mod tests {
 
         let new_dht_store = commit_sys_entry(Arc::clone(&context), &store.dht(), &sys_entry)
             .expect("there should be a new store for committing a sys entry");
-
         assert_eq!(
             Some(sys_entry.clone()),
-            store
-                .dht()
-                .content_storage()
+            (*storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
+                .map(|s|Entry::from_content(&s))
         );
+
+        let new_storage = &new_dht_store
+                .content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
-            new_dht_store
-                .content_storage()
+            (*new_storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
+                .map(|s|Entry::from_content(&s))
         );
     }
 
@@ -284,13 +285,14 @@ pub mod tests {
 
         let mut context = (*context).clone();
         context.set_state(locked_state.clone());
-        let _ = context.file_storage.add(&entry);
+        let storage = context.file_storage.clone();
+        let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_>;
+        let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();
 
@@ -326,7 +328,7 @@ pub mod tests {
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_>;
+        let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();
 

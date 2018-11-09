@@ -119,7 +119,7 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),

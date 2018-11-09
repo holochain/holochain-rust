@@ -159,11 +159,12 @@ pub mod tests {
         signature::{test_signature, test_signature_b, test_signature_c},
         time::test_iso_8601,
     };
+    use std::sync::{Arc,RwLock};
 
-    pub fn test_chain_store() -> ChainStore<FilesystemStorage> {
-        ChainStore::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                .expect("could not create new chain store"),
+    pub fn test_chain_store() -> ChainStore {
+        ChainStore::new
+        (
+            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).expect("could not create chain store")))
         )
     }
 
@@ -183,12 +184,11 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        chain_store
-            .content_storage()
+        let storage = chain_store.content_storage.clone();
+        (*storage.write().unwrap())
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_b)
             .expect("could not add header to cas");
 
@@ -235,8 +235,8 @@ pub mod tests {
         );
 
         for chain_header in vec![&chain_header_a, &chain_header_b, &chain_header_c] {
-            chain_store
-                .content_storage()
+             let storage = chain_store.content_storage.clone();
+             (*storage.write().unwrap())
                 .add(chain_header)
                 .expect("could not add header to cas");
         }
@@ -303,16 +303,14 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        chain_store
-            .content_storage()
+        let storage = chain_store.content_storage.clone();
+        (*storage.write().unwrap())
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_b)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_c)
             .expect("could not add header to cas");
 

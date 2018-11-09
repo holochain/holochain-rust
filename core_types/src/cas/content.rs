@@ -147,7 +147,7 @@ impl AddressableContentTestSuite {
             cas.add(&f).expect(&add_error_message);
             assert_eq!(
                 Some(f.clone()),
-                T::from_content(cas.fetch(&f.address()).expect(&fetch_error_message))
+                Some(T::from_content(&cas.fetch(&f.address()).expect(&fetch_error_message).expect("could not get json")))
             );
         });
     }

@@ -22,11 +22,32 @@ pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
 pub mod tests {
     use path::storage_path;
     use std::path::{Path, MAIN_SEPARATOR};
+    use holochain_core_types::error::{HolochainError};
+    use super::create_path_if_not_exists;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
 
     #[test]
     fn test_storage_path() {
         let dummy_path = storage_path(Path::new("foo"), "bar").unwrap();
         let expected_path = vec!["foo", ".hc", "storage", "bar"].join(&MAIN_SEPARATOR.to_string());
         assert_eq!(dummy_path, expected_path);
+    }
+
+    #[test]
+    fn test_create_path_if_not_exists() {
+        let bad_path = storage_path(Path::new("/foo"), "bar").unwrap();
+        let result = create_path_if_not_exists(&bad_path);
+        match result {
+            Ok(()) => unreachable!(),
+            Err(err) => assert_eq!(err,HolochainError::IoError("Could not create directory".to_string())),
+        };
+        let dir = tempdir().unwrap();
+        let file_path = dir.path();
+        let result = create_path_if_not_exists(file_path.to_str().unwrap());
+        match result {
+            Ok(val) => assert_eq!(val,()),
+            Err(_) => unreachable!(),
+        };
     }
 }

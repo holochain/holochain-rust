@@ -5,10 +5,10 @@
 A Zome API Function is any Holochain core functionality that is exposed as a
 callable function within zome code.
 
-Compare this to a Zome Callback Function, which is implemented by the zome code 
+Compare this to a Zome Callback Function, which is implemented by the zome code
 and called by Holochain.
 
-So, zome functions (functions in the zome code) are called by Holochain, 
+So, zome functions (functions in the zome code) are called by Holochain,
 which can optionally call Zome API Functions, and then finally return a
 value back to Holochain.
 
@@ -52,11 +52,11 @@ Canonical name: `property`
 Returns an application property, which are defined by the app developer in the DNA.
 It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).
 
-### Make Hash
+### Entry Address
 
-Canonical name: `make_hash`
+Canonical name: `entry_address`
 
-TODO
+Returns the address that a given entry will hash into.
 
 ### Debug
 

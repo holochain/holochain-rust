@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-  "core_api",
+  "container",
+  "container_api",
   "core_api_c_binding",
   "core",
   "dna",

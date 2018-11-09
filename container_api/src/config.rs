@@ -22,9 +22,9 @@ pub struct AgentConfiguration {
     key_file: Option<String>,
 }
 
-impl Into<Agent> for AgentConfiguration {
-    fn into(self) -> Agent {
-        Agent::from(Identity::from(self.id))
+impl From<AgentConfiguration> for Agent {
+    fn from(config: AgentConfiguration) -> Self {
+        Agent::from(Identity::from(config.id))
     }
 }
 
@@ -35,17 +35,16 @@ pub struct DNAConfiguration {
     hash: String,
 }
 
-impl Into<HcResult<Dna>> for DNAConfiguration {
-    fn into(self) -> HcResult<Dna> {
-        let mut f = File::open(self.file)
-            .map_err(|_| HolochainError::IoError(String::from("Could not read from file")))?;
+impl TryFrom<DNAConfiguration> for Dna {
+    type Error = HolochainError;
+    fn try_from(dna_config: DNAConfiguration) -> Result<Self, Self::Error> {
+        let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
-        f.read_to_string(&mut contents)
-            .map_err(|_| HolochainError::IoError(String::from("Could not read from file")))?;
+        f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from(contents))
-            .map_err(|_| HolochainError::IoError(String::from("Could not create dna form json")))
     }
 }
+
 
 #[derive(Deserialize)]
 pub struct InstanceConfiguration {

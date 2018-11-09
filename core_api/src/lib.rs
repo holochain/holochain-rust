@@ -13,7 +13,7 @@
 //! use holochain_core_api::*;
 //! use holochain_dna::Dna;
 //! use holochain_core_types::entry::agent::Agent;
-//! use std::sync::{Arc, Mutex};
+//! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
 //! use holochain_core::persister::SimplePersister;
@@ -21,7 +21,6 @@
 //!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
 //! };
 //! use tempfile::tempdir;
-//! use std::sync::{Arc,Mutex};
 //!
 //! // instantiate a new holochain instance
 //!

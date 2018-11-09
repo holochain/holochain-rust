@@ -15,19 +15,10 @@ extern crate lazy_static;
 extern crate rmp_serde;
 extern crate serde;
 extern crate serde_bytes;
-#[macro_use]
-extern crate serde_derive;
 extern crate zmq;
 
-pub mod msg_types;
 #[macro_use]
 pub mod errors;
-mod context;
-pub mod message;
-mod socket;
-mod util;
-
-pub mod ipc_client;
-
-// re-export the struct people will actually use
-pub use ipc_client::ZmqIpcClient;
+pub mod context;
+pub mod socket;
+pub mod util;

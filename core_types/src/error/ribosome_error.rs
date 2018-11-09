@@ -188,6 +188,7 @@ impl FromStr for RibosomeErrorCode {
             "Response serialization failed" => Ok(RibosomeErrorCode::ResponseSerializationFailed),
             "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
             "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
+            "Unknown entry type" => Ok(RibosomeErrorCode::UnknownEntryType),
             _ => Err(HolochainError::ErrorGeneric(String::from(
                 "Unknown RibosomeErrorCode",
             ))),
@@ -218,11 +219,16 @@ pub mod tests {
     #[test]
     fn error_conversion() {
         for code in 1..=10 {
-            let err = RibosomeErrorCode::from_offset(code);
+            let mut err = RibosomeErrorCode::from_offset(code);
+
+            let err_str = err.as_str().to_owned();
+
+            err = err_str.parse().expect("unable to parse error");
+
             let inner_code = RibosomeReturnCode::from_error(err);
 
-            let one_int: i32 = inner_code.clone().into();
-            let another_int: u32 = inner_code.clone().into();
+            let _one_int: i32 = inner_code.clone().into();
+            let _another_int: u32 = inner_code.clone().into();
         }
     }
 

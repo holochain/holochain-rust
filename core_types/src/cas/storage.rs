@@ -11,6 +11,7 @@ use std::{
 };
 
 use std::convert::TryFrom;
+use uuid::Uuid;
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
@@ -26,8 +27,9 @@ pub trait ContentAddressableStorage: objekt::Clone + Send + Sync + Debug {
     /// AddressableContent::from_content() can be used to allow the compiler to infer the type
     /// @see the fetch implementation for ExampleCas in the cas module tests
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
-
-    fn get_id(&self) -> String;
+    //needed to find a way to compare two different CAS for partialord derives.
+    //easiest solution was to just compare two ids which are based on uuids
+    fn get_id(&self) -> Uuid;
 }
 
 clone_trait_object!(ContentAddressableStorage);
@@ -74,8 +76,8 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
     }
 
-    fn get_id(&self) -> String {
-        String::from("example-storage")
+    fn get_id(&self) -> Uuid {
+        Uuid::new_v4()
     }
 }
 

@@ -29,7 +29,8 @@ pub fn reduce(
     }
     let reducer = maybe_reducer.unwrap();
     // Reduce
-    let maybe_new_store = reducer(context, &old_store, &action_wrapper);
+    let mut store = old_store.clone();
+    let maybe_new_store = reducer(context, &store, &action_wrapper);
     match maybe_new_store {
         None => old_store,
         Some(new_store) => Arc::new(new_store),
@@ -61,7 +62,8 @@ pub(crate) fn commit_sys_entry(
     }
     // Add it local storage
     let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage().clone().write().unwrap().add(entry);
+    let storage = &new_store.content_storage().clone();
+    let res = storage.write().unwrap().add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
@@ -99,7 +101,8 @@ pub(crate) fn commit_app_entry(
 
     // Add it to local storage...
     let mut new_store = (*old_store).clone();
-    let res = (*new_store.content_storage().clone().write().unwrap()).add(entry);
+    let storage = &new_store.content_storage().clone();
+    let res = (*storage.write().unwrap()).add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
@@ -121,9 +124,8 @@ pub(crate) fn reduce_commit_entry(
     let entry = unwrap_to!(action => Action::Commit);
 
     // pre-condition: Must not already have entry in local storage
-    if (*old_store
-        .content_storage()
-        .clone()
+    let storage = &old_store.content_storage().clone();
+    if (*storage
         .read()
         .unwrap())
         .contains(&entry.address())
@@ -150,8 +152,9 @@ pub(crate) fn reduce_get_entry_from_network(
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
+    let storage = &old_store.content_storage().clone();
     // pre-condition check: Look in local storage if it already has it.
-    if (*old_store.content_storage().read().unwrap()).contains(address).unwrap() {
+    if (*storage.read().unwrap()).contains(address).unwrap() {
         // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
@@ -164,7 +167,8 @@ pub(crate) fn reduce_get_entry_from_network(
             let entry = Entry::from_content(&content);
             let mut new_store = (*old_store).clone();
             // ...and add it to the local storage
-            let res = (*new_store.content_storage().clone().write().unwrap()).add(&entry);
+            let storage = &new_store.content_storage().clone();
+            let res = (*storage.write().unwrap()).add(&entry);
             match res {
                 Err(_) => None,
                 Ok(()) => Some(new_store),
@@ -184,8 +188,8 @@ pub(crate) fn reduce_add_link(
     let link = unwrap_to!(action => Action::AddLink);
 
     let mut new_store = (*old_store).clone();
-
-    if !(*old_store.content_storage().clone().read().unwrap()).contains(link.base()).unwrap() {
+    let storage = &old_store.content_storage().clone();
+    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
         new_store.add_link_actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(

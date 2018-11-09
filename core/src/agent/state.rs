@@ -165,8 +165,9 @@ fn reduce_commit_entry(
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
-        state.chain.content_storage().clone().write().unwrap().add(entry)?;
-        state.chain.content_storage().clone().write().unwrap().add(chain_header)?;
+        let storage = &state.chain.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(chain_header)?;
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
@@ -194,11 +195,8 @@ fn reduce_get_entry(
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-
-    let result: Option<SerializedEntry> = transform_content::<Entry>(state
-        .chain()
-        .content_storage()
-        .clone()
+    let storage = &state.chain().content_storage().clone();
+    let result: Option<SerializedEntry> = transform_content::<Entry>(storage
         .read()
         .unwrap()
         .fetch(&address)

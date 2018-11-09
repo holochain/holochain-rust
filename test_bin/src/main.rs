@@ -47,7 +47,7 @@ fn main() {
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+        Arc::new(RwLock::new(FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap())),
         Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),

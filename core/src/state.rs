@@ -51,7 +51,7 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = &(*context).file_storage;
+        let cas = context.file_storage.clone();
         let eav = context.eav_storage.clone();
 
         fn get_dna(
@@ -68,7 +68,7 @@ impl State {
                 ))?;
 
             Ok(Dna::from_entry(
-                &transform_content::<Entry>((*cas.clone().read().unwrap()).fetch(dna_entry_header.entry_address())?)
+                &transform_content::<Entry>((*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?)
                     .ok_or(HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
                     ))?,

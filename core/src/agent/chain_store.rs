@@ -15,7 +15,11 @@ pub struct ChainStore
 impl PartialEq for ChainStore
 {
     fn eq(&self, other: &ChainStore) -> bool {
-        self.content_storage.clone().read().unwrap().get_id() == other.content_storage.clone().read().unwrap().get_id()
+        let storage_lock = &self.content_storage.clone();
+        let storage =  &*storage_lock.read().unwrap();
+        let other_storage_lock = &other.content_storage.clone();
+        let other_storage = &*other_storage_lock.read().unwrap();
+        storage.get_id() == other_storage.get_id()
     }
 }
 
@@ -87,7 +91,7 @@ impl Iterator for ChainStoreIterator
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-
+        let storage = &self.content_storage.clone();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link())
@@ -95,7 +99,7 @@ impl Iterator for ChainStoreIterator
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>(self.content_storage.clone().read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                transform_content::<ChainHeader>(storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }
@@ -126,7 +130,7 @@ impl Iterator for ChainStoreTypeIterator
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-
+        let storage = &self.content_storage.clone();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link_same_type())
@@ -134,7 +138,7 @@ impl Iterator for ChainStoreTypeIterator
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>((*self.content_storage.clone().read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                transform_content::<ChainHeader>((*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
             });
         previous
     }

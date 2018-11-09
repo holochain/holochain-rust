@@ -50,10 +50,15 @@ pub struct DhtStore
 impl PartialEq for DhtStore
 {
     fn eq(&self, other: &DhtStore) -> bool {
+            let content = &self.content_storage.clone();
+            let other_content = &other.content_storage().clone();
+            let meta = &self.meta_storage.clone();
+            let other_meta = &other.meta_storage.clone();
+
             self.network == other.network
             && self.add_link_actions == other.add_link_actions
-            && &*self.meta_storage.clone().read().unwrap() == &*other.meta_storage.clone().read().unwrap()
-            && &*self.content_storage.clone().read().unwrap() == &*other.content_storage().clone().read().unwrap()
+            && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
+            && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
 }
 
@@ -99,7 +104,7 @@ impl DhtStore
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&mut self) -> Arc<RwLock<ContentAddressableStorage>> {
+    pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
         self.content_storage.clone()
     }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {

@@ -1,3 +1,5 @@
+# WARNING, this Makefile must be updated in two places: the repo root, and docker subdirectory.
+
 # holochain-rust Makefile
 # currently only supports 'debug' builds
 

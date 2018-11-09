@@ -1,23 +1,30 @@
-# WARNING, this file must be updated in two places: the repo root, and docker subdirectory.
-
-FROM ubuntu:xenial
+FROM ubuntu:cosmic
 
 # This removes some warning when installing packages when there is no X
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install --yes\
+USER root
+
+# setup for install and get basics
+RUN apt-get update && apt-get install --yes \
   libssl-dev \
   pkg-config \
   cmake\
   zlib1g-dev \
   curl \
-  qt5-default \
   python2.7 \
   gosu \
   libzmq3-dev \
-  git \
-  nodejs \
-  npm
+  git
+
+# install nodejs
+RUN curl -sL https://deb.nodesource.com/setup_11.x | bash
+RUN apt-get install -y nodejs
+
+# install qt
+RUN apt-get install --yes\
+  qt5-default
+
 
 # Set the internal user for the docker container (non-root)
 ENV DOCKER_BUILD_USER holochain

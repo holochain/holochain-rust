@@ -136,13 +136,6 @@ impl ToString for CallbackParams {
     }
 }
 
-// no idea why this is needed!
-impl<'a> From<&'a CallbackParams> for JsonString {
-    fn from(v: &CallbackParams) -> Self {
-        default_to_json(v.to_owned())
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CallbackResult {
     Pass,

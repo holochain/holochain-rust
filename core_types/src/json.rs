@@ -57,6 +57,12 @@ impl From<JsonString> for String {
     }
 }
 
+impl<'a> From<&'a JsonString> for &'a str {
+    fn from(json_string: &'a JsonString) -> &'a str {
+        &json_string.0
+    }
+}
+
 impl<'a> From<&'a JsonString> for String {
     fn from(json_string: &JsonString) -> String {
         String::from(json_string.to_owned())

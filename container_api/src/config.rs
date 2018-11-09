@@ -77,6 +77,12 @@ impl Configuration {
                 Some(instance_config.clone())
             )
     }
+
+    pub fn instance_ids(&self) -> Vec<String> {
+        self.instances.as_ref().unwrap().iter()
+            .map(|instance| instance.id.clone())
+            .collect::<Vec<String>>()
+    }
 }
 
 #[derive(Deserialize, Clone)]

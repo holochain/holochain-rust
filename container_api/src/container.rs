@@ -12,36 +12,59 @@ use std::sync::Arc;
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::entry::agent::Agent;
 use std::{
+    convert::TryFrom,
     sync::Mutex,
 };
 
 use boolinator::*;
 
 pub struct Container {
-    instances: HashMap<String, Holochain>,
+    pub instances: HashMap<String, Holochain>,
 }
 
 impl Container {
-    pub fn shutdown(mut self) {
-        self.instances = self.instances
-            .into_iter()
-            .map(|(id, mut hc)| {
+    pub fn new() -> Self {
+        Container {
+            instances: HashMap::new(),
+        }
+    }
+    pub fn shutdown(&mut self) {
+        let _ = self.instances
+            .iter_mut()
+            .for_each(|(id, hc)| {
                 let _ = hc.stop();
-                (id,hc)
-            })
-            .collect::<HashMap<_,_>>();
+            });
+        self.instances = HashMap::new();
     }
 
-    pub fn load_config(self, config: &Configuration) -> Result<(), String> {
+    pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown();
-
-
-
+        config.instance_ids()
+            .iter()
+            .map(|id| (id, instantiate_from_config(id, config, Box::new(Container::load_dna))))
+            .for_each(|(id, maybe_holochain)| {
+                if maybe_holochain.is_ok() {
+                    self.instances.insert(id.clone(), maybe_holochain.unwrap());
+                } else {
+                    println!("Error instantiating \"{}\": {}", id, maybe_holochain.err().unwrap());
+                }
+            });
         Ok(())
     }
 
+    fn load_dna(file: &String) -> Result<Dna, String> {
+        Ok(Dna::new())
+    }
+}
 
+impl<'a> TryFrom<&'a Configuration> for Container {
+    type Error = String;
+    fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
+        let mut container = Container::new();
+        container.load_config(config)?;
+        Ok(container)
+    }
 }
 
 type DnaLoader = Box<FnMut(&String) -> Result<Dna, String> + Send>;
@@ -130,5 +153,37 @@ mod tests {
 
         assert_eq!(maybe_holochain.err(), None);
 
+    }
+
+    #[test]
+    fn test_container_load_config() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "."
+
+    "#;
+        let config = load_configuration::<Configuration>(toml).unwrap();
+        let container = Container::try_from(&config);
+        assert!(container.is_ok());
+        let container = container.unwrap();
+        assert_eq!(container.instances.len(), 1);
     }
 }

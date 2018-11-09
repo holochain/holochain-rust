@@ -21,11 +21,6 @@ RUN apt-get update && apt-get install --yes \
 RUN curl -sL https://deb.nodesource.com/setup_11.x | bash
 RUN apt-get install -y nodejs
 
-# install qt
-RUN apt-get install --yes\
-  qt5-default
-
-
 # Set the internal user for the docker container (non-root)
 ENV DOCKER_BUILD_USER holochain
 

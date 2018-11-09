@@ -43,8 +43,19 @@ macro_rules! load_json {
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_dna::zome::entry_types::Sharing;
-///
 /// # use boolinator::Boolinator;
+///
+/// # // Adding empty functions so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///

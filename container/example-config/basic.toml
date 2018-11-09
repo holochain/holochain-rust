@@ -17,7 +17,7 @@ type = "simple"
 file = "app_spec.log"
 [instances.storage]
 type = "file"
-path = "example-config"
+path = "example-config/tmp-storage"
 
 
 [[interfaces]]

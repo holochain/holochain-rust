@@ -26,3 +26,4 @@ cobertura.xml
 # Things being generated on the FS that should not be
 Agent Name
 */foo
+container/example-config/tmp-storage/*

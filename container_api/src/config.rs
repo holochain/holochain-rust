@@ -45,7 +45,6 @@ impl TryFrom<DNAConfiguration> for Dna {
     }
 }
 
-
 #[derive(Deserialize)]
 pub struct InstanceConfiguration {
     id: String,

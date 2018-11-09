@@ -19,7 +19,7 @@ use holochain_core_types::entry::agent::Agent;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
-    sync::Mutex,
+    sync::{Mutex, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -71,8 +71,8 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(agent_path))),
-        FilesystemStorage::new(&cas_path)?,
-        EavFileStorage::new(eav_path)?,
+        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )
 }
 

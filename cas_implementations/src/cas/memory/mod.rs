@@ -3,22 +3,24 @@ use actor::{AskSelf, Protocol};
 use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
 };
 use riker::actors::*;
-
+use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryStorage {
     actor: ActorRef<Protocol>,
+    id: Uuid,
 }
 
 impl MemoryStorage {
     pub fn new() -> Result<MemoryStorage, HolochainError> {
         Ok(MemoryStorage {
             actor: MemoryStorageActor::new_ref()?,
+            id: Uuid::new_v4(),
         })
     }
 }
@@ -38,15 +40,15 @@ impl ContentAddressableStorage for MemoryStorage {
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch<AC: AddressableContent>(
-        &self,
-        address: &Address,
-    ) -> Result<Option<AC>, HolochainError> {
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         let response = self
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
-        let content = unwrap_to!(response => Protocol::CasFetchResult).clone()?;
-        Ok(content.and_then(|c| Some(AC::from_content(&c))))
+        Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
+    }
+
+    fn get_id(&self) -> Uuid {
+        self.id
     }
 }
 

@@ -6,9 +6,10 @@ members = [
   "core",
   "dna",
   "dna_c_binding",
-  "net",
-  "test_bin",
-  "net_ipc",
   "hdk-rust",
+  "net",
+  "net_connection",
+  "net_ipc",
+  "test_bin",
 ]
 exclude = ["test_utils"]

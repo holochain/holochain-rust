@@ -186,7 +186,7 @@ mod tests {
     file = "app_spec.log"
     [instances.storage]
     type = "file"
-    path = "."
+    path = "tmp-storage"
 
     "#;
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -221,7 +221,7 @@ mod tests {
     file = "app_spec.log"
     [instances.storage]
     type = "file"
-    path = "."
+    path = "tmp-storage"
 
     "#;
         let config = load_configuration::<Configuration>(toml).unwrap();

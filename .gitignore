@@ -27,3 +27,4 @@ cobertura.xml
 Agent Name
 */foo
 container/example-config/tmp-storage/*
+container_api/tmp-storage/*

@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content,transform_content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, Entry};
+use entry::{test_entry_unique, Entry,SerializedEntry};
 use error::HolochainError;
 use json::RawString;
 use std::{
@@ -9,6 +9,8 @@ use std::{
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
+
+use std::convert::TryFrom;
 
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
@@ -226,9 +228,9 @@ where
             rx2.recv().unwrap();
             assert_eq!(
                 Some(thread_entry.clone()),
-                transform_content::<Entry>(thread_cas
+                thread_cas
                     .fetch(&thread_entry.address())
-                    .expect("could not fetch from cas"))
+                    .expect("could not fetch from cas").map(|cas|SerializedEntry::try_from(cas).unwrap()).map(|cas:SerializedEntry|cas.into())
             )
         });
 

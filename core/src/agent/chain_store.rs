@@ -1,30 +1,30 @@
 use holochain_core_types::{
-    cas::{content::{transform_content,Address}, storage::ContentAddressableStorage},
+    cas::{
+        content::{AddressableContent, Address},
+        storage::ContentAddressableStorage,
+    },
     chain_header::ChainHeader,
     entry_type::EntryType,
 };
-use std::sync::{Arc,RwLock};
+use std::sync::{Arc, RwLock};
 
-#[derive(Debug,  Clone)]
-pub struct ChainStore
-{
+#[derive(Debug, Clone)]
+pub struct ChainStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
 }
 
-impl PartialEq for ChainStore
-{
+impl PartialEq for ChainStore {
     fn eq(&self, other: &ChainStore) -> bool {
         let storage_lock = &self.content_storage.clone();
-        let storage =  &*storage_lock.read().unwrap();
+        let storage = &*storage_lock.read().unwrap();
         let other_storage_lock = &other.content_storage.clone();
         let other_storage = &*other_storage_lock.read().unwrap();
         storage.get_id() == other_storage.get_id()
     }
 }
 
-impl ChainStore
-{
+impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
     }
@@ -66,17 +66,18 @@ impl ChainStore
     }
 }
 
-pub struct ChainStoreIterator
-{
+pub struct ChainStoreIterator {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl ChainStoreIterator
-{
+impl ChainStoreIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>, current: Option<ChainHeader>) -> ChainStoreIterator {
+    pub fn new(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        current: Option<ChainHeader>,
+    ) -> ChainStoreIterator {
         ChainStoreIterator {
             content_storage,
             current,
@@ -84,8 +85,7 @@ impl ChainStoreIterator
     }
 }
 
-impl Iterator for ChainStoreIterator
-{
+impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
@@ -99,23 +99,25 @@ impl Iterator for ChainStoreIterator
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>(storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                .map(|content|ChainHeader::from_content(&content))
             });
         previous
     }
 }
 
-pub struct ChainStoreTypeIterator
-{
+pub struct ChainStoreTypeIterator {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl ChainStoreTypeIterator
-{
+impl ChainStoreTypeIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>, current: Option<ChainHeader>) -> ChainStoreTypeIterator {
+    pub fn new(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        current: Option<ChainHeader>,
+    ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator {
             content_storage,
             current,
@@ -123,8 +125,7 @@ impl ChainStoreTypeIterator
     }
 }
 
-impl Iterator for ChainStoreTypeIterator
-{
+impl Iterator for ChainStoreTypeIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
@@ -138,7 +139,8 @@ impl Iterator for ChainStoreTypeIterator
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                transform_content::<ChainHeader>((*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS"))
+                (*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                                          .map(|content|ChainHeader::from_content(&content))
             });
         previous
     }

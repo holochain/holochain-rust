@@ -3,7 +3,7 @@ use actor::{AskSelf, Protocol};
 use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent,Content},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
@@ -38,18 +38,14 @@ impl ContentAddressableStorage for MemoryStorage {
         unwrap_to!(response => Protocol::CasContainsResult).clone()
     }
 
-    fn fetch(
-        &self,
-        address: &Address,
-    ) -> Result<Option<Content>, HolochainError> {
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         let response = self
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
         Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
     }
 
-    fn get_id(&self) ->String
-    {
+    fn get_id(&self) -> String {
         String::from("memory-storage")
     }
 }

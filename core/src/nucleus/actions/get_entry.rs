@@ -2,20 +2,31 @@ extern crate serde_json;
 use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
-    cas::{content::{Address,transform_content}, storage::ContentAddressableStorage},
-    entry::Entry,
+    cas::{
+        content::{ Address},
+        storage::ContentAddressableStorage,
+    },
+    entry::{Entry,SerializedEntry},
     error::HolochainError,
 };
 use std::sync::Arc;
+use std::convert::{From,TryInto};
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let dht = context.state().unwrap().dht().content_storage();
-    let storage=&dht.clone();
-    let result = (*storage.read().unwrap()).fetch(&address)?;
-    Ok(transform_content(result))
+    let storage = &dht.clone();
+    let json = (*storage.read().unwrap()).fetch(&address)?;
+    match json
+    {
+        Some(js) => {
+            let serialized : SerializedEntry = js.try_into()?;
+            Ok(Some(serialized.into()))
+        },
+        None => Ok(None)
+    }
 }
 
 /// GetEntry Action Creator

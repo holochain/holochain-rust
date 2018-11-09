@@ -93,12 +93,6 @@ impl AddressableContent for OtherExampleAddressableContent {
     }
 }
 
-pub fn transform_content<AC:AddressableContent>(content:Option<Content>) ->Option<AC>
-{
-    content.map(|a|{
-        AC::from_content(&a)
-    })
-}
 
 pub struct AddressableContentTestSuite;
 
@@ -153,7 +147,7 @@ impl AddressableContentTestSuite {
             cas.add(&f).expect(&add_error_message);
             assert_eq!(
                 Some(f.clone()),
-                transform_content::<T>(cas.fetch(&f.address()).expect(&fetch_error_message))
+                T::from_content(cas.fetch(&f.address()).expect(&fetch_error_message))
             );
         });
     }

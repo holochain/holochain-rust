@@ -36,10 +36,9 @@ impl Network {
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug)]
-pub struct DhtStore
-{
+pub struct DhtStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<ContentAddressableStorage>> ,
+    content_storage: Arc<RwLock<ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     // Placeholder network module
     network: Network,
@@ -47,23 +46,21 @@ pub struct DhtStore
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
-impl PartialEq for DhtStore
-{
+impl PartialEq for DhtStore {
     fn eq(&self, other: &DhtStore) -> bool {
-            let content = &self.content_storage.clone();
-            let other_content = &other.content_storage().clone();
-            let meta = &self.meta_storage.clone();
-            let other_meta = &other.meta_storage.clone();
+        let content = &self.content_storage.clone();
+        let other_content = &other.content_storage().clone();
+        let meta = &self.meta_storage.clone();
+        let other_meta = &other.meta_storage.clone();
 
-            self.network == other.network
+        self.network == other.network
             && self.add_link_actions == other.add_link_actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
 }
 
-impl DhtStore
-{
+impl DhtStore {
     // LifeCycle
     // =========
     pub fn new(

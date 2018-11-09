@@ -1,6 +1,6 @@
-use cas::content::{Address, AddressableContent, Content,transform_content};
+use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, Entry,SerializedEntry};
+use entry::{test_entry_unique, Entry, SerializedEntry};
 use error::HolochainError;
 use json::RawString;
 use std::{
@@ -38,8 +38,7 @@ impl PartialEq for ContentAddressableStorage {
     }
 }
 
-
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 /// some struct to show an example ContentAddressableStorage implementation
 /// this is a thread-safe wrapper around the non-thread-safe implementation below
 /// @see ExampleContentAddressableStorageActor
@@ -71,19 +70,14 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         self.content.read().unwrap().unthreadable_contains(address)
     }
 
-    fn fetch(
-        &self,
-        address: &Address,
-    ) -> Result<Option<Content>, HolochainError> {
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
     }
 
-    fn get_id(&self) ->String
-    {
+    fn get_id(&self) -> String {
         String::from("example-storage")
     }
 }
-
 
 #[derive(Debug)]
 /// Not thread-safe CAS implementation with a HashMap
@@ -155,18 +149,12 @@ where
 
         for cas in both_cas.iter() {
             assert_eq!(Ok(false), cas.contains(&addressable_content.address()));
-            assert_eq!(
-                Ok(None),
-                cas.fetch(&addressable_content.address())
-            );
+            assert_eq!(Ok(None), cas.fetch(&addressable_content.address()));
             assert_eq!(
                 Ok(false),
                 cas.contains(&other_addressable_content.address())
             );
-            assert_eq!(
-                Ok(None),
-                cas.fetch(&other_addressable_content.address())
-            );
+            assert_eq!(Ok(None), cas.fetch(&other_addressable_content.address()));
         }
 
         // round trip some AddressableContent through the ContentAddressableStorage
@@ -230,7 +218,9 @@ where
                 Some(thread_entry.clone()),
                 thread_cas
                     .fetch(&thread_entry.address())
-                    .expect("could not fetch from cas").map(|cas|SerializedEntry::try_from(cas).unwrap()).map(|cas:SerializedEntry|cas.into())
+                    .expect("could not fetch from cas")
+                    .map(|cas| SerializedEntry::try_from(cas).unwrap())
+                    .map(|cas: SerializedEntry| cas.into())
             )
         });
 

@@ -20,8 +20,7 @@ pub fn reduce(
     context: Arc<Context>,
     old_store: Arc<DhtStore>,
     action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore>
-{
+) -> Arc<DhtStore> {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
     if maybe_reducer.is_none() {
@@ -38,8 +37,7 @@ pub fn reduce(
 }
 
 /// Maps incoming action to the correct reducer
-fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer>
-{
+fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
@@ -54,8 +52,7 @@ pub(crate) fn commit_sys_entry(
     _context: Arc<Context>,
     old_store: &DhtStore,
     entry: &Entry,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     // system entry type must be publishable
     if !entry.entry_type().to_owned().can_publish() {
         return None;
@@ -77,8 +74,7 @@ pub(crate) fn commit_app_entry(
     context: Arc<Context>,
     old_store: &DhtStore,
     entry: &Entry,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
     let dna = context
@@ -118,16 +114,13 @@ pub(crate) fn reduce_commit_entry(
     context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
 
     // pre-condition: Must not already have entry in local storage
     let storage = &old_store.content_storage().clone();
-    if (*storage
-        .read()
-        .unwrap())
+    if (*storage.read().unwrap())
         .contains(&entry.address())
         .unwrap()
     {
@@ -147,8 +140,7 @@ pub(crate) fn reduce_get_entry_from_network(
     _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
@@ -181,8 +173,7 @@ pub(crate) fn reduce_add_link(
     _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::AddLink);
@@ -215,8 +206,7 @@ pub(crate) fn reduce_get_links(
     _context: Arc<Context>,
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
-) -> Option<DhtStore>
-{
+) -> Option<DhtStore> {
     // FIXME
     None
 }

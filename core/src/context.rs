@@ -1,6 +1,9 @@
 use action::ActionWrapper;
 use holochain_agent::Agent;
-use holochain_core_types::{eav::EntityAttributeValueStorage,cas::storage::ContentAddressableStorage, error::HolochainError};
+use holochain_core_types::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    error::HolochainError,
+};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;

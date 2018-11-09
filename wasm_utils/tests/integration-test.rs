@@ -1,7 +1,7 @@
 #![feature(try_from)]
 extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate serde_derive;
@@ -12,13 +12,13 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;
 
+use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::logger::Logger;
-use holochain_core_types::json::{default_try_from_json, JsonString, RawString};
-use std::convert::TryFrom;
-
-use holochain_core_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core_types::error::{CoreError, HolochainError, RibosomeErrorCode};
-use std::error::Error;
+use holochain_core_types::{
+    error::{CoreError, HolochainError, RibosomeErrorCode},
+    json::{default_try_from_json, JsonString, RawString},
+};
+use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
 
 #[derive(Clone, Debug)]

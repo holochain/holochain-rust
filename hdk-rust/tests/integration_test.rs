@@ -1,5 +1,5 @@
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
@@ -7,8 +7,7 @@ extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
 
-use holochain_core_api::*;
-
+use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},

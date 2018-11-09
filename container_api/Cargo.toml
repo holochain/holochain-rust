@@ -1,5 +1,5 @@
 [package]
-name = "holochain_core_api"
+name = "holochain_container_api"
 version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
@@ -9,6 +9,9 @@ holochain_core_types = { path = "../core_types" }
 holochain_dna = { path = "../dna" }
 futures-preview = "0.2.2"
 tempfile = "3"
+serde = "1.0"
+serde_derive = "1.0"
+toml = "0.4.8"
 
 [dev-dependencies]
 holochain_cas_implementations = { path = "../cas_implementations" }

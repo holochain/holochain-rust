@@ -17,6 +17,7 @@ use std::{
 
 use holochain_core_types::json::JsonString;
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
     match catch_unwind(|| Box::into_raw(Box::new(Dna::new()))) {
@@ -26,6 +27,7 @@ pub extern "C" fn holochain_dna_create() -> *mut Dna {
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna {
     match catch_unwind(|| {
@@ -40,6 +42,7 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
     catch_unwind(|| {
@@ -52,6 +55,7 @@ pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
     }).unwrap_or(());
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
     match catch_unwind(|| {
@@ -74,6 +78,7 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_string_free(s: *mut c_char) {
     catch_unwind(|| {
@@ -208,6 +213,7 @@ unsafe fn cstring_vec_to_rustvec(string_vec: *mut CStringVec) -> Vec<CString> {
         .collect::<Vec<_>>()
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
     let _vec = cstring_vec_to_rustvec(string_vec);
@@ -230,6 +236,7 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     ptr: *mut Dna,
@@ -265,6 +272,7 @@ fn fn_names_as_vec(
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_function_names(
     ptr: *mut Dna,
@@ -308,6 +316,7 @@ fn fn_parameters_as_vec(
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_function_parameters(
     ptr: *mut Dna,

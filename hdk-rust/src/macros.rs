@@ -53,7 +53,7 @@ macro_rules! load_json {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 ///
@@ -71,7 +71,7 @@ macro_rules! load_json {
 ///         date_created: "now".into(),
 ///     });
 ///
-///     match hdk::hash_entry(&post_entry) {
+///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
 ///         Err(hdk_error) => hdk_error.into(),
 ///     }

@@ -238,13 +238,13 @@ fn handle_check_hash_app_entry() -> JsonString {
     }
 
     // Check bad entry type name
-    let bad_result = hdk::hash_entry(&Entry::new("bad".into(), entry_value.clone()));
+    let bad_result = hdk::entry_address(&Entry::new("bad".into(), entry_value.clone()));
     if !bad_result.is_err() {
         return bad_result.into();
     }
 
     // Check good entry type name
-    let hash_result = hdk::hash_entry(&entry);
+    let hash_result = hdk::entry_address(&entry);
 
     if commit_result == hash_result {
         JsonString::from(hash_result.unwrap())

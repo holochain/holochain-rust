@@ -287,7 +287,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
@@ -629,7 +629,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///         date_created: "now".into(),
 ///     });
 ///
-///     match hdk::hash_entry(&post_entry) {
+///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
 ///         Err(hdk_error) => hdk_error.into(),
 ///     }
@@ -638,7 +638,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// # }
 /// ```
-pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
+pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -648,7 +648,7 @@ pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
 
     let encoded_allocation_of_result: u32;
     unsafe {
-        encoded_allocation_of_result = hc_hash_entry(allocation_of_input.encode() as u32);
+        encoded_allocation_of_result = hc_entry_address(allocation_of_input.encode() as u32);
     }
 
     // Deserialize complex result stored in memory and check for ERROR in encoding

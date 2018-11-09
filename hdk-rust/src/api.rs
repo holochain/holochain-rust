@@ -11,7 +11,10 @@ use holochain_wasm_utils::{
         get_entry::GetEntryOptions, get_links::GetLinksArgs, link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, ZomeFnCallArgs,
     },
-    holochain_core_types::{hash::HashString, json::JsonString},
+    holochain_core_types::{
+        hash::HashString,
+        json::{JsonString, RawString},
+    },
     memory_allocation::*,
     memory_serialization::*,
 };
@@ -48,6 +51,42 @@ lazy_static! {
   /// Starts with the same value as AGENT_INITIAL_HASH.
   /// After a call to `update_agent` it will have the value of the hash of the newly committed identity entry.
   pub static ref AGENT_LATEST_HASH: &'static HashString = &GLOBALS.agent_latest_hash;
+}
+
+impl From<DNA_NAME> for JsonString {
+    fn from(dna_name: DNA_NAME) -> JsonString {
+        JsonString::from(RawString::from(dna_name.to_string()))
+    }
+}
+
+impl From<DNA_HASH> for JsonString {
+    fn from(dna_hash: DNA_HASH) -> JsonString {
+        JsonString::from(HashString::from(dna_hash.to_string()))
+    }
+}
+
+impl From<AGENT_ID_STR> for JsonString {
+    fn from(agent_id: AGENT_ID_STR) -> JsonString {
+        JsonString::from(RawString::from(agent_id.to_string()))
+    }
+}
+
+impl From<AGENT_ADDRESS> for JsonString {
+    fn from(agent_address: AGENT_ADDRESS) -> JsonString {
+        JsonString::from(Address::from(agent_address.to_string()))
+    }
+}
+
+impl From<AGENT_INITIAL_HASH> for JsonString {
+    fn from(agent_initial_hash: AGENT_INITIAL_HASH) -> JsonString {
+        JsonString::from(HashString::from(agent_initial_hash.to_string()))
+    }
+}
+
+impl From<AGENT_LATEST_HASH> for JsonString {
+    fn from(agent_latest_hash: AGENT_LATEST_HASH) -> JsonString {
+        JsonString::from(HashString::from(agent_latest_hash.to_string()))
+    }
 }
 
 //--------------------------------------------------------------------------------------------------

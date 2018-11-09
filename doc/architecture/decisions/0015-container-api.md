@@ -38,8 +38,8 @@ Accepted
 * With HoloSqape and the Holochain-nodejs, we already have two container implementations
 
 A Holochain app cannot be used directly. Holochain is built as a library that exposes an interface for
-creating Holochain instances and calling their zome functions (see [core_api](/core_api/src/lib.rs)).
-This *core_api* requires its client to provide a context, which holds the representation of the agent
+creating Holochain instances and calling their zome functions (see [container_api](/container_api/src/lib.rs)).
+This *container_api* requires its client to provide a context, which holds the representation of the agent
 (name and keys), a logger and persistence and will also include a networking proxy in the future.
 
 While it is possible to use this library directly in a monolithic app where the UI is tightly

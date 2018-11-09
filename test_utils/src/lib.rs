@@ -1,6 +1,6 @@
 extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
@@ -8,8 +8,8 @@ extern crate wabt;
 
 use holochain_core_types::entry::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use holochain_core_api::{error::HolochainResult, Holochain};
 use holochain_core_types::json::JsonString;
 use holochain_dna::{
     wasm::DnaWasm,

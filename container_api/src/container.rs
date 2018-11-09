@@ -5,12 +5,17 @@ use holochain_cas_implementations::{
 use holochain_core::context::Context;
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
-use std::{collections::HashMap, sync::Arc};
 use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::entry::agent::Agent;
-use std::{convert::TryFrom, fs::File, io::prelude::*, sync::Mutex};
+use std::{
+    collections::HashMap,
+    convert::TryFrom,
+    fs::File,
+    io::prelude::*,
+    sync::{Arc, Mutex, RwLock},
+};
 
 use boolinator::*;
 
@@ -146,8 +151,8 @@ fn create_context(agent: &String, path: &String) -> Result<Context, HolochainErr
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(agent_path))),
-        FilesystemStorage::new(&cas_path)?,
-        EavFileStorage::new(eav_path)?,
+        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )
 }
 

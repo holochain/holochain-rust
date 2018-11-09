@@ -31,17 +31,6 @@ pub struct AgentState {
     top_chain_header: Option<ChainHeader>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
-pub struct AgentStateSnapshot {
-    top_chain_header: ChainHeader,
-}
-
-impl AgentStateSnapshot {
-    pub fn top_chain_header(&self) -> &ChainHeader {
-        &self.top_chain_header
-    }
-}
-
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore) -> AgentState {
@@ -82,6 +71,11 @@ impl AgentState {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct AgentStateSnapshot {
+    top_chain_header: ChainHeader,
+}
+
 impl AgentStateSnapshot {
     pub fn new(chain_header: ChainHeader) -> AgentStateSnapshot {
         AgentStateSnapshot {
@@ -90,6 +84,9 @@ impl AgentStateSnapshot {
     }
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
+    }
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
     }
 }
 
@@ -391,7 +388,7 @@ pub mod tests {
         let header = test_chain_header();
         let agent_snap = AgentStateSnapshot::new(header);
         let json = serde_json::to_string(&agent_snap).unwrap();
-        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        let agent_from_json = AgentStateSnapshot::from_json_str(&json).unwrap();
         assert_eq!(agent_snap.address(), agent_from_json.address());
     }
 

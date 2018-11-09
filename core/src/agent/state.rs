@@ -197,7 +197,7 @@ fn reduce_get_entry(
         .expect("could not fetch from CAS");
     let result: Option<SerializedEntry> = match json {
         Some(js) => match js.try_into() {
-            Ok(info) => Some(info),
+            Ok(serialized_entry) => Some(serialized_entry),
             Err(_) => None,
         },
         None => None,

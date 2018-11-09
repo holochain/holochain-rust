@@ -5,7 +5,7 @@ use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
 use std::collections::HashMap;
-
+use std::sync::{Arc,RwLock};
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
     New,

@@ -17,7 +17,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, sync::{Arc,RwLock}};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -68,7 +68,7 @@ impl State {
                 ))?;
 
             Ok(Dna::from_entry(
-                &transform_content::<Entry>(cas.fetch(dna_entry_header.entry_address())?)
+                &transform_content::<Entry>((*cas.clone().read().unwrap()).fetch(dna_entry_header.entry_address())?)
                     .ok_or(HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
                     ))?,
@@ -76,7 +76,7 @@ impl State {
         }
 
         let mut nucleus_state = NucleusState::new();
-        nucleus_state.dna = get_dna(&agent_state, cas).ok();
+        nucleus_state.dna = get_dna(&agent_state, cas.clone()).ok();
         State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,

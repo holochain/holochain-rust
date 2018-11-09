@@ -5,7 +5,7 @@ use holochain_core_types::{
 };
 use std::sync::{Arc,RwLock};
 
-#[derive(Debug,  Clone, Serialize, Deserialize)]
+#[derive(Debug,  Clone)]
 pub struct ChainStore
 {
     // Storages holding local shard data

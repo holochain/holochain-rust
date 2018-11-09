@@ -13,8 +13,6 @@ use std::sync::{
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
 
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
 /// but also the store of the instance that gets injected before passing on the context
@@ -103,6 +101,7 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
@@ -119,7 +118,9 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
@@ -145,7 +146,9 @@ mod tests {
             holochain_agent::Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),

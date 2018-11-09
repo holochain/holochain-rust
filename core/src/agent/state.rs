@@ -2,10 +2,7 @@ use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
+    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
@@ -15,7 +12,11 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use std::{collections::HashMap, convert::{TryFrom,TryInto}, sync::Arc};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -192,18 +193,18 @@ fn reduce_get_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
     let storage = &state.chain().content_storage().clone();
-    let json = 
-        storage
-            .read()
-            .unwrap()
-            .fetch(&address)
-            .expect("could not fetch from CAS");
-   let result: Option<SerializedEntry> = match json{
-       Some(js) =>{
-           match js.try_into(){Ok(info) => Some(info),Err(_)=>None}
-       },
-       None => None
-   };
+    let json = storage
+        .read()
+        .unwrap()
+        .fetch(&address)
+        .expect("could not fetch from CAS");
+    let result: Option<SerializedEntry> = match json {
+        Some(js) => match js.try_into() {
+            Ok(info) => Some(info),
+            Err(_) => None,
+        },
+        None => None,
+    };
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

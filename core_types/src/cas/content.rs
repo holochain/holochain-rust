@@ -93,7 +93,6 @@ impl AddressableContent for OtherExampleAddressableContent {
     }
 }
 
-
 pub struct AddressableContentTestSuite;
 
 impl AddressableContentTestSuite {
@@ -147,7 +146,11 @@ impl AddressableContentTestSuite {
             cas.add(&f).expect(&add_error_message);
             assert_eq!(
                 Some(f.clone()),
-                Some(T::from_content(&cas.fetch(&f.address()).expect(&fetch_error_message).expect("could not get json")))
+                Some(T::from_content(
+                    &cas.fetch(&f.address())
+                        .expect(&fetch_error_message)
+                        .expect("could not get json")
+                ))
             );
         });
     }

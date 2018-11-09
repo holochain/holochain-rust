@@ -2,15 +2,11 @@ extern crate serde_json;
 use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
-    cas::{
-        content::{ Address},
-        storage::ContentAddressableStorage,
-    },
-    entry::{Entry,SerializedEntry},
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
 };
-use std::{sync::Arc,convert::TryInto};
-
+use std::{convert::TryInto, sync::Arc};
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,
@@ -19,13 +15,12 @@ fn get_entry_from_dht_cas(
     let dht = context.state().unwrap().dht().content_storage();
     let storage = &dht.clone();
     let json = (*storage.read().unwrap()).fetch(&address)?;
-    match json
-    {
+    match json {
         Some(js) => {
-            let serialized : SerializedEntry = js.try_into()?;
+            let serialized: SerializedEntry = js.try_into()?;
             Ok(Some(serialized.into()))
-        },
-        None => Ok(None)
+        }
+        None => Ok(None),
     }
 }
 
@@ -45,10 +40,7 @@ pub fn get_entry(
 #[cfg(test)]
 pub mod tests {
     use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        entry::test_entry,
-    };
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use instance::tests::test_context_with_state;
 
     #[test]
@@ -57,15 +49,8 @@ pub mod tests {
         let context = test_context_with_state();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(None), result);
-        let storage = &context
-            .state()
-            .unwrap()
-            .dht()
-            .content_storage()
-            .clone();
-        (*storage.write().unwrap())
-            .add(&entry)
-            .unwrap();
+        let storage = &context.state().unwrap().dht().content_storage().clone();
+        (*storage.write().unwrap()).add(&entry).unwrap();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
@@ -76,15 +61,8 @@ pub mod tests {
         let context = test_context_with_state();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(None), block_on(future));
-        let storage = &context
-            .state()
-            .unwrap()
-            .dht()
-            .content_storage()
-            .clone();
-        (*storage.write().unwrap())
-            .add(&entry)
-            .unwrap();
+        let storage = &context.state().unwrap().dht().content_storage().clone();
+        (*storage.write().unwrap()).add(&entry).unwrap();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), block_on(future));
     }

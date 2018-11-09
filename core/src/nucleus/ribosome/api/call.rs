@@ -221,7 +221,9 @@ pub mod tests {
                 Agent::from("alex".to_string()),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+                Arc::new(RwLock::new(
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                )),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),

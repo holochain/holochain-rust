@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, Entry, SerializedEntry};
+use entry::{test_entry_unique, SerializedEntry};
 use error::HolochainError;
 use json::RawString;
 use std::{

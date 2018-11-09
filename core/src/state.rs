@@ -5,10 +5,8 @@ use agent::{
 };
 use context::Context;
 use dht::dht_store::DhtStore;
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
-    eav::EntityAttributeValueStorage,
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},
@@ -18,8 +16,8 @@ use nucleus::state::NucleusState;
 use serde_json;
 use std::{
     collections::HashSet,
+    convert::TryInto,
     sync::{Arc, RwLock},
-    convert::TryInto
 };
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
@@ -69,14 +67,14 @@ impl State {
                     "No DNA entry found in source chain while creating state from agent"
                         .to_string(),
                 ))?;
-                let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-                let serialized_entry:SerializedEntry = json.map(|e|e.try_into()).ok_or(HolochainError::ErrorGeneric(
+            let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
+            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
+                HolochainError::ErrorGeneric(
                     "No DNA entry found in storage while creating state from agent".to_string(),
-                ))??;
-                let entry :Entry = serialized_entry.into();
-            Ok(Dna::from_entry(
-                &entry,
-            ))
+                ),
+            )??;
+            let entry: Entry = serialized_entry.into();
+            Ok(Dna::from_entry(&entry))
         }
 
         let mut nucleus_state = NucleusState::new();

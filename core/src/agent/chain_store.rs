@@ -1,6 +1,6 @@
 use holochain_core_types::{
     cas::{
-        content::{AddressableContent, Address},
+        content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
@@ -153,19 +153,19 @@ pub mod tests {
     use agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        cas::content::AddressableContent,
         chain_header::{test_chain_header, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
         signature::{test_signature, test_signature_b, test_signature_c},
         time::test_iso_8601,
     };
-    use std::sync::{Arc,RwLock};
+    use std::sync::{Arc, RwLock};
 
     pub fn test_chain_store() -> ChainStore {
-        ChainStore::new
-        (
-            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).expect("could not create chain store")))
-        )
+        ChainStore::new(Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
+                .expect("could not create chain store"),
+        )))
     }
 
     #[test]
@@ -235,8 +235,8 @@ pub mod tests {
         );
 
         for chain_header in vec![&chain_header_a, &chain_header_b, &chain_header_c] {
-             let storage = chain_store.content_storage.clone();
-             (*storage.write().unwrap())
+            let storage = chain_store.content_storage.clone();
+            (*storage.write().unwrap())
                 .add(chain_header)
                 .expect("could not add header to cas");
         }

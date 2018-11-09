@@ -5,10 +5,7 @@ use agent;
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::{
-        content::{ AddressableContent},
-        storage::ContentAddressableStorage,
-    },
+    cas::content::AddressableContent,
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
@@ -18,8 +15,7 @@ use nucleus::ribosome::callback::{
     validation_package::get_validation_package_definition, CallbackResult,
 };
 use snowflake;
-use std::{sync::Arc, thread};
-use std::convert::TryInto;
+use std::{convert::TryInto, sync::Arc, thread};
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -144,11 +140,11 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
         .map(|chain_header| {
             let storage = chain.content_storage().clone();
             let json = (*storage.read().unwrap())
-                    .fetch(chain_header.entry_address())
-                    .expect("Could not fetch from CAS");
+                .fetch(chain_header.entry_address())
+                .expect("Could not fetch from CAS");
             json.expect("Could not find CAS for existing chain header")
-                    .try_into()
-                    .expect("Could not convert to serialized entry")
+                .try_into()
+                .expect("Could not convert to serialized entry")
         })
         .collect::<Vec<_>>()
 }

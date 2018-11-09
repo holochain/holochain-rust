@@ -4,9 +4,7 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
-    cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::Entry,
+    cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
     error::HolochainError,
 };
 use std::sync::Arc;
@@ -28,7 +26,7 @@ pub fn reduce(
     }
     let reducer = maybe_reducer.unwrap();
     // Reduce
-    let mut store = old_store.clone();
+    let store = old_store.clone();
     let maybe_new_store = reducer(context, &store, &action_wrapper);
     match maybe_new_store {
         None => old_store,
@@ -58,7 +56,7 @@ pub(crate) fn commit_sys_entry(
         return None;
     }
     // Add it local storage
-    let mut new_store = (*old_store).clone();
+    let new_store = (*old_store).clone();
     let storage = &new_store.content_storage().clone();
     let res = storage.write().unwrap().add(entry);
     if res.is_err() {
@@ -157,7 +155,7 @@ pub(crate) fn reduce_get_entry_from_network(
         .get(address)
         .and_then(|content| {
             let entry = Entry::from_content(&content);
-            let mut new_store = (*old_store).clone();
+            let new_store = (*old_store).clone();
             // ...and add it to the local storage
             let storage = &new_store.content_storage().clone();
             let res = (*storage.write().unwrap()).add(&entry);
@@ -220,8 +218,7 @@ pub mod tests {
         dht_store::DhtStore,
     };
     use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        eav::EntityAttributeValueStorage,
+        cas::content::AddressableContent,
         entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
         links_entry::Link,
     };
@@ -241,13 +238,11 @@ pub mod tests {
             commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
         // test_entry is not sys so should do nothing
-        let storage = &store
-                .dht()
-                .content_storage().clone();
+        let storage = &store.dht().content_storage().clone();
         assert_eq!(None, new_dht_store);
         assert_eq!(
             None,
-                (*storage.read().unwrap())
+            (*storage.read().unwrap())
                 .fetch(&entry.address())
                 .expect("could not fetch from cas")
         );
@@ -261,17 +256,16 @@ pub mod tests {
             (*storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s|Entry::from_content(&s))
+                .map(|s| Entry::from_content(&s))
         );
 
-        let new_storage = &new_dht_store
-                .content_storage().clone();
+        let new_storage = &new_dht_store.content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
             (*new_storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s|Entry::from_content(&s))
+                .map(|s| Entry::from_content(&s))
         );
     }
 

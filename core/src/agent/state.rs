@@ -195,13 +195,7 @@ fn reduce_get_entry(
         .unwrap()
         .fetch(&address)
         .expect("could not fetch from CAS");
-    let result: Option<SerializedEntry> = match json {
-        Some(js) => match js.try_into() {
-            Ok(serialized_entry) => Some(serialized_entry),
-            Err(_) => None,
-        },
-        None => None,
-    };
+    let result: Option<SerializedEntry> = json.and_then(|js| js.try_into().ok());
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167

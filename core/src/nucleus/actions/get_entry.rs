@@ -15,13 +15,10 @@ fn get_entry_from_dht_cas(
     let dht = context.state().unwrap().dht().content_storage();
     let storage = &dht.clone();
     let json = (*storage.read().unwrap()).fetch(&address)?;
-    match json {
-        Some(js) => {
-            let serialized: SerializedEntry = js.try_into()?;
-            Ok(Some(serialized.into()))
-        }
-        None => Ok(None),
-    }
+    let entry: Option<Entry> = json
+        .and_then(|js| js.try_into().ok())
+        .map(|s: SerializedEntry| s.into());
+    Ok(entry)
 }
 
 /// GetEntry Action Creator

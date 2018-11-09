@@ -13,7 +13,7 @@
 //! use holochain_container_api::*;
 //! use holochain_dna::Dna;
 //! use holochain_core_types::entry::agent::Agent;
-//! use std::sync::{Arc, Mutex};
+//! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
 //! use holochain_core::persister::SimplePersister;
@@ -34,8 +34,8 @@
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
 //!     Arc::new(Mutex::new(SimplePersister::new(String::from("Agent Name")))),
-//!     FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-//!     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+//!     Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+//!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -87,7 +87,7 @@ use holochain_core::{
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_dna::Dna;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -214,9 +214,15 @@ mod tests {
                     agent,
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
+                    Arc::new(RwLock::new(
+                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
+                            .unwrap(),
+                    )),
+                    Arc::new(RwLock::new(
+                        EavFileStorage::new(
+                            tempdir().unwrap().path().to_str().unwrap().to_string(),
+                        ).unwrap(),
+                    )),
                 ).unwrap(),
             ),
             logger,

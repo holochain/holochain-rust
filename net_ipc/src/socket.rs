@@ -128,14 +128,7 @@ mod tests {
     #[test]
     fn it_zmq_cycle() {
         let mut c = ZmqIpcSocket::new().unwrap();
-        let uri = format!(
-            "ipc://{}",
-            mktemp::Temp::new_file()
-                .unwrap()
-                .to_path_buf()
-                .to_string_lossy()
-        );
-        c.connect(&uri).unwrap();
+        c.connect("tcp://127.0.0.1:0").unwrap();
         c.poll(0).unwrap();
         c.send(&[&[]]).unwrap();
         c.close().unwrap();

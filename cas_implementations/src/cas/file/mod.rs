@@ -15,14 +15,14 @@ use uuid::Uuid;
 #[derive(Clone, PartialEq, Debug)]
 pub struct FilesystemStorage {
     actor: ActorRef<Protocol>,
-    id : Uuid
+    id: Uuid,
 }
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
-            id : Uuid::new_v4()
+            id: Uuid::new_v4(),
         })
     }
 }

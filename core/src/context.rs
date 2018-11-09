@@ -1,5 +1,8 @@
 use action::ActionWrapper;
-use holochain_core_types::{entry::agent::Agent, error::HolochainError,cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage};
+use holochain_core_types::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
+    error::HolochainError,
+};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -96,12 +99,12 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::entry::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex, RwLock};
-    use holochain_cas_implementations::{cas::file::FilesystemStorage,eav::file::EavFileStorage};
 
     #[test]
     fn default_buffer_size_test() {

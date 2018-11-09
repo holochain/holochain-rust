@@ -13,14 +13,14 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryStorage {
     actor: ActorRef<Protocol>,
-    id : Uuid
+    id: Uuid,
 }
 
 impl MemoryStorage {
     pub fn new() -> Result<MemoryStorage, HolochainError> {
         Ok(MemoryStorage {
             actor: MemoryStorageActor::new_ref()?,
-            id : Uuid::new_v4()
+            id: Uuid::new_v4(),
         })
     }
 }

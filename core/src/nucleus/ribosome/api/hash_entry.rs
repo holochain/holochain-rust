@@ -15,6 +15,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
             holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as i32,
         ))
     })?;
+
     // Check if AppEntry is a valid AppEntryType
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);

@@ -1,4 +1,4 @@
-use holochain_core_types::entry_type::EntryType;
+use holochain_core_types::entry::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::QueryArgs;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::{convert::TryFrom, str::FromStr};

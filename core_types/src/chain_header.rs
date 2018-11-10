@@ -1,6 +1,8 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry, Entry, ToEntry};
-use entry_type::{test_entry_type, EntryType};
+use entry::{
+    entry_type::{test_entry_type, EntryType},
+    test_entry, Entry, ToEntry,
+};
 use error::HolochainError;
 use json::JsonString;
 use signature::{test_signature, Signature};
@@ -135,8 +137,10 @@ pub fn test_chain_header() -> ChainHeader {
 pub mod tests {
     use cas::content::{Address, AddressableContent};
     use chain_header::{test_chain_header, ChainHeader};
-    use entry::{test_entry, test_entry_a, test_entry_b, ToEntry};
-    use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
+    use entry::{
+        entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
+        test_entry, test_entry_a, test_entry_b, ToEntry,
+    };
     use signature::{test_signature, test_signature_b};
     use time::test_iso_8601;
 

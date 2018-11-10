@@ -1,4 +1,4 @@
-use holochain_core_types::{entry_type::EntryType, hash::HashString, json::JsonString};
+use holochain_core_types::{entry::entry_type::EntryType, hash::HashString, json::JsonString};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};

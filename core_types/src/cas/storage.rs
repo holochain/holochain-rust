@@ -10,6 +10,7 @@ use std::{
     thread,
 };
 
+use objekt;
 use std::convert::TryFrom;
 use uuid::Uuid;
 

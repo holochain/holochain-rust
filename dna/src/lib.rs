@@ -42,8 +42,7 @@ pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    entry::{Entry, ToEntry},
-    entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry, ToEntry},
     error::{DnaError, HolochainError},
     json::JsonString,
 };

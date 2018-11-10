@@ -1,8 +1,7 @@
 use holochain_core_types::{
     self,
     cas::content::AddressableContent,
-    entry::{Entry, SerializedEntry},
-    entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry, SerializedEntry},
 };
 use holochain_dna::Dna;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};

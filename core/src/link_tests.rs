@@ -7,8 +7,7 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::ToEntry,
-        entry_type::EntryType,
+        entry::{entry_type::EntryType, ToEntry},
         links_entry::*,
     };
     use instance::{tests::test_context, Instance, Observer};

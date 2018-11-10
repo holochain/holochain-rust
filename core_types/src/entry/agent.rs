@@ -1,6 +1,5 @@
 use cas::content::{AddressableContent, Content};
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{entry_type::EntryType, Entry, ToEntry};
 use json::JsonString;
 
 /// Object holding an Agent's identity.

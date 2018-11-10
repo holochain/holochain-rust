@@ -10,8 +10,7 @@ extern crate serde_json;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
-    entry_type::test_entry_type,
+    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::ZomeApiInternalResult,
     hash::HashString,
     json::JsonString,

@@ -295,8 +295,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{agent::Agent, ToEntry},
-        entry_type::EntryType,
+        entry::{agent::Agent, entry_type::EntryType, ToEntry},
         json::{JsonString, RawString},
     };
     use holochain_dna::{zome::Zome, Dna};

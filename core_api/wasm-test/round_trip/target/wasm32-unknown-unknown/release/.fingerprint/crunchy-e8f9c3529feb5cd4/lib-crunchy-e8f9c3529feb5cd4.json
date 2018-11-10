@@ -1,0 +1,1 @@
+{"rustc":10246027807469938785,"features":"[\"default\", \"limit_128\"]","target":5870929089954252329,"profile":3039565332415304816,"path":2215574466917234075,"deps":[],"local":[{"Precalculated":"0.1.6"}],"rustflags":["-Z","external-macro-backtrace"],"edition":"Edition2015"}

@@ -1,18 +1,18 @@
 extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
 extern crate holochain_dna;
 extern crate tempfile;
 
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_container_api::*;
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_api::*;
 use holochain_core_types::entry::agent::Agent;
 use holochain_dna::Dna;
 use std::{
     env,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
 
 use tempfile::tempdir;
@@ -47,8 +47,12 @@ fn main() {
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
+        Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+        )),
+        Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
+        )),
     ).expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

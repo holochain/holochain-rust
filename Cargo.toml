@@ -1,14 +1,16 @@
 [workspace]
 
 members = [
-  "core_api",
+  "container",
+  "container_api",
   "core_api_c_binding",
   "core",
   "dna",
   "dna_c_binding",
-  "net",
-  "test_bin",
-  "net_ipc",
   "hdk-rust",
+  "net",
+  "net_connection",
+  "net_ipc",
+  "test_bin",
 ]
 exclude = ["test_utils"]

@@ -1,31 +1,39 @@
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
     chain_header::ChainHeader,
     entry_type::EntryType,
 };
+use std::sync::{Arc, RwLock};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ChainStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
+#[derive(Debug, Clone)]
+pub struct ChainStore {
     // Storages holding local shard data
-    content_storage: CAS,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
 }
 
-impl<CAS> ChainStore<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
-    pub fn new(content_storage: CAS) -> Self {
+impl PartialEq for ChainStore {
+    fn eq(&self, other: &ChainStore) -> bool {
+        let storage_lock = &self.content_storage.clone();
+        let storage = &*storage_lock.read().unwrap();
+        let other_storage_lock = &other.content_storage.clone();
+        let other_storage = &*other_storage_lock.read().unwrap();
+        storage.get_id() == other_storage.get_id()
+    }
+}
+
+impl ChainStore {
+    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
     }
 
-    pub fn content_storage(&self) -> CAS {
+    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
 
-    pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator<CAS> {
+    pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
 
@@ -33,7 +41,7 @@ where
         &self,
         start_chain_header: &Option<ChainHeader>,
         entry_type: &EntryType,
-    ) -> ChainStoreTypeIterator<CAS> {
+    ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator::new(
             self.content_storage.clone(),
             self.iter(start_chain_header)
@@ -58,21 +66,18 @@ where
     }
 }
 
-pub struct ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
-    content_storage: CAS,
+pub struct ChainStoreIterator {
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl<CAS> ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
+impl ChainStoreIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: CAS, current: Option<ChainHeader>) -> ChainStoreIterator<CAS> {
+    pub fn new(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        current: Option<ChainHeader>,
+    ) -> ChainStoreIterator {
         ChainStoreIterator {
             content_storage,
             current,
@@ -80,16 +85,13 @@ where
     }
 }
 
-impl<CAS> Iterator for ChainStoreIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
+impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-
+        let storage = &self.content_storage.clone();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link())
@@ -97,27 +99,25 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                .map(|content|ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
             });
         previous
     }
 }
 
-pub struct ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
-    content_storage: CAS,
+pub struct ChainStoreTypeIterator {
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
 }
 
-impl<CAS> ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
+impl ChainStoreTypeIterator {
     #[allow(unknown_lints)]
     #[allow(needless_pass_by_value)]
-    pub fn new(content_storage: CAS, current: Option<ChainHeader>) -> ChainStoreTypeIterator<CAS> {
+    pub fn new(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        current: Option<ChainHeader>,
+    ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator {
             content_storage,
             current,
@@ -125,16 +125,13 @@ where
     }
 }
 
-impl<CAS> Iterator for ChainStoreTypeIterator<CAS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-{
+impl Iterator for ChainStoreTypeIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-
+        let storage = &self.content_storage.clone();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link_same_type())
@@ -142,7 +139,8 @@ where
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                self.content_storage.fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                (*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS")
+                                          .map(|content|ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
             });
         previous
     }
@@ -155,18 +153,19 @@ pub mod tests {
     use agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
+        cas::content::AddressableContent,
         chain_header::{test_chain_header, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
         signature::{test_signature, test_signature_b, test_signature_c},
         time::test_iso_8601,
     };
+    use std::sync::{Arc, RwLock};
 
-    pub fn test_chain_store() -> ChainStore<FilesystemStorage> {
-        ChainStore::new(
+    pub fn test_chain_store() -> ChainStore {
+        ChainStore::new(Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                .expect("could not create new chain store"),
-        )
+                .expect("could not create chain store"),
+        )))
     }
 
     #[test]
@@ -185,12 +184,11 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        chain_store
-            .content_storage()
+        let storage = chain_store.content_storage.clone();
+        (*storage.write().unwrap())
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_b)
             .expect("could not add header to cas");
 
@@ -237,8 +235,8 @@ pub mod tests {
         );
 
         for chain_header in vec![&chain_header_a, &chain_header_b, &chain_header_c] {
-            chain_store
-                .content_storage()
+            let storage = chain_store.content_storage.clone();
+            (*storage.write().unwrap())
                 .add(chain_header)
                 .expect("could not add header to cas");
         }
@@ -305,16 +303,14 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        chain_store
-            .content_storage()
+        let storage = chain_store.content_storage.clone();
+        (*storage.write().unwrap())
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_b)
             .expect("could not add header to cas");
-        chain_store
-            .content_storage()
+        (*storage.write().unwrap())
             .add(&chain_header_c)
             .expect("could not add header to cas");
 

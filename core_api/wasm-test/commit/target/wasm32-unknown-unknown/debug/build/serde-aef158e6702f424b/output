@@ -1,0 +1,5 @@
+cargo:rustc-cfg=de_boxed_c_str
+cargo:rustc-cfg=de_rc_dst
+cargo:rustc-cfg=core_duration
+cargo:rustc-cfg=integer128
+cargo:rustc-cfg=num_nonzero

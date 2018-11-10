@@ -228,6 +228,12 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # extern crate serde_json;
 /// # use hdk::holochain_core_types::json::JsonString;
 ///
+/// # // Adding empty functions so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_call(_: u32) -> u32 { 0 }
+///
 /// # fn main() {
 ///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
@@ -272,6 +278,20 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use hdk::holochain_core_types::hash::HashString;
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
+///
+/// # // Adding empty functions so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_call(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///

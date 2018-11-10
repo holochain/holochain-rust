@@ -6,7 +6,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_dna = { path = "../dna" }
-holochain_core_api = { path = "../core_api" }
+holochain_container_api = { path = "../container_api" }
 holochain_cas_implementations = {path="../cas_implementations"}
 holochain_core_types = { path = "../core_types" }
 tempfile = "3"

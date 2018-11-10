@@ -177,7 +177,7 @@ where
         .clone()
         .get(address)
         .and_then(|content| {
-            let entry = Entry::from_content(&content);
+            let entry = Entry::try_from_content(&content).expect("could not load entry from content");
             let mut new_store = (*old_store).clone();
             // ...and add it to the local storage
             let res = new_store.content_storage_mut().add(&entry);

@@ -302,7 +302,7 @@ pub mod tests {
     /// tests for entry.content()
     fn content_test() {
         let content = test_entry_content();
-        let entry = Entry::from_content(&content);
+        let entry = Entry::try_from_content(&content).unwrap();
 
         assert_eq!(content, entry.content());
     }

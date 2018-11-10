@@ -154,6 +154,6 @@ mod tests {
         assert_eq!(expected_content, test_agent().content(),);
 
         // from_content()
-        assert_eq!(test_agent(), Agent::from_content(&expected_content),);
+        assert_eq!(test_agent(), Agent::try_from_content(&expected_content).unwrap(),);
     }
 }

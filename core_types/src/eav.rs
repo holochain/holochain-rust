@@ -289,10 +289,10 @@ pub mod tests {
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
         let entity =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo"))).unwrap();
         let attribute = "favourite-color".to_string();
         let value =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue"))).unwrap();
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

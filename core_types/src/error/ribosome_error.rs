@@ -176,7 +176,7 @@ impl FromStr for RibosomeErrorCode {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.as_ref() {
+        match s {
             "Unspecified" => Ok(RibosomeErrorCode::Unspecified),
             "Argument deserialization failed" => {
                 Ok(RibosomeErrorCode::ArgumentDeserializationFailed)
@@ -188,6 +188,7 @@ impl FromStr for RibosomeErrorCode {
             "Response serialization failed" => Ok(RibosomeErrorCode::ResponseSerializationFailed),
             "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
             "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
+            "Unknown entry type" => Ok(RibosomeErrorCode::UnknownEntryType),
             _ => Err(HolochainError::ErrorGeneric(String::from(
                 "Unknown RibosomeErrorCode",
             ))),
@@ -213,5 +214,27 @@ pub mod tests {
             RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+    }
+
+    #[test]
+    fn error_conversion() {
+        for code in 1..=10 {
+            let mut err = RibosomeErrorCode::from_offset(code);
+
+            let err_str = err.as_str().to_owned();
+
+            err = err_str.parse().expect("unable to parse error");
+
+            let inner_code = RibosomeReturnCode::from_error(err);
+
+            let _one_int: i32 = inner_code.clone().into();
+            let _another_int: u32 = inner_code.clone().into();
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn code_zero() {
+        RibosomeErrorCode::from_offset(0);
     }
 }

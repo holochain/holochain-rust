@@ -12,7 +12,7 @@ use holochain_core_types::entry::agent::Agent;
 use holochain_dna::Dna;
 use std::{
     env,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
 };
 
 use tempfile::tempdir;
@@ -47,8 +47,12 @@ fn main() {
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
         Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
+        Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+        )),
+        Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
+        )),
     ).expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);

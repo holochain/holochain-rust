@@ -39,6 +39,7 @@ pub fn invoke_hash_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRe
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
+
     // Check if entry_type is valid
     let dna = runtime
         .context

@@ -1,5 +1,8 @@
 use action::ActionWrapper;
-use holochain_core_types::{entry::agent::Agent, error::HolochainError};
+use holochain_core_types::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
+    error::HolochainError,
+};
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -8,8 +11,6 @@ use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
 };
-
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -23,8 +24,8 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
-    pub file_storage: FilesystemStorage,
-    pub eav_storage: EavFileStorage,
+    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
 }
 
 impl Context {
@@ -36,8 +37,8 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: FilesystemStorage,
-        eav: EavFileStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -59,8 +60,8 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
-        cas: FilesystemStorage,
-        eav: EavFileStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent,
@@ -98,11 +99,12 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::entry::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn default_buffer_size_test() {
@@ -115,8 +117,13 @@ mod tests {
             Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());
@@ -138,8 +145,13 @@ mod tests {
             Agent::from("Terence".to_string()),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
         ).unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

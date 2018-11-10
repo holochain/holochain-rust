@@ -8,9 +8,6 @@ use zmq;
 
 /// trait that allows zmq socket abstraction
 pub trait IpcSocket {
-    /// clean up the context
-    fn destroy_context() -> Result<()>;
-
     /// create a new socket
     fn new() -> Result<Box<Self>>
     where
@@ -38,11 +35,6 @@ pub struct ZmqIpcSocket {
 }
 
 impl IpcSocket for ZmqIpcSocket {
-    fn destroy_context() -> Result<()> {
-        context::destroy()?;
-        Ok(())
-    }
-
     fn new() -> Result<Box<Self>> {
         Ok(Box::new(Self {
             socket: context::socket(zmq::ROUTER)?,
@@ -75,14 +67,12 @@ impl IpcSocket for ZmqIpcSocket {
     }
 }
 
-#[cfg(test)]
 /// This is a concrete implementation of the IpcSocket trait for use in testing
 pub struct MockIpcSocket {
     resp_queue: Vec<Vec<Vec<u8>>>,
     sent_queue: Vec<Vec<Vec<u8>>>,
 }
 
-#[cfg(test)]
 impl MockIpcSocket {
     pub fn inject_response(&mut self, data: Vec<Vec<u8>>) {
         self.resp_queue.push(data);
@@ -97,12 +87,7 @@ impl MockIpcSocket {
     }
 }
 
-#[cfg(test)]
 impl IpcSocket for MockIpcSocket {
-    fn destroy_context() -> Result<()> {
-        Ok(())
-    }
-
     fn new() -> Result<Box<Self>> {
         Ok(Box::new(Self {
             resp_queue: Vec::new(),
@@ -133,5 +118,40 @@ impl IpcSocket for MockIpcSocket {
         }
         self.sent_queue.push(tmp);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_zmq_cycle() {
+        let mut c = ZmqIpcSocket::new().unwrap();
+        c.connect("tcp://127.0.0.1:0").unwrap();
+        c.poll(0).unwrap();
+        c.send(&[&[]]).unwrap();
+        c.close().unwrap();
+    }
+
+    #[test]
+    fn it_mock_cycle() {
+        let mut c = MockIpcSocket::new().unwrap();
+        c.connect("").unwrap();
+
+        assert_eq!(false, c.poll(0).unwrap());
+        assert_eq!(0, c.sent_count());
+
+        c.send(&[&[1]]).unwrap();
+
+        assert_eq!(1, c.sent_count());
+        assert_eq!(1, c.next_sent()[0][0]);
+
+        c.inject_response(vec![vec![2]]);
+
+        assert_eq!(true, c.poll(0).unwrap());
+        assert_eq!(2, c.recv().unwrap()[0][0]);
+
+        c.close().unwrap();
     }
 }

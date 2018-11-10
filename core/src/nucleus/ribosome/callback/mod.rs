@@ -8,12 +8,14 @@ pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{
-    entry::SerializedEntry,
+    entry::{
+        dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
+        SerializedEntry,
+    },
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
         self,

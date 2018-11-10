@@ -1,4 +1,4 @@
-use holochain_dna::zome::entry_types::EntryTypeDef;
+use holochain_core_types::entry::dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::holochain_core_types::{
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
@@ -25,7 +25,7 @@ pub struct ValidatingEntryType {
 ///      It is what must be given as the `entry_type_name` argument when calling [commit_entry](fn.commit_entry.html) and the other data read/write functions.
 /// 2. description: `description` is something that is primarily for human readers of your code, just describe this entry type
 /// 3. sharing: `sharing` defines what distribution over the DHT, or not, occurs with entries of this type, possible values
-///      are defined in the [Sharing](../holochain_dna/zome/entry_types/enum.Sharing.html) enum
+///      are defined in the [Sharing](../core_types/entry/dna/zome/entry_types/enum.Sharing.html) enum
 /// 4. native_type: `native_type` references a given Rust struct, which provides a clear schema for entries of this type.
 /// 5. validation_package: `validation_package` is a special identifier, which declares which data is required from peers
 ///      when attempting to validate entries of this type.
@@ -46,7 +46,7 @@ pub struct ValidatingEntryType {
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_dna::zome::entry_types::Sharing;
+/// # use hdk::holochain_core_types::entry::dna::zome::entry_types::Sharing;
 ///
 /// # fn main() {
 ///
@@ -90,7 +90,7 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = ::hdk::holochain_dna::zome::entry_types::EntryTypeDef::new();
+            let mut entry_type = ::hdk::holochain_core_types::entry::dna::zome::entry_types::EntryTypeDef::new();
             entry_type.description = String::from($description);
             entry_type.sharing = $sharing;
 

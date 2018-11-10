@@ -11,6 +11,7 @@ use std::{
     ops::Deref,
 };
 pub mod agent;
+pub mod dna;
 
 pub type EntryValue = JsonString;
 

@@ -4,5 +4,5 @@ version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_dna = { path = "../dna" }
 holochain_core = { path = "../core" }
+holochain_core_types = { path = "../core_types" }

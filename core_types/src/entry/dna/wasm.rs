@@ -1,4 +1,4 @@
-//! holochain_dna::wasm is a module for managing webassembly code
+//! holochain_core_types::entry::dna::wasm is a module for managing webassembly code
 //!  - within the in-memory dna struct
 //!  - and serialized to json
 

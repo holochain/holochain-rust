@@ -27,7 +27,7 @@ use holochain_wasm_utils::{
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
-use hdk::holochain_dna::zome::entry_types::Sharing;
+use hdk::holochain_core_types::entry::dna::zome::entry_types::Sharing;
 use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 

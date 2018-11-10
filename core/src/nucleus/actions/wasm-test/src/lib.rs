@@ -7,7 +7,7 @@ extern crate serde_derive;
 extern crate boolinator;
 
 use boolinator::Boolinator;
-use hdk::holochain_dna::zome::entry_types::Sharing;
+use hdk::holochain_core_types::entry::dna::zome::entry_types::Sharing;
 
 #[derive(Serialize, Deserialize)]
 struct TestEntryType {

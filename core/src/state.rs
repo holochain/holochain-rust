@@ -7,11 +7,10 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
-    entry::*,
+    entry::{dna::Dna, *},
     entry_type::EntryType,
     error::{HcResult, HolochainError},
 };
-use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
 use std::{

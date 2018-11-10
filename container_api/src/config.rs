@@ -6,6 +6,7 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
+use toml;
 
 #[derive(Deserialize)]
 pub struct Configuration {

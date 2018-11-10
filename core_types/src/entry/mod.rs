@@ -11,6 +11,8 @@ use std::{
     ops::Deref,
 };
 pub mod agent;
+pub mod chain_migrate;
+pub mod delete;
 
 pub type EntryValue = JsonString;
 

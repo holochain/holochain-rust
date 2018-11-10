@@ -1,5 +1,0 @@
-/holochain/core_api/wasm-test/commit/target/wasm32-unknown-unknown/release/deps/libnum_rational-246d05c5ae7990ac.rlib: /home/holochain/.cargo/registry/src/github.com-1ecc6299db9ec823/num-rational-0.2.1/src/lib.rs
-
-/holochain/core_api/wasm-test/commit/target/wasm32-unknown-unknown/release/deps/num_rational-246d05c5ae7990ac.d: /home/holochain/.cargo/registry/src/github.com-1ecc6299db9ec823/num-rational-0.2.1/src/lib.rs
-
-/home/holochain/.cargo/registry/src/github.com-1ecc6299db9ec823/num-rational-0.2.1/src/lib.rs:

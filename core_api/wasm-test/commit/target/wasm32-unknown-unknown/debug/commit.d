@@ -1,1 +1,0 @@
-/holochain/core_api/wasm-test/commit/target/wasm32-unknown-unknown/debug/commit.wasm: /holochain/core_api/wasm-test/commit/src/lib.rs /holochain/wasm_utils/src/error.rs /holochain/wasm_utils/src/lib.rs /holochain/wasm_utils/src/memory_allocation.rs /holochain/wasm_utils/src/memory_serialization.rs /holochain/wasm_utils/src/validation.rs

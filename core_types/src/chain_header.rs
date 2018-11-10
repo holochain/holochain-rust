@@ -112,9 +112,7 @@ impl AddressableContent for ChainHeader {
     }
 
     fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content
-            .to_owned()
-            .try_into()
+        content.to_owned().try_into()
     }
 }
 

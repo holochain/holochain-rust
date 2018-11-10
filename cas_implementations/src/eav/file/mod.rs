@@ -44,10 +44,9 @@ pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
     use eav::file::EavFileStorage;
-    use holochain_core_types::cas::content::AddressableContent;
     use holochain_core_types::{
         cas::{
-            content::ExampleAddressableContent,
+            content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
         json::RawString,

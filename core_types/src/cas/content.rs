@@ -1,9 +1,9 @@
 use cas::storage::ContentAddressableStorage;
+use error::error::HolochainError;
 use hash::HashString;
 use json::JsonString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
-use error::error::HolochainError;
 
 /// an Address for some Content
 /// ideally would be the Content but pragmatically must be Address
@@ -105,7 +105,8 @@ impl AddressableContentTestSuite {
     ) where
         T: AddressableContent + Debug + PartialEq + Clone,
     {
-        let addressable_content = T::try_from_content(&content).expect("could not create AddressableContent from Content");
+        let addressable_content = T::try_from_content(&content)
+            .expect("could not create AddressableContent from Content");
 
         assert_eq!(addressable_content, expected_content);
         assert_eq!(content, addressable_content.content());
@@ -118,8 +119,10 @@ impl AddressableContentTestSuite {
         T: AddressableContent + Debug + PartialEq + Clone,
         K: AddressableContent + Debug + PartialEq + Clone,
     {
-        let addressable_content = T::try_from_content(&content).expect("could not create AddressableContent from Content");
-        let other_addressable_content = K::try_from_content(&content).expect("could not create AddressableContent from Content");
+        let addressable_content = T::try_from_content(&content)
+            .expect("could not create AddressableContent from Content");
+        let other_addressable_content = K::try_from_content(&content)
+            .expect("could not create AddressableContent from Content");
 
         assert_eq!(
             addressable_content.content(),
@@ -147,11 +150,13 @@ impl AddressableContentTestSuite {
             cas.add(&f).expect(&add_error_message);
             assert_eq!(
                 Some(f.clone()),
-                Some(T::try_from_content(
-                    &cas.fetch(&f.address())
-                        .expect(&fetch_error_message)
-                        .expect("could not get json")
-                ).unwrap())
+                Some(
+                    T::try_from_content(
+                        &cas.fetch(&f.address())
+                            .expect(&fetch_error_message)
+                            .expect("could not get json")
+                    ).unwrap()
+                )
             );
         });
     }
@@ -170,7 +175,8 @@ pub mod tests {
     fn example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<ExampleAddressableContent>(
             JsonString::from(RawString::from("foo")),
-            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo"))).unwrap(),
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
+                .unwrap(),
             Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }
@@ -180,7 +186,9 @@ pub mod tests {
     fn other_example_addressable_content_trait_test() {
         AddressableContentTestSuite::addressable_content_trait_test::<OtherExampleAddressableContent>(
             JsonString::from(RawString::from("foo")),
-            OtherExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo"))).unwrap(),
+            OtherExampleAddressableContent::try_from_content(&JsonString::from(RawString::from(
+                "foo",
+            ))).unwrap(),
             Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }

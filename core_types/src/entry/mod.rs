@@ -122,8 +122,7 @@ impl AddressableContent for Entry {
     }
 
     fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        Ok(SerializedEntry::try_from(content.to_owned())?
-            .into())
+        Ok(SerializedEntry::try_from(content.to_owned())?.into())
     }
 }
 
@@ -133,9 +132,7 @@ impl AddressableContent for SerializedEntry {
     }
 
     fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content
-            .to_owned()
-            .try_into()
+        content.to_owned().try_into()
     }
 }
 

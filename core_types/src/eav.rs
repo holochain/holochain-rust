@@ -47,9 +47,7 @@ impl AddressableContent for EntityAttributeValue {
     }
 
     fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content
-            .to_owned()
-            .try_into()
+        content.to_owned().try_into()
     }
 }
 
@@ -298,11 +296,13 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity =
-            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo"))).unwrap();
+        let entity = ExampleAddressableContent::try_from_content(&JsonString::from(
+            RawString::from("foo"),
+        )).unwrap();
         let attribute = "favourite-color".to_string();
-        let value =
-            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue"))).unwrap();
+        let value = ExampleAddressableContent::try_from_content(&JsonString::from(
+            RawString::from("blue"),
+        )).unwrap();
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

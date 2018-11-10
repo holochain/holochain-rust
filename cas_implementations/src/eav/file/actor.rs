@@ -1,7 +1,6 @@
 use actor::{Protocol, SYS};
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    cas::content::Content,
+    cas::content::{AddressableContent, Content},
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
     file_validation,
@@ -169,27 +168,27 @@ impl EavFileStorageActor {
         let maybe_first_error = entity_attribute_value_inter.iter().find(|e| e.is_err());
         if let Some(Err(first_error)) = maybe_first_error {
             return Err(first_error.to_owned());
-        }
-        else {
+        } else {
             let hopefully_eavs = entity_attribute_value_inter
                 .iter()
                 .cloned()
                 .map(|maybe_eav_content|
                     // errors filtered out above... unwrap is safe.
-                    Content::from(maybe_eav_content.unwrap()),
-                )
+                    Content::from(maybe_eav_content.unwrap()))
                 .map(|content| EntityAttributeValue::try_from_content(&content))
                 .collect::<HashSet<HcResult<EntityAttributeValue>>>();
 
             let maybe_first_error = hopefully_eavs.iter().find(|e| e.is_err());
             if let Some(Err(first_error)) = maybe_first_error {
                 return Err(first_error.to_owned());
-            }
-            else {
-                Ok(hopefully_eavs.iter().cloned().map(|eav|
+            } else {
+                Ok(hopefully_eavs
+                    .iter()
+                    .cloned()
+                    .map(|eav|
                     // errors filtered out above... unwrap is safe
-                    eav.unwrap()
-                ).collect())
+                    eav.unwrap())
+                    .collect())
             }
         }
     }

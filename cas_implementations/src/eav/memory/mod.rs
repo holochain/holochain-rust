@@ -44,12 +44,11 @@ pub mod tests {
     use eav::memory::EavMemoryStorage;
     use holochain_core_types::{
         cas::{
-            content::ExampleAddressableContent,
+            content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
         json::RawString,
     };
-    use holochain_core_types::cas::content::AddressableContent;
 
     #[test]
     fn memory_eav_round_trip() {

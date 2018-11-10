@@ -143,8 +143,10 @@ where
         OtherAddressable: AddressableContent + Clone + PartialEq + Debug,
     {
         // based on associate type we call the right from_content function
-        let addressable_content = Addressable::try_from_content(&content).expect("could not create AddressableContent from Content");
-        let other_addressable_content = OtherAddressable::try_from_content(&other_content).expect("could not create AddressableContent from Content");
+        let addressable_content = Addressable::try_from_content(&content)
+            .expect("could not create AddressableContent from Content");
+        let other_addressable_content = OtherAddressable::try_from_content(&other_content)
+            .expect("could not create AddressableContent from Content");
 
         // do things that would definitely break if cloning would show inconsistent data
         let both_cas = vec![self.cas.clone(), self.cas_clone.clone()];
@@ -307,11 +309,15 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         // it can reference itself, why not?
-        let many_one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
-        let many_two = A::try_from_content(&bar_content).expect("could not create AddressableContent from Content");
-        let many_three = A::try_from_content(&baz_content).expect("could not create AddressableContent from Content");
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content)
+            .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -322,7 +328,8 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let two = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -367,12 +374,16 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
 
         // it can reference itself, why not?
-        let many_one = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
-        let many_two = A::try_from_content(&bar_content).expect("could not create AddressableContent from Content");
-        let many_three = A::try_from_content(&baz_content).expect("could not create AddressableContent from Content");
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content)
+            .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -383,7 +394,8 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::try_from_content(&foo_content).expect("could not create AddressableContent from Content");
+        let two = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(

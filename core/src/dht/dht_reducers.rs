@@ -154,7 +154,8 @@ pub(crate) fn reduce_get_entry_from_network(
         .clone()
         .get(address)
         .and_then(|content| {
-            let entry = Entry::try_from_content(&content).expect("could not load entry from content");
+            let entry =
+                Entry::try_from_content(&content).expect("could not load entry from content");
             let new_store = (*old_store).clone();
 
             // ...and add it to the local storage

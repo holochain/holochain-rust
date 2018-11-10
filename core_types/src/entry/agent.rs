@@ -1,7 +1,7 @@
-use error::error::HolochainError;
 use cas::content::{AddressableContent, Content};
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
+use error::error::HolochainError;
 use json::JsonString;
 
 /// Object holding an Agent's identity.
@@ -154,6 +154,9 @@ mod tests {
         assert_eq!(expected_content, test_agent().content(),);
 
         // from_content()
-        assert_eq!(test_agent(), Agent::try_from_content(&expected_content).unwrap(),);
+        assert_eq!(
+            test_agent(),
+            Agent::try_from_content(&expected_content).unwrap(),
+        );
     }
 }

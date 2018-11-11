@@ -554,8 +554,8 @@ pub fn get_entry_result(
 /// # }
 /// ```
 pub fn link_entries<S: Into<String>>(
-    base: &HashString,
-    target: &HashString,
+    base: &Address,
+    target: &Address,
     tag: S,
 ) -> Result<(), ZomeApiError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
@@ -622,7 +622,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> JsonString {
+/// fn handle_post_address(content: String) -> JsonString {
 ///
 ///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
 ///         content,
@@ -682,20 +682,20 @@ pub fn verify_signature<S: Into<String>>(
 /// Not Yet Available
 pub fn update_entry<S: Into<String>>(
     _entry_type: S,
-    _entry: serde_json::Value,
-    _replaces: HashString,
-) -> ZomeApiResult<HashString> {
+    _entry: Entry,
+    _replaces: Address,
+) -> ZomeApiResult<Address> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// Not Yet Available
-pub fn update_agent() -> ZomeApiResult<HashString> {
+pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// Not Yet Available
-pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
+pub fn remove_entry<S: Into<String>>(_entry: Address, _message: S) -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
@@ -719,7 +719,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Address>> {
+pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<Vec<Address>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
 
@@ -786,7 +786,7 @@ pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
 }
 
 /// Not Yet Available
-pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
+pub fn send(_to: Address, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 

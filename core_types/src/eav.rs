@@ -7,6 +7,7 @@ use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
+use objekt;
 
 use std::fmt::Debug;
 /// EAV (entity-attribute-value) data

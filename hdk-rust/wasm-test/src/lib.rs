@@ -129,48 +129,48 @@ fn handle_link_two_entries()-> JsonString {
 }
 
 fn handle_links_roundtrip() -> JsonString {
-    let entry1_hash_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
+    let entry1_address_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
         stuff: "entry1".into(),
     }));
-    let entry1_hash = match entry1_hash_result {
-        Ok(hash) => hash,
-        Err(_) => return entry1_hash_result.into(),
+    let entry1_address = match entry1_address_result {
+        Ok(address) => address,
+        Err(_) => return entry1_address_result.into(),
     };
-    hdk::debug(format!("entry1_hash: {:?}", entry1_hash)).unwrap();
+    hdk::debug(format!("entry1_address: {:?}", entry1_address)).unwrap();
 
-    let entry2_hash_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
+    let entry2_address_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
         stuff: "entry2".into(),
     }));
-    let entry2_hash = match entry2_hash_result {
-        Ok(hash) => hash,
-        Err(_) => return entry2_hash_result.into(),
+    let entry2_address = match entry2_address_result {
+        Ok(address) => address,
+        Err(_) => return entry2_address_result.into(),
     };
-    hdk::debug(format!("entry2_hash: {:?}", entry2_hash)).unwrap();
+    hdk::debug(format!("entry2_address: {:?}", entry2_address)).unwrap();
 
-    let entry3_hash_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
+    let entry3_address_result = hdk::commit_entry(&Entry::new("testEntryType".into(), EntryStruct{
         stuff: "entry3".into(),
     }));
-    let entry3_hash = match entry3_hash_result {
-        Ok(hash) => hash,
-        Err(_) => return entry3_hash_result.into(),
+    let entry3_address = match entry3_address_result {
+        Ok(address) => address,
+        Err(_) => return entry3_address_result.into(),
     };
-    hdk::debug(format!("entry3_hash: {:?}", entry3_hash)).unwrap();
+    hdk::debug(format!("entry3_address: {:?}", entry3_address)).unwrap();
 
-    let link_1_result = hdk::link_entries(&entry1_hash, &entry2_hash, "test-tag");
+    let link_1_result = hdk::link_entries(&entry1_address, &entry2_address, "test-tag");
     let link_1 = match link_1_result {
         Ok(link) => link,
         Err(_) => return link_1_result.into(),
     };
     hdk::debug(format!("link_1: {:?}", link_1)).unwrap();
 
-    let link_2_result = hdk::link_entries(&entry1_hash, &entry3_hash, "test-tag");
+    let link_2_result = hdk::link_entries(&entry1_address, &entry3_address, "test-tag");
     let link_2 = match link_2_result {
         Ok(link) => link,
         Err(_) => return link_2_result.into(),
     };
     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
 
-    hdk::get_links(&entry1_hash, "test-tag").into()
+    hdk::get_links(&entry1_address, "test-tag").into()
 }
 
 fn handle_check_query() -> JsonString {
@@ -226,7 +226,7 @@ fn handle_check_query() -> JsonString {
     hdk::query("testEntryType", 1).unwrap().into()
 }
 
-fn handle_check_hash_app_entry() -> JsonString {
+fn handle_check_app_entry_address() -> JsonString {
     // Setup
     let entry_value = JsonString::from(TestEntryType{stuff: "entry1".into()});
     let entry_type = EntryType::from("testEntryType");
@@ -244,20 +244,20 @@ fn handle_check_hash_app_entry() -> JsonString {
     }
 
     // Check good entry type name
-    let hash_result = hdk::entry_address(&entry);
+    let entry_address_result = hdk::entry_address(&entry);
 
-    if commit_result == hash_result {
-        JsonString::from(hash_result.unwrap())
+    if commit_result == entry_address_result {
+        JsonString::from(entry_address_result.unwrap())
     } else {
         JsonString::from(
             ZomeApiError::from(
-                format!("commit result: {:?} hash result: {:?}", commit_result, hash_result)
+                format!("commit result: {:?} hash result: {:?}", commit_result, entry_address_result)
             )
         )
     }
 }
 
-fn handle_check_hash_sys_entry() -> JsonString {
+fn handle_check_sys_entry_address() -> JsonString {
     // TODO
     json!({"result": "FIXME"}).into()
 }
@@ -265,10 +265,10 @@ fn handle_check_hash_sys_entry() -> JsonString {
 fn handle_check_call() -> JsonString {
     let empty_dumpty = json!({});
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty)).ok();
-    let maybe_hash = hdk::call("test_zome", "test_cap", "check_hash_app_entry", empty_dumpty.into());
-    hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
-    match maybe_hash {
-        Ok(hash) => hash.into(),
+    let maybe_address = hdk::call("test_zome", "test_cap", "check_app_entry_address", empty_dumpty.into());
+    hdk::debug(format!("maybe_address = {:?}", maybe_address)).ok();
+    match maybe_address {
+        Ok(address) => address.into(),
         Err(e) => e.into(),
     }
 }
@@ -277,11 +277,11 @@ fn handle_check_call_with_args() -> JsonString {
     let args = hdk_test_entry().serialize();
     hdk::debug(format!("args = {:?}", args)).ok();
 
-    let maybe_hash = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args.into());
-    hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
+    let maybe_address = hdk::call("test_zome", "test_cap", "check_commit_entry_macro", args.into());
+    hdk::debug(format!("maybe_address = {:?}", maybe_address)).ok();
 
-    match maybe_hash {
-        Ok(hash) => hash.into(),
+    match maybe_address {
+        Ok(address) => address.into(),
         Err(e) => e.into(),
     }
 }
@@ -406,10 +406,10 @@ define_zome! {
                 handler: handle_check_call_with_args
             }
 
-            check_hash_app_entry: {
+            check_app_entry_address: {
                 inputs: | |,
                 outputs: |result: JsonString|,
-                handler: handle_check_hash_app_entry
+                handler: handle_check_app_entry_address
             }
 
             check_query: {
@@ -418,10 +418,10 @@ define_zome! {
                 handler: handle_check_query
             }
 
-            check_hash_sys_entry: {
+            check_sys_entry_address: {
                 inputs: | |,
                 outputs: |result: JsonString|,
-                handler: handle_check_hash_sys_entry
+                handler: handle_check_sys_entry_address
             }
 
             send_tweet: {

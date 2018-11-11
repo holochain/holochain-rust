@@ -9,6 +9,7 @@ use std::{
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
+use objekt;
 
 use std::convert::TryFrom;
 use uuid::Uuid;

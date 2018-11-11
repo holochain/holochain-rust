@@ -56,7 +56,7 @@ pub enum ZomeApiFunction {
     Debug,
 
     /// Commit an app entry to source chain
-    /// commit_entry(entry_type: String, entry_value: String) -> Hash
+    /// commit_entry(entry_type: String, entry_value: String) -> Address
     CommitAppEntry,
 
     /// Get an app entry from source chain by key (header hash)
@@ -74,6 +74,10 @@ pub enum ZomeApiFunction {
     LinkEntries,
     GetLinks,
     Query,
+
+    /// Pass an entry to retrieve its address
+    /// the address algorithm is specific to the entry, typically sha256 but can differ
+    /// entry_address(entry: Entry) -> Address
     EntryAddress,
 }
 

@@ -65,7 +65,7 @@ macro_rules! load_json {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> JsonString {
+/// fn handle_post_address(content: String) -> JsonString {
 ///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
 ///         content,
 ///         date_created: "now".into(),
@@ -111,7 +111,7 @@ macro_rules! load_json {
 ///             hash_post: {
 ///                 inputs: |content: String|,
 ///                 outputs: |post: serde_json::Value|,
-///                 handler: handle_hash_post
+///                 handler: handle_post_address
 ///             }
 ///         }
 ///     }

@@ -294,8 +294,7 @@ pub mod tests {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::test_chain_header,
-        entry::{agent::Agent, ToEntry},
+        entry::{agent::Agent, chain_header::test_chain_header, ToEntry},
         entry_type::EntryType,
         json::{JsonString, RawString},
     };

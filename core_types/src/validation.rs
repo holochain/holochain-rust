@@ -1,6 +1,5 @@
 extern crate serde_json;
-use chain_header::ChainHeader;
-use entry::SerializedEntry;
+use entry::{chain_header::ChainHeader, SerializedEntry};
 use error::HolochainError;
 use hash::HashString;
 use json::JsonString;

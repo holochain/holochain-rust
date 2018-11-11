@@ -11,6 +11,7 @@ use std::{
     ops::Deref,
 };
 pub mod agent;
+pub mod chain_header;
 
 pub type EntryValue = JsonString;
 

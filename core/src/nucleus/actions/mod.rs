@@ -9,7 +9,8 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, chain_header::ChainHeader, entry::Entry,
+        cas::content::AddressableContent,
+        entry::{chain_header::ChainHeader, Entry},
         entry_type::EntryType,
     };
     use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};

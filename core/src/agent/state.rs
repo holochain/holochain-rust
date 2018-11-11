@@ -3,8 +3,7 @@ use agent::chain_store::ChainStore;
 use context::Context;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent, Content},
-    chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::{chain_header::ChainHeader, Entry, SerializedEntry},
     error::HolochainError,
     json::*,
     keys::Keys,
@@ -242,8 +241,9 @@ pub mod tests {
     use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::test_chain_header,
-        entry::{expected_entry_address, test_entry, SerializedEntry},
+        entry::{
+            chain_header::test_chain_header, expected_entry_address, test_entry, SerializedEntry,
+        },
         error::HolochainError,
         json::JsonString,
     };

@@ -134,8 +134,10 @@ pub fn test_chain_header() -> ChainHeader {
 #[cfg(test)]
 pub mod tests {
     use cas::content::{Address, AddressableContent};
-    use chain_header::{test_chain_header, ChainHeader};
-    use entry::{test_entry, test_entry_a, test_entry_b, ToEntry};
+    use entry::{
+        chain_header::{test_chain_header, ChainHeader},
+        test_entry, test_entry_a, test_entry_b, ToEntry,
+    };
     use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
     use signature::{test_signature, test_signature_b};
     use time::test_iso_8601;

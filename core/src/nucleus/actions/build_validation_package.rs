@@ -6,8 +6,7 @@ use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
-    chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::{chain_header::ChainHeader, Entry, SerializedEntry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };

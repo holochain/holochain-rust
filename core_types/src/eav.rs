@@ -2,6 +2,7 @@ use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
 use json::JsonString;
+use objekt;
 use std::{
     collections::HashSet,
     convert::TryInto,

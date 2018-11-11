@@ -67,14 +67,14 @@ impl Container {
                     instantiate_from_config(id, config, Box::new(Container::load_dna)),
                 )
             })
-            .for_each(|(id, maybe_holochain)| {
-                if maybe_holochain.is_ok() {
-                    self.instances.insert(id.clone(), maybe_holochain.unwrap());
-                } else {
+            .for_each(|(id, maybe_holochain)| match maybe_holochain {
+                Ok(holochain) => {
+                    self.instances.insert(id.clone(), holochain);
+                }
+                Err(error) => {
                     println!(
                         "Error while trying to create instance \"{}\": {}",
-                        id,
-                        maybe_holochain.err().unwrap()
+                        id, error
                     );
                 }
             });

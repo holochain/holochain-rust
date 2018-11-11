@@ -3,7 +3,7 @@ extern crate serde_json;
 use action::{Action, ActionWrapper};
 use context::Context;
 use futures::{Async, Future};
-use holochain_core_types::{error::HolochainError, links_entry::Link};
+use holochain_core_types::{entry::link_add::Link, error::HolochainError};
 use instance::dispatch_action;
 use std::sync::Arc;
 
@@ -61,7 +61,10 @@ mod tests {
     use nucleus;
 
     use futures::executor::block_on;
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, links_entry::Link};
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        entry::{link_add::Link, Entry},
+    };
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {

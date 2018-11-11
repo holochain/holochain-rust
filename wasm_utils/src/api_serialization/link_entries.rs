@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address, error::HolochainError, json::*, links_entry::Link,
+    cas::content::Address, entry::link_add::Link, error::HolochainError, json::*,
 };
 
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]

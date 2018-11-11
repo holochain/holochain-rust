@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn test_incosistent_config() {
+    fn test_inconsistent_config() {
         let toml = r#"
     [[agents]]
     id = "test agent"

@@ -23,7 +23,7 @@ use holochain_wasm_utils::holochain_core_types::entry::Entry;
 use holochain_wasm_utils::{
     holochain_core_types::{
         error::RibosomeErrorCode,
-        entry_type::EntryType,
+        entry::entry_type::EntryType,
     },
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;

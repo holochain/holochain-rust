@@ -115,7 +115,7 @@ fn instantiate_from_config(
         .and_then(|instance_config| {
             let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
             let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
-            let dna = dna_loader((&dna_config.file)).map_err(|_| {
+            let dna = dna_loader(&dna_config.file).map_err(|_| {
                 HolochainError::ConfigError(format!(
                     "Could not load DNA file \"{}\"",
                     dna_config.file
@@ -140,7 +140,7 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-fn create_context(agent: &String, path: &String) -> Result<Context, HolochainError> {
+fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> {
     let agent = Agent::from("c_bob".to_string());
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);

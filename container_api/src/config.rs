@@ -170,7 +170,7 @@ where
 }
 
 mod tests {
-    use super::*;
+    use super::{Configuration, load_configuration};
 
     #[test]
     fn test_agent_load() {

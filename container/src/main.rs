@@ -5,7 +5,6 @@ extern crate holochain_core_types;
 #[macro_use]
 extern crate structopt;
 
-use clap::{App, Arg};
 use holochain_container_api::{
     config::{load_configuration, Configuration},
     container::Container,

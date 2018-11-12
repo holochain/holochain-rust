@@ -1,0 +1,24 @@
+[tasks.install_system_libzmq.mac]
+condition_script = [
+  "which brew > /dev/null"
+]
+command = "brew"
+args = ["install", "zmq"]
+
+[tasks.install_system_libzmq.ubuntu_trusty]
+script = [
+  "echo \"\\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\\033[0m\"",
+  "echo \"deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./\" >> /etc/apt/sources.list",
+  "wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add",
+  "sudo apt-get update -qq",
+  "sudo apt-get install libzmq3-dev"
+]
+
+[tasks.install_system_libzmq.travis]
+condition = { env = { "TRAVIS" = "true" } }
+run_task = "tasks.install_system_libzmq.ubuntu_trusty"
+
+[tasks.install_system_libzmq]
+run_task = [
+  "tasks.install_system_libzmq.travis"
+]

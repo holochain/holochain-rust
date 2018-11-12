@@ -3,33 +3,37 @@
 //! Remember to free all dna objects and returned strings.
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
-
+#![feature(try_from)]
+extern crate holochain_core_types;
 extern crate holochain_dna;
 
 use holochain_dna::Dna;
 use std::{
+    convert::TryFrom,
     ffi::{CStr, CString},
     os::raw::c_char,
     panic::catch_unwind,
 };
 
+use holochain_core_types::json::JsonString;
+
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
     match catch_unwind(|| Box::into_raw(Box::new(Dna::new()))) {
         Ok(r) => r,
+        #[cfg_attr(tarpaulin, skip)]
         Err(_) => std::ptr::null_mut(),
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna {
     match catch_unwind(|| {
         let json = unsafe { CStr::from_ptr(buf).to_string_lossy().into_owned() };
 
-        let dna = match Dna::from_json_str(&json) {
-            Ok(d) => d,
-            Err(_) => return std::ptr::null_mut(),
-        };
+        let dna = Dna::try_from(JsonString::from(json)).expect("could not restore DNA from JSON");
 
         Box::into_raw(Box::new(dna))
     }) {
@@ -38,6 +42,7 @@ pub extern "C" fn holochain_dna_create_from_json(buf: *const c_char) -> *mut Dna
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
     catch_unwind(|| {
@@ -50,6 +55,7 @@ pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
     }).unwrap_or(());
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
     match catch_unwind(|| {
@@ -58,20 +64,21 @@ pub extern "C" fn holochain_dna_to_json(ptr: *const Dna) -> *mut c_char {
             &*ptr
         };
 
-        let json = dna.to_json();
+        let json_string = JsonString::from(dna.to_owned());
 
-        let json = match CString::new(json) {
+        let json_cstring = match CString::new(String::from(json_string)) {
             Ok(s) => s,
             Err(_) => return std::ptr::null_mut(),
         };
 
-        json.into_raw()
+        json_cstring.into_raw()
     }) {
         Ok(r) => r,
         Err(_) => std::ptr::null_mut(),
     }
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub extern "C" fn holochain_dna_string_free(s: *mut c_char) {
     catch_unwind(|| {
@@ -206,6 +213,7 @@ unsafe fn cstring_vec_to_rustvec(string_vec: *mut CStringVec) -> Vec<CString> {
         .collect::<Vec<_>>()
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringVec) {
     let _vec = cstring_vec_to_rustvec(string_vec);
@@ -228,6 +236,7 @@ fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>>
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     ptr: *mut Dna,
@@ -263,6 +272,7 @@ fn fn_names_as_vec(
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_function_names(
     ptr: *mut Dna,
@@ -306,6 +316,7 @@ fn fn_parameters_as_vec(
     Some(result)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 #[no_mangle]
 pub unsafe extern "C" fn holochain_dna_get_function_parameters(
     ptr: *mut Dna,
@@ -367,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_holochain_dna_get_zome_names() {
-        let mut dna = Dna::from_json_str(
+        let mut dna = Dna::try_from(JsonString::from(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -414,7 +425,7 @@ mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         let mut cnames = CStringVec {
             len: 0,

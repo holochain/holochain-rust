@@ -1,7 +1,7 @@
 [package]
 name = "holochain_core_api_c_binding"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.eu>"]
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
 name = "holochain_core_api_c_binding"
@@ -10,6 +10,8 @@ crate-type = ["staticlib"]
 
 [dependencies]
 holochain_core = { path = "../core" }
-holochain_core_api = { path = "../core_api" }
+holochain_container_api = { path = "../container_api" }
 holochain_dna = { path = "../dna" }
-holochain_agent = { path = "../agent" }
+holochain_cas_implementations = { path = "../cas_implementations" }
+holochain_core_types = { path = "../core_types" }
+directories="1.0.2"

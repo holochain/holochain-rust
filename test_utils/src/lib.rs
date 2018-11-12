@@ -1,15 +1,21 @@
-extern crate holochain_agent;
+extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
+extern crate holochain_core_types;
 extern crate holochain_dna;
+extern crate tempfile;
 extern crate wabt;
 
-use holochain_agent::Agent;
+use holochain_core_types::entry::agent::Agent;
+use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core_types::json::JsonString;
 use holochain_dna::{
     wasm::DnaWasm,
     zome::{
-        capabilities::{Capability, Membrane},
-        entry_types::EntryType,
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
         Config, Zome,
     },
     Dna,
@@ -20,8 +26,9 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex,RwLock},
 };
+use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
@@ -39,10 +46,10 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
             (module
                 (memory (;0;) 17)
                 (func (export "main") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 6
                 )
                 (data (i32.const 0)
-                    "1337"
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )
@@ -62,20 +69,21 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm };
+    let capability = create_test_cap_with_fn_name("main");
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), capability);
 
     let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), EntryType::new());
+    entry_types.insert(String::from("testEntryType"), EntryTypeDef::new());
+    entry_types.insert(String::from("testEntryTypeB"), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
         &entry_types,
         &capabilities,
+        &DnaWasm { code: wasm },
     );
 
     // zome.capabilities.push(capability);
@@ -85,28 +93,45 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
-pub fn create_test_cap(membrane: Membrane, wasm: &Vec<u8>) -> Capability {
+pub fn create_test_cap(membrane: Membrane) -> Capability {
     let mut capability = Capability::new();
-    capability.code = DnaWasm { code: wasm.clone() };
     capability.cap_type.membrane = membrane;
     capability
 }
 
+pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
+    let mut capability = Capability::new();
+    let mut fn_decl = FnDeclaration::new();
+    fn_decl.name = String::from(fn_name);
+    capability.functions.push(fn_decl);
+    capability
+}
+
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_cap(zome_name: &str, cap_name: &str, cap: &Capability) -> Dna {
+pub fn create_test_dna_with_cap(
+    zome_name: &str,
+    cap_name: &str,
+    cap: &Capability,
+    wasm: &[u8],
+) -> Dna {
     let mut dna = Dna::new();
 
     let mut capabilities = HashMap::new();
     capabilities.insert(cap_name.to_string(), cap.clone());
 
+    let etypedef = EntryTypeDef::new();
+    let mut entry_types = HashMap::new();
+    entry_types.insert("testEntryType".to_string(), etypedef);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
-        &HashMap::new(),
+        &entry_types,
         &capabilities,
+        &DnaWasm {
+            code: wasm.to_owned(),
+        },
     );
 
-    // zome.capabilities.push(capability);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
@@ -121,6 +146,9 @@ pub struct TestLogger {
 impl Logger for TestLogger {
     fn log(&mut self, msg: String) {
         self.log.push(msg);
+    }
+    fn dump(&self) -> String {
+        format!("{:?}", self.log)
     }
 }
 
@@ -138,14 +166,18 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from_string(agent_name.to_string());
+    let agent = Agent::from(agent_name.to_string());
     let logger = test_logger();
     (
-        Arc::new(Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        )),
+        Arc::new(
+            Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+                Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+                Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            ).unwrap(),
+        ),
         logger,
     )
 }
@@ -164,27 +196,35 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-/// Creates a capability with a validate_commit() function that always passes
-pub fn validation_capability() -> Capability {
-    let validate_commit_wat = r#"
-            (module
-                (memory (;0;) 17)
-                (func (export "validate_commit") (param $p0 i32) (result i32)
-                    i32.const 0
-                )
-                (export "memory" (memory 0))
-            )
-        "#;
+// Function called at start of all unit tests:
+//   Startup holochain and do a call on the specified wasm function.
+pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
+    // Setup the holochain instance
+    let wasm = create_wasm_from_file(wasm_path);
+    let capability = create_test_cap_with_fn_name(fn_name);
+    let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-    let validate_commit_wasm = Wat2Wasm::new()
-        .canonicalize_lebs(false)
-        .write_debug_names(true)
-        .convert(validate_commit_wat)
-        .unwrap();
+    let context = create_test_context("alex");
+    let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-    let mut validation_capability = Capability::new();
-    validation_capability.code = DnaWasm {
-        code: validate_commit_wasm.as_ref().to_vec(),
-    };
-    validation_capability
+    // Run the holochain instance
+    hc.start().expect("couldn't start");
+    // Call the exposed wasm function
+    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+}
+
+/// create a test context and TestLogger pair so we can use the logger in assertions
+pub fn create_test_context(agent_name: &str) -> Arc<Context> {
+    let agent = Agent::from(agent_name.to_string());
+    let logger = test_logger();
+
+    return Arc::new(
+        Context::new(
+            agent,
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+            Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+        ).unwrap(),
+    );
 }

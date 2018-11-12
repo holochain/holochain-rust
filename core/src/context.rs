@@ -1,9 +1,16 @@
-use error::HolochainError;
-use holochain_agent::Agent;
+use action::ActionWrapper;
+use holochain_core_types::{
+    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
+    error::HolochainError,
+};
+use instance::Observer;
 use logger::Logger;
 use persister::Persister;
 use state::State;
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
+use std::sync::{
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex, RwLock, RwLockReadGuard,
+};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -15,20 +22,57 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
+    pub action_channel: SyncSender<ActionWrapper>,
+    pub observer_channel: SyncSender<Observer>,
+    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
 }
 
 impl Context {
+    pub fn default_channel_buffer_size() -> usize {
+        100
+    }
+
     pub fn new(
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-    ) -> Context {
-        Context {
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+    ) -> Result<Context, HolochainError> {
+        let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
+        let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
+        Ok(Context {
             agent,
             logger,
             persister,
             state: None,
-        }
+            action_channel: tx_action,
+            observer_channel: tx_observer,
+            file_storage: cas,
+            eav_storage: eav,
+        })
+    }
+
+    pub fn new_with_channels(
+        agent: Agent,
+        logger: Arc<Mutex<Logger>>,
+        persister: Arc<Mutex<Persister>>,
+        action_channel: SyncSender<ActionWrapper>,
+        observer_channel: SyncSender<Observer>,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+    ) -> Result<Context, HolochainError> {
+        Ok(Context {
+            agent,
+            logger,
+            persister,
+            state: None,
+            action_channel,
+            observer_channel,
+            file_storage: cas,
+            eav_storage: eav,
+        })
     }
     // helper function to make it easier to call the logger
     pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
@@ -37,7 +81,7 @@ impl Context {
         Ok(())
     }
 
-    pub(crate) fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
         self.state = Some(state);
     }
 
@@ -51,43 +95,66 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    extern crate holochain_agent;
+    extern crate tempfile;
     extern crate test_utils;
+    use self::tempfile::tempdir;
     use super::*;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_core_types::entry::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, RwLock};
+
+    #[test]
+    fn default_buffer_size_test() {
+        assert_eq!(Context::default_channel_buffer_size(), 100);
+    }
 
     #[test]
     fn test_state() {
-        let mut context = Context::new(
-            holochain_agent::Agent::from_string("Terence".to_string()),
+        let mut maybe_context = Context::new(
+            Agent::from("Terence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        );
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+        ).unwrap();
 
-        assert!(context.state().is_none());
+        assert!(maybe_context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new()));
-        context.set_state(global_state.clone());
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
+        maybe_context.set_state(global_state.clone());
 
         {
             let _read_lock = global_state.read().unwrap();
-            assert!(context.state().is_some());
+            assert!(maybe_context.state().is_some());
         }
     }
 
     #[test]
     #[should_panic]
+    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let mut context = Context::new(
-            holochain_agent::Agent::from_string("Terence".to_string()),
+            Agent::from("Terence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new())),
-        );
+            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+            Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            )),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+        ).unwrap();
 
-        let global_state = Arc::new(RwLock::new(State::new()));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

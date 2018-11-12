@@ -1,11 +1,13 @@
 [package]
 name = "test_utils"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_dna = { path = "../dna" }
 holochain_core = { path = "../core" }
-holochain_agent = { path = "../agent" }
-wabt = "0.2.0"
-
+holochain_container_api = { path = "../container_api" }
+holochain_cas_implementations = { path = "../cas_implementations" }
+holochain_core_types = { path = "../core_types" }
+wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }
+tempfile = "3"

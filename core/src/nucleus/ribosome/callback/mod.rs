@@ -3,24 +3,28 @@
 
 pub mod genesis;
 pub mod receive;
-pub mod validate_commit;
+pub mod validate_entry;
+pub mod validation_package;
 
-use action::ActionWrapper;
-use error::HolochainError;
-use hash_table::entry::Entry;
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use instance::Observer;
-use json::ToJson;
+use context::Context;
+use holochain_core_types::{
+    entry::SerializedEntry,
+    error::{HolochainError, RibosomeReturnCode},
+    json::{default_to_json, JsonString},
+    validation::ValidationPackageDefinition,
+};
+use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
-    call_zome_and_wait_for_result,
     ribosome::{
-        callback::{genesis::genesis, receive::receive, validate_commit::validate_commit},
+        self,
+        callback::{genesis::genesis, receive::receive},
         Defn,
     },
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
-use std::{str::FromStr, sync::mpsc::Sender};
+use serde_json;
+use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -33,9 +37,6 @@ pub enum Callback {
     MissingNo = 0,
 
     /// MissingNo Capability
-
-    /// validate_commit() -> bool
-    ValidateCommit,
 
     /// LifeCycle Capability
 
@@ -53,7 +54,6 @@ impl FromStr for Callback {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "genesis" => Ok(Callback::Genesis),
-            "validate_commit" => Ok(Callback::ValidateCommit),
             "receive" => Ok(Callback::Receive),
             "" => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
@@ -62,27 +62,18 @@ impl FromStr for Callback {
 }
 
 impl Callback {
+    // cannot test this because PartialEq is not implemented for fns
+    #[cfg_attr(tarpaulin, skip)]
     pub fn as_fn(
         &self,
-    ) -> fn(
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-        zome: &str,
-        params: &CallbackParams,
-    ) -> CallbackResult {
-        fn noop(
-            _action_channel: &Sender<ActionWrapper>,
-            _observer_channel: &Sender<Observer>,
-            _zome: &str,
-            _params: &CallbackParams,
-        ) -> CallbackResult {
+    ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
+        fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
             CallbackResult::Pass
         }
 
         match *self {
             Callback::MissingNo => noop,
             Callback::Genesis => genesis,
-            Callback::ValidateCommit => validate_commit,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => receive,
@@ -95,7 +86,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => "",
             Callback::Genesis => "genesis",
-            Callback::ValidateCommit => "validate_commit",
             Callback::Receive => "receive",
         }
     }
@@ -118,9 +108,6 @@ impl Defn for Callback {
         match *self {
             Callback::MissingNo => ReservedCapabilityNames::MissingNo,
             Callback::Genesis => ReservedCapabilityNames::LifeCycle,
-            // @TODO needs a sensible capability
-            // @see https://github.com/holochain/holochain-rust/issues/133
-            Callback::ValidateCommit => ReservedCapabilityNames::MissingNo,
             // @TODO call this from somewhere
             // @see https://github.com/holochain/holochain-rust/issues/201
             Callback::Receive => ReservedCapabilityNames::Communication,
@@ -128,10 +115,10 @@ impl Defn for Callback {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(Entry),
+    ValidateCommit(SerializedEntry),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,
@@ -140,23 +127,112 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
-            CallbackParams::Receive => "".to_string(),
+            CallbackParams::Genesis => String::new(),
+            CallbackParams::ValidateCommit(serialized_entry) => {
+                String::from(JsonString::from(serialized_entry.to_owned()))
+            }
+            CallbackParams::Receive => String::new(),
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
+    ValidationPackageDefinition(ValidationPackageDefinition),
+}
+
+impl From<CallbackResult> for JsonString {
+    fn from(v: CallbackResult) -> Self {
+        default_to_json(v)
+    }
+}
+
+impl From<JsonString> for CallbackResult {
+    fn from(json_string: JsonString) -> CallbackResult {
+        let try: Result<CallbackResult, serde_json::Error> =
+            serde_json::from_str(&String::from(json_string.clone()));
+        match try {
+            Ok(callback_result) => callback_result,
+            Err(_) => CallbackResult::Fail(String::from(json_string)),
+        }
+    }
+}
+
+impl From<RibosomeReturnCode> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+        match ribosome_return_code {
+            RibosomeReturnCode::Failure(ribosome_error_code) => {
+                CallbackResult::Fail(ribosome_error_code.to_string())
+            }
+            RibosomeReturnCode::Success => CallbackResult::Pass,
+        }
+    }
+}
+
+pub(crate) fn run_callback(
+    context: Arc<Context>,
+    fc: ZomeFnCall,
+    wasm: &DnaWasm,
+    dna_name: String,
+) -> CallbackResult {
+    match ribosome::run_dna(
+        &dna_name,
+        context,
+        wasm.code.clone(),
+        &fc,
+        Some(fc.clone().parameters.into_bytes()),
+    ) {
+        Ok(call_result) => if call_result.is_null() {
+            CallbackResult::Pass
+        } else {
+            CallbackResult::Fail(call_result.to_string())
+        },
+        Err(_) => CallbackResult::NotImplemented,
+    }
+}
+
+pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
+    // In the case of genesis we encounter race conditions with regards to setting the DNA.
+    // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+    // the state, which can result in this code being executed first.
+    // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+    // TODO: use a future here
+    let mut dna = None;
+    let mut done = false;
+    let mut tries = 0;
+    while !done {
+        {
+            let state = context
+                .state()
+                .expect("Callback called without application state!");
+            dna = state.nucleus().dna();
+        }
+        match dna {
+            Some(_) => done = true,
+            None => {
+                if tries > 10 {
+                    done = true;
+                } else {
+                    sleep(Duration::from_millis(10));
+                    tries += 1;
+                }
+            }
+        }
+    }
+    dna
+}
+
+pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
+    let dna = get_dna(context).expect("Callback called without DNA set!");
+    dna.get_wasm_from_zome_name(zome)
+        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
 }
 
 pub fn call(
-    action_channel: &Sender<ActionWrapper>,
-    observer_channel: &Sender<Observer>,
+    context: Arc<Context>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,
@@ -165,40 +241,25 @@ pub fn call(
         zome,
         &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
-        &params.to_string(),
+        params,
     );
 
-    let call_result =
-        call_zome_and_wait_for_result(zome_call.clone(), &action_channel, &observer_channel);
+    let dna = get_dna(&context).expect("Callback called without DNA set!");
 
-    // translate the call result to a callback result
-    match call_result {
-        // empty string OK = Success
-        Ok(ref s) if s.is_empty() => CallbackResult::Pass,
-
-        // things that = NotImplemented
-        Err(HolochainError::DnaError(_)) => CallbackResult::NotImplemented,
-        // Err(HolochainError::ZomeFunctionNotFound(_)) => CallbackResult::NotImplemented,
-        // @TODO this looks super fragile
-        // without it we get stack overflows, but with it we rely on a specific string
-        Err(HolochainError::ErrorGeneric(ref msg))
-            if msg == &format!(
-                "Function: Module doesn\'t have export {}",
-                function.as_str()
-            ) =>
-        {
-            CallbackResult::NotImplemented
+    match dna.get_wasm_from_zome_name(zome) {
+        None => CallbackResult::NotImplemented,
+        Some(wasm) => {
+            if wasm.code.is_empty() {
+                CallbackResult::NotImplemented
+            } else {
+                run_callback(context.clone(), zome_call, wasm, dna.name.clone())
+            }
         }
-
-        // string value or error = fail
-        Ok(s) => CallbackResult::Fail(s),
-        Err(err) => CallbackResult::Fail(err.to_string()),
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
@@ -281,7 +342,11 @@ pub mod tests {
             .to_vec()
     }
 
-    pub fn test_callback_instance(zome: &str, canonical_name: &str, result: i32) -> Instance {
+    pub fn test_callback_instance(
+        zome: &str,
+        canonical_name: &str,
+        result: i32,
+    ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
             Callback::from_str(canonical_name)
@@ -302,10 +367,6 @@ pub mod tests {
             Callback::from_str("genesis").expect("string literal should be valid callback")
         );
         assert_eq!(
-            Callback::ValidateCommit,
-            Callback::from_str("validate_commit").expect("string literal should be valid callback"),
-        );
-        assert_eq!(
             Callback::Receive,
             Callback::from_str("receive").expect("string literal should be valid callback")
         );
@@ -314,6 +375,32 @@ pub mod tests {
             "Cannot convert string to Callback",
             Callback::from_str("foo").expect_err("string literal shouldn't be valid callback"),
         );
+    }
+
+    #[test]
+    fn defn_test() {
+        // as_str()
+        for (input, output) in vec![
+            (Callback::MissingNo, ""),
+            (Callback::Genesis, "genesis"),
+            (Callback::Receive, "receive"),
+        ] {
+            assert_eq!(output, input.as_str());
+        }
+
+        // str_to_index()
+        for (input, output) in vec![("", 0), ("genesis", 1), ("receive", 2)] {
+            assert_eq!(output, Callback::str_to_index(input));
+        }
+
+        // from_index()
+        for (input, output) in vec![
+            (0, Callback::MissingNo),
+            (1, Callback::Genesis),
+            (2, Callback::Receive),
+        ] {
+            assert_eq!(output, Callback::from_index(input));
+        }
     }
 
 }

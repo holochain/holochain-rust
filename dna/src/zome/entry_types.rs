@@ -1,6 +1,4 @@
-//! holochain_dna::zome::entry_types is a set of structs for working with holochain dna.
-
-use wasm::DnaWasm;
+//! File holding all the structs for handling entry types defined by DNA.
 
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -11,6 +9,17 @@ pub enum Sharing {
     Private,
     #[serde(rename = "encrypted")]
     Encrypted,
+}
+
+impl Sharing {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn can_publish(self) -> bool {
+       match self {
+           Sharing::Public    => true,
+           Sharing::Private   => false,
+           Sharing::Encrypted => true,
+       }
+    }
 }
 
 impl Default for Sharing {
@@ -30,10 +39,6 @@ pub struct LinksTo {
     /// The tag of this links_to entry
     #[serde(default)]
     pub tag: String,
-
-    /// Validation code for this links_to.
-    #[serde(default)]
-    pub validation: DnaWasm,
 }
 
 impl Default for LinksTo {
@@ -42,7 +47,6 @@ impl Default for LinksTo {
         LinksTo {
             target_type: String::new(),
             tag: String::new(),
-            validation: DnaWasm::new(),
         }
     }
 }
@@ -86,7 +90,7 @@ impl LinkedFrom {
 
 /// Represents an individual object in the "zome" "entry_types" array.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct EntryType {
+pub struct EntryTypeDef {
     /// A description of this entry type.
     #[serde(default)]
     pub description: String,
@@ -94,10 +98,6 @@ pub struct EntryType {
     /// The sharing model of this entry type (public, private, encrypted).
     #[serde(default)]
     pub sharing: Sharing,
-
-    /// Validation code for this entry_type.
-    #[serde(default)]
-    pub validation: DnaWasm,
 
     /// An array of link definitions associated with this entry type
     #[serde(default)]
@@ -108,20 +108,19 @@ pub struct EntryType {
     pub linked_from: Vec<LinkedFrom>,
 }
 
-impl Default for EntryType {
+impl Default for EntryTypeDef {
     /// Provide defaults for a "zome"s "entry_types" object.
     fn default() -> Self {
-        EntryType {
+        EntryTypeDef {
             description: String::new(),
             sharing: Sharing::Public,
-            validation: DnaWasm::new(),
             links_to: Vec::new(),
             linked_from: Vec::new(),
         }
     }
 }
 
-impl EntryType {
+impl EntryTypeDef {
     /// Allow sane defaults for `EntryType::new()`.
     pub fn new() -> Self {
         Default::default()
@@ -134,21 +133,21 @@ mod tests {
     use serde_json;
 
     #[test]
+    fn can_publish() {
+        assert!(Sharing::Public.can_publish());
+        assert!(!Sharing::Private.can_publish());
+    }
+
+    #[test]
     fn build_and_compare() {
-        let fixture: EntryType = serde_json::from_str(
+        let fixture: EntryTypeDef = serde_json::from_str(
             r#"{
                 "description": "test",
-                "validation": {
-                    "code": "AAECAw=="
-                },
                 "sharing": "public",
                 "links_to": [
                     {
                         "target_type": "test",
-                        "tag": "test",
-                        "validation": {
-                            "code": "AAECAw=="
-                        }
+                        "tag": "test"
                     }
                 ],
                 "linked_from": [
@@ -160,15 +159,13 @@ mod tests {
             }"#,
         ).unwrap();
 
-        let mut entry = EntryType::new();
+        let mut entry = EntryTypeDef::new();
         entry.description = String::from("test");
-        entry.validation.code = vec![0, 1, 2, 3];
         entry.sharing = Sharing::Public;
 
         let mut link = LinksTo::new();
         link.target_type = String::from("test");
         link.tag = String::from("test");
-        link.validation.code = vec![0, 1, 2, 3];
         entry.links_to.push(link);
 
         let mut linked = LinkedFrom::new();

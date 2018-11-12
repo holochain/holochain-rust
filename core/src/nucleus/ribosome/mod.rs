@@ -2,6 +2,11 @@
 
 pub mod api;
 pub mod callback;
+pub mod memory;
+mod run_dna;
+mod runtime;
+
+pub use self::{run_dna::*, runtime::*};
 
 use holochain_dna::zome::capabilities::ReservedCapabilityNames;
 

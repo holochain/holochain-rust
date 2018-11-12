@@ -3,9 +3,9 @@ use action::{Action, ActionWrapper};
 use agent::state::ActionResponse;
 use context::Context;
 use futures::Future;
-use hash_table::entry::Entry;
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use instance::dispatch_action;
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::{mpsc::SyncSender, Arc};
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
@@ -14,7 +14,7 @@ use std::sync::{mpsc::Sender, Arc};
 /// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
     entry: Entry,
-    action_channel: &Sender<ActionWrapper>,
+    action_channel: &SyncSender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> CommitFuture {
     let action_wrapper = ActionWrapper::new(Action::Commit(entry));
@@ -33,13 +33,13 @@ pub struct CommitFuture {
 }
 
 impl Future for CommitFuture {
-    type Item = ActionResponse;
-    type Error = String;
+    type Item = Address;
+    type Error = HolochainError;
 
     fn poll(
         &mut self,
         cx: &mut futures::task::Context<'_>,
-    ) -> Result<futures::Async<ActionResponse>, Self::Error> {
+    ) -> Result<futures::Async<Address>, Self::Error> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
@@ -53,7 +53,11 @@ impl Future for CommitFuture {
             .actions()
             .get(&self.action)
         {
-            Some(response) => Ok(futures::Async::Ready(response.clone())),
+            Some(ActionResponse::Commit(result)) => match result {
+                Ok(address) => Ok(futures::Async::Ready(address.clone())),
+                Err(error) => Err(error.clone()),
+            },
+            Some(_) => unreachable!(),
             None => Ok(futures::Async::Pending),
         }
     }

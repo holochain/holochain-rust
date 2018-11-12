@@ -1,9 +1,10 @@
-use action::ActionWrapper;
-use error::HolochainError;
+use holochain_core_types::{
+    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
+};
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
+use snowflake;
 use std::collections::HashMap;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
     New,
@@ -30,10 +31,10 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
-    pub zome_calls: HashMap<ZomeFnCall, Option<Result<String, HolochainError>>>,
-    pub validation_results: HashMap<ActionWrapper, ValidationResult>,
-    #[cfg(debug)]
-    pub validations_running: Vec<ActionWrapper>,
+    pub zome_calls: HashMap<ZomeFnCall, Option<Result<JsonString, HolochainError>>>,
+    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
+    pub validation_packages:
+        HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }
 
 impl NucleusState {
@@ -43,19 +44,17 @@ impl NucleusState {
             status: NucleusStatus::New,
             zome_calls: HashMap::new(),
             validation_results: HashMap::new(),
-            #[cfg(debug)]
-            validations_running: Vec::new(),
+            validation_packages: HashMap::new(),
         }
     }
 
     pub fn zome_call_result(
         &self,
         zome_call: &ZomeFnCall,
-    ) -> Option<Result<String, HolochainError>> {
-        match self.zome_calls.get(zome_call) {
-            None => None,
-            Some(value) => value.clone(),
-        }
+    ) -> Option<Result<JsonString, HolochainError>> {
+        self.zome_calls
+            .get(zome_call)
+            .and_then(|value| value.clone())
     }
 
     pub fn has_initialized(&self) -> bool {
@@ -75,12 +74,6 @@ impl NucleusState {
     }
     pub fn status(&self) -> NucleusStatus {
         self.status.clone()
-    }
-    pub fn validation_result(&self, action: &ActionWrapper) -> Option<ValidationResult> {
-        match self.validation_results.get(action) {
-            None => None,
-            Some(r) => Some(r.clone()),
-        }
     }
 }
 

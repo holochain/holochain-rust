@@ -1,0 +1,27 @@
+[[agent]]
+id = "test agent"
+name = "Holo Tester"
+key_file = "holo_tester.key"
+
+[[dna]]
+id = "app spec rust"
+file = "app-spec-rust.hcpkg"
+hash = "Qm328wyq38924y"
+
+[[instance]]
+id = "app spec instance"
+dna = "app spec rust"
+agent = "test agent"
+[instance.logger]
+type = "simple"
+file = "app_spec.log"
+[instance.storage]
+type = "file"
+path = "app_spec_storage"
+
+
+[[interface]]
+type = "websocket"
+port = 8888
+[[interface.instance]]
+id = "app spec instance"

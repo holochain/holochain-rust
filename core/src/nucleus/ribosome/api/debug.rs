@@ -1,25 +1,27 @@
-use nucleus::ribosome::api::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_debug(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
-    let arg = runtime.load_utf8_from_args(args);
-
-    println!("{}", arg);
-    let _ = runtime.context.log(&arg);
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let payload = runtime.load_json_string_from_args(args);
+    println!("{}", payload);
+    // TODO #502 - log in logger as DEBUG log-level
+    runtime
+        .context
+        .log(&format!("zome_log:DEBUG: '{}'", payload))
+        .expect("Logger should work");
+    // Done
+    ribosome_success!()
 }
 
 #[cfg(test)]
 pub mod tests {
+    use holochain_core_types::json::JsonString;
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeApiFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
 
@@ -33,17 +35,19 @@ pub mod tests {
         test_debug_string().into_bytes()
     }
 
-    #[test]
     /// test that bytes passed to debug end up in the log
-    fn test_debug() {
-        let (_runtime, logger) =
-            test_zome_api_function_runtime(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        let result = logger.lock();
-        match result {
-            Err(_) => assert!(false),
-            Ok(logger) => {
-                assert_eq!(format!("{:?}", logger.log), "[\"foo\"]".to_string());
-            }
-        }
+    #[test]
+    fn test_zome_api_function_debug() {
+        let (call_result, context) =
+            test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
+        println!(
+            "test_zome_api_function_debug call_result: {:?}",
+            call_result
+        );
+        assert_eq!(JsonString::null(), call_result,);
+        assert_eq!(
+            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
+            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
+        );
     }
 }

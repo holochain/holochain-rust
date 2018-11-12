@@ -32,7 +32,7 @@ use holochain_wasm_utils::holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::holochain_core_types::error::HolochainError;
 
 #[no_mangle]
-pub extern "C" fn handle_check_global() -> JsonString {
+pub extern "C" fn handle_check_global() -> Address {
     hdk::AGENT_LATEST_HASH.clone().into()
 }
 
@@ -354,7 +354,7 @@ define_zome! {
         test (Public) {
             check_global: {
                 inputs: | |,
-                outputs: |result: JsonString|,
+                outputs: |agent_latest_hash: Address|,
                 handler: handle_check_global
             }
 

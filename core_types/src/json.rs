@@ -45,6 +45,19 @@ impl From<String> for JsonString {
     }
 }
 
+impl From<u32> for JsonString {
+    fn from(u: u32) -> JsonString {
+        default_to_json(u)
+    }
+}
+
+impl TryFrom<JsonString> for u32 {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 impl From<serde_json::Value> for JsonString {
     fn from(v: serde_json::Value) -> JsonString {
         JsonString::from(v.to_string())
@@ -81,9 +94,25 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
+// impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
+//     fn from(result: Result<T, E>) -> JsonString {
+//         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
+//     }
+// }
+
+impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            Err(inner) => inner.into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        ).into()
     }
 }
 

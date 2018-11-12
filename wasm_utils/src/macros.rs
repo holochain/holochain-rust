@@ -26,7 +26,7 @@ macro_rules! ribosome_success {
 macro_rules! ribosome_error_code {
     ($s:ident) => {
         Ok(Some(RuntimeValue::I32(
-            ::holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode::$s as i32,
+            $crate::holochain_core_types::error::RibosomeErrorCode::$s as i32,
         )))
     };
 }
@@ -35,7 +35,7 @@ macro_rules! ribosome_error_code {
 #[macro_export]
 macro_rules! core_error {
     ($hc_err:expr) => {
-        ::holochain_wasm_utils::holochain_core_types::error::CoreError {
+        $crate::holochain_core_types::error::CoreError {
             kind: $hc_err,
             file: file!().to_string(),
             line: line!().to_string(),
@@ -47,8 +47,8 @@ macro_rules! core_error {
 #[macro_export]
 macro_rules! core_error_generic {
     ($msg:expr) => {
-        ::holochain_wasm_utils::holochain_core_types::error::CoreError {
-            kind: ::holochain_wasm_utils::holochain_core_types::error::HolochainError::ErrorGeneric($msg),
+        $crate::holochain_core_types::error::CoreError {
+            kind: $crate::holochain_core_types::error::HolochainError::ErrorGeneric($msg),
             file: file!().to_string(),
             line: line!().to_string(),
         }

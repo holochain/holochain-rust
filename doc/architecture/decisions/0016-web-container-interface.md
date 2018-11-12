@@ -311,3 +311,8 @@ Woo!
 * Web based UIs can just be a browser tab since Holochain app keeps running in HoloSqape without it
 * UI and Holochain node are connected through permanent bi-directional connection
 * Push notifications can be send from the node to the external UI
+
+## Further reading
+
+Here is an excellent blog post summarising websockets vs. SSE vs. long poll:
+https://blog.stanko.io/do-you-really-need-websockets-343aed40aa9b

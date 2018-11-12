@@ -10,6 +10,7 @@
 
 #[macro_use]
 extern crate failure;
+extern crate holochain_net_connection;
 #[macro_use]
 extern crate lazy_static;
 extern crate rmp_serde;
@@ -22,3 +23,5 @@ pub mod errors;
 pub mod context;
 pub mod socket;
 pub mod util;
+
+pub mod ipc_client;

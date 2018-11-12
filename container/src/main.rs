@@ -2,6 +2,8 @@
 extern crate clap;
 extern crate holochain_container_api;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate structopt;
 
 use clap::{App, Arg};
 use holochain_container_api::{
@@ -9,27 +11,24 @@ use holochain_container_api::{
     container::Container,
 };
 use holochain_core_types::error::HolochainError;
-use std::{convert::TryFrom, fs::File, io::prelude::*};
+use std::{convert::TryFrom, fs::File, io::prelude::*, path::PathBuf};
+use structopt::StructOpt;
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "hcc")]
+struct Opt {
+    /// Output file
+    #[structopt(short = "c", long = "config", parse(from_os_str))]
+    config: Option<PathBuf>,
+}
 
 fn main() {
-    let matches = App::new("hcc")
-        .version("0.0.1")
-        .author("Holochain Core Dev Team <devcore@holochain.org>")
-        .about("Headless Holochain Container Service")
-        .arg(
-            Arg::with_name("config")
-                .short("c")
-                .long("config")
-                .value_name("FILE")
-                .help("Sets a custom config file")
-                .takes_value(true),
-        )
-        .get_matches();
-    let config_path = matches
-        .value_of("config")
-        .unwrap_or("~/.holochain/container_config.toml");
-    println!("Using config path: {}", config_path);
-    match bootstrap_from_config(config_path) {
+    let opt = Opt::from_args();
+    let config_path = opt.config
+        .unwrap_or(PathBuf::from(r"~/.holochain/container_config.toml"));
+    let config_path_str = config_path.to_str().unwrap();
+    println!("Using config path: {}", config_path_str);
+    match bootstrap_from_config(config_path_str) {
         Ok(mut container) => {
             if container.instances.len() > 0 {
                 println!(

@@ -7,3 +7,4 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 holochain_core_types = { path = "../core_types" }
 holochain_container_api = { path = "../container_api" }
 clap = "2"
+structopt = "0.2"

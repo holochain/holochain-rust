@@ -58,26 +58,31 @@ impl From<DNA_NAME> for JsonString {
         JsonString::from(RawString::from(dna_name.to_string()))
     }
 }
+
 impl From<DNA_HASH> for JsonString {
     fn from(dna_hash: DNA_HASH) -> JsonString {
         JsonString::from(HashString::from(dna_hash.to_string()))
     }
 }
+
 impl From<AGENT_ID_STR> for JsonString {
     fn from(agent_id: AGENT_ID_STR) -> JsonString {
         JsonString::from(RawString::from(agent_id.to_string()))
     }
 }
+
 impl From<AGENT_ADDRESS> for JsonString {
     fn from(agent_address: AGENT_ADDRESS) -> JsonString {
         JsonString::from(Address::from(agent_address.to_string()))
     }
 }
+
 impl From<AGENT_INITIAL_HASH> for JsonString {
     fn from(agent_initial_hash: AGENT_INITIAL_HASH) -> JsonString {
         JsonString::from(HashString::from(agent_initial_hash.to_string()))
     }
 }
+
 impl From<AGENT_LATEST_HASH> for JsonString {
     fn from(agent_latest_hash: AGENT_LATEST_HASH) -> JsonString {
         JsonString::from(HashString::from(agent_latest_hash.to_string()))
@@ -753,24 +758,22 @@ pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Ve
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
-pub fn query(entry_type_name: &str, limit: u32) -> ZomeApiResult<QueryResult> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
+    let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
+
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(
         &mut mem_stack,
         QueryArgs {
             entry_type_name: entry_type_name.to_string(),
-            limit: limit,
+            start,
+            limit,
         },
     )?;
 
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_query(allocation_of_input.encode() as u32);
-    }
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_query(allocation_of_input.encode() as u32) };
+
     // Deserialize complex result stored in memory
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Free result & input allocations

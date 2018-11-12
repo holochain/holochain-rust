@@ -170,11 +170,11 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     let expected: ZomeApiResult<Address> = Ok(Address::from(
-        "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+        "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
     ));
     assert_eq!(
         result.unwrap(),
@@ -186,7 +186,7 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry_result",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                    {"entry_address": Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")}
                 ))),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -204,7 +204,7 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                    {"entry_address": Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg")}
                 ))),
     );
     println!("\t can_get_entry result = {:?}", result);
@@ -224,12 +224,13 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry_result",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                    {"entry_address": Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJgxxx")}
                 ))),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+    let expected: ZomeApiResult<Option<SerializedEntry>> = Ok(None);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad hash
     let result = hc.call(
@@ -237,12 +238,13 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+                    {"entry_address": Address::from("QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJgxxx")}
                 ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+    let expected: ZomeApiResult<Option<SerializedEntry>> = Ok(None);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 }
 
 #[test]

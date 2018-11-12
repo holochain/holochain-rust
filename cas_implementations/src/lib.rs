@@ -17,9 +17,9 @@ extern crate unwrap_to;
 extern crate snowflake;
 extern crate walkdir;
 
-#[macro_use]
+extern crate uuid;
+
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 
 pub mod actor;

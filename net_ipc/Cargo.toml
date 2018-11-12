@@ -5,6 +5,7 @@ authors = ["neonphog <neonphog@gmail.com>"]
 
 [dependencies]
 failure = "0.1.1"
+holochain_net_connection = { path = "../net_connection" }
 lazy_static = "1.0"
 rmp-serde = "0.13.7"
 serde = "1.0"
@@ -13,4 +14,3 @@ serde_derive = "1.0"
 zmq = "0.8.2"
 
 [dev-dependencies]
-libc = "0.2.42"

@@ -120,13 +120,13 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use holochain_core_types::entry::{test_entry, test_entry_address};
+    use holochain_core_types::entry::{expected_entry_address, test_entry};
     use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(test_entry_address())
+        Action::GetEntry(expected_entry_address())
     }
 
     /// dummy action wrapper with test_action()
@@ -141,7 +141,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(test_entry_address()))
+        ActionWrapper::new(Action::GetEntry(expected_entry_address()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

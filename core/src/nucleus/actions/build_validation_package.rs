@@ -5,15 +5,17 @@ use agent;
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::{content::AddressableContent, storage::ContentAddressableStorage},
+    cas::content::AddressableContent,
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use nucleus::ribosome::callback::{self, CallbackResult};
+use nucleus::ribosome::callback::{
+    validation_package::get_validation_package_definition, CallbackResult,
+};
 use snowflake;
-use std::{sync::Arc, thread};
+use std::{convert::TryInto, sync::Arc, thread};
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -27,13 +29,13 @@ pub fn build_validation_package(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(entry.entry_type().as_str())
+        .get_zome_name_for_entry_type(&entry.entry_type().to_string())
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
-                entry.entry_type().as_str()
-            ))));;
+                String::from(entry.entry_type().to_owned())
+            ))));
         }
         Some(_) => {
             let id = id.clone();
@@ -57,10 +59,7 @@ pub fn build_validation_package(
 
             thread::spawn(move || {
                 let maybe_callback_result =
-                    callback::validation_package::get_validation_package_definition(
-                        entry.entry_type().clone(),
-                        context.clone(),
-                    );
+                    get_validation_package_definition(entry.entry_type().clone(), context.clone());
 
                 let maybe_validation_package = maybe_callback_result
                     .and_then(|callback_result| match callback_result {
@@ -132,18 +131,20 @@ fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
         .find(|ref header| *header.entry_address() == entry.address())
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
+fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
         .map(|chain_header| {
-            let entry: Option<Entry> = chain
-                .content_storage()
+            let storage = chain.content_storage().clone();
+            let json = (*storage.read().unwrap())
                 .fetch(chain_header.entry_address())
                 .expect("Could not fetch from CAS");
-            entry.expect("Could not find entry in CAS for existing chain header")
+            json.expect("Could not find CAS for existing chain header")
+                .try_into()
+                .expect("Could not convert to serialized entry")
         })
         .collect::<Vec<_>>()
 }

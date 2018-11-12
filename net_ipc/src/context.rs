@@ -27,3 +27,14 @@ pub fn destroy() -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_can_create() {
+        socket(zmq::ROUTER).unwrap();
+        //destroy().unwrap();
+    }
+}

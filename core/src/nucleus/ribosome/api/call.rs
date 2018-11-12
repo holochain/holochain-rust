@@ -5,22 +5,21 @@ use holochain_dna::zome::capabilities::Membrane;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call, ribosome::Runtime, state::NucleusState,
+    get_capability_with_zome_call, launch_zome_fn_call,
+    ribosome::{api::ZomeApiResult, Runtime},
+    state::NucleusState,
     ZomeFnCall,
 };
-use serde_json;
-use std::sync::{mpsc::channel, Arc};
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use std::{
+    convert::TryFrom,
+    sync::{mpsc::channel, Arc, RwLock},
+};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(
-            &args.zome_name,
-            &args.cap_name,
-            &args.fn_name,
-            &args.fn_args,
-        )
+        ZomeFnCall::new(&args.zome_name, &args.cap_name, &args.fn_name, args.fn_args)
     }
 }
 
@@ -31,16 +30,17 @@ impl ZomeFnCall {
 /// Launch an Action::Call with newly formed ZomeFnCall
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_call(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: ZomeFnCallArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!("invoke_call failed to deserialize: {:?}", args_str);
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
 
     // ZomeFnCallArgs to ZomeFnCall
@@ -81,16 +81,10 @@ pub fn invoke_call(
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    let action_result = receiver
+    let result = receiver
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
         .expect("observer dropped before done");
-
-    // action_result should be a json str of the result of the zome function called
-    match action_result {
-        Ok(json_str) => runtime.store_utf8(&json_str),
-        // TODO send the holochain error instead
-        Err(_hc_err) => ribosome_error_code!(Unspecified),
-    }
+    runtime.store_result(result)
 }
 
 /// Reduce Call Action
@@ -170,9 +164,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use context::Context;
-    use holochain_agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::error::DnaError;
+    use holochain_core_types::{entry::agent::Agent, error::DnaError, json::JsonString};
     use holochain_dna::{zome::capabilities::Capability, Dna};
     use instance::{
         tests::{test_instance, TestLogger},
@@ -227,9 +220,13 @@ pub mod tests {
                 Agent::from("alex".to_string()),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
+                Arc::new(RwLock::new(
+                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+                )),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                )),
             ).unwrap(),
         )
     }
@@ -237,7 +234,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
         dna: Dna,
-        expected: Result<Result<String, HolochainError>, RecvTimeoutError>,
+        expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let context = create_context();
 

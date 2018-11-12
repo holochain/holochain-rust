@@ -1,11 +1,10 @@
 use holochain_core_types::{
-    cas::content::Address, error::HolochainError, validation::ValidationPackage,
+    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
 };
 use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
 use std::collections::HashMap;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
     New,
@@ -32,7 +31,7 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
-    pub zome_calls: HashMap<ZomeFnCall, Option<Result<String, HolochainError>>>,
+    pub zome_calls: HashMap<ZomeFnCall, Option<Result<JsonString, HolochainError>>>,
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
@@ -52,11 +51,10 @@ impl NucleusState {
     pub fn zome_call_result(
         &self,
         zome_call: &ZomeFnCall,
-    ) -> Option<Result<String, HolochainError>> {
-        match self.zome_calls.get(zome_call) {
-            None => None,
-            Some(value) => value.clone(),
-        }
+    ) -> Option<Result<JsonString, HolochainError>> {
+        self.zome_calls
+            .get(zome_call)
+            .and_then(|value| value.clone())
     }
 
     pub fn has_initialized(&self) -> bool {

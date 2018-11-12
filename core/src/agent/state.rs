@@ -1,24 +1,22 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
-use holochain_cas_implementations::cas::file::FilesystemStorage;
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
+    cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
-    json::ToJson,
+    json::*,
     keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
-
 use serde_json;
-
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -29,24 +27,13 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore<FilesystemStorage>,
+    chain: ChainStore,
     top_chain_header: Option<ChainHeader>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AgentStateSnapshot {
-    top_chain_header: ChainHeader,
-}
-
-impl AgentStateSnapshot {
-    pub fn top_chain_header(&self) -> &ChainHeader {
-        &self.top_chain_header
-    }
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore<FilesystemStorage>) -> AgentState {
+    pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -55,10 +42,7 @@ impl AgentState {
         }
     }
 
-    pub fn new_with_top_chain_header(
-        chain: ChainStore<FilesystemStorage>,
-        chain_header: ChainHeader,
-    ) -> AgentState {
+    pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
         AgentState {
             keys: None,
             actions: HashMap::new(),
@@ -78,13 +62,18 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore<FilesystemStorage> {
+    pub fn chain(&self) -> ChainStore {
         self.chain.clone()
     }
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct AgentStateSnapshot {
+    top_chain_header: ChainHeader,
 }
 
 impl AgentStateSnapshot {
@@ -96,31 +85,26 @@ impl AgentStateSnapshot {
     pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
         serde_json::from_str(header_str)
     }
-}
-
-impl ToJson for AgentStateSnapshot {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(self)?)
+    pub fn top_chain_header(&self) -> &ChainHeader {
+        &self.top_chain_header
     }
 }
 
 impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not Jsonify ChainHeader as Content")
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        AgentStateSnapshot::from_json_str(content)
-            .expect("could not read Json as valid ChainHeader Content")
+        Self::try_from(content.to_owned()).expect("could not deserialized content")
     }
 
     fn address(&self) -> Address {
-        Address::from("AgentState")
+        "AgentState".into()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
@@ -128,32 +112,9 @@ impl AddressableContent for AgentStateSnapshot {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<Entry>),
+    GetEntry(Option<SerializedEntry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
-    LinkEntries(Result<Entry, HolochainError>),
-}
-
-impl ToJson for ActionResponse {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        match self {
-            ActionResponse::Commit(result) => match result {
-                Ok(entry_address) => Ok(format!("{{\"address\":\"{}\"}}", entry_address)),
-                Err(err) => Ok((*err).to_json()?),
-            },
-            ActionResponse::GetEntry(result) => match result {
-                Some(entry) => Ok(entry.to_json()?),
-                None => Ok("".to_string()),
-            },
-            ActionResponse::GetLinks(result) => match result {
-                Ok(hash_list) => Ok(json!(hash_list).to_string()),
-                Err(err) => Ok((*err).to_json()?),
-            },
-            ActionResponse::LinkEntries(result) => match result {
-                Ok(entry) => Ok(format!("{{\"address\":\"{}\"}}", entry.address())),
-                Err(err) => Ok((*err).to_json()?),
-            },
-        }
-    }
+    LinkEntries(Result<SerializedEntry, HolochainError>),
 }
 
 pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
@@ -198,8 +159,9 @@ fn reduce_commit_entry(
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
-        state.chain.content_storage().add(entry)?;
-        state.chain.content_storage().add(chain_header)?;
+        let storage = &state.chain.content_storage().clone();
+        storage.write().unwrap().add(entry)?;
+        storage.write().unwrap().add(chain_header)?;
         Ok(entry.address())
     }
     let result = response(state, &entry, &chain_header);
@@ -227,17 +189,20 @@ fn reduce_get_entry(
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
-    let result = state
-        .chain()
-        .content_storage()
+    let storage = &state.chain().content_storage().clone();
+    let json = storage
+        .read()
+        .unwrap()
         .fetch(&address)
         .expect("could not fetch from CAS");
+    let result: Option<SerializedEntry> = json.and_then(|js| js.try_into().ok());
+
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
 
     state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::GetEntry(result.clone()),
+        action_wrapper.to_owned(),
+        ActionResponse::GetEntry(result.to_owned()),
     );
 }
 
@@ -270,19 +235,17 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use self::tempfile::tempdir;
     use super::{
         reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
     };
     use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::{tests::test_chain_store, ChainStore};
-    use holochain_cas_implementations::cas::file::FilesystemStorage;
+    use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{test_entry, test_entry_address},
+        entry::{expected_entry_address, test_entry, SerializedEntry},
         error::HolochainError,
-        json::ToJson,
+        json::JsonString,
     };
     use instance::tests::test_context;
     use serde_json;
@@ -295,12 +258,12 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(test_entry_address()))
+        ActionResponse::Commit(Ok(expected_entry_address()))
     }
 
     /// dummy action response for a successful get as test_entry()
     pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_entry()))
+        ActionResponse::GetEntry(Some(test_entry().into()))
     }
 
     #[test]
@@ -367,43 +330,50 @@ pub mod tests {
     /// test response to json
     fn test_commit_response_to_json() {
         assert_eq!(
-            format!("{{\"address\":\"{}\"}}", test_entry_address()),
-            ActionResponse::Commit(Ok(test_entry_address()))
-                .to_json()
-                .unwrap(),
+            JsonString::from(format!(
+                "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
+                expected_entry_address()
+            )),
+            JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
-            "{\"error\":\"some error\"}",
-            ActionResponse::Commit(Err(HolochainError::new("some error")))
-                .to_json()
-                .unwrap(),
+            JsonString::from("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
+                "some error"
+            ))))
         );
     }
 
     #[test]
     fn test_get_response_to_json() {
         assert_eq!(
-            "{\"value\":\"test entry value\",\"entry_type\":{\"App\":\"testEntryType\"}}",
-            ActionResponse::GetEntry(Some(test_entry().clone()))
-                .to_json()
-                .unwrap(),
+            JsonString::from(
+                "{\"GetEntry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
+            ),
+            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(
+                test_entry().clone()
+            ))))
         );
-        assert_eq!("", ActionResponse::GetEntry(None).to_json().unwrap());
+        assert_eq!(
+            JsonString::from("{\"GetEntry\":null}"),
+            JsonString::from(ActionResponse::GetEntry(None)),
+        )
     }
 
     #[test]
     fn test_get_links_response_to_json() {
         assert_eq!(
-            format!("[\"{}\"]", test_entry_address()),
-            ActionResponse::GetLinks(Ok(vec![test_entry().address()]))
-                .to_json()
-                .unwrap(),
+            JsonString::from(format!(
+                "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
+                expected_entry_address()
+            )),
+            JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
         );
         assert_eq!(
-            "{\"error\":\"some error\"}",
-            ActionResponse::GetLinks(Err(HolochainError::new("some error")))
-                .to_json()
-                .unwrap(),
+            JsonString::from("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 
@@ -412,23 +382,23 @@ pub mod tests {
         let header = test_chain_header();
         let agent_snap = AgentStateSnapshot::new(header);
         let json = serde_json::to_string(&agent_snap).unwrap();
-        let agent_from_json: AgentStateSnapshot = serde_json::from_str(&json).unwrap();
+        let agent_from_json = AgentStateSnapshot::from_json_str(&json).unwrap();
         assert_eq!(agent_snap.address(), agent_from_json.address());
     }
 
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            format!("{{\"address\":\"{}\"}}", test_entry_address()),
-            ActionResponse::LinkEntries(Ok(test_entry()))
-                .to_json()
-                .unwrap(),
+            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}"),
+            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
+                test_entry(),
+            )))),
         );
         assert_eq!(
-            "{\"error\":\"some error\"}",
-            ActionResponse::LinkEntries(Err(HolochainError::new("some error")))
-                .to_json()
-                .unwrap(),
+            JsonString::from("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
+            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
+                "some error"
+            )))),
         );
     }
 }

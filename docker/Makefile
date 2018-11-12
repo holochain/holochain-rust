@@ -9,8 +9,9 @@ all: main
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
-CARGO = cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-CARGO_TOOLS = cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
+CARGO = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
+CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -113,7 +114,7 @@ install_rust_tools: tools_toolchain
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
 	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-		RUSTFLAGS="--cfg procmacro2_semver_exempt" $(CARGO) install cargo-tarpaulin; \
+		 $(CARGO_TARPULIN) install cargo-tarpaulin; \
 	fi
 
 .PHONY: install_mdbook
@@ -145,8 +146,8 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 wasm_build: ensure_wasm_target
 	cd core/src/nucleus/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd core_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd core_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
@@ -154,8 +155,13 @@ wasm_build: ensure_wasm_target
 build: core_toolchain wasm_build
 	$(CARGO) build --all
 
+.PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
 	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk
+
+.PHONY: code_coverage_crate
+code_coverage_crate: core_toolchain wasm_build install_ci
+	$(CARGO) tarpaulin --timeout 600 --skip-clean -v -p $(CRATE)
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check

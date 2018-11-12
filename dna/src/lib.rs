@@ -6,20 +6,27 @@
 //! # Examples
 //!
 //! ```
+//! #![feature(try_from)]
+//! extern crate holochain_core_types;
+//! extern crate holochain_dna;
 //! use holochain_dna::Dna;
+//! use holochain_core_types::json::JsonString;
+//! use std::convert::TryFrom;
 //!
 //! let name = String::from("My Holochain DNA");
 //!
 //! let mut dna = Dna::new();
 //! dna.name = name.clone();
 //!
-//! let json = dna.to_json();
+//! let json = JsonString::from(dna.clone());
 //!
-//! let dna2 = Dna::from_json_str(&json).unwrap();
+//! let dna2 = Dna::try_from(json).expect("could not restore DNA from JSON");
 //! assert_eq!(name, dna2.name);
 //! ```
-
+#![feature(try_from)]
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -35,12 +42,12 @@ pub mod wasm;
 pub mod zome;
 
 use holochain_core_types::{
-    cas::content::AddressableContent,
     entry::{Entry, ToEntry},
     entry_type::EntryType,
-    error::DnaError,
+    error::{DnaError, HolochainError},
+    json::JsonString,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 use uuid::Uuid;
 use zome::{capabilities::Capability, entry_types::EntryTypeDef};
 
@@ -55,7 +62,7 @@ fn new_uuid() -> String {
 }
 
 /// Represents the top-level holochain dna object.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, DefaultJson)]
 pub struct Dna {
     /// The top-level "name" of a holochain application.
     #[serde(default)]
@@ -115,38 +122,6 @@ impl Dna {
     /// ```
     pub fn new() -> Self {
         Default::default()
-    }
-
-    /// Create a new in-memory dna struct from a json string.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use holochain_dna::Dna;
-    ///
-    /// let dna = Dna::from_json_str(r#"{
-    ///     "name": "MyTestApp"
-    /// }"#).expect("DNA should be valid");
-    ///
-    /// assert_eq!("MyTestApp", dna.name);
-    /// ```
-    pub fn from_json_str(dna: &str) -> serde_json::Result<Self> {
-        serde_json::from_str(dna)
-    }
-
-    /// Generate a json string from an in-memory dna struct.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use holochain_dna::Dna;
-    ///
-    /// let dna = Dna::new();
-    /// println!("json: {}", dna.to_json());
-    ///
-    /// ```
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).expect("DNA should serialize")
     }
 
     /// Generate a pretty-printed json string from an in-memory dna struct.
@@ -245,7 +220,7 @@ impl Dna {
 
 impl Hash for Dna {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let s = self.to_json();
+        let s = String::from(JsonString::from(self.to_owned()));
         s.hash(state);
     }
 }
@@ -253,18 +228,22 @@ impl Hash for Dna {
 impl PartialEq for Dna {
     fn eq(&self, other: &Dna) -> bool {
         // need to guarantee that PartialEq and Hash always agree
-        self.to_json() == other.to_json()
+        JsonString::from(self.to_owned()) == JsonString::from(other.to_owned())
     }
 }
 
 impl ToEntry for Dna {
     fn to_entry(&self) -> Entry {
         // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(&EntryType::Dna, &self.to_json())
+        Entry::new(EntryType::Dna, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        Dna::from_json_str(&entry.value()).expect("entry is not a valid Dna Entry")
+        entry
+            .value()
+            .to_owned()
+            .try_into()
+            .expect("could not convert Entry into Dna")
     }
 }
 
@@ -272,6 +251,7 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
+    use std::convert::TryFrom;
     use zome::tests::test_zome;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
@@ -310,9 +290,9 @@ pub mod tests {
     fn can_parse_and_output_json_helpers() {
         let dna = test_dna();
 
-        let serialized = dna.to_json();
+        let json_string = JsonString::from(dna);
 
-        let deserialized = Dna::from_json_str(&serialized).unwrap();
+        let deserialized = Dna::try_from(json_string).unwrap();
 
         assert_eq!(String::from("2.0"), deserialized.dna_spec_version);
     }
@@ -370,11 +350,11 @@ pub mod tests {
             }"#,
         ).replace(char::is_whitespace, "");
 
-        let dna = Dna::from_json_str(&fixture).unwrap();
+        let dna = Dna::try_from(JsonString::from(fixture.clone())).unwrap();
 
         println!("{}", dna.to_json_pretty().unwrap());
 
-        let serialized = dna.to_json().replace(char::is_whitespace, "");
+        let serialized = String::from(JsonString::from(dna)).replace(char::is_whitespace, "");
 
         assert_eq!(fixture, serialized);
     }
@@ -390,7 +370,7 @@ pub mod tests {
             .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
 
-        let fixture = Dna::from_json_str(
+        let fixture = Dna::try_from(JsonString::from(
             r#"{
                 "name": "",
                 "description": "",
@@ -413,30 +393,30 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert_eq!(dna, fixture);
     }
 
     #[test]
     fn parse_with_defaults_dna() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert!(dna.uuid.len() > 0);
     }
 
     #[test]
     fn parse_with_defaults_zome() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "zomes": {
                     "zome1": {}
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert_eq!(
             dna.zomes.get("zome1").unwrap().config.error_handling,
@@ -446,7 +426,7 @@ pub mod tests {
 
     #[test]
     fn parse_with_defaults_entry_type() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -456,7 +436,7 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert_eq!(
             dna.zomes
@@ -472,7 +452,7 @@ pub mod tests {
 
     #[test]
     fn parse_wasm() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -485,7 +465,7 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
     }
@@ -493,17 +473,17 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_dna() {
-        Dna::from_json_str(
+        Dna::try_from(JsonString::from(
             r#"{
                 "name": 42
             }"#,
-        ).unwrap();
+        )).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_zome() {
-        Dna::from_json_str(
+        Dna::try_from(JsonString::from(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -511,13 +491,13 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn parse_fail_if_bad_type_entry_type() {
-        Dna::from_json_str(
+        Dna::try_from(JsonString::from(
             r#"{
                 "zomes": {
                     "zome1": {
@@ -529,12 +509,12 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
     }
 
     #[test]
     fn parse_accepts_arbitrary_dna_properties() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "properties": {
                     "str": "hello",
@@ -545,7 +525,7 @@ pub mod tests {
                     "obj": {"a": 1, "b": 2}
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         let props = dna.properties.as_object().unwrap();
 
@@ -575,7 +555,7 @@ pub mod tests {
 
     #[test]
     fn get_wasm_from_zome_name() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -613,7 +593,7 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         let wasm = dna.get_wasm_from_zome_name("test zome");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
@@ -624,7 +604,7 @@ pub mod tests {
 
     #[test]
     fn test_get_zome_name_for_entry_type() {
-        let dna = Dna::from_json_str(
+        let dna = Dna::try_from(JsonString::from(
             r#"{
                 "name": "test",
                 "description": "test",
@@ -659,7 +639,7 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).unwrap();
+        )).unwrap();
 
         assert_eq!(
             dna.get_zome_name_for_entry_type("test type").unwrap(),

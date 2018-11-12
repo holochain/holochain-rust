@@ -7,7 +7,12 @@ pub mod validate_entry;
 pub mod validation_package;
 
 use context::Context;
-use holochain_core_types::{entry::Entry, json::ToJson, validation::ValidationPackageDefinition};
+use holochain_core_types::{
+    entry::SerializedEntry,
+    error::{HolochainError, RibosomeReturnCode},
+    json::{default_to_json, JsonString},
+    validation::ValidationPackageDefinition,
+};
 use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
@@ -18,6 +23,7 @@ use nucleus::{
     ZomeFnCall,
 };
 use num_traits::FromPrimitive;
+use serde_json;
 use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
@@ -109,10 +115,10 @@ impl Defn for Callback {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(Entry),
+    ValidateCommit(SerializedEntry),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,
@@ -121,19 +127,49 @@ pub enum CallbackParams {
 impl ToString for CallbackParams {
     fn to_string(&self) -> String {
         match self {
-            CallbackParams::Genesis => "".to_string(),
-            CallbackParams::ValidateCommit(entry) => entry.to_json().unwrap_or_default(),
-            CallbackParams::Receive => "".to_string(),
+            CallbackParams::Genesis => String::new(),
+            CallbackParams::ValidateCommit(serialized_entry) => {
+                String::from(JsonString::from(serialized_entry.to_owned()))
+            }
+            CallbackParams::Receive => String::new(),
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CallbackResult {
     Pass,
     Fail(String),
     NotImplemented,
     ValidationPackageDefinition(ValidationPackageDefinition),
+}
+
+impl From<CallbackResult> for JsonString {
+    fn from(v: CallbackResult) -> Self {
+        default_to_json(v)
+    }
+}
+
+impl From<JsonString> for CallbackResult {
+    fn from(json_string: JsonString) -> CallbackResult {
+        let try: Result<CallbackResult, serde_json::Error> =
+            serde_json::from_str(&String::from(json_string.clone()));
+        match try {
+            Ok(callback_result) => callback_result,
+            Err(_) => CallbackResult::Fail(String::from(json_string)),
+        }
+    }
+}
+
+impl From<RibosomeReturnCode> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+        match ribosome_return_code {
+            RibosomeReturnCode::Failure(ribosome_error_code) => {
+                CallbackResult::Fail(ribosome_error_code.to_string())
+            }
+            RibosomeReturnCode::Success => CallbackResult::Pass,
+        }
+    }
 }
 
 pub(crate) fn run_callback(
@@ -149,10 +185,10 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => if call_result.is_empty() {
+        Ok(call_result) => if call_result.is_null() {
             CallbackResult::Pass
         } else {
-            CallbackResult::Fail(call_result)
+            CallbackResult::Fail(call_result.to_string())
         },
         Err(_) => CallbackResult::NotImplemented,
     }
@@ -205,7 +241,7 @@ pub fn call(
         zome,
         &function.capability().as_str().to_string(),
         &function.as_str().to_string(),
-        &params.to_string(),
+        params,
     );
 
     let dna = get_dna(&context).expect("Callback called without DNA set!");
@@ -224,7 +260,6 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;

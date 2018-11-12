@@ -1,7 +1,8 @@
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, Entry};
+use entry::{test_entry_unique, SerializedEntry};
 use error::HolochainError;
+use json::RawString;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -9,11 +10,14 @@ use std::{
     thread,
 };
 
+use std::convert::TryFrom;
+use uuid::Uuid;
+
 /// content addressable store (CAS)
 /// implements storage in memory or persistently
 /// anything implementing AddressableContent can be added and fetched by address
 /// CAS is append only
-pub trait ContentAddressableStorage: Clone + Send + Sync {
+pub trait ContentAddressableStorage: objekt::Clone + Send + Sync + Debug {
     /// adds AddressableContent to the ContentAddressableStorage by its Address as Content
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError>;
     /// true if the Address is in the Store, false otherwise.
@@ -22,10 +26,21 @@ pub trait ContentAddressableStorage: Clone + Send + Sync {
     /// returns Some AddressableContent if it is in the Store, else None
     /// AddressableContent::from_content() can be used to allow the compiler to infer the type
     /// @see the fetch implementation for ExampleCas in the cas module tests
-    fn fetch<C: AddressableContent>(&self, address: &Address) -> Result<Option<C>, HolochainError>;
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
+    //needed to find a way to compare two different CAS for partialord derives.
+    //easiest solution was to just compare two ids which are based on uuids
+    fn get_id(&self) -> Uuid;
 }
 
-#[derive(Clone)]
+clone_trait_object!(ContentAddressableStorage);
+
+impl PartialEq for ContentAddressableStorage {
+    fn eq(&self, other: &ContentAddressableStorage) -> bool {
+        self.get_id() == other.get_id()
+    }
+}
+
+#[derive(Clone, Debug)]
 /// some struct to show an example ContentAddressableStorage implementation
 /// this is a thread-safe wrapper around the non-thread-safe implementation below
 /// @see ExampleContentAddressableStorageActor
@@ -57,18 +72,16 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
         self.content.read().unwrap().unthreadable_contains(address)
     }
 
-    fn fetch<AC: AddressableContent>(
-        &self,
-        address: &Address,
-    ) -> Result<Option<AC>, HolochainError> {
-        let content = self.content.read().unwrap().unthreadable_fetch(address)?;
-        Ok(match content {
-            Some(c) => Some(AC::from_content(&c)),
-            None => None,
-        })
+    fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+        Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
+    }
+
+    fn get_id(&self) -> Uuid {
+        Uuid::new_v4()
     }
 }
 
+#[derive(Debug)]
 /// Not thread-safe CAS implementation with a HashMap
 pub struct ExampleContentAddressableStorageContent {
     storage: HashMap<Address, Content>,
@@ -111,7 +124,7 @@ where
 
 impl<T> StorageTestSuite<T>
 where
-    T: ContentAddressableStorage + 'static,
+    T: ContentAddressableStorage + 'static + Clone,
 {
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite {
@@ -138,18 +151,12 @@ where
 
         for cas in both_cas.iter() {
             assert_eq!(Ok(false), cas.contains(&addressable_content.address()));
-            assert_eq!(
-                Ok(None),
-                cas.fetch::<Addressable>(&addressable_content.address())
-            );
+            assert_eq!(Ok(None), cas.fetch(&addressable_content.address()));
             assert_eq!(
                 Ok(false),
                 cas.contains(&other_addressable_content.address())
             );
-            assert_eq!(
-                Ok(None),
-                cas.fetch::<OtherAddressable>(&other_addressable_content.address())
-            );
+            assert_eq!(Ok(None), cas.fetch(&other_addressable_content.address()));
         }
 
         // round trip some AddressableContent through the ContentAddressableStorage
@@ -187,7 +194,7 @@ where
             assert_eq!(
                 None,
                 thread_cas
-                    .fetch::<Entry>(&thread_entry.address())
+                    .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
             );
             tx1.send(true).unwrap();
@@ -214,6 +221,8 @@ where
                 thread_cas
                     .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
+                    .map(|cas| SerializedEntry::try_from(cas).unwrap())
+                    .map(|cas: SerializedEntry| cas.into())
             )
         });
 
@@ -225,7 +234,7 @@ pub struct EavTestSuite;
 
 impl EavTestSuite {
     pub fn test_round_trip(
-        mut eav_storage: impl EntityAttributeValueStorage,
+        mut eav_storage: impl EntityAttributeValueStorage + Clone,
         entity_content: impl AddressableContent,
         attribute: String,
         value_content: impl AddressableContent,
@@ -294,11 +303,15 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -309,7 +322,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -350,11 +363,16 @@ impl EavTestSuite {
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
     {
-        let one = A::from_content(&"foo".to_string());
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+        let baz_content = Content::from(RawString::from("baz"));
+
+        let one = A::from_content(&foo_content);
+
         // it can reference itself, why not?
-        let many_one = A::from_content(&"foo".to_string());
-        let many_two = A::from_content(&"bar".to_string());
-        let many_three = A::from_content(&"baz".to_string());
+        let many_one = A::from_content(&foo_content);
+        let many_two = A::from_content(&bar_content);
+        let many_three = A::from_content(&baz_content);
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -365,7 +383,7 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::from_content(&"foo".to_string());
+        let two = A::from_content(&foo_content);
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -408,14 +426,15 @@ pub mod tests {
         content::{ExampleAddressableContent, OtherExampleAddressableContent},
         storage::{test_content_addressable_storage, StorageTestSuite},
     };
+    use json::{JsonString, RawString};
 
     /// show that content of different types can round trip through the same storage
     #[test]
     fn example_content_round_trip_test() {
         let test_suite = StorageTestSuite::new(test_content_addressable_storage());
         test_suite.round_trip_test::<ExampleAddressableContent, OtherExampleAddressableContent>(
-            String::from("foo"),
-            String::from("bar"),
+            JsonString::from(RawString::from("foo")),
+            JsonString::from(RawString::from("bar")),
         );
     }
 }

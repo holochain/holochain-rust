@@ -1,47 +1,41 @@
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
-use nucleus::ribosome::Runtime;
-use serde_json;
-use std::collections::HashSet;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_links(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: GetLinksArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!(
+                "invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
-
-    let get_links_result = runtime
+    // Get links from DHT
+    let maybe_links = runtime
         .context
         .state()
         .unwrap()
         .dht()
         .get_links(input.entry_address, input.tag);
 
-    let json = serde_json::to_string(&GetLinksResult {
-        ok: get_links_result.is_ok(),
-        links: get_links_result
-            .clone()
-            .unwrap_or(HashSet::new())
+    runtime.store_result(match maybe_links {
+        Ok(links) => Ok(links
             .iter()
             .map(|eav| eav.value())
-            .collect::<Vec<Address>>(),
-        error: get_links_result
-            .map_err(|holochain_error| holochain_error.to_string())
-            .err()
-            .unwrap_or(String::from("")),
-    }).expect("Could not serialize GetLinksResult");
-
-    runtime.store_utf8(&json)
+            .collect::<Vec<Address>>()),
+        Err(hc_err) => Err(hc_err),
+    })
 }
 
 #[cfg(test)]
@@ -53,7 +47,8 @@ pub mod tests {
     use dht::actions::add_link::add_link;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::Address, entry::Entry, entry_type::test_entry_type, links_entry::Link,
+        cas::content::Address, entry::Entry, entry_type::test_entry_type, json::JsonString,
+        links_entry::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use instance::tests::{test_context_and_logger, test_instance};
@@ -91,7 +86,10 @@ pub mod tests {
 
         let mut entry_hashes: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::new(&test_entry_type(), &format!("entry{} value", i));
+            let entry = Entry::new(
+                test_entry_type(),
+                JsonString::from(format!("entry{} value", i)),
+            );
             let hash = block_on(commit_entry(
                 entry,
                 &initialized_context.action_channel.clone(),
@@ -114,18 +112,27 @@ pub mod tests {
             test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
         );
 
-        let ordering1: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
+        let expected_1 = JsonString::from(
+            format!(
+                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
                 entry_hashes[1], entry_hashes[2]
-            ) + "\u{0}";
-        let ordering2: bool = call_result
-            == format!(
-                r#"{{"ok":true,"links":["{}","{}"],"error":""}}"#,
-                entry_hashes[2], entry_hashes[1]
-            ) + "\u{0}";
+            ) + "\u{0}",
+        );
 
-        assert!(ordering1 || ordering2);
+        let expected_2 = JsonString::from(
+            format!(
+                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
+                entry_hashes[2], entry_hashes[1]
+            ) + "\u{0}",
+        );
+
+        assert!(
+            call_result == expected_1 || call_result == expected_2,
+            "\n call_result = '{:?}'\n   ordering1 = '{:?}'\n   ordering2 = '{:?}'",
+            call_result,
+            expected_1,
+            expected_2,
+        );
 
         let call_result = test_zome_api_function_call(
             &dna_name,
@@ -137,7 +144,7 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            r#"{"ok":true,"links":[],"error":""}"#.to_string() + "\u{0}",
+            JsonString::from(String::from(r#"{"ok":true,"value":"[]","error":"null"}"#) + "\u{0}"),
         );
     }
 

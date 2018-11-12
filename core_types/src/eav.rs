@@ -1,12 +1,14 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{test_entry_a, test_entry_b, Entry};
 use error::{HcResult, HolochainError};
-use serde_json;
+use json::JsonString;
 use std::{
     collections::HashSet,
+    convert::TryInto,
     sync::{Arc, RwLock},
 };
 
+use std::fmt::Debug;
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT
 /// defines relationships between AddressableContent values
@@ -30,7 +32,7 @@ pub type Value = Address;
 // source agent asserting the meta
 // type Source ...
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -41,13 +43,14 @@ pub struct EntityAttributeValue {
 
 impl AddressableContent for EntityAttributeValue {
     fn content(&self) -> Content {
-        serde_json::to_string(self)
-            .expect("could not serialize EntityAttributeValue to Json Content")
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        serde_json::from_str(content)
-            .expect("could not deserialize Json Content to EntityAttributeValue")
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize EntityAttributeValue from Content")
     }
 }
 
@@ -88,7 +91,7 @@ impl EntityAttributeValue {
 /// does NOT provide storage for AddressableContent
 /// use cas::storage::ContentAddressableStorage to store AddressableContent
 /// provides a simple and flexible interface to define relationships between AddressableContent
-pub trait EntityAttributeValueStorage: Clone {
+pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage
     /// eavs are retrieved through constraint based lookups
@@ -107,6 +110,9 @@ pub trait EntityAttributeValueStorage: Clone {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 }
 
+clone_trait_object!(EntityAttributeValueStorage);
+
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: HashSet<EntityAttributeValue>,
 }
@@ -150,7 +156,13 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 }
 
-#[derive(Clone)]
+impl PartialEq for EntityAttributeValueStorage {
+    fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
+        self.fetch_eav(None, None, None) == other.fetch_eav(None, None, None)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
     content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }
@@ -209,9 +221,9 @@ pub fn test_eav_address() -> Address {
 }
 
 pub fn eav_round_trip_test_runner(
-    entity_content: impl AddressableContent,
+    entity_content: impl AddressableContent + Clone,
     attribute: String,
-    value_content: impl AddressableContent,
+    value_content: impl AddressableContent + Clone,
 ) {
     let eav = EntityAttributeValue::new(
         &entity_content.address(),
@@ -278,6 +290,7 @@ pub mod tests {
         },
     };
     use eav::EntityAttributeValue;
+    use json::RawString;
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
@@ -286,9 +299,11 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity = ExampleAddressableContent::from_content(&"foo".to_string());
+        let entity =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
         let attribute = "favourite-color".to_string();
-        let value = ExampleAddressableContent::from_content(&"blue".to_string());
+        let value =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }
@@ -316,7 +331,7 @@ pub mod tests {
         AddressableContentTestSuite::addressable_content_trait_test::<EntityAttributeValue>(
             test_eav_content(),
             test_eav(),
-            String::from(test_eav_address()),
+            test_eav_address(),
         );
     }
 

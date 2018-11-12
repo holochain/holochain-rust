@@ -9,7 +9,10 @@ use holochain_core_types::{
     hash::HashString,
     links_entry::Link,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::{Arc, RwLock},
+};
 
 // Placeholder network module
 #[derive(Clone, Debug, PartialEq)]
@@ -32,29 +35,38 @@ impl Network {
 
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
-#[derive(Clone, Debug, PartialEq)]
-pub struct DhtStore<CAS, EAVS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+#[derive(Clone, Debug)]
+pub struct DhtStore {
     // Storages holding local shard data
-    content_storage: CAS,
-    meta_storage: EAVS,
+    content_storage: Arc<RwLock<ContentAddressableStorage>>,
+    meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     // Placeholder network module
     network: Network,
 
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
-impl<CAS, EAVS> DhtStore<CAS, EAVS>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+impl PartialEq for DhtStore {
+    fn eq(&self, other: &DhtStore) -> bool {
+        let content = &self.content_storage.clone();
+        let other_content = &other.content_storage().clone();
+        let meta = &self.meta_storage.clone();
+        let other_meta = &other.meta_storage.clone();
+
+        self.network == other.network
+            && self.add_link_actions == other.add_link_actions
+            && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
+            && *meta.read().unwrap() == *other_meta.read().unwrap()
+    }
+}
+
+impl DhtStore {
     // LifeCycle
     // =========
-    pub fn new(content_storage: CAS, meta_storage: EAVS) -> Self {
+    pub fn new(
+        content_storage: Arc<RwLock<ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    ) -> Self {
         let network = Network {};
         DhtStore {
             content_storage,
@@ -80,23 +92,20 @@ where
         address: HashString,
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage
-            .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
+        self.meta_storage.read().unwrap().fetch_eav(
+            Some(address),
+            Some(format!("link__{}", tag)),
+            None,
+        )
     }
 
     // Getters (for reducers)
     // =======
-    pub fn content_storage(&self) -> CAS {
+    pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn content_storage_mut(&mut self) -> &mut CAS {
-        &mut self.content_storage
-    }
-    pub fn meta_storage(&self) -> EAVS {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()
-    }
-    pub(crate) fn meta_storage_mut(&mut self) -> &mut EAVS {
-        &mut self.meta_storage
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network

@@ -1,45 +1,40 @@
 use futures::executor::block_on;
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryArgs, GetEntryResult};
-use nucleus::{actions::get_entry::get_entry, ribosome::Runtime};
-use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::cas::content::Address;
+use nucleus::{
+    actions::get_entry::get_entry,
+    ribosome::{api::ZomeApiResult, Runtime},
+};
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_get_entry(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let res_entry: Result<GetEntryArgs, _> = serde_json::from_str(&args_str);
+    let args_str = runtime.load_json_string_from_args(&args);
+    let try_address = Address::try_from(args_str.clone());
     // Exit on error
-    if res_entry.is_err() {
+    if try_address.is_err() {
+        println!(
+            "invoke_get_entry failed to deserialize Address: {:?}",
+            args_str
+        );
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
-    let input = res_entry.unwrap();
+    let address = try_address.unwrap();
 
-    let future = get_entry(&runtime.context, input.address);
+    let future = get_entry(&runtime.context, address);
     let result = block_on(future);
-    match result {
-        Err(_) => ribosome_error_code!(Unspecified),
-        Ok(maybe_entry) => match maybe_entry {
-            Some(entry) => {
-                let result = GetEntryResult::found(entry.to_string());
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
-            None => {
-                let result = GetEntryResult::not_found();
-                let result_string =
-                    serde_json::to_string(&result).expect("Could not serialize GetAppEntryResult");
-                runtime.store_utf8(&result_string)
-            }
-        },
-    }
+
+    // runtime.store_result(match result {
+    //     Ok(maybe_entry) => Ok(maybe_entry.and_then(|entry| Some(entry.serialize()))),
+    //     Err(hc_err) => Err(hc_err),
+    // })
+    let api_result =
+        result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry.serialize())));
+    runtime.store_result(api_result)
 }
 
 #[cfg(test)]
@@ -48,9 +43,11 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
-    use super::GetEntryArgs;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, hash::HashString,
+        cas::content::{Address, AddressableContent},
+        entry::test_entry,
+        error::ZomeApiInternalResult,
+        json::JsonString,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -63,23 +60,16 @@ mod tests {
         },
         ZomeFnCall,
     };
-    use serde_json;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        let args = GetEntryArgs {
-            address: test_entry().address().into(),
-        };
-        serde_json::to_string(&args).unwrap().into_bytes()
+        JsonString::from(test_entry().address()).into_bytes()
     }
 
     /// dummy get args from standard test entry
     pub fn test_get_args_unknown() -> Vec<u8> {
-        let args = GetEntryArgs {
-            address: HashString::from(String::from("xxxxxxxxx")),
-        };
-        serde_json::to_string(&args).unwrap().into_bytes()
+        JsonString::from(Address::from("xxxxxxxxx")).into_bytes()
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -197,7 +187,7 @@ mod tests {
             &test_zome_name(),
             &test_capability(),
             "commit_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
@@ -209,17 +199,18 @@ mod tests {
 
         assert_eq!(
             call_result,
-            format!(
-                r#"{{"address":"{}","validation_failure":""}}"#,
-                test_entry().address()
-            ) + "\u{0}",
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    test_entry().address()
+                ))) + "\u{0}"
+            ),
         );
 
         let get_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
@@ -229,10 +220,14 @@ mod tests {
             Some(test_get_args_bytes()),
         ).expect("test should be callable");
 
-        let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"Found\",\"entry\":\"test entry value\"}\u{0}");
-
-        assert_eq!(expected, call_result);
+        assert_eq!(
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    test_entry().serialize()
+                ))) + "\u{0}",
+            ),
+            call_result,
+        );
     }
 
     #[test]
@@ -263,7 +258,7 @@ mod tests {
             &test_zome_name(),
             &test_capability(),
             "get_dispatch",
-            &test_parameters(),
+            test_parameters(),
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
@@ -273,10 +268,12 @@ mod tests {
             Some(test_get_args_unknown()),
         ).expect("test should be callable");
 
-        let mut expected = "".to_owned();
-        expected.push_str("{\"status\":\"NotFound\",\"entry\":\"\"}\u{0}");
-
-        assert_eq!(expected, call_result);
+        assert_eq!(
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            ),
+            call_result,
+        );
     }
 
 }

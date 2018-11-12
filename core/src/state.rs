@@ -5,9 +5,8 @@ use agent::{
 };
 use context::Context;
 use dht::dht_store::DhtStore;
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core_types::{
-    cas::{content::*, storage::ContentAddressableStorage},
+    cas::storage::ContentAddressableStorage,
     entry::*,
     entry_type::EntryType,
     error::{HcResult, HolochainError},
@@ -15,7 +14,11 @@ use holochain_core_types::{
 use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::HashSet,
+    convert::TryInto,
+    sync::{Arc, RwLock},
+};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -24,7 +27,7 @@ use std::{collections::HashSet, sync::Arc};
 pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
-    dht: Arc<DhtStore<FilesystemStorage, EavFileStorage>>,
+    dht: Arc<DhtStore>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -36,11 +39,11 @@ impl State {
         // @see https://github.com/holochain/holochain-rust/pull/246
 
         let cas = &(*context).file_storage;
-        let eav = &(*context).eav_storage;
+        let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
-            dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
+            dht: Arc::new(DhtStore::new(cas.clone(), eav)),
             history: HashSet::new(),
         }
     }
@@ -49,12 +52,12 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = &(*context).file_storage;
-        let eav = &(*context).eav_storage;
+        let cas = context.file_storage.clone();
+        let eav = context.eav_storage.clone();
 
         fn get_dna(
             agent_state: &Arc<AgentState>,
-            cas: &FilesystemStorage,
+            cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         ) -> Result<Dna, HolochainError> {
             let dna_entry_header = agent_state
                 .chain()
@@ -64,18 +67,18 @@ impl State {
                     "No DNA entry found in source chain while creating state from agent"
                         .to_string(),
                 ))?;
-
-            Ok(Dna::from_entry(
-                &cas.fetch(dna_entry_header.entry_address())?
-                    .ok_or(HolochainError::ErrorGeneric(
-                        "No DNA entry found in storage while creating state from agent".to_string(),
-                    ))?,
-            ))
+            let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
+            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
+                HolochainError::ErrorGeneric(
+                    "No DNA entry found in storage while creating state from agent".to_string(),
+                ),
+            )??;
+            let entry: Entry = serialized_entry.into();
+            Ok(Dna::from_entry(&entry))
         }
 
         let mut nucleus_state = NucleusState::new();
-        nucleus_state.dna = get_dna(&agent_state, cas).ok();
-
+        nucleus_state.dna = get_dna(&agent_state, cas.clone()).ok();
         State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,
@@ -116,7 +119,7 @@ impl State {
         Arc::clone(&self.agent)
     }
 
-    pub fn dht(&self) -> Arc<DhtStore<FilesystemStorage, EavFileStorage>> {
+    pub fn dht(&self) -> Arc<DhtStore> {
         Arc::clone(&self.dht)
     }
 

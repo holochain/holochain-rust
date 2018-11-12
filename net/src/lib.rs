@@ -9,4 +9,3 @@ extern crate failure;
 extern crate serde_json;
 
 pub mod error;
-pub mod p2p_network;

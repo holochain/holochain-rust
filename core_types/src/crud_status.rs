@@ -1,4 +1,7 @@
 use cas::content::{AddressableContent, Content};
+use error::error::HolochainError;
+use json::JsonString;
+use std::convert::TryInto;
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -6,7 +9,7 @@ pub const STATUS_NAME: &str = "crud-status";
 pub const LINK_NAME: &str = "crud-link";
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Serialize, Deserialize, DefaultJson)]
     /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
     /// statuses are represented as bitflags so we can easily build masks for filtering lookups
     pub struct CrudStatus: u8 {
@@ -19,24 +22,30 @@ bitflags! {
     }
 }
 
-impl ToString for CrudStatus {
-    fn to_string(&self) -> String {
+impl From<CrudStatus> for String {
+    fn from(crud_status: CrudStatus) -> String {
         // don't do self.bits().to_string() because that spits out values for default() and all()
         // only explicit statuses are safe as strings
         // the expectation is that strings will be stored, referenced and parsed
-        match *self {
+        String::from(match crud_status {
             CrudStatus::LIVE => "1",
             CrudStatus::REJECTED => "2",
             CrudStatus::DELETED => "4",
             CrudStatus::MODIFIED => "8",
             CrudStatus::LOCKED => "16",
             _ => unreachable!(),
-        }.to_string()
+        })
     }
 }
 
-impl<'a> From<&'a String> for CrudStatus {
-    fn from(s: &String) -> CrudStatus {
+impl From<&'static str> for CrudStatus {
+    fn from(s: &str) -> CrudStatus {
+        CrudStatus::from(String::from(s))
+    }
+}
+
+impl From<String> for CrudStatus {
+    fn from(s: String) -> CrudStatus {
         match s.as_ref() {
             "1" => CrudStatus::LIVE,
             "2" => CrudStatus::REJECTED,
@@ -50,11 +59,14 @@ impl<'a> From<&'a String> for CrudStatus {
 
 impl AddressableContent for CrudStatus {
     fn content(&self) -> Content {
-        self.to_string()
+        self.to_owned().into()
     }
 
     fn from_content(content: &Content) -> Self {
-        CrudStatus::from(content)
+        content
+            .to_owned()
+            .try_into()
+            .expect("failed to deserialize CrudStatus from Content")
     }
 }
 
@@ -63,11 +75,13 @@ mod tests {
     use super::CrudStatus;
     use cas::{
         content::{
-            AddressableContent, AddressableContentTestSuite, Content, ExampleAddressableContent,
+            Address, AddressableContent, AddressableContentTestSuite, Content,
+            ExampleAddressableContent,
         },
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
     use eav::eav_round_trip_test_runner;
+    use json::{JsonString, RawString};
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -95,30 +109,38 @@ mod tests {
 
     #[test]
     fn crud_status_example_eav() {
-        let entity_content = ExampleAddressableContent::from_content(&"example".to_string());
-        let attribute = "favourite-badge".to_string();
-        let value_content: Content = CrudStatus::from_content(&String::from("2")).content();
+        let entity_content =
+            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("example")));
+        let attribute = String::from("favourite-badge");
+        let value_content: Content =
+            CrudStatus::from_content(&JsonString::from(CrudStatus::REJECTED)).content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 
     #[test]
-    /// show ToString implementation
+    /// show From<CrudStatus> implementation for String
     fn to_string_test() {
-        assert_eq!("1".to_string(), CrudStatus::LIVE.to_string());
-        assert_eq!("2".to_string(), CrudStatus::REJECTED.to_string());
-        assert_eq!("4".to_string(), CrudStatus::DELETED.to_string());
-        assert_eq!("8".to_string(), CrudStatus::MODIFIED.to_string());
-        assert_eq!("16".to_string(), CrudStatus::LOCKED.to_string());
+        assert_eq!(String::from("1"), String::from(CrudStatus::LIVE));
+        assert_eq!(String::from("2"), String::from(CrudStatus::REJECTED));
+        assert_eq!(String::from("4"), String::from(CrudStatus::DELETED));
+        assert_eq!(String::from("8"), String::from(CrudStatus::MODIFIED));
+        assert_eq!(String::from("16"), String::from(CrudStatus::LOCKED));
     }
 
     #[test]
-    /// show From<String> implementation
+    /// show From<String> and From<&'static str> implementation for CrudStatus
     fn from_string_test() {
-        assert_eq!(CrudStatus::from(&"1".to_string()), CrudStatus::LIVE);
-        assert_eq!(CrudStatus::from(&"2".to_string()), CrudStatus::REJECTED);
-        assert_eq!(CrudStatus::from(&"4".to_string()), CrudStatus::DELETED);
-        assert_eq!(CrudStatus::from(&"8".to_string()), CrudStatus::MODIFIED);
-        assert_eq!(CrudStatus::from(&"16".to_string()), CrudStatus::LOCKED);
+        assert_eq!(CrudStatus::from("1"), CrudStatus::LIVE);
+        assert_eq!(CrudStatus::from("2"), CrudStatus::REJECTED);
+        assert_eq!(CrudStatus::from("4"), CrudStatus::DELETED);
+        assert_eq!(CrudStatus::from("8"), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from("16"), CrudStatus::LOCKED);
+
+        assert_eq!(CrudStatus::from(String::from("1")), CrudStatus::LIVE);
+        assert_eq!(CrudStatus::from(String::from("2")), CrudStatus::REJECTED);
+        assert_eq!(CrudStatus::from(String::from("4")), CrudStatus::DELETED);
+        assert_eq!(CrudStatus::from(String::from("8")), CrudStatus::MODIFIED);
+        assert_eq!(CrudStatus::from(String::from("16")), CrudStatus::LOCKED);
     }
 
     #[test]
@@ -126,29 +148,29 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("1"),
+            JsonString::from(CrudStatus::LIVE),
             CrudStatus::LIVE,
-            String::from("QmVaPTddRyjLjMoZnYufWc5M5CjyGNPmFEpp5HtPKEqZFG"),
+            Address::from("QmWZ1VcQ7MzQfbevGGkpZXidjmcwwzq3Ssx2bZCkrnaY8z"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("2"),
+            JsonString::from(CrudStatus::REJECTED),
             CrudStatus::REJECTED,
-            String::from("QmcdyB29uHtqMRZy47MrhaqFqHpHuPr7eUxWWPJbGpSRxg"),
+            Address::from("QmNsbuCbwifcJ8T4MBJmPi2U3MRmSwbizU471R7djP3W4B"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("4"),
+            JsonString::from(CrudStatus::DELETED),
             CrudStatus::DELETED,
-            String::from("QmTPwmaQtBLq9RXbvNyfj46X65YShYzMzn62FFbNYcieEm"),
+            Address::from("QmX6xSz9Tvubevsp1EDBa796TipmhoVTUgs3NgX4bPFrab"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("8"),
+            JsonString::from(CrudStatus::MODIFIED),
             CrudStatus::MODIFIED,
-            String::from("QmRKuYmrQu1oMLHDyiA2v66upmEB5JLRqVhVEYXYYM5agi"),
+            Address::from("Qmc26xWbNbTxmq49kK2CooB63MSQyRSxn2LqGdURYhVnsm"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            String::from("16"),
+            JsonString::from(CrudStatus::LOCKED),
             CrudStatus::LOCKED,
-            String::from("QmaHXADi79HCmmGPYMmdqvyemChRmZPVGyEQYmo6oS2C3a"),
+            Address::from("QmPFzUQmR1ST3ZqSifvKueSN4NRPxMeA1JzsZCav6Uv8BT"),
         );
     }
 

@@ -1,14 +1,7 @@
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 
-#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
     pub entry_address: Address,
     pub tag: String,
-}
-
-#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
-pub struct GetLinksResult {
-    pub ok: bool,
-    pub links: Vec<Address>,
-    pub error: String,
 }

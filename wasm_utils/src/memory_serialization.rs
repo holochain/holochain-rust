@@ -1,10 +1,13 @@
-use holochain_core_types::error::{RibosomeErrorCode, RibosomeErrorReport};
+use holochain_core_types::{
+    error::{CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
+    json::JsonString,
+};
 use memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json;
-use std::{ffi::CStr, os::raw::c_char, slice};
+use std::{convert::TryInto, ffi::CStr, os::raw::c_char, slice};
 
 //-------------------------------------------------------------------------------------------------
 // Raw
@@ -56,11 +59,14 @@ pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str
 }
 
 /// Retrieve a stored string from an encoded allocation.
-/// Return error string if encoded_allocation is invalid.
-pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
+/// Return error code if encoded_allocation is invalid.
+pub fn load_string(encoded_allocation: u32) -> Result<String, RibosomeErrorCode> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
-        Err(return_code) => Err(return_code.to_string()),
+        Err(return_code) => match return_code {
+            RibosomeReturnCode::Success => Err(RibosomeErrorCode::ZeroSizedAllocation),
+            RibosomeReturnCode::Failure(err_code) => Err(err_code),
+        },
         Ok(allocation) => Ok(load_str_from_raw(allocation.offset() as *mut c_char).to_string()),
     }
 }
@@ -70,54 +76,67 @@ pub fn load_string(encoded_allocation: u32) -> Result<String, String> {
 //-------------------------------------------------------------------------------------------------
 
 /// Write a data struct as a json string in wasm memory according to stack state.
-pub fn store_as_json<T: Serialize>(
+pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
-    internal: T,
+    jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let json_bytes = serde_json::to_vec(&internal).unwrap();
+    let j: JsonString = jsonable
+        .try_into()
+        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+    let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
+    write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16)
 }
 
 // Sugar
-pub fn store_json_into_encoded_allocation<T: Serialize>(
+pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
-    internal: T,
+    jsonable: J,
 ) -> i32 {
-    store_as_json(stack, internal).unwrap().encode() as i32
+    store_as_json(stack, jsonable).unwrap().encode() as i32
 }
 
 /// Retrieve a stored data struct from an encoded allocation.
 /// Return error string if encoded_allocation is invalid.
-pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, String> {
+pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, HolochainError> {
     let maybe_allocation = decode_encoded_allocation(encoded_allocation);
     match maybe_allocation {
-        Err(return_code) => Err(return_code.to_string()),
+        Err(return_code) => match return_code {
+            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(
+                RibosomeErrorCode::ZeroSizedAllocation,
+            )),
+            RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code)),
+        },
         Ok(allocation) => load_json_from_raw(allocation.offset() as *mut c_char),
     }
 }
 
 /// Convert a json string stored in wasm memory into a specified struct
-/// If json deserialization of custom struct failed, tries to deserialize a RibosomeErrorReport struct.
+/// If json deserialization of custom struct failed, tries to deserialize a CoreError struct.
 /// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
 #[allow(not_unsafe_ptr_arg_deref)]
-pub fn load_json_from_raw<'s, T: Deserialize<'s>>(ptr_data: *mut c_char) -> Result<T, String> {
+pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
+    ptr_data: *mut c_char,
+) -> Result<T, HolochainError> {
     let stored_str = load_str_from_raw(ptr_data);
     let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(stored_str);
     match maybe_obj {
         Ok(obj) => Ok(obj),
         Err(_) => {
-            // TODO #394 - In Release, load error_string directly and not a RibosomeErrorReport
-            let maybe_error_report: Result<RibosomeErrorReport, serde_json::Error> =
+            // TODO #394 - In Release, load error_string directly and not a CoreError
+            let maybe_hc_err: Result<CoreError, serde_json::Error> =
                 serde_json::from_str(stored_str);
-            match maybe_error_report {
-                Err(_) => Err(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
-                Ok(error_report) => Err(error_report.description),
-            }
+
+            Err(match maybe_hc_err {
+                Err(_) => {
+                    HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
+                }
+                Ok(hc_err) => hc_err.kind,
+            })
         }
     }
 }

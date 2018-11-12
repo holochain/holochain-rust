@@ -19,7 +19,6 @@ pub trait Persister: Send {
 
 #[derive(Default, Clone, PartialEq)]
 pub struct SimplePersister {
-    state: Option<State>,
     file_path: String,
 }
 
@@ -43,10 +42,7 @@ impl Persister for SimplePersister {
 
 impl SimplePersister {
     pub fn new(file: String) -> Self {
-        SimplePersister {
-            state: None,
-            file_path: file,
-        }
+        SimplePersister { file_path: file }
     }
 }
 
@@ -56,7 +52,6 @@ mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use instance::tests::test_context_with_agent_state;
-    use test_utils::create_test_context;
     #[test]
     fn persistance_round_trip() {
         let dir = tempdir().unwrap();

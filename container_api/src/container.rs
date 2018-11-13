@@ -22,7 +22,7 @@ use boolinator::*;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 ///
-/// The main juice of this struct is
+/// A primary point in this struct is
 /// ```load_config(&mut self, config: &Configuration) -> Result<(), String>```
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
 /// While doing so it has to load DNA files referenced in the configuration.

@@ -17,3 +17,5 @@ boolinator = "2.4"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
+clap = "2"
+structopt = "0.2"

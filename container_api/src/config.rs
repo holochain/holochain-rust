@@ -1,3 +1,15 @@
+/// Container Configuration
+/// This module provides structs that represent the different aspects of how
+/// a container can be configured.
+/// This mainly means *listing the instances* the container tries to instantiate and run,
+/// plus the resources needed by these instances:
+/// * agents
+/// * DNAs, i.e. the custom app code that makes up the core of a Holochain instance
+/// * interfaces, which in this context means ways for user interfaces, either GUIs or local
+///   scripts or other local apps, to call DNAs' zome functions and call admin functions of
+///   the container
+/// * bridges, which are
+
 use boolinator::*;
 use holochain_core_types::{
     entry::agent::{Agent, Identity},
@@ -8,16 +20,31 @@ use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
 
+/// Main container configuration struct
+/// This is the root of the configuration tree / aggregates
+/// all other configuration aspects.
+///
+/// References between structs (instance configs pointing to
+/// the agent and DNA to be instantiated) are implemented
+/// via string IDs.
 #[derive(Deserialize)]
 pub struct Configuration {
+    /// List of Agents, this mainly means identities and their keys
     pub agents: Option<Vec<AgentConfiguration>>,
+    /// List of DNAs, for each a path to the DNA file
     pub dnas: Option<Vec<DNAConfiguration>>,
+    /// List of instances, includes references to an agent and a DNA
     pub instances: Option<Vec<InstanceConfiguration>>,
+    /// List of interfaces any UI can use to access zome functions
     pub interfaces: Option<Vec<InterfaceConfiguration>>,
+    /// List of bridges between instances
     pub bridges: Option<Vec<Bridge>>,
 }
 
 impl Configuration {
+    /// This function basically checks if self is a semantically valid configuration.
+    /// This mainly means checking for consistency between config structs that reference others.
+    /// Will return an error string if a reference can not be resolved or if no instance is given.
     pub fn check_consistency(&self) -> Result<(), String> {
         if self.instances.is_none() {
             return Err("No instance found".to_string());
@@ -52,6 +79,7 @@ impl Configuration {
         Ok(())
     }
 
+    /// Returns the agent configuration with the given ID if present
     pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
         self.agents.as_ref().and_then(|agents| {
             agents
@@ -61,6 +89,7 @@ impl Configuration {
         })
     }
 
+    /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
         self.dnas
             .as_ref()
@@ -68,6 +97,7 @@ impl Configuration {
             .and_then(|dna_config| Some(dna_config.clone()))
     }
 
+    /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
         self.instances
             .as_ref()
@@ -75,6 +105,7 @@ impl Configuration {
             .and_then(|instance_config| Some(instance_config.clone()))
     }
 
+    /// Returns all defined instance IDs
     pub fn instance_ids(&self) -> Vec<String> {
         self.instances
             .as_ref()
@@ -85,6 +116,7 @@ impl Configuration {
     }
 }
 
+/// An agent has a name/ID and is defined by a private key that resides in a file
 #[derive(Deserialize, Clone)]
 pub struct AgentConfiguration {
     pub id: String,
@@ -97,6 +129,8 @@ impl From<AgentConfiguration> for Agent {
     }
 }
 
+/// A DNA is represented by a DNA file.
+/// A hash has to be provided for sanity check.
 #[derive(Deserialize, Clone)]
 pub struct DNAConfiguration {
     pub id: String,
@@ -114,6 +148,8 @@ impl TryFrom<DNAConfiguration> for Dna {
     }
 }
 
+/// An instance combines a DNA with an agent.
+/// Each instance has its own storage and logger configuration.
 #[derive(Deserialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
@@ -123,6 +159,8 @@ pub struct InstanceConfiguration {
     pub storage: StorageConfiguration,
 }
 
+/// There might be different kinds of loggers in the future.
+/// Currently there is no logger at all.
 #[derive(Deserialize, Clone)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
@@ -130,6 +168,13 @@ pub struct LoggerConfiguration {
     pub file: Option<String>,
 }
 
+/// This configures the Content Addressable Storage (CAS) that
+/// the instance uses to store source chain and DHT shard in.
+/// There are two storage implementations in cas_implementations so far:
+/// * memory
+/// * file
+///
+/// Projected are various DB adapters.
 #[derive(Deserialize, Clone)]
 pub struct StorageConfiguration {
     #[serde(rename = "type")]
@@ -140,6 +185,17 @@ pub struct StorageConfiguration {
     pub path: Option<String>,
 }
 
+/// Here, interfaces are user facing and make available zome functions to
+/// GUIs, browser based web UIs, local native UIs, other local applications and scripts.
+/// None is implemented yet, but we will have:
+/// * websockets
+/// * HTTP REST
+/// * Unix domain sockets
+/// very soon.
+///
+/// Every interface lists the instances that are made available here.
+/// An admin flag will enable container functions for programmatically changing the configuration
+/// (i.e. installing apps)
 #[derive(Deserialize)]
 pub struct InterfaceConfiguration {
     #[serde(rename = "type")]
@@ -155,12 +211,15 @@ pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
 
+/// A bridge enables an instance to call zome functions of another instance.
+/// It is basically an internal interface.
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct Bridge {
     pub caller_id: String,
     pub callee_id: String,
 }
 
+/// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
     T: Deserialize<'a>,

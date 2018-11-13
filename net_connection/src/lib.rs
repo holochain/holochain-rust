@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(fnbox)]
 
 //! Provides a lightweight concurrency abstraction for holochain
 //! networking / p2p layer

@@ -113,13 +113,15 @@ mod tests {
 
     #[test]
     fn test_state() {
+
+        let file_storage = Arc::new(RwLock::new(
+                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            ));
         let mut maybe_context = Context::new(
             Agent::from("Terence".to_string()),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            )),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),

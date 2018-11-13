@@ -1,4 +1,19 @@
 #![feature(try_from)]
+/// Holochain Container executable
+///
+/// This is (the beginnings) of the main container implementation maintained by the
+/// Holochain Core team.
+///
+/// This executable will become what was referred to as the "pro" version of the container.
+/// A GUI less background system service that manages multiple Holochain instances,
+/// controlled through configuration files like [this example](container/example-config/basic.toml).
+///
+/// The interesting aspects of the container code is going on in [container_api](container_api).
+/// This is mainly a thin wrapper around the structs and functions defined there.
+///
+/// If called without arguments, this executable tries to load a configuration from
+/// ~/.holochain/container_config.toml.
+/// A custom config can be provided with the --config, -c flag.
 extern crate clap;
 extern crate holochain_container_api;
 extern crate holochain_core_types;

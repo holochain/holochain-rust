@@ -23,7 +23,8 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let config_path = opt.config
+    let config_path = opt
+        .config
         .unwrap_or(PathBuf::from(r"~/.holochain/container_config.toml"));
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);

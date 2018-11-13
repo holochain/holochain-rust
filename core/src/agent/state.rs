@@ -90,6 +90,7 @@ impl AgentStateSnapshot {
     }
 }
 
+pub static AGENT_SNAPSHOT_ADDRESS: &'static str = "AgentState";
 impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
         self.to_owned().into()
@@ -100,7 +101,7 @@ impl AddressableContent for AgentStateSnapshot {
     }
 
     fn address(&self) -> Address {
-        "AgentState".into()
+        AGENT_SNAPSHOT_ADDRESS.into()
     }
 }
 

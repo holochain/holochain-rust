@@ -123,19 +123,17 @@ impl State {
         Arc::clone(&self.dht)
     }
 
-    pub fn serialize_state(state: State) -> HcResult<String> {
+    pub fn to_agent_snapshot(state: State) -> HcResult<AgentStateSnapshot> {
         let agent = &*(state.agent());
         let top_chain = agent
             .top_chain_header()
             .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
-        Ok(serde_json::to_string(&AgentStateSnapshot::new(top_chain))?)
+        Ok(AgentStateSnapshot::new(top_chain))
     }
 
-    pub fn deserialize_state(context: Arc<Context>, agent_json: String) -> HcResult<State> {
-        let snapshot = serde_json::from_str::<AgentStateSnapshot>(&agent_json)?;
-        let cas = &(context).file_storage;
+    pub fn from_agent_snapshot(context: Arc<Context>, snapshot: AgentStateSnapshot) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(cas.clone()),
+            ChainStore::new(context.file_storage.clone()),
             snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(

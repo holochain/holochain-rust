@@ -9,7 +9,6 @@
 ///   scripts or other local apps, to call DNAs' zome functions and call admin functions of
 ///   the container
 /// * bridges, which are
-
 use boolinator::*;
 use holochain_core_types::{
     entry::agent::{Agent, Identity},

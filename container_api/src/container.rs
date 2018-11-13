@@ -38,7 +38,6 @@ pub struct Container {
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 impl Container {
-
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn new() -> Self {
         Container {
@@ -102,7 +101,7 @@ impl Container {
                 Err(error) => Some(format!(
                     "Error while trying to create instance \"{}\": {}",
                     id, error
-                ))
+                )),
             })
             .collect::<Vec<_>>();
 
@@ -111,7 +110,6 @@ impl Container {
         } else {
             Err(errors.iter().nth(0).unwrap().clone())
         }
-
     }
 
     /// Default DnaLoader that actually reads files from the filesystem

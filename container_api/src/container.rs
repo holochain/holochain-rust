@@ -19,6 +19,17 @@ use std::{
 
 use boolinator::*;
 
+/// Main representation of the container.
+/// Holds a `HashMap` of Holochain instances referenced by ID.
+///
+/// The main juice of this struct is
+/// ```load_config(&mut self, config: &Configuration) -> Result<(), String>```
+/// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
+/// While doing so it has to load DNA files referenced in the configuration.
+/// In order to not bind this code to the assumption that there is a filesystem
+/// and also enable easier testing,
+/// a DnaLoader has to be injected on creation.
+/// This is a closure that returns a Dna object for a given path string.
 pub struct Container {
     pub instances: HashMap<String, Holochain>,
     dna_loader: DnaLoader,
@@ -27,6 +38,8 @@ pub struct Container {
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 impl Container {
+
+    /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn new() -> Self {
         Container {
             instances: HashMap::new(),
@@ -34,6 +47,7 @@ impl Container {
         }
     }
 
+    /// Starts all instances
     pub fn start_all(&mut self) {
         let _ = self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
@@ -44,6 +58,7 @@ impl Container {
         });
     }
 
+    /// Stops all instances
     pub fn stop_all(&mut self) {
         let _ = self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
@@ -54,11 +69,14 @@ impl Container {
         });
     }
 
+    /// Stop and clear all instances
     pub fn shutdown(&mut self) {
         self.stop_all();
         self.instances = HashMap::new();
     }
 
+    /// Tries to create all instances configured in the given Configuration object.
+    /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown();
@@ -90,6 +108,7 @@ impl Container {
         Ok(())
     }
 
+    /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         let mut f = File::open(file)?;
         let mut contents = String::new();
@@ -109,6 +128,8 @@ impl<'a> TryFrom<&'a Configuration> for Container {
     }
 }
 
+/// Creates one specific Holochain instance from a given Configuration,
+/// id string and DnaLoader.
 fn instantiate_from_config(
     id: &String,
     config: &Configuration,

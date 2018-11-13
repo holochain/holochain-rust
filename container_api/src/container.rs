@@ -92,20 +92,26 @@ impl Container {
             })
             .collect::<Vec<_>>();
 
-        id_instance_pairs
+        let errors = id_instance_pairs
             .into_iter()
-            .for_each(|(id, maybe_holochain)| match maybe_holochain {
+            .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
                     self.instances.insert(id.clone(), holochain);
+                    None
                 }
-                Err(error) => {
-                    println!(
-                        "Error while trying to create instance \"{}\": {}",
-                        id, error
-                    );
-                }
-            });
-        Ok(())
+                Err(error) => Some(format!(
+                    "Error while trying to create instance \"{}\": {}",
+                    id, error
+                ))
+            })
+            .collect::<Vec<_>>();
+
+        if errors.len() == 0 {
+            Ok(())
+        } else {
+            Err(errors.iter().nth(0).unwrap().clone())
+        }
+
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
@@ -194,15 +200,8 @@ mod tests {
         Arc::new(loader)
     }
 
-    //#[test]
-    // TODO
-    // Deactivating this test because tests running in parallel creating Holochain instances
-    // currently fail with:
-    // "Error creating context: Failed to create actor in system: Failed to create actor.
-    // Cause: An actor at the same path already exists"
-    // This needs to be fixed in another PR.
-    fn test_instantiate_from_config() {
-        let toml = r#"
+    fn test_toml<'a>() -> &'a str {
+        r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -224,8 +223,19 @@ mod tests {
     type = "file"
     path = "tmp-storage"
 
-    "#;
-        let config = load_configuration::<Configuration>(toml).unwrap();
+    "#
+    }
+
+    //#[test]
+    // TODO
+    // Deactivating this test because tests running in parallel creating Holochain instances
+    // currently fail with:
+    // "Error creating context: Failed to create actor in system: Failed to create actor.
+    // Cause: An actor at the same path already exists"
+    // This needs to be fixed in another PR.
+    #[cfg_attr(tarpaulin, skip)]
+    fn test_instantiate_from_config() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
         let maybe_holochain = instantiate_from_config(
             &"app spec instance".to_string(),
             &config,
@@ -237,30 +247,7 @@ mod tests {
 
     #[test]
     fn test_container_load_config() {
-        let toml = r#"
-    [[agents]]
-    id = "test agent"
-    name = "Holo Tester"
-    key_file = "holo_tester.key"
-
-    [[dnas]]
-    id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
-    hash = "Qm328wyq38924y"
-
-    [[instances]]
-    id = "app spec instance"
-    dna = "app spec rust"
-    agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
-    [instances.storage]
-    type = "file"
-    path = "tmp-storage"
-
-    "#;
-        let config = load_configuration::<Configuration>(toml).unwrap();
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
         let mut container = Container {
             instances: HashMap::new(),
@@ -269,5 +256,20 @@ mod tests {
 
         assert!(container.load_config(&config).is_ok());
         assert_eq!(container.instances.len(), 1);
+    }
+
+    #[test]
+    fn test_container_try_from_configuration() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        let mut maybe_container = Container::try_from(&config);
+
+        assert!(maybe_container.is_err());
+        assert_eq!(
+            maybe_container.err().unwrap(),
+            HolochainError::ConfigError(
+                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app-spec-rust.hcpkg\"".to_string()
+            )
+        );
     }
 }

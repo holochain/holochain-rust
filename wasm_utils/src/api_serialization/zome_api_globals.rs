@@ -1,5 +1,6 @@
-use holochain_core_types::{error::HolochainError, hash::HashString, json::*};
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{
+    cas::content::Address, error::HolochainError, hash::HashString, json::*,
+};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson)]
 pub struct ZomeApiGlobals {

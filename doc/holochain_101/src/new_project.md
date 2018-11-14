@@ -2,7 +2,7 @@
 
 The command line tools discussed in the last article can be used to easily create a new folder on your computer, that contains all the initial folders and files needed for a Holochain application. 
 
-You will typically want to start a new Holochain application this way, since creating them all by hand would waste your time.
+You will typically want to create a new project folder for a Holochain application this way.  This one approach will suit the creation of a new Holochain app or implementing an existing app with Holochain instead. 
 
 In your terminal, change directories to one where you wish to initialize a new Holochain app. The command will create a new folder within the current directory for your app.
 
@@ -18,4 +18,23 @@ hc init your_app_name
 
 This has created a new folder in which you have the beginnings of a Holochain app.
 
-TODO: document clarified folder structure here and use to illustrate an overview of app development
+It looks something like this, where the ellipses (`...`) indicate a folder
+- test
+    - ...
+- zomes
+    - ...
+- .gitignore
+- .hcignore
+- app.json
+
+`test` contains some starter code for writing tests.
+
+`zomes` will contain sub-folders, each of which represents a "Zome", which can be thought of as a submodule of the source code of your DNA.
+
+`.gitignore` contains useful defaults for ignoring files when using GIT version control.
+
+`.hcignore` is utilized by the packaging commands of the `hc` command line tools
+
+`app.json` is the top level configuration of your DNA.
+
+Carry on to the next article to see about making changes to the configuration of a new project.

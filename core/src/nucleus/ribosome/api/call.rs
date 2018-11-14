@@ -216,8 +216,8 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new(
                 Agent::from("alex".to_string()),

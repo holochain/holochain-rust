@@ -205,9 +205,8 @@ mod tests {
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = Agent::from(agent_name.to_string());
         let file_storage = Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_utils::test_logger();
         (
             Arc::new(

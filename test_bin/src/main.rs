@@ -44,8 +44,8 @@ fn main() {
     let dna = Dna::new();
     let agent = Agent::from(identity.to_string());
     let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        ));
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),

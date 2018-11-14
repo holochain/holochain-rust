@@ -113,10 +113,9 @@ mod tests {
 
     #[test]
     fn test_state() {
-
         let file_storage = Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut maybe_context = Context::new(
             Agent::from("Terence".to_string()),
             test_logger(),
@@ -144,8 +143,8 @@ mod tests {
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let file_storage = Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut context = Context::new(
             Agent::from("Terence".to_string()),
             test_logger(),

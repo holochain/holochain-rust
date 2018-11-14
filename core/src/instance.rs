@@ -340,9 +340,8 @@ pub mod tests {
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = Agent::from(agent_name.to_owned());
         let file_storage = Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_logger();
         (
             Arc::new(
@@ -377,8 +376,8 @@ pub mod tests {
         let agent = Agent::from(agent_name.to_owned());
         let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new_with_channels(
                 agent,
@@ -397,8 +396,8 @@ pub mod tests {
 
     pub fn test_context_with_state() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            ));
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut context = Context::new(
             Agent::from("Florence".to_string()),
             test_logger(),

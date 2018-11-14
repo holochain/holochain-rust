@@ -131,7 +131,10 @@ impl State {
         Ok(AgentStateSnapshot::new(top_chain))
     }
 
-    pub fn from_agent_snapshot(context: Arc<Context>, snapshot: AgentStateSnapshot) -> HcResult<State> {
+    pub fn from_agent_snapshot(
+        context: Arc<Context>,
+        snapshot: AgentStateSnapshot,
+    ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.file_storage.clone()),
             snapshot.top_chain_header().clone(),

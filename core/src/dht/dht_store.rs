@@ -6,7 +6,6 @@ use holochain_core_types::{
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
-    hash::HashString,
     links_entry::Link,
 };
 use std::{
@@ -89,7 +88,7 @@ impl DhtStore {
 
     pub fn get_links(
         &self,
-        address: HashString,
+        address: Address,
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         self.meta_storage.read().unwrap().fetch_eav(

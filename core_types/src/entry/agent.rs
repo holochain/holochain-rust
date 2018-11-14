@@ -43,7 +43,8 @@ impl Agent {
             s.push_str("+");
         }
         s.push_str("A==");
-        let s = base64::decode(&s).expect("could not decode the generated fake base64 string - use the base64 alphabet");
+        let s = base64::decode(&s)
+            .expect("could not decode the generated fake base64 string - use the base64 alphabet");
         let s = IdentityBuffer(array_ref![s, 0, 64].clone());
         Agent::render(&s)
     }
@@ -63,7 +64,7 @@ impl Agent {
     }
 }
 
-impl<'a> std::convert::TryFrom <&'a String> for Agent {
+impl<'a> std::convert::TryFrom<&'a String> for Agent {
     type Error = HolochainError;
 
     fn try_from(s: &String) -> Result<Self, Self::Error> {
@@ -71,7 +72,7 @@ impl<'a> std::convert::TryFrom <&'a String> for Agent {
     }
 }
 
-impl<'a> std::convert::TryFrom <&'a str> for Agent {
+impl<'a> std::convert::TryFrom<&'a str> for Agent {
     type Error = HolochainError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {

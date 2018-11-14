@@ -30,7 +30,7 @@ pub mod tests {
     #[test]
     fn test_storage_path() {
         let dummy_path = storage_path(Path::new("foo"), "bar").unwrap();
-        let expected_path = vec!["", ".hc", "storage", "bar"].join(&MAIN_SEPARATOR.to_string());
+        let expected_path = vec!["foo", ".hc", "storage", "bar"].join(&MAIN_SEPARATOR.to_string());
         assert_eq!(dummy_path, expected_path);
     }
 

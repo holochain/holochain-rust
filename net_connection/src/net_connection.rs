@@ -28,7 +28,8 @@ pub trait NetWorker {
 }
 
 /// closure for instantiating a NetWorker
-pub type NetWorkerFactory = Box<std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;
+pub type NetWorkerFactory =
+    Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;
 
 /// a simple pass-through NetConnection instance
 /// this struct can be use to compose one type of NetWorker into another

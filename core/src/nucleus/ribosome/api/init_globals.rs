@@ -1,4 +1,6 @@
-use holochain_core_types::{entry_type::EntryType, hash::HashString, json::JsonString};
+use holochain_core_types::{
+    cas::content::Address, entry_type::EntryType, hash::HashString, json::JsonString,
+};
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
@@ -15,7 +17,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         dna_hash: HashString::from(""),
         agent_id_str: String::from(runtime.context.agent.clone()),
         // TODO #233 - Implement agent pub key hash
-        agent_address: HashString::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
+        agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
@@ -30,7 +32,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         // Update agent hashes
         let maybe_top = state.agent().top_chain_header();
         if maybe_top.is_some() {
-            let mut found_entries: Vec<HashString> = vec![];
+            let mut found_entries: Vec<Address> = vec![];
             for chain_header in state
                 .agent()
                 .chain()

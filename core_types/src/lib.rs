@@ -29,7 +29,6 @@ extern crate holochain_core_types_derive;
 extern crate serde_derive;
 extern crate uuid;
 
-pub mod agent_id;
 pub mod cas;
 pub mod chain_header;
 pub mod crud_status;

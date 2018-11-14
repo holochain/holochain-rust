@@ -2,29 +2,17 @@
 
 ## Overview
 
-A callback function is implemented in the zome language and called by Holochain.
+A callback function is implemented in the Zome language and called by Holochain.
 
-Contrast this to a zome API function that is implemented by Holochain and called
-by the zome.
-
-Callback functions are passed some parameters and expected to return one of
-three possible `CallbackParams` variants:
-
-- `Pass`: The callback function has executed/validated successfully
-- `NotImplemented`: The callback function was not found in the current zome
-- `Fail(String)`: The callback function failed for the given reason
+Contrast this to a Zome API function that is implemented by Holochain and called
+by the Zome.
 
 As per Zome API functions, the names of the callback functions may be slightly
 different depending on the language. The canonical name follows Rust naming
 conventions but other languages may vary these (e.g. camel casing).
 
-To implement a callback function in a zome simply define it and Holochain will
+To implement a callback function in a Zome simply define it and Holochain will
 call it automatically during standard internal workflows.
-
-Return `true` or an empty string from the zome function to `Pass`.
-
-Return `false` or a non-empty string from the zome function to `Fail`. The
-string will be used as the `Fail` reason.
 
 ## Reference
 
@@ -33,19 +21,6 @@ string will be used as the `Fail` reason.
 Canonical name: `genesis`
 Parameters: none
 
-Called the first time a dApp initializes.
+Called the first time an agent launches an instance of a DNA with Holochain. Within genesis an app develop has the ability whether the given agent should be allowed to successfully join the Holochain network for this particular DNA, by implenting rules, or preconditions that must be met. If `genesis` comes back from the Zome with a fail, the agent will not be able to join.
 
-- `Pass`: the dApp will initialize
-- `NotImplemented`: the dApp will initialize
-- `Fail` (any reason): the dApp will NOT initialize
-
-### ValidateCommit
-
-Canonical name: `validate_commit`
-Parameters: The candidate entry to be committed
-
-Called internally by the `commit` Zome API function.
-
-- `Pass`: the entry will be committed
-- `NotImplemented`: the entry will be committed
-- `Fail` (any reason): the entry will NOT be committed and `commit` will return a `HcApiReturnCode::ErrorCallbackResult` error code.
+[View in Rust hdk](https://holochain.github.io/rust-api/0.0.1/hdk/macro.define_zome.html)

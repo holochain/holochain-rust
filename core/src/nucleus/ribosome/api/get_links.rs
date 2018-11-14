@@ -84,22 +84,22 @@ pub mod tests {
         let (context, _) = test_context_and_logger("joan");
         let initialized_context = instance.initialize_context(context);
 
-        let mut entry_hashes: Vec<Address> = Vec::new();
+        let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::new(
                 test_entry_type(),
                 JsonString::from(format!("entry{} value", i)),
             );
-            let hash = block_on(commit_entry(
+            let address = block_on(commit_entry(
                 entry,
                 &initialized_context.action_channel.clone(),
                 &initialized_context,
             )).expect("Could not commit entry for testing");
-            entry_hashes.push(hash);
+            entry_addresses.push(address);
         }
 
-        let link1 = Link::new(&entry_hashes[0], &entry_hashes[1], "test-tag");
-        let link2 = Link::new(&entry_hashes[0], &entry_hashes[2], "test-tag");
+        let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
+        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
 
         assert!(block_on(add_link(&link1, &initialized_context)).is_ok());
         assert!(block_on(add_link(&link2, &initialized_context)).is_ok());
@@ -109,20 +109,20 @@ pub mod tests {
             initialized_context.clone(),
             &instance,
             &wasm,
-            test_get_links_args_bytes(&entry_hashes[0], "test-tag"),
+            test_get_links_args_bytes(&entry_addresses[0], "test-tag"),
         );
 
         let expected_1 = JsonString::from(
             format!(
                 r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
-                entry_hashes[1], entry_hashes[2]
+                entry_addresses[1], entry_addresses[2]
             ) + "\u{0}",
         );
 
         let expected_2 = JsonString::from(
             format!(
                 r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
-                entry_hashes[2], entry_hashes[1]
+                entry_addresses[2], entry_addresses[1]
             ) + "\u{0}",
         );
 
@@ -139,7 +139,7 @@ pub mod tests {
             initialized_context.clone(),
             &instance,
             &wasm,
-            test_get_links_args_bytes(&entry_hashes[0], "other-tag"),
+            test_get_links_args_bytes(&entry_addresses[0], "other-tag"),
         );
 
         assert_eq!(

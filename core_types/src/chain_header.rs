@@ -8,7 +8,7 @@ use std::convert::{TryFrom, TryInto};
 use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"
-/// The hash of the ChainHeader is used as the Item's key in the source chain hash table
+/// The address of the ChainHeader is used as the Item's key in the source chain hash table
 /// ChainHeaders are linked to next header in chain and next header of same type in chain
 // @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7

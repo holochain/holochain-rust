@@ -113,6 +113,7 @@ impl Container {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
+    #[cfg_attr(tarpaulin, skip)] // This function is mocked in tests
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         let mut f = File::open(file)?;
         let mut contents = String::new();
@@ -254,6 +255,9 @@ mod tests {
 
         assert!(container.load_config(&config).is_ok());
         assert_eq!(container.instances.len(), 1);
+
+        container.start_all();
+        container.stop_all();
     }
 
     #[test]

@@ -10,18 +10,26 @@ use reed_solomon::{Decoder, Encoder};
 
 const PARITY_LEN: usize = 2;
 
-pub type Identity = String;
-
 #[derive(Clone)]
-pub struct IdentityBuffer([u8; 64]);
+pub struct KeyBuffer([u8; 64]);
 
-impl IdentityBuffer {
-    pub fn parse(s: &str) -> Result<IdentityBuffer, HolochainError> {
+impl KeyBuffer {
+    pub fn with_corrected(s: &str) -> Result<KeyBuffer, HolochainError> {
         let s = s.replace("-", "+").replace("_", "/");
         let s = base64::decode(&s)?;
         let dec = Decoder::new(PARITY_LEN);
         let dec = *dec.correct(s.as_slice(), None)?;
-        Ok(IdentityBuffer(array_ref![dec, 0, 64].clone()))
+        Ok(KeyBuffer::with_raw(array_ref![dec, 0, 64]))
+    }
+
+    pub fn with_raw(b: &[u8; 64]) -> KeyBuffer {
+        KeyBuffer(b.clone())
+    }
+
+    pub fn render(&self) -> String {
+        let enc = Encoder::new(PARITY_LEN);
+        let enc = *enc.encode(&self.0);
+        base64::encode(&enc[..]).replace("+", "-").replace("/", "_")
     }
 
     pub fn get_sig(&self) -> &[u8; 32] {
@@ -33,107 +41,35 @@ impl IdentityBuffer {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Agent(Identity);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct Agent {
+    pub nick: String,
+    pub key: String,
+}
 
 impl Agent {
     pub fn generate_fake(s: &str) -> Self {
-        let mut s = s.to_string();
-        while s.len() < 85 {
-            s.push_str("+");
+        let mut buf = s.to_string();
+        while buf.len() < 84 {
+            buf.push_str("+");
         }
-        s.push_str("A==");
-        let s = base64::decode(&s)
+        buf.push_str("AAAA");
+        let buf = base64::decode(&buf)
             .expect("could not decode the generated fake base64 string - use the base64 alphabet");
-        let s = IdentityBuffer(array_ref![s, 0, 64].clone());
-        Agent::render(&s)
+        let buf = KeyBuffer::with_raw(array_ref![buf, 0, 64]);
+        Agent::new(s, &buf)
     }
 
-    pub fn render(b: &IdentityBuffer) -> Self {
-        let enc = Encoder::new(PARITY_LEN);
-        let enc = *enc.encode(&b.0);
-        Agent(base64::encode(&enc[..]).replace("+", "-").replace("/", "_"))
-    }
-
-    pub fn correct(s: &str) -> Result<Self, HolochainError> {
-        Ok(Agent::render(&IdentityBuffer::parse(s)?))
-    }
-
-    pub fn to_buffer(&self) -> Result<IdentityBuffer, HolochainError> {
-        IdentityBuffer::parse(&self.0)
-    }
-}
-
-impl<'a> std::convert::TryFrom<&'a String> for Agent {
-    type Error = HolochainError;
-
-    fn try_from(s: &String) -> Result<Self, Self::Error> {
-        Agent::correct(s.as_str())
-    }
-}
-
-impl<'a> std::convert::TryFrom<&'a str> for Agent {
-    type Error = HolochainError;
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Agent::correct(s)
-    }
-}
-
-// TODO - conflicts with the bad `From` below
-/*
-impl std::convert::TryFrom<String> for Agent {
-    type Error = HolochainError;
-
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        Agent::correct(&s)
-    }
-}
-*/
-
-// TODO - this isn't good, but we have a lot of things using it
-// so... go ahead and implement for now
-impl From<String> for Agent {
-    fn from(s: String) -> Self {
-        match Agent::correct(&s) {
-            Ok(a) => a,
-            Err(e) => panic!("failed to parse Agent identity: {:?}", e),
+    pub fn new(nick: &str, key: &KeyBuffer) -> Self {
+        Agent {
+            nick: nick.to_string(),
+            key: key.render(),
         }
     }
-}
 
-impl From<Agent> for String {
-    fn from(agent: Agent) -> String {
-        String::from(agent.0)
-    }
-}
-
-impl std::convert::TryFrom<JsonString> for Agent {
-    type Error = HolochainError;
-
-    fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
-        let json_string = String::from(json_string);
-        let json_string: serde_json::Value = match serde_json::from_str(&json_string) {
-            Ok(d) => d,
-            Err(e) => return Err(HolochainError::SerializationError(e.to_string())),
-        };
-        let json_string = match json_string.as_str() {
-            Some(s) => s.to_string(),
-            None => return Err(HolochainError::SerializationError("bad identity".into())),
-        };
-        Agent::correct(&json_string)
-    }
-}
-
-impl<'a> From<&'a Agent> for JsonString {
-    fn from(agent: &Agent) -> JsonString {
-        serde_json::Value::String(agent.0.clone()).into()
-    }
-}
-
-impl From<Agent> for JsonString {
-    fn from(agent: Agent) -> JsonString {
-        JsonString::from(&agent)
+    pub fn to_buffer(&self) -> KeyBuffer {
+        let key = base64::decode(&self.key).expect("corrupt identity key");
+        KeyBuffer::with_raw(array_ref![key, 0, 64])
     }
 }
 
@@ -153,7 +89,7 @@ impl ToEntry for Agent {
 
 impl AddressableContent for Agent {
     fn address(&self) -> Address {
-        self.0.clone().into()
+        self.key.clone().into()
     }
 
     fn content(&self) -> Content {
@@ -175,16 +111,16 @@ mod tests {
         "ATIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
 
     pub fn test_identity_value() -> Content {
-        format!("\"{}\"", GOOD_ID).into()
+        format!("{{\"nick\":\"bob\",\"key\":\"{}\"}}", GOOD_ID).into()
     }
 
     pub fn test_agent() -> Agent {
-        Agent::correct(BAD_ID).unwrap()
+        Agent::new("bob", &KeyBuffer::with_corrected(BAD_ID).unwrap())
     }
 
     #[test]
     fn it_should_allow_buffer_access() {
-        let buf = test_agent().to_buffer().unwrap();
+        let buf = test_agent().to_buffer();
         assert_eq!(
             &[
                 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,
@@ -203,35 +139,12 @@ mod tests {
 
     #[test]
     fn it_can_generate_fake() {
-        assert_eq!("sandwich-----------------------------------------------------------------------------BpJ".to_string(), String::from(Agent::generate_fake("sandwich")));
+        assert_eq!("sandwich----------------------------------------------------------------------------AA-k".to_string(), Agent::generate_fake("sandwich").address().to_string());
     }
 
     #[test]
     fn it_should_correct_errors() {
-        assert_eq!(GOOD_ID.to_string(), String::from(test_agent()));
-    }
-
-    #[test]
-    fn it_should_use_self_as_address() {
-        assert_eq!(GOOD_ID.to_string(), String::from(test_agent().address()));
-    }
-
-    #[test]
-    fn it_should_try_from_string_ref() {
-        let test: String = Agent::try_from(&BAD_ID.to_string()).unwrap().into();
-        assert_eq!(GOOD_ID.to_string(), test);
-    }
-
-    #[test]
-    fn it_should_try_from_str_ref() {
-        let test: String = Agent::try_from(BAD_ID.to_string().as_str()).unwrap().into();
-        assert_eq!(GOOD_ID.to_string(), test);
-    }
-
-    #[test]
-    fn it_should_from_string() {
-        let test: String = Agent::from(BAD_ID.to_string()).into();
-        assert_eq!(GOOD_ID.to_string(), test);
+        assert_eq!(GOOD_ID.to_string(), test_agent().address().to_string());
     }
 
     #[test]
@@ -260,7 +173,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            Content::from("{\"value\":\"\\\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\\\"\",\"entry_type\":\"%agent_id\"}");
+            Content::from("{\"value\":\"{\\\"nick\\\":\\\"bob\\\",\\\"key\\\":\\\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\\\"}\",\"entry_type\":\"%agent_id\"}");
         // content()
         assert_eq!(expected_content, test_agent().content(),);
 

@@ -371,7 +371,20 @@ define_zome! {
             validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
-            }
+            },
+
+            links: [
+                to!(
+                    "testEntryType",
+                    tag: "test-link",
+                    validation_package: || {
+                        hdk::ValidationPackageDefinition::ChainFull
+                    },
+                    validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
+                        Ok(())
+                    }
+                )
+            ]
         ),
 
         entry!(

@@ -292,7 +292,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
@@ -559,8 +559,8 @@ pub fn get_entry_result(
 /// # }
 /// ```
 pub fn link_entries<S: Into<String>>(
-    base: &HashString,
-    target: &HashString,
+    base: &Address,
+    target: &Address,
     tag: S,
 ) -> Result<(), ZomeApiError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
@@ -627,14 +627,14 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> JsonString {
+/// fn handle_post_address(content: String) -> JsonString {
 ///
 ///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     });
 ///
-///     match hdk::hash_entry(&post_entry) {
+///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
 ///         Err(hdk_error) => hdk_error.into(),
 ///     }
@@ -643,7 +643,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// # }
 /// ```
-pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
+pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -653,7 +653,7 @@ pub fn hash_entry(entry: &Entry) -> ZomeApiResult<Address> {
 
     let encoded_allocation_of_result: u32;
     unsafe {
-        encoded_allocation_of_result = hc_hash_entry(allocation_of_input.encode() as u32);
+        encoded_allocation_of_result = hc_entry_address(allocation_of_input.encode() as u32);
     }
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
@@ -687,20 +687,20 @@ pub fn verify_signature<S: Into<String>>(
 /// Not Yet Available
 pub fn update_entry<S: Into<String>>(
     _entry_type: S,
-    _entry: serde_json::Value,
-    _replaces: HashString,
-) -> ZomeApiResult<HashString> {
+    _entry: Entry,
+    _replaces: Address,
+) -> ZomeApiResult<Address> {
     // FIXME
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// Not Yet Available
-pub fn update_agent() -> ZomeApiResult<HashString> {
+pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
 /// Not Yet Available
-pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApiResult<HashString> {
+pub fn remove_entry<S: Into<String>>(_entry: Address, _message: S) -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
@@ -724,7 +724,7 @@ pub fn remove_entry<S: Into<String>>(_entry: HashString, _message: S) -> ZomeApi
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Address>> {
+pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<Vec<Address>> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
 
@@ -789,7 +789,7 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 }
 
 /// Not Yet Available
-pub fn send(_to: HashString, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
+pub fn send(_to: Address, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 

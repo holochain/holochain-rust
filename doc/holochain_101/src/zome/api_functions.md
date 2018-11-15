@@ -5,6 +5,7 @@
 A Zome API Function is any Holochain core functionality that is exposed as a
 callable function within Zome code.
 
+
 Compare this to a Zome Callback Function, which is implemented by the Zome code 
 and called by Holochain.
 
@@ -47,15 +48,13 @@ Canonical name: `property`
 Returns an application property, which are defined by the developer in the DNA.
 It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).
 
-[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.property.html)
+### Entry Address
 
-### Hash Entry
+Canonical name: `entry_address`
 
-Canonical name: `hash_entry`
+Returns the address that a given entry will hash into.
 
-Reconstructs an address of the given entry data. This is the same value that would be returned if an entry type and entry value were passed to the `commit_entry` function and by which it would be retrievable from the DHT using `get_entry`. It is often used to reconstruct an address of a base argument when calling `get_links`. It was renamed `hash_entry` in this version from `make_hash` in the Go version of Holochain.
-
-[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.hash_entry.html)
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.entry_address.html)
 
 ### Debug
 

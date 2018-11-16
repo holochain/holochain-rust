@@ -42,7 +42,7 @@ fn main() {
 
     //let dna = holochain_dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
-    let agent = Agent::from(identity.to_string());
+    let agent = Agent::generate_fake(identity);
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),

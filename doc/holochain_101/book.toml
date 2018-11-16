@@ -1,8 +1,8 @@
 [book]
-authors = ["David Meister"]
+authors = ["David Meister", "Connor Turland"]
 multilingual = false
 src = "src"
-title = "holochain_101"
+title = "Holochain Guidebook"
 
 [build]
 preprocess = ["links"]

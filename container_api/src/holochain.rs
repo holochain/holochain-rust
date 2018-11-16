@@ -29,7 +29,7 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::from("bob".to_string());
+//! let agent = Agent::generate_fake("bob");
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
@@ -188,7 +188,7 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = Agent::from(agent_name.to_string());
+        let agent = Agent::generate_fake(agent_name);
         let logger = test_utils::test_logger();
         (
             Arc::new(
@@ -223,7 +223,7 @@ mod tests {
 
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
+        assert_eq!(hc.context.agent.nick, "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");

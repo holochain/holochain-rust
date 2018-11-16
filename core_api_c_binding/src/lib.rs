@@ -61,7 +61,7 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
 }
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::from("c_bob".to_string());
+    let agent = Agent::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     let agent_path = format!("{}/state", path);

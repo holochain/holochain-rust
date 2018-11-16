@@ -104,7 +104,7 @@ impl Holochain {
     }
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(format!("{}/state", path));
+        let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
@@ -190,17 +190,17 @@ mod tests {
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = Agent::generate_fake(agent_name);
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_utils::test_logger();
         (
             Arc::new(
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    )),
+                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                    file_storage.clone(),
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),

@@ -7,6 +7,52 @@ branches:
 
 jobs:
   include:
+    - name: "Holochain tests + code coverage"
+      dist: trusty
+      language: node_js
+      node_js:
+        - "8"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script: make code_coverage
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+      before_cache:
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/integration_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
+
     - name: "windows build & test all"
       os: windows
       env:
@@ -54,70 +100,6 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Command-line tools"
-      dist: trusty
-      language: bash
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_cmd
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
-
-    - name: "Holochain tests + code coverage"
-      dist: trusty
-      language: node_js
-      node_js:
-        - "8"
-
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script: make code_coverage
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-      before_cache:
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/integration_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-        - rm -rf $HOME/.cargo/registry/index
-
     - name: "Lint (fmt & _clippy)"
       dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
@@ -158,4 +140,22 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
         - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Command-line tools"
+      dist: trusty
+      language: bash
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make test_cmd
+      before_cache:
         - rm -rf $HOME/.cargo/registry/index

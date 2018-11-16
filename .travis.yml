@@ -54,7 +54,25 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Standard tests + code coverage"
+    - name: "Command-line tools"
+      dist: trusty
+      language: bash
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make test_cmd
+      before_cache:
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Holochain tests + code coverage"
       dist: trusty
       language: node_js
       node_js:

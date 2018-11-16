@@ -27,7 +27,7 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 .PHONY: main \
 	c_binding_tests ${C_BINDING_DIRS} \
 	test ${C_BINDING_TESTS} \
-        test_non_c \
+        test_holochain \
 	clean ${C_BINDING_CLEAN}
 
 # apply formatting / style guidelines, and build the rust project
@@ -131,11 +131,14 @@ ${C_BINDING_DIRS}:
 	qmake -o $@Makefile $@qmake.pro
 	cd $@; $(MAKE)
 
-# execute all tests, both rust and "C" bindings
-test: test_non_c c_binding_tests ${C_BINDING_TESTS}
+# execute all tests, both command-line tools holochain and "C" bindings
+test: test_holochain test_cmd c_binding_tests ${C_BINDING_TESTS}
 
-test_non_c: main
-	RUSTFLAGS="-D warnings" $(CARGO) test
+test_holochain: main
+	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+
+test_cmd: main
+	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build

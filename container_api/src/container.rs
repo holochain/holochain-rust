@@ -177,14 +177,14 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
     let agent = Agent::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
-    let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
-        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        file_storage.clone(),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )
 }

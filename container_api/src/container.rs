@@ -174,7 +174,7 @@ impl Logger for NullLogger {
 }
 
 fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::from("c_bob".to_string());
+    let agent = Agent::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     let agent_path = format!("{}/state", path);

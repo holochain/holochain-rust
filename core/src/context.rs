@@ -117,7 +117,7 @@ mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut maybe_context = Context::new(
-            Agent::from("Terence".to_string()),
+            Agent::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -146,7 +146,7 @@ mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            Agent::from("Terence".to_string()),
+            Agent::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),

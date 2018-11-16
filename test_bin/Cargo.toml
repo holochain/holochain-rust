@@ -21,3 +21,7 @@ path = "src/main.rs"
 [[bin]]
 name = "test_bin_ipc"
 path = "src/test_bin_ipc.rs"
+
+[[bin]]
+name = "test_bin_mock_net"
+path = "src/test_bin_mock_net.rs"

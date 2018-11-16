@@ -102,7 +102,8 @@ pub mod tests {
             test_entry(),
             &initialized_context.action_channel.clone(),
             &initialized_context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &dna_name,

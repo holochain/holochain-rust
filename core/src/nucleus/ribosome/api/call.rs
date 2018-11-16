@@ -227,7 +227,8 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 

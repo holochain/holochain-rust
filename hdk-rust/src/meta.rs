@@ -123,7 +123,8 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
     let json_string = serde_json::to_string(&json!({
         "entry_types": entry_types,
         "capabilities": capabilities,
-    })).expect("Can't serialize DNA");
+    }))
+    .expect("Can't serialize DNA");
 
     unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32 }
 }

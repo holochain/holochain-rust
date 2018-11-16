@@ -53,7 +53,8 @@ fn main() {
         Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
-    ).expect("context is supposed to be created");
+    )
+    .expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 

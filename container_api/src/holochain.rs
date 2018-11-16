@@ -203,9 +203,11 @@ mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )

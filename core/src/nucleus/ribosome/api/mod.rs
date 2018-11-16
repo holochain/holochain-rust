@@ -339,7 +339,8 @@ pub mod tests {
             wasm.clone(),
             &zome_call,
             Some(args_bytes),
-        ).expect("test should be callable")
+        )
+        .expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:

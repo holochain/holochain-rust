@@ -4,31 +4,34 @@ let
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
   nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
 
-  coreDate = "2018-10-12";
-  coreChannel = "nightly";
-  coreToolchain = "${coreDate}-${coreChannel}";
+  rustChannel = "nightly";
+  rustToolchain = date: "${rustChannel}-${date}";
 
-  # toolsVersion = "nightly-2018-07-17";
-  wasmTarget = "wasm32-unknown-unknown";
+  coreDate = "2018-10-12";
+  coreToolchain = rustToolchain coreDate;
 
   rust-channel = (nixpkgs.rustChannelOf {
     date = coreDate;
-    channel = coreChannel;
+    channel = rustChannel;
   });
 
-  /* rust-wasm = (nixpkgs.rustChannelOf {
-    date = coreDate;
-    channel = coreChannel;
-  }).rust; */
+  wasmTarget = "wasm32-unknown-unknown";
   rust-wasm = rust-channel.rust.override {
-    targets = [ "wasm32-unknown-unknown" ];
+    targets = [ wasmTarget ];
   };
 
-  # cargo = v: "rustup run ${v} cargo";
-  # hc-fmt = pkgs.writeShellScriptBin "hc-fmt" "${cargo toolsVersion} fmt";
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test";
+  toolsDate = "2018-07-17";
+  toolsToolchain = rustToolchain toolsDate;
+  rust-tools = (nixpkgs.rustChannelOf {
+    date = toolsDate;
+    channel = rustChannel;
+  }).rust;
 
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  cargo = date: "rustup run ${rustToolchain date} cargo";
+  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "${cargo toolsDate} fmt";
+  hc-test = nixpkgs.writeShellScriptBin "hc-test" "${cargo coreDate} test";
+
+  wasmBuild = path: "${cargo coreDate} build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/wasm-test/Cargo.toml"}
@@ -44,34 +47,13 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    # rust-nightly
     rust-wasm
-    # pkgs.zeromq
-    # pkgs.rustup
-    # pkgs.cargo
-    # pkgs.rustfmt
-    # pkgs.rustc
-    # pkgs.gnumake
-    # pkgs.gcc
-    # pkgs.binutils-unwrapped
-    # pkgs.pkgconfig
-    # pkgs.python27
-    # rust
+    rust-tools
+    rustup
 
-    # pkgs.libstdcxx5
-    # pkgs.lld
-    # pkgs.llvm
-
-    # hc-fmt
+    hc-fmt
     hc-wasm-build
-    # hc-test
+    hc-test
   ];
-
-  /* shellHook =
-  ''
-  rustup toolchain install ${coreVersion}
-  rustup toolchain install ${toolsVersion}
-  rustup target add ${wasmTarget} --toolchain ${coreVersion}
-  ''; */
 
 }

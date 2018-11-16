@@ -26,7 +26,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::from(agent_name.to_owned());
+    let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
     Arc::new(
         Context::new(

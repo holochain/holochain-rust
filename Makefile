@@ -5,7 +5,7 @@
 # run `make test` to execute all the tests
 # run `make clean` to clean up the build environment
 
-all: main
+all: main_strict
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
@@ -25,13 +25,20 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # build artifact / dependency checking is handled by our sub-tools
 # we can just try to build everything every time, it should be efficient
 .PHONY: main \
+	main_strict \
+	lint \
 	c_binding_tests ${C_BINDING_DIRS} \
 	test ${C_BINDING_TESTS} \
-        test_holochain \
+	test_holochain \
 	clean ${C_BINDING_CLEAN}
 
-# apply formatting / style guidelines, and build the rust project
-main: fmt_check clippy build
+# apply formatting / style guidelines
+lint: fmt_check clippy build
+
+# main entrypoints
+main: build
+
+main_strict: lint build
 
 # idempotent install rustup with the default toolchain set for tooling
 # best for CI based on tools only

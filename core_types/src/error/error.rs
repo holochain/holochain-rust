@@ -304,8 +304,7 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
-            }
-            .to_string(),
+            }.to_string(),
         );
     }
 }

@@ -353,11 +353,9 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
-                        .unwrap(),
+                        ).unwrap(),
                     )),
-                )
-                .unwrap(),
+                ).unwrap(),
             ),
             logger,
         )
@@ -391,8 +389,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-            )
-            .unwrap(),
+            ).unwrap(),
         )
     }
 
@@ -408,8 +405,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-        )
-        .unwrap();
+        ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -428,8 +424,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-        )
-        .unwrap();
+        ).unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);

@@ -122,8 +122,7 @@ pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
     match serde_json::to_string(&v) {
         Ok(s) => Ok(JsonString::from(s)),
         Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }
-    .expect(&format!("could not Jsonify: {:?}", v))
+    }.expect(&format!("could not Jsonify: {:?}", v))
 }
 
 /// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]

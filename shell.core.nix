@@ -4,34 +4,12 @@ let
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
   nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
 
-  rustChannel = "nightly";
-  rustToolchain = date: "${rustChannel}-${date}";
-
-  coreDate = "2018-10-12";
-  coreToolchain = rustToolchain coreDate;
-
-  rust-channel = (nixpkgs.rustChannelOf {
-    date = coreDate;
-    channel = rustChannel;
-  });
-
+  date = "2018-10-12";
   wasmTarget = "wasm32-unknown-unknown";
-  rust-wasm = rust-channel.rust.override {
-    targets = [ wasmTarget ];
-  };
 
-  toolsDate = "2018-07-17";
-  toolsToolchain = rustToolchain toolsDate;
-  rust-tools = (nixpkgs.rustChannelOf {
-    date = toolsDate;
-    channel = rustChannel;
-  }).rust;
+  rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
-  cargo = date: "rustup run ${rustToolchain date} cargo";
-  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "${cargo toolsDate} fmt";
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "${cargo coreDate} test";
-
-  wasmBuild = path: "${cargo coreDate} build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/wasm-test/Cargo.toml"}
@@ -41,17 +19,16 @@ let
   ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
+
+  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test";
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    rust-wasm
-    rust-tools
-    rustup
+    rust-build
 
-    hc-fmt
     hc-wasm-build
     hc-test
   ];

@@ -30,8 +30,7 @@ pub mod tests {
             // anything other than Genesis is fine here
             Callback::MissingNo.as_str(),
             0,
-        )
-        .expect("Test callback instance could not be initialized");
+        ).expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = receive(context, zome, &CallbackParams::Receive);

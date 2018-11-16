@@ -107,9 +107,3 @@ pub mod error;
 pub mod holochain;
 
 pub use holochain::Holochain;
-        let persister = SimplePersister::new(context.file_storage.clone());
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),

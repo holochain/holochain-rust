@@ -7,12 +7,11 @@
 //! extern crate holochain_container_api;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
-//! extern crate holochain_dna;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_dna::Dna;
 //! use holochain_core_types::entry::agent::Agent;
+//! use holochain_core_types::dna::Dna;
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -25,7 +24,7 @@
 //! // instantiate a new holochain instance
 //!
 //! // need to get to something like this:
-//! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+//! //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
 //!
 //! // but for now:
 //! let dna = Dna::new();
@@ -67,8 +66,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -174,8 +172,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::entry::agent::Agent;
-    use holochain_dna::Dna;
+    use holochain_core_types::{dna::Dna, entry::agent::Agent};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{

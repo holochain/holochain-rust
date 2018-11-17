@@ -8,12 +8,12 @@ pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{
+    dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
     entry::SerializedEntry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
 use nucleus::{
     ribosome::{
         self,
@@ -185,11 +185,13 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => if call_result.is_null() {
-            CallbackResult::Pass
-        } else {
-            CallbackResult::Fail(call_result.to_string())
-        },
+        Ok(call_result) => {
+            if call_result.is_null() {
+                CallbackResult::Pass
+            } else {
+                CallbackResult::Fail(call_result.to_string())
+            }
+        }
         Err(_) => CallbackResult::NotImplemented,
     }
 }

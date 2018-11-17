@@ -113,13 +113,14 @@ mod tests {
 
     #[test]
     fn test_state() {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut maybe_context = Context::new(
             Agent::generate_fake("Terence"),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            )),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
@@ -141,13 +142,14 @@ mod tests {
     #[should_panic]
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut context = Context::new(
             Agent::generate_fake("Terence"),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            )),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),

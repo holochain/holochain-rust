@@ -14,7 +14,7 @@ jobs:
       sudo: true
       script:
         - nix-shell shell.tools.nix --run hc-fmt-check
-        - nix-shell shell.core.nix --runn "hc-wasm-build && hc-test"
+        - nix-shell shell.core.nix --run "hc-wasm-build && hc-test"
       cache:
         directories:
           - /nix/store

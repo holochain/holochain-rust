@@ -12,6 +12,7 @@ extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
 #[macro_use]
 extern crate lazy_static;
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 

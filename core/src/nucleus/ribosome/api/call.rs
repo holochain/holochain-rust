@@ -11,7 +11,7 @@ use nucleus::{
 };
 use std::{
     convert::TryFrom,
-    sync::{mpsc::channel, Arc, RwLock},
+    sync::{mpsc::channel, Arc},
 };
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -161,21 +161,22 @@ pub mod tests {
     extern crate wabt;
 
     use self::tempfile::tempdir;
-    use super::*;
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         dna::{zome::capabilities::Capability, Dna},
         entry::agent::Agent,
-        error::DnaError,
+        error::{DnaError, HolochainError},
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use instance::{
         tests::{test_instance, TestLogger},
-        Observer,
+        Observer, RECV_DEFAULT_TIMEOUT_MS,
     };
     use nucleus::ribosome::{
         api::{
+            call::{Action, ActionWrapper, Membrane, ZomeFnCall},
             tests::{
                 test_capability, test_function_name, test_parameters, test_zome_api_function_wasm,
                 test_zome_name,
@@ -186,7 +187,10 @@ pub mod tests {
     };
     use persister::SimplePersister;
     use serde_json;
-    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use std::sync::{
+        mpsc::{channel, RecvTimeoutError},
+        Arc, Mutex, RwLock,
+    };
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry

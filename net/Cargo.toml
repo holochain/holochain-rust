@@ -9,4 +9,5 @@ failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_net_connection = { path = "../net_connection" }
 holochain_net_ipc = { path = "../net_ipc" }
+lazy_static = "1.2"
 serde_json = { version = "1", features = ["preserve_order"] }

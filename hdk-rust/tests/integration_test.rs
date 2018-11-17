@@ -50,8 +50,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "link_two_entries",
         "links_roundtrip",
         "check_query",
-        "check_hash_app_entry",
-        "check_hash_sys_entry",
+        "check_app_entry_address",
+        "check_sys_entry_address",
         "check_call",
         "check_call_with_args",
     ]);
@@ -79,7 +79,7 @@ fn can_use_globals() {
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA"
+            "QmU92yJa32rGJYcgDwhxAeBtpHeK7wjLEqZ1bWnDZKTRB8"
         ))),
         "result = {:?}",
         result
@@ -198,7 +198,7 @@ fn can_get_entry() {
         )
     );
 
-    // test the case with a bad hash
+    // test the case with a bad address
     let result = hc.call(
         "test_zome",
         "test_cap",
@@ -211,7 +211,7 @@ fn can_get_entry() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::null());
 
-    // test the case with a bad hash
+    // test the case with a bad address
     let result = hc.call(
         "test_zome",
         "test_cap",
@@ -243,7 +243,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}}"),
+        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
     );
 }
 
@@ -349,10 +349,10 @@ fn can_check_query() {
 }
 
 #[test]
-fn can_check_hash_app_entry() {
+fn can_check_app_entry_address() {
     let (mut hc, _) = start_holochain_instance();
 
-    let result = hc.call("test_zome", "test_cap", "check_hash_app_entry", r#"{}"#);
+    let result = hc.call("test_zome", "test_cap", "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
@@ -363,10 +363,10 @@ fn can_check_hash_app_entry() {
 }
 
 #[test]
-fn can_check_hash_sys_entry() {
+fn can_check_sys_entry_address() {
     let (mut hc, _) = start_holochain_instance();
 
-    let _result = hc.call("test_zome", "test_cap", "check_hash_sys_entry", r#"{}"#);
+    let _result = hc.call("test_zome", "test_cap", "check_sys_entry_address", r#"{}"#);
     // TODO
     //    assert!(result.is_ok(), "result = {:?}", result);
     //    assert_eq!(

@@ -13,6 +13,9 @@ use std::{
 pub mod agent;
 pub mod link_add;
 pub mod link_list;
+pub mod chain_migrate;
+pub mod delete;
+pub mod link_remove;
 
 pub type EntryValue = JsonString;
 
@@ -201,7 +204,7 @@ pub fn expected_serialized_entry_content() -> JsonString {
     JsonString::from("{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}")
 }
 
-/// the correct hash for test_entry()
+/// the correct address for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_entry_address() -> Address {
     Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT".to_string())

@@ -85,10 +85,15 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/integration_test*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
@@ -126,10 +131,15 @@ jobs:
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/integration_test*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/integration_test*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*/
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/integration_test*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
         - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*

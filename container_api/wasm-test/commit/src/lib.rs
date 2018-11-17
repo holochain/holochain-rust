@@ -20,7 +20,7 @@ extern {
 //-------------------------------------------------------------------------------------------------
 
 /// Call HC API COMMIT function with proper input struct
-/// return hash of entry added source chain
+/// return address of entry added source chain
 fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_value: &str)
   -> Result<Address, String>
 {

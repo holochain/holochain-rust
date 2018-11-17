@@ -1,7 +1,7 @@
 use holochain_core_types::{
-    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
+    cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
+    validation::ValidationPackage,
 };
-use holochain_dna::Dna;
 use nucleus::ZomeFnCall;
 use snowflake;
 use std::collections::HashMap;

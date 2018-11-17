@@ -295,11 +295,11 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
+        dna::{zome::Zome, Dna},
         entry::{agent::Agent, ToEntry},
         entry_type::EntryType,
         json::{JsonString, RawString},
     };
-    use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,

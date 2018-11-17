@@ -1,8 +1,10 @@
-use error::HolochainError;
+use holochain_core_types::{
+    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
+};
 use holochain_dna::Dna;
-use nucleus::FunctionCall;
+use nucleus::ZomeFnCall;
+use snowflake;
 use std::collections::HashMap;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum NucleusStatus {
     New,
@@ -17,6 +19,10 @@ impl Default for NucleusStatus {
     }
 }
 
+pub type ValidationResult = Result<(), String>;
+
+/// The state-slice for the Nucleus.
+/// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct NucleusState {
     pub dna: Option<Dna>,
@@ -25,7 +31,10 @@ pub struct NucleusState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
-    pub ribosome_calls: HashMap<FunctionCall, Option<Result<String, HolochainError>>>,
+    pub zome_calls: HashMap<ZomeFnCall, Option<Result<JsonString, HolochainError>>>,
+    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
+    pub validation_packages:
+        HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }
 
 impl NucleusState {
@@ -33,18 +42,19 @@ impl NucleusState {
         NucleusState {
             dna: None,
             status: NucleusStatus::New,
-            ribosome_calls: HashMap::new(),
+            zome_calls: HashMap::new(),
+            validation_results: HashMap::new(),
+            validation_packages: HashMap::new(),
         }
     }
 
-    pub fn ribosome_call_result(
+    pub fn zome_call_result(
         &self,
-        function_call: &FunctionCall,
-    ) -> Option<Result<String, HolochainError>> {
-        match self.ribosome_calls.get(function_call) {
-            None => None,
-            Some(value) => value.clone(),
-        }
+        zome_call: &ZomeFnCall,
+    ) -> Option<Result<JsonString, HolochainError>> {
+        self.zome_calls
+            .get(zome_call)
+            .and_then(|value| value.clone())
     }
 
     pub fn has_initialized(&self) -> bool {

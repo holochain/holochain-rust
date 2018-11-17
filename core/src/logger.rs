@@ -6,7 +6,13 @@ use chrono::Local;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
+    // Add log message to logger
     fn log(&mut self, msg: String);
+
+    // Dump all held logs
+    fn dump(&self) -> String {
+        String::new()
+    }
 }
 
 #[derive(Clone)]
@@ -14,6 +20,8 @@ pub struct SimpleLogger {
     // log: Vec<String>,
 }
 
+// ignore this in test coverage as it is only side effects
+#[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
         let date = Local::now();

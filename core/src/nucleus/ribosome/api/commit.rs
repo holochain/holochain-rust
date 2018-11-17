@@ -1,99 +1,73 @@
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
-use nucleus::ribosome::{
-    api::{runtime_allocate_encode_str, runtime_args_to_utf8, HcApiReturnCode, Runtime},
-    callback::{validate_commit::validate_commit, CallbackParams, CallbackResult},
+use agent::actions::commit::*;
+use futures::{executor::block_on, FutureExt};
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
+    error::HolochainError,
+    hash::HashString,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use serde_json;
-use std::sync::mpsc::channel;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use nucleus::{
+    actions::{build_validation_package::*, validate::*},
+    ribosome::{api::ZomeApiResult, Runtime},
+};
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
-/// Struct for input data received when Commit API function is invoked
-#[derive(Deserialize, Default, Debug, Serialize)]
-struct CommitArgs {
-    entry_type_name: String,
-    entry_content: String,
-}
-
-/// HcApiFuncIndex::COMMIT function code
+/// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: r#"{"entry_type_name":"post","entry_content":"hello"}"#
+/// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_commit_entry(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime_args_to_utf8(&runtime, &args);
-    let entry_input: CommitArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let serialized_entry = match SerializedEntry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            // Return Error code in i32 format
-            return Ok(Some(RuntimeValue::I32(
-                HcApiReturnCode::ErrorSerdeJson as i32,
-            )));
+            println!(
+                "invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
 
     // Create Chain Entry
-    let entry =
-        ::hash_table::entry::Entry::new(&entry_input.entry_type_name, &entry_input.entry_content);
+    let entry = Entry::from(serialized_entry);
 
-    // @TODO test that failing validation prevents commits happening
-    // @see https://github.com/holochain/holochain-rust/issues/206
-    if let CallbackResult::Fail(_) = validate_commit(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        &runtime.function_call.zome,
-        &CallbackParams::ValidateCommit(entry.clone()),
-    ) {
-        return Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorCallbackResult as i32,
-        )));
-    }
-    // anything other than a fail means we should commit the entry
-
-    // Create Commit Action
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
-    // Send Action and block for result
-    let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
-        &runtime.action_channel,
-        &runtime.observer_channel,
-        action_wrapper.clone(),
-        move |state: &::state::State| {
-            let mut actions_copy = state.agent().actions();
-            match actions_copy.remove(&action_wrapper) {
-                Some(v) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(v)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
-            }
-        },
+    // Wait for future to be resolved
+    let task_result: Result<Address, HolochainError> = block_on(
+        // 1. Build the context needed for validation of the entry
+        build_validation_package(&entry, &runtime.context)
+            .and_then(|validation_package| {
+                Ok(ValidationData {
+                    package: validation_package,
+                    sources: vec![HashString::from("<insert your agent key here>")],
+                    lifecycle: EntryLifecycle::Chain,
+                    action: EntryAction::Commit,
+                })
+            })
+            // 2. Validate the entry
+            .and_then(|validation_data| {
+                validate_entry(
+                    entry.entry_type().clone(),
+                    entry.clone(),
+                    validation_data,
+                    &runtime.context,
+                )
+            })
+            // 3. Commit the valid entry to chain and DHT
+            .and_then(|_| {
+                commit_entry(
+                    entry.clone(),
+                    &runtime.context.action_channel,
+                    &runtime.context,
+                )
+            }),
     );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
 
-    let action_result = receiver.recv().expect("observer dropped before done");
-
-    match action_result {
-        ActionResponse::Commit(_) => {
-            // serialize, allocate and encode result
-            runtime_allocate_encode_str(runtime, &action_result.to_json())
-        }
-        _ => Ok(Some(RuntimeValue::I32(
-            HcApiReturnCode::ErrorActionResult as i32,
-        ))),
-    }
+    runtime.store_result(task_result)
 }
 
 #[cfg(test)]
@@ -101,37 +75,40 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use super::CommitArgs;
-    use hash_table::entry::tests::test_entry;
+    use holochain_core_types::{
+        cas::content::Address,
+        entry::{test_entry, SerializedEntry},
+        error::ZomeApiInternalResult,
+        json::JsonString,
+    };
     use nucleus::ribosome::{
-        api::{tests::test_zome_api_function_runtime, ZomeAPIFunction},
+        api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use serde_json;
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let e = test_entry();
-        let args = CommitArgs {
-            entry_type_name: e.entry_type().into(),
-            entry_content: e.content().into(),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        let entry = test_entry();
+
+        let serialized_entry = SerializedEntry::from(entry);
+        JsonString::from(serialized_entry).into_bytes()
     }
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
-        let (runtime, _) = test_zome_api_function_runtime(
-            ZomeAPIFunction::CommitEntry.as_str(),
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::CommitAppEntry.as_str(),
             test_commit_args_bytes(),
         );
 
         assert_eq!(
-            runtime.result,
-            format!(r#"{{"hash":"{}"}}"#, test_entry().key()) + "\u{0}",
+            call_result,
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(
+                    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT")
+                ))) + "\u{0}"
+            ),
         );
     }
 

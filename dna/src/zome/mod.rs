@@ -4,6 +4,7 @@ pub mod capabilities;
 pub mod entry_types;
 
 use std::collections::HashMap;
+use wasm::DnaWasm;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -58,11 +59,15 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: HashMap<String, entry_types::EntryType>,
+    pub entry_types: HashMap<String, entry_types::EntryTypeDef>,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
     pub capabilities: HashMap<String, capabilities::Capability>,
+
+    /// Validation code for this entry_type.
+    #[serde(default)]
+    pub code: DnaWasm,
 }
 
 impl Eq for Zome {}
@@ -71,10 +76,11 @@ impl Default for Zome {
     /// Provide defaults for an individual "zome".
     fn default() -> Self {
         Zome {
-            description: String::from(""),
+            description: String::new(),
             config: Config::new(),
             entry_types: HashMap::new(),
             capabilities: HashMap::new(),
+            code: DnaWasm::new(),
         }
     }
 }
@@ -84,14 +90,16 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &HashMap<String, entry_types::EntryType>,
+        entry_types: &HashMap<String, entry_types::EntryTypeDef>,
         capabilities: &HashMap<String, capabilities::Capability>,
+        code: &DnaWasm,
     ) -> Zome {
         Zome {
             description: description.into(),
             config: config.clone(),
             entry_types: entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
+            code: code.clone(),
         }
     }
 }
@@ -100,9 +108,10 @@ impl Zome {
 pub mod tests {
     use super::*;
     use serde_json;
+    use zome::Zome;
 
-    pub fn test_zome_description() -> String {
-        "test zome description".into()
+    pub fn test_zome() -> Zome {
+        Zome::default()
     }
 
     #[test]

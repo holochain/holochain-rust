@@ -1,10 +1,9 @@
-//! holochain_dna::zome::capabilities is a set of structs for working with holochain dna.
+//! File holding all the structs for handling capabilities defined in DNA.
 
 use std::str::FromStr;
-use wasm::DnaWasm;
 
 //--------------------------------------------------------------------------------------------------
-// Reserved Capabilities and functions names
+// Reserved Capabilities names
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq)]
@@ -45,7 +44,7 @@ impl ReservedCapabilityNames {
 }
 
 //--------------------------------------------------------------------------------------------------
-//
+// CapabilityType
 //--------------------------------------------------------------------------------------------------
 
 /// Enum for Zome Capability "membrane" property.
@@ -101,7 +100,7 @@ pub struct FnParameter {
 
 impl FnParameter {
     #[allow(dead_code)]
-    fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
+    pub fn new<S: Into<String>>(n: S, t: S) -> FnParameter {
         FnParameter {
             name: n.into(),
             parameter_type: t.into(),
@@ -123,7 +122,7 @@ impl Default for FnDeclaration {
     /// Defaults for a "fn_declarations" object.
     fn default() -> Self {
         FnDeclaration {
-            name: String::from(""),
+            name: String::new(),
             inputs: Vec::new(),
             outputs: Vec::new(),
         }
@@ -141,25 +140,20 @@ impl FnDeclaration {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
     /// "capability" sub-object
-    #[serde(default)]
-    pub capability: CapabilityType,
+    #[serde(rename = "capability")]
+    pub cap_type: CapabilityType,
 
     /// "fn_declarations" array
     #[serde(default)]
     pub functions: Vec<FnDeclaration>,
-
-    /// Validation code for this entry_type.
-    #[serde(default)]
-    pub code: DnaWasm,
 }
 
 impl Default for Capability {
     /// Provide defaults for a "zome"s "capabilities" object.
     fn default() -> Self {
         Capability {
-            capability: CapabilityType::new(),
+            cap_type: CapabilityType::new(),
             functions: Vec::new(),
-            code: DnaWasm::new(),
         }
     }
 }
@@ -226,10 +220,7 @@ mod tests {
                             }
                         ]
                     }
-                ],
-                "code": {
-                    "code": "AAECAw=="
-                }
+                ]
             }"#,
         ).unwrap();
 
@@ -241,7 +232,6 @@ mod tests {
         fn_dec.inputs.push(input);
         fn_dec.outputs.push(output);
         cap.functions.push(fn_dec);
-        cap.code.code = vec![0, 1, 2, 3];
 
         assert_eq!(fixture, cap);
     }

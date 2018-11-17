@@ -1,13 +1,18 @@
 use agent::state::AgentState;
 use context::Context;
-use hash_table::entry::Entry;
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, links_entry::Link,
+    validation::ValidationPackage,
+};
 use holochain_dna::Dna;
-use instance::Observer;
-use nucleus::{state::NucleusState, EntrySubmission, FunctionCall, FunctionResult};
+use nucleus::{
+    state::{NucleusState, ValidationResult},
+    ExecuteZomeFnResponse, ZomeFnCall,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    sync::{mpsc::Sender, Arc},
+    sync::Arc,
 };
 
 /// Wrapper for actions that provides a unique ID
@@ -61,32 +66,47 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+/// All Actions for the Holochain Instance Store, according to Redux pattern.
+#[derive(Clone, PartialEq, Debug)]
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
     Commit(Entry),
-    /// hash to Get
-    Get(String),
+    /// GetEntry by address
+    GetEntry(Address),
+
+    /// link to add
+    AddLink(Link),
+    /// get links from entry address and attribute-name
+    //GetLinks(GetLinksArgs),
 
     /// execute a function in a zome WASM
-    ExecuteZomeFunction(FunctionCall),
+    ExecuteZomeFunction(ZomeFnCall),
     /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(FunctionResult),
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
     /// initialize an application from a Dna
     /// not the same as genesis
     /// may call genesis internally
     InitApplication(Dna),
     /// return the result of an InitApplication action
+    /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// ???
-    // @TODO how does this relate to validating a commit?
-    ValidateEntry(EntrySubmission),
+    /// Execute a zome function call called by another zome function
+    Call(ZomeFnCall),
 
-    /// add a network peer
-    AddPeer(String),
+    /// A validation result that should be stored
+    /// Key is an unique id of the calling context
+    /// and the hash of the entry that was validated
+    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
+
+    ReturnValidationPackage(
+        (
+            snowflake::ProcessUniqueId,
+            Result<ValidationPackage, HolochainError>,
+        ),
+    ),
 }
 
 /// function signature for action handler functions
@@ -94,21 +114,19 @@ pub enum Action {
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> =
-    fn(Arc<Context>, &mut S, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>);
+pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
 #[cfg(test)]
 pub mod tests {
 
     use action::{Action, ActionWrapper};
-    use hash::tests::test_hash;
-    use hash_table::entry::tests::{test_entry, test_entry_hash};
-    use nucleus::tests::test_function_result;
+    use holochain_core_types::entry::{expected_entry_address, test_entry};
+    use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::Get(test_entry_hash())
+        Action::GetEntry(expected_entry_address())
     }
 
     /// dummy action wrapper with test_action()
@@ -123,11 +141,11 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Get(test_hash()))
+        ActionWrapper::new(Action::GetEntry(expected_entry_address()))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_function_result()))
+        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_response()))
     }
 
     #[test]

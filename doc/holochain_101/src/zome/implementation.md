@@ -11,7 +11,7 @@ define a few related items.
 
 Within `nucleus::ribosome::api`:
 
-- A variant in the `ZomeAPIFunction` enum
+- A variant in the `ZomeApiFunction` enum
 - The same canonical string in _both_ `as_str` and `from_str`
 - A mapping to the API function under `as_fn`
 
@@ -111,10 +111,10 @@ error enum variant.
 
 For an example implementation returning a complex struct see:
 
-- `agent::state::ActionResult::Get` defining a result containing a `Pair` struct
+- `agent::state::ActionResponse::GetEntry` containing an `Entry` struct
 - `nucleus::ribosome::get::invoke_get`
   - match the action result against the correct enum variant
-  - serialize the pair using serde
+  - serialize the entry using serde
   - return the result of `runtime_allocate_encode_str`
   - if the action result variant does NOT match then return `HcApiReturnCode::ErrorActionResult`
 

@@ -2,11 +2,10 @@ use agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS};
 use context::Context;
 use holochain_core_types::{
     cas::{
-        content::{AddressableContent, Content},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     error::HolochainError,
-    hash::HashString,
 };
 use state::State;
 use std::{
@@ -46,7 +45,7 @@ impl Persister for SimplePersister {
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
-        let address = HashString::from(AGENT_SNAPSHOT_ADDRESS);
+        let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
         let snapshot: Option<AgentStateSnapshot> = store
             .fetch(&address)?
             .map(|s: Content| AgentStateSnapshot::from_content(&s));

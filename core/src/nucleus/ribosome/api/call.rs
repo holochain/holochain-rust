@@ -164,13 +164,13 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_net::p2p_network::P2pNetwork;
     use holochain_core_types::{
         dna::{zome::capabilities::Capability, Dna},
         entry::agent::Agent,
         error::DnaError,
         json::JsonString,
     };
+    use holochain_net::p2p_network::P2pNetwork;
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,

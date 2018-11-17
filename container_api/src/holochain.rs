@@ -176,8 +176,8 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_net::p2p_network::P2pNetwork;
     use holochain_core_types::{dna::Dna, entry::agent::Agent};
+    use holochain_net::p2p_network::P2pNetwork;
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;

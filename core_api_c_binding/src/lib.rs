@@ -5,14 +5,13 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
-
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_net::p2p_network::P2pNetwork;
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_net::p2p_network::P2pNetwork;
 
 use std::sync::Arc;
 

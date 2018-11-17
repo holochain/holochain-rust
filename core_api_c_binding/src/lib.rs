@@ -9,7 +9,7 @@ use holochain_cas_implementations::{
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::{entry::dna::Dna, error::HolochainError};
+use holochain_core_types::{dna::Dna, error::HolochainError};
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};

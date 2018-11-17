@@ -1,4 +1,4 @@
-use holochain_core_types::entry::dna::zome::entry_types::EntryTypeDef;
+use holochain_core_types::dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::holochain_core_types::{
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
@@ -46,7 +46,7 @@ pub struct ValidatingEntryType {
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_core_types::entry::dna::zome::entry_types::Sharing;
+/// # use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
 ///
 /// # fn main() {
 ///
@@ -90,7 +90,7 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = ::hdk::holochain_core_types::entry::dna::zome::entry_types::EntryTypeDef::new();
+            let mut entry_type = ::hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
             entry_type.description = String::from($description);
             entry_type.sharing = $sharing;
 

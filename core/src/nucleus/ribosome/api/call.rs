@@ -1,6 +1,6 @@
 use action::{Action, ActionWrapper};
 use context::Context;
-use holochain_core_types::{entry::dna::zome::capabilities::Membrane, error::HolochainError};
+use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
@@ -165,10 +165,8 @@ pub mod tests {
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
-        entry::{
-            agent::Agent,
-            dna::{zome::capabilities::Capability, Dna},
-        },
+        dna::{zome::capabilities::Capability, Dna},
+        entry::agent::Agent,
         error::DnaError,
         json::JsonString,
     };

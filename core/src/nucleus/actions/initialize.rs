@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::entry::{dna::Dna, ToEntry};
+use holochain_core_types::{dna::Dna, entry::ToEntry};
 use instance::dispatch_action_and_wait;
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},

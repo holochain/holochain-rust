@@ -3,7 +3,7 @@ use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_core::context::Context;
-use holochain_core_types::{entry::dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};

@@ -1,6 +1,6 @@
 use entry_definition::ValidatingEntryType;
 use globals::G_MEM_STACK;
-use holochain_core_types::entry::dna::zome::capabilities::Capability;
+use holochain_core_types::dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
     holochain_core_types::error::RibosomeErrorCode,
@@ -130,7 +130,7 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::entry::dna::zome::capabilities::Capability;
+    use holochain_core_types::dna::zome::capabilities::Capability;
     use std::collections::HashMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.

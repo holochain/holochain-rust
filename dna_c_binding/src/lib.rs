@@ -6,7 +6,7 @@
 #![feature(try_from)]
 extern crate holochain_core_types;
 
-use holochain_core_types::entry::dna::Dna;
+use holochain_core_types::dna::Dna;
 use std::{
     convert::TryFrom,
     ffi::{CStr, CString},

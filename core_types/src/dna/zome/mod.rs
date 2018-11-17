@@ -1,9 +1,9 @@
-//! holochain_core_types::entry::dna::zome is a set of structs for working with holochain dna.
+//! holochain_core_types::dna::zome is a set of structs for working with holochain dna.
 
 pub mod capabilities;
 pub mod entry_types;
 
-use entry::dna::wasm::DnaWasm;
+use dna::wasm::DnaWasm;
 use std::collections::HashMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -107,7 +107,7 @@ impl Zome {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use entry::dna::zome::Zome;
+    use dna::zome::Zome;
     use serde_json;
 
     pub fn test_zome() -> Zome {

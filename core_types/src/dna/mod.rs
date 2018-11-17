@@ -8,7 +8,7 @@
 //! ```
 //! #![feature(try_from)]
 //! extern crate holochain_core_types;
-//! use holochain_core_types::entry::dna::Dna;
+//! use holochain_core_types::dna::Dna;
 //! use holochain_core_types::json::JsonString;
 //! use std::convert::TryFrom;
 //!
@@ -26,10 +26,8 @@
 pub mod wasm;
 pub mod zome;
 
-use entry::{
-    dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-    Entry, ToEntry,
-};
+use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
+use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use error::{DnaError, HolochainError};
 use json::JsonString;
@@ -104,7 +102,7 @@ impl Dna {
     /// # Examples
     ///
     /// ```
-    /// use holochain_core_types::entry::dna::Dna;
+    /// use holochain_core_types::dna::Dna;
     ///
     /// let dna = Dna::new();
     /// assert_eq!("", dna.name);
@@ -119,7 +117,7 @@ impl Dna {
     /// # Examples
     ///
     /// ```
-    /// use holochain_core_types::entry::dna::Dna;
+    /// use holochain_core_types::dna::Dna;
     ///
     /// let dna = Dna::new();
     /// println!("json: {}", dna.to_json_pretty().expect("DNA should serialize"));
@@ -241,7 +239,7 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
-    use entry::dna::zome::tests::test_zome;
+    use dna::zome::tests::test_zome;
     use std::convert::TryFrom;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";

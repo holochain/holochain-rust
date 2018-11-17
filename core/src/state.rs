@@ -7,7 +7,8 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
-    entry::{dna::Dna, *},
+    dna::Dna,
+    entry::{Entry, SerializedEntry, ToEntry},
     entry_type::EntryType,
     error::{HcResult, HolochainError},
 };

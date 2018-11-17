@@ -7,7 +7,7 @@ extern crate tempfile;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_types::entry::{agent::Agent, dna::Dna};
+use holochain_core_types::{dna::Dna, entry::agent::Agent};
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},
@@ -38,7 +38,7 @@ fn main() {
         usage();
     }
 
-    //let dna = holochain_core_types::entry::dna::from_package_file("mydna.hcpkg");
+    //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
     let agent = Agent::generate_fake(identity);
     let context = Context::new(

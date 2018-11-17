@@ -1,10 +1,7 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address,
-    entry::{dna::Dna, Entry},
-    error::HolochainError,
-    links_entry::Link,
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, links_entry::Link,
     validation::ValidationPackage,
 };
 use nucleus::{

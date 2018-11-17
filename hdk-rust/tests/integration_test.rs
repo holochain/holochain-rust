@@ -9,13 +9,11 @@ extern crate serde_json;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{
-        dna::zome::{
-            capabilities::{Capability, FnDeclaration, Membrane},
-            entry_types::EntryTypeDef,
-        },
-        Entry, SerializedEntry,
+    dna::zome::{
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
     },
+    entry::{Entry, SerializedEntry},
     entry_type::test_entry_type,
     error::ZomeApiInternalResult,
     hash::HashString,

@@ -10,7 +10,7 @@ use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::Eav
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_types::json::JsonString;
-use holochain_core_types::entry::dna::{
+use holochain_core_types::dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, FnDeclaration, Membrane},

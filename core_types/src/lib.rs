@@ -39,6 +39,7 @@ pub mod entry_type;
 pub mod error;
 #[macro_use]
 extern crate objekt;
+pub mod dna;
 pub mod file_validation;
 pub mod hash;
 pub mod json;

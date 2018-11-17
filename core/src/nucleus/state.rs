@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address, entry::dna::Dna, error::HolochainError, json::JsonString,
+    cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,
 };
 use nucleus::ZomeFnCall;

@@ -11,10 +11,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        entry::{
-            dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-            Entry,
-        },
+        dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
+        entry::Entry,
         entry_type::EntryType,
     };
     use instance::{tests::test_instance_and_context, Instance};

@@ -1,3 +1,4 @@
+#![cfg_attr(tarpaulin, skip)]
 #![feature(try_from)]
 /// Holochain Container executable
 ///

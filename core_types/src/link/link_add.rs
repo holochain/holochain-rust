@@ -1,66 +1,24 @@
-//-------------------------------------------------------------------------------------------------
-// Link
-//-------------------------------------------------------------------------------------------------
-
 use cas::content::Address;
 use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use error::HolochainError;
 use json::JsonString;
+use link::{Link, LinkActionKind};
 use std::convert::TryInto;
 
-type LinkTag = String;
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
-pub struct Link {
-    base: Address,
-    target: Address,
-    tag: LinkTag,
-}
-
-impl Link {
-    pub fn new(base: &Address, target: &Address, tag: &str) -> Self {
-        Link {
-            base: base.to_owned(),
-            target: target.to_owned(),
-            tag: tag.to_owned(),
-        }
-    }
-
-    // Getters
-    pub fn base(&self) -> &Address {
-        &self.base
-    }
-
-    pub fn target(&self) -> &Address {
-        &self.target
-    }
-
-    pub fn tag(&self) -> &LinkTag {
-        &self.tag
-    }
-}
-
 //-------------------------------------------------------------------------------------------------
-// LinkEntry
+// LinkAddEntry
 //-------------------------------------------------------------------------------------------------
-
-// HC.LinkAction sync with hdk-rust
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub enum LinkActionKind {
-    ADD,
-    DELETE,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct LinkEntry {
+pub struct LinkAddEntry {
     action_kind: LinkActionKind,
     link: Link,
 }
 
-impl LinkEntry {
+impl LinkAddEntry {
     pub fn new(action_kind: LinkActionKind, base: &Address, target: &Address, tag: &str) -> Self {
-        LinkEntry {
+        LinkAddEntry {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
         }
@@ -75,14 +33,14 @@ impl LinkEntry {
     }
 
     pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
-        LinkEntry {
+        LinkAddEntry {
             action_kind: action_kind,
             link: link.clone(),
         }
     }
 }
 
-impl ToEntry for LinkEntry {
+impl ToEntry for LinkAddEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::LinkAdd, self.to_owned())
@@ -102,34 +60,19 @@ impl ToEntry for LinkEntry {
 pub mod tests {
 
     use cas::content::AddressableContent;
-    use entry::{
-        link_add::{Link, LinkActionKind, LinkEntry, LinkTag},
-        test_entry_a, test_entry_b, Entry, ToEntry,
-    };
+    use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
     use entry_type::EntryType;
     use json::JsonString;
+    use link::{
+        link_add::LinkAddEntry,
+        tests::{example_link, example_link_action_kind, example_link_tag},
+    };
     use std::convert::TryFrom;
 
-    pub fn test_link_tag() -> LinkTag {
-        LinkTag::from("foo-tag")
-    }
-
-    pub fn test_link() -> Link {
-        Link::new(
-            &test_entry_a().address(),
-            &test_entry_b().address(),
-            &test_link_tag(),
-        )
-    }
-
-    pub fn test_link_entry_action_kind() -> LinkActionKind {
-        LinkActionKind::ADD
-    }
-
-    pub fn test_link_entry() -> LinkEntry {
-        let link = test_link();
-        LinkEntry::new(
-            test_link_entry_action_kind(),
+    pub fn test_link_entry() -> LinkAddEntry {
+        let link = example_link();
+        LinkAddEntry::new(
+            example_link_action_kind(),
             link.base(),
             link.target(),
             link.tag(),
@@ -146,22 +89,22 @@ pub mod tests {
 
     #[test]
     fn link_smoke_test() {
-        test_link();
+        example_link();
     }
 
     #[test]
     fn link_base_test() {
-        assert_eq!(&test_entry_a().address(), test_link().base(),);
+        assert_eq!(&test_entry_a().address(), example_link().base(),);
     }
 
     #[test]
     fn link_target_test() {
-        assert_eq!(&test_entry_b().address(), test_link().target(),);
+        assert_eq!(&test_entry_b().address(), example_link().target(),);
     }
 
     #[test]
     fn link_tag_test() {
-        assert_eq!(&test_link_tag(), test_link().tag(),);
+        assert_eq!(&example_link_tag(), example_link().tag(),);
     }
 
     #[test]
@@ -171,15 +114,12 @@ pub mod tests {
 
     #[test]
     fn link_entry_action_kind_test() {
-        assert_eq!(
-            &test_link_entry_action_kind(),
-            test_link_entry().action_kind(),
-        );
+        assert_eq!(&example_link_action_kind(), test_link_entry().action_kind(),);
     }
 
     #[test]
     fn link_entry_link_test() {
-        assert_eq!(&test_link(), test_link_entry().link(),);
+        assert_eq!(&example_link(), test_link_entry().link(),);
     }
 
     #[test]
@@ -195,7 +135,7 @@ pub mod tests {
     /// show From<String> for LinkEntry
     fn link_entry_from_string_test() {
         assert_eq!(
-            LinkEntry::try_from(test_link_entry_json_string()).unwrap(),
+            LinkAddEntry::try_from(test_link_entry_json_string()).unwrap(),
             test_link_entry(),
         );
     }
@@ -212,7 +152,7 @@ pub mod tests {
         // from_entry()
         assert_eq!(
             test_link_entry(),
-            LinkEntry::from_entry(&test_link_entry().to_entry()),
+            LinkAddEntry::from_entry(&test_link_entry().to_entry()),
         );
     }
 }

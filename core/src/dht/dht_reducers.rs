@@ -219,7 +219,8 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{link_add::Link, test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        link::Link,
     };
     use instance::tests::test_context;
     use state::test_store;

@@ -1,7 +1,5 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
-use holochain_core_types::json::JsonString;
-
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
@@ -14,8 +12,6 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, MutexGuard},
 };
-
-use serde_json;
 
 /// hash connections by dna::agent_id
 fn cat_dna_agent(dna_hash: &str, agent_id: &str) -> String {

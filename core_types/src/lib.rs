@@ -42,6 +42,7 @@ pub mod file_validation;
 pub mod hash;
 pub mod json;
 pub mod keys;
+pub mod link;
 pub mod signature;
 pub mod time;
 pub mod validation;

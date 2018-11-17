@@ -189,11 +189,12 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
     )
 }
 
-mod tests {
+#[cfg(test)]
+pub mod tests {
     use super::*;
     use config::load_configuration;
 
-    fn test_dna_loader() -> DnaLoader {
+    pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
             as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
@@ -233,7 +234,7 @@ mod tests {
     // Cause: An actor at the same path already exists"
     // This needs to be fixed in another PR.
     #[cfg_attr(tarpaulin, skip)]
-    fn test_instantiate_from_config() {
+    pub fn test_instantiate_from_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
         let maybe_holochain = instantiate_from_config(
             &"app spec instance".to_string(),
@@ -264,7 +265,7 @@ mod tests {
     fn test_container_try_from_configuration() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        let mut maybe_container = Container::try_from(&config);
+        let maybe_container = Container::try_from(&config);
 
         assert!(maybe_container.is_err());
         assert_eq!(

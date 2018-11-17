@@ -1,7 +1,8 @@
-use entry::{link_add::Link, Entry, ToEntry};
+use entry::{Entry, ToEntry};
 use entry_type::EntryType;
 use error::error::HolochainError;
 use json::JsonString;
+use link::Link;
 use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------

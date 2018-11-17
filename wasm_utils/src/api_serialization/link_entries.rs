@@ -1,6 +1,4 @@
-use holochain_core_types::{
-    cas::content::Address, entry::link_add::Link, error::HolochainError, json::*,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, link::Link};
 
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct LinkEntriesArgs {

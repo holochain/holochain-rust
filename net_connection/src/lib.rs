@@ -18,6 +18,8 @@ extern crate serde;
 extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
+// macros used in tests
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 

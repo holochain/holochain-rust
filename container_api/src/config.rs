@@ -229,8 +229,10 @@ where
         .map_err(|_| HolochainError::IoError(String::from("Could not serialize toml")))
 }
 
-mod tests {
-    use super::{load_configuration, Configuration};
+#[cfg(test)]
+pub mod tests {
+
+    use config::{load_configuration, Configuration};
 
     #[test]
     fn test_agent_load() {

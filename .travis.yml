@@ -7,6 +7,22 @@ branches:
 
 jobs:
   include:
+    - name: "nix"
+      language: nix
+      script:
+        - nix-shell shell.tools.nix --run hc-fmt-check
+        - nix-shell shell.core.nix --runn "hc-wasm-build && hc-test"
+      cache:
+        directories:
+          - $HOME/nix.store
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      before_cache:
+        - rm -rf $HOME/.cargo/registry/index
+        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug*
+        - rm -rf $TRAVIS_BUILD_DIR/target/debug/*
+
     - name: "windows build & test all"
       os: windows
       env:

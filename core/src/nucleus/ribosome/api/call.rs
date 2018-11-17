@@ -214,7 +214,6 @@ pub mod tests {
             .into_bytes()
     }
 
-
     /// create a test network
     #[cfg_attr(tarpaulin, skip)]
     fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {

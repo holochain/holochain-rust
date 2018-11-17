@@ -3,9 +3,9 @@ use holochain_core_types::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
     error::HolochainError,
 };
+use holochain_net::p2p_network::P2pNetwork;
 use instance::Observer;
 use logger::Logger;
-use holochain_net::p2p_network::P2pNetwork;
 use persister::Persister;
 use state::State;
 use std::sync::{

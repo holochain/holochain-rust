@@ -11,10 +11,7 @@ use holochain_cas_implementations::{
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::{
-    error::HolochainError,
-    json::JsonString,
-};
+use holochain_core_types::{error::HolochainError, json::JsonString};
 
 use holochain_dna::Dna;
 use holochain_net::p2p_network::P2pNetwork;

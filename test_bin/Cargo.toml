@@ -6,6 +6,21 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_container_api = { path = "../container_api" }
-holochain_cas_implementations = {path="../cas_implementations"}
+holochain_cas_implementations = { path="../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
+holochain_net_connection = { path="../net_connection" }
+holochain_net = { path="../net" }
+serde_json = { version = "1", features = ["preserve_order"] }
 tempfile = "3"
+
+[[bin]]
+name = "holochain_test_bin"
+path = "src/main.rs"
+
+[[bin]]
+name = "test_bin_ipc"
+path = "src/test_bin_ipc.rs"
+
+[[bin]]
+name = "test_bin_mock_net"
+path = "src/test_bin_mock_net.rs"

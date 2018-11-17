@@ -52,7 +52,7 @@ macro_rules! load_json {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 ///
@@ -64,13 +64,13 @@ macro_rules! load_json {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> JsonString {
+/// fn handle_post_address(content: String) -> JsonString {
 ///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     });
 ///
-///     match hdk::hash_entry(&post_entry) {
+///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
 ///         Err(hdk_error) => hdk_error.into(),
 ///     }
@@ -110,7 +110,7 @@ macro_rules! load_json {
 ///             hash_post: {
 ///                 inputs: |content: String|,
 ///                 outputs: |post: serde_json::Value|,
-///                 handler: handle_hash_post
+///                 handler: handle_post_address
 ///             }
 ///         }
 ///     }

@@ -96,6 +96,7 @@ pub enum HolochainError {
     ValidationFailed(String),
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
+    ConfigError(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -127,6 +128,7 @@ impl Error for HolochainError {
             ValidationFailed(fail_msg) => &fail_msg,
             Ribosome(err_code) => err_code.as_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
+            ConfigError(err_msg) => &err_msg,
         }
     }
 }
@@ -155,6 +157,18 @@ impl From<IoError> for HolochainError {
 impl From<SerdeError> for HolochainError {
     fn from(error: SerdeError) -> Self {
         HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<base64::DecodeError> for HolochainError {
+    fn from(error: base64::DecodeError) -> Self {
+        HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<reed_solomon::DecoderError> for HolochainError {
+    fn from(error: reed_solomon::DecoderError) -> Self {
+        HolochainError::SerializationError(format!("{:?}", error))
     }
 }
 
@@ -255,6 +269,7 @@ mod tests {
             (HolochainError::NotImplemented, "not implemented"),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
+            (HolochainError::ConfigError(String::from("foo")), "foo"),
             (
                 HolochainError::Dna(DnaError::ZomeNotFound(String::from("foo"))),
                 "foo",

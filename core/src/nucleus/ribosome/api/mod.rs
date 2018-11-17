@@ -4,9 +4,9 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
+pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
-pub mod hash_entry;
 pub mod init_globals;
 pub mod link_entries;
 pub mod query;
@@ -15,8 +15,9 @@ use holochain_core_types::entry::dna::zome::capabilities::ReservedCapabilityName
 use nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
-        init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
+        entry_address::invoke_entry_address, get_entry::invoke_get_entry,
+        get_links::invoke_get_links, init_globals::invoke_init_globals,
+        link_entries::invoke_link_entries, query::invoke_query,
     },
     runtime::Runtime,
     Defn,
@@ -55,7 +56,7 @@ pub enum ZomeApiFunction {
     Debug,
 
     /// Commit an app entry to source chain
-    /// commit_entry(entry_type: String, entry_value: String) -> Hash
+    /// commit_entry(entry_type: String, entry_value: String) -> Address
     CommitAppEntry,
 
     /// Get an app entry from source chain by key (header hash)
@@ -73,7 +74,11 @@ pub enum ZomeApiFunction {
     LinkEntries,
     GetLinks,
     Query,
-    HashEntry,
+
+    /// Pass an entry to retrieve its address
+    /// the address algorithm is specific to the entry, typically sha256 but can differ
+    /// entry_address(entry: Entry) -> Address
+    EntryAddress,
 }
 
 impl Defn for ZomeApiFunction {
@@ -89,22 +94,18 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::LinkEntries => "hc_link_entries",
             ZomeApiFunction::GetLinks => "hc_get_links",
             ZomeApiFunction::Query => "hc_query",
-            ZomeApiFunction::HashEntry => "hc_hash_entry",
+            ZomeApiFunction::EntryAddress => "hc_entry_address",
         }
     }
 
     fn str_to_index(s: &str) -> usize {
-        match ZomeApiFunction::from_str(s) {
-            Ok(i) => i as usize,
-            Err(_) => ZomeApiFunction::MissingNo as usize,
-        }
+        ZomeApiFunction::from_str(s)
+            .map(|i| i as usize)
+            .unwrap_or(ZomeApiFunction::MissingNo as usize)
     }
 
     fn from_index(i: usize) -> Self {
-        match FromPrimitive::from_usize(i) {
-            Some(v) => v,
-            None => ZomeApiFunction::MissingNo,
-        }
+        FromPrimitive::from_usize(i).unwrap_or(ZomeApiFunction::MissingNo)
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
@@ -128,7 +129,7 @@ impl FromStr for ZomeApiFunction {
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             "hc_query" => Ok(ZomeApiFunction::Query),
-            "hc_hash_entry" => Ok(ZomeApiFunction::HashEntry),
+            "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -157,7 +158,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
             ZomeApiFunction::Query => invoke_query,
-            ZomeApiFunction::HashEntry => invoke_hash_entry,
+            ZomeApiFunction::EntryAddress => invoke_entry_address,
         }
     }
 }
@@ -379,7 +380,7 @@ pub mod tests {
             ("hc_link_entries", ZomeApiFunction::LinkEntries),
             ("hc_get_links", ZomeApiFunction::GetLinks),
             ("hc_query", ZomeApiFunction::Query),
-            ("hc_hash_entry", ZomeApiFunction::HashEntry),
+            ("hc_entry_address", ZomeApiFunction::EntryAddress),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -405,7 +406,7 @@ pub mod tests {
             (ZomeApiFunction::LinkEntries, "hc_link_entries"),
             (ZomeApiFunction::GetLinks, "hc_get_links"),
             (ZomeApiFunction::Query, "hc_query"),
-            (ZomeApiFunction::HashEntry, "hc_hash_entry"),
+            (ZomeApiFunction::EntryAddress, "hc_entry_address"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -422,7 +423,7 @@ pub mod tests {
             ("hc_link_entries", 7),
             ("hc_get_links", 8),
             ("hc_query", 9),
-            ("hc_hash_entry", 10),
+            ("hc_entry_address", 10),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -439,7 +440,7 @@ pub mod tests {
             (7, ZomeApiFunction::LinkEntries),
             (8, ZomeApiFunction::GetLinks),
             (9, ZomeApiFunction::Query),
-            (10, ZomeApiFunction::HashEntry),
+            (10, ZomeApiFunction::EntryAddress),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

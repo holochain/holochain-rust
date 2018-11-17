@@ -222,7 +222,7 @@ pub mod tests {
     fn create_context() -> Arc<Context> {
         Arc::new(
             Context::new(
-                Agent::from("alex".to_string()),
+                Agent::generate_fake("alex"),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 Arc::new(RwLock::new(

@@ -187,11 +187,13 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => if call_result.is_null() {
-            CallbackResult::Pass
-        } else {
-            CallbackResult::Fail(call_result.to_string())
-        },
+        Ok(call_result) => {
+            if call_result.is_null() {
+                CallbackResult::Pass
+            } else {
+                CallbackResult::Fail(call_result.to_string())
+            }
+        }
         Err(_) => CallbackResult::NotImplemented,
     }
 }

@@ -10,8 +10,12 @@
 #![feature(try_from)]
 #![feature(never_type)]
 
+#[macro_use]
+extern crate arrayref;
+extern crate base64;
 extern crate futures;
 extern crate multihash;
+extern crate reed_solomon;
 extern crate rust_base58;
 extern crate serde;
 #[macro_use]
@@ -23,9 +27,9 @@ extern crate snowflake;
 extern crate bitflags;
 #[macro_use]
 extern crate holochain_core_types_derive;
-extern crate base64;
 
 extern crate uuid;
+
 pub mod cas;
 pub mod chain_header;
 pub mod crud_status;

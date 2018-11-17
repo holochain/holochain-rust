@@ -9,6 +9,9 @@ jobs:
   include:
     - name: "nix"
       language: nix
+      # sudo actually speeds nix up...
+      # https://github.com/travis-ci/travis-ci/issues/6604
+      sudo: true
       script:
         - nix-shell shell.tools.nix --run hc-fmt-check
         - nix-shell shell.core.nix --runn "hc-wasm-build && hc-test"

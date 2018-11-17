@@ -12,8 +12,7 @@
 //! extern crate tempfile;
 //! use holochain_container_api::*;
 //! use holochain_net::p2p_network::P2pNetwork;
-//! use holochain_core_types::entry::agent::Agent;
-//! use holochain_core_types::json::JsonString;
+//! use holochain_core_types::{entry::agent::Agent, dna::Dna, json::JsonString};
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;

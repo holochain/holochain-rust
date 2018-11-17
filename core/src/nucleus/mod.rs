@@ -7,10 +7,10 @@ pub mod state;
 use action::{Action, ActionWrapper, NucleusReduceFn};
 use context::Context;
 use holochain_core_types::{
+    dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna},
     error::{DnaError, HcResult, HolochainError},
     json::JsonString,
 };
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
 use instance::{dispatch_action_with_observer, Observer};
 use nucleus::{
     ribosome::api::call::reduce_call,
@@ -431,7 +431,7 @@ pub mod tests {
     extern crate test_utils;
     use super::*;
     use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
-    use holochain_dna::Dna;
+    use holochain_core_types::dna::Dna;
     use instance::{
         tests::{test_context, test_context_with_channels, test_instance},
         Instance,

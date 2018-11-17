@@ -8,5 +8,4 @@ name = "holochain_dna_c_binding"
 crate-type = ["staticlib"]
 
 [dependencies]
-holochain_dna = { path = "../dna" }
 holochain_core_types = { path = "../core_types" }

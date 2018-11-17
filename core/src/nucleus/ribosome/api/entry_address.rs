@@ -1,10 +1,10 @@
 use holochain_core_types::{
     self,
     cas::content::AddressableContent,
+    dna::Dna,
     entry::{Entry, SerializedEntry},
     entry_type::EntryType,
 };
-use holochain_dna::Dna;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};

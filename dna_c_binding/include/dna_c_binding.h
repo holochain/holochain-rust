@@ -34,7 +34,7 @@ struct CStringVec {
     const char** ptr;
 };
 
-extern void qholochain_dna_get_zome_names(const Dna *ptr, CStringVec *string_vec);
+extern void holochain_dna_get_zome_names(const Dna *ptr, CStringVec *string_vec);
 extern void holochain_dna_free_zome_names(CStringVec *string_vec);
 
 extern void holochain_dna_get_capabilities_names(const Dna *ptr, const char *zome_name, CStringVec *string_vec);

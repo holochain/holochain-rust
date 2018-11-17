@@ -123,7 +123,7 @@ impl State {
         Arc::clone(&self.dht)
     }
 
-    pub fn from_agent_snapshot(
+    pub fn try_from_agent_snapshot(
         context: Arc<Context>,
         snapshot: AgentStateSnapshot,
     ) -> HcResult<State> {

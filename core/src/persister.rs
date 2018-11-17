@@ -50,7 +50,7 @@ impl Persister for SimplePersister {
         let snapshot: Option<AgentStateSnapshot> = store
             .fetch(&address)?
             .map(|s: Content| AgentStateSnapshot::from_content(&s));
-        let state = snapshot.map(|snap| State::from_agent_snapshot(context, snap).ok());
+        let state = snapshot.map(|snap| State::try_from_agent_snapshot(context, snap).ok());
         Ok(state.unwrap_or(None))
     }
 }

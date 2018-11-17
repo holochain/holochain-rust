@@ -102,8 +102,13 @@ impl Iterator for ChainStoreIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                .map(|content|ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
+                storage
+                    .read()
+                    .unwrap()
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| ChainHeader::try_from_content(&content)
+                    .expect("failed to load ChainHeader from Content"))
             });
         previous
     }
@@ -142,8 +147,10 @@ impl Iterator for ChainStoreTypeIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                (*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                                          .map(|content|ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
+                (*storage.read().unwrap())
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
             });
         previous
     }

@@ -42,7 +42,7 @@ A container is a Holochain utility or service that manages and runs Holochain ap
 In order to develop a Rust based container toolset we added this crate [container_api](container_api).
 There is another crate [container](container) which is a wrapper around [container_api](container_api) that builds to an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.
 
-If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily. 
+If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily.
 
 To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
 
@@ -136,7 +136,7 @@ If your changes do not break the current environment, you can submit a separate 
 Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
 
 ### Building for Android
-Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/holochain_across_platforms.md).
+Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/building_for_android.md).
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.

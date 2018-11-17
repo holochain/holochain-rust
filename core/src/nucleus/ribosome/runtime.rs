@@ -55,7 +55,8 @@ impl Runtime {
         String::from_utf8(bin_arg)
             // @TODO don't panic in WASM
             // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap().into()
+            .unwrap()
+            .into()
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.

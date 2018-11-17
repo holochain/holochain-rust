@@ -11,7 +11,7 @@
 /// * bridges, which are
 use boolinator::*;
 use holochain_core_types::{
-    entry::agent::{Agent, Identity},
+    entry::agent::Agent,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
@@ -125,7 +125,8 @@ pub struct AgentConfiguration {
 
 impl From<AgentConfiguration> for Agent {
     fn from(config: AgentConfiguration) -> Self {
-        Agent::from(Identity::from(config.id))
+        Agent::try_from(JsonString::try_from(config.id).expect("bad agent json"))
+            .expect("bad agent json")
     }
 }
 

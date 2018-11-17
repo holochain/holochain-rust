@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn test_state() {
         let mut maybe_context = Context::new(
-            Agent::from("Terence".to_string()),
+            Agent::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             Arc::new(RwLock::new(
@@ -142,7 +142,7 @@ mod tests {
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let mut context = Context::new(
-            Agent::from("Terence".to_string()),
+            Agent::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             Arc::new(RwLock::new(

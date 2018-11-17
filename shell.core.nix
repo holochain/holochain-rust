@@ -31,6 +31,8 @@ stdenv.mkDerivation rec {
 
     hc-wasm-build
     hc-test
+
+    zeromq
   ];
 
 }

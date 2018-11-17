@@ -12,6 +12,7 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
+use state::State;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -87,6 +88,18 @@ impl AgentStateSnapshot {
     }
     pub fn top_chain_header(&self) -> &ChainHeader {
         &self.top_chain_header
+    }
+}
+
+impl TryFrom<State> for AgentStateSnapshot {
+    type Error = HolochainError;
+
+    fn try_from(state: State) -> Result<Self, Self::Error> {
+        let agent = &*(state.agent());
+        let top_chain = agent
+            .top_chain_header()
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
+        Ok(AgentStateSnapshot::new(top_chain))
     }
 }
 

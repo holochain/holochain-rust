@@ -9,6 +9,7 @@ use holochain_core_types::{
 };
 use state::State;
 use std::{
+    convert::TryFrom,
     fs::{File, OpenOptions},
     io::{Read, Write},
     sync::{Arc, RwLock},
@@ -39,7 +40,7 @@ impl Persister for SimplePersister {
     fn save(&mut self, state: State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
-        let snapshot = State::to_agent_snapshot(state)?;
+        let snapshot = AgentStateSnapshot::try_from(state)?;
         Ok(store.add(&snapshot)?)
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {

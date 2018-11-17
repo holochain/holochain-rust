@@ -123,14 +123,6 @@ impl State {
         Arc::clone(&self.dht)
     }
 
-    pub fn to_agent_snapshot(state: State) -> HcResult<AgentStateSnapshot> {
-        let agent = &*(state.agent());
-        let top_chain = agent
-            .top_chain_header()
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
-        Ok(AgentStateSnapshot::new(top_chain))
-    }
-
     pub fn from_agent_snapshot(
         context: Arc<Context>,
         snapshot: AgentStateSnapshot,

@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
+holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_dna = { path = "../dna" }
@@ -12,7 +13,9 @@ tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4.8"
+boolinator = "2.4"
 
 [dev-dependencies]
-holochain_cas_implementations = { path = "../cas_implementations" }
 test_utils = { path = "../test_utils"}
+clap = "2"
+structopt = "0.2"

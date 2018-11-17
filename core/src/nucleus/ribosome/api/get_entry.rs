@@ -231,7 +231,7 @@ mod tests {
     }
 
     #[test]
-    /// test that we get status NotFound on an obviously broken hash
+    /// test that we get status NotFound on an obviously broken address
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(

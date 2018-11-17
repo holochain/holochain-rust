@@ -3,6 +3,7 @@ use eav::{EntityAttributeValue, EntityAttributeValueStorage};
 use entry::{test_entry_unique, SerializedEntry};
 use error::HolochainError;
 use json::RawString;
+use objekt;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -10,7 +11,6 @@ use std::{
     thread,
 };
 
-use objekt;
 use std::convert::TryFrom;
 use uuid::Uuid;
 

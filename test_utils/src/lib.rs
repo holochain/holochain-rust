@@ -166,7 +166,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from(agent_name.to_string());
+    let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
     (
         Arc::new(
@@ -215,7 +215,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::from(agent_name.to_string());
+    let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
 
     return Arc::new(

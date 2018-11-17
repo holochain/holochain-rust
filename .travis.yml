@@ -17,6 +17,7 @@ jobs:
         - nix-shell shell.core.nix --runn "hc-wasm-build && hc-test"
       cache:
         directories:
+          - /nix/store
           - $HOME/nix.store
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target

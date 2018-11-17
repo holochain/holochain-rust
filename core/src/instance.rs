@@ -300,6 +300,7 @@ pub mod tests {
         json::{JsonString, RawString},
     };
     use holochain_dna::{zome::Zome, Dna};
+    use holochain_net::p2p_network::P2pNetwork;
     use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,
@@ -332,11 +333,25 @@ pub mod tests {
     }
 
     /// create a test logger
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_logger() -> Arc<Mutex<TestLogger>> {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
+    /// create a test network
+    #[cfg_attr(tarpaulin, skip)]
+    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+        let res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "backend": "mock"
+            }).into(),
+        ).unwrap();
+        Arc::new(Mutex::new(res))
+    }
+
     /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = Agent::generate_fake(agent_name);
         let logger = test_logger();
@@ -355,6 +370,7 @@ pub mod tests {
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),
                     )),
+                    make_mock_net(),
                 ).unwrap(),
             ),
             logger,
@@ -362,12 +378,14 @@ pub mod tests {
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context(agent_name: &str) -> Arc<Context> {
         let (context, _) = test_context_and_logger(agent_name);
         context
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
@@ -389,10 +407,12 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
+                make_mock_net(),
             ).unwrap(),
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_state() -> Arc<Context> {
         let mut context = Context::new(
             Agent::generate_fake("Florence"),
@@ -405,12 +425,14 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            make_mock_net(),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state() -> Arc<Context> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
@@ -424,6 +446,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            make_mock_net(),
         ).unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

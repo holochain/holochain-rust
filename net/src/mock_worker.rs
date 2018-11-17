@@ -156,7 +156,7 @@ impl NetWorker for MockWorker {
 
         let mut mock = get_mock()?;
         mock.access_count += 1;
-        println!("mock tick ({})", mock.access_count);
+        //println!("mock tick ({})", mock.access_count);
 
         Ok(did_something)
     }

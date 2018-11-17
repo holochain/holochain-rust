@@ -17,6 +17,8 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
+use holochain_net::p2p_network::P2pNetwork;
+
 use boolinator::*;
 
 /// Main representation of the container.
@@ -180,12 +182,20 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
     let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let res = P2pNetwork::new(
+        Box::new(|_r| Ok(())),
+        &json!({
+            "backend": "mock"
+        }).into(),
+    ).unwrap();
+
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(agent_path))),
         Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
+        Arc::new(Mutex::new(res)),
     )
 }
 

@@ -3,8 +3,12 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_dna;
+extern crate holochain_net;
 extern crate tempfile;
 extern crate wabt;
+#[macro_use]
+extern crate serde_json;
+
 
 use holochain_core_types::entry::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -20,6 +24,8 @@ use holochain_dna::{
     },
     Dna,
 };
+use holochain_net::p2p_network::P2pNetwork;
+
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     fmt,
@@ -164,6 +170,18 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
     Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
 }
 
+/// create a test network
+#[cfg_attr(tarpaulin, skip)]
+fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+    let res = P2pNetwork::new(
+        Box::new(|_r| Ok(())),
+        &json!({
+            "backend": "mock"
+        }).into(),
+    ).unwrap();
+    Arc::new(Mutex::new(res))
+}
+
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = Agent::generate_fake(agent_name);
@@ -176,6 +194,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
                 Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
                 Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                make_mock_net(),
             ).unwrap(),
         ),
         logger,
@@ -225,6 +244,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
             Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
             Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            make_mock_net(),
         ).unwrap(),
     );
 }

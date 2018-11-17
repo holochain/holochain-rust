@@ -17,7 +17,7 @@ jobs:
 
       before_install:
         - docker pull nixos/nix
-        - docker build ./docker/Dockerfile.nix
+        - docker build -f ./docker/Dockerfile.nix .
 
       script:
         # - nix-shell shell.tools.nix --run hc-fmt-check

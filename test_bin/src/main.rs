@@ -2,7 +2,6 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate holochain_net;
 extern crate tempfile;
 #[macro_use]
@@ -11,9 +10,9 @@ extern crate serde_json;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_types::entry::agent::Agent;
-use holochain_dna::Dna;
 use holochain_net::p2p_network::P2pNetwork;
+use holochain_core_types::{dna::Dna, entry::agent::Agent};
+
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},
@@ -56,13 +55,16 @@ fn main() {
         usage();
     }
 
-    //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+    //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
     let agent = Agent::generate_fake(identity);
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
         )),

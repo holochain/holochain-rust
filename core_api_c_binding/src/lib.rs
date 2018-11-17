@@ -3,18 +3,17 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate holochain_net;
+
 
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::{error::HolochainError, json::JsonString};
-
-use holochain_dna::Dna;
 use holochain_net::p2p_network::P2pNetwork;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
@@ -80,10 +79,11 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
         make_mock_net(),

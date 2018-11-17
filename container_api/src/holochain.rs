@@ -7,12 +7,10 @@
 //! extern crate holochain_container_api;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
-//! extern crate holochain_dna;
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_dna::Dna;
 //! use holochain_net::p2p_network::P2pNetwork;
 //! use holochain_core_types::entry::agent::Agent;
 //! use holochain_core_types::json::JsonString;
@@ -28,16 +26,17 @@
 //! // instantiate a new holochain instance
 //!
 //! // need to get to something like this:
-//! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+//! //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
 //!
 //! // but for now:
 //! let dna = Dna::new();
 //! let agent = Agent::generate_fake("bob");
+//! let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new(String::from("Agent Name")))),
-//!     Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+//!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+//!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
 //!     Arc::new(Mutex::new(P2pNetwork::new(Box::new(|_r| Ok(())),&JsonString::from("{\"backend\": \"mock\"}")).unwrap())),
 //!  ).unwrap();
@@ -71,8 +70,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -107,7 +105,7 @@ impl Holochain {
     }
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(format!("{}/state", path));
+        let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
@@ -178,9 +176,9 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::entry::agent::Agent;
-    use holochain_dna::Dna;
     use holochain_net::p2p_network::P2pNetwork;
+    use holochain_core_types::{dna::Dna, entry::agent::Agent};
+
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{
@@ -206,17 +204,17 @@ mod tests {
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = Agent::generate_fake(agent_name);
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_utils::test_logger();
         (
             Arc::new(
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    )),
+                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                    file_storage.clone(),
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),

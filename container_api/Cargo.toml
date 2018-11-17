@@ -7,7 +7,6 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_dna = { path = "../dna" }
 holochain_net = { path = "../net" }
 futures-preview = "0.2.2"
 tempfile = "3"

@@ -11,7 +11,6 @@ crate-type = ["staticlib"]
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_container_api = { path = "../container_api" }
-holochain_dna = { path = "../dna" }
 holochain_net = { path = "../net" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }

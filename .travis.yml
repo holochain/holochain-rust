@@ -16,16 +16,17 @@ jobs:
         - docker
 
       before_install:
+        - ls -la
         - docker pull nixos/nix
         - docker build -f ./docker/Dockerfile.nix . -t test
-        - docker run test
+        - docker run test -v $TRAVIS_BUILD_DIR:.
 
       script:
         # - nix-shell shell.tools.nix --run hc-fmt-check
         # - nix-shell shell.core.nix --run "hc-wasm-build && hc-test"
       cache:
         directories:
-          - /nix/store
+          - /nix
           - $HOME/nix.store
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target

@@ -8,13 +8,19 @@ branches:
 jobs:
   include:
     - name: "nix"
-      language: nix
+      language: bash
       # sudo actually speeds nix up...
       # https://github.com/travis-ci/travis-ci/issues/6604
-      sudo: true
+      sudo: required
+      services:
+        - docker
+
+      before_install:
+        - docker pull nixos/nix
+
       script:
-        - nix-shell shell.tools.nix --run hc-fmt-check
-        - nix-shell shell.core.nix --run "hc-wasm-build && hc-test"
+        # - nix-shell shell.tools.nix --run hc-fmt-check
+        # - nix-shell shell.core.nix --run "hc-wasm-build && hc-test"
       cache:
         directories:
           - /nix/store

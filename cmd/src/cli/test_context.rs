@@ -1,6 +1,6 @@
 use tempfile::tempdir;
 
-use holochain_cas_implementations::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use holochain_cas_implementations::{cas::file::FilesystemStorage, cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_types::entry::agent::Agent;
 use std::sync::{Arc, Mutex, RwLock};
@@ -25,14 +25,19 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
+#[cfg_attr(tarpaulin, skip)]
 pub fn test_context(agent_name: &str) -> Arc<Context> {
+    let tempdir = tempdir().unwrap();
     let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
     Arc::new(
         Context::new(
             agent,
             logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new(agent_name.to_string()))),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             Arc::new(RwLock::new(MemoryStorage::new().unwrap())),
             Arc::new(RwLock::new(EavMemoryStorage::new().unwrap())),
         ).unwrap(),

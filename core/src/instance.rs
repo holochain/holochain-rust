@@ -296,8 +296,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
-        entry::{agent::Agent, ToEntry},
-        entry_type::EntryType,
+        entry::{agent::Agent, entry_type::EntryType, ToEntry},
         json::{JsonString, RawString},
     };
     use holochain_net::p2p_network::P2pNetwork;

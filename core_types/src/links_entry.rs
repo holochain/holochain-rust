@@ -1,6 +1,5 @@
 use cas::content::Address;
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{entry_type::EntryType, Entry, ToEntry};
 use error::HolochainError;
 use json::JsonString;
 use std::convert::TryInto;
@@ -139,8 +138,7 @@ impl ToEntry for LinkListEntry {
 pub mod tests {
 
     use cas::content::AddressableContent;
-    use entry::{test_entry_a, test_entry_b, Entry, ToEntry};
-    use entry_type::EntryType;
+    use entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry};
     use json::JsonString;
     use links_entry::{Link, LinkActionKind, LinkEntry, LinkTag};
     use std::convert::TryFrom;

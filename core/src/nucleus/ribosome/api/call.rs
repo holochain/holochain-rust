@@ -11,7 +11,7 @@ use nucleus::{
 };
 use std::{
     convert::TryFrom,
-    sync::{mpsc::channel, Arc, RwLock},
+    sync::{mpsc::channel, Arc},
 };
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -187,7 +187,7 @@ pub mod tests {
     };
     use persister::SimplePersister;
     use serde_json;
-    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex, RwLock};
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry

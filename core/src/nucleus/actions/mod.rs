@@ -12,8 +12,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-        entry::Entry,
-        entry_type::EntryType,
+        entry::{entry_type::EntryType, Entry},
     };
     use instance::{tests::test_instance_and_context, Instance};
     use std::sync::Arc;

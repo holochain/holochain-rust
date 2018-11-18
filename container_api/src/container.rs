@@ -205,7 +205,7 @@ pub mod tests {
     use super::*;
     use config::load_configuration;
 
-    fn test_dna_loader() -> DnaLoader {
+    pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
             as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)

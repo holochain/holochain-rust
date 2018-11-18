@@ -1,8 +1,7 @@
 //! Represents an agent entry in the cas
 
 use cas::content::{Address, AddressableContent, Content};
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{Entry, EntryType, ToEntry};
 use json::JsonString;
 
 use std::convert::TryFrom;

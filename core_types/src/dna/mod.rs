@@ -27,8 +27,7 @@ pub mod wasm;
 pub mod zome;
 
 use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{entry_type::EntryType, Entry, ToEntry};
 use error::{DnaError, HolochainError};
 use json::JsonString;
 use serde_json::{self, Value};

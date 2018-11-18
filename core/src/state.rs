@@ -8,8 +8,7 @@ use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
-    entry::{Entry, SerializedEntry, ToEntry},
-    entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::{HcResult, HolochainError},
 };
 use nucleus::state::NucleusState;

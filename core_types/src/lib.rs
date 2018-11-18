@@ -39,11 +39,15 @@ pub mod entry_type;
 pub mod error;
 #[macro_use]
 extern crate objekt;
+pub mod agent;
+pub mod chain_migrate;
+pub mod delete;
 pub mod dna;
 pub mod file_validation;
 pub mod hash;
 pub mod json;
 pub mod keys;
+pub mod link_remove;
 pub mod links_entry;
 pub mod signature;
 pub mod time;

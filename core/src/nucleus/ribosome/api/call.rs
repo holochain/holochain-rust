@@ -165,8 +165,8 @@ pub mod tests {
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
+        agent::Agent,
         dna::{zome::capabilities::Capability, Dna},
-        entry::agent::Agent,
         error::DnaError,
         json::JsonString,
     };

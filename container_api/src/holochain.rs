@@ -10,7 +10,7 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_core_types::entry::agent::Agent;
+//! use holochain_core_types::agent::Agent;
 //! use holochain_core_types::dna::Dna;
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
@@ -173,7 +173,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::{dna::Dna, entry::agent::Agent};
+    use holochain_core_types::{agent::Agent, dna::Dna};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{

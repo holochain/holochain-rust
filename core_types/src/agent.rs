@@ -7,7 +7,7 @@ use json::JsonString;
 
 use std::convert::TryFrom;
 
-use super::super::error::HolochainError;
+use error::HolochainError;
 use reed_solomon::{Decoder, Encoder};
 
 const PARITY_LEN: usize = 2;

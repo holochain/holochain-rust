@@ -11,7 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
@@ -178,7 +178,7 @@ pub mod tests {
     };
     use std::{str::FromStr, sync::Arc};
 
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

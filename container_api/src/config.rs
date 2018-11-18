@@ -11,11 +11,11 @@
 /// * bridges, which are
 use boolinator::*;
 use holochain_core_types::{
+    dna::Dna,
     entry::agent::Agent,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
-use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
 use toml;

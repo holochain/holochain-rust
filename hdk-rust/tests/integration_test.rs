@@ -1,7 +1,6 @@
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -10,15 +9,15 @@ extern crate serde_json;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
+    dna::zome::{
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
+    },
     entry::{Entry, SerializedEntry},
     entry_type::test_entry_type,
     error::ZomeApiInternalResult,
     hash::HashString,
     json::JsonString,
-};
-use holochain_dna::zome::{
-    capabilities::{Capability, FnDeclaration, Membrane},
-    entry_types::EntryTypeDef,
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;

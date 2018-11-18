@@ -18,15 +18,16 @@ extern crate multihash;
 extern crate reed_solomon;
 extern crate rust_base58;
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-#[macro_use]
-extern crate serde_derive;
 extern crate uuid;
 
 pub mod cas;
@@ -38,6 +39,7 @@ pub mod entry_type;
 pub mod error;
 #[macro_use]
 extern crate objekt;
+pub mod dna;
 pub mod file_validation;
 pub mod hash;
 pub mod json;

@@ -84,11 +84,11 @@ impl LinkEntry {
 impl ToEntry for LinkEntry {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::Link, self.to_owned())
+        Entry::new(EntryType::LinkAdd, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        assert_eq!(&EntryType::Link, entry.entry_type());
+        assert_eq!(&EntryType::LinkAdd, entry.entry_type());
         entry
             .value()
             .to_owned()
@@ -238,7 +238,7 @@ pub mod tests {
     fn link_entry_to_entry_test() {
         // to_entry()
         assert_eq!(
-            Entry::new(EntryType::Link, test_link_entry_json_string()),
+            Entry::new(EntryType::LinkAdd, test_link_entry_json_string()),
             test_link_entry().to_entry(),
         );
 

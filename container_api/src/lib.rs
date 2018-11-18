@@ -1,3 +1,6 @@
+//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+//!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
+//!     file_system.clone(),
 #![feature(try_from)]
 /// Holochain Container API
 ///
@@ -88,7 +91,6 @@ extern crate futures;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate serde;
 extern crate tempfile;
 #[macro_use]

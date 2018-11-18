@@ -7,10 +7,10 @@ use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
-    entry::{entry_type::EntryType, *},
+    dna::Dna,
+    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::{HcResult, HolochainError},
 };
-use holochain_dna::Dna;
 use nucleus::state::NucleusState;
 use serde_json;
 use std::{
@@ -122,19 +122,12 @@ impl State {
         Arc::clone(&self.dht)
     }
 
-    pub fn serialize_state(state: State) -> HcResult<String> {
-        let agent = &*(state.agent());
-        let top_chain = agent
-            .top_chain_header()
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
-        Ok(serde_json::to_string(&AgentStateSnapshot::new(top_chain))?)
-    }
-
-    pub fn deserialize_state(context: Arc<Context>, agent_json: String) -> HcResult<State> {
-        let snapshot = serde_json::from_str::<AgentStateSnapshot>(&agent_json)?;
-        let cas = &(context).file_storage;
+    pub fn try_from_agent_snapshot(
+        context: Arc<Context>,
+        snapshot: AgentStateSnapshot,
+    ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(cas.clone()),
+            ChainStore::new(context.file_storage.clone()),
             snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(

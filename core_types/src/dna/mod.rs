@@ -1,4 +1,4 @@
-//! holochain_dna is a library for working with holochain dna files.
+//! dna is a library for working with holochain dna files/entries.
 //!
 //! It includes utilities for representing dna structures in memory,
 //! as well as serializing and deserializing dna, mainly to json format.
@@ -8,8 +8,7 @@
 //! ```
 //! #![feature(try_from)]
 //! extern crate holochain_core_types;
-//! extern crate holochain_dna;
-//! use holochain_dna::Dna;
+//! use holochain_core_types::dna::Dna;
 //! use holochain_core_types::json::JsonString;
 //! use std::convert::TryFrom;
 //!
@@ -23,32 +22,21 @@
 //! let dna2 = Dna::try_from(json).expect("could not restore DNA from JSON");
 //! assert_eq!(name, dna2.name);
 //! ```
-#![feature(try_from)]
-extern crate holochain_core_types;
-#[macro_use]
-extern crate holochain_core_types_derive;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-#[macro_use]
-extern crate serde_json;
-extern crate base64;
-extern crate uuid;
-
-use serde_json::Value;
-use std::hash::{Hash, Hasher};
 
 pub mod wasm;
 pub mod zome;
 
-use holochain_core_types::{
-    entry::{entry_type::EntryType, Entry, ToEntry},
-    error::{DnaError, HolochainError},
-    json::JsonString,
+use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
+use entry::{entry_type::EntryType, Entry, ToEntry};
+use error::{DnaError, HolochainError};
+use json::JsonString;
+use serde_json::{self, Value};
+use std::{
+    collections::HashMap,
+    convert::TryInto,
+    hash::{Hash, Hasher},
 };
-use std::{collections::HashMap, convert::TryInto};
 use uuid::Uuid;
-use zome::{capabilities::Capability, entry_types::EntryTypeDef};
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -113,7 +101,7 @@ impl Dna {
     /// # Examples
     ///
     /// ```
-    /// use holochain_dna::Dna;
+    /// use holochain_core_types::dna::Dna;
     ///
     /// let dna = Dna::new();
     /// assert_eq!("", dna.name);
@@ -128,7 +116,7 @@ impl Dna {
     /// # Examples
     ///
     /// ```
-    /// use holochain_dna::Dna;
+    /// use holochain_core_types::dna::Dna;
     ///
     /// let dna = Dna::new();
     /// println!("json: {}", dna.to_json_pretty().expect("DNA should serialize"));
@@ -250,8 +238,8 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
+    use dna::zome::tests::test_zome;
     use std::convert::TryFrom;
-    use zome::tests::test_zome;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 

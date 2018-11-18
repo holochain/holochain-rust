@@ -47,9 +47,10 @@ impl Persister for SimplePersister {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
         let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
-        let snapshot: Option<AgentStateSnapshot> = store
-            .fetch(&address)?
-            .map(|s: Content| AgentStateSnapshot::from_content(&s));
+        let snapshot: Option<AgentStateSnapshot> = store.fetch(&address)?.map(|s: Content| {
+            AgentStateSnapshot::try_from_content(&s)
+                .expect("could not load AgentStateSnapshot from content")
+        });
         let state = snapshot.map(|snap| State::try_from_agent_snapshot(context, snap).ok());
         Ok(state.unwrap_or(None))
     }

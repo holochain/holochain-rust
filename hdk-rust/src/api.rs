@@ -397,7 +397,7 @@ pub fn call<S: Into<String>>(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::EntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///
@@ -524,7 +524,7 @@ pub fn get_entry_result(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::EntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
@@ -617,7 +617,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::EntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///

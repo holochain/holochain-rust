@@ -2,8 +2,7 @@ use holochain_core_types::{
     self,
     cas::content::AddressableContent,
     dna::Dna,
-    entry::{Entry, SerializedEntry},
-    entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry, SerializedEntry},
 };
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::{convert::TryFrom, str::FromStr};

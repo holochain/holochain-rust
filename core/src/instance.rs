@@ -297,8 +297,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
-        entry::ToEntry,
-        entry_type::EntryType,
+        entry::{entry_type::EntryType, ToEntry},
         json::{JsonString, RawString},
     };
     use logger::Logger;

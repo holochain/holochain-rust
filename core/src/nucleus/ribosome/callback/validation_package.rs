@@ -1,7 +1,7 @@
 extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
-    entry_type::EntryType, error::HolochainError, validation::ValidationPackageDefinition,
+    entry::entry_type::EntryType, error::HolochainError, validation::ValidationPackageDefinition,
 };
 use nucleus::{
     ribosome::{

@@ -5,9 +5,8 @@
 //! See the associated Qt unit tests in the c_binding_tests directory.
 #![feature(try_from)]
 extern crate holochain_core_types;
-extern crate holochain_dna;
 
-use holochain_dna::Dna;
+use holochain_core_types::dna::Dna;
 use std::{
     convert::TryFrom,
     ffi::{CStr, CString},

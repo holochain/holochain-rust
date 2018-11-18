@@ -14,18 +14,15 @@ macro_rules! sys_prefix {
 // Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
 pub enum EntryType {
-    AgentId,
-    Deletion,
     App(String),
     Dna,
-    ChainHeader,
-    Key,
-    Link,
-    Migration,
-    /// TODO #339 - This is different kind of SystemEntry for the DHT only.
-    /// Should be moved into a different enum for DHT entry types.
+    AgentId,
+    Delete,
+    LinkAdd,
+    LinkRemove,
     LinkList,
-    AgentState,
+    ChainHeader,
+    ChainMigrate,
 }
 
 impl EntryType {
@@ -59,14 +56,13 @@ impl FromStr for EntryType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             sys_prefix!("agent_id") => Ok(EntryType::AgentId),
-            sys_prefix!("deletion") => Ok(EntryType::Deletion),
+            sys_prefix!("delete") => Ok(EntryType::Delete),
             sys_prefix!("dna") => Ok(EntryType::Dna),
             sys_prefix!("chain_header") => Ok(EntryType::ChainHeader),
-            sys_prefix!("key") => Ok(EntryType::Key),
-            sys_prefix!("link") => Ok(EntryType::Link),
+            sys_prefix!("link_add") => Ok(EntryType::LinkAdd),
+            sys_prefix!("link_remove") => Ok(EntryType::LinkRemove),
             sys_prefix!("link_list") => Ok(EntryType::LinkList),
-            sys_prefix!("migration") => Ok(EntryType::Migration),
-            sys_prefix!("agent_state") => Ok(EntryType::AgentState),
+            sys_prefix!("chain_migrate") => Ok(EntryType::ChainMigrate),
             _ => Ok(EntryType::App(s.to_string())),
         }
     }
@@ -77,14 +73,13 @@ impl From<EntryType> for String {
         String::from(match entry_type {
             EntryType::App(ref s) => s,
             EntryType::AgentId => sys_prefix!("agent_id"),
-            EntryType::Deletion => sys_prefix!("deletion"),
+            EntryType::Delete => sys_prefix!("delete"),
             EntryType::Dna => sys_prefix!("dna"),
             EntryType::ChainHeader => sys_prefix!("chain_header"),
-            EntryType::Key => sys_prefix!("key"),
-            EntryType::Link => sys_prefix!("link"),
+            EntryType::LinkAdd => sys_prefix!("link_add"),
+            EntryType::LinkRemove => sys_prefix!("link_remove"),
             EntryType::LinkList => sys_prefix!("link_list"),
-            EntryType::Migration => sys_prefix!("migration"),
-            EntryType::AgentState => sys_prefix!("agent_state"),
+            EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
         })
     }
 }
@@ -141,15 +136,15 @@ pub mod tests {
 
     pub fn test_types() -> Vec<EntryType> {
         vec![
-            EntryType::AgentId,
-            EntryType::Deletion,
             EntryType::App(String::from("foo")),
             EntryType::Dna,
-            EntryType::ChainHeader,
-            EntryType::Key,
-            EntryType::Link,
-            EntryType::Migration,
+            EntryType::AgentId,
+            EntryType::Delete,
+            EntryType::LinkAdd,
+            EntryType::LinkRemove,
             EntryType::LinkList,
+            EntryType::ChainHeader,
+            EntryType::ChainMigrate,
         ]
     }
 
@@ -176,15 +171,16 @@ pub mod tests {
     }
 
     #[test]
-    fn entry_type_as_str() {
+    fn entry_type_as_str_test() {
         for (type_str, variant) in vec![
-            (sys_prefix!("agent_id"), EntryType::AgentId),
-            (sys_prefix!("deletion"), EntryType::Deletion),
             (sys_prefix!("dna"), EntryType::Dna),
+            (sys_prefix!("agent_id"), EntryType::AgentId),
+            (sys_prefix!("delete"), EntryType::Delete),
+            (sys_prefix!("link_add"), EntryType::LinkAdd),
+            (sys_prefix!("link_remove"), EntryType::LinkRemove),
+            (sys_prefix!("link_list"), EntryType::LinkList),
             (sys_prefix!("chain_header"), EntryType::ChainHeader),
-            (sys_prefix!("key"), EntryType::Key),
-            (sys_prefix!("link"), EntryType::Link),
-            (sys_prefix!("migration"), EntryType::Migration),
+            (sys_prefix!("chain_migrate"), EntryType::ChainMigrate),
         ] {
             assert_eq!(
                 variant,

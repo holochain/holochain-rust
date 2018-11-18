@@ -1,5 +1,4 @@
-use entry::{Entry, ToEntry};
-use entry_type::EntryType;
+use entry::{entry_type::EntryType, Entry, ToEntry};
 use error::error::HolochainError;
 use json::JsonString;
 use link::Link;

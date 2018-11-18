@@ -10,9 +10,8 @@ extern crate serde_json;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_types::{dna::Dna, entry::agent::Agent};
+use holochain_core_types::{agent::Agent, dna::Dna};
 use holochain_net::p2p_network::P2pNetwork;
-
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},

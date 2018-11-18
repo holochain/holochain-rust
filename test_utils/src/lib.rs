@@ -9,7 +9,7 @@ extern crate wabt;
 extern crate serde_json;
 
 
-use holochain_core_types::entry::agent::Agent;
+use holochain_core_types::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};

@@ -1,5 +1,5 @@
 use cas::content::{Address, AddressableContent, Content};
-use entry_type::{
+use entry::entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
     EntryType,
 };
@@ -13,7 +13,7 @@ use std::{
 pub mod agent;
 pub mod chain_migrate;
 pub mod delete;
-pub mod link_remove;
+pub mod entry_type;
 
 pub type EntryValue = JsonString;
 

@@ -47,8 +47,10 @@ pub mod tests {
     use dht::actions::add_link::add_link;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::Address, entry::Entry, entry_type::test_entry_type, json::JsonString,
-        links_entry::Link,
+        cas::content::Address,
+        entry::{entry_type::test_entry_type, Entry},
+        json::JsonString,
+        link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use instance::tests::{test_context_and_logger, test_instance};

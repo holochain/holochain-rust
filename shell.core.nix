@@ -27,6 +27,9 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+    cmake
+    python
+    pkgconfig
     zeromq
     rust-build
 

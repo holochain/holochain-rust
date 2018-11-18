@@ -1,6 +1,6 @@
 use action::ActionWrapper;
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
+    agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use instance::Observer;
@@ -100,7 +100,7 @@ mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::entry::agent::Agent;
+    use holochain_core_types::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;

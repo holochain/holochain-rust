@@ -13,7 +13,7 @@ use holochain_core_types::{dna::Dna, error::HolochainError};
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::entry::agent::Agent;
+use holochain_core_types::agent::Agent;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,

@@ -7,7 +7,7 @@ use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::entry::agent::Agent;
+use holochain_core_types::agent::Agent;
 use std::{
     collections::HashMap,
     convert::TryFrom,

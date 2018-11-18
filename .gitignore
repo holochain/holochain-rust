@@ -5,8 +5,6 @@ package-lock.json
 **/*.rs.bk
 **/Cargo.lock
 Cargo.lock
-container_api/wasm-test/round_trip/target
-container_api/wasm-test/commit/target
 core/src/nucleus/ribosome/target
 core/src/nucleus/wasm-test/target
 core/src/nucleus/actions/wasm-test/target
@@ -24,7 +22,5 @@ cobertura.xml
 !/docker/Makefile
 
 # Things being generated on the FS that should not be
-Agent Name
-*/foo
 container/example-config/tmp-storage/*
 container_api/tmp-storage/*

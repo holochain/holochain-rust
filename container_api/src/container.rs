@@ -3,8 +3,7 @@ use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_core::context::Context;
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
@@ -174,26 +173,27 @@ impl Logger for NullLogger {
 }
 
 fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::from("c_bob".to_string());
+    let agent = Agent::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
-    let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
-        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        file_storage.clone(),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )
 }
 
-mod tests {
+#[cfg(test)]
+pub mod tests {
     use super::*;
     use config::load_configuration;
 
-    fn test_dna_loader() -> DnaLoader {
+    pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
             as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
@@ -232,17 +232,17 @@ mod tests {
     // "Error creating context: Failed to create actor in system: Failed to create actor.
     // Cause: An actor at the same path already exists"
     // This needs to be fixed in another PR.
-    #[cfg_attr(tarpaulin, skip)]
-    fn test_instantiate_from_config() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
-        let maybe_holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
-            &config,
-            &mut test_dna_loader(),
-        );
-
-        assert_eq!(maybe_holochain.err(), None);
-    }
+    // #[cfg_attr(tarpaulin, skip)]
+    // fn test_instantiate_from_config() {
+    //     let config = load_configuration::<Configuration>(test_toml()).unwrap();
+    //     let maybe_holochain = instantiate_from_config(
+    //         &"app spec instance".to_string(),
+    //         &config,
+    //         &mut test_dna_loader(),
+    //     );
+    //
+    //     assert_eq!(maybe_holochain.err(), None);
+    // }
 
     #[test]
     fn test_container_load_config() {
@@ -264,7 +264,7 @@ mod tests {
     fn test_container_try_from_configuration() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        let mut maybe_container = Container::try_from(&config);
+        let maybe_container = Container::try_from(&config);
 
         assert!(maybe_container.is_err());
         assert_eq!(

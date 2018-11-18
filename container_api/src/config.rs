@@ -11,11 +11,11 @@
 /// * bridges, which are
 use boolinator::*;
 use holochain_core_types::{
-    entry::agent::{Agent, Identity},
+    dna::Dna,
+    entry::agent::Agent,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
-use holochain_dna::Dna;
 use serde::Deserialize;
 use std::{convert::TryFrom, fs::File, io::prelude::*};
 use toml;
@@ -125,7 +125,8 @@ pub struct AgentConfiguration {
 
 impl From<AgentConfiguration> for Agent {
     fn from(config: AgentConfiguration) -> Self {
-        Agent::from(Identity::from(config.id))
+        Agent::try_from(JsonString::try_from(config.id).expect("bad agent json"))
+            .expect("bad agent json")
     }
 }
 
@@ -228,8 +229,10 @@ where
         .map_err(|_| HolochainError::IoError(String::from("Could not serialize toml")))
 }
 
-mod tests {
-    use super::{load_configuration, Configuration};
+#[cfg(test)]
+pub mod tests {
+
+    use config::{load_configuration, Configuration};
 
     #[test]
     fn test_agent_load() {

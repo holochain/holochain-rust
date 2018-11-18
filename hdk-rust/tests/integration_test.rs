@@ -1,7 +1,6 @@
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
@@ -10,15 +9,14 @@ extern crate serde_json;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
-    entry_type::test_entry_type,
+    dna::zome::{
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::EntryTypeDef,
+    },
+    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::ZomeApiInternalResult,
     hash::HashString,
     json::JsonString,
-};
-use holochain_dna::zome::{
-    capabilities::{Capability, FnDeclaration, Membrane},
-    entry_types::EntryTypeDef,
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;
@@ -79,7 +77,7 @@ fn can_use_globals() {
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "QmQw3V41bAWkQA9kwpNfU3ZDNzr9YW4p9RV4QHhFD3BkqA"
+            "QmU92yJa32rGJYcgDwhxAeBtpHeK7wjLEqZ1bWnDZKTRB8"
         ))),
         "result = {:?}",
         result
@@ -243,7 +241,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"83\\\"}\"}}"),
+        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
     );
 }
 

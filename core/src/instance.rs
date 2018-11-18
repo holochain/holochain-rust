@@ -295,11 +295,10 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{agent::Agent, ToEntry},
-        entry_type::EntryType,
+        dna::{zome::Zome, Dna},
+        entry::{agent::Agent, entry_type::EntryType, ToEntry},
         json::{JsonString, RawString},
     };
-    use holochain_dna::{zome::Zome, Dna};
     use logger::Logger;
     use nucleus::{
         actions::initialize::initialize_application,
@@ -338,18 +337,18 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from(agent_name.to_owned());
+        let agent = Agent::generate_fake(agent_name);
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_logger();
         (
             Arc::new(
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    )),
+                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                    file_storage.clone(),
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
@@ -373,18 +372,19 @@ pub mod tests {
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from(agent_name.to_owned());
+        let agent = Agent::generate_fake(agent_name);
         let logger = test_logger();
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new_with_channels(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 action_channel.clone(),
                 observer_channel.clone(),
-                Arc::new(RwLock::new(
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                )),
+                file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
@@ -394,13 +394,14 @@ pub mod tests {
     }
 
     pub fn test_context_with_state() -> Arc<Context> {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let mut context = Context::new(
-            Agent::from("Florence".to_string()),
+            Agent::generate_fake("Florence"),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            )),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
@@ -416,9 +417,9 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
-            Agent::from("Florence".to_string()),
+            Agent::generate_fake("Florence"),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())

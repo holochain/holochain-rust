@@ -9,10 +9,11 @@ pub mod tests {
     use context::Context;
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, chain_header::ChainHeader, entry::Entry,
-        entry_type::EntryType,
+        cas::content::AddressableContent,
+        chain_header::ChainHeader,
+        dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
+        entry::{entry_type::EntryType, Entry},
     };
-    use holochain_dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
     use instance::{tests::test_instance_and_context, Instance};
     use std::sync::Arc;
     use test_utils::*;

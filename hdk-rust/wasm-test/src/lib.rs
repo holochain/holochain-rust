@@ -15,14 +15,13 @@ use boolinator::Boolinator;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     globals::G_MEM_STACK,
-    holochain_dna::zome::entry_types::Sharing,
 };
 use holochain_wasm_utils::{
     api_serialization::get_entry::GetEntryOptions,
+    holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::Address,
-        entry::{Entry, SerializedEntry},
-        entry_type::EntryType,
+        entry::{Entry, entry_type::EntryType, SerializedEntry},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
     },

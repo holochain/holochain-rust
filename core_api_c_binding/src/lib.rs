@@ -3,15 +3,13 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::error::HolochainError;
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError};
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
@@ -61,16 +59,17 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
 }
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::from("c_bob".to_string());
+    let agent = Agent::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     let agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
     )

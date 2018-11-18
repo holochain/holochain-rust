@@ -9,8 +9,8 @@ all: main
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
-CARGO = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
+CARGO = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
+CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
@@ -146,8 +146,7 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 wasm_build: ensure_wasm_target
 	cd core/src/nucleus/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 

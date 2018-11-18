@@ -7,15 +7,14 @@ pub mod tests {
     use action::{Action, ActionWrapper};
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::ToEntry,
-        entry_type::EntryType,
-        links_entry::*,
+        entry::{entry_type::EntryType, ToEntry},
+        link::{link_list::LinkListEntry, Link},
     };
     use instance::{tests::test_context, Instance, Observer};
 
     use std::sync::mpsc::channel;
 
-    pub fn create_test_link() -> Link {
+    pub fn create_example_link() -> Link {
         Link::new(
             &Address::from("12".to_string()),
             &Address::from("34".to_string()),
@@ -24,7 +23,7 @@ pub mod tests {
     }
 
     pub fn create_test_link_a() -> Link {
-        create_test_link()
+        create_example_link()
     }
 
     pub fn create_test_link_b() -> Link {
@@ -48,7 +47,7 @@ pub mod tests {
     fn can_commit_link() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let link = create_test_link();
+        let link = create_example_link();
         let link_list_entry = LinkListEntry::new(&[link]);
         let entry = link_list_entry.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(entry));
@@ -109,7 +108,7 @@ pub mod tests {
     /// Committing a LinkListEntry to source chain should work
     #[test]
     fn can_round_trip_lle() {
-        let link = create_test_link();
+        let link = create_example_link();
         let lle = LinkListEntry::new(&[link]);
         let lle_entry = lle.to_entry();
         let lle_trip = LinkListEntry::from_entry(&lle_entry);

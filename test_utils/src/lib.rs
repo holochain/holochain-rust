@@ -2,7 +2,6 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
 extern crate tempfile;
 extern crate wabt;
 
@@ -11,7 +10,7 @@ use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::Eav
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_types::json::JsonString;
-use holochain_dna::{
+use holochain_core_types::dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
@@ -166,15 +165,16 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::from(agent_name.to_string());
+    let agent = Agent::generate_fake(agent_name);
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
     let logger = test_logger();
     (
         Arc::new(
             Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
                 Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
             ).unwrap(),
         ),
@@ -215,16 +215,17 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::from(agent_name.to_string());
+    let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
 
-    return Arc::new(
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+    Arc::new(
         Context::new(
             agent,
             logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
         ).unwrap(),
-    );
+    )
 }

@@ -7,12 +7,11 @@
 //! extern crate holochain_container_api;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
-//! extern crate holochain_dna;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_dna::Dna;
 //! use holochain_core_types::entry::agent::Agent;
+//! use holochain_core_types::dna::Dna;
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -25,16 +24,17 @@
 //! // instantiate a new holochain instance
 //!
 //! // need to get to something like this:
-//! //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+//! //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::from("bob".to_string());
+//! let agent = Agent::generate_fake("bob");
+//! let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
 //! let context = Context::new(
 //!     agent,
 //!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new(String::from("Agent Name")))),
-//!     Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap())),
+//!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+//!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
@@ -67,8 +67,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use holochain_dna::Dna;
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -103,7 +102,7 @@ impl Holochain {
     }
 
     pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(format!("{}/state", path));
+        let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
@@ -174,8 +173,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::entry::agent::Agent;
-    use holochain_dna::Dna;
+    use holochain_core_types::{dna::Dna, entry::agent::Agent};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{
@@ -188,18 +186,18 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = Agent::from(agent_name.to_string());
+        let agent = Agent::generate_fake(agent_name);
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_utils::test_logger();
         (
             Arc::new(
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    Arc::new(RwLock::new(
-                        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                            .unwrap(),
-                    )),
+                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                    file_storage.clone(),
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
@@ -223,7 +221,7 @@ mod tests {
 
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(String::from(hc.context.agent.clone()), "bob".to_string());
+        assert_eq!(hc.context.agent.nick, "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -371,9 +369,9 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = create_wasm_from_file(
-            "wasm-test/round_trip/target/wasm32-unknown-unknown/release/round_trip.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -384,7 +382,7 @@ mod tests {
         let result = hc.call(
             "test_zome",
             "test_cap",
-            "test",
+            "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
         assert!(result.is_ok(), "result = {:?}", result);
@@ -399,9 +397,9 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -413,7 +411,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -434,9 +432,9 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test_fail");
+        let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -448,7 +446,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash

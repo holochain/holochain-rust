@@ -4,7 +4,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    entry_type::EntryType,
+    entry::entry_type::EntryType,
 };
 use std::sync::{Arc, RwLock};
 
@@ -102,8 +102,12 @@ impl Iterator for ChainStoreIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                .map(|content|ChainHeader::from_content(&content))
+                storage
+                    .read()
+                    .unwrap()
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| ChainHeader::from_content(&content))
             });
         previous
     }
@@ -142,8 +146,10 @@ impl Iterator for ChainStoreTypeIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                (*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                                          .map(|content|ChainHeader::from_content(&content))
+                (*storage.read().unwrap())
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| ChainHeader::from_content(&content))
             });
         previous
     }

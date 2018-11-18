@@ -21,7 +21,6 @@ extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
 pub extern crate holochain_core_types;
-pub extern crate holochain_dna;
 pub extern crate holochain_wasm_utils;
 
 pub mod api;

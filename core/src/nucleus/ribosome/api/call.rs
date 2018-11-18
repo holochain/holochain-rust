@@ -1,7 +1,6 @@
 use action::{Action, ActionWrapper};
 use context::Context;
-use holochain_core_types::error::HolochainError;
-use holochain_dna::zome::capabilities::Membrane;
+use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use instance::RECV_DEFAULT_TIMEOUT_MS;
 use nucleus::{
@@ -12,7 +11,7 @@ use nucleus::{
 };
 use std::{
     convert::TryFrom,
-    sync::{mpsc::channel, Arc, RwLock},
+    sync::{mpsc::channel, Arc},
 };
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -165,8 +164,12 @@ pub mod tests {
     use super::*;
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{entry::agent::Agent, error::DnaError, json::JsonString};
-    use holochain_dna::{zome::capabilities::Capability, Dna};
+    use holochain_core_types::{
+        dna::{zome::capabilities::Capability, Dna},
+        entry::agent::Agent,
+        error::DnaError,
+        json::JsonString,
+    };
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,
@@ -183,7 +186,7 @@ pub mod tests {
     };
     use persister::SimplePersister;
     use serde_json;
-    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex, RwLock};
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
@@ -215,14 +218,15 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new(
-                Agent::from("alex".to_string()),
+                Agent::generate_fake("alex"),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                Arc::new(RwLock::new(
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                )),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),

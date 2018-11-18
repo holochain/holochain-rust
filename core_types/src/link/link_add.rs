@@ -16,9 +16,9 @@ pub struct LinkAddEntry {
 }
 
 impl LinkAddEntry {
-    pub fn new(action_kind: LinkActionKind, base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new(base: &Address, target: &Address, tag: &str) -> Self {
         LinkAddEntry {
-            action_kind: action_kind,
+            action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
         }
     }
@@ -31,9 +31,9 @@ impl LinkAddEntry {
         &self.link
     }
 
-    pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
+    pub fn from_link(link: &Link) -> Self {
         LinkAddEntry {
-            action_kind: action_kind,
+            action_kind: LinkActionKind::ADD,
             link: link.clone(),
         }
     }
@@ -70,7 +70,6 @@ pub mod tests {
     pub fn test_link_entry() -> LinkAddEntry {
         let link = example_link();
         LinkAddEntry::new(
-            example_link_action_kind(),
             link.base(),
             link.target(),
             link.tag(),

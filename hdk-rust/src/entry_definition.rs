@@ -1,7 +1,10 @@
-use holochain_core_types::dna::zome::entry_types::EntryTypeDef;
-use holochain_wasm_utils::holochain_core_types::{
+use holochain_core_types::{
+    dna::zome::entry_types::EntryTypeDef,
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
+};
+use holochain_wasm_utils::{
+    api_serialization::validation::LinkDirection,
 };
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
@@ -17,13 +20,8 @@ pub struct ValidatingEntryType {
     pub links: Vec<ValidatingLinkDefinition>,
 }
 
-pub enum LinkType {
-    To,
-    From,
-}
-
 pub struct ValidatingLinkDefinition {
-    pub link_type: LinkType,
+    pub link_type: LinkDirection,
     pub other_entry_type: String,
     pub tag: String,
     pub package_creator: PackageCreator,

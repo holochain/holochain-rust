@@ -386,9 +386,9 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = create_wasm_from_file(
-            "wasm-test/round_trip/target/wasm32-unknown-unknown/release/round_trip.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -399,7 +399,7 @@ mod tests {
         let result = hc.call(
             "test_zome",
             "test_cap",
-            "test",
+            "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
         assert!(result.is_ok(), "result = {:?}", result);
@@ -414,9 +414,9 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -428,7 +428,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -449,9 +449,9 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test_fail");
+        let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -463,7 +463,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash

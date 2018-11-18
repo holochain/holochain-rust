@@ -1,6 +1,9 @@
 use tempfile::tempdir;
 
-use holochain_cas_implementations::{cas::file::FilesystemStorage, cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use holochain_cas_implementations::{
+    cas::{file::FilesystemStorage, memory::MemoryStorage},
+    eav::memory::EavMemoryStorage,
+};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
 use holochain_core_types::entry::agent::Agent;
 use std::sync::{Arc, Mutex, RwLock};

@@ -6,7 +6,7 @@ use holochain_core_types::{
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
-    links_entry::Link,
+    link::Link,
 };
 use std::{
     collections::{HashMap, HashSet},

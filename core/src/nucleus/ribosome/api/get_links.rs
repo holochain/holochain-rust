@@ -50,7 +50,7 @@ pub mod tests {
         cas::content::Address,
         entry::{entry_type::test_entry_type, Entry},
         json::JsonString,
-        links_entry::Link,
+        link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use instance::tests::{test_context_and_logger, test_instance};

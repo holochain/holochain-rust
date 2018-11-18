@@ -230,8 +230,9 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{load_configuration, Configuration};
+pub mod tests {
+
+    use config::{load_configuration, Configuration};
 
     #[test]
     fn test_agent_load() {

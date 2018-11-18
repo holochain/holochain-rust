@@ -1,7 +1,19 @@
+use agent::actions::commit::*;
 use dht::actions::add_link::*;
-use futures::executor::block_on;
+use futures::{executor::block_on, FutureExt};
+use holochain_core_types::{
+    cas::content::Address,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
+    entry::{Entry, ToEntry},
+    error::HolochainError,
+    hash::HashString,
+    link::link_add::LinkAddEntry,
+};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use nucleus::{
+    actions::{build_validation_package::*, validate::*},
+    ribosome::{api::ZomeApiResult, Runtime}
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -22,8 +34,45 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-    // Wait for add_link() future to be resolved
-    let result = block_on(add_link(&input.to_link(), &runtime.context));
+
+    let link = input.to_link();
+    let link_add_entry = LinkAddEntry::from_link(&link);
+    let entry = link_add_entry.to_entry();
+
+    // Wait for future to be resolved
+    let result: Result<(), HolochainError> = block_on(
+        // 1. Build the context needed for validation of the entry
+        build_validation_package(&link_add_entry.to_entry(), &runtime.context)
+            .and_then(|validation_package| {
+                Ok(ValidationData {
+                    package: validation_package,
+                    sources: vec![HashString::from("<insert your agent key here>")],
+                    lifecycle: EntryLifecycle::Chain,
+                    action: EntryAction::Commit,
+                })
+            })
+            // 2. Validate the entry
+            .and_then(|validation_data| {
+                validate_entry(
+                    link_add_entry.to_entry().entry_type().clone(),
+                    entry.clone(),
+                    validation_data,
+                    &runtime.context,
+                )
+            })
+            // 3. Commit the valid entry to chain and DHT
+            .and_then(|_| {
+                commit_entry(
+                    entry.clone(),
+                    &runtime.context.action_channel,
+                    &runtime.context,
+                )
+            })
+            .and_then(|_| {
+                add_link(&input.to_link(), &runtime.context)
+            }),
+    );
+
     runtime.store_result(result)
 }
 

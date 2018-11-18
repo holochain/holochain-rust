@@ -41,10 +41,13 @@ fn main() {
     //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
     let agent = Agent::generate_fake(identity);
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
         )),

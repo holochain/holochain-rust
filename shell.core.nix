@@ -27,6 +27,7 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+    zeromq
     rust-build
 
     hc-wasm-build

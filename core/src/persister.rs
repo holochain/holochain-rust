@@ -1,10 +1,18 @@
+use agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS};
 use context::Context;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    },
+    error::HolochainError,
+};
 use state::State;
 use std::{
+    convert::TryFrom,
     fs::{File, OpenOptions},
     io::{Read, Write},
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
 
 /// trait that defines the persistence functionality that holochain_core requires
@@ -17,32 +25,39 @@ pub trait Persister: Send {
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
 }
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Clone)]
 pub struct SimplePersister {
-    file_path: String,
+    storage: Arc<RwLock<ContentAddressableStorage>>,
+}
+
+impl PartialEq for SimplePersister {
+    fn eq(&self, other: &SimplePersister) -> bool {
+        (&*self.storage.read().unwrap()).get_id() == (&*other.storage.read().unwrap()).get_id()
+    }
 }
 
 impl Persister for SimplePersister {
     fn save(&mut self, state: State) -> Result<(), HolochainError> {
-        let mut f = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(self.file_path.clone())?;
-        let json = State::serialize_state(state)?;
-        Ok(f.write_all(json.as_bytes())?)
+        let lock = &*self.storage.clone();
+        let mut store = lock.write().unwrap();
+        let snapshot = AgentStateSnapshot::try_from(state)?;
+        Ok(store.add(&snapshot)?)
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
-        let mut f = File::open(self.file_path.clone())?;
-        let mut json = String::new();
-        f.read_to_string(&mut json)?;
-        let state = State::deserialize_state(context, json)?;
-        Ok(Some(state))
+        let lock = &*self.storage.clone();
+        let mut store = lock.write().unwrap();
+        let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
+        let snapshot: Option<AgentStateSnapshot> = store
+            .fetch(&address)?
+            .map(|s: Content| AgentStateSnapshot::from_content(&s));
+        let state = snapshot.map(|snap| State::try_from_agent_snapshot(context, snap).ok());
+        Ok(state.unwrap_or(None))
     }
 }
 
 impl SimplePersister {
-    pub fn new(file: String) -> Self {
-        SimplePersister { file_path: file }
+    pub fn new(storage: Arc<RwLock<ContentAddressableStorage>>) -> Self {
+        SimplePersister { storage: storage }
     }
 }
 
@@ -59,7 +74,7 @@ mod tests {
         let tempfile = temp_path.to_str().unwrap();
         let context = test_context_with_agent_state();
         File::create(temp_path.clone()).unwrap();
-        let mut persistance = SimplePersister::new(tempfile.to_string());
+        let mut persistance = SimplePersister::new(context.file_storage.clone());
         let state = context.state().unwrap().clone();
         persistance.save(state.clone()).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();

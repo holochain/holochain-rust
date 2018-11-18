@@ -38,7 +38,7 @@ macro_rules! load_json {
 /// # #[macro_use]
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::EntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::dna::zome::entry_types::Sharing;

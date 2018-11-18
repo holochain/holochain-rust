@@ -21,8 +21,7 @@ use holochain_wasm_utils::{
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::Address,
-        entry::{Entry, SerializedEntry},
-        entry_type::EntryType,
+        entry::{Entry, entry_type::EntryType, SerializedEntry},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
     },

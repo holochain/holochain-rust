@@ -79,30 +79,50 @@ impl Configuration {
         Ok(())
     }
 
+    fn lookup<T, F>(coll: &Vec<T>, pred: F) -> Option<T>
+    where F: FnMut(&&T) -> bool, T: Clone {
+        coll
+            .iter()
+            .find(pred)
+            .and_then(|config: &T| Some((*config).clone()))
+    }
+
     /// Returns the agent configuration with the given ID if present
     pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
-        self.agents.as_ref().and_then(|agents| {
-            agents
-                .iter()
-                .find(|ac| &ac.id == id)
-                .and_then(|agent_config| Some(agent_config.clone()))
-        })
+        Configuration::lookup(self.agents.as_ref()?, |ac| &ac.id == id)
+    }
+
+    /// Returns the agent configuration with the given hash if present
+    /// TODO: will we ever refer to agents by public key hash?
+    pub fn agent_by_hash(&self, _hash: &String) -> Option<AgentConfiguration> {
+        unimplemented!()
+        // Configuration::lookup(self.agents.as_ref()?, |ac| &ac.hash == id)
     }
 
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
-        self.dnas
-            .as_ref()
-            .and_then(|dnas| dnas.iter().find(|dc| &dc.id == id))
-            .and_then(|dna_config| Some(dna_config.clone()))
+        Configuration::lookup(self.dnas.as_ref()?, |dc| &dc.id == id)
+    }
+
+    /// Returns the DNA configuration with the given hash if present
+    pub fn dna_by_hash(&self, hash: &String) -> Option<DNAConfiguration> {
+        Configuration::lookup(self.dnas.as_ref()?, |dc| &dc.hash == hash)
     }
 
     /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
-        self.instances
-            .as_ref()
-            .and_then(|instances| instances.iter().find(|ic| &ic.id == id))
-            .and_then(|instance_config| Some(instance_config.clone()))
+        Configuration::lookup(self.instances.as_ref()?, |c| &c.id == id)
+    }
+
+    /// Returns the instance configuration with the given agent ID and DNA hash if present
+    pub fn instance_by_agent_id_and_dna_hash(&self, agent_id: &String, dna_hash: &String) -> Option<InstanceConfiguration> {
+        self.agent_by_id(agent_id).and_then(|ac| {
+            self.dna_by_hash(dna_hash).and_then(|dc| {
+                Configuration::lookup(self.instances.as_ref()?, |c| {
+                    c.dna == dc.id && c.agent == ac.id
+                })
+            })
+        })
     }
 
     /// Returns all defined instance IDs
@@ -347,6 +367,12 @@ pub mod tests {
         assert_eq!(instance_ref.id, "app spec instance");
 
         assert_eq!(config.bridges, None);
+
+        let instance = config.instance_by_agent_id_and_dna_hash(
+            &"test agent".to_string(),
+            &"Qm328wyq38924y".to_string()
+        ).unwrap();
+        assert_eq!(instance.id, "app spec instance");
     }
 
     #[test]

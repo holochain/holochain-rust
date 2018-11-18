@@ -17,6 +17,7 @@ stdenv.mkDerivation rec {
   name = "holochain-tools-environment";
 
   buildInputs = [
+    zeromq
     rust-build
 
     hc-fmt

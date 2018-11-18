@@ -2,7 +2,6 @@
 //! for communications between holochain core and the p2p / networking
 //! process or library. See protocol_wrapper for a higher level interface.
 
-use rmp_serde;
 use serde_bytes;
 
 use holochain_core_types::json::JsonString;
@@ -168,7 +167,6 @@ pub struct PongData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rmp_serde;
 
     #[test]
     fn it_should_handle_bad_type() {

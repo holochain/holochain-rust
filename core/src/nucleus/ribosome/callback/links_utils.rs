@@ -16,10 +16,10 @@ pub fn get_link_entries(
     let base_address = link.base();
     let target_address = link.target();
     let base = block_on(get_entry(&context, base_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Could not find link base")),
+        HolochainError::ErrorGeneric(String::from("Base for link not found")),
     )?;
     let target = block_on(get_entry(&context, target_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Could not find link target")),
+        HolochainError::ErrorGeneric(String::from("Target for link not found")),
     )?;
     Ok((base, target))
 }

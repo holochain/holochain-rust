@@ -1,22 +1,18 @@
 extern crate serde_json;
+use super::links_utils;
 use context::Context;
 use holochain_core_types::{
-    entry::{
-        Entry, ToEntry,
-        entry_type::EntryType
-    },
-    error::HolochainError, validation::ValidationPackageDefinition,
+    entry::{entry_type::EntryType, Entry, ToEntry},
+    error::HolochainError,
     link::link_add::LinkAddEntry,
+    validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use nucleus::{
-    ribosome::{
-        self, callback::CallbackResult,
-    },
+    ribosome::{self, callback::CallbackResult},
     ZomeFnCall,
 };
 use std::{convert::TryFrom, sync::Arc};
-use super::links_utils;
 
 pub fn get_validation_package_definition(
     entry: &Entry,
@@ -31,7 +27,8 @@ pub fn get_validation_package_definition(
             }
 
             let zome_name = zome_name.unwrap();
-            let wasm = context.get_wasm( &zome_name)
+            let wasm = context
+                .get_wasm(&zome_name)
                 .ok_or(HolochainError::ErrorGeneric(String::from("no wasm found")))?;
 
             ribosome::run_dna(
@@ -46,7 +43,7 @@ pub fn get_validation_package_definition(
                 ),
                 Some(app_entry_type.into_bytes()),
             )?
-        },
+        }
         EntryType::LinkAdd => {
             let link_add_entry = LinkAddEntry::from_entry(entry);
             let (base, target) = links_utils::get_link_entries(link_add_entry.link(), &context)?;
@@ -58,13 +55,14 @@ pub fn get_validation_package_definition(
                 &context,
             ).ok_or(HolochainError::NotImplemented)?;
 
-            let wasm = context.get_wasm(&link_definition_path.zome_name)
+            let wasm = context
+                .get_wasm(&link_definition_path.zome_name)
                 .expect("Couldn't get WASM for zome");
 
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
                 tag: link_definition_path.tag,
-                direction:  link_definition_path.direction,
+                direction: link_definition_path.direction,
             };
 
             let call = ZomeFnCall::new(
@@ -81,7 +79,7 @@ pub fn get_validation_package_definition(
                 &call,
                 Some(call.parameters.into_bytes()),
             )?
-        },
+        }
         _ => Err(HolochainError::NotImplemented)?,
     };
 

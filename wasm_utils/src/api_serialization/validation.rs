@@ -1,6 +1,5 @@
 use holochain_core_types::{
-    link::Link,
-    error::HolochainError, json::*, validation::ValidationData
+    error::HolochainError, json::*, link::Link, validation::ValidationData,
 };
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
@@ -20,7 +19,7 @@ pub enum LinkDirection {
 pub struct LinkValidationPackageArgs {
     pub entry_type: String,
     pub tag: String,
-    pub direction: LinkDirection
+    pub direction: LinkDirection,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]

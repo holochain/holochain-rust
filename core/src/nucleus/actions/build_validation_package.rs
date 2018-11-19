@@ -7,10 +7,7 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,
-    entry::{
-        entry_type::EntryType,
-        Entry, SerializedEntry
-    },
+    entry::{entry_type::EntryType, Entry, SerializedEntry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
@@ -34,7 +31,8 @@ pub fn build_validation_package(
             .dna()
             .unwrap()
             .get_zome_name_for_entry_type(&entry.entry_type().to_string())
-            .is_none() {
+            .is_none()
+        {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
                 String::from(entry.entry_type().to_owned())
@@ -63,8 +61,7 @@ pub fn build_validation_package(
         );
 
         thread::spawn(move || {
-            let maybe_callback_result =
-                get_validation_package_definition(&entry, context.clone());
+            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             println!("VALIDATION PACKAGE DEF: {:?}", maybe_callback_result);
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
@@ -72,12 +69,10 @@ pub fn build_validation_package(
                         Err(HolochainError::ErrorGeneric(error_string))
                     }
                     CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented => {
-                        Err(HolochainError::ErrorGeneric(format!(
-                            "ValidationPackage callback not implemented for {:?}",
-                            entry.entry_type().clone()
-                        )))
-                    }
+                    CallbackResult::NotImplemented => Err(HolochainError::ErrorGeneric(format!(
+                        "ValidationPackage callback not implemented for {:?}",
+                        entry.entry_type().clone()
+                    ))),
                     _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
@@ -85,22 +80,18 @@ pub fn build_validation_package(
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries =
-                                Some(all_public_chain_entries(&context));
+                            package.source_chain_entries = Some(all_public_chain_entries(&context));
                             package
                         }
                         ChainHeaders => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers =
-                                Some(all_public_chain_headers(&context));
+                            package.source_chain_headers = Some(all_public_chain_headers(&context));
                             package
                         }
                         ChainFull => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries =
-                                Some(all_public_chain_entries(&context));
-                            package.source_chain_headers =
-                                Some(all_public_chain_headers(&context));
+                            package.source_chain_entries = Some(all_public_chain_entries(&context));
+                            package.source_chain_headers = Some(all_public_chain_headers(&context));
                             package
                         }
                         Custom(string) => {

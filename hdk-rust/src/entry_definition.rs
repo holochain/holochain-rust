@@ -3,9 +3,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
 };
-use holochain_wasm_utils::{
-    api_serialization::validation::LinkDirection,
-};
+use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + Sync>;
@@ -167,7 +165,6 @@ macro_rules! entry {
         }
     );
 }
-
 
 #[macro_export]
 macro_rules! link {

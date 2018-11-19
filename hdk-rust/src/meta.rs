@@ -3,9 +3,7 @@ use globals::G_MEM_STACK;
 use holochain_core_types::dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
     api_serialization::validation::{
-        EntryValidationArgs,
-        LinkValidationArgs,
-        LinkValidationPackageArgs,
+        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
@@ -108,11 +106,8 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 }
 
-
 #[no_mangle]
-pub extern "C" fn __hdk_get_validation_package_for_link(
-    encoded_allocation_of_input: u32,
-) -> u32 {
+pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
@@ -127,17 +122,14 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
     }
     let link_validation_args: LinkValidationPackageArgs = maybe_name.unwrap();
 
-
     zd.entry_types
         .into_iter()
         .find(|ref entry_type| entry_type.name == link_validation_args.entry_type)
         .and_then(|entry_type| {
-            entry_type.links
-                .into_iter()
-                .find(|ref link_definition|
-                    link_definition.tag == link_validation_args.tag &&
-                        link_definition.link_type == link_validation_args.direction
-                )
+            entry_type.links.into_iter().find(|ref link_definition| {
+                link_definition.tag == link_validation_args.tag
+                    && link_definition.link_type == link_validation_args.direction
+            })
         })
         .and_then(|mut link_definition| {
             let package = (*link_definition.package_creator)();
@@ -166,12 +158,13 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
         .into_iter()
         .find(|ref entry_type| entry_type.name == link_validation_args.entry_type)
         .and_then(|entry_type_definition| {
-            entry_type_definition.links
+            entry_type_definition
+                .links
                 .into_iter()
-                .find(|link_definition|
-                    link_definition.tag == *link_validation_args.link.tag() &&
-                        link_definition.link_type == link_validation_args.direction
-                )
+                .find(|link_definition| {
+                    link_definition.tag == *link_validation_args.link.tag()
+                        && link_definition.link_type == link_validation_args.direction
+                })
         })
         .and_then(|mut link_definition| {
             let validation_result = (*link_definition.validator)(

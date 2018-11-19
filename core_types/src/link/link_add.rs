@@ -69,11 +69,7 @@ pub mod tests {
 
     pub fn test_link_entry() -> LinkAddEntry {
         let link = example_link();
-        LinkAddEntry::new(
-            link.base(),
-            link.target(),
-            link.tag(),
-        )
+        LinkAddEntry::new(link.base(), link.target(), link.tag())
     }
 
     pub fn test_link_entry_json_string() -> JsonString {

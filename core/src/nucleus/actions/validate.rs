@@ -35,7 +35,8 @@ pub fn validate_entry(
             .dna()
             .unwrap()
             .get_zome_name_for_entry_type(&entry.entry_type().to_string())
-            .is_none() {
+            .is_none()
+        {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
                 String::from(entry.entry_type().to_owned())

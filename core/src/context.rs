@@ -1,7 +1,9 @@
 use action::ActionWrapper;
 use holochain_core_types::{
-    agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    dna::{Dna, wasm::DnaWasm},
+    agent::Agent,
+    cas::storage::ContentAddressableStorage,
+    dna::{wasm::DnaWasm, Dna},
+    eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_network::P2pNetwork;
@@ -14,7 +16,8 @@ use std::{
         mpsc::{sync_channel, SyncSender},
         Arc, Mutex, RwLock, RwLockReadGuard,
     },
-    thread::sleep, time::Duration,
+    thread::sleep,
+    time::Duration,
 };
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.

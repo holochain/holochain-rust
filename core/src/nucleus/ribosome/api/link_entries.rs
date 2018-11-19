@@ -2,16 +2,16 @@ use agent::actions::commit::*;
 use dht::actions::add_link::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    validation::{EntryAction, EntryLifecycle, ValidationData},
     entry::ToEntry,
     error::HolochainError,
     hash::HashString,
     link::link_add::LinkAddEntry,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use nucleus::{
     actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime}
+    ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

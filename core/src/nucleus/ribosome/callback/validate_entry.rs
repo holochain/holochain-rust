@@ -10,11 +10,12 @@ use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use nucleus::{
     ribosome::{
         self,
-        callback::{get_dna, get_wasm, CallbackResult},
+        callback::CallbackResult,
     },
     ZomeFnCall,
 };
 use std::sync::Arc;
+use super::links_utils;
 
 pub fn validate_entry(
     entry: Entry,
@@ -40,14 +41,14 @@ fn validate_app_entry(
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    let dna = get_dna(&context).expect("Callback called without DNA set!");
+    let dna = context.get_dna().expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
     if zome_name.is_none() {
         return Ok(CallbackResult::NotImplemented);
     }
 
     let zome_name = zome_name.unwrap();
-    match get_wasm(&context, &zome_name) {
+    match context.get_wasm(&zome_name) {
         Some(wasm) => {
             let validation_call =
                 build_validation_call(entry, app_entry_type, zome_name, validation_data)?;

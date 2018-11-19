@@ -218,6 +218,7 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
     let _vec = cstring_vec_to_rustvec(string_vec);
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
@@ -248,6 +249,7 @@ pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     vec_char_to_cstringvec(capabalities, string_vec);
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn fn_names_as_vec(
     dna: &Dna,
     zome_name: &str,
@@ -288,6 +290,7 @@ pub unsafe extern "C" fn holochain_dna_get_function_names(
     vec_char_to_cstringvec(fn_names, string_vec)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn fn_parameters_as_vec(
     dna: &Dna,
     zome_name: &str,

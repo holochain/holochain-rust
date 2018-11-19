@@ -1,12 +1,12 @@
 //! Represents an agent entry in the cas
 
 use cas::content::{Address, AddressableContent, Content};
-use entry::{Entry, EntryType, ToEntry};
+use entry::{entry_type::EntryType, Entry, ToEntry};
 use json::JsonString;
 
 use std::convert::TryFrom;
 
-use super::super::error::HolochainError;
+use error::HolochainError;
 use reed_solomon::{Decoder, Encoder};
 
 const PARITY_LEN: usize = 2;

@@ -12,7 +12,6 @@ let
   wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/wasm-test/Cargo.toml"}
   ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
   ${wasmBuild "container_api/wasm-test/round_trip/Cargo.toml"}
   ${wasmBuild "container_api/wasm-test/commit/Cargo.toml"}

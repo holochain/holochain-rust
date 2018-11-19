@@ -76,6 +76,32 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
+fn handle_debug_hello() -> JsonString {
+    hdk::debug("Hello world!").unwrap();
+    ().into()
+}
+
+fn handle_debug_multiple() -> JsonString {
+    hdk::debug("Hello").unwrap();
+    hdk::debug("world").unwrap();
+    hdk::debug("!").unwrap();
+    ().into()
+}
+
+#[no_mangle]
+pub extern "C" fn check_debug_stacked_hello(encoded_allocation_of_input: usize) -> i32 {
+    #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
+    struct TestStruct {
+      value: String,
+    }
+    let mut mem_stack = SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+    let fish = store_as_json_into_encoded_allocation(&mut mem_stack, TestStruct {
+        value: "fish".to_string(),
+    });
+    hdk::debug("disruptive debug log").unwrap();
+    fish
+}
+
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct EntryStruct {
     stuff: String,
@@ -393,6 +419,19 @@ define_zome! {
 
     functions: {
         test (Public) {
+
+            check_debug_hello: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_debug_hello
+            }
+
+            check_debug_multiple: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_debug_multiple
+            }
+
             check_global: {
                 inputs: | |,
                 outputs: |result: JsonString|,

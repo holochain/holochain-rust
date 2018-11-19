@@ -11,7 +11,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::EntryTypeDef,
+        entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::ZomeApiInternalResult,
@@ -55,10 +55,25 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
-    dna.zomes.get_mut("test_zome").unwrap().entry_types.insert(
-        String::from("validation_package_tester"),
-        EntryTypeDef::new(),
-    );
+    // TODO: construct test DNA using the auto-generated JSON feature
+    // The code below is fragile!
+    // We have to manually construct a Dna struct that reflects what we defined using define_zome!
+    // in wasm-test/src/lib.rs.
+    // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
+    // matches up. We should do the same in test.
+    {
+        let mut entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        entry_types.insert(
+            String::from("validation_package_tester"),
+            EntryTypeDef::new(),
+        );
+
+        let mut test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
+        test_entry_type.links_to.push(LinksTo {
+            target_type: String::from("testEntryType"),
+            tag: String::from("test-tag"),
+        });
+    }
 
     let (context, test_logger) = test_context_and_logger("alex");
     let mut hc =

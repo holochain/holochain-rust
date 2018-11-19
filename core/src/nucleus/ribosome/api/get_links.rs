@@ -1,5 +1,5 @@
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -30,10 +30,12 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         .get_links(input.entry_address, input.tag);
 
     runtime.store_result(match maybe_links {
-        Ok(links) => Ok(links
-            .iter()
-            .map(|eav| eav.value())
-            .collect::<Vec<Address>>()),
+        Ok(links) => Ok(GetLinksResult::new(
+            links
+                .iter()
+                .map(|eav| eav.value())
+                .collect::<Vec<Address>>(),
+        )),
         Err(hc_err) => Err(hc_err),
     })
 }
@@ -116,14 +118,14 @@ pub mod tests {
 
         let expected_1 = JsonString::from(
             format!(
-                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[1], entry_addresses[2]
             ) + "\u{0}",
         );
 
         let expected_2 = JsonString::from(
             format!(
-                r#"{{"ok":true,"value":"[\"{}\",\"{}\"]","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"addresses\":[\"{}\",\"{}\"]}}","error":"null"}}"#,
                 entry_addresses[2], entry_addresses[1]
             ) + "\u{0}",
         );
@@ -146,7 +148,10 @@ pub mod tests {
 
         assert_eq!(
             call_result,
-            JsonString::from(String::from(r#"{"ok":true,"value":"[]","error":"null"}"#) + "\u{0}"),
+            JsonString::from(
+                String::from(r#"{"ok":true,"value":"{\"addresses\":[]}","error":"null"}"#)
+                    + "\u{0}"
+            ),
         );
     }
 

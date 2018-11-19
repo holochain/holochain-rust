@@ -5,6 +5,7 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_wasm_utils;
 
 use holochain_container_api::*;
 use holochain_core_types::{
@@ -14,10 +15,11 @@ use holochain_core_types::{
         entry_types::EntryTypeDef,
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
-    error::ZomeApiInternalResult,
+    error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
+use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
@@ -318,11 +320,17 @@ fn can_roundtrip_links() {
     let result_string = result.unwrap();
 
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected = JsonString::from("{\"Ok\":[\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\",\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\"]}");
-    let ordering1: bool = result_string == expected;
+    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
+        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
+        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
+    ]));
+    let ordering1: bool = result_string == JsonString::from(expected);
 
-    let expected = JsonString::from("{\"Ok\":[\"QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3\",\"QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx\"]}");
-    let ordering2: bool = result_string == expected;
+    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
+        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
+        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
+    ]));
+    let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }

@@ -26,9 +26,7 @@ stdenv.mkDerivation rec {
     zeromq
   ];
 
-  shellHook =
-  ''
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  export RUSTFLAGS="-D warnings"
-  '';
+  RUSTFLAGS = "-D warnings";
+
 }

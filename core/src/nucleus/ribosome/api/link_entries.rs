@@ -80,30 +80,53 @@ pub mod tests {
     extern crate wabt;
 
     use agent::actions::commit::commit_entry;
+    use context::Context;
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::test_entry,
+        entry::{Entry, test_entry, entry_type::EntryType},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
-    use instance::tests::{test_context_and_logger, test_instance};
+    use instance::{
+        Instance,
+        tests::{test_context_and_logger, test_instance}
+    };
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
         Defn,
     };
     use serde_json;
-    use std::convert::TryFrom;
+    use std::{convert::TryFrom, sync::Arc};
+
+    pub fn test_entry_b() -> Entry {
+        Entry::new(EntryType::App(String::from("testEntryTypeB")), "test")
+    }
 
     /// dummy link_entries args from standard test entry
-    pub fn test_link_args_bytes() -> Vec<u8> {
+    pub fn test_link_args_bytes(tag: String) -> Vec<u8> {
         let entry = test_entry();
 
         let args = LinkEntriesArgs {
             base: entry.address(),
             target: entry.address(),
-            tag: String::from("test-tag"),
+            tag,
+        };
+        serde_json::to_string(&args)
+            .expect("args should serialize")
+            .into_bytes()
+    }
+
+    pub fn test_link_2_args_bytes(tag: String) -> Vec<u8> {
+        let base= test_entry();
+        let target= test_entry_b();
+
+
+        let args = LinkEntriesArgs {
+            base: base.address(),
+            target: target.address(),
+            tag,
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -115,12 +138,27 @@ pub mod tests {
         JsonString::from(test_entry().serialize()).into_bytes()
     }
 
+    fn create_test_instance() -> (Instance, Arc<Context>) {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
+        let dna = test_utils::create_test_dna_with_wasm(
+            &test_zome_name(),
+            &test_capability(),
+            wasm.clone(),
+        );
+
+        let instance = test_instance(dna).expect("Could not create test instance");
+
+        let (context, _) = test_context_and_logger("joan");
+        let initialized_context = instance.initialize_context(context);
+        (instance, initialized_context)
+    }
+
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn errors_if_base_is_not_present_test() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
-            test_link_args_bytes(),
+            test_link_args_bytes(String::from("test-tag")),
         );
 
         let result = ZomeApiInternalResult::try_from(call_result)
@@ -132,31 +170,77 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability(),
-            wasm.clone(),
-        );
-
-        let dna_name = &dna.name.to_string().clone();
-        let instance = test_instance(dna).expect("Could not create test instance");
-
-        let (context, _) = test_context_and_logger("joan");
-        let initialized_context = instance.initialize_context(context);
+        let (instance, context) = create_test_instance();
 
         block_on(commit_entry(
             test_entry(),
-            &initialized_context.action_channel.clone(),
-            &initialized_context,
+            &context.action_channel.clone(),
+            &context,
         )).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
-            initialized_context,
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
             &instance,
-            &wasm,
-            test_link_args_bytes(),
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_args_bytes(String::from("test-tag")),
+        );
+
+        assert_eq!(
+            call_result,
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            ),
+        );
+    }
+
+    #[test]
+    fn errors_with_wrong_tag() {
+        let (instance, context) = create_test_instance();
+
+        block_on(commit_entry(
+            test_entry(),
+            &context.action_channel.clone(),
+            &context,
+        )).expect("Could not commit entry for testing");
+
+        let call_result = test_zome_api_function_call(
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
+            &instance,
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_args_bytes(String::from("wrong-tag")),
+        );
+
+        let result = ZomeApiInternalResult::try_from(call_result)
+            .expect("valid ZomeApiInternalResult JsonString");
+
+        let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
+        assert_eq!("not implemented", core_err.kind.to_string(),);
+    }
+
+    #[test]
+    fn works_with_linked_from_defined_link() {
+        let (instance, context) = create_test_instance();
+
+        block_on(commit_entry(
+            test_entry(),
+            &context.action_channel.clone(),
+            &context,
+        )).expect("Could not commit entry for testing");
+
+        block_on(commit_entry(
+            test_entry_b(),
+            &context.action_channel.clone(),
+            &context,
+        )).expect("Could not commit entry for testing");
+
+        let call_result = test_zome_api_function_call(
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
+            &instance,
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_2_args_bytes(String::from("test-tag")),
         );
 
         assert_eq!(

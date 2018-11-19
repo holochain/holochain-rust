@@ -18,7 +18,7 @@ use holochain_core_types::dna::{
     wasm::DnaWasm,
     zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::{EntryTypeDef, LinksTo},
+        entry_types::{EntryTypeDef, LinksTo, LinkedFrom},
         Config, Zome,
     },
     Dna,
@@ -85,9 +85,15 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
         tag: String::from("test-tag"),
     });
 
+    let mut test_entry_b_def = EntryTypeDef::new();
+    test_entry_b_def.linked_from.push(LinkedFrom {
+        base_type: String::from("testEntryType"),
+        tag: String::from("test-tag"),
+    });
+
     let mut entry_types = HashMap::new();
     entry_types.insert(String::from("testEntryType"), test_entry_def);
-    entry_types.insert(String::from("testEntryTypeB"), EntryTypeDef::new());
+    entry_types.insert(String::from("testEntryTypeB"), test_entry_b_def);
 
     let zome = Zome::new(
         "some zome description",

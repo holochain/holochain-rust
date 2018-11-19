@@ -26,16 +26,14 @@ pub fn get_link_entries(link: &Link, context: &Arc<Context>) -> Result<(Entry,En
     Ok((base, target))
 }
 
-
-fn wasm_for_entry_type(entry_type: &String, context: &Arc<Context>) -> DnaWasm {
-    let dna = context.get_dna().expect("No DNA found?!");
-    let zome_name = dna.get_zome_name_for_entry_type(entry_type)
-        .expect("App entry types must be defined");
-    context.get_wasm(&zome_name)
-        .expect("Zomes must have a WASM binary")
+pub struct LinkDefinitionPath {
+    pub zome_name: String,
+    pub entry_type_name: String,
+    pub direction: LinkDirection,
+    pub tag: String,
 }
 
-pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_type: &EntryType, context: &Arc<Context>) -> Option<(LinkValidationPackageArgs, DnaWasm)> {
+pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_type: &EntryType, context: &Arc<Context>) -> Option<LinkDefinitionPath> {
     let dna = context.get_dna().expect("No DNA found?!");
     match base_type {
         EntryType::App(app_entry_type) => {
@@ -48,14 +46,15 @@ pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_t
                         &link_def.tag == tag
                 )
                 .and_then(|link_def| {
-                    Some((
-                        LinkValidationPackageArgs {
-                            entry_type: app_entry_type.clone(),
-                            tag: tag.clone(),
+                    Some(
+                        LinkDefinitionPath {
+                            zome_name: dna.get_zome_name_for_entry_type(app_entry_type)
+                                .expect("App entry types must be defined"),
+                            entry_type_name: app_entry_type.clone(),
                             direction: LinkDirection::To,
-                        },
-                        wasm_for_entry_type(&app_entry_type, context)
-                    ))
+                            tag: tag.clone(),
+                        }
+                    )
                 })
         },
         _ => None
@@ -73,14 +72,15 @@ pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_t
                                 &link_def.tag == tag
                         )
                         .and_then(|_| {
-                            Some((
-                                LinkValidationPackageArgs {
-                                    entry_type: app_entry_type.clone(),
-                                    tag: tag.clone(),
+                            Some(
+                                LinkDefinitionPath {
+                                    zome_name: dna.get_zome_name_for_entry_type(app_entry_type)
+                                        .expect("App entry types must be defined"),
+                                    entry_type_name: app_entry_type.clone(),
                                     direction: LinkDirection::From,
-                                },
-                                wasm_for_entry_type(&app_entry_type, context)
-                            ))
+                                    tag: tag.clone(),
+                                }
+                            )
                         })
                 },
                 _ => None

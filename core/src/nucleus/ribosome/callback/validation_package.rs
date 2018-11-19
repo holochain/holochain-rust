@@ -8,6 +8,7 @@ use holochain_core_types::{
     error::HolochainError, validation::ValidationPackageDefinition,
     link::link_add::LinkAddEntry,
 };
+use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use nucleus::{
     ribosome::{
         self, callback::CallbackResult,
@@ -50,18 +51,27 @@ pub fn get_validation_package_definition(
             let link_add_entry = LinkAddEntry::from_entry(entry);
             let (base, target) = links_utils::get_link_entries(link_add_entry.link(), &context)?;
 
-            let (args, wasm) = links_utils::find_link_definition_in_dna(
+            let link_definition_path = links_utils::find_link_definition_in_dna(
                 &base.entry_type(),
                 link_add_entry.link().tag(),
                 &target.entry_type(),
                 &context,
             ).ok_or(HolochainError::NotImplemented)?;
 
+            let wasm = context.get_wasm(&link_definition_path.zome_name)
+                .expect("Couldn't get WASM for zome");
+
+            let params = LinkValidationPackageArgs {
+                entry_type: link_definition_path.entry_type_name,
+                tag: link_definition_path.tag,
+                direction:  link_definition_path.direction,
+            };
+
             let call = ZomeFnCall::new(
                 "",
                 "no capability, since this is an entry validation call",
                 "__hdk_get_validation_package_for_link",
-                args.clone(),
+                params,
             );
 
             ribosome::run_dna(

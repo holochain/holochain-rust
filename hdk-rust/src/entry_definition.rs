@@ -60,7 +60,10 @@ pub struct ValidatingLinkDefinition {
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
+/// # use hdk::holochain_core_types::{
+/// #   cas::content::Address,
+/// #   dna::zome::entry_types::Sharing,
+/// # };
 ///
 /// # fn main() {
 ///
@@ -84,7 +87,7 @@ pub struct ValidatingLinkDefinition {
 ///         validation: |post: Post, _ctx: hdk::ValidationData| {
 ///             (post.content.len() < 280)
 ///                 .ok_or_else(|| String::from("Content too long"))
-///         }
+///         },
 ///
 ///         links: [
 ///             to!(
@@ -95,9 +98,8 @@ pub struct ValidatingLinkDefinition {
 ///                     hdk::ValidationPackageDefinition::ChainFull
 ///                 },
 ///
-///                 validation: |post: Post, _ctx: hdk::ValidationData| {
-///                     (post.content.len() < 280)
-///                         .ok_or_else(|| String::from("Content too long"))
+///                 validation: |base: Address, target: Address, _ctx: hdk::ValidationData| {
+///                     Ok(())
 ///                 }
 ///             )
 ///         ]

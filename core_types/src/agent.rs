@@ -124,9 +124,9 @@ impl AddressableContent for Agent {
         self.to_entry().content()
     }
 
-    /// build from entry content
-    fn from_content(content: &Content) -> Self {
-        Agent::from_entry(&Entry::from_content(content))
+    // build from entry content
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Agent::from_entry(&Entry::try_from_content(content)?))
     }
 }
 
@@ -207,6 +207,9 @@ mod tests {
         assert_eq!(expected_content, test_agent().content(),);
 
         // from_content()
-        assert_eq!(test_agent(), Agent::from_content(&expected_content),);
+        assert_eq!(
+            test_agent(),
+            Agent::try_from_content(&expected_content).unwrap(),
+        );
     }
 }

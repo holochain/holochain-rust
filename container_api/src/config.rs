@@ -225,7 +225,7 @@ pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
     T: Deserialize<'a>,
 {
-    ::toml::from_str::<T>(toml)
+    toml::from_str::<T>(toml)
         .map_err(|_| HolochainError::IoError(String::from("Could not serialize toml")))
 }
 

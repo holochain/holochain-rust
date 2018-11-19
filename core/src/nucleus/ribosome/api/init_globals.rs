@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address, entry_type::EntryType, hash::HashString, json::JsonString,
+    cas::content::Address, entry::entry_type::EntryType, hash::HashString, json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;

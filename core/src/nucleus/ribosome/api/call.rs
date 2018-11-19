@@ -165,11 +165,12 @@ pub mod tests {
     use context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
+        agent::Agent,
         dna::{zome::capabilities::Capability, Dna},
-        entry::agent::Agent,
         error::DnaError,
         json::JsonString,
     };
+    use holochain_net::p2p_network::P2pNetwork;
     use instance::{
         tests::{test_instance, TestLogger},
         Observer,
@@ -216,6 +217,18 @@ pub mod tests {
             .into_bytes()
     }
 
+    /// create a test network
+    #[cfg_attr(tarpaulin, skip)]
+    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+        let res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "backend": "mock"
+            }).into(),
+        ).unwrap();
+        Arc::new(Mutex::new(res))
+    }
+
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
@@ -231,6 +244,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
+                make_mock_net(),
             ).unwrap(),
         )
     }

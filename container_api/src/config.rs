@@ -11,8 +11,8 @@
 /// * bridges, which are
 use boolinator::*;
 use holochain_core_types::{
+    agent::Agent,
     dna::Dna,
-    entry::agent::Agent,
     error::{HcResult, HolochainError},
     json::JsonString,
 };

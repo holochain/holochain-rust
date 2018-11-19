@@ -35,10 +35,12 @@ pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
 pub mod entry;
-pub mod entry_type;
 pub mod error;
 #[macro_use]
 extern crate objekt;
+pub mod agent;
+pub mod chain_migrate;
+pub mod delete;
 pub mod dna;
 pub mod file_validation;
 pub mod hash;

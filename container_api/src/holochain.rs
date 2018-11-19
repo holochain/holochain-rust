@@ -7,11 +7,12 @@
 //! extern crate holochain_container_api;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
+//! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_core_types::entry::agent::Agent;
-//! use holochain_core_types::dna::Dna;
+//! use holochain_net::p2p_network::P2pNetwork;
+//! use holochain_core_types::{agent::Agent, dna::Dna, json::JsonString};
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -36,6 +37,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
 //!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+//!     Arc::new(Mutex::new(P2pNetwork::new(Box::new(|_r| Ok(())),&JsonString::from("{\"backend\": \"mock\"}")).unwrap())),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -67,7 +69,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{agent::Agent, dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -173,13 +175,27 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::{dna::Dna, entry::agent::Agent};
+    use holochain_core_types::dna::Dna;
+    use holochain_net::p2p_network::P2pNetwork;
+
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
+
+    /// create a test network
+    #[cfg_attr(tarpaulin, skip)]
+    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+        let res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "backend": "mock"
+            }).into(),
+        ).unwrap();
+        Arc::new(Mutex::new(res))
+    }
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -203,6 +219,7 @@ mod tests {
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),
                     )),
+                    make_mock_net(),
                 ).unwrap(),
             ),
             logger,
@@ -369,9 +386,9 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = create_wasm_from_file(
-            "wasm-test/round_trip/target/wasm32-unknown-unknown/release/round_trip.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -382,7 +399,7 @@ mod tests {
         let result = hc.call(
             "test_zome",
             "test_cap",
-            "test",
+            "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
         assert!(result.is_ok(), "result = {:?}", result);
@@ -397,9 +414,9 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test");
+        let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -411,7 +428,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -432,9 +449,9 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
-            "wasm-test/commit/target/wasm32-unknown-unknown/release/commit.wasm",
+            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
         );
-        let capability = create_test_cap_with_fn_name("test_fail");
+        let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -446,7 +463,7 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 4);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "test_fail", r#"{}"#);
+        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash

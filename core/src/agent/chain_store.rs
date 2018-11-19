@@ -4,7 +4,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    entry_type::EntryType,
+    entry::entry_type::EntryType,
 };
 use std::sync::{Arc, RwLock};
 

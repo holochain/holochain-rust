@@ -99,6 +99,18 @@ impl Context {
     }
 }
 
+/// create a test network
+#[cfg_attr(tarpaulin, skip)]
+pub fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+    let res = P2pNetwork::new(
+        Box::new(|_r| Ok(())),
+        &json!({
+            "backend": "mock"
+        }).into(),
+    ).unwrap();
+    Arc::new(Mutex::new(res))
+}
+
 #[cfg(test)]
 mod tests {
     extern crate tempfile;
@@ -111,18 +123,7 @@ mod tests {
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex, RwLock};
-
-    /// create a test network
-    #[cfg_attr(tarpaulin, skip)]
-    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-        let res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            }).into(),
-        ).unwrap();
-        Arc::new(Mutex::new(res))
-    }
+    use context::make_mock_net;
 
     #[test]
     fn default_buffer_size_test() {

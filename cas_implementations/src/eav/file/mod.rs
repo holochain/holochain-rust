@@ -57,10 +57,10 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let entity_content =
-            ExampleAddressableContent::from_content(&RawString::from("foo").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
         let attribute = "favourite-color".to_string();
         let value_content =
-            ExampleAddressableContent::from_content(&RawString::from("blue").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
         EavTestSuite::test_round_trip(
             EavFileStorage::new(temp_path).unwrap(),
             entity_content,

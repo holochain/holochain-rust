@@ -35,6 +35,7 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let opt = Opt::from_args();
     let config_path = opt
@@ -61,6 +62,7 @@ fn main() {
     };
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
@@ -69,6 +71,7 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     Container::try_from(&config)
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();

@@ -53,10 +53,10 @@ pub mod tests {
     #[test]
     fn memory_eav_round_trip() {
         let entity_content =
-            ExampleAddressableContent::from_content(&RawString::from("foo").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
         let attribute = "favourite-color".to_string();
         let value_content =
-            ExampleAddressableContent::from_content(&RawString::from("blue").into());
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
         EavTestSuite::test_round_trip(
             EavMemoryStorage::new().expect("could not construct new eav memory storage"),
             entity_content,

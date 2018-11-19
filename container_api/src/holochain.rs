@@ -69,7 +69,7 @@ use holochain_core::{
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{agent::Agent, dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -103,7 +103,7 @@ impl Holochain {
         }
     }
 
-    pub fn load(path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
+    pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
             .load(context.clone())
@@ -175,7 +175,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::dna::Dna;
+    use holochain_core_types::{agent::Agent, dna::Dna};
     use holochain_net::p2p_network::P2pNetwork;
 
     use std::sync::{Arc, Mutex, RwLock};

@@ -114,17 +114,17 @@ macro_rules! entry {
 
             $($(
                 match $link_expr.link_type {
-                    $crate::entry_definition::LinkType::To => {
+                    $crate::LinkDirection::To => {
                         entry_type.links_to.push(
-                            $crate::holochain_dna::zome::entry_types::LinksTo{
+                            $crate::holochain_core_types::dna::zome::entry_types::LinksTo{
                                 target_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
                             }
                         );
                     },
-                    $crate::entry_definition::LinkType::From => {
+                    $crate::LinkDirection::From => {
                         entry_type.linked_from.push(
-                            $crate::holochain_dna::zome::entry_types::LinkedFrom{
+                            $crate::holochain_core_types::dna::zome::entry_types::LinkedFrom{
                                 base_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
                             }
@@ -214,7 +214,7 @@ macro_rules! to {
         validation: | $source:ident : Address,  $target:ident : Address, $ctx:ident : hdk::ValidationData | $link_validation:expr
     ) => (
         link!(
-            direction: $crate::entry_definition::LinkType::To,
+            direction: $crate::LinkDirection::To,
             other_type: $other_type,
             tag: $tag,
 
@@ -234,7 +234,7 @@ macro_rules! from {
         validation: | $source:ident : Address,  $target:ident : Address, $ctx:ident : hdk::ValidationData | $link_validation:expr
     ) => (
         link!(
-            direction: $crate::entry_definition::LinkType::From,
+            direction: $crate::LinkDirection::From,
             other_type: $other_type,
             tag: $tag,
 

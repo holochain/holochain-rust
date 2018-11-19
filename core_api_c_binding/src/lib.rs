@@ -75,7 +75,7 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = Agent::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
-    let agent_path = format!("{}/state", path);
+    let _agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));

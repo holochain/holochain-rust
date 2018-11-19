@@ -86,6 +86,18 @@ However, we mostly use [docker](https://www.docker.com/) because it's easier to 
 
 The `docker` folder contains scripts to build and run docker images.
 
+### NixOS
+
+If you have `nix-shell` then feel free to use our `.nix` files.
+
+`shell.core.nix` and `shell.tools.nix` are split to mirror the versioning behaviour in the makefile.
+
+Not everything in the Makefile is implemented in nix, and a lot of things don't need to be. Notably the cross-platform and defensive installation of dependencies is not included.
+
+If you have a nix friendly system, this is probably the fastest way to develop and test.
+
+e.g. `nix-shell shell.core.nix --run "hc-wasm-build && hc-test"`
+
 #### Running tests
 
 Run:
@@ -102,6 +114,57 @@ Run:
 ```shell
 . docker/run-fmt
 ```
+
+#### Compiler warnings
+
+Compilation warnings are NOT OK in shared/production level code.
+
+Warnings have a nasty habit of piling up over time. This makes your code increasingly unpleasant for other people to work with.
+
+CI MUST fail or pass, there is no use in the ever noisier "maybe" status.
+
+If you are facing a warning locally you can try:
+
+0. Fixing it
+1. Using `#[allow(***)]` inline to surgically override a once-off issue
+2. Proposing a global `allow` for a specific rule
+  - this is an extreme action to take
+  - this should only be considered if it can be shown that:
+    - the issue is common (e.g. dozens of `#allow[***]`)
+    - disabling it won't cause issues/mess to pile up elsewhere
+    - the wider Rust community won't find our codebase harder to work with
+
+If you don't know the best approach, please ask for help!
+
+It is NOT OK to disable `deny` for warnings globally at the CI or makefile/nix level.
+
+You can allow warnings locally during development by setting the `RUSTFLAGS` environment variable.
+
+#### CI configuration changes
+
+Please also be aware that extending/changing the CI configuration can be very time consuming. Seemingly minor changes can have large downstream impact.
+
+Some notable things to watch out for:
+
+- Adding changes that cause the Travis cache to be dropped on every run
+- Changing the compiler/lint rules that are shared by many people
+- Changing versions of crates/libs that also impact downstream crates/repos
+- Changing the nightly version of Rust used
+- Adding/removing tools or external libs
+
+The change may not be immediately apparent to you. The change may break the development environment on a different operating system, e.g. Windows.
+
+At the same time, we do not want to catastrophise and stifle innovation or legitimate upgrades.
+
+If you have a proposal to improve our CI config, that is great!
+
+Please open a dedicated branch for the change in isolation so we can discuss the proposal together.
+
+Please broadcast the proposal in chat to maximise visibility and the opportunity for everyone to respond.
+
+It is NOT OK to change the behaviour of tests/CI in otherwise unrelated PRs. SOMETIMES it MAY be OK to change CI in a related PR, e.g. adding a new lib that your code requires. DO expect that a change like this will probably attract additional scrutiny during the PR review process, which is unfortunate but important.
+
+Use your best judgement and respect that other people, across all timezones, rely on this repository remaining a productive working environment 24/7/365.
 
 #### Updating the CI Environment
 

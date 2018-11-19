@@ -17,9 +17,6 @@
 extern crate clap;
 extern crate holochain_container_api;
 extern crate holochain_core_types;
-// macros used in tests
-#[allow(unused_imports)]
-#[macro_use]
 extern crate structopt;
 
 use holochain_container_api::{

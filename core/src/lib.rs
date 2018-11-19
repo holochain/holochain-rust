@@ -8,6 +8,8 @@ extern crate futures;
 extern crate multihash;
 extern crate rust_base58;
 extern crate serde;
+// serde macro used in tests only
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 extern crate snowflake;

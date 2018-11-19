@@ -12,7 +12,6 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use nucleus::state::NucleusState;
-use serde_json;
 use std::{
     collections::HashSet,
     convert::TryInto,

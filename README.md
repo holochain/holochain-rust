@@ -132,7 +132,7 @@ If you are facing a warning locally you can try:
   - this should only be considered if it can be shown that:
     - the issue is common (e.g. dozens of `#allow[***]`)
     - disabling it won't cause issues/mess to pile up elsewhere
-    - the wider Rust community won't find our codebase newly confusing or hard to work with
+    - the wider Rust community won't find our codebase harder to work with
 
 If you don't know the best approach, please ask for help!
 
@@ -160,7 +160,7 @@ If you have a proposal to improve our CI config, that is great!
 
 Please open a dedicated branch for the change in isolation so we can discuss the proposal together.
 
-Please broadcase the proposal in chat to maximise visibility and the opportunity for everyone to respond.
+Please broadcast the proposal in chat to maximise visibility and the opportunity for everyone to respond.
 
 It is NOT OK to change the behaviour of tests/CI in otherwise unrelated PRs. SOMETIMES it MAY be OK to change CI in a related PR, e.g. adding a new lib that your code requires. DO expect that a change like this will probably attract additional scrutiny during the PR review process, which is unfortunate but important.
 

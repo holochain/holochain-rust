@@ -199,12 +199,18 @@ pub struct StorageConfiguration {
 /// (i.e. installing apps)
 #[derive(Deserialize)]
 pub struct InterfaceConfiguration {
-    #[serde(rename = "type")]
-    pub interface_type: String,
-    pub port: Option<u16>,
-    pub file: Option<String>,
+    pub protocol: InterfaceProtocol,
     pub admin: Option<bool>,
     pub instances: Vec<InstanceReferenceConfiguration>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag="type")]
+pub enum InterfaceProtocol {
+    #[serde(rename="websocket")]
+    Websocket { port: u16 },
+    #[serde(rename="domainsocket")]
+    DomainSocket { file: String },
 }
 
 #[derive(Deserialize)]
@@ -226,13 +232,13 @@ where
     T: Deserialize<'a>,
 {
     toml::from_str::<T>(toml)
-        .map_err(|_| HolochainError::IoError(String::from("Could not serialize toml")))
+        .map_err(|e| HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string())))
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use config::{load_configuration, Configuration};
+    use config::{load_configuration, Configuration, InterfaceProtocol};
 
     #[test]
     fn test_agent_load() {
@@ -307,6 +313,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
+    [interfaces.protocol]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
@@ -339,9 +346,11 @@ pub mod tests {
 
         let interfaces = config.interfaces.unwrap();
         let interface_config = interfaces.get(0).unwrap();
-        assert_eq!(interface_config.interface_type, "websocket");
-        assert_eq!(interface_config.port, Some(8888));
-        assert_eq!(interface_config.file, None);
+        if let InterfaceProtocol::Websocket { port } = interface_config.protocol {
+            assert_eq!(port, 8888);
+        } else {
+            panic!();
+        }
         assert_eq!(interface_config.admin, None);
         let instance_ref = interface_config.instances.get(0).unwrap();
         assert_eq!(instance_ref.id, "app spec instance");
@@ -380,7 +389,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_inconsistent_config_interface() {
+    fn test_inconsistent_config_interface_1() {
         let toml = r#"
     [[agents]]
     id = "test agent"
@@ -404,6 +413,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
+    [interfaces.protocol]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
@@ -419,5 +429,44 @@ pub mod tests {
                     .to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_invalid_toml_1() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    [interfaces.protocol]
+    type = "invalid type"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    "#;
+        if let Err(e) = load_configuration::<Configuration>(toml) {
+            assert!(true, e.to_string().contains("unknown variant `invalid type`"))
+        } else {
+            panic!("Should have failed!")
+        }
     }
 }

@@ -154,8 +154,10 @@ pub(crate) fn reduce_get_entry_from_network(
         .clone()
         .get(address)
         .and_then(|content| {
-            let entry = Entry::from_content(&content);
+            let entry =
+                Entry::try_from_content(&content).expect("could not load entry from content");
             let new_store = (*old_store).clone();
+
             // ...and add it to the local storage
             let storage = &new_store.content_storage().clone();
             let res = (*storage.write().unwrap()).add(&entry);
@@ -256,7 +258,7 @@ pub mod tests {
             (*storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::from_content(&s))
+                .map(|s| Entry::try_from_content(&s).unwrap())
         );
 
         let new_storage = &new_dht_store.content_storage().clone();
@@ -265,7 +267,7 @@ pub mod tests {
             (*new_storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::from_content(&s))
+                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 

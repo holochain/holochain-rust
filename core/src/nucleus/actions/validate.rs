@@ -27,7 +27,7 @@ pub fn validate_entry(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
-    if let EntryType::App(app_entry_type) = entry.entry_type() {
+    if let EntryType::App(_) = entry.entry_type() {
         if context
             .state()
             .unwrap()

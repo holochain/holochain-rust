@@ -62,13 +62,13 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
     // matches up. We should do the same in test.
     {
-        let mut entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
         entry_types.insert(
             String::from("validation_package_tester"),
             EntryTypeDef::new(),
         );
 
-        let mut test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
+        let test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
             tag: String::from("test-tag"),

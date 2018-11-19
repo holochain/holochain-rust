@@ -26,7 +26,7 @@ pub fn build_validation_package(
 ) -> Box<dyn Future<Item = ValidationPackage, Error = HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
 
-    if let EntryType::App(app_entry_type) = entry.entry_type() {
+    if let EntryType::App(_) = entry.entry_type() {
         if context
             .state()
             .unwrap()

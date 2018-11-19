@@ -1,7 +1,6 @@
 use context::Context;
-use futures::{executor::block_on, FutureExt};
+use futures::executor::block_on;
 use holochain_core_types::{
-    dna::wasm::DnaWasm,
     entry::{
         Entry,
         entry_type::EntryType
@@ -11,9 +10,7 @@ use holochain_core_types::{
 };
 use nucleus::actions::get_entry::get_entry;
 use std::sync::Arc;
-use holochain_wasm_utils::api_serialization::validation::{
-    LinkDirection, LinkValidationPackageArgs,
-};
+use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 
 pub fn get_link_entries(link: &Link, context: &Arc<Context>) -> Result<(Entry,Entry), HolochainError> {
@@ -52,7 +49,7 @@ pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_t
                                 .expect("App entry types must be defined"),
                             entry_type_name: app_entry_type.clone(),
                             direction: LinkDirection::To,
-                            tag: tag.clone(),
+                            tag: link_def.tag.clone(),
                         }
                     )
                 })
@@ -71,14 +68,14 @@ pub fn find_link_definition_in_dna(base_type: &EntryType, tag: &String, target_t
                             link_def.base_type == String::from(base_type.clone()) &&
                                 &link_def.tag == tag
                         )
-                        .and_then(|_| {
+                        .and_then(|link_def| {
                             Some(
                                 LinkDefinitionPath {
                                     zome_name: dna.get_zome_name_for_entry_type(app_entry_type)
                                         .expect("App entry types must be defined"),
                                     entry_type_name: app_entry_type.clone(),
                                     direction: LinkDirection::From,
-                                    tag: tag.clone(),
+                                    tag: link_def.tag.clone(),
                                 }
                             )
                         })

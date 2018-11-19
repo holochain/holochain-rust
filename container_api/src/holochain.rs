@@ -226,6 +226,14 @@ mod tests {
         )
     }
 
+    fn example_api_wasm_path() -> String {
+        "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
+    }
+
+    fn example_api_wasm() -> Vec<u8> {
+        create_wasm_from_file(&example_api_wasm_path())
+    }
+
     #[test]
     fn can_instantiate() {
         let mut dna = Dna::new();
@@ -385,9 +393,7 @@ mod tests {
 
     #[test]
     fn can_call_test() {
-        let wasm = create_wasm_from_file(
-            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-        );
+        let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("bob");
@@ -413,9 +419,7 @@ mod tests {
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_commit() {
         // Setup the holochain instance
-        let wasm = create_wasm_from_file(
-            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-        );
+        let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
@@ -448,9 +452,7 @@ mod tests {
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_commit_err() {
         // Setup the holochain instance
-        let wasm = create_wasm_from_file(
-            "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-        );
+        let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
@@ -483,9 +485,7 @@ mod tests {
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_debug() {
         // Setup the holochain instance
-        let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
-        );
+        let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
@@ -518,9 +518,7 @@ mod tests {
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_debug_multiple() {
         // Setup the holochain instance
-        let wasm = create_wasm_from_file(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
-        );
+        let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
@@ -556,10 +554,8 @@ mod tests {
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn call_debug_stacked() {
-        let call_result = hc_setup_and_call_zome_fn(
-            "../core/src/nucleus/wasm-test/target/wasm32-unknown-unknown/release/debug.wasm",
-            "debug_stacked_hello",
-        );
+        let call_result =
+            hc_setup_and_call_zome_fn(&example_api_wasm_path(), "debug_stacked_hello");
         assert_eq!(
             JsonString::from("{\"value\":\"fish\"}"),
             call_result.unwrap()

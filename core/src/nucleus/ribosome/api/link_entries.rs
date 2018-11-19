@@ -84,14 +84,14 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{Entry, test_entry, entry_type::EntryType},
+        entry::{entry_type::EntryType, test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
     use instance::{
+        tests::{test_context_and_logger, test_instance},
         Instance,
-        tests::{test_context_and_logger, test_instance}
     };
     use nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
@@ -119,9 +119,8 @@ pub mod tests {
     }
 
     pub fn test_link_2_args_bytes(tag: String) -> Vec<u8> {
-        let base= test_entry();
-        let target= test_entry_b();
-
+        let base = test_entry();
+        let target = test_entry_b();
 
         let args = LinkEntriesArgs {
             base: base.address(),

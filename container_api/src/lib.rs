@@ -91,10 +91,14 @@ extern crate futures;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_net;
+
 extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate serde_json;
 extern crate boolinator;
 #[cfg(test)]
 extern crate test_utils;

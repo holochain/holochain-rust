@@ -1,3 +1,5 @@
+pub mod entry_type;
+
 use cas::content::{Address, AddressableContent, Content};
 use entry::entry_type::{
     test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
@@ -10,10 +12,6 @@ use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
 };
-pub mod agent;
-pub mod chain_migrate;
-pub mod delete;
-pub mod entry_type;
 
 pub type EntryValue = JsonString;
 
@@ -124,10 +122,8 @@ impl AddressableContent for Entry {
         self.serialize().content()
     }
 
-    fn from_content(content: &Content) -> Self {
-        SerializedEntry::try_from(content.to_owned())
-            .expect("failed to restore Entry content")
-            .into()
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(SerializedEntry::try_from(content.to_owned())?.into())
     }
 }
 
@@ -136,11 +132,8 @@ impl AddressableContent for SerializedEntry {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        content
-            .to_owned()
-            .try_into()
-            .expect("failed to deserialize SerializedEntry from Content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        content.to_owned().try_into()
     }
 }
 
@@ -307,7 +300,7 @@ pub mod tests {
     /// tests for entry.content()
     fn content_test() {
         let content = test_entry_content();
-        let entry = Entry::from_content(&content);
+        let entry = Entry::try_from_content(&content).unwrap();
 
         assert_eq!(content, entry.content());
     }

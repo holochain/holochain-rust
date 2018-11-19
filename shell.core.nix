@@ -12,7 +12,6 @@ let
   wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/wasm-test/Cargo.toml"}
   ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
   ${wasmBuild "container_api/wasm-test/Cargo.toml"}
   ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
@@ -34,6 +33,11 @@ stdenv.mkDerivation rec {
 
     hc-wasm-build
     hc-test
+
+    zeromq
   ];
+
+  # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
+  RUSTFLAGS = "-D warnings";
 
 }

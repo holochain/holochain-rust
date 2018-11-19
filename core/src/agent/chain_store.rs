@@ -107,7 +107,8 @@ impl Iterator for ChainStoreIterator {
                     .unwrap()
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
-                    .map(|content| ChainHeader::from_content(&content))
+                    .map(|content| ChainHeader::try_from_content(&content)
+                    .expect("failed to load ChainHeader from Content"))
             });
         previous
     }
@@ -149,7 +150,7 @@ impl Iterator for ChainStoreTypeIterator {
                 (*storage.read().unwrap())
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
-                    .map(|content| ChainHeader::from_content(&content))
+                    .map(|content| ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
             });
         previous
     }

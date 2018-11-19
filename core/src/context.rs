@@ -1,9 +1,10 @@
 use action::ActionWrapper;
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage, entry::agent::Agent,
+    agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     dna::{Dna, wasm::DnaWasm},
     error::HolochainError,
 };
+use holochain_net::p2p_network::P2pNetwork;
 use instance::Observer;
 use logger::Logger;
 use persister::Persister;
@@ -30,6 +31,7 @@ pub struct Context {
     pub observer_channel: SyncSender<Observer>,
     pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    pub network: Arc<Mutex<P2pNetwork>>,
 }
 
 impl Context {
@@ -43,6 +45,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        net: Arc<Mutex<P2pNetwork>>,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -55,6 +58,7 @@ impl Context {
             observer_channel: tx_observer,
             file_storage: cas,
             eav_storage: eav,
+            network: net,
         })
     }
 
@@ -66,6 +70,7 @@ impl Context {
         observer_channel: SyncSender<Observer>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        net: Arc<Mutex<P2pNetwork>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent,
@@ -76,6 +81,7 @@ impl Context {
             observer_channel,
             file_storage: cas,
             eav_storage: eav,
+            network: net,
         })
     }
     // helper function to make it easier to call the logger
@@ -141,11 +147,23 @@ mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::entry::agent::Agent;
+    use holochain_core_types::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex, RwLock};
+
+    /// create a test network
+    #[cfg_attr(tarpaulin, skip)]
+    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+        let res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "backend": "mock"
+            }).into(),
+        ).unwrap();
+        Arc::new(Mutex::new(res))
+    }
 
     #[test]
     fn default_buffer_size_test() {
@@ -166,6 +184,7 @@ mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            make_mock_net(),
         ).unwrap();
 
         assert!(maybe_context.state().is_none());
@@ -195,6 +214,7 @@ mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            make_mock_net(),
         ).unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

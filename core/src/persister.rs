@@ -10,8 +10,6 @@ use holochain_core_types::{
 use state::State;
 use std::{
     convert::TryFrom,
-    fs::{File, OpenOptions},
-    io::{Read, Write},
     sync::{Arc, RwLock},
 };
 
@@ -45,11 +43,12 @@ impl Persister for SimplePersister {
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
-        let mut store = lock.write().unwrap();
+        let store = lock.write().unwrap();
         let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
-        let snapshot: Option<AgentStateSnapshot> = store
-            .fetch(&address)?
-            .map(|s: Content| AgentStateSnapshot::from_content(&s));
+        let snapshot: Option<AgentStateSnapshot> = store.fetch(&address)?.map(|s: Content| {
+            AgentStateSnapshot::try_from_content(&s)
+                .expect("could not load AgentStateSnapshot from content")
+        });
         let state = snapshot.map(|snap| State::try_from_agent_snapshot(context, snap).ok());
         Ok(state.unwrap_or(None))
     }
@@ -63,15 +62,18 @@ impl SimplePersister {
 
 #[cfg(test)]
 mod tests {
+
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use super::*;
     use instance::tests::test_context_with_agent_state;
+    use persister::{Persister, SimplePersister};
+    use std::fs::File;
+
     #[test]
     fn persistance_round_trip() {
         let dir = tempdir().unwrap();
         let temp_path = dir.path().join("test");
-        let tempfile = temp_path.to_str().unwrap();
+        let _tempfile = temp_path.to_str().unwrap();
         let context = test_context_with_agent_state();
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.file_storage.clone());

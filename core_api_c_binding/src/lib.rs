@@ -3,17 +3,20 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_net;
 
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_container_api::Holochain;
 use holochain_core::context::Context;
-use holochain_core_types::{dna::Dna, error::HolochainError};
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_net::p2p_network::P2pNetwork;
+
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::entry::agent::Agent;
+use holochain_core_types::agent::Agent;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -58,11 +61,21 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     }
 }
 
+/// create a test network
+#[cfg_attr(tarpaulin, skip)]
+fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
+    let res = P2pNetwork::new(
+        Box::new(|_r| Ok(())),
+        &JsonString::from("{\"backend\": \"mock\"}"),
+    ).unwrap();
+    Arc::new(Mutex::new(res))
+}
+
 fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = Agent::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
-    let agent_path = format!("{}/state", path);
+    let _agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
@@ -72,6 +85,7 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
+        make_mock_net(),
     )
 }
 

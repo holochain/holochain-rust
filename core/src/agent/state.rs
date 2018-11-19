@@ -109,8 +109,8 @@ impl AddressableContent for AgentStateSnapshot {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        Self::try_from(content.to_owned()).expect("could not deserialized content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Self::try_from(content.to_owned())
     }
 
     fn address(&self) -> Address {

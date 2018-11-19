@@ -47,11 +47,8 @@ impl AddressableContent for EntityAttributeValue {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        content
-            .to_owned()
-            .try_into()
-            .expect("failed to deserialize EntityAttributeValue from Content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        content.to_owned().try_into()
     }
 }
 
@@ -300,11 +297,13 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+        let entity = ExampleAddressableContent::try_from_content(&JsonString::from(
+            RawString::from("foo"),
+        )).unwrap();
         let attribute = "favourite-color".to_string();
-        let value =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+        let value = ExampleAddressableContent::try_from_content(&JsonString::from(
+            RawString::from("blue"),
+        )).unwrap();
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

@@ -2,9 +2,8 @@ use agent::actions::commit::*;
 use dht::actions::add_link::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-    entry::{Entry, ToEntry},
+    entry::ToEntry,
     error::HolochainError,
     hash::HashString,
     link::link_add::LinkAddEntry,
@@ -54,7 +53,6 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(
-                    link_add_entry.to_entry().entry_type().clone(),
                     entry.clone(),
                     validation_data,
                     &runtime.context,

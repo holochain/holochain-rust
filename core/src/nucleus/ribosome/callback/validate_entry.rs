@@ -2,11 +2,15 @@ extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
     dna::wasm::DnaWasm,
-    entry::{entry_type::EntryType, Entry},
+    entry::{entry_type::EntryType, Entry, ToEntry},
     error::HolochainError,
+    link::link_add::LinkAddEntry,
     validation::ValidationData,
 };
-use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
+use holochain_wasm_utils::api_serialization::validation::{
+    EntryValidationArgs,
+    LinkValidationArgs,
+};
 use nucleus::{
     ribosome::{
         self,
@@ -19,20 +23,62 @@ use super::links_utils;
 
 pub fn validate_entry(
     entry: Entry,
-    entry_type: EntryType,
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    match entry_type {
+    match entry.entry_type() {
         EntryType::App(app_entry_type) => Ok(validate_app_entry(
-            entry,
-            app_entry_type,
+            entry.clone(),
+            app_entry_type.clone(),
             validation_data,
             context,
         )?),
         EntryType::Dna => Ok(CallbackResult::Pass),
+        EntryType::LinkAdd => Ok(validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context,
+        )?),
         _ => Ok(CallbackResult::NotImplemented),
     }
+}
+
+fn validate_link_entry(
+    entry: Entry,
+    validation_data: ValidationData,
+    context: Arc<Context>,
+) -> Result<CallbackResult, HolochainError> {
+    let link_add_entry = LinkAddEntry::from_entry(&entry);
+    let link = link_add_entry.link().clone();
+    let (base, target) = links_utils::get_link_entries(&link, &context)?;
+    let link_definition_path = links_utils::find_link_definition_in_dna(
+        &base.entry_type(),
+        link.tag(),
+        &target.entry_type(),
+        &context,
+    ).ok_or(HolochainError::NotImplemented)?;
+
+    let wasm = context.get_wasm(&link_definition_path.zome_name)
+        .expect("Couldn't get WASM for zome");
+
+    let params = LinkValidationArgs {
+        entry_type: link_definition_path.entry_type_name,
+        link,
+        direction:  link_definition_path.direction,
+        validation_data,
+    };
+    let call = ZomeFnCall::new(
+        &link_definition_path.zome_name,
+        "no capability, since this is an entry validation call",
+        "__hdk_validate_link",
+        params,
+    );
+    Ok(run_validation_callback(
+        context.clone(),
+        call,
+        &wasm,
+        context.get_dna().unwrap().name.clone(),
+    ))
 }
 
 fn validate_app_entry(

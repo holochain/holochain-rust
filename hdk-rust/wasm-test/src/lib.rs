@@ -375,7 +375,7 @@ define_zome! {
             links: [
                 to!(
                     "testEntryType",
-                    tag: "test-link",
+                    tag: "test-tag",
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },

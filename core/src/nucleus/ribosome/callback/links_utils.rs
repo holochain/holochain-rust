@@ -36,12 +36,12 @@ pub fn find_link_definition_in_dna(
     tag: &String,
     target_type: &EntryType,
     context: &Arc<Context>,
-) -> Option<LinkDefinitionPath> {
+) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
     match base_type {
         EntryType::App(app_entry_type) => dna
             .get_entry_type_def(&app_entry_type)
-            .expect("Found entry type that is not defined in DNA?!")
+            .ok_or(HolochainError::ErrorGeneric(String::from("Unknown entry type")))?
             .links_to
             .iter()
             .find(|&link_def| {
@@ -50,8 +50,7 @@ pub fn find_link_definition_in_dna(
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
                     zome_name: dna
-                        .get_zome_name_for_entry_type(app_entry_type)
-                        .expect("App entry types must be defined"),
+                        .get_zome_name_for_entry_type(app_entry_type)?,
                     entry_type_name: app_entry_type.clone(),
                     direction: LinkDirection::To,
                     tag: link_def.tag.clone(),
@@ -61,7 +60,7 @@ pub fn find_link_definition_in_dna(
     }.or(match target_type {
         EntryType::App(app_entry_type) => dna
             .get_entry_type_def(&app_entry_type)
-            .expect("Found entry type that is not defined in DNA?!")
+            .ok_or(HolochainError::ErrorGeneric(String::from("Unknown entry type")))?
             .linked_from
             .iter()
             .find(|&link_def| {
@@ -70,8 +69,7 @@ pub fn find_link_definition_in_dna(
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
                     zome_name: dna
-                        .get_zome_name_for_entry_type(app_entry_type)
-                        .expect("App entry types must be defined"),
+                        .get_zome_name_for_entry_type(app_entry_type)?,
                     entry_type_name: app_entry_type.clone(),
                     direction: LinkDirection::From,
                     tag: link_def.tag.clone(),
@@ -79,4 +77,5 @@ pub fn find_link_definition_in_dna(
             }),
         _ => None,
     })
+        .ok_or(HolochainError::ErrorGeneric(String::from("Unknown entry type")))
 }

@@ -190,7 +190,6 @@ macro_rules! entry {
     );
 }
 
-
 /// The `link` macro is a helper for creating `ValidatingEntryType` definitions
 /// for use within the [entry](macro.entry.html) macro.
 /// It has 5 component parts:

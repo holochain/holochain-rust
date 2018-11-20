@@ -49,6 +49,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "commit_validation_package_tester",
         "link_two_entries",
         "links_roundtrip",
+        "link_validation",
         "check_query",
         "check_app_entry_address",
         "check_sys_entry_address",
@@ -75,6 +76,19 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
             target_type: String::from("testEntryType"),
             tag: String::from("test-tag"),
         });
+    }
+
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        let mut link_validator = EntryTypeDef::new();
+        link_validator.links_to.push( LinksTo {
+            target_type: String::from("link_validator"),
+            tag: String::from("longer"),
+        });
+        entry_types.insert(
+            String::from("link_validator"),
+            link_validator,
+        );
     }
 
     let (context, test_logger) = test_context_and_logger("alex");
@@ -348,6 +362,23 @@ fn can_roundtrip_links() {
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
+}
+
+#[test]
+fn can_validate_links() {
+    let (mut hc, _) = start_holochain_instance();
+    let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
+    let result = hc.call("test_zome", "test_cap", "link_validation", params_ok);
+    assert!(result.is_ok(), "result = {:?}", result);
+
+    let params_not_ok = r#"{"stuff1": "aaa", "stuff2": "aa"}"#;
+    let result = hc.call("test_zome", "test_cap", "link_validation", params_not_ok);
+    assert!(result.is_ok(), "result = {:?}", result);
+
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"Target stuff is not longer\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
+    );
 }
 
 #[test]

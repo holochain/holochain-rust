@@ -58,14 +58,14 @@ impl KeyBuffer {
 /// note thate the "address" of an agent entry is the base64url encoded
 /// public key identity string
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct Agent {
+pub struct AgentId {
     /// a nickname for referencing this agent
     pub nick: String,
     /// the base64url encoded public identity string for this agent
     pub key: String,
 }
 
-impl Agent {
+impl AgentId {
     /// generate a fake testing agent
     /// `s` will be used for the `nick` and included in the key string as well
     /// this agent is not cryptographically generated...
@@ -79,7 +79,7 @@ impl Agent {
         let buf = base64::decode(&buf)
             .expect("could not decode the generated fake base64 string - use the base64 alphabet");
         let buf = KeyBuffer::with_raw(array_ref![buf, 0, 64]);
-        Agent::new(s, &buf)
+        AgentId::new(s, &buf)
     }
 
     /// initialize an Agent struct with `nick` and `key`
@@ -97,7 +97,7 @@ impl Agent {
     }
 }
 
-impl ToEntry for Agent {
+impl ToEntry for AgentId {
     /// convert Agent to an entry
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::AgentId, JsonString::from(self))
@@ -106,14 +106,14 @@ impl ToEntry for Agent {
     /// build an Agent from an entry
     fn from_entry(entry: &Entry) -> Self {
         assert_eq!(&EntryType::AgentId, entry.entry_type());
-        match Agent::try_from(entry.value().to_owned()) {
+        match AgentId::try_from(entry.value().to_owned()) {
             Ok(a) => a,
             Err(e) => panic!("failed to parse Agent entry: {:?}", e),
         }
     }
 }
 
-impl AddressableContent for Agent {
+impl AddressableContent for AgentId {
     /// for an Agent, the address is their public base64url encoded itentity string
     fn address(&self) -> Address {
         self.key.clone().into()
@@ -126,7 +126,7 @@ impl AddressableContent for Agent {
 
     // build from entry content
     fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        Ok(Agent::from_entry(&Entry::try_from_content(content)?))
+        Ok(AgentId::from_entry(&Entry::try_from_content(content)?))
     }
 }
 

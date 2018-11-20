@@ -10,14 +10,14 @@ use std::convert::TryInto;
 //-------------------------------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct LinkAddEntry {
+pub struct LinkAdd {
     action_kind: LinkActionKind,
     link: Link,
 }
 
-impl LinkAddEntry {
+impl LinkAdd {
     pub fn new(action_kind: LinkActionKind, base: &Address, target: &Address, tag: &str) -> Self {
-        LinkAddEntry {
+        LinkAdd {
             action_kind: action_kind,
             link: Link::new(base, target, tag),
         }
@@ -39,7 +39,7 @@ impl LinkAddEntry {
     }
 }
 
-impl ToEntry for LinkAddEntry {
+impl ToEntry for LinkAdd {
     // Convert a LinkEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::LinkAdd, self.to_owned())

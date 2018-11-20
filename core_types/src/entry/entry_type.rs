@@ -10,11 +10,9 @@ macro_rules! sys_prefix {
     };
 }
 
-// Enum for listing all System Entry Types
-// Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
-pub enum EntryType {
-    App(String),
+pub struct AppEntryType(String);
+
+pub enum SystemEntryType {
     Dna,
     AgentId,
     Delete,
@@ -23,6 +21,14 @@ pub enum EntryType {
     LinkList,
     ChainHeader,
     ChainMigrate,
+}
+
+// Enum for listing all System Entry Types
+// Variant `Data` is for user defined entry types
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
+pub enum EntryType {
+    App(AppEntryType),
+    System(SystemEntryType),
 }
 
 impl EntryType {

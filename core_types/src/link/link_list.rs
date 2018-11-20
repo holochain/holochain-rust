@@ -9,11 +9,11 @@ use std::convert::TryInto;
 //-------------------------------------------------------------------------------------------------
 //
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson)]
-pub struct LinkListEntry {
+pub struct LinkList {
     links: Vec<Link>,
 }
 
-impl LinkListEntry {
+impl LinkList {
     pub fn new(links: &[Link]) -> Self {
         LinkListEntry {
             links: links.to_vec(),
@@ -25,7 +25,7 @@ impl LinkListEntry {
     }
 }
 
-impl ToEntry for LinkListEntry {
+impl ToEntry for LinkList {
     // Convert a LinkListEntry into a JSON array of Links
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::LinkList, self.to_owned())

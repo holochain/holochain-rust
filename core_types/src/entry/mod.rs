@@ -12,36 +12,32 @@ use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
 };
+use dna::Dna;
+use agent::AgentId;
+use delete::Delete;
+use link::link_add::LinkAdd;
+use link::link_remove::LinkRemove;
+use link::link_list::LinkList;
+use chain_header::ChainHeader;
+use chain_migrate::ChainMigrate;
 
-pub type EntryValue = JsonString;
+pub type AppEntryType = EntryType;
+pub type AppEntryValue = JsonString;
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
 #[derive(Clone, Debug)]
-pub struct Entry {
-    value: EntryValue,
-    entry_type: EntryType,
-}
+pub enum Entry {
+    App(AppEntryType, AppEntryValue),
 
-impl Entry {
-    pub fn new<J: Into<JsonString>>(entry_type: EntryType, value: J) -> Entry {
-        Entry {
-            entry_type,
-            value: value.into(),
-        }
-    }
-
-    pub fn value(&self) -> &Content {
-        &self.value
-    }
-
-    pub fn entry_type(&self) -> &EntryType {
-        &self.entry_type
-    }
-
-    pub fn serialize(&self) -> SerializedEntry {
-        SerializedEntry::from(self.clone())
-    }
+    Dna(Dna),
+    AgentId(AgentId),
+    Delete(Delete),
+    LinkAdd(LinkAdd),
+    LinkRemove(LinkRemove),
+    LinkList(LinkList),
+    ChainHeader(ChainHeader),
+    ChainMigrate(ChainMigrate),
 }
 
 pub trait ToEntry {

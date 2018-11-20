@@ -177,14 +177,12 @@ pub struct LoggerConfiguration {
 ///
 /// Projected are various DB adapters.
 #[derive(Deserialize, Clone)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum StorageConfiguration {
     #[serde(rename = "memory")]
     Memory,
     #[serde(rename = "file")]
-    File {
-        path: String,
-    },
+    File { path: String },
 }
 
 /// Here, interfaces are user facing and make available zome functions to
@@ -208,11 +206,11 @@ pub struct InterfaceConfiguration {
 }
 
 #[derive(Deserialize)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum InterfaceProtocol {
-    #[serde(rename="websocket")]
+    #[serde(rename = "websocket")]
     Websocket { port: u16 },
-    #[serde(rename="domainsocket")]
+    #[serde(rename = "domainsocket")]
     DomainSocket { file: String },
 }
 
@@ -234,14 +232,15 @@ pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
     T: Deserialize<'a>,
 {
-    toml::from_str::<T>(toml)
-        .map_err(|e| HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string())))
+    toml::from_str::<T>(toml).map_err(|e| {
+        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use config::{load_configuration, Configuration, StorageConfiguration, InterfaceProtocol};
+    use config::{load_configuration, Configuration, InterfaceProtocol, StorageConfiguration};
 
     #[test]
     fn test_agent_load() {
@@ -253,9 +252,7 @@ pub mod tests {
     [[agents]]
     id="alex"
     "#;
-        let agents = load_configuration::<Configuration>(toml)
-            .unwrap()
-            .agents;
+        let agents = load_configuration::<Configuration>(toml).unwrap().agents;
         assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
         assert_eq!(
             agents
@@ -280,9 +277,7 @@ pub mod tests {
     file = "app-spec-rust.hcpkg"
     hash = "Qm328wyq38924y"
     "#;
-        let dnas = load_configuration::<Configuration>(toml)
-            .unwrap()
-            .dnas;
+        let dnas = load_configuration::<Configuration>(toml).unwrap().dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
@@ -339,8 +334,8 @@ pub mod tests {
         let logger_config = &instance_config.logger;
         assert_eq!(logger_config.logger_type, "simple");
         assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
-        if let StorageConfiguration::File {path} = &instance_config.storage {
-            assert_eq!(path, "app_spec_storage");
+        if let StorageConfiguration::File { path } = &instance_config.storage {
+            assert_eq!(path, PathBuf::from("app_spec_storage"));
         } else {
             panic!("Expected `file` type StorageConfiguration!")
         }
@@ -467,7 +462,10 @@ pub mod tests {
 
     "#;
         if let Err(e) = load_configuration::<Configuration>(toml) {
-            assert!(true, e.to_string().contains("unknown variant `invalid type`"))
+            assert!(
+                true,
+                e.to_string().contains("unknown variant `invalid type`")
+            )
         } else {
             panic!("Should have failed!")
         }

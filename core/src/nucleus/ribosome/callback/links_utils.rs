@@ -9,6 +9,7 @@ use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 use nucleus::actions::get_entry::get_entry;
 use std::sync::Arc;
 
+/// Retrieves the base and target entries of the link and returns both.
 pub fn get_link_entries(
     link: &Link,
     context: &Arc<Context>,
@@ -24,6 +25,15 @@ pub fn get_link_entries(
     Ok((base, target))
 }
 
+/// This is a "path" in the DNA tree.
+/// That uniquely identifies a link definition.
+///
+/// zome
+///  |_ entry type
+///      |_ direction (links_to / linked_from)
+///          |_ tag
+///
+/// Needed for link validation to call the right callback
 pub struct LinkDefinitionPath {
     pub zome_name: String,
     pub entry_type_name: String,
@@ -31,6 +41,16 @@ pub struct LinkDefinitionPath {
     pub tag: String,
 }
 
+/// This function tries to find the link definition for a link given by base type,
+/// tag and target type.
+///
+/// It first looks at all "links_to" definitions in the base entry type and checks
+/// for matching tag and target type.
+///
+/// If nothing could be found there it iterates over all "linked_form" definitions in
+/// the target entry type.
+///
+/// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
 pub fn find_link_definition_in_dna(
     base_type: &EntryType,
     tag: &String,

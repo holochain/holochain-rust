@@ -91,12 +91,8 @@ pub mod tests {
             .assert()
             .success();
 
-        test(
-            &temp_dir_path_buf,
-            &TEST_DIR_NAME,
-            "test/index.js",
-            false,
-        ).unwrap_or_else(|e| panic!("test call failed: {}", e));
+        test(&temp_dir_path_buf, &TEST_DIR_NAME, "test/index.js", false)
+            .unwrap_or_else(|e| panic!("test call failed: {}", e));
 
         // check success of packaging step
         assert!(
@@ -127,12 +123,7 @@ pub mod tests {
             .assert()
             .success();
 
-        let result = test(
-            &temp_dir_path_buf,
-            "west",
-            "test/index.js",
-            false,
-        );
+        let result = test(&temp_dir_path_buf, "west", "test/index.js", false);
 
         // should err because "west" directory doesn't exist
         assert!(result.is_err());

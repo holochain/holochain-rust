@@ -29,19 +29,16 @@ use toml;
 /// via string IDs.
 #[derive(Deserialize)]
 pub struct Configuration {
-    /// List of Agents, this mainly means identities and their keys
-    #[serde(default)]
+    /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
-    /// List of DNAs, for each a path to the DNA file
-    #[serde(default)]
+    /// List of DNAs, for each a path to the DNA file. Required.
     pub dnas: Vec<DNAConfiguration>,
-    /// List of instances, includes references to an agent and a DNA
-    #[serde(default)]
+    /// List of instances, includes references to an agent and a DNA. Required.
     pub instances: Vec<InstanceConfiguration>,
-    /// List of interfaces any UI can use to access zome functions
+    /// List of interfaces any UI can use to access zome functions. Optional.
     #[serde(default)]
     pub interfaces: Vec<InterfaceConfiguration>,
-    /// List of bridges between instances
+    /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
 }

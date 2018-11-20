@@ -1,7 +1,8 @@
 //! Represents an agent entry in the cas
 
 use cas::content::{Address, AddressableContent, Content};
-use entry::{entry_type::EntryType, Entry, ToEntry};
+use entry::{Entry};
+use error::HcResult;
 use json::JsonString;
 
 use std::convert::TryFrom;
@@ -84,7 +85,7 @@ impl AgentId {
 
     /// initialize an Agent struct with `nick` and `key`
     pub fn new(nick: &str, key: &KeyBuffer) -> Self {
-        Agent {
+        AgentId {
             nick: nick.to_string(),
             key: key.render(),
         }
@@ -97,22 +98,6 @@ impl AgentId {
     }
 }
 
-impl ToEntry for AgentId {
-    /// convert Agent to an entry
-    fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::AgentId, JsonString::from(self))
-    }
-
-    /// build an Agent from an entry
-    fn from_entry(entry: &Entry) -> Self {
-        assert_eq!(&EntryType::AgentId, entry.entry_type());
-        match AgentId::try_from(entry.value().to_owned()) {
-            Ok(a) => a,
-            Err(e) => panic!("failed to parse Agent entry: {:?}", e),
-        }
-    }
-}
-
 impl AddressableContent for AgentId {
     /// for an Agent, the address is their public base64url encoded itentity string
     fn address(&self) -> Address {
@@ -121,35 +106,38 @@ impl AddressableContent for AgentId {
 
     /// get the entry content
     fn content(&self) -> Content {
-        self.to_entry().content()
+        Entry::AgentId(self.to_owned()).into()
     }
 
     // build from entry content
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        Ok(AgentId::from_entry(&Entry::try_from_content(content)?))
+    fn try_from_content(content: &Content) -> HcResult<Self> {
+        match Entry::try_from(content)? {
+            Entry::AgentId(agent_id) => Ok(agent_id),
+            _ => Err(HolochainError::SerializationError("Attempted to load AgentId from non AgentID entry".into()))
+        }
     }
+}
+
+pub static GOOD_ID: &'static str =
+    "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
+pub static BAD_ID: &'static str =
+    "ATIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
+
+pub fn test_agent_id() -> AgentId {
+    AgentId::new("bob", &KeyBuffer::with_corrected(BAD_ID).unwrap())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    static GOOD_ID: &'static str =
-        "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
-    static BAD_ID: &'static str =
-        "ATIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
-
     pub fn test_identity_value() -> Content {
         format!("{{\"nick\":\"bob\",\"key\":\"{}\"}}", GOOD_ID).into()
     }
 
-    pub fn test_agent() -> Agent {
-        Agent::new("bob", &KeyBuffer::with_corrected(BAD_ID).unwrap())
-    }
-
     #[test]
     fn it_should_allow_buffer_access() {
-        let buf = test_agent().to_buffer();
+        let buf = test_agent_id().to_buffer();
         assert_eq!(
             &[
                 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,
@@ -168,34 +156,18 @@ mod tests {
 
     #[test]
     fn it_can_generate_fake() {
-        assert_eq!("sandwich----------------------------------------------------------------------------AA-k".to_string(), Agent::generate_fake("sandwich").address().to_string());
+        assert_eq!("sandwich----------------------------------------------------------------------------AA-k".to_string(), AgentId::generate_fake("sandwich").address().to_string());
     }
 
     #[test]
     fn it_should_correct_errors() {
-        assert_eq!(GOOD_ID.to_string(), test_agent().address().to_string());
+        assert_eq!(GOOD_ID.to_string(), test_agent_id().address().to_string());
     }
 
     #[test]
     /// show ToString implementation for Agent
     fn agent_to_string_test() {
-        assert_eq!(test_identity_value(), test_agent().into());
-    }
-
-    #[test]
-    /// show ToEntry implementation for Agent
-    fn agent_to_entry_test() {
-        // to_entry()
-        assert_eq!(
-            Entry::new(EntryType::AgentId, test_identity_value()),
-            test_agent().to_entry(),
-        );
-
-        // from_entry()
-        assert_eq!(
-            test_agent(),
-            Agent::from_entry(&Entry::new(EntryType::AgentId, test_identity_value())),
-        );
+        assert_eq!(test_identity_value(), test_agent_id().into());
     }
 
     #[test]
@@ -204,12 +176,12 @@ mod tests {
         let expected_content =
             Content::from("{\"value\":\"{\\\"nick\\\":\\\"bob\\\",\\\"key\\\":\\\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\\\"}\",\"entry_type\":\"%agent_id\"}");
         // content()
-        assert_eq!(expected_content, test_agent().content(),);
+        assert_eq!(expected_content, test_agent_id().content(),);
 
         // from_content()
         assert_eq!(
-            test_agent(),
-            Agent::try_from_content(&expected_content).unwrap(),
+            test_agent_id(),
+            AgentId::try_from_content(&expected_content).unwrap(),
         );
     }
 }

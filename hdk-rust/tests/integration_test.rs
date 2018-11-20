@@ -14,7 +14,7 @@ use holochain_core_types::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
     },
-    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
+    entry::{entry_type::test_entry_type, Entry, Entry},
     error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
@@ -115,7 +115,7 @@ fn can_commit_entry_macro() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        // this works because the macro names the args the same as the SerializedEntry fields
+        // this works because the macro names the args the same as the Entry fields
         r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
     );
     println!("\t result = {:?}", result);
@@ -234,7 +234,7 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(SerializedEntry::from(Entry::new(
+        &String::from(JsonString::from(Entry::from(Entry::new(
             test_entry_type(),
             JsonString::from("{\"stuff\":\"FAIL\"}"),
         )))),

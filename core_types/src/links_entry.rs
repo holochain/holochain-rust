@@ -98,17 +98,17 @@ impl ToEntry for LinkEntry {
 }
 
 //-------------------------------------------------------------------------------------------------
-// LinkListEntry
+// LinkList
 //-------------------------------------------------------------------------------------------------
 //
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson)]
-pub struct LinkListEntry {
+pub struct LinkList {
     links: Vec<Link>,
 }
 
-impl LinkListEntry {
+impl LinkList {
     pub fn new(links: &[Link]) -> Self {
-        LinkListEntry {
+        LinkList {
             links: links.to_vec(),
         }
     }
@@ -118,8 +118,8 @@ impl LinkListEntry {
     }
 }
 
-impl ToEntry for LinkListEntry {
-    // Convert a LinkListEntry into a JSON array of Links
+impl ToEntry for LinkList {
+    // Convert a LinkList into a JSON array of Links
     fn to_entry(&self) -> Entry {
         Entry::new(EntryType::LinkList, self.to_owned())
     }
@@ -130,7 +130,7 @@ impl ToEntry for LinkListEntry {
             .value()
             .to_owned()
             .try_into()
-            .expect("could not convert Entry to LinkListEntry")
+            .expect("could not convert Entry to LinkList")
     }
 }
 

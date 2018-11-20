@@ -28,12 +28,8 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let future = get_entry(&runtime.context, address);
     let result = block_on(future);
 
-    // runtime.store_result(match result {
-    //     Ok(maybe_entry) => Ok(maybe_entry.and_then(|entry| Some(entry.serialize()))),
-    //     Err(hc_err) => Err(hc_err),
-    // })
     let api_result =
-        result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry.serialize())));
+        result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));
     runtime.store_result(api_result)
 }
 

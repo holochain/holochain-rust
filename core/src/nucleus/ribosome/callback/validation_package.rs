@@ -19,7 +19,7 @@ pub fn get_validation_package_definition(
     match entry_type {
         EntryType::App(app_entry_type) => {
             let dna = get_dna(&context).expect("Callback called without DNA set!");
-            let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
+            let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
                 return Ok(CallbackResult::NotImplemented);
             }
@@ -36,9 +36,9 @@ pub fn get_validation_package_definition(
                     &zome_name,
                     "no capability, since this is an entry validation call",
                     "__hdk_get_validation_package_for_entry_type",
-                    app_entry_type.clone(),
+                    app_entry_type.to_string(),
                 ),
-                Some(app_entry_type.into_bytes()),
+                Some(String::from(app_entry_type).into_bytes()),
             )?;
 
             if result.is_null() {

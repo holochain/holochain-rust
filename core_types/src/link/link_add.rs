@@ -1,9 +1,7 @@
 use cas::content::Address;
-use entry::{entry_type::EntryType, Entry, ToEntry};
 use error::HolochainError;
 use json::JsonString;
 use link::{Link, LinkActionKind};
-use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
 // LinkAddEntry
@@ -32,26 +30,10 @@ impl LinkAdd {
     }
 
     pub fn from_link(action_kind: LinkActionKind, link: &Link) -> Self {
-        LinkAddEntry {
+        LinkAdd {
             action_kind: action_kind,
             link: link.clone(),
         }
-    }
-}
-
-impl ToEntry for LinkAdd {
-    // Convert a LinkEntry into a JSON array of Links
-    fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::LinkAdd, self.to_owned())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        assert_eq!(&EntryType::LinkAdd, entry.entry_type());
-        entry
-            .value()
-            .to_owned()
-            .try_into()
-            .expect("could not convert Entry to LinkEntry")
     }
 }
 
@@ -59,22 +41,26 @@ impl ToEntry for LinkAdd {
 pub mod tests {
 
     use cas::content::AddressableContent;
-    use entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry};
+    use entry::{test_entry_a, test_entry_b, Entry};
     use json::JsonString;
     use link::{
-        link_add::LinkAddEntry,
+        link_add::LinkAdd,
         tests::{example_link, example_link_action_kind, example_link_tag},
     };
     use std::convert::TryFrom;
 
-    pub fn test_link_entry() -> LinkAddEntry {
+    pub fn example_link_add() -> LinkAdd {
         let link = example_link();
-        LinkAddEntry::new(
+        LinkAdd::new(
             example_link_action_kind(),
             link.base(),
             link.target(),
             link.tag(),
         )
+    }
+
+    pub fn test_link_entry() -> Entry {
+        Entry::LinkAdd(example_link_add())
     }
 
     pub fn test_link_entry_json_string() -> JsonString {
@@ -111,17 +97,17 @@ pub mod tests {
     }
 
     #[test]
-    fn link_entry_action_kind_test() {
-        assert_eq!(&example_link_action_kind(), test_link_entry().action_kind(),);
+    fn link_add_action_kind_test() {
+        assert_eq!(&example_link_action_kind(), example_link_add().action_kind(),);
     }
 
     #[test]
-    fn link_entry_link_test() {
-        assert_eq!(&example_link(), test_link_entry().link(),);
+    fn link_add_link_test() {
+        assert_eq!(&example_link(), example_link_add().link(),);
     }
 
     #[test]
-    /// show ToString for LinkEntry
+    /// show ToString for LinkAdd
     fn link_entry_to_string_test() {
         assert_eq!(
             test_link_entry_json_string(),
@@ -130,27 +116,11 @@ pub mod tests {
     }
 
     #[test]
-    /// show From<String> for LinkEntry
+    /// show From<String> for LinkAdd
     fn link_entry_from_string_test() {
         assert_eq!(
-            LinkAddEntry::try_from(test_link_entry_json_string()).unwrap(),
+            Entry::try_from(test_link_entry_json_string()).unwrap(),
             test_link_entry(),
-        );
-    }
-
-    #[test]
-    /// show ToEntry implementation for Link
-    fn link_entry_to_entry_test() {
-        // to_entry()
-        assert_eq!(
-            Entry::new(EntryType::LinkAdd, test_link_entry_json_string()),
-            test_link_entry().to_entry(),
-        );
-
-        // from_entry()
-        assert_eq!(
-            test_link_entry(),
-            LinkAddEntry::from_entry(&test_link_entry().to_entry()),
         );
     }
 }

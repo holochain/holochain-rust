@@ -3,13 +3,14 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::{dna::Dna, entry::ToEntry};
+use holochain_core_types::{dna::Dna};
 use instance::dispatch_action_and_wait;
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::NucleusStatus,
 };
 use std::{sync::Arc, thread, time::*};
+use holochain_core_types::entry::Entry;
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -34,6 +35,7 @@ pub fn initialize_application(
     }
 
     let context_clone = context.clone();
+    let dna_clone = dna.clone();
 
     thread::spawn(move || {
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
@@ -43,8 +45,10 @@ pub fn initialize_application(
             action_wrapper.clone(),
         );
 
+        let dna_entry = Entry::Dna(dna_clone);
+        let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
+
         // Commit DNA to chain
-        let dna_entry = dna.to_entry();
         let dna_commit = block_on(commit_entry(
             dna_entry,
             &context_clone.action_channel.clone(),
@@ -69,7 +73,6 @@ pub fn initialize_application(
         }
 
         // Commit AgentId to chain
-        let agent_id_entry = context_clone.agent.to_entry();
         let agent_id_commit = block_on(commit_entry(
             agent_id_entry,
             &context_clone.action_channel.clone(),

@@ -8,7 +8,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::{entry_type::EntryType, ToEntry},
-        link::{link_list::LinkListEntry, Link},
+        link::{link_list::LinkList, Link},
     };
     use instance::{tests::test_context, Instance, Observer};
 
@@ -48,7 +48,7 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let link = create_example_link();
-        let link_list_entry = LinkListEntry::new(&[link]);
+        let link_list_entry = LinkList::new(&[link]);
         let entry = link_list_entry.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         // Set up instance and process the action
@@ -72,7 +72,7 @@ pub mod tests {
             });
     }
 
-    /// Committing a LinkListEntry to source chain should work
+    /// Committing a LinkList to source chain should work
     #[test]
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
@@ -80,7 +80,7 @@ pub mod tests {
         let link_a = create_test_link_a();
         let link_b = create_test_link_b();
         let link_c = create_test_link_c();
-        let link_list_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
+        let link_list_entry = LinkList::new(&[link_a, link_b, link_c]);
         let entry = link_list_entry.to_entry();
         let commit_action = ActionWrapper::new(Action::Commit(entry));
         println!("commit_multilink: {:?}", commit_action);
@@ -105,13 +105,13 @@ pub mod tests {
             });
     }
 
-    /// Committing a LinkListEntry to source chain should work
+    /// Committing a LinkList to source chain should work
     #[test]
     fn can_round_trip_lle() {
         let link = create_example_link();
-        let lle = LinkListEntry::new(&[link]);
+        let lle = LinkList::new(&[link]);
         let lle_entry = lle.to_entry();
-        let lle_trip = LinkListEntry::from_entry(&lle_entry);
+        let lle_trip = LinkList::from_entry(&lle_entry);
         assert_eq!(lle, lle_trip);
     }
 }

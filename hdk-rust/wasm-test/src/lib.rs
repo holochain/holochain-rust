@@ -21,7 +21,7 @@ use holochain_wasm_utils::{
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::Address,
-        entry::{Entry, entry_type::EntryType, SerializedEntry},
+        entry::{Entry, entry_type::EntryType, Entry},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
     },
@@ -62,8 +62,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
-    let serialized_entry: SerializedEntry = result.unwrap();
-    hdk::debug(format!("SerializedEntry: {:?}", serialized_entry)).expect("debug() must work");
+    let serialized_entry: Entry = result.unwrap();
+    hdk::debug(format!("Entry: {:?}", serialized_entry)).expect("debug() must work");
     let res = hdk::commit_entry(&serialized_entry.into());
 
     let res_obj: JsonString = match res {

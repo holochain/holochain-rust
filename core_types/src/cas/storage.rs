@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, SerializedEntry};
+use entry::{test_entry_unique};
 use error::HolochainError;
 use json::RawString;
 use objekt;
@@ -10,6 +10,7 @@ use std::{
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
+use entry::Entry;
 
 use std::convert::TryFrom;
 use uuid::Uuid;
@@ -224,8 +225,7 @@ where
                 thread_cas
                     .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
-                    .map(|cas| SerializedEntry::try_from(cas).unwrap())
-                    .map(|cas: SerializedEntry| cas.into())
+                    .map(|content| Entry::try_from(content).unwrap())
             )
         });
 

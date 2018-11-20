@@ -3,7 +3,7 @@ use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
 };
 use std::{convert::TryInto, sync::Arc};
@@ -17,7 +17,7 @@ fn get_entry_from_dht_cas(
     let json = (*storage.read().unwrap()).fetch(&address)?;
     let entry: Option<Entry> = json
         .and_then(|js| js.try_into().ok())
-        .map(|s: SerializedEntry| s.into());
+        .map(|s: Entry| s.into());
     Ok(entry)
 }
 

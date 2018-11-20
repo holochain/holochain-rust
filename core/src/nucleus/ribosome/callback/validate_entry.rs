@@ -15,6 +15,8 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
+use holochain_core_types::entry::entry_type::SystemEntryType;
+use holochain_core_types::entry::entry_type::AppEntryType;
 
 pub fn validate_entry(
     entry: Entry,
@@ -29,19 +31,19 @@ pub fn validate_entry(
             validation_data,
             context,
         )?),
-        EntryType::Dna => Ok(CallbackResult::Pass),
+        EntryType::System(SystemEntryType::Dna) => Ok(CallbackResult::Pass),
         _ => Ok(CallbackResult::NotImplemented),
     }
 }
 
 fn validate_app_entry(
     entry: Entry,
-    app_entry_type: String,
+    app_entry_type: AppEntryType,
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = get_dna(&context).expect("Callback called without DNA set!");
-    let zome_name = dna.get_zome_name_for_entry_type(&app_entry_type);
+    let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
     if zome_name.is_none() {
         return Ok(CallbackResult::NotImplemented);
     }
@@ -50,7 +52,7 @@ fn validate_app_entry(
     match get_wasm(&context, &zome_name) {
         Some(wasm) => {
             let validation_call =
-                build_validation_call(entry, app_entry_type, zome_name, validation_data)?;
+                build_validation_call(entry, EntryType::App(app_entry_type), zome_name, validation_data)?;
             Ok(run_validation_callback(
                 context.clone(),
                 validation_call,
@@ -64,13 +66,13 @@ fn validate_app_entry(
 
 fn build_validation_call(
     entry: Entry,
-    entry_type: String,
+    entry_type: EntryType,
     zome_name: String,
     validation_data: ValidationData,
 ) -> Result<ZomeFnCall, HolochainError> {
     let params = EntryValidationArgs {
         entry_type,
-        entry: entry.to_string(),
+        entry,
         validation_data,
     };
 

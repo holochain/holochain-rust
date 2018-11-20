@@ -12,7 +12,7 @@ use holochain_wasm_utils::{
 };
 use holochain_core_types::{
     json::RawString,
-    json::JsonString, entry::SerializedEntry,
+    json::JsonString, entry::Entry,
     error::ZomeApiInternalResult, cas::content::Address,
     error::HolochainError,
     error::RibosomeReturnCode,
@@ -103,7 +103,7 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
   -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
-  let serialized_entry = SerializedEntry::new(
+  let serialized_entry = Entry::new(
     entry_type_name,
     entry_value,
   );

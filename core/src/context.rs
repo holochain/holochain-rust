@@ -1,6 +1,6 @@
 use action::ActionWrapper;
 use holochain_core_types::{
-    agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_network::P2pNetwork;
@@ -19,7 +19,7 @@ use std::sync::{
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub agent: Agent,
+    pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
@@ -36,7 +36,7 @@ impl Context {
     }
 
     pub fn new(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
@@ -46,7 +46,7 @@ impl Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Ok(Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
@@ -59,7 +59,7 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
@@ -69,7 +69,7 @@ impl Context {
         net: Arc<Mutex<P2pNetwork>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,

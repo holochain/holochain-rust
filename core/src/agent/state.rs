@@ -4,7 +4,7 @@ use context::Context;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
     json::*,
     keys::Keys,
@@ -126,9 +126,9 @@ impl AddressableContent for AgentStateSnapshot {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<SerializedEntry>),
+    GetEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
-    LinkEntries(Result<SerializedEntry, HolochainError>),
+    LinkEntries(Result<Entry, HolochainError>),
 }
 
 pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
@@ -209,7 +209,7 @@ fn reduce_get_entry(
         .unwrap()
         .fetch(&address)
         .expect("could not fetch from CAS");
-    let result: Option<SerializedEntry> = json.and_then(|js| js.try_into().ok());
+    let result: Option<Entry> = json.and_then(|js| js.try_into().ok());
 
     // @TODO if the get fails local, do a network get
     // @see https://github.com/holochain/holochain-rust/issues/167
@@ -257,7 +257,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{expected_entry_address, test_entry, SerializedEntry},
+        entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
     };
@@ -364,7 +364,7 @@ pub mod tests {
             JsonString::from(
                 "{\"GetEntry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
             ),
-            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(
+            JsonString::from(ActionResponse::GetEntry(Some(Entry::from(
                 test_entry().clone()
             ))))
         );
@@ -404,7 +404,7 @@ pub mod tests {
     fn test_link_entries_response_to_json() {
         assert_eq!(
             JsonString::from("{\"LinkEntries\":{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}"),
-            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
+            JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),
         );

@@ -7,7 +7,7 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
@@ -16,6 +16,7 @@ use nucleus::ribosome::callback::{
 };
 use snowflake;
 use std::{convert::TryInto, sync::Arc, thread};
+use holochain_core_types::entry::entry_type::EntryType;
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -29,7 +30,15 @@ pub fn build_validation_package(
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(&entry.entry_type().to_string())
+        .get_zome_name_for_app_entry_type(&match entry.entry_type() {
+            EntryType::App(app_entry_type) => app_entry_type,
+            EntryType::System(system_entry_type) => {
+                return Box::new(future::err(HolochainError::ValidationFailed(format!(
+                    "System validation not supported yet: {:?}",
+                    system_entry_type,
+                ))))
+            },
+        })
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
@@ -131,7 +140,7 @@ fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
         .find(|ref header| *header.entry_address() == entry.address())
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
+fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain

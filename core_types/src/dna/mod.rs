@@ -27,16 +27,16 @@ pub mod wasm;
 pub mod zome;
 
 use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use entry::{entry_type::EntryType, Entry, ToEntry};
+use entry::{entry_type::EntryType};
 use error::{DnaError, HolochainError};
 use json::JsonString;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,
-    convert::TryInto,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;
+use entry::entry_type::AppEntryType;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -175,9 +175,10 @@ impl Dna {
     }
 
     /// Return the name of the zome holding a specified app entry_type
-    pub fn get_zome_name_for_entry_type(&self, entry_type_name: &str) -> Option<String> {
+    pub fn get_zome_name_for_app_entry_type(&self, app_entry_type: &AppEntryType) -> Option<String> {
+        let entry_type_name = String::from(app_entry_type.to_owned());
         // pre-condition: must be a valid app entry_type name
-        assert!(EntryType::has_valid_app_name(entry_type_name));
+        assert!(EntryType::has_valid_app_name(&entry_type_name));
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, _) in &zome.entry_types {
@@ -219,21 +220,6 @@ impl PartialEq for Dna {
     }
 }
 
-impl ToEntry for Dna {
-    fn to_entry(&self) -> Entry {
-        // TODO #239 - Convert Dna to Entry by following DnaEntry schema and not the to_json() dump
-        Entry::new(EntryType::Dna, self.to_owned())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        entry
-            .value()
-            .to_owned()
-            .try_into()
-            .expect("could not convert Entry into Dna")
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -251,7 +237,7 @@ pub mod tests {
     fn get_entry_type_def_test() {
         let mut dna = test_dna();
         let mut zome = test_zome();
-        let entry_type = EntryType::App("bar".to_string());
+        let entry_type = EntryType::App(AppEntryType::from("bar"));
         let entry_type_def = EntryTypeDef::new();
 
         zome.entry_types
@@ -629,11 +615,11 @@ pub mod tests {
         )).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_entry_type("test type").unwrap(),
+            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("test type")).unwrap(),
             "test zome".to_string()
         );
         assert!(
-            dna.get_zome_name_for_entry_type("non existant entry type")
+            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
                 .is_none()
         );
     }

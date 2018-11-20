@@ -9,7 +9,7 @@ extern crate wabt;
 extern crate serde_json;
 
 
-use holochain_core_types::agent::Agent;
+use holochain_core_types::agent::AgentId;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
@@ -183,7 +183,7 @@ fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::generate_fake(agent_name);
+    let agent = AgentId::generate_fake(agent_name);
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
     let logger = test_logger();
     (
@@ -234,7 +234,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::generate_fake(agent_name);
+    let agent = AgentId::generate_fake(agent_name);
     let logger = test_logger();
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));

@@ -8,7 +8,7 @@ use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
-    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
+    entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 use nucleus::state::NucleusState;
@@ -17,6 +17,7 @@ use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
+use holochain_core_types::entry::entry_type::SystemEntryType;
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -56,23 +57,25 @@ impl State {
         fn get_dna(
             agent_state: &Arc<AgentState>,
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        ) -> Result<Dna, HolochainError> {
+        ) -> HcResult<Dna> {
             let dna_entry_header = agent_state
                 .chain()
-                .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
+                .iter_type(&agent_state.top_chain_header(), &EntryType::System(SystemEntryType::Dna))
                 .last()
                 .ok_or(HolochainError::ErrorGeneric(
                     "No DNA entry found in source chain while creating state from agent"
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
+            let entry: Entry = json.map(|e| e.try_into()).ok_or(
                 HolochainError::ErrorGeneric(
                     "No DNA entry found in storage while creating state from agent".to_string(),
                 ),
             )??;
-            let entry: Entry = serialized_entry.into();
-            Ok(Dna::from_entry(&entry))
+            match entry {
+                Entry::Dna(dna) => Ok(dna),
+                _ => Err(HolochainError::SerializationError("Tried to get Dna from non-Dna Entry".into())),
+            }
         }
 
         let mut nucleus_state = NucleusState::new();

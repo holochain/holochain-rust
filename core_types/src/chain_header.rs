@@ -1,12 +1,12 @@
 use cas::content::{Address, AddressableContent, Content};
 use entry::{
     entry_type::{test_entry_type, EntryType},
-    test_entry, Entry, ToEntry,
+    test_entry,
 };
 use error::HolochainError;
 use json::JsonString;
 use signature::{test_signature, Signature};
-use std::convert::{TryFrom, TryInto};
+use std::convert::{TryInto};
 use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"
@@ -96,18 +96,6 @@ impl ChainHeader {
     }
 }
 
-//
-impl ToEntry for ChainHeader {
-    fn to_entry(&self) -> Entry {
-        Entry::new(EntryType::ChainHeader, self.to_owned())
-    }
-
-    fn from_entry(entry: &Entry) -> Self {
-        ChainHeader::try_from(entry.value().to_owned())
-            .expect("could not deserialize ChainHeader from Entry")
-    }
-}
-
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
         self.to_owned().into()
@@ -136,7 +124,7 @@ pub mod tests {
     use chain_header::{test_chain_header, ChainHeader};
     use entry::{
         entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
-        test_entry, test_entry_a, test_entry_b, ToEntry,
+        test_entry, test_entry_a, test_entry_b,
     };
     use signature::{test_signature, test_signature_b};
     use time::test_iso_8601;
@@ -369,11 +357,4 @@ pub mod tests {
         );
     }
 
-    #[test]
-    fn can_round_trip_header_entry() {
-        assert_eq!(
-            test_chain_header(),
-            ChainHeader::from_entry(&test_chain_header().to_entry())
-        );
-    }
 }

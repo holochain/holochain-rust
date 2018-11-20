@@ -28,13 +28,23 @@ pub fn validate_entry(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
+    let app_entry_type = match entry_type {
+        EntryType::App(ref app_entry_type) => app_entry_type.clone(),
+        EntryType::System(system_entry_type) => {
+            return Box::new(future::err(HolochainError::ValidationFailed(format!(
+                "System validation not implemented {:?}",
+                system_entry_type,
+            ))))
+        },
+    };
+
     match context
         .state()
         .unwrap()
         .nucleus()
         .dna()
         .unwrap()
-        .get_zome_name_for_entry_type(&entry_type.to_string())
+        .get_zome_name_for_app_entry_type(&app_entry_type)
     {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(

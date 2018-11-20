@@ -17,7 +17,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use serde::Deserialize;
-use std::{convert::TryFrom, fs::File, io::prelude::*};
+use std::{convert::TryFrom, fs::File, io::prelude::*, };
 use toml;
 
 /// Main container configuration struct
@@ -306,10 +306,18 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
-    id = "app spec interface"
+    id = "app spec websocket interface"
     [interfaces.protocol]
     type = "websocket"
     port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.protocol]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
 
@@ -332,20 +340,26 @@ pub mod tests {
         assert_eq!(logger_config.logger_type, "simple");
         assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
         if let StorageConfiguration::File { path } = &instance_config.storage {
-            assert_eq!(path, PathBuf::from("app_spec_storage"));
+            assert_eq!(path, "app_spec_storage");
         } else {
             panic!("Expected `file` type StorageConfiguration!")
         }
 
         let interfaces = config.interfaces;
-        let interface_config = interfaces.get(0).unwrap();
-        if let InterfaceProtocol::Websocket { port } = interface_config.protocol {
+        let interface_config_0 = interfaces.get(0).unwrap();
+        let interface_config_1 = interfaces.get(1).unwrap();
+        if let InterfaceProtocol::Websocket { port } = interface_config_0.protocol {
             assert_eq!(port, 8888);
         } else {
             panic!();
         }
-        assert_eq!(interface_config.admin, false);
-        let instance_ref = interface_config.instances.get(0).unwrap();
+        if let InterfaceProtocol::DomainSocket { ref file } = interface_config_1.protocol {
+            assert_eq!(file, "/tmp/holochain.sock");
+        } else {
+            panic!();
+        }
+        assert_eq!(interface_config_0.admin, false);
+        let instance_ref = interface_config_0.instances.get(0).unwrap();
         assert_eq!(instance_ref.id, "app spec instance");
 
         assert_eq!(config.bridges, vec![]);

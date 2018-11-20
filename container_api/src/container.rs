@@ -18,7 +18,6 @@ use std::{
 
 use holochain_net::p2p_network::P2pNetwork;
 
-use boolinator::*;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.

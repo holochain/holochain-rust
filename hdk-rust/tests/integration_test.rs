@@ -6,7 +6,9 @@ extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
 extern crate holochain_wasm_utils;
+extern crate hdk;
 
+use hdk::error::ZomeApiError;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
@@ -15,7 +17,7 @@ use holochain_core_types::{
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
-    error::{HcResult, ZomeApiInternalResult},
+    error::{HcResult, ZomeApiInternalResult, CoreError, HolochainError},
     hash::HashString,
     json::JsonString,
 };
@@ -374,11 +376,21 @@ fn can_validate_links() {
     let params_not_ok = r#"{"stuff1": "aaa", "stuff2": "aa"}"#;
     let result = hc.call("test_zome", "test_cap", "link_validation", params_not_ok);
     assert!(result.is_ok(), "result = {:?}", result);
+    // Yep, the zome call is ok but what we got back should be a ValidationFailed error,
+    // wrapped in a CoreError, wrapped in a ZomeApiError, wrapped in a Result,
+    // serialized to JSON :D
+    let zome_result : Result<(), ZomeApiError> = serde_json::from_str(&result.unwrap().to_string()).unwrap();
+    assert!(zome_result.is_err());
+    if let ZomeApiError::Internal(error) = zome_result.err().unwrap() {
+        let core_error : CoreError = serde_json::from_str(&error).unwrap();
+        assert_eq!(
+            core_error.kind,
+            HolochainError::ValidationFailed("Target stuff is not longer".to_string()),
+        );
+    } else {
+        assert!(false);
+    }
 
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"Target stuff is not longer\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
-    );
 }
 
 #[test]

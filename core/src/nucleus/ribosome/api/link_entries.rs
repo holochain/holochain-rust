@@ -66,6 +66,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     &runtime.context,
                 )
             })
+            // 4. Add link to the DHT's meta system so it can actually be retrieved
+            //    when looked-up via the base
             .and_then(|_| {
                 add_link(&input.to_link(), &runtime.context)
             }),

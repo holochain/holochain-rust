@@ -5,8 +5,8 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
-extern crate holochain_wasm_utils;
 extern crate hdk;
+extern crate holochain_wasm_utils;
 
 use hdk::error::ZomeApiError;
 use holochain_container_api::*;
@@ -17,7 +17,7 @@ use holochain_core_types::{
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
-    error::{HcResult, ZomeApiInternalResult, CoreError, HolochainError},
+    error::{CoreError, HcResult, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
@@ -83,14 +83,11 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     {
         let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
         let mut link_validator = EntryTypeDef::new();
-        link_validator.links_to.push( LinksTo {
+        link_validator.links_to.push(LinksTo {
             target_type: String::from("link_validator"),
             tag: String::from("longer"),
         });
-        entry_types.insert(
-            String::from("link_validator"),
-            link_validator,
-        );
+        entry_types.insert(String::from("link_validator"), link_validator);
     }
 
     let (context, test_logger) = test_context_and_logger("alex");
@@ -379,10 +376,11 @@ fn can_validate_links() {
     // Yep, the zome call is ok but what we got back should be a ValidationFailed error,
     // wrapped in a CoreError, wrapped in a ZomeApiError, wrapped in a Result,
     // serialized to JSON :D
-    let zome_result : Result<(), ZomeApiError> = serde_json::from_str(&result.unwrap().to_string()).unwrap();
+    let zome_result: Result<(), ZomeApiError> =
+        serde_json::from_str(&result.unwrap().to_string()).unwrap();
     assert!(zome_result.is_err());
     if let ZomeApiError::Internal(error) = zome_result.err().unwrap() {
-        let core_error : CoreError = serde_json::from_str(&error).unwrap();
+        let core_error: CoreError = serde_json::from_str(&error).unwrap();
         assert_eq!(
             core_error.kind,
             HolochainError::ValidationFailed("Target stuff is not longer".to_string()),
@@ -390,7 +388,6 @@ fn can_validate_links() {
     } else {
         assert!(false);
     }
-
 }
 
 #[test]

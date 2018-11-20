@@ -30,6 +30,8 @@ stdenv.mkDerivation rec {
     pkgconfig
     zeromq
     rust-build
+    
+    nodejs
 
     hc-wasm-build
     hc-test

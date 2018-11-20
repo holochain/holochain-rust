@@ -11,7 +11,6 @@ pub fn test(
     path: &PathBuf,
     tests_folder: &str,
     testfile: &str,
-    skip_npm: bool,
     skip_build: bool,
 ) -> DefaultResult<()> {
     // create dist folder
@@ -40,28 +39,14 @@ pub fn test(
         tests_folder
     );
 
-    if !skip_npm {
-        // npm install, if no node_modules yet
-        let node_modules_path = tests_path.join("node_modules");
-        if !node_modules_path.exists() {
-            println!("{}", "Installing node_modules".green().bold());
-            util::run_cmd(
-                tests_path.clone(),
-                "npm".to_string(),
-                vec!["install".to_string(), "--silent".to_string()],
-            )?;
-        }
-
-        // npm run build
-        println!(
-            "{} an executable test file: {}",
-            "Building".green().bold(),
-            testfile,
-        );
+    // npm install, if no node_modules yet
+    let node_modules_path = tests_path.join("node_modules");
+    if !node_modules_path.exists() {
+        println!("{}", "Installing node_modules".green().bold());
         util::run_cmd(
             tests_path.clone(),
             "npm".to_string(),
-            vec!["run".to_string(), "build".to_string()],
+            vec!["install".to_string(), "--silent".to_string()],
         )?;
     }
 
@@ -109,8 +94,7 @@ pub mod tests {
         test(
             &temp_dir_path_buf,
             &TEST_DIR_NAME,
-            "test/dist/bundle.js",
-            false,
+            "test/index.js",
             false,
         ).unwrap_or_else(|e| panic!("test call failed: {}", e));
 
@@ -126,60 +110,6 @@ pub mod tests {
             temp_dir_path_buf
                 .join(&TEST_DIR_NAME)
                 .join("node_modules")
-                .exists()
-        );
-        // check success of js webpack build step
-        assert!(
-            temp_dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("dist/bundle.js")
-                .exists()
-        );
-    }
-
-    #[test]
-    fn test_command_no_npm() {
-        let temp_space = gen_dir();
-        let temp_dir_path = temp_space.path();
-        let temp_dir_path_buf = temp_space.path().to_path_buf();
-
-        // do init first, so theres a project
-        Command::main_binary()
-            .unwrap()
-            .args(&["init", temp_dir_path.to_str().unwrap()])
-            .assert()
-            .success();
-
-        let result = test(
-            &temp_dir_path_buf,
-            &TEST_DIR_NAME,
-            "test/dist/index.js",
-            true,
-            false,
-        );
-
-        // is err because "node test/dist/index.js" will have failed
-        // but the important thing is that the npm calls weren't made
-        assert!(result.is_err());
-        // check success of packaging step
-        assert!(
-            temp_dir_path_buf
-                .join(&DIST_DIR_NAME)
-                .join(package::DEFAULT_BUNDLE_FILE_NAME)
-                .exists()
-        );
-        // npm shouldn't have installed
-        assert!(
-            !temp_dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("node_modules")
-                .exists()
-        );
-        // built file shouldn't exist
-        assert!(
-            !temp_dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("dist/bundle.js")
                 .exists()
         );
     }
@@ -200,8 +130,7 @@ pub mod tests {
         let result = test(
             &temp_dir_path_buf,
             "west",
-            "test/dist/bundle.js",
-            false,
+            "test/index.js",
             false,
         );
 

@@ -36,23 +36,8 @@ fn setup_test_folder(path: &PathBuf, test_folder: &str) -> DefaultResult<()> {
     )?;
     create_test_file(
         &tests_path,
-        "package-lock.json",
-        include_str!("js-tests-scaffold/package-lock.json"),
-    )?;
-    create_test_file(
-        &tests_path,
         "package.json",
         include_str!("js-tests-scaffold/package.json"),
-    )?;
-    create_test_file(
-        &tests_path,
-        "README.md",
-        include_str!("js-tests-scaffold/README.md"),
-    )?;
-    create_test_file(
-        &tests_path,
-        "webpack.config.js",
-        include_str!("js-tests-scaffold/webpack.config.js"),
     )?;
     Ok(())
 }
@@ -147,18 +132,5 @@ pub mod tests {
                 .join("package.json")
                 .exists()
         );
-        assert!(
-            dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("package-lock.json")
-                .exists()
-        );
-        assert!(
-            dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("webpack.config.js")
-                .exists()
-        );
-        assert!(dir_path_buf.join(&TEST_DIR_NAME).join("README.md").exists());
     }
 }

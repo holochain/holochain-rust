@@ -117,13 +117,13 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
+    use context::make_mock_net;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::Agent;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
     use std::sync::{Arc, Mutex, RwLock};
-    use context::make_mock_net;
 
     #[test]
     fn default_buffer_size_test() {

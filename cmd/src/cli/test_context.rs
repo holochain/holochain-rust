@@ -4,10 +4,13 @@ use holochain_cas_implementations::{
     cas::{file::FilesystemStorage, memory::MemoryStorage},
     eav::memory::EavMemoryStorage,
 };
-use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
+use holochain_core::{
+    context::{make_mock_net, Context},
+    logger::Logger,
+    persister::SimplePersister,
+};
 use holochain_core_types::agent::Agent;
 use std::sync::{Arc, Mutex, RwLock};
-use holochain_core::context::make_mock_net;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {

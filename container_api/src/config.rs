@@ -30,15 +30,20 @@ use toml;
 #[derive(Deserialize)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys
-    pub agents: Option<Vec<AgentConfiguration>>,
+    #[serde(default)]
+    pub agents: Vec<AgentConfiguration>,
     /// List of DNAs, for each a path to the DNA file
-    pub dnas: Option<Vec<DNAConfiguration>>,
+    #[serde(default)]
+    pub dnas: Vec<DNAConfiguration>,
     /// List of instances, includes references to an agent and a DNA
-    pub instances: Option<Vec<InstanceConfiguration>>,
+    #[serde(default)]
+    pub instances: Vec<InstanceConfiguration>,
     /// List of interfaces any UI can use to access zome functions
-    pub interfaces: Option<Vec<InterfaceConfiguration>>,
+    #[serde(default)]
+    pub interfaces: Vec<InterfaceConfiguration>,
     /// List of bridges between instances
-    pub bridges: Option<Vec<Bridge>>,
+    #[serde(default)]
+    pub bridges: Vec<Bridge>,
 }
 
 impl Configuration {
@@ -46,10 +51,10 @@ impl Configuration {
     /// This mainly means checking for consistency between config structs that reference others.
     /// Will return an error string if a reference can not be resolved or if no instance is given.
     pub fn check_consistency(&self) -> Result<(), String> {
-        if self.instances.is_none() {
+        if self.instances.is_empty() {
             return Err("No instance found".to_string());
         }
-        for ref instance in self.instances.as_ref().unwrap().iter() {
+        for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
                 format!(
                     "Agent configuration {} not found, mentioned in instance {}",
@@ -63,16 +68,14 @@ impl Configuration {
                 )
             })?;
         }
-        if self.interfaces.is_some() {
-            for ref interface in self.interfaces.as_ref().unwrap().iter() {
-                for ref instance in interface.instances.iter() {
-                    self.instance_by_id(&instance.id).is_some().ok_or_else(|| {
-                        format!(
-                            "Instance configuration \"{}\" not found, mentioned in interface",
-                            instance.id
-                        )
-                    })?;
-                }
+        for ref interface in self.interfaces.iter() {
+            for ref instance in interface.instances.iter() {
+                self.instance_by_id(&instance.id).is_some().ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in interface",
+                        instance.id
+                    )
+                })?;
             }
         }
 
@@ -81,35 +84,31 @@ impl Configuration {
 
     /// Returns the agent configuration with the given ID if present
     pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
-        self.agents.as_ref().and_then(|agents| {
-            agents
-                .iter()
-                .find(|ac| &ac.id == id)
-                .and_then(|agent_config| Some(agent_config.clone()))
-        })
+        self.agents
+            .iter()
+            .find(|ac| &ac.id == id)
+            .and_then(|agent_config| Some(agent_config.clone()))
     }
 
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
         self.dnas
-            .as_ref()
-            .and_then(|dnas| dnas.iter().find(|dc| &dc.id == id))
+            .iter()
+            .find(|dc| &dc.id == id)
             .and_then(|dna_config| Some(dna_config.clone()))
     }
 
     /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
         self.instances
-            .as_ref()
-            .and_then(|instances| instances.iter().find(|ic| &ic.id == id))
+            .iter()
+            .find(|ic| &ic.id == id)
             .and_then(|instance_config| Some(instance_config.clone()))
     }
 
     /// Returns all defined instance IDs
     pub fn instance_ids(&self) -> Vec<String> {
         self.instances
-            .as_ref()
-            .unwrap()
             .iter()
             .map(|instance| instance.id.clone())
             .collect::<Vec<String>>()
@@ -200,7 +199,8 @@ pub struct StorageConfiguration {
 #[derive(Deserialize)]
 pub struct InterfaceConfiguration {
     pub protocol: InterfaceProtocol,
-    pub admin: Option<bool>,
+    #[serde(default)]
+    pub admin: bool,
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
@@ -252,8 +252,7 @@ pub mod tests {
     "#;
         let agents = load_configuration::<Configuration>(toml)
             .unwrap()
-            .agents
-            .expect("expected agents returned");
+            .agents;
         assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
         assert_eq!(
             agents
@@ -280,8 +279,7 @@ pub mod tests {
     "#;
         let dnas = load_configuration::<Configuration>(toml)
             .unwrap()
-            .dnas
-            .expect("expected agents returned");
+            .dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
@@ -323,13 +321,13 @@ pub mod tests {
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Ok(()));
-        let dnas = config.dnas.expect("expected agents returned");
+        let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
         assert_eq!(dna_config.hash, "Qm328wyq38924y");
 
-        let instances = config.instances.unwrap();
+        let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
@@ -344,18 +342,18 @@ pub mod tests {
         assert_eq!(storage_config.password, None);
         assert_eq!(storage_config.url, None);
 
-        let interfaces = config.interfaces.unwrap();
+        let interfaces = config.interfaces;
         let interface_config = interfaces.get(0).unwrap();
         if let InterfaceProtocol::Websocket { port } = interface_config.protocol {
             assert_eq!(port, 8888);
         } else {
             panic!();
         }
-        assert_eq!(interface_config.admin, None);
+        assert_eq!(interface_config.admin, false);
         let instance_ref = interface_config.instances.get(0).unwrap();
         assert_eq!(instance_ref.id, "app spec instance");
 
-        assert_eq!(config.bridges, None);
+        assert_eq!(config.bridges, vec![]);
     }
 
     #[test]

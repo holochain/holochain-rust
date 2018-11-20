@@ -159,7 +159,7 @@ build_holochain: core_toolchain wasm_build
 	$(CARGO) build --all --exclude hc
 
 .PHONY: build_cmd
-build_cmd: core_toolchain wasm_build
+build_cmd: core_toolchain
 	$(CARGO) build -p hc
 
 .PHONY: code_coverage

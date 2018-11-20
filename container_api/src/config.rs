@@ -161,6 +161,7 @@ pub struct InstanceConfiguration {
 
 /// There might be different kinds of loggers in the future.
 /// Currently there is no logger at all.
+/// TODO: make this an enum when it's actually in use
 #[derive(Deserialize, Clone)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
@@ -176,13 +177,14 @@ pub struct LoggerConfiguration {
 ///
 /// Projected are various DB adapters.
 #[derive(Deserialize, Clone)]
-pub struct StorageConfiguration {
-    #[serde(rename = "type")]
-    pub storage_type: String,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub url: Option<String>,
-    pub path: Option<String>,
+#[serde(tag="type")]
+pub enum StorageConfiguration {
+    #[serde(rename = "memory")]
+    Memory,
+    #[serde(rename = "file")]
+    File {
+        path: String,
+    },
 }
 
 /// Here, interfaces are user facing and make available zome functions to
@@ -238,7 +240,7 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use config::{load_configuration, Configuration, InterfaceProtocol};
+    use config::{load_configuration, Configuration, StorageConfiguration, InterfaceProtocol};
 
     #[test]
     fn test_agent_load() {
@@ -335,12 +337,11 @@ pub mod tests {
         let logger_config = &instance_config.logger;
         assert_eq!(logger_config.logger_type, "simple");
         assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
-        let storage_config = &instance_config.storage;
-        assert_eq!(storage_config.storage_type, "file");
-        assert_eq!(storage_config.path, Some(String::from("app_spec_storage")));
-        assert_eq!(storage_config.username, None);
-        assert_eq!(storage_config.password, None);
-        assert_eq!(storage_config.url, None);
+        if let StorageConfiguration::File {path} = &instance_config.storage {
+            assert_eq!(path, "app_spec_storage");
+        } else {
+            panic!("Expected `file` type StorageConfiguration!")
+        }
 
         let interfaces = config.interfaces;
         let interface_config = interfaces.get(0).unwrap();

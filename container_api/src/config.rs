@@ -206,6 +206,8 @@ pub enum InterfaceProtocol {
     Websocket { port: u16 },
     #[serde(rename = "domainsocket")]
     DomainSocket { file: String },
+    #[serde(rename = "custom")]
+    Custom(toml::value::Value),
 }
 
 #[derive(Deserialize)]

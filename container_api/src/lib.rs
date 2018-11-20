@@ -103,10 +103,13 @@ extern crate boolinator;
 #[cfg(test)]
 extern crate test_utils;
 extern crate toml;
+extern crate ws;
 
 pub mod config;
 pub mod container;
 pub mod error;
 pub mod holochain;
+pub mod interface;
+pub mod jsonrpc;
 
 pub use holochain::Holochain;

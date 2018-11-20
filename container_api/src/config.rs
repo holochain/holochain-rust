@@ -200,6 +200,7 @@ pub enum StorageConfiguration {
 /// (i.e. installing apps)
 #[derive(Deserialize)]
 pub struct InterfaceConfiguration {
+    pub id: String,
     pub protocol: InterfaceProtocol,
     #[serde(default)]
     pub admin: bool,
@@ -313,6 +314,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
+    id = "app spec interface"
     [interfaces.protocol]
     type = "websocket"
     port = 8888
@@ -412,6 +414,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
+    id = "app spec interface"
     [interfaces.protocol]
     type = "websocket"
     port = 8888
@@ -455,6 +458,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     [[interfaces]]
+    id = "app spec interface"
     [interfaces.protocol]
     type = "invalid type"
     port = 8888

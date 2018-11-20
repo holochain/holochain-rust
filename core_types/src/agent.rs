@@ -174,7 +174,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            Content::from("{\"value\":\"{\\\"nick\\\":\\\"bob\\\",\\\"key\\\":\\\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\\\"}\",\"entry_type\":\"%agent_id\"}");
+            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"key\":\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"}}");
         // content()
         assert_eq!(expected_content, test_agent_id().content(),);
 

@@ -18,7 +18,8 @@ let
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
 
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test";
+  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
+  hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
@@ -30,11 +31,12 @@ stdenv.mkDerivation rec {
     pkgconfig
     zeromq
     rust-build
-    
+
     nodejs
 
     hc-wasm-build
     hc-test
+    hc-test-cmd
 
     zeromq
   ];

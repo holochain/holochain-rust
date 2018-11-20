@@ -153,9 +153,6 @@ fn run() -> HolochainResult<()> {
             skip_build,
         } => {
             let tests_folder = dir.unwrap_or(cli::TEST_DIR_NAME.to_string());
-            // this "magic string" comes from the webpack config
-            // in the js-tests-scaffold: https://github.com/holochain/js-tests-scaffold/blob/master/webpack.config.js#L5-L8
-            // they need to stay in sync
             let test_file = testfile.unwrap_or("test/index.js".to_string());
             cli::test(
                 &PathBuf::new().join("."),

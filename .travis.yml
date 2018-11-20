@@ -41,11 +41,20 @@ jobs:
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
       before_install:
         - choco install python2
-        - choco install nodejs.install
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+        - choco install nodist
+        - export PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
+        - export NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
+        - export NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - export NODIST_X64=1
+        - nodist add 8
+        - nodist 8
+        - node -e "console.log(process.argv[0], process.arch, process.versions)"
       install:
         - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
+        - ls "/c/Program Files"
+        - ls "/c"
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         # Build WASMs
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown

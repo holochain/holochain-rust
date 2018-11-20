@@ -26,15 +26,35 @@ use entry::entry_type::AppEntryType;
 use entry::entry_type::test_app_entry_type;
 use entry::entry_type::test_app_entry_type_b;
 use json::default_to_json;
+use serde::Serializer;
+use serde::Deserializer;
+use serde::Deserialize;
+use serde::ser::SerializeTupleVariant;
 
 pub type AppEntryValue = JsonString;
+
+fn serialize_app_entry <S>(app_entry_type: &AppEntryType, app_entry_value: &AppEntryValue, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    let mut state = serializer.serialize_tuple_variant("Entry", 0, "App", 2)?;
+    state.serialize_field(&app_entry_type.to_string())?;
+    state.serialize_field(&app_entry_value.to_string())?;
+    state.end()
+}
+
+fn deserialize_app_entry<'de, D>(deserializer: D) -> Result<(AppEntryType, AppEntryValue), D::Error> where D: Deserializer<'de> {
+    #[derive(Deserialize)]
+    struct SerializedAppEntry(String, String);
+
+    let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
+    Ok((AppEntryType::from(serialized_app_entry.0), AppEntryValue::from(serialized_app_entry.1)))
+}
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub enum Entry {
     // @TODO don't skip
-    #[serde(skip)]
+    #[serde(serialize_with="serialize_app_entry")]
+    #[serde(deserialize_with="deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
     Dna(Dna),

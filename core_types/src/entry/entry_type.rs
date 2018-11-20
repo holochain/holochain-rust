@@ -19,6 +19,12 @@ impl From<&'static str> for AppEntryType {
     }
 }
 
+impl From<String> for AppEntryType {
+    fn from(s: String) -> Self {
+        AppEntryType(s)
+    }
+}
+
 impl From<AppEntryType> for String {
     fn from (app_entry_type: AppEntryType) -> Self {
         app_entry_type.0.clone()

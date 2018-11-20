@@ -14,7 +14,7 @@ use holochain_core_types::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
     },
-    entry::{entry_type::test_entry_type, Entry, Entry},
+    entry::{entry_type::test_app_entry_type, Entry},
     error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
@@ -234,10 +234,10 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(Entry::from(Entry::new(
-            test_entry_type(),
+        &String::from(JsonString::from(Entry::App(
+            test_app_entry_type(),
             JsonString::from("{\"stuff\":\"FAIL\"}"),
-        )))),
+        ))),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);

@@ -175,7 +175,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::{agent::Agent, dna::Dna};
+    use holochain_core_types::{agent::AgentId, dna::Dna};
     use holochain_net::p2p_network::P2pNetwork;
 
     use std::sync::{Arc, Mutex, RwLock};
@@ -202,7 +202,7 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
-        let agent = Agent::generate_fake(agent_name);
+        let agent = AgentId::generate_fake(agent_name);
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
@@ -246,7 +246,7 @@ mod tests {
 
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
-        assert_eq!(hc.context.agent.nick, "bob".to_string());
+        assert_eq!(hc.context.agent_id.nick, "bob".to_string());
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");

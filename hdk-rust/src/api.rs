@@ -2,7 +2,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, Entry},
+    entry::{Entry},
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -431,7 +431,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     // Call Ribosome's commit_entry()
     let encoded_allocation_of_result: u32;
@@ -475,8 +475,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// # }
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-    Ok(get_entry_result(address, GetEntryOptions {})?
-        .and_then(|serialized_entry| Some(serialized_entry.deserialize())))
+    Ok(get_entry_result(address, GetEntryOptions {})?)
 }
 
 /// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
@@ -651,7 +650,7 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     let encoded_allocation_of_result: u32;
     unsafe {

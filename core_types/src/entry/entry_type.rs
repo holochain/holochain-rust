@@ -37,8 +37,12 @@ impl ToString for AppEntryType {
     }
 }
 
+// Enum for listing all System Entry Types
+// Variant `Data` is for user defined entry types
 #[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
-pub enum SystemEntryType {
+pub enum EntryType {
+    App(AppEntryType),
+
     Dna,
     AgentId,
     Delete,
@@ -47,14 +51,6 @@ pub enum SystemEntryType {
     LinkList,
     ChainHeader,
     ChainMigrate,
-}
-
-// Enum for listing all System Entry Types
-// Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
-pub enum EntryType {
-    App(AppEntryType),
-    System(SystemEntryType),
 }
 
 impl EntryType {
@@ -70,7 +66,7 @@ impl EntryType {
 
     pub fn can_publish(&self) -> bool {
         match self {
-            EntryType::System(SystemEntryType::Dna) => false,
+            EntryType::Dna => false,
             _ => true,
         }
     }
@@ -90,14 +86,14 @@ impl FromStr for EntryType {
     // Note: Function always return Ok()
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            sys_prefix!("agent_id") => EntryType::System(SystemEntryType::AgentId),
-            sys_prefix!("delete") => EntryType::System(SystemEntryType::Delete),
-            sys_prefix!("dna") => EntryType::System(SystemEntryType::Dna),
-            sys_prefix!("chain_header") => EntryType::System(SystemEntryType::ChainHeader),
-            sys_prefix!("link_add") => EntryType::System(SystemEntryType::LinkAdd),
-            sys_prefix!("link_remove") => EntryType::System(SystemEntryType::LinkRemove),
-            sys_prefix!("link_list") => EntryType::System(SystemEntryType::LinkList),
-            sys_prefix!("chain_migrate") => EntryType::System(SystemEntryType::ChainMigrate),
+            sys_prefix!("agent_id") => EntryType::AgentId,
+            sys_prefix!("delete") => EntryType::Delete,
+            sys_prefix!("dna") => EntryType::Dna,
+            sys_prefix!("chain_header") => EntryType::ChainHeader,
+            sys_prefix!("link_add") => EntryType::LinkAdd,
+            sys_prefix!("link_remove") => EntryType::LinkRemove,
+            sys_prefix!("link_list") => EntryType::LinkList,
+            sys_prefix!("chain_migrate") => EntryType::ChainMigrate,
             _ => EntryType::App(AppEntryType(s.into())),
         })
     }
@@ -107,16 +103,14 @@ impl From<EntryType> for String {
     fn from(entry_type: EntryType) -> String {
         String::from(match entry_type {
             EntryType::App(ref app_entry_type) => &app_entry_type.0,
-            EntryType::System(system_entry_type) => match system_entry_type {
-                SystemEntryType::AgentId => sys_prefix!("agent_id"),
-                SystemEntryType::Delete => sys_prefix!("delete"),
-                SystemEntryType::Dna => sys_prefix!("dna"),
-                SystemEntryType::ChainHeader => sys_prefix!("chain_header"),
-                SystemEntryType::LinkAdd => sys_prefix!("link_add"),
-                SystemEntryType::LinkRemove => sys_prefix!("link_remove"),
-                SystemEntryType::LinkList => sys_prefix!("link_list"),
-                SystemEntryType::ChainMigrate => sys_prefix!("chain_migrate"),
-            },
+            EntryType::AgentId => sys_prefix!("agent_id"),
+            EntryType::Delete => sys_prefix!("delete"),
+            EntryType::Dna => sys_prefix!("dna"),
+            EntryType::ChainHeader => sys_prefix!("chain_header"),
+            EntryType::LinkAdd => sys_prefix!("link_add"),
+            EntryType::LinkRemove => sys_prefix!("link_remove"),
+            EntryType::LinkList => sys_prefix!("link_list"),
+            EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
         })
     }
 }
@@ -181,14 +175,14 @@ pub mod tests {
     pub fn test_types() -> Vec<EntryType> {
         vec![
             EntryType::App(AppEntryType::from("foo")),
-            EntryType::System(SystemEntryType::Dna),
-            EntryType::System(SystemEntryType::AgentId),
-            EntryType::System(SystemEntryType::Delete),
-            EntryType::System(SystemEntryType::LinkAdd),
-            EntryType::System(SystemEntryType::LinkRemove),
-            EntryType::System(SystemEntryType::LinkList),
-            EntryType::System(SystemEntryType::ChainHeader),
-            EntryType::System(SystemEntryType::ChainMigrate),
+            EntryType::Dna,
+            EntryType::AgentId,
+            EntryType::Delete,
+            EntryType::LinkAdd,
+            EntryType::LinkRemove,
+            EntryType::LinkList,
+            EntryType::ChainHeader,
+            EntryType::ChainMigrate,
         ]
     }
 
@@ -196,8 +190,8 @@ pub mod tests {
     fn entry_type_kind() {
         assert!(EntryType::App(AppEntryType::from("")).is_app());
         assert!(!EntryType::App(AppEntryType::from("")).is_sys());
-        assert!(EntryType::System(SystemEntryType::AgentId).is_sys());
-        assert!(!EntryType::System(SystemEntryType::AgentId).is_app());
+        assert!(EntryType::AgentId.is_sys());
+        assert!(!EntryType::AgentId.is_app());
     }
 
     #[test]
@@ -205,7 +199,7 @@ pub mod tests {
         assert!(EntryType::has_valid_app_name("agent_id"));
         assert!(!EntryType::has_valid_app_name("%agent_id"));
         assert!(!EntryType::has_valid_app_name(&String::from(
-            EntryType::System(SystemEntryType::AgentId)
+            EntryType::AgentId
         )));
         assert!(!EntryType::has_valid_app_name(&String::new()));
         assert!(EntryType::has_valid_app_name("toto"));
@@ -217,14 +211,14 @@ pub mod tests {
     #[test]
     fn entry_type_as_str_test() {
         for (type_str, variant) in vec![
-            (sys_prefix!("dna"), EntryType::System(SystemEntryType::Dna)),
-            (sys_prefix!("agent_id"), EntryType::System(SystemEntryType::AgentId)),
-            (sys_prefix!("delete"), EntryType::System(SystemEntryType::Delete)),
-            (sys_prefix!("link_add"), EntryType::System(SystemEntryType::LinkAdd)),
-            (sys_prefix!("link_remove"), EntryType::System(SystemEntryType::LinkRemove)),
-            (sys_prefix!("link_list"), EntryType::System(SystemEntryType::LinkList)),
-            (sys_prefix!("chain_header"), EntryType::System(SystemEntryType::ChainHeader)),
-            (sys_prefix!("chain_migrate"), EntryType::System(SystemEntryType::ChainMigrate)),
+            (sys_prefix!("dna"), EntryType::Dna),
+            (sys_prefix!("agent_id"), EntryType::AgentId),
+            (sys_prefix!("delete"), EntryType::Delete),
+            (sys_prefix!("link_add"), EntryType::LinkAdd),
+            (sys_prefix!("link_remove"), EntryType::LinkRemove),
+            (sys_prefix!("link_list"), EntryType::LinkList),
+            (sys_prefix!("chain_header"), EntryType::ChainHeader),
+            (sys_prefix!("chain_migrate"), EntryType::ChainMigrate),
         ] {
             assert_eq!(
                 variant,
@@ -239,7 +233,7 @@ pub mod tests {
     fn can_publish_test() {
         for t in test_types() {
             match t {
-                EntryType::System(SystemEntryType::Dna) => assert!(!t.can_publish()),
+                EntryType::Dna => assert!(!t.can_publish()),
                 _ => assert!(t.can_publish()),
             }
         }

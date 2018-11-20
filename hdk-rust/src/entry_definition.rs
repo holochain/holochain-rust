@@ -4,9 +4,10 @@ use holochain_wasm_utils::holochain_core_types::{
     validation::{ValidationData, ValidationPackageDefinition},
 };
 use std::collections::HashMap;
+use holochain_core_types::entry::Entry;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
-pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + Sync>;
+pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
 pub type LinkValidator =
     Box<FnMut(HashString, String, HashString, ValidationData) -> Result<(), String> + Sync>;
 

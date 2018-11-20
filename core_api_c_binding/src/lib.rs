@@ -16,7 +16,7 @@ use holochain_net::p2p_network::P2pNetwork;
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::agent::Agent;
+use holochain_core_types::agent::AgentId;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -72,7 +72,7 @@ fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
 }
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::generate_fake("c_bob");
+    let agent = AgentId::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     let _agent_path = format!("{}/state", path);

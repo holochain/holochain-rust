@@ -30,10 +30,10 @@ pub fn validate_entry(
 
     let app_entry_type = match entry_type {
         EntryType::App(ref app_entry_type) => app_entry_type.clone(),
-        EntryType::System(system_entry_type) => {
+        _ => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "System validation not implemented {:?}",
-                system_entry_type,
+                entry_type,
             ))))
         },
     };

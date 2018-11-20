@@ -32,10 +32,10 @@ pub fn build_validation_package(
         .unwrap()
         .get_zome_name_for_app_entry_type(&match entry.entry_type() {
             EntryType::App(app_entry_type) => app_entry_type,
-            EntryType::System(system_entry_type) => {
+            _ => {
                 return Box::new(future::err(HolochainError::ValidationFailed(format!(
                     "System validation not supported yet: {:?}",
-                    system_entry_type,
+                    entry.entry_type(),
                 ))))
             },
         })

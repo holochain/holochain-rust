@@ -87,7 +87,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     match zd
         .entry_types
         .into_iter()
-        .find(|ref entry_type| entry_type.name == entry_validation_args.entry_type)
+        .find(|ref entry_type| entry_type.name == entry_validation_args.entry_type.to_string())
     {
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {

@@ -106,7 +106,7 @@ mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::Agent;
+    use holochain_core_types::agent::AgentId;
     use instance::tests::test_logger;
     use persister::SimplePersister;
     use state::State;
@@ -135,7 +135,7 @@ mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut maybe_context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -165,7 +165,7 @@ mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),

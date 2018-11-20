@@ -15,7 +15,6 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
-use holochain_core_types::entry::entry_type::SystemEntryType;
 use holochain_core_types::entry::entry_type::AppEntryType;
 
 pub fn validate_entry(
@@ -31,7 +30,7 @@ pub fn validate_entry(
             validation_data,
             context,
         )?),
-        EntryType::System(SystemEntryType::Dna) => Ok(CallbackResult::Pass),
+        EntryType::Dna => Ok(CallbackResult::Pass),
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

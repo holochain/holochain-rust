@@ -21,7 +21,6 @@ use link::link_list::LinkList;
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
 use error::HcResult;
-use entry::entry_type::SystemEntryType;
 use entry::entry_type::AppEntryType;
 use entry::entry_type::test_app_entry_type;
 use entry::entry_type::test_app_entry_type_b;
@@ -30,6 +29,7 @@ use serde::Serializer;
 use serde::Deserializer;
 use serde::Deserialize;
 use serde::ser::SerializeTupleVariant;
+use json::default_try_from_json;
 
 pub type AppEntryValue = JsonString;
 
@@ -73,18 +73,25 @@ impl From<Option<Entry>> for JsonString {
     }
 }
 
+impl TryFrom<JsonString> for Option<Entry> {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 impl Entry {
     pub fn entry_type(&self) -> EntryType {
         match &self {
             Entry::App(app_entry_type, _) => EntryType::App(app_entry_type.to_owned()),
-            Entry::Dna(_) => EntryType::System(SystemEntryType::Dna),
-            Entry::AgentId(_) => EntryType::System(SystemEntryType::AgentId),
-            Entry::Delete(_) => EntryType::System(SystemEntryType::Delete),
-            Entry::LinkAdd(_) => EntryType::System(SystemEntryType::LinkAdd),
-            Entry::LinkRemove(_) => EntryType::System(SystemEntryType::LinkRemove),
-            Entry::LinkList(_) => EntryType::System(SystemEntryType::LinkList),
-            Entry::ChainHeader(_) => EntryType::System(SystemEntryType::ChainHeader),
-            Entry::ChainMigrate(_) => EntryType::System(SystemEntryType::ChainMigrate),
+            Entry::Dna(_) => EntryType::Dna,
+            Entry::AgentId(_) => EntryType::AgentId,
+            Entry::Delete(_) => EntryType::Delete,
+            Entry::LinkAdd(_) => EntryType::LinkAdd,
+            Entry::LinkRemove(_) => EntryType::LinkRemove,
+            Entry::LinkList(_) => EntryType::LinkList,
+            Entry::ChainHeader(_) => EntryType::ChainHeader,
+            Entry::ChainMigrate(_) => EntryType::ChainMigrate,
         }
     }
 }

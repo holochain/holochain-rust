@@ -324,14 +324,14 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 0);
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 0);
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 1);
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 1);
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

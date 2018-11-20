@@ -5,7 +5,6 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::RuntimeArgs;
-use holochain_core_types::entry::entry_type::SystemEntryType;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -37,7 +36,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             for chain_header in state
                 .agent()
                 .chain()
-                .iter_type(&maybe_top, &EntryType::System(SystemEntryType::AgentId))
+                .iter_type(&maybe_top, &EntryType::AgentId)
             {
                 found_entries.push(chain_header.entry_address().to_owned());
             }

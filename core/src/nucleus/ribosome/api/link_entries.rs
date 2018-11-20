@@ -65,7 +65,7 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry().serialize()).into_bytes()
+        JsonString::from(test_entry()).into_bytes()
     }
 
     #[test]

@@ -65,11 +65,11 @@ pub fn test(
         )?;
     }
 
-    // execute the built test file using hcshell
+    // execute the built test file using node
     println!("{} tests in {}", "Running".green().bold(), testfile,);
     util::run_cmd(
         path.to_path_buf(),
-        "hcshell".to_string(),
+        "node".to_string(),
         vec![testfile.to_string()],
     )?;
 
@@ -158,7 +158,7 @@ pub mod tests {
             false,
         );
 
-        // is err because "hcshell test/dist/index.js" will have failed
+        // is err because "node test/dist/index.js" will have failed
         // but the important thing is that the npm calls weren't made
         assert!(result.is_err());
         // check success of packaging step

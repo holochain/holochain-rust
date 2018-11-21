@@ -27,7 +27,9 @@ jobs:
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
       # script: make code_coverage
-      script: make test
+      script:
+        - make wasm_build
+        - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       before_cache:

@@ -44,6 +44,9 @@ pub struct PeerData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct MessageData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
     #[serde(rename = "dnaHash")]
     pub dna_hash: String,
 
@@ -52,9 +55,6 @@ pub struct MessageData {
 
     #[serde(rename = "fromAgentId")]
     pub from_agent_id: String,
-
-    #[serde(rename = "_id")]
-    pub msg_id: String,
 
     pub data: serde_json::Value,
 }
@@ -66,6 +66,96 @@ pub struct TrackAppData {
 
     #[serde(rename = "agentId")]
     pub agent_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct SuccessResultData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub to_agent_id: String,
+
+    #[serde(rename = "successInfo")]
+    pub success_info: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct FailureResultData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub to_agent_id: String,
+
+    #[serde(rename = "errorInfo")]
+    pub error_info: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct GetDhtData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub from_agent_id: String,
+
+    pub address: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DhtData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub agent_id: String,
+
+    pub address: String,
+    pub content: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct GetDhtMetaData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub from_agent_id: String,
+
+    pub address: String,
+    pub attribute: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DhtMetaData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub agent_id: String,
+
+    pub address: String,
+    pub attribute: String,
+    pub content: serde_json::Value,
 }
 
 /// High level p2p / network message
@@ -119,6 +209,51 @@ pub enum ProtocolWrapper {
     /// [send] send out a "trackApp" request
     #[serde(rename = "trackApp")]
     TrackApp(TrackAppData),
+
+    /// [send / recv] report success for a messages with _id parameter
+    #[serde(rename = "successResult")]
+    SuccessResult(SuccessResultData),
+
+    /// [send / recv] for any message with _id parameter to indicate failure
+    FailureResult(FailureResultData),
+
+    /// [send] request data from the dht
+    /// [recv] another node, or the network module itself is requesting data
+    ///        from us... send a GetDhtResult message back
+    #[serde(rename = "getDht")]
+    GetDht(GetDhtData),
+
+    /// [recv] response from requesting dht data from the network
+    /// [send] success response if network is requesting this data of us
+    #[serde(rename = "getDhtResult")]
+    GetDhtResult(DhtData),
+
+    /// [send] publish content to the dht
+    #[serde(rename = "publishDht")]
+    PublishDht(DhtData),
+
+    /// [recv] the network is requesting that we store this data
+    #[serde(rename = "storeDht")]
+    StoreDht(DhtData),
+
+    /// [send] request data from the dht
+    /// [recv] another node, or the network module itself is requesting data
+    ///        from us... send a GetDhtResult message back
+    #[serde(rename = "getDhtMeta")]
+    GetDhtMeta(GetDhtMetaData),
+
+    /// [recv] response from requesting dht data from the network
+    /// [send] success response if network is requesting this data of us
+    #[serde(rename = "getDhtMetaResult")]
+    GetDhtMetaResult(DhtMetaData),
+
+    /// [send] publish content to the dht
+    #[serde(rename = "publishDhtMeta")]
+    PublishDhtMeta(DhtMetaData),
+
+    /// [recv] the network is requesting that we store this data
+    #[serde(rename = "storeDhtMeta")]
+    StoreDhtMeta(DhtMetaData),
 }
 
 impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {

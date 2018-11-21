@@ -149,10 +149,10 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
-	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	$(CARGO) build --release --target wasm32-unknown-unknown --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml
+	$(CARGO) build --release --target wasm32-unknown-unknown --manifest-path container_api/wasm-test/Cargo.toml
+	$(CARGO) build --release --target wasm32-unknown-unknown --manifest-path hdk-rust/wasm-test/Cargo.toml
+	$(CARGO) build --release --target wasm32-unknown-unknown --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml
 
 .PHONY: build_holochain
 build_holochain: core_toolchain wasm_build

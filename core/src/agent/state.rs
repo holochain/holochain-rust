@@ -1,13 +1,15 @@
 use action::{Action, ActionWrapper, AgentReduceFn};
 use agent::chain_store::ChainStore;
 use context::Context;
+use futures::executor::block_on;
+use nucleus::actions::get_entry::get_entry;
 use holochain_core_types::{
+    agent::Agent,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
+    entry::{Entry, SerializedEntry, entry_type::EntryType, ToEntry},
     error::HolochainError,
     json::*,
-    keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
@@ -23,7 +25,6 @@ use std::{
 /// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
-    keys: Option<Keys>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -36,7 +37,6 @@ impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
@@ -45,16 +45,10 @@ impl AgentState {
 
     pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: Some(chain_header),
         }
-    }
-
-    /// getter for a copy of self.keys
-    pub fn keys(&self) -> Option<Keys> {
-        self.keys.clone()
     }
 
     /// getter for a copy of self.actions
@@ -69,6 +63,20 @@ impl AgentState {
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
+    }
+
+    pub fn get_agent(&self, context: &Arc<Context>) -> Result<Agent, HolochainError> {
+        self.chain()
+            .iter_type(&self.top_chain_header, &EntryType::AgentId)
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.address()))
+            .and_then(|agent_entry_address| {
+                block_on(get_entry(context, agent_entry_address)).ok()
+            })
+            .and_then(|agent_entry| {
+                Some(Agent::from_entry(&agent_entry.unwrap()))
+            })
+            .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))
     }
 }
 
@@ -286,11 +294,6 @@ pub mod tests {
         test_agent_state();
     }
 
-    #[test]
-    /// test for the agent state keys getter
-    fn agent_state_keys() {
-        assert_eq!(None, test_agent_state().keys());
-    }
 
     #[test]
     /// test for the agent state actions getter

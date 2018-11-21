@@ -11,6 +11,8 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
+pub mod handle_crud;
+
 use boolinator::Boolinator;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
@@ -27,6 +29,9 @@ use holochain_wasm_utils::{
     },
     memory_allocation::*,
     memory_serialization::*,
+};
+use handle_crud::{
+    handle_update_entry_ok, handle_remove_entry_ok,
 };
 
 #[no_mangle]
@@ -90,7 +95,7 @@ fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonStr
 }
 
 fn handle_check_get_entry_result(entry_address: Address) -> JsonString {
-    match hdk::get_entry_result(entry_address, GetEntryOptions {}) {
+    match hdk::get_entry_result(entry_address, GetEntryOptions::default()) {
         Ok(result) => result.into(),
         Err(e) => e.into(),
     }
@@ -463,6 +468,18 @@ define_zome! {
                 inputs: | |,
                 outputs: |result: JsonString|,
                 handler: handle_check_sys_entry_address
+            }
+
+            update_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_update_entry_ok
+            }
+
+            remove_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_remove_entry_ok
             }
 
             send_tweet: {

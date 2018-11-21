@@ -6,6 +6,8 @@ pub mod commit;
 pub mod debug;
 pub mod entry_address;
 pub mod get_entry;
+pub mod update_entry;
+pub mod remove_entry;
 pub mod get_links;
 pub mod init_globals;
 pub mod link_entries;
@@ -18,6 +20,7 @@ use nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query,
+        remove_entry::invoke_remove_entry, update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
@@ -63,6 +66,9 @@ pub enum ZomeApiFunction {
     /// get_entry(address: Address) -> Entry
     GetAppEntry,
 
+    UpdateEntry,
+    RemoveEntry,
+
     /// Init Zome API Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
@@ -89,6 +95,8 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Debug => "hc_debug",
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
+            ZomeApiFunction::UpdateEntry => "hc_update_entry",
+            ZomeApiFunction::RemoveEntry => "hc_remove_entry",
             ZomeApiFunction::InitGlobals => "hc_init_globals",
             ZomeApiFunction::Call => "hc_call",
             ZomeApiFunction::LinkEntries => "hc_link_entries",
@@ -124,6 +132,8 @@ impl FromStr for ZomeApiFunction {
             "hc_debug" => Ok(ZomeApiFunction::Debug),
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
+            "hc_update_entry" => Ok(ZomeApiFunction::UpdateEntry),
+            "hc_remove_entry" => Ok(ZomeApiFunction::RemoveEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
             "hc_call" => Ok(ZomeApiFunction::Call),
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
@@ -153,6 +163,8 @@ impl ZomeApiFunction {
             ZomeApiFunction::Debug => invoke_debug,
             ZomeApiFunction::CommitAppEntry => invoke_commit_app_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
+            ZomeApiFunction::UpdateEntry => invoke_update_entry,
+            ZomeApiFunction::RemoveEntry => invoke_remove_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,

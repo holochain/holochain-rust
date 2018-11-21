@@ -63,6 +63,8 @@ impl FilesystemStorageActor {
 
     /// filesystem CAS add. NOT thread safe.
     fn unthreadable_add(&self, address: &Address, content: &Content) -> Result<(), HolochainError> {
+        // println!("unthreadable_add = {}", address);
+
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;
@@ -71,6 +73,7 @@ impl FilesystemStorageActor {
 
     /// filesystem CAS contains. NOT thread safe.
     fn unthreadable_contains(&self, address: &Address) -> Result<bool, HolochainError> {
+        // println!("unthreadable_contains = {:?}", Path::new(&self.address_to_path(address)).is_file());
         Ok(Path::new(&self.address_to_path(address)).is_file())
     }
 

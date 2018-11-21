@@ -20,6 +20,7 @@ pub struct FilesystemStorage {
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
+        // println!("FilesystemStorage:\n {:?}", path);
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
             id: Uuid::new_v4(),
@@ -36,6 +37,7 @@ impl ContentAddressableStorage for FilesystemStorage {
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
+        println!("FilesystemStorage.contains({}) ?", address);
         let response = self
             .actor
             .block_on_ask(Protocol::CasContains(address.clone()))?;

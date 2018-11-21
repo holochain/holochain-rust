@@ -52,6 +52,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_sys_entry_address",
         "check_call",
         "check_call_with_args",
+        "update_entry_ok",
+        "remove_entry_ok",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
@@ -147,6 +149,7 @@ fn can_round_trip() {
 
 #[test]
 fn can_get_entry() {
+    println!("\n can_get_entry\n");
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
@@ -175,7 +178,7 @@ fn can_get_entry() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(
-            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
+            "{\"addresses\":[\"Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v\"],\"entries\":[{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}],\"crud_status\":[{\"bits\":1}],\"crud_links\":{}}"
         )
     );
 
@@ -207,7 +210,8 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+    assert_eq!(result.unwrap(),
+               JsonString::from("{\"addresses\":[],\"entries\":[],\"crud_status\":[],\"crud_links\":{}}"));
 
     // test the case with a bad address
     let result = hc.call(
@@ -400,4 +404,31 @@ fn can_check_call_with_args() {
             "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
         ))),
     );
+}
+
+#[test]
+fn can_remove_entry() {
+    let (mut hc, _) = start_holochain_instance();
+
+    let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
+    println!("remove_entry_ok result: {:?}\n", result);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"addresses\":[\"QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg\"],\"entries\":[{\"value\":\"{\\\"stuff\\\":\\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}],\"crud_status\":[{\"bits\":4}],\"crud_links\":{}}"),
+    );
+}
+
+#[test]
+fn can_update_entry() {
+    let (mut hc, _) = start_holochain_instance();
+
+    let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+//    assert_eq!(
+//        result.unwrap(),
+//        JsonString::from(ZomeApiInternalResult::success(Address::from(
+//            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+//        ))),
+//    );
 }

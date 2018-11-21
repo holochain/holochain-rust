@@ -42,7 +42,7 @@ pub struct DhtStore {
     // Placeholder network module
     network: Network,
 
-    add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
+    actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
 
 impl PartialEq for DhtStore {
@@ -53,7 +53,7 @@ impl PartialEq for DhtStore {
         let other_meta = &other.meta_storage.clone();
 
         self.network == other.network
-            && self.add_link_actions == other.add_link_actions
+            && self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -71,7 +71,7 @@ impl DhtStore {
             content_storage,
             meta_storage,
             network,
-            add_link_actions: HashMap::new(),
+            actions: HashMap::new(),
         }
     }
 
@@ -112,12 +112,12 @@ impl DhtStore {
     pub(crate) fn network_mut(&mut self) -> &mut Network {
         &mut self.network
     }
-    pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
-        &self.add_link_actions
+    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
+        &self.actions
     }
-    pub(crate) fn add_link_actions_mut(
+    pub(crate) fn actions_mut(
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
-        &mut self.add_link_actions
+        &mut self.actions
     }
 }

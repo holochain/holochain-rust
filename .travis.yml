@@ -112,6 +112,8 @@ _nodejs_deploy_template: &_nodejs_deploy_template
 
 _windows_nodejs_container_template: &_windows_nodejs_container_template
   install:
+    - choco upgrade yarn
+    - export PATH="/c/Program Files (x86)/Yarn/bin:$PATH"
     # deps for neon, found at https://guides.neon-bindings.com/getting-started/
     - npm install --scripts-prepend-node-path=true --global --vs2015 --production windows-build-tools
     - yarn config set python python2.7
@@ -139,6 +141,7 @@ jobs:
       install:
         - rustup target add wasm32-unknown-unknown
       script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         # Build WASMs
         - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown

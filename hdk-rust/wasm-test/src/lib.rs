@@ -18,10 +18,10 @@ use hdk::{
 };
 use holochain_wasm_utils::{
     api_serialization::get_entry::GetEntryOptions,
-    holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::Address,
-        entry::{Entry, entry_type::EntryType, SerializedEntry},
+        dna::zome::entry_types::Sharing,
+        entry::{entry_type::EntryType, Entry, SerializedEntry},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
     },

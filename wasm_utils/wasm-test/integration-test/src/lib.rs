@@ -7,12 +7,10 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
-use holochain_wasm_utils::holochain_core_types::json::JsonString;
-use holochain_wasm_utils::holochain_core_types::json::RawString;
+use holochain_wasm_utils::holochain_core_types::json::{JsonString, RawString};
 
 use holochain_wasm_utils::{
-    memory_allocation::*, memory_serialization::*,
-    holochain_core_types::error::HolochainError,
+    holochain_core_types::error::HolochainError, memory_allocation::*, memory_serialization::*,
 };
 use std::os::raw::c_char;
 
@@ -190,26 +188,38 @@ pub extern "C" fn test_stacked_json_str(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_stacked_json_obj(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let first = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
-        value: "first".to_string(),
-    });
-    let _second = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
-        value: "second".to_string(),
-    });
+    let first = store_as_json_into_encoded_allocation(
+        &mut stack,
+        TestStruct {
+            value: "first".to_string(),
+        },
+    );
+    let _second = store_as_json_into_encoded_allocation(
+        &mut stack,
+        TestStruct {
+            value: "second".to_string(),
+        },
+    );
     first as u32
 }
 
 #[no_mangle]
 pub extern "C" fn test_stacked_mix(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let _first = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
-        value: "first".to_string(),
-    });
+    let _first = store_as_json_into_encoded_allocation(
+        &mut stack,
+        TestStruct {
+            value: "first".to_string(),
+        },
+    );
     let _second = store_as_json_into_encoded_allocation(&mut stack, "second");
     let third = store_string_into_encoded_allocation(&mut stack, "third");
     let _fourth = store_as_json_into_encoded_allocation(&mut stack, "fourth");
-    let _fifth = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
-        value: "fifth".to_string(),
-    });
+    let _fifth = store_as_json_into_encoded_allocation(
+        &mut stack,
+        TestStruct {
+            value: "fifth".to_string(),
+        },
+    );
     third as u32
 }

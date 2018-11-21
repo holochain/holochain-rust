@@ -8,20 +8,21 @@ extern crate wabt;
 #[macro_use]
 extern crate serde_json;
 
-
-use holochain_core_types::agent::Agent;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
-use holochain_core_types::json::JsonString;
-use holochain_core_types::dna::{
-    wasm::DnaWasm,
-    zome::{
-        capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::EntryTypeDef,
-        Config, Zome,
+use holochain_core_types::{
+    agent::Agent,
+    dna::{
+        wasm::DnaWasm,
+        zome::{
+            capabilities::{Capability, FnDeclaration, Membrane},
+            entry_types::EntryTypeDef,
+            Config, Zome,
+        },
+        Dna,
     },
-    Dna,
+    json::JsonString,
 };
 use holochain_net::p2p_network::P2pNetwork;
 
@@ -31,7 +32,7 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{Arc, Mutex,RwLock},
+    sync::{Arc, Mutex, RwLock},
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -184,7 +185,9 @@ fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = Agent::generate_fake(agent_name);
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+    ));
     let logger = test_logger();
     (
         Arc::new(
@@ -193,7 +196,10 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 file_storage.clone(),
-                Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                )),
                 make_mock_net(),
             ).unwrap(),
         ),
@@ -237,14 +243,19 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = Agent::generate_fake(agent_name);
     let logger = test_logger();
 
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+    ));
     Arc::new(
         Context::new(
             agent,
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
-            Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
             make_mock_net(),
         ).unwrap(),
     )

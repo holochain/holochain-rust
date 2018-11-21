@@ -7,6 +7,32 @@ branches:
 
 jobs:
   include:
+    - name: "Holochain tests + code coverage"
+      dist: trusty
+      language: node_js
+      node_js:
+        - "8"
+
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script: make code_coverage
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+      before_cache:
+        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
+        - rm -rf $HOME/.cargo/registry/index
+
     - name: "windows build & test all"
       os: windows
       env:
@@ -16,6 +42,14 @@ jobs:
       before_install:
         - choco install python2
         - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+        - choco install nodist
+        - export PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
+        - export NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
+        - export NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - export NODIST_X64=1
+        - nodist add 8
+        - nodist 8
+        - node -e "console.log(process.argv[0], process.arch, process.versions)"
       install:
         - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
@@ -52,40 +86,10 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Standard tests + code coverage"
-      dist: trusty
-      language: node_js
-      node_js:
-        - "8"
-
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script: make code_coverage
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-      before_cache:
-        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
-        - rm -rf $HOME/.cargo/registry/index
-
-    - name: "Formatting & clippy"
+    - name: "Lint (fmt & _clippy)"
       dist: trusty
       # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
       language: bash
-
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
 
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
@@ -100,6 +104,27 @@ jobs:
         - make fmt_check
         # @see #431
         # - make clippy
+      before_cache:
+        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
+        - rm -rf $HOME/.cargo/registry/index
+
+    - name: "Command-line tools"
+      dist: trusty
+      language: node_js
+      node_js:
+        - "8"
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make test_cmd
       before_cache:
         - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
         - rm -rf $HOME/.cargo/registry/index

@@ -190,7 +190,7 @@ pub(crate) fn reduce_update_entry(
 
 //
 pub(crate) fn reduce_remove_entry(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {

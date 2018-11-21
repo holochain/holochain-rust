@@ -2,7 +2,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    entry::{Entry},
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     crud_status::CrudStatus,
 };

@@ -1,8 +1,6 @@
 # holochain-nodejs
 
-[![Build Status](https://travis-ci.com/holochain/holochain-nodejs.svg?branch=master)](https://travis-ci.com/holochain/holochain-nodejs)
-
-Node bindings for holochain
+Nodejs Holochain Container primarily for the execution of tests
 
 ## Installation
 
@@ -29,19 +27,19 @@ app.start();
 app.stop();
 ```
 
-See also the example directory
-
 ## Deployment
 Recommended pattern for deployment:
 
+In your CLI, navigate to the directory containing these files.
+
 Use `npm version [patch, minor, major]` (depending on the type of update)
-This will create a tag, and update the package.json.
+This will update the package.json.
 
-Push the tags to github
-`git push --tags`
+Commit this.
 
-Push the code to github
-`git push origin master`
+Push it to github.
+
+Create a tag on github of the format `holochain-nodejsY.Y.Y` where `Y.Y.Y` is the version number of the tag. This is really important.
 
 This will cause the CI to build for all platforms, and upload the binaries to github releases.
 
@@ -49,7 +47,7 @@ If are added as a team member on the holochain team on npm, and have previously 
 If you haven't, run `npm adduser`.
 Use the details of your npm user to login.
 
-Once travis has finished with the binary uploads to releases (which can be found at https://travis-ci.com/holochain/holochain-nodejs) run the following from your computer
+Once travis has finished with the binary uploads to releases (which can be found at https://travis-ci.com/holochain/holochain-nodejs) run the following from your computer, from the nodejs_holochain directory
 `node ./publish.js --publish`
 
 Until windows for travis can utilize secure environment variables without breaking (its not available as a feature yet), we cannot re-enable the automated npm publish step. When the time comes, the configuration is already in the travis file, commented out.

@@ -34,7 +34,9 @@ _windows_template: &_windows_template
   os: windows
   language: rust
   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-  install: sh scripts/configure_windows.sh
+  before_install: sh scripts/configure_windows.sh
+
+
 
 _unix_nodejs_container_template: &_unix_nodejs_container_template
   before_install:
@@ -107,7 +109,15 @@ _nodejs_deploy_template: &_nodejs_deploy_template
           tags: true
           condition: $PERFORM_DEPLOY = 1
       name: holochain-nodejs version $TRAVIS_TAG
-# nodejs deployment templates stop here
+
+_windows_nodejs_container_template: &_windows_nodejs_container_template
+  install:
+    # deps for neon, found at https://guides.neon-bindings.com/getting-started/
+    - npm install --scripts-prepend-node-path=true --global --vs2015 --production windows-build-tools
+    - yarn config set python python2.7
+    - npm config set msvs_version 2015
+    - yarn config set msvs_version 2015 --global
+# nodejs specific deployment templates stop here
 
 jobs:
   include:
@@ -126,6 +136,9 @@ jobs:
       env:
         - TRAVIS_NODE_VERSION=8
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+        - RUST_VERSION=nightly-2018-10-12-x86_64-pc-windows-msvc
+      install:
+        - rustup target add wasm32-unknown-unknown --toolchain $RUST_VERSION
       script:
         # Build WASMs
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
@@ -220,6 +233,7 @@ jobs:
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
       env:
       - TRAVIS_NODE_VERSION="8"
       - PERFORM_DEPLOY=1
@@ -228,6 +242,7 @@ jobs:
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
       env:
       - TRAVIS_NODE_VERSION="10"
       - PERFORM_DEPLOY=1
@@ -236,6 +251,7 @@ jobs:
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
       env:
       - TRAVIS_NODE_VERSION="11"
       - PERFORM_DEPLOY=1

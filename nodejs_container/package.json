@@ -1,0 +1,39 @@
+{
+  "name": "@holochain/holochain-nodejs",
+  "version": "0.1.21",
+  "description": "Node bindings for holochain",
+  "main": "index.js",
+  "author": "Julian Laubstein <contact@julianlaubstein.de>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "scripts": {
+    "compile": "neon build --release",
+    "clean": "neon clean"
+  },
+  "dependencies": {
+    "node-pre-gyp": "^0.11.0"
+  },
+  "devDependencies": {
+    "neon-cli": "^0.2.0",
+    "shelljs": "^0.8.2"
+  },
+  "binary": {
+    "module_name": "index",
+    "module_path": "./bin-package",
+    "host": "https://github.com/holochain/holochain-nodejs/releases/download/",
+    "remote_path": "v{version}"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

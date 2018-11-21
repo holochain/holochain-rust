@@ -16,7 +16,7 @@ _trusty_bash: &_trusty_bash
   # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
   language: bash
 
-_shared_template: &_shared_template
+_cargo_cache_template: &_cargo_cache_template
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
   cache:
@@ -32,6 +32,7 @@ _shared_template: &_shared_template
 
 _windows_template: &_windows_template
   os: windows
+  language: rust
   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
   install: sh scripts/configure_windows
 
@@ -56,10 +57,12 @@ _unix_nodejs_container_template: &_unix_nodejs_container_template
 # the following is all for nodejs deployment
 _linux_nodejs_template: &_linux_nodejs_template
   os: linux
+  language: rust
   rust: nightly
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
+  language: rust
   rust: nightly
 
 _to_deploy_template: &_to_deploy_template
@@ -110,7 +113,7 @@ jobs:
   include:
     - name: "Holochain tests + code coverage"
       <<: *_trusty_nodejs
-      <<: *_shared_template
+      <<: *_cargo_cache_template
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
@@ -154,7 +157,7 @@ jobs:
 
     - name: "Lint (fmt & _clippy)"
       <<: *_trusty_bash
-      <<: *_shared_template
+      <<: *_cargo_cache_template
       script:
         - make fmt_check
         # @see #431
@@ -162,13 +165,13 @@ jobs:
 
     - name: "Command-line tools"
       <<: *_trusty_nodejs
-      <<: *_shared_template
+      <<: *_cargo_cache_template
       script:
         - make test_cmd
 
     - name: "Nodejs Container Test"
       <<: *_trusty_nodejs
-      <<: *_shared_template
+      <<: *_cargo_cache_template
       <<: *_unix_nodejs_container_template
       env:
       - TRAVIS_NODE_VERSION="8"
@@ -176,64 +179,64 @@ jobs:
 
     # if this is release tag, the resultant binary will be uploaded to github
     - name: "Linux - Node 8"
-      <<: *_unix_nodejs_container_template
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_8_deploy_template
       <<: *_nodejs_deploy_template
-    - name: "Linux - Node 10"
       <<: *_unix_nodejs_container_template
+    - name: "Linux - Node 10"
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_10_deploy_template
       <<: *_nodejs_deploy_template
-    - name: "Linux - Node 11"
       <<: *_unix_nodejs_container_template
+    - name: "Linux - Node 11"
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_11_deploy_template
       <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
 
     - name: "OSX - Node 8"
-      <<: *_unix_nodejs_container_template
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_8_deploy_template
       <<: *_nodejs_deploy_template
-    - name: "OSX - Node 10"
       <<: *_unix_nodejs_container_template
+    - name: "OSX - Node 10"
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_10_deploy_template
       <<: *_nodejs_deploy_template
-    - name: "OSX - Node 11"
       <<: *_unix_nodejs_container_template
+    - name: "OSX - Node 11"
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_11_deploy_template
       <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
 
     - name: "Windows - Node 8"
       <<: *_windows_template
       <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
       env:
       - TRAVIS_NODE_VERSION="8"
       - PERFORM_DEPLOY=1
       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      <<: *_nodejs_deploy_template
     - name: "Windows - Node 10"
       <<: *_windows_template
       <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
       env:
       - TRAVIS_NODE_VERSION="10"
       - PERFORM_DEPLOY=1
       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      <<: *_nodejs_deploy_template
     - name: "Windows - Node 11"
       <<: *_windows_template
       <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
       env:
       - TRAVIS_NODE_VERSION="11"
       - PERFORM_DEPLOY=1
       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      <<: *_nodejs_deploy_template

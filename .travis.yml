@@ -100,13 +100,13 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       api_key:
           secure: BIgLicKCn7lwSuAtaZeq514Tqu7YVMAHi8N/R7MfZc1NbzFs40q5MyNMf1krVoXwJF3BoQ8Y5pb2iesqsrZLCv9lWcrOeOjsTywabZnTan0DcDZs5TimyNknCNSkF4OoXjIWefkEdtB8PzkC5zNL/P2nIMyiuHWHuQYiZGhclwO6x0LAj3aYLrdkVeR0129Rdh05Np5edMY4DHfq9tLmQ/IfyE7U97ttAwXHIKnZnQ+SRxgYxSGaIDSHLA3Ah4HHKl7KUgh6wDo19zoT5jdisI/bDO5YCgUcRAphYKrTebA4GiBIUWikg7eCUQmLj98DJZFgEonmKrR+MIYXJ4u47lvrAcC0T/1+Alo6oAHA9j23Yf737LpWnkLcxxtpgp+ykbGjG42kW2Okoj5yyqPO6wGxr808yaRORQDfp/7n4cxr+pSQIM4eIaUySakNtpYDwWABhYje4MkQI6s1iLRbCkK85DiUA3Ptmvpwbyhz7pbXadNQ1chydHoGvD1qGK1BCfRjTmfUlA/UzJeyq9pnMI8RqyVQmjDT8MpFR+QfOKGUDyvOBFGAtvR5TdJT20LEcXDEX7O+F4apZXhmG7dFMpHKIXbtSJyNFYeM+0cJCQUoJHp9Zvk5yJy8cf1VJDY2v75QzaQ/Aodz4M9h7WVnK8tWNqDKETDs7e7KUQTDn7A=
       file_glob: true
-      file: bin-package/*.tar.gz
+      file: nodejs_container/bin-package/*.tar.gz
       skip_cleanup: true
       # publish only if we're building a tag and if the PERFORM_DEPLOY is set to 1
       on:
           tags: true
           condition: $PERFORM_DEPLOY = 1
-      name: Version $TRAVIS_TAG
+      name: holochain-nodejs version $TRAVIS_TAG
 # nodejs deployment templates stop here
 
 jobs:

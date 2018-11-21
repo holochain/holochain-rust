@@ -26,7 +26,8 @@ jobs:
           - $TRAVIS_BUILD_DIR/target
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
-      script: make code_coverage
+      # script: make code_coverage
+      script: make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       before_cache:

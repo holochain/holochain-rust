@@ -1,0 +1,19 @@
+{
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-loader": "^8.0.0",
+    "faucet": "0.0.1",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0"
+  },
+  "dependencies": {
+    "@holochain/holochain-nodejs": "^0.1.19",
+    "json3": "*",
+    "tape": "^4.9.1"
+  },
+  "scripts": {
+    "test": "node test.js"
+  }
+}

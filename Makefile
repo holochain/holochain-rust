@@ -162,6 +162,10 @@ build_holochain: core_toolchain wasm_build
 build_cmd: core_toolchain ensure_wasm_target
 	$(CARGO) build -p hc
 
+.PHONY: install_cmd
+install_cmd: build_cmd
+	cd cmd && $(CARGO) install -f --path .
+
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
 	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc

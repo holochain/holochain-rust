@@ -20,7 +20,6 @@ pub struct FilesystemStorage {
 
 impl FilesystemStorage {
     pub fn new(path: &str) -> Result<FilesystemStorage, HolochainError> {
-        // println!("FilesystemStorage:\n {:?}", path);
         Ok(FilesystemStorage {
             actor: FilesystemStorageActor::new_ref(path)?,
             id: Uuid::new_v4(),

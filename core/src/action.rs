@@ -13,7 +13,6 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
-use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two

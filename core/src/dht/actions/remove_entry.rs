@@ -7,7 +7,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 
@@ -49,7 +48,7 @@ impl Future for RemoveEntryFuture {
         cx.waker().wake();
         if let Some(state) = self.context.state() {
             match state.dht().actions().get(&self.action) {
-                Some(Ok(())) => Ok(futures::Async::Ready(())),
+                Some(Ok(_)) => Ok(futures::Async::Ready(())),
                 Some(Err(e)) => Err(e.clone()),
                 None => Ok(futures::Async::Pending),
             }

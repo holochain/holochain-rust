@@ -42,7 +42,7 @@ pub struct DhtStore {
     // Placeholder network module
     network: Network,
 
-    actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
+    actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
 
 impl PartialEq for DhtStore {
@@ -112,12 +112,12 @@ impl DhtStore {
     pub(crate) fn network_mut(&mut self) -> &mut Network {
         &mut self.network
     }
-    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
+    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions
     }
     pub(crate) fn actions_mut(
         &mut self,
-    ) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
+    ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &mut self.actions
     }
 }

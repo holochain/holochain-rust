@@ -45,7 +45,7 @@ impl Future for AddLinkFuture {
         cx.waker().wake();
         if let Some(state) = self.context.state() {
             match state.dht().actions().get(&self.action) {
-                Some(Ok(())) => Ok(futures::Async::Ready(())),
+                Some(Ok(_)) => Ok(futures::Async::Ready(())),
                 Some(Err(e)) => Err(e.clone()),
                 None => Ok(futures::Async::Pending),
             }

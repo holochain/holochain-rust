@@ -31,20 +31,23 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     let entry_v2 =
         Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v2".into() });
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
-    hdk::debug("\t res?").ok();
     let addr_v2 = res.unwrap();
+
+    // get latest from latest
+    hdk::debug("\n **** get latest from latest").ok();
+    let res = hdk::get_entry(addr_v2.clone());
+    let entry_res = res.unwrap().unwrap();
+    assert_eq!(entry_res, entry_v2.clone());
+
+    // get latest from initial
+    let res = hdk::get_entry(addr_v1.clone());
+    let entry_res = res.unwrap().unwrap();
+    hdk::debug("\t entry_res?").ok();
+    assert_eq!(entry_res, entry_v2.clone());
 
     hdk::debug(entry_v2.to_string()).ok();
     JsonString::from(entry_v2.to_string())
 
-//    // get latest from latest
-//    let res = hdk::get_entry(addr_v2.clone());
-//    let entry_res = res.unwrap().unwrap();
-//    assert_eq!(entry_res, entry_v2.clone());
-//    // get latest from initial
-//    let res = hdk::get_entry(addr_v1.clone());
-//    let entry_res = res.unwrap().unwrap();
-//    assert_eq!(entry_res, entry_v2.clone());
 //    // get initial from latest
 //    let res = hdk::get_entry_initial(addr_v2.clone());
 //    let entry_res = res.unwrap().unwrap();
@@ -149,20 +152,20 @@ pub fn handle_remove_entry_ok() -> JsonString {
     let res = hdk::commit_entry(&entry_test);
     let addr_v1 = res.unwrap();
     // get it
-    hdk::debug("\n get it:\n");
+    hdk::debug("\n get it:\n").ok();
     let res = hdk::get_entry(addr_v1.clone());
     let entry_v1 = res.unwrap().unwrap();
     assert_eq!(entry_test, entry_v1);
     // Delete it
-    hdk::debug("\n Delete it:\n");
+    hdk::debug("\n Delete it:\n").ok();
     let res = hdk::remove_entry(addr_v1.clone());
     assert!(res.is_ok());
     // get it should fail
-    hdk::debug("\n get it should fail:\n");
+    hdk::debug("\n get it should fail:\n").ok();
     let res = hdk::get_entry(addr_v1.clone());
     assert_eq!(res.unwrap(), None);
     // Delete it again should fail
-    hdk::debug("\n Delete it again should fail:\n");
+    hdk::debug("\n Delete it again should fail:\n").ok();
     let res = hdk::remove_entry(addr_v1.clone());
     assert!(res.is_err());
     // get entry_result

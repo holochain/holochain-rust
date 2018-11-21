@@ -179,7 +179,7 @@ pub(crate) fn reduce_update_entry(
     }
     new_store
         .actions_mut()
-        .insert(action_wrapper.clone(), res);
+        .insert(action_wrapper.clone(), res.map(|_| new_address.clone()));
 
     println!("\n DHT reduce_update_entry: new_status = {:?}", new_status);
     // Update crud-link
@@ -280,7 +280,7 @@ pub(crate) fn reduce_remove_entry(
     }
     new_store
         .actions_mut()
-        .insert(action_wrapper.clone(), res);
+        .insert(action_wrapper.clone(), res.map(|_| address.clone()));
 
     println!("\n reduce_remove_entry: new_status = {:?}", new_status);
     // Done
@@ -351,7 +351,7 @@ pub(crate) fn reduce_add_link(
     let result = storage.write().unwrap().add_eav(&eav);
     new_store
         .actions_mut()
-        .insert(action_wrapper.clone(), result);
+        .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
     Some(new_store)
 }
 

@@ -39,7 +39,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
 
     // Create Chain Entry
-    let entry = Entry::from(entry_args.new_entry);
+    let entry = Entry::from(entry_args.new_entry.clone());
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(

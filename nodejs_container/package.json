@@ -3,7 +3,7 @@
   "version": "0.1.21",
   "description": "Node bindings for holochain",
   "main": "index.js",
-  "author": "Julian Laubstein <contact@julianlaubstein.de>",
+  "author": "Holochain Core Dev Team <devcore@holochain.org>",
   "license": "MIT",
   "engines": {
     "node": ">=8.0.0"

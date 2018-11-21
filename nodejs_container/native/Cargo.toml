@@ -1,7 +1,7 @@
 [package]
 name = "holochain-node"
 version = "0.1.0"
-authors = ["Julian Laubstein <contact@julianlaubstein.de>"]
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 license = "MIT"
 build = "build.rs"
 exclude = ["artifacts.json", "index.node"]
@@ -15,11 +15,11 @@ neon-build = "0.2.0"
 
 [dependencies]
 neon = "0.2.0"
-holochain_container_api = { git = "https://github.com/holochain/holochain-rust", branch = "develop" }
-holochain_core = { git = "https://github.com/holochain/holochain-rust", branch = "develop" }
-holochain_net = { git = "https://github.com/holochain/holochain-rust", branch = "develop" }
-holochain_core_types = { git = "https://github.com/holochain/holochain-rust", branch = "develop" }
-holochain_cas_implementations = { git = "https://github.com/holochain/holochain-rust", branch = "develop" }
+holochain_container_api = { path = "../../container_api" }
+holochain_core = { path = "../../core" }
+holochain_net = { path = "../../net" }
+holochain_core_types = { path = "../../core_types" }
+holochain_cas_implementations = { path = "../../cas_implementations" }
 tempfile="3"
 
 base64 = "0.9"

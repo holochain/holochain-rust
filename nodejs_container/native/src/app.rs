@@ -112,8 +112,6 @@ declare_types! {
             let fn_name = ctx.argument::<JsString>(2)?.to_string(&mut ctx)?.value();
             let params = ctx.argument::<JsString>(3)?.to_string(&mut ctx)?.value();
 
-            println!("{}", params);
-
             let mut this = ctx.this();
 
             let call_result = {

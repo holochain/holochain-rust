@@ -12,5 +12,6 @@ members = [
   "net_connection",
   "net_ipc",
   "test_bin",
+  "nodejs_container/native"
 ]
 exclude = ["test_utils"]

@@ -17,7 +17,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use serde::Deserialize;
-use std::{convert::TryFrom, fs::File, io::prelude::*, };
+use std::{convert::TryFrom, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -34,6 +34,7 @@ pub struct Configuration {
     /// List of DNAs, for each a path to the DNA file. Required.
     pub dnas: Vec<DNAConfiguration>,
     /// List of instances, includes references to an agent and a DNA. Required.
+    #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
     /// List of interfaces any UI can use to access zome functions. Optional.
     #[serde(default)]
@@ -46,11 +47,7 @@ pub struct Configuration {
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    /// Will return an error string if a reference can not be resolved or if no instance is given.
     pub fn check_consistency(&self) -> Result<(), String> {
-        if self.instances.is_empty() {
-            return Err("No instance found".to_string());
-        }
         for ref instance in self.instances.iter() {
             self.agent_by_id(&instance.agent).is_some().ok_or_else(|| {
                 format!(
@@ -116,7 +113,7 @@ impl Configuration {
 #[derive(Deserialize, Clone)]
 pub struct AgentConfiguration {
     pub id: String,
-    pub key_file: Option<String>,
+    pub key_file: String,
 }
 
 impl From<AgentConfiguration> for Agent {
@@ -248,6 +245,12 @@ pub mod tests {
 
     [[agents]]
     id="alex"
+    key_file="another/file"
+
+    [[dnas]]
+    id="dna"
+    file="file.dna.json"
+    hash="QmDontCare"
     "#;
         let agents = load_configuration::<Configuration>(toml).unwrap().agents;
         assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
@@ -256,8 +259,7 @@ pub mod tests {
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
-                .key_file
-                .unwrap(),
+                .key_file,
             "file/to/serialize"
         );
         assert_eq!(
@@ -269,6 +271,10 @@ pub mod tests {
     #[test]
     fn test_dna_load() {
         let toml = r#"
+    [[agents]]
+    id="agent"
+    key_file="whatever"
+
     [[dnas]]
     id = "app spec rust"
     file = "app-spec-rust.hcpkg"

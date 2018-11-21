@@ -21,7 +21,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let serialized_entry = match Entry::try_from(args_str.clone()) {
+    let entry = match Entry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
@@ -32,9 +32,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
-    // Create Chain Entry
-    let entry = Entry::from(serialized_entry);
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(

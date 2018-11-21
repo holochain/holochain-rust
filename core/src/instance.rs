@@ -319,6 +319,8 @@ pub mod tests {
         time::Duration,
     };
 
+    use holochain_core_types::entry::Entry;
+
     #[derive(Clone, Debug)]
     pub struct TestLogger {
         pub log: Vec<String>,
@@ -513,8 +515,8 @@ pub mod tests {
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
                     assert!(
-                        entry.entry_type() == &EntryType::AgentId
-                            || entry.entry_type() == &EntryType::Dna
+                        entry.entry_type() == EntryType::AgentId
+                            || entry.entry_type() == EntryType::Dna
                     );
                     true
                 }
@@ -745,7 +747,7 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let dna_entry = dna.to_entry();
+        let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
 
         // Set up instance and process the action
@@ -762,7 +764,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::Dna);
+                    assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
                 }
@@ -775,7 +777,7 @@ pub mod tests {
     fn can_commit_agent() {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
-        let agent_entry = context.agent.to_entry();
+        let agent_entry = Entry::AgentId(context.agent_id.clone());
         let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
 
         // Set up instance and process the action
@@ -792,7 +794,7 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::AgentId,);
+                    assert_eq!(entry.entry_type(), EntryType::AgentId,);
                     assert_eq!(entry.content(), agent_entry.content());
                     true
                 }

@@ -50,7 +50,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
-        entry::{entry_type::test_entry_type, Entry},
+        entry::{ Entry},
         json::JsonString,
         link::Link,
     };
@@ -61,6 +61,7 @@ pub mod tests {
         Defn,
     };
     use serde_json;
+    use holochain_core_types::entry::entry_type::test_app_entry_type;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {
@@ -90,8 +91,8 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::new(
-                test_entry_type(),
+            let entry = Entry::App(
+                test_app_entry_type(),
                 JsonString::from(format!("entry{} value", i)),
             );
             let address = block_on(commit_entry(

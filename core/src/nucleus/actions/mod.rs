@@ -12,11 +12,12 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-        entry::{entry_type::EntryType, Entry},
+        entry::{Entry},
     };
     use instance::{tests::test_instance_and_context, Instance};
     use std::sync::Arc;
     use test_utils::*;
+    use holochain_core_types::entry::entry_type::AppEntryType;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
@@ -56,30 +57,30 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::new(EntryType::App(String::from("package_entry")), "test value")
+        Entry::App(AppEntryType::from("package_entry"), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_entries")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_entries"),
+            "test value".into(),
         )
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_headers")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_headers"),
+            "test value".into(),
         )
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_full")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_full"),
+            "test value".into(),
         )
     }
 

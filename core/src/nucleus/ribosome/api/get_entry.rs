@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(
             JsonString::from(
                 String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().serialize()
+                    test_entry()
                 ))) + "\u{0}",
             ),
             call_result,

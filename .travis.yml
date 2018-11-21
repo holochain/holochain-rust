@@ -27,8 +27,66 @@ _shared_template: &_shared_template
   install:
     - export PATH=$HOME/.cargo/bin:$PATH
   before_cache:
-    - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
+    - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
     - rm -rf $HOME/.cargo/registry/index
+
+_windows_template: &_windows_template
+  os: windows
+  rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+  install: sh scripts/configure_windows
+
+# the following is all for nodejs deployment
+_linux_nodejs_template: &_linux_nodejs_template
+  os: linux
+  rust: nightly
+
+_macosx_nodejs_template: &_macosx_nodejs_template
+  os: osx
+  rust: nightly
+
+_to_deploy_template: &_to_deploy_template
+  if: tag =~ /^v\d+\.\d+\.\d+/
+
+_env_node_8_deploy_template: &_env_node_8_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="8"
+  - PERFORM_DEPLOY=1
+
+_env_node_10_deploy_template: &_env_node_10_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="10"
+  - PERFORM_DEPLOY=1
+
+_env_node_11_deploy_template: &_env_node_11_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="11"
+  - PERFORM_DEPLOY=1
+
+_nodejs_deploy_template: &_nodejs_deploy_template
+  cache:
+      yarn: true
+      cargo: true
+      directories:
+          - node_modules
+  before_script:
+      - yarn install --ignore-scripts
+  script:
+      - cd nodejs_container
+      - node publish.js
+  # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
+  deploy:
+      provider: releases
+      api_key:
+          secure: RmlFk4bed1I8pRV9cEihHx6gKtJT8KqSHTLXh6usut87MTLz3Nbil6sYwG8gI+MJjy5Q5ScoACgpyQHGX7W/eSvmP2te878TecppHPAlF1JfM3O9jYMahS8ME6+HwtTEZBkdIVvJMFgCHbL13Q2utN09BcOHM9316ftce2rGz8vL/utBgzR7WY7gKeeJhPBKMyYti355Oeks4Ig2E8ELC5JP3yiuLwbqmahTbk4kXWEkzsXHHBj/uGtMFpqQ7DMfTls8pjDbagqHbswSLQ6rZfiWmt/IJdO/tGPPqD7eYAnI/uA1uHaQOOK5exwS9VsKZvOmDj/xFaLDRPEnPhDLOY7ei+NdSN2GODmIaytQg5RYBPkSX9E5mVD9bB5xIU5tu43fPMd6TcurH6OxfzbhAVza4YSII0pcu4C+v852NDiUbIFmQ93ns1YnRpql9ajZR62WhqcJucJc/PedEGd/4wF/DsBjBIHgAjReBnLdBPagi4HgE8YbBeXJK9zebZjRt0gIp45tb1MocxHO0ywz/qiYYFjYdCeF80b0WsoLb5sw5Rta7pzwVcRETNhJ//mnw3Ws0pCu7H5gHuwtnXjDaHxK5y/lll14XatHTCWA0wRBi45iAoJKYKStzB+QS7F2biIEwaBBR0OoeFCOZu1zQy0lTtwhYQ0zth1jr8usPtU=
+      file_glob: true
+      file: bin-package/*.tar.gz
+      skip_cleanup: true
+      # publish only if we're building a tag and if the PERFORM_DEPLOY is set to 1
+      on:
+          tags: true
+          condition: $PERFORM_DEPLOY = 1
+      name: Version $TRAVIS_TAG
+# nodejs deployment templates stop here
 
 jobs:
   include:
@@ -43,26 +101,11 @@ jobs:
         - bash <(curl -s https://codecov.io/bash)
 
     - name: "windows build & test all"
-      os: windows
+      <<: *_windows_template
       env:
+        - TRAVIS_NODE_VERSION=8
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      language: rust
-      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      before_install:
-        - choco install python2
-        - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-        - choco install nodist
-        - export PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
-        - export NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
-        - export NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - export NODIST_X64=1
-        - nodist add 8
-        - nodist 8
-        - node -e "console.log(process.argv[0], process.arch, process.versions)"
-      install:
-        - rustup target add wasm32-unknown-unknown --toolchain nightly-2018-10-12-x86_64-pc-windows-msvc
       script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
         # Build WASMs
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
@@ -122,3 +165,67 @@ jobs:
           - node_modules
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
+
+    # if this is release tag, the resultant binary will be uploaded to github
+    - name: "Linux - Node 8"
+      <<: *_install_unix_template
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_8_deploy_template
+      <<: *_nodejs_deploy_template
+    - name: "Linux - Node 10"
+      <<: *_install_unix_template
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_10_deploy_template
+      <<: *_nodejs_deploy_template
+    - name: "Linux - Node 11"
+      <<: *_install_unix_template
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_11_deploy_template
+      <<: *_nodejs_deploy_template
+
+    - name: "OSX - Node 8"
+      <<: *_install_unix_template
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_8_deploy_template
+      <<: *_nodejs_deploy_template
+    - name: "OSX - Node 10"
+      <<: *_install_unix_template
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_10_deploy_template
+      <<: *_nodejs_deploy_template
+    - name: "OSX - Node 11"
+      <<: *_install_unix_template
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_11_deploy_template
+      <<: *_nodejs_deploy_template
+
+    - name: "Windows - Node 8"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      env:
+      - TRAVIS_NODE_VERSION="8"
+      - PERFORM_DEPLOY=1
+      - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      <<: *_nodejs_deploy_template
+    - name: "Windows - Node 10"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      env:
+      - TRAVIS_NODE_VERSION="10"
+      - PERFORM_DEPLOY=1
+      - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      <<: *_nodejs_deploy_template
+    - name: "Windows - Node 11"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      env:
+      - TRAVIS_NODE_VERSION="11"
+      - PERFORM_DEPLOY=1
+      - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      <<: *_nodejs_deploy_template

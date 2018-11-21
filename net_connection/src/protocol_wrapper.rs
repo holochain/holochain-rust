@@ -120,7 +120,7 @@ pub struct DhtData {
     #[serde(rename = "dnaHash")]
     pub dna_hash: String,
 
-    #[serde(rename = "toAgentId")]
+    #[serde(rename = "agentId")]
     pub agent_id: String,
 
     pub address: String,
@@ -150,7 +150,7 @@ pub struct DhtMetaData {
     #[serde(rename = "dnaHash")]
     pub dna_hash: String,
 
-    #[serde(rename = "toAgentId")]
+    #[serde(rename = "agentId")]
     pub agent_id: String,
 
     pub address: String,

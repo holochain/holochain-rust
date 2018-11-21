@@ -1,10 +1,10 @@
 {
   "name": "@holochain/holochain-nodejs",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "Nodejs Holochain Container primarily for test execution",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/holochain/holochain-rust.git"
+    "type": "git",
+    "url": "https://github.com/holochain/holochain-rust.git"
   },
   "main": "index.js",
   "author": "Holochain Core Dev Team <devcore@holochain.org>",

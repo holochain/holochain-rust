@@ -5,33 +5,42 @@ branches:
     - master
     - develop
 
+_trusty_nodejs: &_trusty_nodejs
+  dist: trusty
+  language: node_js
+  node_js:
+    - "8"
+
+_trusty_bash: &_trusty_bash
+  dist: trusty
+  # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+  language: bash
+
+_shared_template: &_shared_template
+  # manually cache as we manually install rustup
+  # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+  cache:
+    timeout: 1000
+    directories:
+      - $HOME/.cargo
+      - $TRAVIS_BUILD_DIR/target
+  install:
+    - export PATH=$HOME/.cargo/bin:$PATH
+  before_cache:
+    - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
+    - rm -rf $HOME/.cargo/registry/index
+
 jobs:
   include:
     - name: "Holochain tests + code coverage"
-      dist: trusty
-      language: node_js
-      node_js:
-        - "8"
-
+      <<: *_trusty_nodejs
+      <<: *_shared_template
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
       script: make code_coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
-      before_cache:
-        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
-        - rm -rf $HOME/.cargo/registry/index
 
     - name: "windows build & test all"
       os: windows
@@ -63,14 +72,10 @@ jobs:
         - cargo +nightly-2018-10-12-x86_64-pc-windows-msvc test --all
 
     - name: "C binding tests"
-      dist: trusty
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
-
+      <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
-
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -87,44 +92,33 @@ jobs:
         - rm -rf $HOME/.cargo/registry/index
 
     - name: "Lint (fmt & _clippy)"
-      dist: trusty
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
+      <<: *_trusty_bash
+      <<: *_shared_template
       script:
         - make fmt_check
         # @see #431
         # - make clippy
-      before_cache:
-        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
-        - rm -rf $HOME/.cargo/registry/index
 
     - name: "Command-line tools"
-      dist: trusty
-      language: node_js
-      node_js:
-        - "8"
+      <<: *_trusty_nodejs
+      <<: *_shared_template
+      script:
+        - make test_cmd
 
+    - name: "Nodejs Container Test"
+      <<: *_trusty_nodejs
+      <<: *_shared_template
+      before_install:
+        - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
+        - export PATH=$HOME/.yarn/bin:$PATH
+      script:
+        - make test_nodejs_container
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
+        yarn: true
         timeout: 1000
         directories:
+          - node_modules
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_cmd
-      before_cache:
-        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
-        - rm -rf $HOME/.cargo/registry/index

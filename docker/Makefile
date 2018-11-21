@@ -142,6 +142,9 @@ test_holochain: build_holochain
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
+test_nodejs_container: core_toolchain
+	cd nodejs_container && yarn install --ignore-scripts && node ./publish.js
+
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
 

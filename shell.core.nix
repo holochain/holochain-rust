@@ -38,6 +38,6 @@ stdenv.mkDerivation rec {
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace";
 
 }

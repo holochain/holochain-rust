@@ -348,7 +348,7 @@ pub mod tests {
         if let StorageConfiguration::File { path } = &instance_config.storage {
             assert_eq!(path, "app_spec_storage");
         } else {
-            panic!("Expected `file` type StorageConfiguration!")
+            panic!("Wrong enum type");
         }
 
         let interfaces = config.interfaces;
@@ -357,12 +357,12 @@ pub mod tests {
         if let InterfaceProtocol::Websocket { port } = interface_config_0.protocol {
             assert_eq!(port, 8888);
         } else {
-            panic!();
+            panic!("Wrong enum type");
         }
         if let InterfaceProtocol::DomainSocket { ref file } = interface_config_1.protocol {
             assert_eq!(file, "/tmp/holochain.sock");
         } else {
-            panic!();
+            panic!("Wrong enum type");
         }
         assert_eq!(interface_config_0.admin, false);
         let instance_ref = interface_config_0.instances.get(0).unwrap();

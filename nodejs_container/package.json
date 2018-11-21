@@ -33,7 +33,7 @@
   },
   "binary": {
     "module_name": "index",
-    "module_path": "./nodejs_container/bin-package",
+    "module_path": "./bin-package",
     "host": "https://github.com/holochain/holochain-rust/releases/download/",
     "remote_path": "holochain-nodejs{version}"
   },

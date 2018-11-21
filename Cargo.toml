@@ -1,23 +1,28 @@
 [workspace]
 
 members = [
+  "cas_implementations",
   "cmd",
   "container",
   "container_api",
-  "core_api_c_binding",
+  "container_api/wasm-test",
   "core",
   "core/src/nucleus/actions/wasm-test",
-  "container_api/wasm-test",
-  "hdk-rust/wasm-test",
-  "wasm_utils/wasm-test/integration-test",
+  "core_api_c_binding",
+  "core_types",
+  "core_types_derive",
   "dna_c_binding",
   "hdk-rust",
+  "hdk-rust/wasm-test",
   "net",
   "net_connection",
   "net_ipc",
   "test_bin",
+  "test_utils",
+  "wasm_utils",
+  "wasm_utils/wasm-test/integration-test",
 ]
-exclude = ["test_utils"]
+# exclude = ["test_utils"]
 
 [profile.release]
 panic = "abort"

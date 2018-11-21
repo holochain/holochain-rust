@@ -124,11 +124,11 @@ enum Cli {
 }
 
 fn main() {
-    if let Err(err) = run() {
+    run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 
         ::std::process::exit(1);
-    }
+    });
 }
 
 fn run() -> HolochainResult<()> {

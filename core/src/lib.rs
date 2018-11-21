@@ -31,6 +31,8 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_core_types_derive;
+extern crate holochain_net_connection;
+extern crate base64;
 
 pub mod action;
 pub mod agent;
@@ -40,6 +42,7 @@ pub mod instance;
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;
+pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;

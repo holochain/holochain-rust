@@ -26,7 +26,8 @@ toml="0.4.8"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
-
+holochain_net_connection = { path = "../net_connection" }
+base64 = "*"
 
 [dev-dependencies]
 wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }

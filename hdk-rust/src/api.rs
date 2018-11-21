@@ -2,7 +2,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    entry::{Entry},
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -22,6 +22,7 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::{convert::TryInto, os::raw::c_char};
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -484,7 +485,7 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_result(
     address: Address,
     _options: GetEntryOptions,
-) -> ZomeApiResult<Option<SerializedEntry>> {
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

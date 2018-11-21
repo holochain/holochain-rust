@@ -4,3 +4,4 @@ test/node_modules
 dist
 test/v8-compile-cache*
 test/dist/bundle.js
+test/foo

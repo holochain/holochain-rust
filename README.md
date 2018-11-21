@@ -65,7 +65,7 @@ There is a work-in-progress book of documentation being written about `holochain
 
 ## Installation & Usage
 
-**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/app-spec-rust/releases/tag/v0.0.1-dev-preview
+**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/holochain-rust/releases/tag/v0.0.1-dev-preview
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
@@ -79,12 +79,11 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 
 1. install (or update to) the correct version of rust
 2. build all the rust libraries from the source code in this repository.
+3. build and install the command-line tools.
 
 ### Docker
 
-However, we mostly use [docker](https://www.docker.com/) because it's easier to count on things working the expected way across platforms.
-
-The `docker` folder contains scripts to build and run docker images.
+We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.
 
 ### NixOS
 
@@ -105,6 +104,20 @@ Run:
 ```shell
 . docker/run-test
 ```
+or
+
+``` shell
+make test
+```
+
+Note that there are also make commands for running the tests of just core, or the command-line line tools or app-spec separately:
+
+``` shell
+make test_cmd
+make test_holochain
+make test_app-spec
+```
+
 
 #### Code style
 There is a linter/formatter enforcing code style.
@@ -114,6 +127,12 @@ Run:
 ```shell
 . docker/run-fmt
 ```
+or
+
+``` shell
+make fmt
+```
+
 
 #### Compiler warnings
 
@@ -206,12 +225,12 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 
 ### App Spec Driven Development
 In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
-1. Start by creating a branch in the [app-spec-rust](https://github.com/holochain/app-spec-rust) repository which demonstrates an actual implementation of the use of the new feature in the sample application that lives in that repository, including tests that would pass if the feature were actually implemented here in the holochain-rust repo.
-1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail, because they try and run the proposed changes against the `develop` branch of this `holochain-rust` repo.
-1. Do any development necessary in the `holochain-rust` repo to implement the feature demonstrated in `app-spec-rust`
-1. Finally, when the feature is fully implemented, the CI tests should turn green on `app-spec-rust` and the branch can be merged.  This merge in `app-spec-rust` of the feature branch completes the test-driven development loop.
+1. Start by creating a branch in this repository and modifying the example app in the app-spec directory to demonstrates an actual implementation of the use of the new feature, including tests that would pass if the feature were actually implemented.
+1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail.
+1. Do any development necessary in core or hdk crates of this repo to actually implement the feature demonstrated in `app-spec`
+1. Finally, when the feature is fully implemented, the CI tests should turn green and the branch can be merged.
 
-In this way [`app-spec-rust`](https://github.com/holochain/app-spec-rust) works as a living specification with example app to build against.
+In this way `app-spec` works as a living specification with example app to build against.
 
 Some helpful links:
 

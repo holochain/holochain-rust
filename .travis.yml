@@ -128,3 +128,24 @@ jobs:
       before_cache:
         - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
         - rm -rf $HOME/.cargo/registry/index
+
+    - name: "App-spec"
+      dist: trusty
+      language: node_js
+      node_js:
+        - "8"
+
+      # manually cache as we manually install rustup
+      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
+      install:
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - make test_app-spec
+      before_cache:
+        - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
+        - rm -rf $HOME/.cargo/registry/index

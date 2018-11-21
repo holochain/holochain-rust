@@ -215,6 +215,7 @@ pub enum ProtocolWrapper {
     SuccessResult(SuccessResultData),
 
     /// [send / recv] for any message with _id parameter to indicate failure
+    #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
 
     /// [send] request data from the dht
@@ -236,22 +237,22 @@ pub enum ProtocolWrapper {
     #[serde(rename = "storeDht")]
     StoreDht(DhtData),
 
-    /// [send] request data from the dht
+    /// [send] request meta data from the dht
     /// [recv] another node, or the network module itself is requesting data
     ///        from us... send a GetDhtResult message back
     #[serde(rename = "getDhtMeta")]
     GetDhtMeta(GetDhtMetaData),
 
-    /// [recv] response from requesting dht data from the network
+    /// [recv] response from requesting meta dht data from the network
     /// [send] success response if network is requesting this data of us
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
 
-    /// [send] publish content to the dht
+    /// [send] publish meta content to the dht
     #[serde(rename = "publishDhtMeta")]
     PublishDhtMeta(DhtMetaData),
 
-    /// [recv] the network is requesting that we store this data
+    /// [recv] the network is requesting that we store this meta data
     #[serde(rename = "storeDhtMeta")]
     StoreDhtMeta(DhtMetaData),
 }

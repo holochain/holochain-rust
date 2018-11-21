@@ -28,15 +28,15 @@ use json::default_to_json;
 use serde::Serializer;
 use serde::Deserializer;
 use serde::Deserialize;
-use serde::ser::SerializeTupleVariant;
 use json::default_try_from_json;
+use serde::ser::SerializeTuple;
 
 pub type AppEntryValue = JsonString;
 
 fn serialize_app_entry <S>(app_entry_type: &AppEntryType, app_entry_value: &AppEntryValue, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    let mut state = serializer.serialize_tuple_variant("Entry", 0, "App", 2)?;
-    state.serialize_field(&app_entry_type.to_string())?;
-    state.serialize_field(&app_entry_value.to_string())?;
+    let mut state = serializer.serialize_tuple(2)?;
+    state.serialize_element(&app_entry_type.to_string())?;
+    state.serialize_element(&app_entry_value.to_string())?;
     state.end()
 }
 
@@ -150,13 +150,14 @@ pub fn test_entry() -> Entry {
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}")
+    JsonString::from("{\"App\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}");
+    JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_entry_address() -> Address {
-    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT".to_string())
+    Address::from("QmckAM3pRp7mc2BgesY5DpTXMyM51VLL2ZFCyfiSF4iXr4".to_string())
 }
 
 /// dummy entry, same as test_entry()
@@ -265,14 +266,15 @@ pub mod tests {
         );
         assert_eq!(
             entry,
-            Entry::from(Entry::try_from(expected.clone()).unwrap())
+            Entry::try_from(expected.clone()).unwrap()
         );
-        assert_eq!(entry, Entry::from(Entry::from(entry.clone())));
+        assert_eq!(entry, Entry::from(entry.clone()));
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"value\":\"\\\"{}\\\"\",\"entry_type\":\"%agent_id\"}}",
-            String::from(test_sys_entry_address()),
+            "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
+            "bob",
+            "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd",
         ));
         assert_eq!(
             expected,

@@ -34,7 +34,7 @@ _windows_template: &_windows_template
   os: windows
   language: rust
   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-  install: sh scripts/configure_windows
+  install: sh scripts/configure_windows.sh
 
 _unix_nodejs_container_template: &_unix_nodejs_container_template
   before_install:

@@ -31,7 +31,7 @@ pub fn validate_entry(
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     match entry.entry_type() {
-        /// DNA entries are not validated currently and always valid
+        // DNA entries are not validated currently and always valid
         // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
         EntryType::Dna => Ok(CallbackResult::Pass),
 

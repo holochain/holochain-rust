@@ -4,14 +4,16 @@
 # run `make` to build all the libraries and binaries
 # run `make test` to execute all the tests
 # run `make clean` to clean up the build environment
+# run `make test_holochain` to test holochain builds
+# run `make test_cmd` to test the command line tool builds
 
-all: main
+all: lint build_holochain build_cmd
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
 TOOLS_RUST_VERSION ?= nightly-2018-07-17
-CARGO = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
-CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(TOOLS_RUST_VERSION)
-CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
+CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
+CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -24,14 +26,14 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 
 # build artifact / dependency checking is handled by our sub-tools
 # we can just try to build everything every time, it should be efficient
-.PHONY: main \
+.PHONY: lint \
 	c_binding_tests ${C_BINDING_DIRS} \
 	test ${C_BINDING_TESTS} \
-        test_non_c \
+	test_holochain \
 	clean ${C_BINDING_CLEAN}
 
-# apply formatting / style guidelines, and build the rust project
-main: fmt_check clippy build
+# apply formatting / style guidelines
+lint: fmt_check clippy
 
 # idempotent install rustup with the default toolchain set for tooling
 # best for CI based on tools only
@@ -131,11 +133,14 @@ ${C_BINDING_DIRS}:
 	qmake -o $@Makefile $@qmake.pro
 	cd $@; $(MAKE)
 
-# execute all tests, both rust and "C" bindings
-test: test_non_c c_binding_tests ${C_BINDING_TESTS}
+# execute all tests, both command-line tools holochain and "C" bindings
+test: test_holochain test_cmd c_binding_tests ${C_BINDING_TESTS}
 
-test_non_c: main
-	RUSTFLAGS="-D warnings" $(CARGO) test
+test_holochain: build_holochain
+	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+
+test_cmd: build_cmd
+	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
@@ -144,20 +149,22 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
-	cd core/src/nucleus/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test/round_trip && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test/commit && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
-.PHONY: build
-build: core_toolchain wasm_build
-	$(CARGO) build --all
+.PHONY: build_holochain
+build_holochain: core_toolchain wasm_build
+	$(CARGO) build --all --exclude hc
+
+.PHONY: build_cmd
+build_cmd: core_toolchain ensure_wasm_target
+	$(CARGO) build -p hc
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk
+	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc
 
 .PHONY: code_coverage_crate
 code_coverage_crate: core_toolchain wasm_build install_ci

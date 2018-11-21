@@ -10,19 +10,49 @@ pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + S
 pub type LinkValidator =
     Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
 
+/// This struct represents a complete entry type definition.
+/// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
+/// which only represents the static parts that show up in the JSON definition
+/// of an entry type.
+/// What is missing from there is the validation callbacks that can not be defined as JSON
+/// and are added here as Box<FnMut> objects (types PackageCreator, Validator, LinkValidator)
+///
+/// Instances of this struct are expected and used in the [define_zome! macro](macro.define_zome.html).
+/// Although possible, a DNA developer does not need to create these instances directly but instead
+/// should use the [entry! macro](macro.entry.html) for a clean syntax.
 pub struct ValidatingEntryType {
+    /// Name of the entry type
     pub name: String,
+    /// All the static aspects of the entry type as
     pub entry_type_definition: EntryTypeDef,
+    /// Callback that returns a validation package definition that Holochain reads in order
+    /// to create the right validation package to pass in to the validator callback on validation.
     pub package_creator: PackageCreator,
+    /// This is the validation callback that is used to determine if an entry is valid.
     pub validator: Validator,
+
     pub links: Vec<ValidatingLinkDefinition>,
 }
 
+/// Similar to ValidatingEntryType, this provides the dynamic aspects of link definitions,
+/// the validation callbacks, and thus completes the structs in the DNA crate.
+/// The [entry! macro](macro.entry.html) expects an array of links that are represented by
+/// instances of this struct.
+///
+/// DNA developers don't need to use this type directly but instead should use the
+/// [link!](macro.link.html), [to!](macro.to.html) or [from!](macro.from.html) macro.
 pub struct ValidatingLinkDefinition {
+    /// Is this link defined as pointing from this entry type to some other type,
+    /// or from the other type to this?
     pub link_type: LinkDirection,
+    /// The other entry type the link connects this entry type to
     pub other_entry_type: String,
+    /// Tag (i.e. name) of this type of links
     pub tag: String,
+    /// Callback that returns a validation package definition that Holochain reads in order
+    /// to create the right validation package to pass in to the validator callback on validation.
     pub package_creator: PackageCreator,
+    /// This is the validation callback that is used to determine if a link is valid.
     pub validator: LinkValidator,
 }
 

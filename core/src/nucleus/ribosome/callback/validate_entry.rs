@@ -17,24 +17,37 @@ use nucleus::{
 };
 use std::sync::Arc;
 
+/// This function determines and runs the appropriate validation callback for the given entry
+/// with the given validation data (which includes the validation package).
+/// It returns a CallbackResult which would be
+/// * CallbackResult::Pass when the entry is valid
+/// * CallbackResult::Fail(message) when the entry is invalid, giving the fail string from the
+///         validation callback
+/// * CallbackResult::NotImplemented if a validation callback is not implemented for the given
+///         entry's type.
 pub fn validate_entry(
     entry: Entry,
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     match entry.entry_type() {
+        /// DNA entries are not validated currently and always valid
+        // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
+        EntryType::Dna => Ok(CallbackResult::Pass),
+
         EntryType::App(app_entry_type) => Ok(validate_app_entry(
             entry.clone(),
             app_entry_type.clone(),
             validation_data,
             context,
         )?),
-        EntryType::Dna => Ok(CallbackResult::Pass),
+
         EntryType::LinkAdd => Ok(validate_link_entry(
             entry.clone(),
             validation_data,
             context,
         )?),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

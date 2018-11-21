@@ -119,7 +119,7 @@ pub fn test_entry_value() -> JsonString {
 }
 
 pub fn test_entry_content() -> Content {
-    Content::from(r#"{"value":"\"test entry value\"","entry_type":"testEntryType"}"#)
+    Content::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// dummy entry content, same as test_entry_value()
@@ -150,14 +150,13 @@ pub fn test_entry() -> Entry {
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"App\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}");
     JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_entry_address() -> Address {
-    Address::from("QmckAM3pRp7mc2BgesY5DpTXMyM51VLL2ZFCyfiSF4iXr4".to_string())
+    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq".to_string())
 }
 
 /// dummy entry, same as test_entry()

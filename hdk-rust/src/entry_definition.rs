@@ -99,15 +99,22 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|raw_entry: String, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+            let validator = Box::new(|entry: ::hdk::holochain_core_types::entry::Entry, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
                 let $ctx = ctx;
-                match serde_json::from_str(&raw_entry) {
-                    Ok(entry) => {
-                        let entry_struct : $entry_type = entry;
-                        let $entry = entry_struct;
-                        $entry_validation
+                match entry {
+                    ::hdk::holochain_core_types::entry::Entry::App(app_entry_type, app_entry_value) => {
+                        let maybe_app_entry: ::hdk::holochain_core_types::error::HcResult<$entry_type> = ::std::convert::TryInto::try_into(app_entry_value);
+                        match maybe_app_entry {
+                            Ok(app_entry) => {
+                                let $entry = app_entry;
+                                $entry_validation
+                            },
+                            Err(_) => {
+                                Err(String::from("Schema valiation failed"))
+                            }
+                        }
                     },
-                    Err(_) => {
+                    _ => {
                         Err(String::from("Schema validation failed"))
                     }
                 }

@@ -16,6 +16,8 @@ use holochain_core_types::{
     error::ZomeApiInternalResult, cas::content::Address,
     error::HolochainError,
     error::RibosomeReturnCode,
+    entry::entry_type::AppEntryType,
+    entry::AppEntryValue,
 };
 use std::convert::TryInto;
 
@@ -103,11 +105,11 @@ fn hdk_commit(mem_stack: &mut SinglePageStack, entry_type_name: &str, entry_valu
   -> Result<Address, String>
 {
   // Put args in struct and serialize into memory
-  let serialized_entry = Entry::new(
-    entry_type_name,
-    entry_value,
+  let entry = Entry::App(
+    AppEntryType::from(entry_type_name.to_string()),
+    AppEntryValue::from(entry_value.to_string()),
   );
-  let allocation_of_input =  store_as_json(mem_stack, JsonString::from(serialized_entry))?;
+  let allocation_of_input =  store_as_json(mem_stack, JsonString::from(entry))?;
 
   // Call WASMI-able commit
   let encoded_allocation_of_result: i32;

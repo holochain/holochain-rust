@@ -1,4 +1,3 @@
-
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
@@ -8,21 +7,20 @@ use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::Agent;
+use holochain_net::p2p_network::P2pNetwork;
 use std::{
+    clone::Clone,
     collections::HashMap,
     convert::TryFrom,
     fs::File,
     io::prelude::*,
     sync::{Arc, Mutex, RwLock},
+    thread,
 };
-use holochain_net::p2p_network::P2pNetwork;
-use thread;
 
-
-use config::{Configuration, StorageConfiguration};
-use interface::{Interface, InstanceMap, DispatchRpc};
+use config::{Configuration, InterfaceConfiguration, InterfaceProtocol, StorageConfiguration};
+use interface::{self, DispatchRpc, InstanceMap, Interface, RpcDispatcher};
 use jsonrpc::JsonRpc;
-
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -38,52 +36,65 @@ use jsonrpc::JsonRpc;
 pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
-    interfaces: HashMap<String, Box<Interface<Container>>>,
+    // interface_threads: HashMap<String, thread::JoinHandle<Result<(), String>>>,
+    interface_threads: HashMap<String, thread::JoinHandle<()>>,
     dna_loader: DnaLoader,
 }
 
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
-
-impl DispatchRpc for Container {
-    fn instances(&self) -> &InstanceMap { &self.instances }
-    
-    /// Dispatch to the correct Holochain and `call` it based on the JSONRPC method
-    fn dispatch_rpc(&self, rpc: JsonRpc) -> Result<JsonString, HolochainError> {
-        let matches: Vec<&str> = rpc.method.split('/').collect();
-        let result = if let [instance_id, zome, cap, func] = matches.as_slice() {
-            let key = instance_id.to_string();
-            self.instances()
-                .get(&key)
-                .ok_or(format!("No instance for agent/dna pair: {:?}", key))
-                .and_then(|hc| {
-                    hc.lock().unwrap().call(zome, cap, func, &rpc.params.to_string()).map_err(|e| e.to_string())
-                })
-        } else {
-            Err(format!("bad rpc method: {}", rpc.method))
-        };
-        result.map_err(HolochainError::ErrorGeneric)
-    }
-}
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn with_config(config: Configuration) -> Self {
         Container {
             instances: HashMap::new(),
-            interfaces: HashMap::new(),
+            interface_threads: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
         }
     }
 
-    pub fn start_interfaces(&mut self) {
-        
+    pub fn start_interfaces(mut self) {
+        self.interface_threads = self
+            .config
+            .interfaces
+            .iter()
+            .map(|ic| {
+                let handle = match ic.protocol {
+                    InterfaceProtocol::Websocket { port } => {
+                        let dispatcher = self.make_dispatcher(ic);
+                        thread::spawn(move || {
+                            let iface = interface::WebsocketInterface::new(port);
+                            iface.run(Arc::new(dispatcher));
+                        })
+                    }
+                    _ => unimplemented!(),
+                };
+                (ic.id.clone(), handle)
+            })
+            .collect()
     }
 
+    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
+        let InterfaceConfiguration {
+            id,
+            protocol,
+            admin,
+            instances,
+        } = interface_config;
+        let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
+        let instance_subset: InstanceMap = self
+            .instances
+            .iter()
+            .filter(|(id, _)| instance_ids.contains(&id))
+            .map(|(id, val)| (id.clone(), val.clone()))
+            .collect();
+        RpcDispatcher::new(instance_subset)
+    }
 
     /// Starts all instances
     pub fn start_all(&mut self) {
-        let _ = self.instances.iter_mut().for_each(|(id, hc)| {
+        self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
             match hc.lock().unwrap().start() {
                 Ok(()) => println!("ok"),
@@ -94,7 +105,7 @@ impl Container {
 
     /// Stops all instances
     pub fn stop_all(&mut self) {
-        let _ = self.instances.iter_mut().for_each(|(id, hc)| {
+        self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
             match hc.lock().unwrap().stop() {
                 Ok(()) => println!("ok"),
@@ -130,7 +141,8 @@ impl Container {
             .into_iter()
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
-                    self.instances.insert(id.clone(), Mutex::new(holochain));
+                    self.instances
+                        .insert(id.clone(), Arc::new(Mutex::new(holochain)));
                     None
                 }
                 Err(error) => Some(format!(
@@ -160,7 +172,7 @@ impl Container {
 impl<'a> TryFrom<&'a Configuration> for Container {
     type Error = HolochainError;
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
-        let mut container = Container::with_config(config);
+        let mut container = Container::with_config((*config).clone());
         container
             .load_config(config)
             .map_err(|string| HolochainError::ConfigError(string))?;

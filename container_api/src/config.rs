@@ -27,7 +27,7 @@ use toml;
 /// References between structs (instance configs pointing to
 /// the agent and DNA to be instantiated) are implemented
 /// via string IDs.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
@@ -190,7 +190,7 @@ pub enum StorageConfiguration {
 /// Every interface lists the instances that are made available here.
 /// An admin flag will enable container functions for programmatically changing the configuration
 /// (i.e. installing apps)
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub protocol: InterfaceProtocol,
@@ -199,7 +199,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(tag = "type")]
 pub enum InterfaceProtocol {
     #[serde(rename = "websocket")]
@@ -210,14 +210,14 @@ pub enum InterfaceProtocol {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.
 /// It is basically an internal interface.
-#[derive(Deserialize, PartialEq, Debug)]
+#[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct Bridge {
     pub caller_id: String,
     pub callee_id: String,

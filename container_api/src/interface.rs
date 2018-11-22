@@ -1,37 +1,48 @@
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use Holochain;
-use holochain_core_types::{
-    error::HolochainError, json::JsonString,
-};
 
+use jsonrpc::JsonRpc;
+use serde_json::{self, Value};
 use std::{
     collections::HashMap,
     convert::TryFrom,
     sync::{Arc, Mutex, RwLock},
     thread,
 };
-use jsonrpc::JsonRpc;
-use serde_json::{self, Value};
 use ws::{self, Message, Result as WsResult};
 
 pub type InterfaceError = String;
-pub type InstanceMap = HashMap<String, Mutex<Holochain>>;
-
+pub type InstanceMap = HashMap<String, Arc<Mutex<Holochain>>>;
 
 pub trait DispatchRpc {
+    fn dispatch_rpc(&self, rpc: &JsonRpc) -> Result<JsonString, HolochainError>;
+}
 
-    fn instances(&self) -> &InstanceMap;
+pub struct RpcDispatcher {
+    instances: InstanceMap,
+}
 
+unsafe impl Send for RpcDispatcher {}
+
+impl RpcDispatcher {
+    pub fn new(instances: InstanceMap) -> Self {
+        Self { instances }
+    }
+}
+
+impl DispatchRpc for RpcDispatcher {
     /// Dispatch to the correct Holochain and `call` it based on the JSONRPC method
-    fn dispatch_rpc(&self, rpc: JsonRpc) -> Result<JsonString, HolochainError> {
+    fn dispatch_rpc(&self, rpc: &JsonRpc) -> Result<JsonString, HolochainError> {
         let matches: Vec<&str> = rpc.method.split('/').collect();
         let result = if let [instance_id, zome, cap, func] = matches.as_slice() {
             let key = instance_id.to_string();
-            self.instances()
+            self.instances
                 .get(&key)
                 .ok_or(format!("No instance with ID: {:?}", key))
                 .and_then(|hc_mutex| {
                     let mut hc = hc_mutex.lock().unwrap();
-                    hc.call(zome, cap, func, &rpc.params.to_string()).map_err(|e| e.to_string())
+                    hc.call(zome, cap, func, &rpc.params.to_string())
+                        .map_err(|e| e.to_string())
                 })
         } else {
             Err(format!("bad rpc method: {}", rpc.method))
@@ -40,36 +51,31 @@ pub trait DispatchRpc {
     }
 }
 
-pub trait Interface<D: DispatchRpc> {
-    fn run(&self, &D) -> Result<(), String>;
-    //
-    // fn start(&self) -> Result<(), InterfaceError> {
-    //     self.handle = thread::spawn(move || {
-    //         self.run()
-    //     })
-    // }
-    //
-    // fn stop(&self) -> Result<(), InterfaceError> {
-    //     self.handle.join()
-    // }
-
+pub trait Interface {
+    fn run(&self, Arc<DispatchRpc>) -> Result<(), String>;
 }
 
-struct WebsocketInterface {
-    port: u16
+pub struct WebsocketInterface {
+    port: u16,
 }
 
-impl<D: DispatchRpc> Interface<D> for WebsocketInterface {
-    fn run(&self, dispatcher: &D) -> Result<(), String> {
-        ws::listen(format!("localhost:{}", self.port), |out| {
+impl WebsocketInterface {
+    pub fn new(port: u16) -> Self {
+        WebsocketInterface { port }
+    }
+}
+
+impl Interface for WebsocketInterface {
+    fn run(&self, dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
+        ws::listen(format!("localhost:{}", self.port), move |out| {
+            let dispatcher = dispatcher.clone();
             move |msg| match msg {
                 Message::Text(s) => match JsonRpc::try_from(s) {
-                    Ok(rpc) => {
-                        let response: JsonString =
-                            match dispatcher.dispatch_rpc(rpc) {
-                                Ok(payload) => payload,
-                                Err(err) => mk_err(&err.to_string()),
-                            };
+                    Ok(ref rpc) => {
+                        let response: JsonString = match dispatcher.dispatch_rpc(rpc) {
+                            Ok(payload) => payload.clone(),
+                            Err(err) => mk_err(&err.to_string()).clone(),
+                        };
                         out.send(Message::Text(response.into()))
                     }
                     Err(err) => out.send(Message::Text(mk_err(&err).to_string())),

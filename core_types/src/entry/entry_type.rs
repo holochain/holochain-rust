@@ -165,11 +165,6 @@ pub fn test_entry_type_b() -> EntryType {
     EntryType::App(test_app_entry_type_b())
 }
 
-// #[cfg_attr(tarpaulin, skip)]
-// pub fn test_unpublishable_entry_type() -> EntryType {
-//     EntryType::Dna
-// }
-
 #[cfg(test)]
 pub mod tests {
     use super::*;

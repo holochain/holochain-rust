@@ -1,11 +1,11 @@
 use futures::executor::block_on;
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -37,11 +37,12 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        crud_status::CrudStatus,
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
-        crud_status::CrudStatus,
     };
+    use holochain_wasm_utils::api_serialization::get_entry::*;
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
         ribosome::{
@@ -54,7 +55,6 @@ mod tests {
         ZomeFnCall,
     };
     use std::sync::Arc;
-    use holochain_wasm_utils::api_serialization::get_entry::*;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
@@ -72,7 +72,6 @@ mod tests {
             options: GetEntryOptions::new(StatusRequestKind::Latest),
         };
         JsonString::from(entry_args).into_bytes()
-
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -227,8 +226,10 @@ mod tests {
         entry_result.addresses.push(test_entry().address());
         entry_result.entries.push(test_entry().serialize());
         entry_result.crud_status.push(CrudStatus::LIVE);
-        assert_eq!(JsonString::from(
-            String::from(JsonString::from(ZomeApiInternalResult::success(entry_result)))),
+        assert_eq!(
+            JsonString::from(String::from(JsonString::from(
+                ZomeApiInternalResult::success(entry_result)
+            ))),
             call_result,
         );
     }
@@ -271,9 +272,11 @@ mod tests {
             Some(test_get_args_unknown()),
         ).expect("test should be callable");
 
-        assert_eq!(JsonString::from(
-            String::from(JsonString::from(ZomeApiInternalResult::success(GetEntryResult::new())))),
-                   call_result,
+        assert_eq!(
+            JsonString::from(String::from(JsonString::from(
+                ZomeApiInternalResult::success(GetEntryResult::new())
+            ))),
+            call_result,
         );
     }
 

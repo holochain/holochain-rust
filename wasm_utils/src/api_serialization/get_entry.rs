@@ -1,9 +1,5 @@
-
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    entry::SerializedEntry,
-    cas::content::Address,
-    error::HolochainError,
+    cas::content::Address, crud_status::CrudStatus, entry::SerializedEntry, error::HolochainError,
     json::*,
 };
 use std::collections::HashMap;
@@ -20,7 +16,6 @@ impl Default for StatusRequestKind {
     }
 }
 
-
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct GetEntryOptions {
     pub status_request: StatusRequestKind,
@@ -36,9 +31,7 @@ impl Default for GetEntryOptions {
 
 impl GetEntryOptions {
     pub fn new(status_request: StatusRequestKind) -> Self {
-        GetEntryOptions {
-            status_request,
-        }
+        GetEntryOptions { status_request }
     }
 }
 
@@ -47,7 +40,6 @@ pub struct GetEntryArgs {
     pub address: Address,
     pub options: GetEntryOptions,
 }
-
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
 pub struct GetEntryResult {

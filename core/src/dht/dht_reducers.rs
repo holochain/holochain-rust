@@ -4,21 +4,17 @@ use action::{Action, ActionWrapper};
 use context::Context;
 use dht::dht_store::DhtStore;
 use holochain_core_types::{
-    cas::content::AddressableContent, eav::EntityAttributeValue,
-    entry::Entry,
+    cas::content::AddressableContent,
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
+    eav::EntityAttributeValue,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
-    crud_status::{CrudStatus, create_crud_status_eav, create_crud_link_eav, STATUS_NAME},
-    entry::SerializedEntry,
 };
-use std::sync::Arc;
-use std::{
-    convert::{TryFrom},
-};
-use std::collections::HashSet;
 use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryResult, StatusRequestKind, GetEntryOptions,
+    GetEntryOptions, GetEntryResult, StatusRequestKind,
 };
 use nucleus::actions::get_entry::get_entry_rec;
+use std::{collections::HashSet, convert::TryFrom, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -117,7 +113,10 @@ pub(crate) fn commit_app_entry(
     let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
-        println!("commit_app_entry: meta_storage write failed!: {:?}", res.err().unwrap());
+        println!(
+            "commit_app_entry: meta_storage write failed!: {:?}",
+            res.err().unwrap()
+        );
         return None;
     }
     // ...and publish to the network if its not private
@@ -142,7 +141,6 @@ pub(crate) fn reduce_commit_entry(
     return commit_app_entry(context, old_store, entry);
 }
 
-
 //
 pub(crate) fn reduce_update_entry(
     context: Arc<Context>,
@@ -155,7 +153,10 @@ pub(crate) fn reduce_update_entry(
     let mut new_store = (*old_store).clone();
     let content_storage = &old_store.content_storage().clone();
     // pre-condition: Must already have old_entry in local content_storage
-    if !(*content_storage.read().unwrap()).contains(&old_address).unwrap() {
+    if !(*content_storage.read().unwrap())
+        .contains(&old_address)
+        .unwrap()
+    {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -165,15 +166,18 @@ pub(crate) fn reduce_update_entry(
         return Some(new_store);
     }
     //  pre-condition: Must already have new_entry in local content_storage
-    if !(*content_storage.read().unwrap()).contains(&new_address).unwrap() {
-            new_store.actions_mut().insert(
-                action_wrapper.clone(),
-                Err(HolochainError::ErrorGeneric(String::from(
-                    "new_entry is not present in DHT's CAS",
-                ))),
-            );
-            return Some(new_store);
-        }
+    if !(*content_storage.read().unwrap())
+        .contains(&new_address)
+        .unwrap()
+    {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "new_entry is not present in DHT's CAS",
+            ))),
+        );
+        return Some(new_store);
+    }
     // pre-condition: old_entry's latest version must have LIVE crud-status
     // get latest entry
     let mut entry_result = GetEntryResult::new();
@@ -184,7 +188,9 @@ pub(crate) fn reduce_update_entry(
         GetEntryOptions::new(StatusRequestKind::Latest),
     );
     if let Err(err) = res {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     let latest_old_address = entry_result.addresses.iter().last().unwrap();
@@ -215,14 +221,18 @@ pub(crate) fn reduce_update_entry(
     let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_old_address, new_address);
     let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
     if let Err(err) = res {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     // Notify Network
@@ -255,14 +265,20 @@ pub(crate) fn reduce_remove_entry(
         GetEntryOptions::new(StatusRequestKind::Latest),
     );
     if let Err(err) = res {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
-    let latest_address= entry_result.addresses.iter().last().unwrap();
+    let latest_address = entry_result.addresses.iter().last().unwrap();
 
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &old_store.content_storage().clone();
-    let maybe_entry = content_storage.read().unwrap().fetch(latest_address).unwrap();
+    let maybe_entry = content_storage
+        .read()
+        .unwrap()
+        .fetch(latest_address)
+        .unwrap();
     if maybe_entry.is_none() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
@@ -287,10 +303,15 @@ pub(crate) fn reduce_remove_entry(
     // pre-condition: Current status must be LIVE
     // get current status
     let meta_storage = &old_store.meta_storage().clone();
-    let maybe_status_eav =  meta_storage.read().unwrap().fetch_eav(
-        Some(latest_address.clone()), Some(STATUS_NAME.to_string()), None);
+    let maybe_status_eav = meta_storage.read().unwrap().fetch_eav(
+        Some(latest_address.clone()),
+        Some(STATUS_NAME.to_string()),
+        None,
+    );
     if let Err(err) = maybe_status_eav {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     let status_eavs = maybe_status_eav.unwrap();
@@ -316,7 +337,9 @@ pub(crate) fn reduce_remove_entry(
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
-        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     // Notify Network

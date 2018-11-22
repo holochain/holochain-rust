@@ -1,10 +1,4 @@
-use nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
-};
-use agent::actions::{update_entry::update_entry, commit::commit_entry};
-use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use agent::actions::{commit::commit_entry, update_entry::update_entry};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
@@ -14,6 +8,12 @@ use holochain_core_types::{
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
+use nucleus::{
+    actions::{build_validation_package::*, validate::*},
+    ribosome::{api::ZomeApiResult, Runtime},
+};
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::UpdateEntry function code
 /// args: [0] encoded MemoryAllocation as u32

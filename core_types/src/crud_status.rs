@@ -1,9 +1,9 @@
-use cas::content::{AddressableContent, Content, Address};
+use cas::content::{Address, AddressableContent, Content};
+use eav::EntityAttributeValue;
 use error::error::HolochainError;
+use hash::HashString;
 use json::JsonString;
 use std::convert::TryInto;
-use eav::EntityAttributeValue;
-use hash::HashString;
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -21,7 +21,6 @@ pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAt
 pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValue {
     EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
 }
-
 
 bitflags! {
     #[derive(Default, Serialize, Deserialize, DefaultJson)]

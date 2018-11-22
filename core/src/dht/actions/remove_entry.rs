@@ -1,12 +1,9 @@
-extern crate serde_json;
 extern crate futures;
+extern crate serde_json;
+use action::{Action, ActionWrapper};
 use context::Context;
 use futures::Future;
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
-use action::{Action, ActionWrapper};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 

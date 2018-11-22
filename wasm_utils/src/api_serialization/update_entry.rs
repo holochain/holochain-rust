@@ -1,8 +1,5 @@
 use holochain_core_types::{
-    error::HolochainError, json::*,
-    cas::content::Address,
-    entry::SerializedEntry,
-
+    cas::content::Address, entry::SerializedEntry, error::HolochainError, json::*,
 };
 
 /// Struct for input data received when Zome API function update_entry() is invoked

@@ -2,16 +2,17 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
+    crud_status::CrudStatus,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
-    crud_status::CrudStatus,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResult, StatusRequestKind, GetEntryArgs},
-        get_links::GetLinksArgs, link_entries::LinkEntriesArgs,
-        QueryArgs, QueryResult, ZomeFnCallArgs,
+        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind},
+        get_links::GetLinksArgs,
+        link_entries::LinkEntriesArgs,
+        QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
@@ -22,7 +23,6 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::{convert::TryInto, os::raw::c_char};
-use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -518,10 +518,7 @@ pub fn get_entry_result(
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let entry_args = GetEntryArgs {
-        address,
-        options,
-    };
+    let entry_args = GetEntryArgs { address, options };
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, entry_args)?;
@@ -721,10 +718,7 @@ pub fn verify_signature<S: Into<String>>(
 }
 
 /// Not Yet Available
-pub fn update_entry(
-    new_entry: Entry,
-    address: Address,
-) -> ZomeApiResult<Address> {
+pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

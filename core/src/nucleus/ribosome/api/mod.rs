@@ -6,12 +6,12 @@ pub mod commit;
 pub mod debug;
 pub mod entry_address;
 pub mod get_entry;
-pub mod update_entry;
-pub mod remove_entry;
 pub mod get_links;
 pub mod init_globals;
 pub mod link_entries;
 pub mod query;
+pub mod remove_entry;
+pub mod update_entry;
 
 use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use nucleus::ribosome::{
@@ -19,8 +19,8 @@ use nucleus::ribosome::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
-        link_entries::invoke_link_entries, query::invoke_query,
-        remove_entry::invoke_remove_entry, update_entry::invoke_update_entry,
+        link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
+        update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,

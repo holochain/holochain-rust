@@ -210,8 +210,10 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(),
-               JsonString::from("{\"addresses\":[],\"entries\":[],\"crud_status\":[],\"crud_links\":{}}"));
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"addresses\":[],\"entries\":[],\"crud_status\":[],\"crud_links\":{}}")
+    );
 
     // test the case with a bad address
     let result = hc.call(

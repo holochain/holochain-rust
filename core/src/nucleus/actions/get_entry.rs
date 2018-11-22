@@ -3,16 +3,15 @@ use context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
     cas::content::Address,
+    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    eav::EntityAttributeValue,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
-    eav::EntityAttributeValue,
-    crud_status::{CrudStatus, STATUS_NAME, LINK_NAME},
 };
-use std::{convert::TryInto, sync::Arc};
 use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryResult, GetEntryArgs, StatusRequestKind, GetEntryOptions,
+    GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, convert::TryInto, sync::Arc};
 
 pub(crate) fn get_entry_from_dht_cas(
     context: &Arc<Context>,
@@ -34,8 +33,11 @@ pub(crate) fn get_entry_meta_from_dht(
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
-    let status_eavs =
-        (*storage.read().unwrap()).fetch_eav(Some(address.clone()), Some(STATUS_NAME.to_string()), None)?;
+    let status_eavs = (*storage.read().unwrap()).fetch_eav(
+        Some(address.clone()),
+        Some(STATUS_NAME.to_string()),
+        None,
+    )?;
     if status_eavs.len() == 0 {
         return Ok(None);
     }
@@ -45,14 +47,16 @@ pub(crate) fn get_entry_meta_from_dht(
     let has_deleted = status_eavs
         .iter()
         .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::DELETED)
-        .collect::<HashSet<&EntityAttributeValue>>().len() > 0;
+        .collect::<HashSet<&EntityAttributeValue>>()
+        .len() > 0;
     if has_deleted {
         crud_status = CrudStatus::DELETED;
     } else {
         let has_modified = status_eavs
             .iter()
             .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::MODIFIED)
-            .collect::<HashSet<&EntityAttributeValue>>().len() > 0;
+            .collect::<HashSet<&EntityAttributeValue>>()
+            .len() > 0;
         if has_modified {
             crud_status = CrudStatus::MODIFIED;
         }
@@ -77,12 +81,16 @@ pub fn get_entry(
     args: &GetEntryArgs,
 ) -> Box<dyn Future<Item = GetEntryResult, Error = HolochainError>> {
     let mut entry_result = GetEntryResult::new();
-    match get_entry_rec(context, &mut entry_result, args.address.clone(), args.options.clone()) {
+    match get_entry_rec(
+        context,
+        &mut entry_result,
+        args.address.clone(),
+        args.options.clone(),
+    ) {
         Err(err) => Box::new(future::err(err)),
         Ok(_) => Box::new(future::ok(entry_result)),
     }
 }
-
 
 /// Recursive function for filling GetEntryResult by walking the crud-links
 pub fn get_entry_rec(
@@ -110,14 +118,14 @@ pub fn get_entry_rec(
         entry_result.crud_links.insert(address, new_address.clone());
         // 4. Follow link depending on StatusRequestKind
         match options.status_request {
-            StatusRequestKind::Initial => {},
-                StatusRequestKind::Latest => {
-                    *entry_result = GetEntryResult::new();
-                    get_entry_rec(context, entry_result, new_address, options)?;
-                },
+            StatusRequestKind::Initial => {}
+            StatusRequestKind::Latest => {
+                *entry_result = GetEntryResult::new();
+                get_entry_rec(context, entry_result, new_address, options)?;
+            }
             StatusRequestKind::All => {
                 get_entry_rec(context, entry_result, new_address, options)?;
-            },
+            }
         }
     }
     Ok(())
@@ -126,10 +134,13 @@ pub fn get_entry_rec(
 #[cfg(test)]
 pub mod tests {
     use futures::executor::block_on;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-    use instance::tests::test_context_with_state;
+    use holochain_core_types::{
+        cas::content::AddressableContent,
+        crud_status::{create_crud_status_eav, CrudStatus},
+        entry::test_entry,
+    };
     use holochain_wasm_utils::api_serialization::get_entry::*;
-    use holochain_core_types::crud_status::{CrudStatus, create_crud_status_eav};
+    use instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {
@@ -149,7 +160,9 @@ pub mod tests {
         let context = test_context_with_state();
         let args = GetEntryArgs {
             address: entry.address(),
-            options: GetEntryOptions { status_request: StatusRequestKind::Latest},
+            options: GetEntryOptions {
+                status_request: StatusRequestKind::Latest,
+            },
         };
         let future = super::get_entry(&context, &args);
         let res = block_on(future);
@@ -158,11 +171,16 @@ pub mod tests {
         (*content_storage.write().unwrap()).add(&entry).unwrap();
         let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
         let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
-        (*meta_storage.write().unwrap()).add_eav(&status_eav).unwrap();
+        (*meta_storage.write().unwrap())
+            .add_eav(&status_eav)
+            .unwrap();
         let future = super::get_entry(&context, &args);
         let res = block_on(future);
         let entry_result = res.unwrap();
-        assert_eq!(&entry.serialize(), entry_result.entries.iter().next().unwrap());
+        assert_eq!(
+            &entry.serialize(),
+            entry_result.entries.iter().next().unwrap()
+        );
     }
 
 }

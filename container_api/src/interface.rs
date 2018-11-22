@@ -54,4 +54,3 @@ impl DispatchRpc for RpcDispatcher {
 pub trait Interface {
     fn run(&self, Arc<DispatchRpc>) -> Result<(), String>;
 }
-

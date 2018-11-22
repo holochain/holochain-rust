@@ -9,9 +9,9 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use tiny_http::{Server, Response};
+use tiny_http::{Response, Server};
 
-use interface::{Interface, DispatchRpc};
+use interface::{DispatchRpc, Interface};
 
 pub struct HttpInterface {
     port: u16,
@@ -26,7 +26,7 @@ impl HttpInterface {
 impl Interface for HttpInterface {
     fn run(&self, _dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
         unimplemented!();
-        
+
         let server_url = format!("0.0.0.0:{}", self.port);
         let server = Server::http(server_url.as_str()).unwrap();
         for request in server.incoming_requests() {

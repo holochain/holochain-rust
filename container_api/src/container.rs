@@ -60,11 +60,11 @@ impl Container {
             .config
             .interfaces
             .iter()
-            .map(|ic| { (ic.id.clone(), self.spawn_interface_thread(ic.clone())) })
+            .map(|ic| (ic.id.clone(), self.spawn_interface_thread(ic.clone())))
             .collect()
     }
 
-    // pub fn stop_all_interfaces(&mut self) { 
+    // pub fn stop_all_interfaces(&mut self) {
     //     self.interface_threads
     //         .values_mut()
     //         .for_each(|handle| { handle.join(); })
@@ -72,11 +72,10 @@ impl Container {
     // }
 
     pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
-        self.config.interface_by_id(&id)
+        self.config
+            .interface_by_id(&id)
             .ok_or(format!("Interface does not exist: {}", id))
-            .and_then(|config| {
-                self.start_interface(&config)
-            })
+            .and_then(|config| self.start_interface(&config))
     }
 
     /// Starts all instances
@@ -145,11 +144,11 @@ impl Container {
             Err(errors.iter().nth(0).unwrap().clone())
         }
     }
-    
+
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
-        } 
+        }
         let dispatcher = self.make_dispatcher(config);
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
@@ -182,7 +181,10 @@ impl Container {
         RpcDispatcher::new(instance_subset)
     }
 
-    fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> InterfaceThreadHandle { 
+    fn spawn_interface_thread(
+        &self,
+        interface_config: InterfaceConfiguration,
+    ) -> InterfaceThreadHandle {
         let dispatcher = self.make_dispatcher(&interface_config);
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
@@ -202,17 +204,13 @@ impl<'a> TryFrom<&'a Configuration> for Container {
     }
 }
 
-
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
-    
     match interface_config.driver {
-        InterfaceDriver::Http { port } => {
-            Box::new(interface_impls::http::HttpInterface::new(port))
-        },
+        InterfaceDriver::Http { port } => Box::new(interface_impls::http::HttpInterface::new(port)),
         InterfaceDriver::Websocket { port } => {
             Box::new(interface_impls::websocket::WebsocketInterface::new(port))
-        },
+        }
         _ => unimplemented!(),
     }
 }

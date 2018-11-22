@@ -11,7 +11,7 @@ use std::{
 };
 use ws::{self, Message, Result as WsResult};
 
-use interface::{Interface, DispatchRpc};
+use interface::{DispatchRpc, Interface};
 
 pub struct WebsocketInterface {
     port: u16,
@@ -24,7 +24,6 @@ impl WebsocketInterface {
 }
 
 impl Interface for WebsocketInterface {
-    
     fn run(&self, dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
         ws::listen(format!("localhost:{}", self.port), move |out| {
             // must clone the Arc as we move from outer FnMut to inner FnMut

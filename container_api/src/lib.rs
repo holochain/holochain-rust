@@ -102,8 +102,8 @@ extern crate serde_json;
 extern crate boolinator;
 #[cfg(test)]
 extern crate test_utils;
-extern crate toml;
 extern crate tiny_http;
+extern crate toml;
 extern crate ws;
 
 pub mod config;

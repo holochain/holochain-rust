@@ -37,10 +37,11 @@ use jsonrpc::JsonRpc;
 pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
-    interface_threads: HashMap<String, thread::JoinHandle<()>>,
-    dna_loader: DnaLoader,
+    interface_threads: HashMap<String, InterfaceThreadHandle>,
+    pub dna_loader: DnaLoader,
 }
 
+type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 impl Container {
@@ -54,52 +55,32 @@ impl Container {
         }
     }
 
-    pub fn start_interfaces(mut self) {
+    pub fn start_all_interfaces(&mut self) {
         self.interface_threads = self
             .config
             .interfaces
             .iter()
-            .map(|ic| {
-                let dispatcher = self.make_dispatcher(ic);
-                let handle = match ic.driver {
-                    InterfaceDriver::Http { port } => {
-                        thread::spawn(move || {
-                            let iface = interface_impls::http::HttpInterface::new(port);
-                            iface.run(Arc::new(dispatcher)).expect("server shoulda run");
-                        })
-                    }
-                    InterfaceDriver::Websocket { port } => {
-                        thread::spawn(move || {
-                            let iface = interface_impls::websocket::WebsocketInterface::new(port);
-                            iface.run(Arc::new(dispatcher)).expect("server shoulda run");
-                        })
-                    }
-                    _ => unimplemented!(),
-                };
-                (ic.id.clone(), handle)
-            })
+            .map(|ic| { (ic.id.clone(), self.spawn_interface_thread(ic.clone())) })
             .collect()
     }
 
-    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
-        let InterfaceConfiguration {
-            id,
-            driver,
-            admin,
-            instances,
-        } = interface_config;
-        let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
-        let instance_subset: InstanceMap = self
-            .instances
-            .iter()
-            .filter(|(id, _)| instance_ids.contains(&id))
-            .map(|(id, val)| (id.clone(), val.clone()))
-            .collect();
-        RpcDispatcher::new(instance_subset)
+    // pub fn stop_all_interfaces(&mut self) { 
+    //     self.interface_threads
+    //         .values_mut()
+    //         .for_each(|handle| { handle.join(); })
+    //         // .collect()
+    // }
+
+    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+        self.config.interface_by_id(&id)
+            .ok_or(format!("Interface does not exist: {}", id))
+            .and_then(|config| {
+                self.start_interface(&config)
+            })
     }
 
     /// Starts all instances
-    pub fn start_all(&mut self) {
+    pub fn start_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
             match hc.lock().unwrap().start() {
@@ -110,7 +91,7 @@ impl Container {
     }
 
     /// Stops all instances
-    pub fn stop_all(&mut self) {
+    pub fn stop_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
             match hc.lock().unwrap().stop() {
@@ -122,7 +103,7 @@ impl Container {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) {
-        self.stop_all();
+        self.stop_all_instances();
         self.instances = HashMap::new();
     }
 
@@ -164,6 +145,16 @@ impl Container {
             Err(errors.iter().nth(0).unwrap().clone())
         }
     }
+    
+    fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
+        if self.interface_threads.contains_key(&config.id) {
+            return Err(format!("Interface {} already started!", config.id));
+        } 
+        let dispatcher = self.make_dispatcher(config);
+        let handle = self.spawn_interface_thread(config.clone());
+        self.interface_threads.insert(config.id.clone(), handle);
+        Ok(())
+    }
 
     /// Default DnaLoader that actually reads files from the filesystem
     #[cfg_attr(tarpaulin, skip)] // This function is mocked in tests
@@ -172,6 +163,31 @@ impl Container {
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from(contents))
+    }
+
+    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
+        let InterfaceConfiguration {
+            id,
+            driver,
+            admin,
+            instances,
+        } = interface_config;
+        let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
+        let instance_subset: InstanceMap = self
+            .instances
+            .iter()
+            .filter(|(id, _)| instance_ids.contains(&id))
+            .map(|(id, val)| (id.clone(), val.clone()))
+            .collect();
+        RpcDispatcher::new(instance_subset)
+    }
+
+    fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> InterfaceThreadHandle { 
+        let dispatcher = self.make_dispatcher(&interface_config);
+        thread::spawn(move || {
+            let iface = make_interface(&interface_config);
+            iface.run(Arc::new(dispatcher))
+        })
     }
 }
 
@@ -183,6 +199,21 @@ impl<'a> TryFrom<&'a Configuration> for Container {
             .load_config(config)
             .map_err(|string| HolochainError::ConfigError(string))?;
         Ok(container)
+    }
+}
+
+
+/// This can eventually be dependency injected for third party Interface definitions
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+    
+    match interface_config.driver {
+        InterfaceDriver::Http { port } => {
+            Box::new(interface_impls::http::HttpInterface::new(port))
+        },
+        InterfaceDriver::Websocket { port } => {
+            Box::new(interface_impls::websocket::WebsocketInterface::new(port))
+        },
+        _ => unimplemented!(),
     }
 }
 
@@ -311,17 +342,16 @@ pub mod tests {
     fn test_container_load_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        let mut container = Container {
-            instances: HashMap::new(),
-            interfaces: HashMap::new(),
-            dna_loader: test_dna_loader(),
-        };
+        /// TODO: redundant
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
 
         assert!(container.load_config(&config).is_ok());
         assert_eq!(container.instances.len(), 1);
 
-        container.start_all();
-        container.stop_all();
+        container.start_all_instances();
+        container.start_all_interfaces();
+        container.stop_all_instances();
     }
 
     #[test]

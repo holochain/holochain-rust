@@ -55,6 +55,3 @@ pub trait Interface {
     fn run(&self, Arc<DispatchRpc>) -> Result<(), String>;
 }
 
-fn mk_err(msg: &str) -> JsonString {
-    json!({ "error": Value::from(msg) }).into()
-}

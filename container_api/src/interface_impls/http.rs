@@ -24,7 +24,7 @@ impl HttpInterface {
 }
 
 impl Interface for HttpInterface {
-    fn run(&self, dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
+    fn run(&self, _dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
         unimplemented!();
         
         let server_url = format!("0.0.0.0:{}", self.port);

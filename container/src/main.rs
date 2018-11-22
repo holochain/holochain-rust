@@ -51,9 +51,9 @@ fn main() {
                     container.instances.len()
                 );
                 println!("Starting all of them...");
-                container.start_all();
+                container.start_all_instances();
                 println!("Starting interfaces...");
-                container.start_interfaces();
+                container.start_all_interfaces();
                 println!("Done.");
                 loop {}
             } else {

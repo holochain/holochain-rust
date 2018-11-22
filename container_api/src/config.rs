@@ -100,6 +100,14 @@ impl Configuration {
             .and_then(|instance_config| Some(instance_config.clone()))
     }
 
+    /// Returns the interface configuration with the given ID if present
+    pub fn interface_by_id(&self, id: &String) -> Option<InterfaceConfiguration> {
+        self.interfaces
+            .iter()
+            .find(|ic| &ic.id == id)
+            .and_then(|interface_config| Some(interface_config.clone()))
+    }
+
     /// Returns all defined instance IDs
     pub fn instance_ids(&self) -> Vec<String> {
         self.instances

@@ -97,9 +97,7 @@ impl Holochain {
                 };
                 Ok(hc)
             }
-            Err(err_str) => Err(HolochainInstanceError::InternalFailure(
-                HolochainError::ErrorGeneric(err_str),
-            )),
+            Err(err) => Err(HolochainInstanceError::InternalFailure(err)),
         }
     }
 

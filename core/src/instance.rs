@@ -290,7 +290,7 @@ pub mod tests {
         state::{ActionResponse, AgentState},
     };
     use context::{Context, mock_network_config};
-    use futures::executor::block_on;
+    use futures::{executor::block_on, FutureExt};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -302,6 +302,7 @@ pub mod tests {
     };
 
     use logger::Logger;
+    use network::actions::initialize_network::initialize_network;
     use nucleus::{
         actions::initialize::initialize_application,
         ribosome::{callback::Callback, Defn},
@@ -466,7 +467,12 @@ pub mod tests {
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
-        block_on(initialize_application(dna.clone(), context.clone()))?;
+        block_on(
+            initialize_application(dna.clone(), context.clone())
+                .and_then(|_| {
+                    initialize_network(&context)
+                })
+        )?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());

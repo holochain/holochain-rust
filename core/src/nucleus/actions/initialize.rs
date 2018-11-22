@@ -3,7 +3,7 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::{dna::Dna, entry::ToEntry};
+use holochain_core_types::{dna::Dna, entry::ToEntry, error::HolochainError};
 use instance::dispatch_action_and_wait;
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
@@ -26,10 +26,10 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 pub fn initialize_application(
     dna: Dna,
     context: Arc<Context>,
-) -> Box<dyn Future<Item = NucleusStatus, Error = String>> {
+) -> Box<dyn Future<Item = NucleusStatus, Error = HolochainError>> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
         return Box::new(future::err(
-            "Can't trigger initialization: Nucleus status is not New".to_string(),
+            HolochainError::ErrorGeneric("Can't trigger initialization: Nucleus status is not New".to_string()),
         ));
     }
 
@@ -133,7 +133,7 @@ pub struct InitializationFuture {
 
 impl Future for InitializationFuture {
     type Item = NucleusStatus;
-    type Error = String;
+    type Error = HolochainError;
 
     fn poll(
         &mut self,
@@ -148,14 +148,14 @@ impl Future for InitializationFuture {
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
         {
-            return Err("Timeout while initializing".to_string());
+            return Err(HolochainError::ErrorGeneric("Timeout while initializing".to_string()));
         }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
                 NucleusStatus::New => Ok(futures::Async::Pending),
                 NucleusStatus::Initializing => Ok(futures::Async::Pending),
                 NucleusStatus::Initialized => Ok(futures::Async::Ready(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Err(error.clone()),
+                NucleusStatus::InitializationFailed(ref error) => Err(error.clone().into()),
             }
         } else {
             Ok(futures::Async::Pending)

@@ -15,16 +15,16 @@ use TestEntryType;
 
 pub(crate) fn handle_update_entry_ok() -> JsonString {
     // Commit v1 entry
-    hdk::debug("**** Commit v1 entry:").ok();
+    hdk::debug("**** Commit v1 entry").ok();
     let res = hdk::commit_entry(&hdk_test_entry());
     let addr_v1 = res.unwrap();
     // get it
-    hdk::debug("**** Get it:").ok();
+    hdk::debug("**** Get it").ok();
     let res = hdk::get_entry(addr_v1.clone());
     let entry_v1 = res.unwrap().unwrap();
 
     // update it to v2
-    hdk::debug("**** update it to v2:").ok();
+    hdk::debug("**** update it to v2").ok();
     let entry_v2 =
         Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v2".into() });
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
@@ -149,13 +149,13 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 pub fn handle_remove_entry_ok() -> JsonString {
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();
-    let entry_test = hdk_test_entry();
-    let res = hdk::commit_entry(&entry_test);
+    let entry_v1 = hdk_test_entry();
+    let res = hdk::commit_entry(&entry_v1);
     let addr_v1 = res.unwrap();
     // Get it
     hdk::debug("**** Get it").ok();
     let res = hdk::get_entry(addr_v1.clone());
-    let entry_v1 = res.unwrap().unwrap();
+    let entry_test = res.unwrap().unwrap();
     assert_eq!(entry_test, entry_v1);
     // Delete it
     hdk::debug("**** Delete it").ok();
@@ -174,4 +174,67 @@ pub fn handle_remove_entry_ok() -> JsonString {
         Ok(result) => result.into(),
         Err(e) => e.into(),
     }
+}
+
+//
+pub fn handle_remove_modified_entry_ok() -> JsonString {
+    // Commit v1 entry
+    hdk::debug("**** Commit v1 entry").ok();
+    let entry_v1 = hdk_test_entry();
+    let res = hdk::commit_entry(&entry_v1);
+    let addr_v1 = res.unwrap();
+    // Get it
+    hdk::debug("**** Get it").ok();
+    let res = hdk::get_entry(addr_v1.clone());
+    let entry_test = res.unwrap().unwrap();
+    assert_eq!(entry_test, entry_v1);
+    // update it to v2
+    hdk::debug("**** update it to v2").ok();
+    let entry_v2 =
+        Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v2".into() });
+    let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
+    let addr_v2 = res.unwrap();
+    // Get v2
+    hdk::debug("**** Get v2").ok();
+    let res = hdk::get_entry(addr_v1.clone());
+    let entry_test = res.unwrap().unwrap();
+    assert_eq!(entry_test, entry_v2);
+    // Delete it
+    hdk::debug("**** Delete it").ok();
+    let res = hdk::remove_entry(addr_v1.clone());
+    assert!(res.is_ok());
+    // Get latest should fail
+    hdk::debug("**** Get latest should fail").ok();
+    let res = hdk::get_entry(addr_v1.clone());
+    assert_eq!(res.unwrap(), None);
+    // Get initial should fail
+    hdk::debug("**** Get initial should fail").ok();
+    let res = hdk::get_entry_initial(addr_v1.clone());
+    assert_eq!(res.unwrap(), None);
+    // Delete latest again should fail
+    hdk::debug("**** Delete latest again should fail").ok();
+    let res = hdk::remove_entry(addr_v2.clone());
+    assert!(res.is_err());
+    // Delete initial again should fail
+    hdk::debug("**** Delete initial again should fail").ok();
+    let res = hdk::remove_entry(addr_v1.clone());
+    assert!(res.is_err());
+
+    // get history from initial
+    hdk::debug("**** get history from initial").ok();
+    let res = hdk::get_entry_history(addr_v1.clone());
+    let history = res.unwrap().unwrap();
+
+    assert_eq!(history.entries.len(), 2);
+    assert_eq!(history.entries[0], SerializedEntry::from(entry_v1.clone()));
+    assert_eq!(history.addresses[0], addr_v1.clone());
+    assert_eq!(history.crud_status[0], CrudStatus::MODIFIED);
+    assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
+
+    assert_eq!(history.entries[1], SerializedEntry::from(entry_v2.clone()));
+    assert_eq!(history.addresses[1], addr_v2.clone());
+    assert_eq!(history.crud_status[1], CrudStatus::DELETED);
+    assert_eq!(history.crud_links.get(&addr_v2.clone()), None);
+
+    JsonString::from(history)
 }

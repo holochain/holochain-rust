@@ -31,7 +31,7 @@ use holochain_wasm_utils::{
     memory_serialization::*,
 };
 use handle_crud::{
-    handle_update_entry_ok, handle_remove_entry_ok,
+    handle_update_entry_ok, handle_remove_entry_ok, handle_remove_modified_entry_ok,
 };
 
 #[no_mangle]
@@ -480,6 +480,12 @@ define_zome! {
                 inputs: | |,
                 outputs: |result: JsonString|,
                 handler: handle_remove_entry_ok
+            }
+
+            remove_modified_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_remove_modified_entry_ok
             }
 
             send_tweet: {

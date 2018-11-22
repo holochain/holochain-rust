@@ -53,6 +53,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_call_with_args",
         "update_entry_ok",
         "remove_entry_ok",
+        "remove_modified_entry_ok",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
@@ -409,7 +410,6 @@ fn can_check_call_with_args() {
 fn can_remove_entry() {
     let (mut hc, _) = start_holochain_instance();
     let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
-    println!("can_remove_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
@@ -421,6 +421,13 @@ fn can_remove_entry() {
 fn can_update_entry() {
     let (mut hc, _) = start_holochain_instance();
     let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
-    println!("can_update_entry result: {:?}\n", result);
+    assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn can_remove_modified_entry() {
+    let (mut hc, _) = start_holochain_instance();
+    let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
+    println!("can_remove_modified_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
 }

@@ -43,7 +43,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
 }
 
 pub fn handle_hash_post(content: String) -> JsonString {
-    let post_entry = Entry::App(AppEntryType::from("post")),
+    let post_entry = Entry::App(AppEntryType::from("post"),
         Post {
             content: content.to_string(),
             date_created: "now".to_string()

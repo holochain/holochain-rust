@@ -133,8 +133,8 @@ ${C_BINDING_DIRS}:
 	qmake -o $@Makefile $@qmake.pro
 	cd $@; $(MAKE)
 
-# execute all tests: command-line tools, holochain, nodejs container, and "C" bindings
-test: test_holochain test_cmd test_nodejs_container c_binding_tests ${C_BINDING_TESTS}
+# execute all tests: holochain, command-line tools, app spec, nodejs container, and "C" bindings
+test: test_holochain test_cmd test_app_spec build_nodejs_container c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -142,7 +142,11 @@ test_holochain: build_holochain
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_nodejs_container: core_toolchain
+test_app_spec: ensure_wasm_target install_cmd
+	rustup default ${CORE_RUST_VERSION}
+	cd app_spec && ./build_and_test.sh
+
+build_nodejs_container: core_toolchain
 	rustup default ${CORE_RUST_VERSION}
 	cd nodejs_container && yarn install --ignore-scripts && node ./publish.js
 
@@ -165,6 +169,10 @@ build_holochain: core_toolchain wasm_build
 .PHONY: build_cmd
 build_cmd: core_toolchain ensure_wasm_target
 	$(CARGO) build -p hc
+
+.PHONY: install_cmd
+install_cmd: build_cmd
+	cd cmd && $(CARGO) install -f --path .
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci

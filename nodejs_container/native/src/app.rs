@@ -38,7 +38,7 @@ declare_types! {
             let agent_name = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let dna_data = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
 
-            let agent = Agent::generate_fake(&agent_name);
+            let agent = AgentId::generate_fake(&agent_name);
             let file_storage = Arc::new(RwLock::new(
                 FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
             ));

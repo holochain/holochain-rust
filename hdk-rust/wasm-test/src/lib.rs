@@ -26,7 +26,7 @@ use holochain_wasm_utils::{
         error::HolochainError,
             error::RibosomeErrorCode,
         json::JsonString,
-        // json::RawString,
+        json::RawString,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -104,14 +104,14 @@ fn handle_check_commit_entry_macro(entry: Entry) -> JsonString {
 //         Err(e) => e.into(),
 //     }
 // }
-//
-// fn handle_commit_validation_package_tester() -> JsonString {
-//     hdk::commit_entry(&Entry::App(
-//         "validation_package_tester".into(),
-//         JsonString::from(RawString::from("test")),
-//     )).into()
-// }
-//
+
+fn handle_commit_validation_package_tester() -> JsonString {
+    hdk::commit_entry(&Entry::App(
+        "validation_package_tester".into(),
+        JsonString::from(RawString::from("test")),
+    )).into()
+}
+
 // fn handle_link_two_entries() -> JsonString {
 //     let entry1_result = hdk::commit_entry(&Entry::App(
 //         "testEntryType".into(),
@@ -415,13 +415,13 @@ define_zome! {
             //     outputs: |result: JsonString|,
             //     handler: handle_check_get_entry_result
             // }
-            //
-            // commit_validation_package_tester: {
-            //     inputs: | |,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_commit_validation_package_tester
-            // }
-            //
+
+            commit_validation_package_tester: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_commit_validation_package_tester
+            }
+
             // link_two_entries: {
             //     inputs: | |,
             //     outputs: |result: JsonString|,

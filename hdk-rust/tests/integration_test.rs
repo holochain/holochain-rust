@@ -56,11 +56,15 @@ fn example_valid_entry() -> Entry {
     )
 }
 
-fn example_commit_entry_params() -> String {
+fn example_valid_entry_params() -> String {
     format!(
         "{{\"entry\":{}}}",
         String::from(JsonString::from(example_valid_entry())),
     )
+}
+
+fn example_valid_entry_address() -> Address {
+    Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
 fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
@@ -143,7 +147,7 @@ fn can_commit_entry_macro() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &example_commit_entry_params(),
+        &example_valid_entry_params(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -285,27 +289,23 @@ fn has_populated_validation_data() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        )),
+        JsonString::from(example_valid_entry_address()),
     );
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        )),
+        JsonString::from(example_valid_entry_address()),
     );
 
     //

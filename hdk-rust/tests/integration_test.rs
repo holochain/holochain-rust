@@ -343,17 +343,14 @@ fn can_roundtrip_links() {
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
 
+    let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
+    let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
+
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
-        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
-        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
-    ]));
+    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![address_1.clone(), address_2.clone()]));
     let ordering1: bool = result_string == JsonString::from(expected);
 
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
-        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
-        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
-    ]));
+    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![address_2, address_1]));
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);

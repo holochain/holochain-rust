@@ -137,61 +137,61 @@ fn handle_commit_validation_package_tester() -> JsonString {
 //
 //     hdk::link_entries(&entry1_result.unwrap(), &entry2_result.unwrap(), "test-tag").into()
 // }
-//
-// fn handle_links_roundtrip() -> JsonString {
-//     let entry1_hash_result = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry1".into(),
-//         }.into(),
-//     ));
-//     let entry1_address = match entry1_hash_result {
-//         Ok(hash) => hash,
-//         Err(_) => return entry1_hash_result.into(),
-//     };
-//     hdk::debug(format!("entry1_address: {:?}", entry1_address)).unwrap();
-//
-//     let entry2_hash_result = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry2".into(),
-//         }.into(),
-//     ));
-//     let entry2_address = match entry2_hash_result {
-//         Ok(hash) => hash,
-//         Err(_) => return entry2_hash_result.into(),
-//     };
-//     hdk::debug(format!("entry2_address: {:?}", entry2_address)).unwrap();
-//
-//     let entry3_hash_result = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry3".into(),
-//         }.into(),
-//     ));
-//     let entry3_address = match entry3_hash_result {
-//         Ok(hash) => hash,
-//         Err(_) => return entry3_hash_result.into(),
-//     };
-//     hdk::debug(format!("entry3_address: {:?}", entry3_address)).unwrap();
-//
-//     let link_1_result = hdk::link_entries(&entry1_address, &entry2_address, "test-tag");
-//     let link_1 = match link_1_result {
-//         Ok(link) => link,
-//         Err(_) => return link_1_result.into(),
-//     };
-//     hdk::debug(format!("link_1: {:?}", link_1)).unwrap();
-//
-//     let link_2_result = hdk::link_entries(&entry1_address, &entry3_address, "test-tag");
-//     let link_2 = match link_2_result {
-//         Ok(link) => link,
-//         Err(_) => return link_2_result.into(),
-//     };
-//     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
-//
-//     hdk::get_links(&entry1_address, "test-tag").into()
-// }
-//
+
+fn handle_links_roundtrip() -> JsonString {
+    let entry1_hash_result = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry1".into(),
+        }.into(),
+    ));
+    let entry1_address = match entry1_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry1_hash_result.into(),
+    };
+    hdk::debug(format!("entry1_address: {:?}", entry1_address)).unwrap();
+
+    let entry2_hash_result = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }.into(),
+    ));
+    let entry2_address = match entry2_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry2_hash_result.into(),
+    };
+    hdk::debug(format!("entry2_address: {:?}", entry2_address)).unwrap();
+
+    let entry3_hash_result = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry3".into(),
+        }.into(),
+    ));
+    let entry3_address = match entry3_hash_result {
+        Ok(hash) => hash,
+        Err(_) => return entry3_hash_result.into(),
+    };
+    hdk::debug(format!("entry3_address: {:?}", entry3_address)).unwrap();
+
+    let link_1_result = hdk::link_entries(&entry1_address, &entry2_address, "test-tag");
+    let link_1 = match link_1_result {
+        Ok(link) => link,
+        Err(_) => return link_1_result.into(),
+    };
+    hdk::debug(format!("link_1: {:?}", link_1)).unwrap();
+
+    let link_2_result = hdk::link_entries(&entry1_address, &entry3_address, "test-tag");
+    let link_2 = match link_2_result {
+        Ok(link) => link,
+        Err(_) => return link_2_result.into(),
+    };
+    hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
+
+    hdk::get_links(&entry1_address, "test-tag").into()
+}
+
 // fn handle_check_query() -> JsonString {
 //     fn err(s: &str) -> ZomeApiResult<Address> {
 //         Err(ZomeApiError::Internal(s.to_owned()))
@@ -403,7 +403,7 @@ define_zome! {
                 outputs: |result: JsonString|,
                 handler: handle_check_commit_entry_macro
             }
-            
+
             check_get_entry: {
                 inputs: |entry_address: Address|,
                 outputs: |result: JsonString|,
@@ -427,13 +427,13 @@ define_zome! {
             //     outputs: |result: JsonString|,
             //     handler: handle_link_two_entries
             // }
-            //
-            // links_roundtrip: {
-            //     inputs: | |,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_links_roundtrip
-            // }
-            //
+
+            links_roundtrip: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_links_roundtrip
+            }
+
             // check_call: {
             //     inputs: | |,
             //     outputs: |result: JsonString|,

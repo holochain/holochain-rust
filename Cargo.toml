@@ -22,7 +22,12 @@ members = [
   "wasm_utils",
   "wasm_utils/wasm-test/integration-test",
 ]
-# exclude = ["test_utils"]
+
+exclude = [
+  "test_utils",
+  "app_spec",
+  "nodejs_container/native",
+]
 
 [profile.release]
 panic = "abort"

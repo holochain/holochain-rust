@@ -1,11 +1,11 @@
 extern crate futures;
 extern crate serde_json;
 use action::{Action, ActionWrapper};
-use agent;
+use agent::{self, chain_header};
 use context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
-    cas::content::AddressableContent,
+    //cas::content::AddressableContent,
     chain_header::ChainHeader,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
@@ -41,7 +41,7 @@ pub fn build_validation_package(
             let id = id.clone();
             let entry = entry.clone();
             let context = context.clone();
-            let entry_header = chain_header(entry.clone(), &context).unwrap_or(
+            let entry_header = chain_header(&entry, &context).unwrap_or(
                 // TODO: make sure that we don't run into race conditions with respect to the chain
                 // We need the source chain header as part of the validation package.
                 // For an already committed entry (when asked to deliver the validation package to
@@ -121,14 +121,6 @@ pub fn build_validation_package(
         context: context.clone(),
         key: id,
     })
-}
-
-fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain
-        .iter(&top_header)
-        .find(|ref header| *header.entry_address() == entry.address())
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {

@@ -193,7 +193,7 @@ pub enum StorageConfiguration {
 #[derive(Deserialize, Clone)]
 pub struct InterfaceConfiguration {
     pub id: String,
-    pub protocol: InterfaceProtocol,
+    pub driver: InterfaceDriver,
     #[serde(default)]
     pub admin: bool,
     pub instances: Vec<InstanceReferenceConfiguration>,
@@ -201,7 +201,7 @@ pub struct InterfaceConfiguration {
 
 #[derive(Deserialize, Clone)]
 #[serde(tag = "type")]
-pub enum InterfaceProtocol {
+pub enum InterfaceDriver {
     #[serde(rename = "websocket")]
     Websocket { port: u16 },
     #[serde(rename = "http")]
@@ -238,7 +238,7 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use config::{load_configuration, Configuration, InterfaceProtocol, StorageConfiguration};
+    use config::{load_configuration, Configuration, InterfaceDriver, StorageConfiguration};
 
     #[test]
     fn test_agent_load() {
@@ -317,7 +317,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "app spec websocket interface"
-    [interfaces.protocol]
+    [interfaces.driver]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
@@ -325,7 +325,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "app spec domainsocket interface"
-    [interfaces.protocol]
+    [interfaces.driver]
     type = "domainsocket"
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
@@ -358,12 +358,12 @@ pub mod tests {
         let interfaces = config.interfaces;
         let interface_config_0 = interfaces.get(0).unwrap();
         let interface_config_1 = interfaces.get(1).unwrap();
-        if let InterfaceProtocol::Websocket { port } = interface_config_0.protocol {
+        if let InterfaceDriver::Websocket { port } = interface_config_0.driver {
             assert_eq!(port, 8888);
         } else {
             panic!("Wrong enum type");
         }
-        if let InterfaceProtocol::DomainSocket { ref file } = interface_config_1.protocol {
+        if let InterfaceDriver::DomainSocket { ref file } = interface_config_1.driver {
             assert_eq!(file, "/tmp/holochain.sock");
         } else {
             panic!("Wrong enum type");
@@ -431,7 +431,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.protocol]
+    [interfaces.driver]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
@@ -475,7 +475,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "app spec interface"
-    [interfaces.protocol]
+    [interfaces.driver]
     type = "invalid type"
     port = 8888
     [[interfaces.instances]]

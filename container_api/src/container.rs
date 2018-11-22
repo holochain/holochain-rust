@@ -18,7 +18,7 @@ use std::{
     thread,
 };
 
-use config::{Configuration, InterfaceConfiguration, InterfaceProtocol, StorageConfiguration};
+use config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration};
 use interface::{self, DispatchRpc, InstanceMap, Interface, RpcDispatcher};
 use interface_impls;
 use jsonrpc::JsonRpc;
@@ -37,7 +37,6 @@ use jsonrpc::JsonRpc;
 pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
-    // interface_threads: HashMap<String, thread::JoinHandle<Result<(), String>>>,
     interface_threads: HashMap<String, thread::JoinHandle<()>>,
     dna_loader: DnaLoader,
 }
@@ -62,14 +61,14 @@ impl Container {
             .iter()
             .map(|ic| {
                 let dispatcher = self.make_dispatcher(ic);
-                let handle = match ic.protocol {
-                    InterfaceProtocol::Http { port } => {
+                let handle = match ic.driver {
+                    InterfaceDriver::Http { port } => {
                         thread::spawn(move || {
                             let iface = interface_impls::http::HttpInterface::new(port);
                             iface.run(Arc::new(dispatcher)).expect("server shoulda run");
                         })
                     }
-                    InterfaceProtocol::Websocket { port } => {
+                    InterfaceDriver::Websocket { port } => {
                         thread::spawn(move || {
                             let iface = interface_impls::websocket::WebsocketInterface::new(port);
                             iface.run(Arc::new(dispatcher)).expect("server shoulda run");
@@ -85,7 +84,7 @@ impl Container {
     fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
         let InterfaceConfiguration {
             id,
-            protocol,
+            driver,
             admin,
             instances,
         } = interface_config;

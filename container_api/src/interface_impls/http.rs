@@ -25,6 +25,8 @@ impl HttpInterface {
 
 impl Interface for HttpInterface {
     fn run(&self, dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
+        unimplemented!();
+        
         let server_url = format!("0.0.0.0:{}", self.port);
         let server = Server::http(server_url.as_str()).unwrap();
         for request in server.incoming_requests() {

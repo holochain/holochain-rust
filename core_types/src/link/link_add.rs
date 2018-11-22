@@ -98,7 +98,10 @@ pub mod tests {
 
     #[test]
     fn link_add_action_kind_test() {
-        assert_eq!(&example_link_action_kind(), example_link_add().action_kind(),);
+        assert_eq!(
+            &example_link_action_kind(),
+            example_link_add().action_kind(),
+        );
     }
 
     #[test]

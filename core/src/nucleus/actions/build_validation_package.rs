@@ -7,7 +7,7 @@ use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
@@ -16,7 +16,6 @@ use nucleus::ribosome::callback::{
 };
 use snowflake;
 use std::{convert::TryInto, sync::Arc, thread};
-use holochain_core_types::entry::entry_type::EntryType;
 
 pub fn build_validation_package(
     entry: &Entry,
@@ -37,9 +36,8 @@ pub fn build_validation_package(
                     "System validation not supported yet: {:?}",
                     entry.entry_type(),
                 ))))
-            },
-        })
-    {
+            }
+        }) {
         None => {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",

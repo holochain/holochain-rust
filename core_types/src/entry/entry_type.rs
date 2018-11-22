@@ -14,7 +14,7 @@ macro_rules! sys_prefix {
 pub struct AppEntryType(String);
 
 impl From<&'static str> for AppEntryType {
-    fn from (s: &str) -> Self {
+    fn from(s: &str) -> Self {
         AppEntryType(s.to_string())
     }
 }
@@ -26,7 +26,7 @@ impl From<String> for AppEntryType {
 }
 
 impl From<AppEntryType> for String {
-    fn from (app_entry_type: AppEntryType) -> Self {
+    fn from(app_entry_type: AppEntryType) -> Self {
         app_entry_type.0.clone()
     }
 }

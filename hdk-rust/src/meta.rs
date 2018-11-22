@@ -1,6 +1,9 @@
 use entry_definition::ValidatingEntryType;
 use globals::G_MEM_STACK;
-use holochain_core_types::dna::zome::capabilities::Capability;
+use holochain_core_types::{
+    dna::zome::capabilities::Capability,
+    entry::entry_type::{AppEntryType, EntryType},
+};
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
     holochain_core_types::error::RibosomeErrorCode,
@@ -8,8 +11,6 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::collections::HashMap;
-use holochain_core_types::entry::entry_type::AppEntryType;
-use holochain_core_types::entry::entry_type::EntryType;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -60,8 +61,9 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone())))
-    {
+        .find(|ref validating_entry_type| {
+            validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
+        }) {
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
@@ -89,8 +91,9 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     match zd
         .entry_types
         .into_iter()
-        .find(|ref validating_entry_type| validating_entry_type.name == entry_validation_args.entry_type)
-    {
+        .find(|ref validating_entry_type| {
+            validating_entry_type.name == entry_validation_args.entry_type
+        }) {
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {
             let validation_result = (*entry_type_definition.validator)(
@@ -117,7 +120,10 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
     let mut entry_types = HashMap::new();
     for validating_entry_type in zd.entry_types {
-        entry_types.insert(validating_entry_type.name, validating_entry_type.entry_type_definition);
+        entry_types.insert(
+            validating_entry_type.name,
+            validating_entry_type.entry_type_definition,
+        );
     }
 
     let capabilities = unsafe { __list_capabilities() };

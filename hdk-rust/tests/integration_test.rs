@@ -197,33 +197,24 @@ fn can_get_entry() {
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        &String::from(JsonString::from(json!(
-                    {"entry_address": example_valid_entry_address()}
-                ))),
+        &String::from(JsonString::from(json!({
+            "entry_address": example_valid_entry_address()
+        }))),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(example_valid_entry())
-    );
-
+    assert_eq!(result.unwrap(), JsonString::from(example_valid_entry()));
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        &String::from(JsonString::from(json!(
-                    {"entry_address": example_valid_entry_address()}
-                ))),
+        &String::from(JsonString::from(json!({
+            "entry_address": example_valid_entry_address()
+        }))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(
-            example_valid_entry()
-        ),
-    );
+    assert_eq!(result.unwrap(), JsonString::from(example_valid_entry()),);
 
     // test the case with a bad address
     let result = hc.call(
@@ -350,7 +341,10 @@ fn can_roundtrip_links() {
     let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![address_1.clone(), address_2.clone()]));
+    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
+        address_1.clone(),
+        address_2.clone(),
+    ]));
     let ordering1: bool = result_string == JsonString::from(expected);
 
     let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![address_2, address_1]));

@@ -35,7 +35,7 @@ pub fn validate_entry(
                 "System validation not implemented {:?}",
                 entry_type,
             ))))
-        },
+        }
     };
 
     match context

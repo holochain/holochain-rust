@@ -1,11 +1,12 @@
-use holochain_core_types::dna::zome::entry_types::EntryTypeDef;
+use holochain_core_types::{
+    dna::zome::entry_types::EntryTypeDef,
+    entry::{entry_type::EntryType, Entry},
+};
 use holochain_wasm_utils::holochain_core_types::{
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
 };
 use std::collections::HashMap;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::entry::entry_type::EntryType;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
@@ -46,14 +47,18 @@ pub struct ValidatingEntryType {
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # #[macro_use]
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
 /// # use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
+/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::HolochainError;
 ///
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,

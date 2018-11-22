@@ -3,14 +3,13 @@ use action::{Action, ActionWrapper};
 use agent::actions::commit::commit_entry;
 use context::Context;
 use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::{dna::Dna};
+use holochain_core_types::{dna::Dna, entry::Entry};
 use instance::dispatch_action_and_wait;
 use nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::NucleusStatus,
 };
 use std::{sync::Arc, thread, time::*};
-use holochain_core_types::entry::Entry;
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.

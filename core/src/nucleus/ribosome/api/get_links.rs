@@ -50,7 +50,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
-        entry::{ Entry},
+        entry::{entry_type::test_app_entry_type, Entry},
         json::JsonString,
         link::Link,
     };
@@ -61,7 +61,6 @@ pub mod tests {
         Defn,
     };
     use serde_json;
-    use holochain_core_types::entry::entry_type::test_app_entry_type;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(base: &Address, tag: &str) -> Vec<u8> {

@@ -1,51 +1,48 @@
 pub mod entry_type;
 pub mod serde;
 
+use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
-use entry::entry_type::{
-    EntryType,
-};
-use error::{HolochainError};
-use json::{JsonString, RawString};
-use snowflake;
-use std::{
-    convert::{TryFrom},
-};
-use agent::test_agent_id;
-use dna::Dna;
-use agent::AgentId;
-use delete::Delete;
-use link::link_add::LinkAdd;
-use link::link_remove::LinkRemove;
-use link::link_list::LinkList;
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
-use error::HcResult;
-use entry::entry_type::AppEntryType;
-use entry::entry_type::test_app_entry_type;
-use entry::entry_type::test_app_entry_type_b;
-use json::default_to_json;
-use serde::Serializer;
-use serde::Deserializer;
-use serde::Deserialize;
-use json::default_try_from_json;
-use serde::ser::SerializeTuple;
+use delete::Delete;
+use dna::Dna;
+use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
+use error::{HcResult, HolochainError};
+use json::{default_to_json, default_try_from_json, JsonString, RawString};
+use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
+use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
+use snowflake;
+use std::convert::TryFrom;
 
 pub type AppEntryValue = JsonString;
 
-fn serialize_app_entry <S>(app_entry_type: &AppEntryType, app_entry_value: &AppEntryValue, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+fn serialize_app_entry<S>(
+    app_entry_type: &AppEntryType,
+    app_entry_value: &AppEntryValue,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
     let mut state = serializer.serialize_tuple(2)?;
     state.serialize_element(&app_entry_type.to_string())?;
     state.serialize_element(&app_entry_value.to_string())?;
     state.end()
 }
 
-fn deserialize_app_entry<'de, D>(deserializer: D) -> Result<(AppEntryType, AppEntryValue), D::Error> where D: Deserializer<'de> {
+fn deserialize_app_entry<'de, D>(deserializer: D) -> Result<(AppEntryType, AppEntryValue), D::Error>
+where
+    D: Deserializer<'de>,
+{
     #[derive(Deserialize)]
     struct SerializedAppEntry(String, String);
 
     let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
-    Ok((AppEntryType::from(serialized_app_entry.0), AppEntryValue::from(serialized_app_entry.1)))
+    Ok((
+        AppEntryType::from(serialized_app_entry.0),
+        AppEntryValue::from(serialized_app_entry.1),
+    ))
 }
 
 /// Structure holding actual data in a source chain "Item"
@@ -53,8 +50,8 @@ fn deserialize_app_entry<'de, D>(deserializer: D) -> Result<(AppEntryType, AppEn
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub enum Entry {
     // @TODO don't skip
-    #[serde(serialize_with="serialize_app_entry")]
-    #[serde(deserialize_with="deserialize_app_entry")]
+    #[serde(serialize_with = "serialize_app_entry")]
+    #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),
 
     Dna(Dna),
@@ -259,14 +256,8 @@ pub mod tests {
     fn json_round_trip() {
         let entry = test_entry();
         let expected = expected_serialized_entry_content();
-        assert_eq!(
-            expected,
-            JsonString::from(Entry::from(entry.clone()))
-        );
-        assert_eq!(
-            entry,
-            Entry::try_from(expected.clone()).unwrap()
-        );
+        assert_eq!(expected, JsonString::from(Entry::from(entry.clone())));
+        assert_eq!(entry, Entry::try_from(expected.clone()).unwrap());
         assert_eq!(entry, Entry::from(entry.clone()));
 
         let sys_entry = test_sys_entry();
@@ -275,18 +266,12 @@ pub mod tests {
             "bob",
             "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd",
         ));
-        assert_eq!(
-            expected,
-            JsonString::from(Entry::from(sys_entry.clone()))
-        );
+        assert_eq!(expected, JsonString::from(Entry::from(sys_entry.clone())));
         assert_eq!(
             &sys_entry,
             &Entry::from(Entry::try_from(expected.clone()).unwrap())
         );
-        assert_eq!(
-            &sys_entry,
-            &Entry::from(Entry::from(sys_entry.clone())),
-        );
+        assert_eq!(&sys_entry, &Entry::from(Entry::from(sys_entry.clone())),);
     }
 
     #[test]

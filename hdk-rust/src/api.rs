@@ -2,7 +2,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry},
+    entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
@@ -468,7 +468,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
 ///     match hdk::get_entry(post_address) {
-///         Ok(maybe_post) => maybe_post.and_then(|entry| Some(entry.serialize())).into(),
+///         Ok(maybe_post) => maybe_post.into(),
 ///         Err(e) => e.into(),
 ///     }
 /// }
@@ -618,7 +618,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type:AppEntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///

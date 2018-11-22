@@ -1,7 +1,7 @@
 //! Represents an agent entry in the cas
 
 use cas::content::{Address, AddressableContent, Content};
-use entry::{Entry};
+use entry::Entry;
 use error::HcResult;
 use json::JsonString;
 
@@ -113,7 +113,9 @@ impl AddressableContent for AgentId {
     fn try_from_content(content: &Content) -> HcResult<Self> {
         match Entry::try_from(content)? {
             Entry::AgentId(agent_id) => Ok(agent_id),
-            _ => Err(HolochainError::SerializationError("Attempted to load AgentId from non AgentID entry".into()))
+            _ => Err(HolochainError::SerializationError(
+                "Attempted to load AgentId from non AgentID entry".into(),
+            )),
         }
     }
 }

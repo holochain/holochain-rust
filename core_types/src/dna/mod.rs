@@ -27,7 +27,7 @@ pub mod wasm;
 pub mod zome;
 
 use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use entry::{entry_type::EntryType};
+use entry::entry_type::{AppEntryType, EntryType};
 use error::{DnaError, HolochainError};
 use json::JsonString;
 use serde_json::{self, Value};
@@ -36,7 +36,6 @@ use std::{
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;
-use entry::entry_type::AppEntryType;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -175,7 +174,10 @@ impl Dna {
     }
 
     /// Return the name of the zome holding a specified app entry_type
-    pub fn get_zome_name_for_app_entry_type(&self, app_entry_type: &AppEntryType) -> Option<String> {
+    pub fn get_zome_name_for_app_entry_type(
+        &self,
+        app_entry_type: &AppEntryType,
+    ) -> Option<String> {
         let entry_type_name = String::from(app_entry_type.to_owned());
         // pre-condition: must be a valid app entry_type name
         assert!(EntryType::has_valid_app_name(&entry_type_name));
@@ -615,7 +617,8 @@ pub mod tests {
         )).unwrap();
 
         assert_eq!(
-            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("test type")).unwrap(),
+            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("test type"))
+                .unwrap(),
             "test zome".to_string()
         );
         assert!(

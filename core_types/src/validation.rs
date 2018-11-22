@@ -1,9 +1,9 @@
 extern crate serde_json;
 use chain_header::ChainHeader;
+use entry::Entry;
 use error::HolochainError;
 use hash::HashString;
 use json::JsonString;
-use entry::Entry;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {

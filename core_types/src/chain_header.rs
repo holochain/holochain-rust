@@ -6,7 +6,7 @@ use entry::{
 use error::HolochainError;
 use json::JsonString;
 use signature::{test_signature, Signature};
-use std::convert::{TryInto};
+use std::convert::TryInto;
 use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"

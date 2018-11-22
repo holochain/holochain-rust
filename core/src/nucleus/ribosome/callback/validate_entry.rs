@@ -2,7 +2,10 @@ extern crate serde_json;
 use context::Context;
 use holochain_core_types::{
     dna::wasm::DnaWasm,
-    entry::{entry_type::EntryType, Entry},
+    entry::{
+        entry_type::{AppEntryType, EntryType},
+        Entry,
+    },
     error::HolochainError,
     validation::ValidationData,
 };
@@ -15,7 +18,6 @@ use nucleus::{
     ZomeFnCall,
 };
 use std::sync::Arc;
-use holochain_core_types::entry::entry_type::AppEntryType;
 
 pub fn validate_entry(
     entry: Entry,
@@ -50,8 +52,12 @@ fn validate_app_entry(
     let zome_name = zome_name.unwrap();
     match get_wasm(&context, &zome_name) {
         Some(wasm) => {
-            let validation_call =
-                build_validation_call(entry, EntryType::App(app_entry_type), zome_name, validation_data)?;
+            let validation_call = build_validation_call(
+                entry,
+                EntryType::App(app_entry_type),
+                zome_name,
+                validation_data,
+            )?;
             Ok(run_validation_callback(
                 context.clone(),
                 validation_call,

@@ -1,6 +1,6 @@
 use cas::content::{Address, AddressableContent, Content};
 use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique};
+use entry::{test_entry_unique, Entry};
 use error::HolochainError;
 use json::RawString;
 use objekt;
@@ -10,7 +10,6 @@ use std::{
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
-use entry::Entry;
 
 use std::convert::TryFrom;
 use uuid::Uuid;

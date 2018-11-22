@@ -14,7 +14,6 @@ from the project root.
 
 ## Usage
 After installing via npm the module can be used in a node script as follows:
-
 ```javascript
 const Container = require('@holochain/holochain-nodejs');
 const app = Container.loadAndInstantiate("path/to/happ.hcpkg");
@@ -25,6 +24,20 @@ app.start();
 // app.call(zome, capability, function, params);
 
 app.stop();
+```
+
+Note about usage:
+prior to version 0.1.22, you would need to use `JSON.stringify` on the input parameters, and `JSON.parse` on the result.
+
+```
+const rawResult = app.call(zome, capability, function, JSON.stringify({ key: "value" }));
+const result = JSON.parse(rawResult);
+```
+
+Now in version 0.1.22, you must still pass in an object (just like before), but it should be the plain object, and the result does not need to be parsed.
+You can use it more simply, like this:
+```
+const result = app.call(zome, capability, function, { key: "value" });
 ```
 
 ## Deployment

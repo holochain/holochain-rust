@@ -2,7 +2,7 @@ use error::{ZomeApiError, ZomeApiResult};
 use globals::*;
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry},
+    entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     crud_status::CrudStatus,
 };
@@ -443,9 +443,10 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     }
 }
 
-/// Retrieves latest version of entry from the local chain or the DHT, by looking it up using
-/// its address.
-/// Returns None if no entry exists at the specified or if its crud-status is not LIVE.
+/// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
+/// the specified address.
+/// Returns None if no entry exists at the specified address or
+/// if the entry's crud-status is not LIVE.
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -478,8 +479,8 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(Some(entry))
 }
 
-/// Returns the Entry at the exact address whatever its crud-status.
-/// Returns None if no entry exists at the specified.
+/// Returns the Entry at the exact address specified, whatever its crud-status.
+/// Returns None if no entry exists at the specified address.
 pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
     if entry_result.entries.len() == 0 {
@@ -493,9 +494,9 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(Some(entry))
 }
 
-/// Return a GetEntryResult filled with all the versions of the entry from specified address to
-/// latest.
-/// Returns None if no entry exists at the specified.
+/// Return a GetEntryResult filled with all the versions of the entry from the version at
+/// the specified address to the latest.
+/// Returns None if no entry exists at the specified address.
 pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResult>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
     if entry_result.entries.len() == 0 {
@@ -504,8 +505,9 @@ pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResul
     Ok(Some(entry_result))
 }
 
-/// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
-/// its address, and a the full options to specify exactly what data to return
+/// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
+/// the specified address.
+/// The data returned is configurable with the GetEntryOptions argument.
 pub fn get_entry_result(
     address: Address,
     options: GetEntryOptions,

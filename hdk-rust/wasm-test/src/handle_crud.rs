@@ -12,7 +12,7 @@ use hdk_test_entry;
 use hdk_test_entry_type;
 use TestEntryType;
 
-
+//
 pub(crate) fn handle_update_entry_ok() -> JsonString {
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();

@@ -35,7 +35,6 @@ _windows_template: &_windows_template
   language: rust
   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
   before_install:
-  - choco install python2
   - choco install nodist
   - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
   - nodist add $TRAVIS_NODE_VERSION

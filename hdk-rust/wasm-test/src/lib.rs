@@ -17,10 +17,10 @@ use hdk::{
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
-//     api_serialization::get_entry::GetEntryOptions,
+    api_serialization::get_entry::GetEntryOptions,
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
-//         cas::content::Address,
+        cas::content::Address,
         entry::Entry,
         // entry::entry_type::EntryType,
         error::HolochainError,
@@ -90,20 +90,20 @@ fn handle_check_commit_entry_macro(entry: Entry) -> JsonString {
         Err(e) => e.into(),
     }
 }
-//
-// fn handle_check_get_entry_result(entry_address: Address) -> JsonString {
-//     match hdk::get_entry_result(entry_address, GetEntryOptions {}) {
-//         Ok(result) => result.into(),
-//         Err(e) => e.into(),
-//     }
-// }
-//
-// fn handle_check_get_entry(entry_address: Address) -> JsonString {
-//     match hdk::get_entry(entry_address) {
-//         Ok(result) => result.into(),
-//         Err(e) => e.into(),
-//     }
-// }
+
+fn handle_check_get_entry_result(entry_address: Address) -> JsonString {
+    match hdk::get_entry_result(entry_address, GetEntryOptions {}) {
+        Ok(result) => result.into(),
+        Err(e) => e.into(),
+    }
+}
+
+fn handle_check_get_entry(entry_address: Address) -> JsonString {
+    match hdk::get_entry(entry_address) {
+        Ok(result) => result.into(),
+        Err(e) => e.into(),
+    }
+}
 
 fn handle_commit_validation_package_tester() -> JsonString {
     hdk::commit_entry(&Entry::App(
@@ -403,18 +403,18 @@ define_zome! {
                 outputs: |result: JsonString|,
                 handler: handle_check_commit_entry_macro
             }
-            //
-            // check_get_entry: {
-            //     inputs: |entry_address: Address|,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_check_get_entry
-            // }
-            //
-            // check_get_entry_result: {
-            //     inputs: |entry_address: Address|,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_check_get_entry_result
-            // }
+            
+            check_get_entry: {
+                inputs: |entry_address: Address|,
+                outputs: |result: JsonString|,
+                handler: handle_check_get_entry
+            }
+
+            check_get_entry_result: {
+                inputs: |entry_address: Address|,
+                outputs: |result: JsonString|,
+                handler: handle_check_get_entry_result
+            }
 
             commit_validation_package_tester: {
                 inputs: | |,

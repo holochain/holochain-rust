@@ -179,21 +179,19 @@ fn can_round_trip() {
 }
 
 #[test]
-fn can_get_entry() {
+fn c() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
-        )),
+        JsonString::from(example_valid_entry_address()),
     );
 
     let result = hc.call(
@@ -201,23 +199,22 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry_result",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                    {"entry_address": example_valid_entry_address()}
                 ))),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(
-            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
-        )
+        JsonString::from(example_valid_entry())
     );
+
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
+                    {"entry_address": example_valid_entry_address()}
                 ))),
     );
     println!("\t can_get_entry result = {:?}", result);
@@ -225,8 +222,8 @@ fn can_get_entry() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(
-            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
-        )
+            example_valid_entry()
+        ),
     );
 
     // test the case with a bad address

@@ -13,4 +13,8 @@ members = [
   "net_ipc",
   "test_bin",
 ]
-exclude = ["test_utils"]
+exclude = [
+  "test_utils",
+  "app_spec",
+  "nodejs_container/native",
+]

@@ -130,6 +130,8 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use instance::tests::test_context_with_state;
+    use holochain_wasm_utils::api_serialization::get_entry::*;
+    use holochain_core_types::crud_status::{CrudStatus, create_crud_status_eav};
 
     #[test]
     fn get_entry_from_dht_cas() {
@@ -144,15 +146,25 @@ pub mod tests {
     }
 
     #[test]
-    fn get_entry_from_dht_cas_futures() {
+    fn get_entry_futures() {
         let entry = test_entry();
         let context = test_context_with_state();
-        let future = super::get_entry(&context, entry.address());
-        assert_eq!(Ok(None), block_on(future));
-        let storage = &context.state().unwrap().dht().content_storage().clone();
-        (*storage.write().unwrap()).add(&entry).unwrap();
-        let future = super::get_entry(&context, entry.address());
-        assert_eq!(Ok(Some(entry.clone())), block_on(future));
+        let args = GetEntryArgs {
+            address: entry.address(),
+            options: GetEntryOptions { status_request: StatusRequestKind::Latest},
+        };
+        let future = super::get_entry(&context, &args);
+        let res = block_on(future);
+        assert_eq!(0, res.unwrap().entries.len());
+        let content_storage = &context.state().unwrap().dht().content_storage().clone();
+        (*content_storage.write().unwrap()).add(&entry).unwrap();
+        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
+        (*meta_storage.write().unwrap()).add_eav(&status_eav).unwrap();
+        let future = super::get_entry(&context, &args);
+        let res = block_on(future);
+        let entry_result = res.unwrap();
+        assert_eq!(&entry.serialize(), entry_result.entries.iter().next().unwrap());
     }
 
 }

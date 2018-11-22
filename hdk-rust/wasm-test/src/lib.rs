@@ -324,20 +324,20 @@ fn handle_links_roundtrip() -> JsonString {
 //         Err(e) => e.into(),
 //     }
 // }
-//
-// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-// struct TweetResponse {
-//     first: String,
-//     second: String,
-// }
-//
-// fn handle_send_tweet(author: String, content: String) -> JsonString {
-//     TweetResponse {
-//         first: author,
-//         second: content,
-//     }.into()
-// }
-//
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct TweetResponse {
+    first: String,
+    second: String,
+}
+
+fn handle_send_tweet(author: String, content: String) -> JsonString {
+    TweetResponse {
+        first: author,
+        second: content,
+    }.into()
+}
+
 
 //
 // fn hdk_test_entry_type() -> AppEntryType {
@@ -463,12 +463,12 @@ define_zome! {
             //     outputs: |result: JsonString|,
             //     handler: handle_check_sys_entry_address
             // }
-            //
-            // send_tweet: {
-            //     inputs: |author: String, content: String|,
-            //     outputs: |response: JsonString|,
-            //     handler: handle_send_tweet
-            // }
+
+            send_tweet: {
+                inputs: |author: String, content: String|,
+                outputs: |response: JsonString|,
+                handler: handle_send_tweet
+            }
         }
     }
 }

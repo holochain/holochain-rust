@@ -15,7 +15,7 @@ Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate.
 To see the documentation for usage, check out https://holochain.github.io/rust-api/0.0.1/hdk
 
 ### Specification for App Development
-As new features, or changes to the HDK (and the API) are being designed, use cases will be added to an example app and put as changes to a pull request to its [repository](https://github.com/holochain/app-spec-rust). The repository also integrates the feature set available in Holochain's main branch.
+As new features, or changes to the HDK (and the API) are being designed, use cases will be added to an example app and put as changes to a pull request to the app_spec directory of this repo. The example app also integrates the feature set available in Holochain's main branch.
 
 Please see the [Contribute section](https://github.com/holochain/holochain-rust/blob/develop/README.md#app-spec-driven-development) for our protocol on how we do this.
 

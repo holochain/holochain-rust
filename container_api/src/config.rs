@@ -269,7 +269,7 @@ pub mod tests {
         let toml = r#"
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
     "#;
         let dnas = load_configuration::<Configuration>(toml)
@@ -278,7 +278,7 @@ pub mod tests {
             .expect("expected agents returned");
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.hcpkg");
         assert_eq!(dna_config.hash, "Qm328wyq38924y");
     }
 
@@ -292,7 +292,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -319,7 +319,7 @@ pub mod tests {
         let dnas = config.dnas.expect("expected agents returned");
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app-spec-rust.hcpkg");
+        assert_eq!(dna_config.file, "app_spec.hcpkg");
         assert_eq!(dna_config.hash, "Qm328wyq38924y");
 
         let instances = config.instances.unwrap();
@@ -359,7 +359,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -389,7 +389,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]

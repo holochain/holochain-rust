@@ -220,7 +220,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -282,7 +282,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app-spec-rust.hcpkg\"".to_string()
+                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
     }

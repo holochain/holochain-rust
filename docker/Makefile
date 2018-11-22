@@ -142,7 +142,7 @@ test_holochain: build_holochain
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_app_spec: build_holochain install_cmd
+test_app_spec: ensure_wasm_target install_cmd
 	cd app_spec && ./build_and_test.sh
 
 c_build: core_toolchain

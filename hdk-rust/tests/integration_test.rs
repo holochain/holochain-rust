@@ -1,3 +1,4 @@
+#![feature(try_from)]
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
@@ -5,7 +6,11 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 extern crate holochain_wasm_utils;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use holochain_container_api::*;
 use holochain_core_types::{
@@ -14,8 +19,11 @@ use holochain_core_types::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
     },
-    entry::{entry_type::test_app_entry_type, Entry},
-    error::{HcResult, ZomeApiInternalResult},
+    entry::{
+        entry_type::{test_app_entry_type, AppEntryType},
+        AppEntryValue, Entry,
+    },
+    error::{HcResult, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
@@ -33,6 +41,19 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
         capability.functions.push(fn_decl);
     }
     capability
+}
+
+fn example_valid_entry() -> Entry {
+    #[derive(DefaultJson, Serialize, Deserialize, Debug)]
+    struct EntryStruct {
+        stuff: String,
+    }
+    Entry::App(
+        AppEntryType::from("testEntryType"),
+        AppEntryValue::from(EntryStruct {
+            stuff: "non fail".into(),
+        }),
+    )
 }
 
 fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
@@ -116,14 +137,18 @@ fn can_commit_entry_macro() {
         "test_cap",
         "check_commit_entry_macro",
         // this works because the macro names the args the same as the Entry fields
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        // r#"{"App":["testEntryType","{\"stuff\": \"non fail\"}"]}"#,
+        &format!(
+            "{{\"entry\":{}}}",
+            String::from(JsonString::from(example_valid_entry())),
+        ),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(
         result.unwrap(),
         JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
+            "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd"
         )),
     );
 }

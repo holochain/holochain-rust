@@ -42,29 +42,4 @@ impl NetworkState {
             id: snowflake::ProcessUniqueId::new(),
         }
     }
-
-
-    pub fn publish(&self, entry: Entry) -> NetResult<()> {
-        if self.network.is_none() || self.dna_hash.is_none() ||  self.agent_id.is_none() {
-            bail!("Network not initialized");
-        }
-
-        let data = DhtData {
-            msg_id: "?".to_string(),
-            dna_hash: self.dna_hash.clone().unwrap(),
-            agent_id: self.agent_id.clone().unwrap(),
-            address: entry.address().to_string(),
-            content: serde_json::from_str(&entry.content().to_string())?,
-        };
-
-        match self.network {
-            None => unreachable!(),
-            Some(ref network) => {
-                network.lock()
-                    .unwrap()
-                    .send(ProtocolWrapper::PublishDht(data).into())
-            }
-        }
-    }
-
 }

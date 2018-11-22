@@ -15,4 +15,6 @@ members = [
 ]
 exclude = [
   "test_utils",
-  "app_spec"]
+  "app_spec",
+  "nodejs_container/native",
+]

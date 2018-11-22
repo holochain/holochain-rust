@@ -373,7 +373,7 @@ fn can_check_query() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(vec![Address::from(
-            "QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx",
+            "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
         )]),
     );
 }
@@ -429,7 +429,7 @@ fn can_check_call_with_args() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(ZomeApiInternalResult::success(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
+            "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd"
         ))),
     );
 }

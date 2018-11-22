@@ -12,7 +12,7 @@
 //! extern crate tempfile;
 //! use holochain_container_api::*;
 //! use holochain_net::p2p_network::P2pNetwork;
-//! use holochain_core_types::{agent::Agent, dna::Dna, json::JsonString};
+//! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
 //! use holochain_core::logger::SimpleLogger;
@@ -29,7 +29,7 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
-//! let agent = Agent::generate_fake("bob");
+//! let agent = AgentId::generate_fake("bob");
 //! let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
 //! let context = Context::new(
 //!     agent,

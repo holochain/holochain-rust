@@ -362,7 +362,7 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from(
-                "{\"GetEntry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
+                "{\"GetEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
             JsonString::from(ActionResponse::GetEntry(Some(Entry::from(
                 test_entry().clone()
@@ -403,7 +403,7 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}"),
+            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
             JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),

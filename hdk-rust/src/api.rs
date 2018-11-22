@@ -630,10 +630,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// fn handle_post_address(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),

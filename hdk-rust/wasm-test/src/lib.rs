@@ -14,7 +14,7 @@ extern crate holochain_core_types_derive;
 use boolinator::Boolinator;
 use hdk::{
     error::ZomeApiError,
-    // error::ZomeApiResult,
+    error::ZomeApiResult,
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         cas::content::Address,
         entry::Entry,
-        // entry::entry_type::EntryType,
+        entry::entry_type::EntryType,
         error::HolochainError,
             error::RibosomeErrorCode,
         json::JsonString,
@@ -192,67 +192,67 @@ fn handle_links_roundtrip() -> JsonString {
     hdk::get_links(&entry1_address, "test-tag").into()
 }
 
-// fn handle_check_query() -> JsonString {
-//     fn err(s: &str) -> ZomeApiResult<Address> {
-//         Err(ZomeApiError::Internal(s.to_owned()))
-//     }
-//
-//     // Query DNA entry
-//     let addresses = hdk::query(&EntryType::Dna.to_string(), 0, 0).unwrap();
-//
-//     if !addresses.len() == 1 {
-//         return err("Dna Addresses not length 1").into();
-//     }
-//
-//     // Query AgentId entry
-//     let addresses = hdk::query(&EntryType::AgentId.to_string(), 0, 0).unwrap();
-//
-//     if !addresses.len() == 1 {
-//         return err("AgentId Addresses not length 1").into();
-//     }
-//
-//     // Query unknown entry
-//     let addresses = hdk::query("bad_type", 0, 0).unwrap();
-//
-//     if !addresses.len() == 0 {
-//         return err("bad_type Addresses not length 1").into();
-//     }
-//
-//     // Query Zome entry
-//     let _ = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry1".into(),
-//         }.into(),
-//     )).unwrap();
-//     let addresses = hdk::query("testEntryType", 0, 1).unwrap();
-//
-//     if !addresses.len() == 1 {
-//         return err("testEntryType Addresses not length 1").into();
-//     }
-//
-//     // Query Zome entries
-//     let _ = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry2".into(),
-//         }.into(),
-//     )).unwrap();
-//     let _ = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry3".into(),
-//         }.into(),
-//     )).unwrap();
-//
-//     let addresses = hdk::query("testEntryType", 0, 0).unwrap();
-//
-//     if !addresses.len() == 3 {
-//         return err("testEntryType Addresses not length 3").into();
-//     }
-//
-//     hdk::query("testEntryType", 0, 1).unwrap().into()
-// }
+fn handle_check_query() -> JsonString {
+    fn err(s: &str) -> ZomeApiResult<Address> {
+        Err(ZomeApiError::Internal(s.to_owned()))
+    }
+
+    // Query DNA entry
+    let addresses = hdk::query(&EntryType::Dna.to_string(), 0, 0).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("Dna Addresses not length 1").into();
+    }
+
+    // Query AgentId entry
+    let addresses = hdk::query(&EntryType::AgentId.to_string(), 0, 0).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("AgentId Addresses not length 1").into();
+    }
+
+    // Query unknown entry
+    let addresses = hdk::query("bad_type", 0, 0).unwrap();
+
+    if !addresses.len() == 0 {
+        return err("bad_type Addresses not length 1").into();
+    }
+
+    // Query Zome entry
+    let _ = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry1".into(),
+        }.into(),
+    )).unwrap();
+    let addresses = hdk::query("testEntryType", 0, 1).unwrap();
+
+    if !addresses.len() == 1 {
+        return err("testEntryType Addresses not length 1").into();
+    }
+
+    // Query Zome entries
+    let _ = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }.into(),
+    )).unwrap();
+    let _ = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry3".into(),
+        }.into(),
+    )).unwrap();
+
+    let addresses = hdk::query("testEntryType", 0, 0).unwrap();
+
+    if !addresses.len() == 3 {
+        return err("testEntryType Addresses not length 3").into();
+    }
+
+    hdk::query("testEntryType", 0, 1).unwrap().into()
+}
 
 fn handle_check_app_entry_address() -> JsonString {
     // Setup
@@ -450,12 +450,12 @@ define_zome! {
                 handler: handle_check_app_entry_address
             }
 
-            // check_query: {
-            //     inputs: | |,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_check_query
-            // }
-            //
+            check_query: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_check_query
+            }
+
             // check_sys_entry_address: {
             //     inputs: | |,
             //     outputs: |result: JsonString|,

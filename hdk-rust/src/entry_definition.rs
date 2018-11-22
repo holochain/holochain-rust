@@ -40,6 +40,7 @@ pub struct ValidatingEntryType {
 /// The following is a standalone Rust file that exports a function which can be called
 /// to get a `ValidatingEntryType` of a "post".
 /// ```rust
+/// # #![feature(try_from)]
 /// # extern crate boolinator;
 /// # extern crate serde_json;
 /// # #[macro_use]

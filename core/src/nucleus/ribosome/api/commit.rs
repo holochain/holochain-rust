@@ -103,7 +103,7 @@ pub mod tests {
             call_result,
             JsonString::from(
                 String::from(JsonString::from(ZomeApiInternalResult::success(
-                    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT")
+                    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
                 ))) + "\u{0}"
             ),
         );

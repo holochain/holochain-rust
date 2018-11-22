@@ -77,10 +77,10 @@ pub mod tests {
         // TODO #233 - Implement agent address
         // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
         // TODO (david.b) this should work:
-        //assert_eq!(globals.agent_id_str, String::from(Agent::generate_fake("jane")));
+        //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
         // assert_eq!(
         //     globals.agent_initial_hash,
-        //     Agent::generate_fake("jane").address()
+        //     AgentId::generate_fake("jane").address()
         // );
         assert_eq!(globals.agent_initial_hash, globals.agent_latest_hash);
     }

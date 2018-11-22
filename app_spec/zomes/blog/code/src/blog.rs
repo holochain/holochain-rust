@@ -8,7 +8,7 @@ use hdk::{
     holochain_core_types::hash::HashString,
     holochain_core_types::json::JsonString,
     holochain_core_types::entry::Entry,
-    holochain_core_types::entry::entry_type::EntryType,
+    holochain_core_types::entry::entry_type::AppEntryType,
     AGENT_ADDRESS,
 };
 
@@ -43,11 +43,11 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
 }
 
 pub fn handle_hash_post(content: String) -> JsonString {
-    let post_entry = Entry::new(EntryType::App("post".into()),
+    let post_entry = Entry::App(AppEntryType::from("post")),
         Post {
             content: content.to_string(),
             date_created: "now".to_string()
-        }
+        }.into()
     );
 
 
@@ -59,11 +59,11 @@ pub fn handle_hash_post(content: String) -> JsonString {
 
 pub fn handle_create_post(content: String, in_reply_to: HashString) -> JsonString {
 
-    let post_entry = Entry::new(EntryType::App("post".into()),
+    let post_entry = Entry::App(AppEntryType::from("post"),
         Post {
             content: content.to_string(),
             date_created: "now".to_string()
-        }
+        }.into()
     );
 
     match hdk::commit_entry(&post_entry) {
@@ -126,8 +126,8 @@ pub fn handle_get_post(post_address: HashString) -> JsonString {
     match result {
         // In the case we don't get an error
         // it might be an entry ...
-        Ok(Some(entry)) => {
-            entry.value().to_owned()
+        Ok(Some(Entry::App(_, entry_value))) => {
+            entry_value
         },
         Ok(None) => {}.into(),
 
@@ -135,5 +135,6 @@ pub fn handle_get_post(post_address: HashString) -> JsonString {
         // is not a stringified JSON which should not
         // happen but might be a bug somewhere else:
         Err(err) => err.into(),
+        _ => unreachable!(),
     }
 }

@@ -399,7 +399,7 @@ pub fn call<S: Into<String>>(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///
@@ -411,10 +411,10 @@ pub fn call<S: Into<String>>(
 ///
 /// pub fn handle_create_post(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(address) => address.into(),
@@ -525,7 +525,7 @@ pub fn get_entry_result(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
@@ -538,10 +538,10 @@ pub fn get_entry_result(
 /// }
 ///
 /// pub fn handle_link_entries(content: String) -> JsonString {
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(post_address) => {
@@ -618,7 +618,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type:AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///

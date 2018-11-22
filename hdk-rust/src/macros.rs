@@ -38,7 +38,7 @@ macro_rules! load_json {
 /// # #[macro_use]
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::dna::zome::entry_types::Sharing;
@@ -65,10 +65,10 @@ macro_rules! load_json {
 /// }
 ///
 /// fn handle_post_address(content: String) -> JsonString {
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),

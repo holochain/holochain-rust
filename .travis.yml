@@ -101,7 +101,7 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       - yarn install --ignore-scripts
   script:
       - cd nodejs_container
-      - node publish.js
+      - node ./publish.js
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   deploy:
       provider: releases

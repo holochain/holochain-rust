@@ -23,7 +23,7 @@ path = "example-config/tmp-storage"
 [[interfaces]]
 id = "app spec instance"
 [interfaces.protocol]
-type = "websocket"
+type = "http"
 port = 8888
 [[interfaces.instances]]
 id = "app spec instance"

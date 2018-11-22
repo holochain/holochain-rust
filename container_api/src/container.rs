@@ -61,9 +61,15 @@ impl Container {
             .interfaces
             .iter()
             .map(|ic| {
+                let dispatcher = self.make_dispatcher(ic);
                 let handle = match ic.protocol {
+                    InterfaceProtocol::Http { port } => {
+                        thread::spawn(move || {
+                            let iface = interface_impls::http::HttpInterface::new(port);
+                            iface.run(Arc::new(dispatcher)).expect("server shoulda run");
+                        })
+                    }
                     InterfaceProtocol::Websocket { port } => {
-                        let dispatcher = self.make_dispatcher(ic);
                         thread::spawn(move || {
                             let iface = interface_impls::websocket::WebsocketInterface::new(port);
                             iface.run(Arc::new(dispatcher)).expect("server shoulda run");

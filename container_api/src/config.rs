@@ -204,6 +204,8 @@ pub struct InterfaceConfiguration {
 pub enum InterfaceProtocol {
     #[serde(rename = "websocket")]
     Websocket { port: u16 },
+    #[serde(rename = "http")]
+    Http { port: u16 },
     #[serde(rename = "domainsocket")]
     DomainSocket { file: String },
     #[serde(rename = "custom")]

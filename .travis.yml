@@ -73,7 +73,7 @@ _macosx_nodejs_template: &_macosx_nodejs_template
   rust: nightly
 
 _to_deploy_template: &_to_deploy_template
-  if: tag =~ /^v\d+\.\d+\.\d+/
+  if: tag =~ /^holochain-nodejs\d+\.\d+\.\d+/
 
 _env_node_8_deploy_template: &_env_node_8_deploy_template
   env:

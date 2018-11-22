@@ -111,7 +111,7 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       on:
           tags: true
           condition: $PERFORM_DEPLOY = 1
-      name: holochain-nodejs version $TRAVIS_TAG
+      name: $TRAVIS_TAG
 
 _windows_nodejs_container_template: &_windows_nodejs_container_template
   install:

@@ -134,7 +134,7 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests: holochain, command-line tools, app spec, nodejs container, and "C" bindings
-test: test_holochain test_cmd test_app_spec test_nodejs_container c_binding_tests ${C_BINDING_TESTS}
+test: test_holochain test_cmd test_app_spec build_nodejs_container c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -146,7 +146,7 @@ test_app_spec: ensure_wasm_target install_cmd
 	rustup default ${CORE_RUST_VERSION}
 	cd app_spec && ./build_and_test.sh
 
-test_nodejs_container: core_toolchain
+build_nodejs_container: core_toolchain
 	rustup default ${CORE_RUST_VERSION}
 	cd nodejs_container && yarn install --ignore-scripts && node ./publish.js
 

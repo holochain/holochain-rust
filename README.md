@@ -116,7 +116,7 @@ Note that there are also make commands for running the tests of just core, or th
 make test_cmd
 make test_holochain
 make test_app_spec
-make test_nodejs_container
+make build_nodejs_container
 ```
 
 

@@ -3,7 +3,6 @@
     "faucet": "0.0.1"
   },
   "dependencies": {
-    "@holochain/holochain-nodejs": "^0.1.21",
     "json3": "*",
     "tape": "^4.9.1"
   },

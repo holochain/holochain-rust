@@ -34,9 +34,15 @@ _windows_template: &_windows_template
   os: windows
   language: rust
   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-  before_install: sh scripts/configure_windows.sh
-
-
+  before_install:
+  - choco install python2
+  - choco install nodist
+  - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
+  - nodist add $TRAVIS_NODE_VERSION
+  - nodist $TRAVIS_NODE_VERSION
+  - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
+  - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+  - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_container_template: &_unix_nodejs_container_template
   before_install:
@@ -136,13 +142,13 @@ jobs:
     - name: "windows build & test all"
       <<: *_windows_template
       env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
         - TRAVIS_NODE_VERSION=8
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       install:
         - rustup target add wasm32-unknown-unknown
       script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
-        - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
         # Build WASMs
         # - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         # - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown

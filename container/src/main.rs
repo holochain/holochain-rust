@@ -52,6 +52,8 @@ fn main() {
                 );
                 println!("Starting all of them...");
                 container.start_all();
+                println!("Starting interfaces...");
+                container.start_interfaces();
                 println!("Done.");
                 loop {}
             } else {

@@ -12,7 +12,7 @@ app.start()
 test('description of example test', (t) => {
   // Make a call to a Zome function
   // indicating the capability and function, and passing it an input
-  // const result = app.call("zome-name", "capability-name", "function-name", "input-data")
+  // const result = app.call("zome-name", "capability-name", "function-name", {})
 
   // check for equality of the actual and expected results
   // t.equal(result, "expected result!")

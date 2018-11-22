@@ -262,10 +262,12 @@ fn can_invalidate_invalid_commit() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(Entry::App(
-            test_app_entry_type(),
-            JsonString::from("{\"stuff\":\"FAIL\"}"),
-        ))),
+        &json!({"entry":
+            String::from(JsonString::from(Entry::App(
+                test_app_entry_type(),
+                JsonString::from("{\"stuff\":\"FAIL\"}"),
+            ))),
+        }).to_string(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);

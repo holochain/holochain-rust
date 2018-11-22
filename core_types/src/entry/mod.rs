@@ -1,5 +1,4 @@
 pub mod entry_type;
-pub mod serde;
 
 use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};

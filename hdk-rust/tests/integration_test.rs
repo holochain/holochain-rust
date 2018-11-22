@@ -179,7 +179,7 @@ fn can_round_trip() {
 }
 
 #[test]
-fn c() {
+fn can_get_entry() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(

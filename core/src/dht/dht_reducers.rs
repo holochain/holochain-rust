@@ -237,7 +237,7 @@ pub(crate) fn reduce_update_entry(
 
 //
 pub(crate) fn reduce_remove_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -245,9 +245,24 @@ pub(crate) fn reduce_remove_entry(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
+
+    // Get latest entry
+    let mut entry_result = GetEntryResult::new();
+    let res = get_entry_rec(
+        &context,
+        &mut entry_result,
+        address.clone(),
+        GetEntryOptions::new(StatusRequestKind::Latest),
+    );
+    if let Err(err) = res {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    let latest_address= entry_result.addresses.iter().last().unwrap();
+
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &old_store.content_storage().clone();
-    let maybe_entry = content_storage.read().unwrap().fetch(address).unwrap();
+    let maybe_entry = content_storage.read().unwrap().fetch(latest_address).unwrap();
     if maybe_entry.is_none() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
@@ -273,7 +288,7 @@ pub(crate) fn reduce_remove_entry(
     // get current status
     let meta_storage = &old_store.meta_storage().clone();
     let maybe_status_eav =  meta_storage.read().unwrap().fetch_eav(
-        Some(address.clone()), Some(STATUS_NAME.to_string()), None);
+        Some(latest_address.clone()), Some(STATUS_NAME.to_string()), None);
     if let Err(err) = maybe_status_eav {
         new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
@@ -297,17 +312,19 @@ pub(crate) fn reduce_remove_entry(
     }
 
     // Update crud-status
-    let new_status = create_crud_status_eav(address, CrudStatus::DELETED);
+    let new_status_eav = create_crud_status_eav(latest_address, CrudStatus::DELETED);
     let meta_storage = &new_store.meta_storage().clone();
-    let res = (*meta_storage.write().unwrap()).add_eav(&new_status);
+    let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
         new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
+    // Notify Network
+    new_store.network_mut().publish_meta(&new_status_eav);
     // Done
     new_store
         .actions_mut()
-        .insert(action_wrapper.clone(), res.map(|_| address.clone()));
+        .insert(action_wrapper.clone(), res.map(|_| latest_address.clone()));
     Some(new_store)
 }
 

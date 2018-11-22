@@ -64,9 +64,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
-    let serialized_entry: Entry = result.unwrap();
-    hdk::debug(format!("Entry: {:?}", serialized_entry)).expect("debug() must work");
-    let res = hdk::commit_entry(&serialized_entry.into());
+    let entry: Entry = result.unwrap();
+    hdk::debug(format!("Entry: {:?}", entry)).expect("debug() must work");
+    let res = hdk::commit_entry(&entry.into());
 
     let res_obj: JsonString = match res {
         Ok(hash) => hash.into(),
@@ -108,7 +108,7 @@ fn handle_check_get_entry(entry_address: Address) -> JsonString {
 fn handle_commit_validation_package_tester() -> JsonString {
     hdk::commit_entry(&Entry::App(
         "validation_package_tester".into(),
-        RawString::from("test").into(),
+        JsonString::from(RawString::from("test")),
     )).into()
 }
 

@@ -53,6 +53,8 @@ pub enum EntryType {
     ChainMigrate,
 }
 
+impl Eq for EntryType {}
+
 impl EntryType {
     pub fn is_app(&self) -> bool {
         match self {

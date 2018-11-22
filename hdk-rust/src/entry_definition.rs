@@ -5,6 +5,7 @@ use holochain_wasm_utils::holochain_core_types::{
 };
 use std::collections::HashMap;
 use holochain_core_types::entry::Entry;
+use holochain_core_types::entry::entry_type::EntryType;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
 pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
@@ -12,7 +13,7 @@ pub type LinkValidator =
     Box<FnMut(HashString, String, HashString, ValidationData) -> Result<(), String> + Sync>;
 
 pub struct ValidatingEntryType {
-    pub name: String,
+    pub name: EntryType,
     pub entry_type_definition: EntryTypeDef,
     pub package_creator: PackageCreator,
     pub validator: Validator,
@@ -122,7 +123,7 @@ macro_rules! entry {
 
 
             ::hdk::entry_definition::ValidatingEntryType {
-                name: String::from($name),
+                name: ::hdk::holochain_core_types::entry::entry_type::EntryType::App(::hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,
                 package_creator,
                 validator,

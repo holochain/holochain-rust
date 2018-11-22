@@ -56,6 +56,13 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+fn example_commit_entry_params() -> String {
+    format!(
+        "{{\"entry\":{}}}",
+        String::from(JsonString::from(example_valid_entry())),
+    )
+}
+
 fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm =
@@ -100,7 +107,7 @@ fn can_use_globals() {
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "QmU92yJa32rGJYcgDwhxAeBtpHeK7wjLEqZ1bWnDZKTRB8"
+            "QmfFVhScc1cVzEqTBVLBr6d2FbsHaM5Cn3ynnvM7CUiJp9"
         ))),
         "result = {:?}",
         result
@@ -136,12 +143,7 @@ fn can_commit_entry_macro() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        // this works because the macro names the args the same as the Entry fields
-        // r#"{"App":["testEntryType","{\"stuff\": \"non fail\"}"]}"#,
-        &format!(
-            "{{\"entry\":{}}}",
-            String::from(JsonString::from(example_valid_entry())),
-        ),
+        &example_commit_entry_params(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);

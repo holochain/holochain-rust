@@ -10,7 +10,7 @@ use holochain_container_api::Holochain;
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_core_types::{
     dna::Dna,
-    agent::Agent,
+    agent::AgentId,
     json::JsonString
 };
 use neon::context::Context;

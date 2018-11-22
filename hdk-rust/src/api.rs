@@ -289,6 +289,10 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
@@ -487,9 +491,6 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
-    if entry_result.crud_status.iter().next().unwrap() == &CrudStatus::LIVE {
-        return Ok(None);
-    }
     let entry = entry_result.entries.iter().next().unwrap().deserialize();
     Ok(Some(entry))
 }

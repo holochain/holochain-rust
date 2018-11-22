@@ -55,6 +55,10 @@ macro_rules! load_json {
 /// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///

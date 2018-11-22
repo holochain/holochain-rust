@@ -40,6 +40,7 @@ mod tests {
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
+        crud_status::CrudStatus,
     };
     use instance::tests::{test_context_and_logger, test_instance};
     use nucleus::{
@@ -53,15 +54,25 @@ mod tests {
         ZomeFnCall,
     };
     use std::sync::Arc;
+    use holochain_wasm_utils::api_serialization::get_entry::*;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry().address()).into_bytes()
+        let entry_args = GetEntryArgs {
+            address: test_entry().address(),
+            options: GetEntryOptions::new(StatusRequestKind::Latest),
+        };
+        JsonString::from(entry_args).into_bytes()
     }
 
     /// dummy get args from standard test entry
     pub fn test_get_args_unknown() -> Vec<u8> {
-        JsonString::from(Address::from("xxxxxxxxx")).into_bytes()
+        let entry_args = GetEntryArgs {
+            address: Address::from("xxxxxxxxx"),
+            options: GetEntryOptions::new(StatusRequestKind::Latest),
+        };
+        JsonString::from(entry_args).into_bytes()
+
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -212,12 +223,12 @@ mod tests {
             Some(test_get_args_bytes()),
         ).expect("test should be callable");
 
-        assert_eq!(
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().serialize()
-                ))) + "\u{0}",
-            ),
+        let mut entry_result = GetEntryResult::new();
+        entry_result.addresses.push(test_entry().address());
+        entry_result.entries.push(test_entry().serialize());
+        entry_result.crud_status.push(CrudStatus::LIVE);
+        assert_eq!(JsonString::from(
+            String::from(JsonString::from(ZomeApiInternalResult::success(entry_result)))),
             call_result,
         );
     }
@@ -260,11 +271,9 @@ mod tests {
             Some(test_get_args_unknown()),
         ).expect("test should be callable");
 
-        assert_eq!(
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
-            ),
-            call_result,
+        assert_eq!(JsonString::from(
+            String::from(JsonString::from(ZomeApiInternalResult::success(GetEntryResult::new())))),
+                   call_result,
         );
     }
 

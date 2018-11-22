@@ -79,9 +79,7 @@ pub fn get_entry(
     let mut entry_result = GetEntryResult::new();
     match get_entry_rec(context, &mut entry_result, args.address.clone(), args.options.clone()) {
         Err(err) => Box::new(future::err(err)),
-        Ok(_) => {
-            Box::new(future::ok(entry_result))
-        },
+        Ok(_) => Box::new(future::ok(entry_result)),
     }
 }
 

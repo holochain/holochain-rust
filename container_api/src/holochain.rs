@@ -171,12 +171,11 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
-        context::Context,
+        context::{Context, mock_network_config},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
     use holochain_core_types::{agent::Agent, dna::Dna};
-    use holochain_net::p2p_network::P2pNetwork;
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
@@ -184,18 +183,6 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
-
-    /// create a test network
-    #[cfg_attr(tarpaulin, skip)]
-    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-        let res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            }).into(),
-        ).unwrap();
-        Arc::new(Mutex::new(res))
-    }
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -219,7 +206,7 @@ mod tests {
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),
                     )),
-                    make_mock_net(),
+                    mock_network_config(),
                 ).unwrap(),
             ),
             logger,

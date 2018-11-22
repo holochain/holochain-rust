@@ -289,7 +289,7 @@ pub mod tests {
         chain_store::ChainStore,
         state::{ActionResponse, AgentState},
     };
-    use context::Context;
+    use context::{Context, mock_network_config};
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
@@ -300,7 +300,6 @@ pub mod tests {
         entry::{entry_type::EntryType, ToEntry},
         json::{JsonString, RawString},
     };
-    use holochain_net::p2p_network::P2pNetwork;
 
     use logger::Logger;
     use nucleus::{
@@ -339,18 +338,6 @@ pub mod tests {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
-    /// create a test network
-    #[cfg_attr(tarpaulin, skip)]
-    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-        let res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            }).into(),
-        ).unwrap();
-        Arc::new(Mutex::new(res))
-    }
-
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
@@ -371,7 +358,7 @@ pub mod tests {
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
                         ).unwrap(),
                     )),
-                    make_mock_net(),
+                    mock_network_config(),
                 ).unwrap(),
             ),
             logger,
@@ -409,7 +396,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                make_mock_net(),
+                mock_network_config(),
             ).unwrap(),
         )
     }
@@ -428,7 +415,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
+            mock_network_config(),
         ).unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -449,7 +436,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
+            mock_network_config(),
         ).unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

@@ -11,15 +11,17 @@ use holochain_net_connection::{
 use std::sync::Arc;
 
 struct Network {
-
+    net_impl: Option<P2pNetwork>,
 }
 
 impl Network {
     pub fn new() -> Self {
-        Network {}
+        Network {
+            net_impl: None,
+        }
     }
 
-    pub fn start(&self, context: Arc<Context>) -> Result<(), HolochainError>{
+    pub fn start(&mut self, context: Arc<Context>) -> Result<(), HolochainError>{
         let state = context.state()
             .ok_or("Network::start() could not get application state".to_string())?;
         let agent = state.agent().get_agent(&context)?;
@@ -28,10 +30,23 @@ impl Network {
         let dna = state.nucleus().dna().ok_or("Network::start() called without DNA".to_string())?;
         let dna_hash = base64::encode(&dna.multihash()?);
 
-        let mut network = context.network.lock().unwrap();
-        (*network).send(ProtocolWrapper::TrackApp(TrackAppData{
+        let mut network = P2pNetwork::new(
+            self.handler(),
+            &context.network_config
+        ).unwrap();
+
+        network.send(ProtocolWrapper::TrackApp(TrackAppData{
             dna_hash,
             agent_id,
-        }).into()).map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+        }).into())
+            .and_then(|_| {
+                self.net_impl = Some(network);
+                Ok(())
+            })
+            .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    }
+
+    pub fn handler(&self) -> NetHandler {
+        Box::new(|_r| Ok(()))
     }
 }

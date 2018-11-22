@@ -10,7 +10,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind},
-        get_links::GetLinksArgs,
+        get_links::{GetLinksArgs,GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
@@ -798,7 +798,7 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<Vec<Address>> {
+pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
 

@@ -1,4 +1,4 @@
-use config::Configuration;
+use config::{Configuration, StorageConfiguration};
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
@@ -17,8 +17,6 @@ use std::{
 };
 
 use holochain_net::p2p_network::P2pNetwork;
-
-use boolinator::*;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -156,12 +154,11 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            (instance_config.storage.storage_type == "file"
-                && instance_config.storage.path.is_some())
-                .ok_or(String::from("Only file storage supported currently"))?;
-
-            let context = create_context(&agent_config.id, &instance_config.storage.path.unwrap())
-                .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
+            let context: Context = match instance_config.storage {
+                StorageConfiguration::File { path } => create_context(&agent_config.id, &path)
+                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
+                _ => Err("Only file storage supported currently".to_string()),
+            }?;
 
             Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
         })
@@ -220,7 +217,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -282,7 +279,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app-spec-rust.hcpkg\"".to_string()
+                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
     }

@@ -20,6 +20,7 @@ use std::{
 
 use config::{Configuration, InterfaceConfiguration, InterfaceProtocol, StorageConfiguration};
 use interface::{self, DispatchRpc, InstanceMap, Interface, RpcDispatcher};
+use interface_impls;
 use jsonrpc::JsonRpc;
 
 /// Main representation of the container.
@@ -64,8 +65,8 @@ impl Container {
                     InterfaceProtocol::Websocket { port } => {
                         let dispatcher = self.make_dispatcher(ic);
                         thread::spawn(move || {
-                            let iface = interface::WebsocketInterface::new(port);
-                            iface.run(Arc::new(dispatcher));
+                            let iface = interface_impls::websocket::WebsocketInterface::new(port);
+                            iface.run(Arc::new(dispatcher)).expect("server shoulda run");
                         })
                     }
                     _ => unimplemented!(),

@@ -110,6 +110,7 @@ pub mod container;
 pub mod error;
 pub mod holochain;
 pub mod interface;
+pub mod interface_impls;
 pub mod jsonrpc;
 
 pub use holochain::Holochain;

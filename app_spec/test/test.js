@@ -1,7 +1,7 @@
 const test = require('tape');
 const Container = require('@holochain/holochain-nodejs');
 
-const app = Container.loadAndInstantiate("../dist/app_spec.hcpkg")
+const app = Container.loadAndInstantiate("dist/app_spec.hcpkg")
 app.start()
 
 test('call', (t) => {

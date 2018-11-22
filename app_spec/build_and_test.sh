@@ -10,4 +10,5 @@ echo "Running test.js in node"
 echo "------------------------------------------------------------------------------------"
 cd test
 npm install
-node test.js | node_modules/faucet/bin/cmd.js
+cd ..
+node test/test.js | test/node_modules/faucet/bin/cmd.js

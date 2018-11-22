@@ -128,15 +128,13 @@ fn can_commit_entry() {
         "test_zome",
         "test_cap",
         "check_commit_entry",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        &String::from(JsonString::from(example_valid_entry())),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
-        )),
+        JsonString::from(example_valid_entry_address()),
     );
 }
 
@@ -389,7 +387,7 @@ fn can_check_app_entry_address() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(Address::from(
-            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+            "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
         )),
     );
 }
@@ -416,7 +414,7 @@ fn can_check_call() {
     assert_eq!(
         result.unwrap(),
         JsonString::from(ZomeApiInternalResult::success(Address::from(
-            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
+            "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
         ))),
     );
 }

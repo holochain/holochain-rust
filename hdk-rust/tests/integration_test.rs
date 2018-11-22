@@ -43,13 +43,14 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     capability
 }
 
+#[derive(DefaultJson, Serialize, Deserialize, Debug)]
+struct EntryStruct {
+    stuff: String,
+}
+
 fn example_valid_entry() -> Entry {
-    #[derive(DefaultJson, Serialize, Deserialize, Debug)]
-    struct EntryStruct {
-        stuff: String,
-    }
     Entry::App(
-        AppEntryType::from("testEntryType"),
+        AppEntryType::from(test_app_entry_type()),
         AppEntryValue::from(EntryStruct {
             stuff: "non fail".into(),
         }),
@@ -263,10 +264,12 @@ fn can_invalidate_invalid_commit() {
         "test_cap",
         "check_commit_entry_macro",
         &json!({"entry":
-            String::from(JsonString::from(Entry::App(
-                test_app_entry_type(),
-                JsonString::from("{\"stuff\":\"FAIL\"}"),
-            ))),
+            Entry::App(
+                AppEntryType::from(test_app_entry_type()),
+                AppEntryValue::from(EntryStruct {
+                    stuff: "FAIL".into(),
+                }),
+            )
         }).to_string(),
     );
     println!("\t result = {:?}", result);

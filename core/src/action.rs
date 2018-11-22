@@ -1,8 +1,12 @@
 use agent::state::AgentState;
 use context::Context;
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, link::Link,
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError,
+    json::JsonString, link::Link,
     validation::ValidationPackage,
+};
+use network::{
+    state::NetworkState,
 };
 use nucleus::{
     state::{NucleusState, ValidationResult},
@@ -106,12 +110,16 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    InitNetwork((JsonString, String, String)),
+    Publish(Address),
 }
 
 /// function signature for action handler functions
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
+pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 

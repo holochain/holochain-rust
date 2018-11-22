@@ -112,31 +112,31 @@ fn handle_commit_validation_package_tester() -> JsonString {
     )).into()
 }
 
-// fn handle_link_two_entries() -> JsonString {
-//     let entry1_result = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry1".into(),
-//         }.into(),
-//     ));
-//
-//     if entry1_result.is_err() {
-//         return entry1_result.into();
-//     }
-//
-//     let entry2_result = hdk::commit_entry(&Entry::App(
-//         "testEntryType".into(),
-//         EntryStruct {
-//             stuff: "entry2".into(),
-//         }.into(),
-//     ));
-//
-//     if entry2_result.is_err() {
-//         return entry2_result.into();
-//     }
-//
-//     hdk::link_entries(&entry1_result.unwrap(), &entry2_result.unwrap(), "test-tag").into()
-// }
+fn handle_link_two_entries() -> JsonString {
+    let entry1_result = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry1".into(),
+        }.into(),
+    ));
+
+    if entry1_result.is_err() {
+        return entry1_result.into();
+    }
+
+    let entry2_result = hdk::commit_entry(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }.into(),
+    ));
+
+    if entry2_result.is_err() {
+        return entry2_result.into();
+    }
+
+    hdk::link_entries(&entry1_result.unwrap(), &entry2_result.unwrap(), "test-tag").into()
+}
 
 fn handle_links_roundtrip() -> JsonString {
     let entry1_hash_result = hdk::commit_entry(&Entry::App(
@@ -422,11 +422,11 @@ define_zome! {
                 handler: handle_commit_validation_package_tester
             }
 
-            // link_two_entries: {
-            //     inputs: | |,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_link_two_entries
-            // }
+            link_two_entries: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_link_two_entries
+            }
 
             links_roundtrip: {
                 inputs: | |,

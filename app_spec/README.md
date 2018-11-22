@@ -17,7 +17,7 @@ The primary dependency is on the Holochain command line tools which should be in
 Nodejs and NPM, for compiling Javascript tests, Version 8 or higher
 * https://nodejs.org/en/download/
 
-o verify it is all working, run each of the following three commands.
+To verify it is all working, run each of the following two commands.
 
 `hc`
 

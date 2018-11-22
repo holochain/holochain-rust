@@ -97,11 +97,8 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       cargo: true
       directories:
           - node_modules
-  before_script:
-      - yarn install --ignore-scripts
   script:
-      - cd nodejs_container
-      - node ./publish.js
+      - ./scripts/build_nodejs_container.sh
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   deploy:
       provider: releases
@@ -125,6 +122,8 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
     - yarn config set python python2.7
     - npm config set msvs_version 2015
     - yarn config set msvs_version 2015 --global
+  script:
+      - sh ./scripts/build_nodejs_container.sh
 # nodejs specific deployment templates stop here
 
 jobs:

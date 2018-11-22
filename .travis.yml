@@ -145,7 +145,7 @@ jobs:
       install:
         - export PATH=$HOME/.cargo/bin:$PATH
       script:
-        - make test_app-spec
+        - make test_app_spec
       before_cache:
         - cd $TRAVIS_BUILD_DIR && . travis_cache_clean.sh
         - rm -rf $HOME/.cargo/registry/index

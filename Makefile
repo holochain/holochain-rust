@@ -134,7 +134,7 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests, both command-line tools holochain and "C" bindings
-test: test_holochain test_cmd test_app-spec c_binding_tests ${C_BINDING_TESTS}
+test: test_holochain test_cmd test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -142,8 +142,8 @@ test_holochain: build_holochain
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_app-spec: build_holochain install_cmd
-	cd app-spec && ./build_and_test.sh
+test_app_spec: build_holochain install_cmd
+	cd app_spec && ./build_and_test.sh
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build

@@ -1,7 +1,7 @@
 const test = require('tape');
 const Container = require('@holochain/holochain-nodejs');
 
-const app = Container.loadAndInstantiate("../dist/app-spec-rust.hcpkg")
+const app = Container.loadAndInstantiate("../dist/app_spec.hcpkg")
 app.start()
 
 test('call', (t) => {
@@ -31,7 +31,7 @@ test('create_post', (t) => {
   const in_reply_to = ""
   const params = JSON.stringify({content, in_reply_to})
   const result = app.call("blog", "main", "create_post", params)
-  t.equal(JSON.parse(result).address.length, 46) 
+  t.equal(JSON.parse(result).address.length, 46)
 })
 
 test('post max content size 280 characters', (t) => {

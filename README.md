@@ -110,12 +110,12 @@ or
 make test
 ```
 
-Note that there are also make commands for running the tests of just core, or the command-line line tools or app-spec separately:
+Note that there are also make commands for running the tests of just core, or the command-line line tools or app_spec separately:
 
 ``` shell
 make test_cmd
 make test_holochain
-make test_app-spec
+make test_app_spec
 ```
 
 
@@ -225,12 +225,12 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 
 ### App Spec Driven Development
 In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
-1. Start by creating a branch in this repository and modifying the example app in the app-spec directory to demonstrates an actual implementation of the use of the new feature, including tests that would pass if the feature were actually implemented.
+1. Start by creating a branch in this repository and modifying the example app in the app_spec directory to demonstrates an actual implementation of the use of the new feature, including tests that would pass if the feature were actually implemented.
 1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail.
-1. Do any development necessary in core or hdk crates of this repo to actually implement the feature demonstrated in `app-spec`
+1. Do any development necessary in core or hdk crates of this repo to actually implement the feature demonstrated in `app_spec`
 1. Finally, when the feature is fully implemented, the CI tests should turn green and the branch can be merged.
 
-In this way `app-spec` works as a living specification with example app to build against.
+In this way `app_spec` works as a living specification with example app to build against.
 
 Some helpful links:
 

@@ -15,4 +15,4 @@ members = [
 ]
 exclude = [
   "test_utils",
-  "app-spec"]
+  "app_spec"]

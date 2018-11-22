@@ -4,13 +4,10 @@ use futures::Future;
 use holochain_core_types::{
     cas::content::Address,
     error::HolochainError,
-    entry::Entry,
 };
 use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
 use instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
-use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 
 /// Update Entry Action Creator
 ///

@@ -13,7 +13,6 @@ use holochain_core_types::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
     },
-    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::ZomeApiInternalResult,
     hash::HashString,
     json::JsonString,
@@ -409,7 +408,6 @@ fn can_check_call_with_args() {
 #[test]
 fn can_remove_entry() {
     let (mut hc, _) = start_holochain_instance();
-
     let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
     println!("can_remove_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -422,15 +420,7 @@ fn can_remove_entry() {
 #[test]
 fn can_update_entry() {
     let (mut hc, _) = start_holochain_instance();
-
     let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
     println!("can_update_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
-
-//    assert_eq!(
-//        result.unwrap(),
-//        JsonString::from(ZomeApiInternalResult::success(Address::from(
-//            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
-//        ))),
-//    );
 }

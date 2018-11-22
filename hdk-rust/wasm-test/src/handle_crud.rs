@@ -1,4 +1,3 @@
-
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::GetEntryOptions,
@@ -9,7 +8,6 @@ use holochain_wasm_utils::{
         crud_status::CrudStatus,
     },
 };
-
 use hdk_test_entry;
 use hdk_test_entry_type;
 use TestEntryType;
@@ -150,24 +148,25 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 //
 pub fn handle_remove_entry_ok() -> JsonString {
     // Commit v1 entry
+    hdk::debug("\n **** Commit v1 entry").ok();
     let entry_test = hdk_test_entry();
     let res = hdk::commit_entry(&entry_test);
     let addr_v1 = res.unwrap();
-    // get it
-    hdk::debug("\n get it:\n").ok();
+    // Get it
+    hdk::debug("\n **** Get it").ok();
     let res = hdk::get_entry(addr_v1.clone());
     let entry_v1 = res.unwrap().unwrap();
     assert_eq!(entry_test, entry_v1);
     // Delete it
-    hdk::debug("\n Delete it:\n").ok();
+    hdk::debug("\n **** Delete it:").ok();
     let res = hdk::remove_entry(addr_v1.clone());
     assert!(res.is_ok());
-    // get it should fail
-    hdk::debug("\n get it should fail:\n").ok();
+    // Get it should fail
+    hdk::debug("\n **** Get it should fail:").ok();
     let res = hdk::get_entry(addr_v1.clone());
     assert_eq!(res.unwrap(), None);
     // Delete it again should fail
-    hdk::debug("\n Delete it again should fail:\n").ok();
+    hdk::debug("\n **** Delete it again should fail:").ok();
     let res = hdk::remove_entry(addr_v1.clone());
     assert!(res.is_err());
     // get entry_result

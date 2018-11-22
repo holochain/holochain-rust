@@ -5,11 +5,10 @@ use nucleus::{
 use agent::actions::{update_entry::update_entry, commit::commit_entry};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use agent::actions::update_entry::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},

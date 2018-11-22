@@ -12,7 +12,6 @@ use std::{convert::TryInto, sync::Arc};
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryResult, GetEntryArgs, StatusRequestKind, GetEntryOptions,
 };
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 pub(crate) fn get_entry_from_dht_cas(

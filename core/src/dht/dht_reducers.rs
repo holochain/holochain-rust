@@ -16,7 +16,7 @@ use std::{
 };
 use std::collections::HashSet;
 use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryResult, GetEntryArgs, StatusRequestKind, GetEntryOptions,
+    GetEntryResult, StatusRequestKind, GetEntryOptions,
 };
 use nucleus::actions::get_entry::get_entry_rec;
 
@@ -153,7 +153,6 @@ pub(crate) fn reduce_update_entry(
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    let meta_storage = &old_store.meta_storage().clone();
     let content_storage = &old_store.content_storage().clone();
     // pre-condition: Must already have old_entry in local content_storage
     if !(*content_storage.read().unwrap()).contains(&old_address).unwrap() {
@@ -210,6 +209,7 @@ pub(crate) fn reduce_update_entry(
         );
         return Some(new_store);
     }
+
     // Update crud-status
     let meta_storage = &new_store.meta_storage().clone();
     let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
@@ -241,11 +241,10 @@ pub(crate) fn reduce_remove_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
+    // Setup
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
-    println!("\n reduce_remove_entry!!!");
-
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &old_store.content_storage().clone();
     let maybe_entry = content_storage.read().unwrap().fetch(address).unwrap();
@@ -275,35 +274,19 @@ pub(crate) fn reduce_remove_entry(
     let meta_storage = &old_store.meta_storage().clone();
     let maybe_status_eav =  meta_storage.read().unwrap().fetch_eav(
         Some(address.clone()), Some(STATUS_NAME.to_string()), None);
-    if maybe_status_eav.is_err() {
-        new_store.actions_mut().insert(
-            action_wrapper.clone(),
-            Err(HolochainError::ErrorGeneric(String::from(
-                "entry does not have a status",
-            ))),
-        );
+    if let Err(err) = maybe_status_eav {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
     let status_eavs = maybe_status_eav.unwrap();
     assert!(!status_eavs.is_empty(), "Entry should have a Status");
-    println!("reduce_remove_entry: status_eavs = {:?}", status_eavs);
-    // FIXME waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-    let status_eav =
-        if status_eavs.len() > 1 {
-            status_eavs.iter().last().unwrap()
-        } else {
-            status_eavs.iter().next().unwrap()
-        };
-    let entry_status = CrudStatus::from(String::from(status_eav.value()));
-    println!("reduce_remove_entry: entry_status = {:?}", entry_status);
+    // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
+    // For now checks if crud-status other than LIVE are present
     let status_eavs = status_eavs
         .iter()
         .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::LIVE)
         .collect::<HashSet<&EntityAttributeValue>>();
-    println!("reduce_remove_entry: status_eavs FILTERED = {:?}", status_eavs);
-    //if entry_status != CrudStatus::LIVE {
     if status_eavs.len() > 0 {
-        println!("reduce_remove_entry NOT LIVE !!");
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -312,25 +295,19 @@ pub(crate) fn reduce_remove_entry(
         );
         return Some(new_store);
     }
+
     // Update crud-status
     let new_status = create_crud_status_eav(address, CrudStatus::DELETED);
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status);
-    if res.is_err() {
-        new_store.actions_mut().insert(
-            action_wrapper.clone(),
-            Err(HolochainError::ErrorGeneric(String::from(
-                "add_eav() for crud-status failed",
-            ))),
-        );
+    if let Err(err) = res {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
+    // Done
     new_store
         .actions_mut()
         .insert(action_wrapper.clone(), res.map(|_| address.clone()));
-
-    println!("\n reduce_remove_entry: new_status = {:?}", new_status);
-    // Done
     Some(new_store)
 }
 

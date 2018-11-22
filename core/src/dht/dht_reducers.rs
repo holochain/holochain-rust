@@ -7,7 +7,7 @@ use holochain_core_types::{
     cas::content::AddressableContent, eav::EntityAttributeValue,
     entry::Entry,
     error::HolochainError,
-    crud_status::{CrudStatus, create_crud_status_eav, STATUS_NAME},
+    crud_status::{CrudStatus, create_crud_status_eav, create_crud_link_eav, STATUS_NAME},
     entry::SerializedEntry,
 };
 use std::sync::Arc;
@@ -15,6 +15,10 @@ use std::{
     convert::{TryFrom},
 };
 use std::collections::HashSet;
+use holochain_wasm_utils::api_serialization::get_entry::{
+    GetEntryResult, GetEntryArgs, StatusRequestKind, GetEntryOptions,
+};
+use nucleus::actions::get_entry::get_entry_rec;
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -82,7 +86,6 @@ pub(crate) fn commit_app_entry(
     old_store: &DhtStore,
     entry: &Entry,
 ) -> Option<DhtStore> {
-    println!("\ncommit_app_entry!!!\n");
     // pre-condition: if app entry_type must be valid
     // get entry_type definition
     let dna = context
@@ -97,13 +100,10 @@ pub(crate) fn commit_app_entry(
         return None;
     }
     let entry_type_def = maybe_def.unwrap();
-
     // app entry type must be publishable
     if !entry_type_def.sharing.clone().can_publish() {
         return None;
     }
-
-    println!("commit_app_entry: entry: {:?}", entry);
     // Add entry and meta to local storage...
     let mut new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
@@ -120,8 +120,6 @@ pub(crate) fn commit_app_entry(
         println!("commit_app_entry: meta_storage write failed!: {:?}", res.err().unwrap());
         return None;
     }
-    println!("commit_app_entry: eav: {:?}", status_eav);
-
     // ...and publish to the network if its not private
     new_store.network_mut().publish(entry);
     new_store.network_mut().publish_meta(&status_eav);
@@ -137,9 +135,6 @@ pub(crate) fn reduce_commit_entry(
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
-
-    println!("\nreduce_commit_entry!!!");
-
     // Handle sys entries and app entries differently
     if entry.entry_type().to_owned().is_sys() {
         return commit_sys_entry(context, old_store, entry);
@@ -150,41 +145,93 @@ pub(crate) fn reduce_commit_entry(
 
 //
 pub(crate) fn reduce_update_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
+    // Setup
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-
-    println!("\n DHT reduce_update_entry!!!");
-
-    // pre-condition: Must already have old and new entry in local content_storage
-    // FIXME
-    // pre-condition: old_entry current status must be LIVE
-    // FIXME
-    // Update crud-status
-    let new_status = create_crud_status_eav(old_address, CrudStatus::MODIFIED);
-    let meta_storage = &new_store.meta_storage().clone();
-    let res = (*meta_storage.write().unwrap()).add_eav(&new_status);
-    if res.is_err() {
+    let meta_storage = &old_store.meta_storage().clone();
+    let content_storage = &old_store.content_storage().clone();
+    // pre-condition: Must already have old_entry in local content_storage
+    if !(*content_storage.read().unwrap()).contains(&old_address).unwrap() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
-                "add_eav() for crud-status failed",
+                "old_entry is not present in DHT's CAS",
             ))),
         );
         return Some(new_store);
     }
+    //  pre-condition: Must already have new_entry in local content_storage
+    if !(*content_storage.read().unwrap()).contains(&new_address).unwrap() {
+            new_store.actions_mut().insert(
+                action_wrapper.clone(),
+                Err(HolochainError::ErrorGeneric(String::from(
+                    "new_entry is not present in DHT's CAS",
+                ))),
+            );
+            return Some(new_store);
+        }
+    // pre-condition: old_entry's latest version must have LIVE crud-status
+    // get latest entry
+    let mut entry_result = GetEntryResult::new();
+    let res = get_entry_rec(
+        &context,
+        &mut entry_result,
+        old_address.clone(),
+        GetEntryOptions::new(StatusRequestKind::Latest),
+    );
+    if let Err(err) = res {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    let latest_old_address = entry_result.addresses.iter().last().unwrap();
+    // verify its crud-status
+    if entry_result.crud_status.iter().last().unwrap() != &CrudStatus::LIVE {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "old_entry latest version does not have LIVE crud-status",
+            ))),
+        );
+        return Some(new_store);
+    }
+    // pre-condition: latest entry must not already have a crud-link
+    let maybe_crud_link = entry_result.crud_links.get(latest_old_address);
+    if maybe_crud_link.is_some() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "attempted to add a second crud-link to an entry",
+            ))),
+        );
+        return Some(new_store);
+    }
+    // Update crud-status
+    let meta_storage = &new_store.meta_storage().clone();
+    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
+    let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
+    if let Err(err) = res {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Update crud-link
+    let crud_link_eav = create_crud_link_eav(latest_old_address, new_address);
+    let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
+    if let Err(err) = res {
+        new_store.actions_mut().insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Notify Network
+    new_store.network_mut().publish_meta(&new_status_eav);
+    new_store.network_mut().publish_meta(&crud_link_eav);
+    // Done
     new_store
         .actions_mut()
         .insert(action_wrapper.clone(), res.map(|_| new_address.clone()));
-
-    println!("\n DHT reduce_update_entry: new_status = {:?}", new_status);
-    // Update crud-link
-    // FIXME
-    // Done
     Some(new_store)
 }
 

@@ -6,10 +6,12 @@ use holochain_core_types::{
     entry::{Entry, SerializedEntry},
     error::HolochainError,
     eav::EntityAttributeValue,
-    crud_status::{CrudStatus, STATUS_NAME},
+    crud_status::{CrudStatus, STATUS_NAME, LINK_NAME},
 };
 use std::{convert::TryInto, sync::Arc};
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, GetEntryArgs};
+use holochain_wasm_utils::api_serialization::get_entry::{
+    GetEntryResult, GetEntryArgs, StatusRequestKind, GetEntryOptions,
+};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -32,28 +34,39 @@ pub(crate) fn get_entry_meta_from_dht(
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
+    // Get crud-status
     let status_eavs =
-        (*storage.read().unwrap()).fetch_eav(Some(address), Some(STATUS_NAME.to_string()), None)?;
+        (*storage.read().unwrap()).fetch_eav(Some(address.clone()), Some(STATUS_NAME.to_string()), None)?;
     if status_eavs.len() == 0 {
         return Ok(None);
     }
+    let mut crud_status = CrudStatus::LIVE;
     // FIXME waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     let has_deleted = status_eavs
         .iter()
         .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::DELETED)
         .collect::<HashSet<&EntityAttributeValue>>().len() > 0;
     if has_deleted {
-        return Ok(Some((CrudStatus::DELETED, None)));
+        crud_status = CrudStatus::DELETED;
+    } else {
+        let has_modified = status_eavs
+            .iter()
+            .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::MODIFIED)
+            .collect::<HashSet<&EntityAttributeValue>>().len() > 0;
+        if has_modified {
+            crud_status = CrudStatus::MODIFIED;
+        }
     }
-    let has_modified = status_eavs
-        .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::MODIFIED)
-        .collect::<HashSet<&EntityAttributeValue>>().len() > 0;
-    if has_modified {
-        return Ok(Some((CrudStatus::MODIFIED, None)));
+    // Get crud-link
+    let mut maybe_crud_link = None;
+    let link_eavs =
+        (*storage.read().unwrap()).fetch_eav(Some(address), Some(LINK_NAME.to_string()), None)?;
+    assert!(link_eavs.len() <= 1);
+    if link_eavs.len() == 1 {
+        maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
     }
-    //let status = CrudStatus::from(String::from(status_eav.value()));
-    Ok(Some((CrudStatus::LIVE, None)))
+    // Done
+    Ok(Some((crud_status, maybe_crud_link)))
 }
 
 /// GetEntry Action Creator
@@ -63,33 +76,53 @@ pub fn get_entry(
     context: &Arc<Context>,
     args: &GetEntryArgs,
 ) -> Box<dyn Future<Item = GetEntryResult, Error = HolochainError>> {
-    // First try to get the Entry
-    let address = args.address.clone();
-    let res = get_entry_from_dht_cas(context, address.clone());
-    let maybe_entry = match res {
-        Err(err) => return Box::new(future::err(err)),
-        Ok(result) => result,
-    };
+    let mut entry_result = GetEntryResult::new();
+    match get_entry_rec(context, &mut entry_result, args.address.clone(), args.options.clone()) {
+        Err(err) => Box::new(future::err(err)),
+        Ok(_) => {
+            Box::new(future::ok(entry_result))
+        },
+    }
+}
+
+
+/// Recursive function for filling GetEntryResult by walking the crud-links
+pub fn get_entry_rec(
+    context: &Arc<Context>,
+    entry_result: &mut GetEntryResult,
+    address: Address,
+    options: GetEntryOptions,
+) -> Result<(), HolochainError> {
+    // 1. try to get the Entry
+    let address = address.clone();
+    let maybe_entry = get_entry_from_dht_cas(context, address.clone())?;
     // No entry = return empty result
     if maybe_entry.is_none() {
-        return Box::new(future::ok(GetEntryResult::new()));
+        return Ok(());
     }
     let entry = maybe_entry.unwrap();
-    // Second try to get entry's meta
-    let res = get_entry_meta_from_dht(context, address.clone());
-    let meta = match res {
-        Err(err) => return Box::new(future::err(err)),
-        Ok(result) => result.expect("Entry should have meta"),
-    };
-    // Create GetEntryResult for just one Entry
-    let entry_result = GetEntryResult {
-        addresses: vec![address],
-        entries: vec![entry.serialize()],
-        crud_status: vec![meta.0],
-        crud_links: HashMap::new(), // FIXME put link here if found
-    };
-    println!("\n get_entry: {:?}\n", entry_result);
-    Box::new(future::ok(entry_result))
+    // 2. try to get entry's meta
+    let meta = get_entry_meta_from_dht(context, address.clone())?;
+    let meta = meta.expect("Entry should have meta");
+    // 3. Add Entry + Meta to GetEntryResult
+    entry_result.addresses.push(address.clone());
+    entry_result.entries.push(entry.serialize());
+    entry_result.crud_status.push(meta.0);
+    if let Some(new_address) = meta.1 {
+        entry_result.crud_links.insert(address, new_address.clone());
+        // 4. Follow link depending on StatusRequestKind
+        match options.status_request {
+            StatusRequestKind::Initial => {},
+                StatusRequestKind::Latest => {
+                    *entry_result = GetEntryResult::new();
+                    get_entry_rec(context, entry_result, new_address, options)?;
+                },
+            StatusRequestKind::All => {
+                get_entry_rec(context, entry_result, new_address, options)?;
+            },
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

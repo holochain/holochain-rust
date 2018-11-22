@@ -25,7 +25,6 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     // Create and block on future
     let future = get_entry(&runtime.context, &input);
     let result = block_on(future);
-    println!("invoke_get_entry result: {:?}", result);
     // Store result in wasm memory
     runtime.store_result(result)
 }

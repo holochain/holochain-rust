@@ -21,9 +21,6 @@ use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-
-    println!("\n invoke_UPDATE_entry!!");
-
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry_args = match UpdateEntryArgs::try_from(args_str.clone()) {

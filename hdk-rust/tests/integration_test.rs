@@ -411,7 +411,7 @@ fn can_remove_entry() {
     let (mut hc, _) = start_holochain_instance();
 
     let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
-    println!("remove_entry_ok result: {:?}\n", result);
+    println!("can_remove_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
@@ -424,7 +424,9 @@ fn can_update_entry() {
     let (mut hc, _) = start_holochain_instance();
 
     let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
+    println!("can_update_entry result: {:?}\n", result);
     assert!(result.is_ok(), "result = {:?}", result);
+
 //    assert_eq!(
 //        result.unwrap(),
 //        JsonString::from(ZomeApiInternalResult::success(Address::from(

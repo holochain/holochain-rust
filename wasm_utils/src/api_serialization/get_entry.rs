@@ -8,7 +8,7 @@ use holochain_core_types::{
 };
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub enum StatusRequestKind {
     Initial,
     Latest,
@@ -21,9 +21,9 @@ impl Default for StatusRequestKind {
 }
 
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct GetEntryOptions {
-    status_request: StatusRequestKind,
+    pub status_request: StatusRequestKind,
 }
 
 impl Default for GetEntryOptions {

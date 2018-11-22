@@ -36,7 +36,6 @@ impl ContentAddressableStorage for FilesystemStorage {
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        println!("FilesystemStorage.contains({}) ?", address);
         let response = self
             .actor
             .block_on_ask(Protocol::CasContains(address.clone()))?;

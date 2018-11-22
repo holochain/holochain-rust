@@ -71,7 +71,7 @@ impl FilesystemStorageActor {
 
     /// filesystem CAS contains. NOT thread safe.
     fn unthreadable_contains(&self, address: &Address) -> Result<bool, HolochainError> {
-       Ok(Path::new(&self.address_to_path(address)).is_file())
+        Ok(Path::new(&self.address_to_path(address)).is_file())
     }
 
     /// filesystem CAS fetch. NOT thread safe.

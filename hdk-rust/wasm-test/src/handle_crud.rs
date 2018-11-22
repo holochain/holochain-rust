@@ -165,6 +165,10 @@ pub fn handle_remove_entry_ok() -> JsonString {
     hdk::debug("**** Get it should fail").ok();
     let res = hdk::get_entry(addr_v1.clone());
     assert_eq!(res.unwrap(), None);
+    // Get initial should work
+    hdk::debug("**** Get initial should work").ok();
+    let res = hdk::get_entry_initial(addr_v1.clone());
+    assert_eq!(res.unwrap(), Some(entry_v1));
     // Delete it again should fail
     hdk::debug("**** Delete it again should fail").ok();
     let res = hdk::remove_entry(addr_v1.clone());
@@ -211,6 +215,10 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     hdk::debug("**** get v1 should fail").ok();
     let res = hdk::get_entry(addr_v1.clone());
     assert_eq!(res.unwrap(), None);
+    // Get initial should work
+    hdk::debug("**** get initial should work").ok();
+    let res = hdk::get_entry_initial(addr_v1.clone());
+    assert_eq!(res.unwrap(), Some(entry_v1.clone()));
     // Delete v2 again should fail
     hdk::debug("**** delete v2 again should fail").ok();
     let res = hdk::remove_entry(addr_v2.clone());

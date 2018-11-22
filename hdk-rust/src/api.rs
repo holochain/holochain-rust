@@ -443,8 +443,9 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     }
 }
 
-/// Retrieves an entry from the local chain or the DHT, by looking it up using
+/// Retrieves latest version of entry from the local chain or the DHT, by looking it up using
 /// its address.
+/// Returns None if no entry exists at the specified or if its crud-status is not LIVE.
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -477,16 +478,24 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(Some(entry))
 }
 
+/// Returns the Entry at the exact address whatever its crud-status.
+/// Returns None if no entry exists at the specified.
 pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
     if entry_result.entries.len() == 0 {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
+    if entry_result.crud_status.iter().next().unwrap() == &CrudStatus::LIVE {
+        return Ok(None);
+    }
     let entry = entry_result.entries.iter().next().unwrap().deserialize();
     Ok(Some(entry))
 }
 
+/// Return a GetEntryResult filled with all the versions of the entry from specified address to
+/// latest.
+/// Returns None if no entry exists at the specified.
 pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResult>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
     if entry_result.entries.len() == 0 {

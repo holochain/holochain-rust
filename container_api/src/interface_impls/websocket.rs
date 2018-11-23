@@ -1,7 +1,7 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use Holochain;
 
-use jsonrpc::JsonRpc;
+use jsonrpc::JsonRpcRequest;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,
@@ -29,12 +29,9 @@ impl Interface for WebsocketInterface {
             // must clone the Arc as we move from outer FnMut to inner FnMut
             let dispatcher = dispatcher.clone();
             move |msg| match msg {
-                Message::Text(s) => match JsonRpc::try_from(s) {
+                Message::Text(s) => match JsonRpcRequest::try_from(s) {
                     Ok(ref rpc) => {
-                        let response: JsonString = match dispatcher.dispatch_rpc(rpc) {
-                            Ok(payload) => payload.clone(),
-                            Err(err) => mk_err(&err.to_string()).clone(),
-                        };
+                        let response: JsonString = dispatcher.dispatch_rpc(rpc);
                         out.send(Message::Text(response.into()))
                     }
                     Err(err) => out.send(Message::Text(mk_err(&err).to_string())),

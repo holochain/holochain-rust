@@ -1,7 +1,7 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use Holochain;
 
-use jsonrpc::JsonRpc;
+use jsonrpc::JsonRpcRequest;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,

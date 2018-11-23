@@ -27,7 +27,7 @@ use toml;
 /// References between structs (instance configs pointing to
 /// the agent and DNA to be instantiated) are implemented
 /// via string IDs.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
@@ -118,7 +118,7 @@ impl Configuration {
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct AgentConfiguration {
     pub id: String,
     pub key_file: String,
@@ -133,7 +133,7 @@ impl From<AgentConfiguration> for Agent {
 
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct DNAConfiguration {
     pub id: String,
     pub file: String,
@@ -152,7 +152,7 @@ impl TryFrom<DNAConfiguration> for Dna {
 
 /// An instance combines a DNA with an agent.
 /// Each instance has its own storage and logger configuration.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
@@ -164,7 +164,7 @@ pub struct InstanceConfiguration {
 /// There might be different kinds of loggers in the future.
 /// Currently there is no logger at all.
 /// TODO: make this an enum when it's actually in use
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     pub logger_type: String,
@@ -178,7 +178,7 @@ pub struct LoggerConfiguration {
 /// * file
 ///
 /// Projected are various DB adapters.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(tag = "type")]
 pub enum StorageConfiguration {
     #[serde(rename = "memory")]
@@ -198,7 +198,7 @@ pub enum StorageConfiguration {
 /// Every interface lists the instances that are made available here.
 /// An admin flag will enable container functions for programmatically changing the configuration
 /// (i.e. installing apps)
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub driver: InterfaceDriver,
@@ -207,7 +207,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(tag = "type")]
 pub enum InterfaceDriver {
     #[serde(rename = "websocket")]
@@ -220,14 +220,14 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.
 /// It is basically an internal interface.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct Bridge {
     pub caller_id: String,
     pub callee_id: String,

@@ -21,7 +21,7 @@ use std::{
 use config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration};
 use interface::{self, DispatchRpc, InstanceMap, Interface, RpcDispatcher};
 use interface_impls;
-use jsonrpc::JsonRpc;
+use jsonrpc::JsonRpcRequest;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -178,7 +178,7 @@ impl Container {
             .filter(|(id, _)| instance_ids.contains(&id))
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
-        RpcDispatcher::new(instance_subset)
+        RpcDispatcher::new(&self.config, instance_subset)
     }
 
     fn spawn_interface_thread(

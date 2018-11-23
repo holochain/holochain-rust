@@ -2,7 +2,6 @@ max_width = 100
 hard_tabs = false
 tab_spaces = 4
 newline_style = "Unix"
-use_small_heuristics = "Default"
 indent_style = "Block"
 wrap_comments = false
 comment_width = 80

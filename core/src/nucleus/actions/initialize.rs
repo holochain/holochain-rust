@@ -1,11 +1,11 @@
 extern crate futures;
-use action::{Action, ActionWrapper};
-use agent::actions::commit::commit_entry;
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::agent::actions::commit::commit_entry;
+use crate::context::Context;
 use futures::{executor::block_on, future, Async, Future};
 use holochain_core_types::{dna::Dna, entry::ToEntry};
-use instance::dispatch_action_and_wait;
-use nucleus::{
+use crate::instance::dispatch_action_and_wait;
+use crate::nucleus::{
     ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
     state::NucleusStatus,
 };

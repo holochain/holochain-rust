@@ -4,15 +4,15 @@ pub mod actions;
 pub mod ribosome;
 pub mod state;
 
-use action::{Action, ActionWrapper, NucleusReduceFn};
-use context::Context;
+use crate::action::{Action, ActionWrapper, NucleusReduceFn};
+use crate::context::Context;
 use holochain_core_types::{
     dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna},
     error::{DnaError, HcResult, HolochainError},
     json::JsonString,
 };
-use instance::{dispatch_action_with_observer, Observer};
-use nucleus::{
+use crate::instance::{dispatch_action_with_observer, Observer};
+use crate::nucleus::{
     ribosome::api::call::reduce_call,
     state::{NucleusState, NucleusStatus},
 };
@@ -430,13 +430,13 @@ fn get_capability_with_zome_call(
 pub mod tests {
     extern crate test_utils;
     use super::*;
-    use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
+    use crate::action::{tests::test_action_wrapper_rzfr, ActionWrapper};
     use holochain_core_types::dna::Dna;
-    use instance::{
+    use crate::instance::{
         tests::{test_context, test_context_with_channels, test_instance},
         Instance,
     };
-    use nucleus::state::tests::test_nucleus_state;
+    use crate::nucleus::state::tests::test_nucleus_state;
     use std::sync::Arc;
 
     use holochain_core_types::json::{JsonString, RawString};

@@ -1,5 +1,5 @@
 extern crate serde_json;
-use context::Context;
+use crate::context::Context;
 use holochain_core_types::{
     dna::wasm::DnaWasm,
     entry::{entry_type::EntryType, Entry},
@@ -7,7 +7,7 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
-use nucleus::{
+use crate::nucleus::{
     ribosome::{
         self,
         callback::{get_dna, get_wasm, CallbackResult},

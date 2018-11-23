@@ -1,6 +1,6 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
-use error::HolochainError;
-use json::JsonString;
+use crate::error::HolochainError;
+use crate::json::JsonString;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 

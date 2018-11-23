@@ -1,6 +1,6 @@
-use action::ActionWrapper;
-use context::Context;
-use state::State;
+use crate::action::ActionWrapper;
+use crate::context::Context;
+use crate::state::State;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,12 +284,12 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::{
+    use crate::action::{tests::test_action_wrapper_get, Action, ActionWrapper};
+    use crate::agent::{
         chain_store::ChainStore,
         state::{ActionResponse, AgentState},
     };
-    use context::Context;
+    use crate::context::Context;
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
@@ -302,13 +302,13 @@ pub mod tests {
     };
     use holochain_net::p2p_network::P2pNetwork;
 
-    use logger::Logger;
-    use nucleus::{
+    use crate::logger::Logger;
+    use crate::nucleus::{
         actions::initialize::initialize_application,
         ribosome::{callback::Callback, Defn},
     };
-    use persister::SimplePersister;
-    use state::State;
+    use crate::persister::SimplePersister;
+    use crate::state::State;
 
     use std::{
         sync::{
@@ -640,7 +640,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
@@ -651,14 +651,14 @@ pub mod tests {
         // the initial state is not intialized
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::Initializing
+            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 

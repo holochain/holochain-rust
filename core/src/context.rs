@@ -1,13 +1,13 @@
-use action::ActionWrapper;
+use crate::action::ActionWrapper;
 use holochain_core_types::{
     agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_network::P2pNetwork;
-use instance::Observer;
-use logger::Logger;
-use persister::Persister;
-use state::State;
+use crate::instance::Observer;
+use crate::logger::Logger;
+use crate::persister::Persister;
+use crate::state::State;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
@@ -117,12 +117,12 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use context::make_mock_net;
+    use crate::context::make_mock_net;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::Agent;
-    use instance::tests::test_logger;
-    use persister::SimplePersister;
-    use state::State;
+    use crate::instance::tests::test_logger;
+    use crate::persister::SimplePersister;
+    use crate::state::State;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]

@@ -60,7 +60,7 @@
 //!
 //!```
 
-use error::{HolochainInstanceError, HolochainResult};
+use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,

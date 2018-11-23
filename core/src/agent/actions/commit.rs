@@ -1,10 +1,10 @@
 extern crate futures;
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::agent::state::ActionResponse;
+use crate::context::Context;
 use futures::Future;
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
-use instance::dispatch_action;
+use crate::instance::dispatch_action;
 use std::sync::{mpsc::SyncSender, Arc};
 
 /// Commit Action Creator

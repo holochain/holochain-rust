@@ -1,5 +1,5 @@
 extern crate serde_json;
-use context::Context;
+use crate::context::Context;
 use futures::{future, Future};
 use holochain_core_types::{
     cas::content::Address,
@@ -38,7 +38,7 @@ pub fn get_entry(
 pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-    use instance::tests::test_context_with_state;
+    use crate::instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {

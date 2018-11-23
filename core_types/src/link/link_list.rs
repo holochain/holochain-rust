@@ -1,7 +1,7 @@
-use entry::{entry_type::EntryType, Entry, ToEntry};
-use error::error::HolochainError;
-use json::JsonString;
-use link::Link;
+use crate::entry::{entry_type::EntryType, Entry, ToEntry};
+use crate::error::error::HolochainError;
+use crate::json::JsonString;
+use crate::link::Link;
 use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------

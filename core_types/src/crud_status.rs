@@ -1,6 +1,6 @@
-use cas::content::{AddressableContent, Content};
-use error::error::HolochainError;
-use json::JsonString;
+use crate::cas::content::{AddressableContent, Content};
+use crate::error::error::HolochainError;
+use crate::json::JsonString;
 use std::convert::TryInto;
 
 // @TODO are these the correct key names?
@@ -70,15 +70,15 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use cas::{
+    use crate::cas::{
         content::{
             Address, AddressableContent, AddressableContentTestSuite, Content,
             ExampleAddressableContent,
         },
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
-    use eav::eav_round_trip_test_runner;
-    use json::{JsonString, RawString};
+    use crate::eav::eav_round_trip_test_runner;
+    use crate::json::{JsonString, RawString};
 
     #[test]
     /// test the CrudStatus bit flags as ints

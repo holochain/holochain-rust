@@ -1,8 +1,8 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use agent;
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::agent;
+use crate::context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
@@ -11,7 +11,7 @@ use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use nucleus::ribosome::callback::{
+use crate::nucleus::ribosome::callback::{
     validation_package::get_validation_package_definition, CallbackResult,
 };
 use snowflake;
@@ -194,7 +194,7 @@ impl Future for ValidationPackageFuture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nucleus::actions::tests::*;
+    use crate::nucleus::actions::tests::*;
 
     use futures::executor::block_on;
     use holochain_core_types::validation::ValidationPackage;

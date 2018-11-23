@@ -1,17 +1,17 @@
-use action::ActionWrapper;
-use agent::{
+use crate::action::ActionWrapper;
+use crate::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use context::Context;
-use dht::dht_store::DhtStore;
+use crate::context::Context;
+use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
     entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::{HcResult, HolochainError},
 };
-use nucleus::state::NucleusState;
+use crate::nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
     convert::TryInto,
@@ -87,17 +87,17 @@ impl State {
 
     pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
-            nucleus: ::nucleus::reduce(
+            nucleus: crate::nucleus::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.nucleus),
                 &action_wrapper,
             ),
-            agent: ::agent::state::reduce(
+            agent: crate::agent::state::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.agent),
                 &action_wrapper,
             ),
-            dht: ::dht::dht_reducers::reduce(
+            dht: crate::dht::dht_reducers::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.dht),
                 &action_wrapper,

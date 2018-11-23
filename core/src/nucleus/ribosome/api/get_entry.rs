@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
-use nucleus::{
+use crate::nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
@@ -49,8 +49,8 @@ mod tests {
         error::ZomeApiInternalResult,
         json::JsonString,
     };
-    use instance::tests::{test_context_and_logger, test_instance};
-    use nucleus::{
+    use crate::instance::tests::{test_context_and_logger, test_instance};
+    use crate::nucleus::{
         ribosome::{
             self,
             api::{

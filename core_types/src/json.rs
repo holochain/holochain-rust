@@ -1,4 +1,4 @@
-use error::{HcResult, HolochainError};
+use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 use std::{
@@ -212,8 +212,8 @@ impl TryFrom<JsonString> for RawString {
 
 #[cfg(test)]
 pub mod tests {
-    use error::HolochainError;
-    use json::{JsonString, RawString};
+    use crate::error::HolochainError;
+    use crate::json::{JsonString, RawString};
     use serde_json;
     use std::convert::TryFrom;
 

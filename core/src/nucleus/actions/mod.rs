@@ -5,8 +5,8 @@ pub mod validate;
 
 #[cfg(test)]
 pub mod tests {
-    use agent::actions::commit::commit_entry;
-    use context::Context;
+    use crate::agent::actions::commit::commit_entry;
+    use crate::context::Context;
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -14,7 +14,7 @@ pub mod tests {
         dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
         entry::{entry_type::EntryType, Entry},
     };
-    use instance::{tests::test_instance_and_context, Instance};
+    use crate::instance::{tests::test_instance_and_context, Instance};
     use std::sync::Arc;
     use test_utils::*;
 

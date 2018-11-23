@@ -1,10 +1,10 @@
-use context::Context;
+use crate::context::Context;
 use holochain_core_types::{
     error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     json::JsonString,
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
-use nucleus::{
+use crate::nucleus::{
     ribosome::{
         api::{ZomeApiFunction, ZomeApiResult},
         memory::SinglePageManager,

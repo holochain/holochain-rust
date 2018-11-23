@@ -1,9 +1,9 @@
-use action::{Action, ActionWrapper};
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::context::Context;
 use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use instance::RECV_DEFAULT_TIMEOUT_MS;
-use nucleus::{
+use crate::instance::RECV_DEFAULT_TIMEOUT_MS;
+use crate::nucleus::{
     get_capability_with_zome_call, launch_zome_fn_call,
     ribosome::{api::ZomeApiResult, Runtime},
     state::NucleusState,
@@ -54,11 +54,11 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
     let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
+    crate::instance::dispatch_action_with_observer(
         &runtime.context.action_channel,
         &runtime.context.observer_channel,
         action_wrapper.clone(),
-        move |state: &::state::State| {
+        move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let maybe_result = state.nucleus().zome_call_result(&zome_call);
             match maybe_result {
@@ -161,7 +161,7 @@ pub mod tests {
     extern crate wabt;
 
     use self::tempfile::tempdir;
-    use context::Context;
+    use crate::context::Context;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -171,11 +171,11 @@ pub mod tests {
     };
     use holochain_net::p2p_network::P2pNetwork;
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-    use instance::{
+    use crate::instance::{
         tests::{test_instance, TestLogger},
         Observer, RECV_DEFAULT_TIMEOUT_MS,
     };
-    use nucleus::ribosome::{
+    use crate::nucleus::ribosome::{
         api::{
             call::{Action, ActionWrapper, Membrane, ZomeFnCall},
             tests::{
@@ -186,7 +186,7 @@ pub mod tests {
         },
         Defn,
     };
-    use persister::SimplePersister;
+    use crate::persister::SimplePersister;
     use serde_json;
     use std::sync::{
         mpsc::{channel, RecvTimeoutError},
@@ -267,7 +267,7 @@ pub mod tests {
         // let instance = Instance::new();
         let instance = test_instance(dna).expect("Could not initialize test instance");
         let (sender, receiver) = channel();
-        let closure = move |state: &::state::State| {
+        let closure = move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let opt_res = state.nucleus().zome_call_result(&zome_call);
             match opt_res {

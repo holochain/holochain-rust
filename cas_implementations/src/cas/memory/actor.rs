@@ -1,4 +1,4 @@
-use actor::{Protocol, SYS};
+use crate::actor::{Protocol, SYS};
 use holochain_core_types::{
     cas::content::{Address, Content},
     error::HolochainError,

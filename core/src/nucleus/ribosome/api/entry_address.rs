@@ -4,7 +4,7 @@ use holochain_core_types::{
     dna::Dna,
     entry::{entry_type::EntryType, Entry, SerializedEntry},
 };
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
 

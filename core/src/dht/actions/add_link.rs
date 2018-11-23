@@ -1,10 +1,10 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::context::Context;
 use futures::{Async, Future};
 use holochain_core_types::{error::HolochainError, link::Link};
-use instance::dispatch_action;
+use crate::instance::dispatch_action;
 use std::sync::Arc;
 
 /// AddLink Action Creator
@@ -58,7 +58,7 @@ impl Future for AddLinkFuture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nucleus;
+    use crate::nucleus;
 
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};

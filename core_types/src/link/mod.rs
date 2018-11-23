@@ -2,9 +2,9 @@ pub mod link_add;
 pub mod link_list;
 pub mod link_remove;
 
-use cas::content::Address;
-use error::HolochainError;
-use json::JsonString;
+use crate::cas::content::Address;
+use crate::error::HolochainError;
+use crate::json::JsonString;
 
 type LinkTag = String;
 
@@ -48,9 +48,9 @@ pub enum LinkActionKind {
 #[cfg(test)]
 pub mod tests {
 
-    use cas::content::AddressableContent;
-    use entry::{test_entry_a, test_entry_b};
-    use link::{Link, LinkActionKind, LinkTag};
+    use crate::cas::content::AddressableContent;
+    use crate::entry::{test_entry_a, test_entry_b};
+    use crate::link::{Link, LinkActionKind, LinkTag};
 
     pub fn example_link_tag() -> LinkTag {
         LinkTag::from("foo-tag")

@@ -4,13 +4,13 @@
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
-    use action::{Action, ActionWrapper};
+    use crate::action::{Action, ActionWrapper};
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::{entry_type::EntryType, ToEntry},
         link::{link_list::LinkListEntry, Link},
     };
-    use instance::{tests::test_context, Instance, Observer};
+    use crate::instance::{tests::test_context, Instance, Observer};
 
     use std::sync::mpsc::channel;
 

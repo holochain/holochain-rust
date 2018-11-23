@@ -1,7 +1,7 @@
-use cas::storage::ContentAddressableStorage;
-use error::error::HolochainError;
-use hash::HashString;
-use json::JsonString;
+use crate::cas::storage::ContentAddressableStorage;
+use crate::error::error::HolochainError;
+use crate::hash::HashString;
+use crate::json::JsonString;
 use multihash::Hash;
 use std::fmt::{Debug, Write};
 
@@ -164,11 +164,11 @@ impl AddressableContentTestSuite {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{
+    use crate::cas::content::{
         Address, AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
         OtherExampleAddressableContent,
     };
-    use json::{JsonString, RawString};
+    use crate::json::{JsonString, RawString};
 
     #[test]
     /// test the first example

@@ -1,5 +1,5 @@
-use agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS};
-use context::Context;
+use crate::agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS};
+use crate::context::Context;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -7,7 +7,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use state::State;
+use crate::state::State;
 use std::{
     convert::TryFrom,
     sync::{Arc, RwLock},
@@ -65,8 +65,8 @@ mod tests {
 
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use instance::tests::test_context_with_agent_state;
-    use persister::{Persister, SimplePersister};
+    use crate::instance::tests::test_context_with_agent_state;
+    use crate::persister::{Persister, SimplePersister};
     use std::fs::File;
 
     #[test]

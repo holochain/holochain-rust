@@ -1,9 +1,9 @@
 extern crate serde_json;
-use context::Context;
+use crate::context::Context;
 use holochain_core_types::{
     entry::entry_type::EntryType, error::HolochainError, validation::ValidationPackageDefinition,
 };
-use nucleus::{
+use crate::nucleus::{
     ribosome::{
         self,
         callback::{get_dna, get_wasm, CallbackResult},

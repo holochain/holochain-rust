@@ -1,4 +1,4 @@
-use agent::actions::commit::*;
+use crate::agent::actions::commit::*;
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
@@ -7,7 +7,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use nucleus::{
+use crate::nucleus::{
     actions::{build_validation_package::*, validate::*},
     ribosome::{api::ZomeApiResult, Runtime},
 };
@@ -81,7 +81,7 @@ pub mod tests {
         error::ZomeApiInternalResult,
         json::JsonString,
     };
-    use nucleus::ribosome::{
+    use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };

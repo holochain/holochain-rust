@@ -2,7 +2,7 @@ use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
     json::JsonString,
 };
-use memory_allocation::{
+use crate::memory_allocation::{
     decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
 };
 use serde::Deserialize;

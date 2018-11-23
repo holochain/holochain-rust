@@ -3,7 +3,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
@@ -56,7 +56,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 pub mod tests {
     use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-    use nucleus::ribosome::{
+    use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };

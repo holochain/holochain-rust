@@ -1,7 +1,7 @@
 use self::HolochainError::*;
-use error::{DnaError, RibosomeErrorCode};
+use crate::error::{DnaError, RibosomeErrorCode};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::*;
+use crate::json::*;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,

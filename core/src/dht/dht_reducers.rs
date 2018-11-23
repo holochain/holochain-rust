@@ -1,8 +1,8 @@
 //! all DHT reducers
 
-use action::{Action, ActionWrapper};
-use context::Context;
-use dht::dht_store::DhtStore;
+use crate::action::{Action, ActionWrapper};
+use crate::context::Context;
+use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
     error::HolochainError,
@@ -214,8 +214,8 @@ pub(crate) fn reduce_get_links(
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
-    use dht::{
+    use crate::action::{Action, ActionWrapper};
+    use crate::dht::{
         dht_reducers::{commit_sys_entry, reduce},
         dht_store::DhtStore,
     };
@@ -224,8 +224,8 @@ pub mod tests {
         entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
         link::Link,
     };
-    use instance::tests::test_context;
-    use state::test_store;
+    use crate::instance::tests::test_context;
+    use crate::state::test_store;
     use std::sync::{Arc, RwLock};
 
     #[test]

@@ -2,8 +2,8 @@
 //! It allows us to easily mock it out for unit tests
 //! as well as manage context with lazy_static!
 
-use context;
-use errors::*;
+use crate::context;
+use crate::errors::*;
 use std::sync::mpsc;
 use zmq;
 

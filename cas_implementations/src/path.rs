@@ -22,7 +22,7 @@ pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
 pub mod tests {
     use super::create_path_if_not_exists;
     use holochain_core_types::error::HolochainError;
-    use path::storage_path;
+    use crate::path::storage_path;
     use std::path::{Path, MAIN_SEPARATOR};
     extern crate tempfile;
     use self::tempfile::tempdir;

@@ -1,7 +1,7 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use context::Context;
+use crate::action::{Action, ActionWrapper};
+use crate::context::Context;
 use futures::{future, Async, Future};
 use holochain_core_types::{
     cas::content::AddressableContent,
@@ -10,7 +10,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::ValidationData,
 };
-use nucleus::ribosome::callback::{self, CallbackResult};
+use crate::nucleus::ribosome::callback::{self, CallbackResult};
 use snowflake;
 use std::{sync::Arc, thread};
 

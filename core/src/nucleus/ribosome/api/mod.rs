@@ -12,7 +12,7 @@ pub mod link_entries;
 pub mod query;
 
 use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
-use nucleus::ribosome::{
+use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
@@ -170,9 +170,9 @@ pub mod tests {
     use holochain_core_types::json::JsonString;
     extern crate test_utils;
     use super::ZomeApiFunction;
-    use context::Context;
-    use instance::{tests::test_instance_and_context, Instance};
-    use nucleus::{
+    use crate::context::Context;
+    use crate::instance::{tests::test_instance_and_context, Instance};
+    use crate::nucleus::{
         ribosome::{self, Defn},
         ZomeFnCall,
     };

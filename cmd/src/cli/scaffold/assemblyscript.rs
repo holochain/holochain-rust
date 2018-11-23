@@ -1,12 +1,12 @@
-use cli::{package, scaffold::Scaffold};
-use config_files::Build;
-use error::DefaultResult;
+use crate::cli::{package, scaffold::Scaffold};
+use crate::config_files::Build;
+use crate::error::DefaultResult;
 use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::Path,
 };
-use util;
+use crate::util;
 
 pub const TSCONFIG_FILE_NAME: &str = "tsconfig.json";
 pub const TYPESCRIPT_FILE_NAME: &str = "index.ts";

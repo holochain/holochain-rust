@@ -1,6 +1,6 @@
-use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::chain_store::ChainStore;
-use context::Context;
+use crate::action::{Action, ActionWrapper, AgentReduceFn};
+use crate::agent::chain_store::ChainStore;
+use crate::context::Context;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
@@ -12,7 +12,7 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use state::State;
+use crate::state::State;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -252,8 +252,8 @@ pub mod tests {
     use super::{
         reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
     };
-    use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
+    use crate::action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
+    use crate::agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
@@ -261,7 +261,7 @@ pub mod tests {
         error::HolochainError,
         json::JsonString,
     };
-    use instance::tests::test_context;
+    use crate::instance::tests::test_context;
     use serde_json;
     use std::{collections::HashMap, sync::Arc};
 

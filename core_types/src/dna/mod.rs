@@ -26,10 +26,10 @@
 pub mod wasm;
 pub mod zome;
 
-use dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
-use entry::{entry_type::EntryType, Entry, ToEntry};
-use error::{DnaError, HolochainError};
-use json::JsonString;
+use crate::dna::zome::{capabilities::Capability, entry_types::EntryTypeDef};
+use crate::entry::{entry_type::EntryType, Entry, ToEntry};
+use crate::error::{DnaError, HolochainError};
+use crate::json::JsonString;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,
@@ -238,7 +238,7 @@ impl ToEntry for Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
-    use dna::zome::tests::test_zome;
+    use crate::dna::zome::tests::test_zome;
     use std::convert::TryFrom;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";

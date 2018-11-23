@@ -2,7 +2,7 @@
 //! Also contains the functions declarations of the external functions provided by the Ribosome.
 
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
-use init_globals::init_globals;
+use crate::init_globals::init_globals;
 
 // Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;

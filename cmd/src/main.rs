@@ -24,7 +24,7 @@ mod config_files;
 mod error;
 mod util;
 
-use error::{HolochainError, HolochainResult};
+use crate::error::{HolochainError, HolochainResult};
 use std::path::PathBuf;
 use structopt::StructOpt;
 

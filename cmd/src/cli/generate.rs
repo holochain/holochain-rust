@@ -1,14 +1,14 @@
-use cli::{
+use crate::cli::{
     package::CODE_DIR_NAME,
     scaffold::{self, Scaffold},
 };
-use error::DefaultResult;
+use crate::error::DefaultResult;
 use serde_json;
 use std::{
     fs::{self, File},
     path::PathBuf,
 };
-use util;
+use crate::util;
 
 pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
 

@@ -1,10 +1,10 @@
-use cli::{
+use crate::cli::{
     package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
     test::{DIST_DIR_NAME, TEST_DIR_NAME},
 };
 use colored::*;
-use config_files::App as AppConfig;
-use error::DefaultResult;
+use crate::config_files::App as AppConfig;
+use crate::error::DefaultResult;
 use serde_json;
 use std::{
     fs::{self, File, OpenOptions},

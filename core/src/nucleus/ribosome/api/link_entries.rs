@@ -1,7 +1,7 @@
-use dht::actions::add_link::*;
+use crate::dht::actions::add_link::*;
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -32,7 +32,7 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use agent::actions::commit::commit_entry;
+    use crate::agent::actions::commit::commit_entry;
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -41,8 +41,8 @@ pub mod tests {
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
-    use instance::tests::{test_context_and_logger, test_instance};
-    use nucleus::ribosome::{
+    use crate::instance::tests::{test_context_and_logger, test_instance};
+    use crate::nucleus::ribosome::{
         api::{tests::*, ZomeApiFunction},
         Defn,
     };

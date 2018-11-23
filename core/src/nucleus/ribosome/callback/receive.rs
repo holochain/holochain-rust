@@ -1,6 +1,6 @@
 use super::call;
-use context::Context;
-use nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
+use crate::context::Context;
+use crate::nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
 use std::sync::Arc;
 
 pub fn receive(
@@ -16,8 +16,8 @@ pub fn receive(
 pub mod tests {
 
     use super::receive;
-    use instance::tests::test_context;
-    use nucleus::ribosome::{
+    use crate::instance::tests::test_context;
+    use crate::nucleus::ribosome::{
         callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
         Defn,
     };

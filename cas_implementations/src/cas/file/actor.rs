@@ -116,7 +116,7 @@ impl Actor for FilesystemStorageActor {
 #[cfg(test)]
 pub mod tests {
 
-    use cas::file::actor::actor_id;
+    use crate::cas::file::actor::actor_id;
 
     #[test]
     fn path_to_actor_id_test() {

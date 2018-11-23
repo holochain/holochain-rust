@@ -1,5 +1,5 @@
-use entry_definition::ValidatingEntryType;
-use globals::G_MEM_STACK;
+use crate::entry_definition::ValidatingEntryType;
+use crate::globals::G_MEM_STACK;
 use holochain_core_types::dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
@@ -41,7 +41,7 @@ extern "C" {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: u32,
 ) -> u32 {
-    ::global_fns::init_global_memory(encoded_allocation_of_input);
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -63,14 +63,14 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
-            ::global_fns::store_and_return_output(package)
+            crate::global_fns::store_and_return_output(package)
         }
     }
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> u32 {
-    ::global_fns::init_global_memory(encoded_allocation_of_input);
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -80,7 +80,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     // Deserialize input
     let maybe_name = load_json(encoded_allocation_of_input);
     if let Err(hc_err) = maybe_name {
-        return ::global_fns::store_and_return_output(hc_err);
+        return crate::global_fns::store_and_return_output(hc_err);
     }
     let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
 
@@ -98,7 +98,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
             match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => crate::global_fns::store_and_return_output(fail_string),
             }
         }
     }
@@ -106,7 +106,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
-    ::global_fns::init_global_memory(encoded_allocation_of_input);
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {

@@ -1,5 +1,5 @@
 use super::NetResult;
-use protocol::Protocol;
+use crate::protocol::Protocol;
 
 /// closure for getting Protocol messages from the p2p abstraction system
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;

@@ -1,9 +1,9 @@
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
     cas::content::Address, entry::entry_type::EntryType, hash::HashString, json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
@@ -54,12 +54,12 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
-    use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
+    use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
 
     #[test]

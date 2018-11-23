@@ -1,13 +1,15 @@
-use crate::cli::{package, scaffold::Scaffold};
-use crate::config_files::Build;
-use crate::error::DefaultResult;
+use crate::{
+    cli::{package, scaffold::Scaffold},
+    config_files::Build,
+    error::DefaultResult,
+    util,
+};
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
 };
 use toml::{self, value::Value};
-use crate::util;
 
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
 pub const LIB_RS_PATH: &str = "src/lib.rs";

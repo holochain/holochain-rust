@@ -1,6 +1,6 @@
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -45,8 +45,15 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use crate::agent::actions::commit::commit_entry;
-    use crate::dht::actions::add_link::add_link;
+    use crate::{
+        agent::actions::commit::commit_entry,
+        dht::actions::add_link::add_link,
+        instance::tests::{test_context_and_logger, test_instance},
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            Defn,
+        },
+    };
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
@@ -55,11 +62,6 @@ pub mod tests {
         link::Link,
     };
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
-    use crate::instance::tests::{test_context_and_logger, test_instance};
-    use crate::nucleus::ribosome::{
-        api::{tests::*, ZomeApiFunction},
-        Defn,
-    };
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -98,7 +100,8 @@ pub mod tests {
                 entry,
                 &initialized_context.action_channel.clone(),
                 &initialized_context,
-            )).expect("Could not commit entry for testing");
+            ))
+            .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
 

@@ -1,12 +1,14 @@
 pub mod entry_type;
 
-use crate::cas::content::{Address, AddressableContent, Content};
-use crate::entry::entry_type::{
-    test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
-    EntryType,
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::entry_type::{
+        test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
+        EntryType,
+    },
+    error::{error::HcResult, HolochainError},
+    json::{JsonString, RawString, *},
 };
-use crate::error::{error::HcResult, HolochainError};
-use crate::json::{JsonString, RawString, *};
 use snowflake;
 use std::{
     convert::{TryFrom, TryInto},
@@ -247,11 +249,13 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::cas::{
-        content::{AddressableContent, AddressableContentTestSuite},
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    use crate::{
+        cas::{
+            content::{AddressableContent, AddressableContentTestSuite},
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        },
+        entry::{expected_entry_address, Entry},
     };
-    use crate::entry::{expected_entry_address, Entry};
 
     #[test]
     /// tests for PartialEq

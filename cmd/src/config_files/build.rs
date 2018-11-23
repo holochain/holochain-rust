@@ -1,5 +1,5 @@
 use base64;
-use crate::error::DefaultResult;
+use crate::{error::DefaultResult, util};
 use serde_json;
 use std::{
     collections::HashMap,
@@ -7,7 +7,6 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
-use crate::util;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Build {

@@ -1,17 +1,19 @@
-use crate::action::ActionWrapper;
-use crate::agent::{
-    chain_store::ChainStore,
-    state::{AgentState, AgentStateSnapshot},
+use crate::{
+    action::ActionWrapper,
+    agent::{
+        chain_store::ChainStore,
+        state::{AgentState, AgentStateSnapshot},
+    },
+    context::Context,
+    dht::dht_store::DhtStore,
+    nucleus::state::NucleusState,
 };
-use crate::context::Context;
-use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
     entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::{HcResult, HolochainError},
 };
-use crate::nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
     convert::TryInto,
@@ -66,11 +68,11 @@ impl State {
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
-                HolochainError::ErrorGeneric(
-                    "No DNA entry found in storage while creating state from agent".to_string(),
-                ),
-            )??;
+            let serialized_entry: SerializedEntry =
+                json.map(|e| e.try_into())
+                    .ok_or(HolochainError::ErrorGeneric(
+                        "No DNA entry found in storage while creating state from agent".to_string(),
+                    ))??;
             let entry: Entry = serialized_entry.into();
             Ok(Dna::from_entry(&entry))
         }

@@ -6,21 +6,23 @@ pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
-use crate::context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{
+            self,
+            callback::{genesis::genesis, receive::receive},
+            Defn,
+        },
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{
     dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
     entry::SerializedEntry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
-};
-use crate::nucleus::{
-    ribosome::{
-        self,
-        callback::{genesis::genesis, receive::receive},
-        Defn,
-    },
-    ZomeFnCall,
 };
 use num_traits::FromPrimitive;
 use serde_json;
@@ -265,8 +267,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
-    use crate::instance::{tests::test_instance, Instance};
-    use crate::nucleus::ribosome::{callback::Callback, Defn};
+    use crate::{
+        instance::{tests::test_instance, Instance},
+        nucleus::ribosome::{callback::Callback, Defn},
+    };
     use std::str::FromStr;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime

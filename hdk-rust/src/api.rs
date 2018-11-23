@@ -1,5 +1,7 @@
-use crate::error::{ZomeApiError, ZomeApiResult};
-use crate::globals::*;
+use crate::{
+    error::{ZomeApiError, ZomeApiResult},
+    globals::*,
+};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},

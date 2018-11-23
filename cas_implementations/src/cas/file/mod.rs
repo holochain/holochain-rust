@@ -1,6 +1,8 @@
 pub mod actor;
-use crate::actor::{AskSelf, Protocol};
-use crate::cas::file::actor::FilesystemStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    cas::file::actor::FilesystemStorageActor,
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},

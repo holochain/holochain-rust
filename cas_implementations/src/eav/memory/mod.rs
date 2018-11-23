@@ -1,6 +1,8 @@
 pub mod actor;
-use crate::actor::{AskSelf, Protocol};
-use crate::eav::memory::actor::EavMemoryStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    eav::memory::actor::EavMemoryStorageActor,
+};
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,

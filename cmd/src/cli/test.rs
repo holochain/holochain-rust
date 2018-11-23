@@ -1,8 +1,6 @@
-use crate::cli::package;
 use colored::*;
-use crate::error::DefaultResult;
+use crate::{cli::package, error::DefaultResult, util};
 use std::{fs, path::PathBuf};
-use crate::util;
 
 pub const TEST_DIR_NAME: &str = "test";
 pub const DIST_DIR_NAME: &str = "dist";

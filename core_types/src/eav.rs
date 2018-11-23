@@ -1,7 +1,9 @@
-use crate::cas::content::{Address, AddressableContent, Content};
-use crate::entry::{test_entry_a, test_entry_b, Entry};
-use crate::error::{HcResult, HolochainError};
-use crate::json::JsonString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{test_entry_a, test_entry_b, Entry},
+    error::{HcResult, HolochainError},
+    json::JsonString,
+};
 use objekt;
 use std::{
     collections::HashSet,
@@ -281,14 +283,16 @@ pub fn eav_round_trip_test_runner(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::cas::{
-        content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-        storage::{
-            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
+    use crate::{
+        cas::{
+            content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
+            storage::{
+                test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
+            },
         },
+        eav::EntityAttributeValue,
+        json::RawString,
     };
-    use crate::eav::EntityAttributeValue;
-    use crate::json::RawString;
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
@@ -297,13 +301,13 @@ pub mod tests {
     #[test]
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
-        let entity = ExampleAddressableContent::try_from_content(&JsonString::from(
-            RawString::from("foo"),
-        )).unwrap();
+        let entity =
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
+                .unwrap();
         let attribute = "favourite-color".to_string();
-        let value = ExampleAddressableContent::try_from_content(&JsonString::from(
-            RawString::from("blue"),
-        )).unwrap();
+        let value =
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue")))
+                .unwrap();
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

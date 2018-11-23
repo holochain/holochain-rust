@@ -11,7 +11,6 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 
-use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
@@ -22,6 +21,7 @@ use crate::nucleus::ribosome::{
     runtime::Runtime,
     Defn,
 };
+use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -170,11 +170,13 @@ pub mod tests {
     use holochain_core_types::json::JsonString;
     extern crate test_utils;
     use super::ZomeApiFunction;
-    use crate::context::Context;
-    use crate::instance::{tests::test_instance_and_context, Instance};
-    use crate::nucleus::{
-        ribosome::{self, Defn},
-        ZomeFnCall,
+    use crate::{
+        context::Context,
+        instance::{tests::test_instance_and_context, Instance},
+        nucleus::{
+            ribosome::{self, Defn},
+            ZomeFnCall,
+        },
     };
     use std::{str::FromStr, sync::Arc};
 
@@ -339,7 +341,8 @@ pub mod tests {
             wasm.clone(),
             &zome_call,
             Some(args_bytes),
-        ).expect("test should be callable")
+        )
+        .expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:

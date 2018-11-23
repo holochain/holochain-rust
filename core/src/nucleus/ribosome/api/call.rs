@@ -1,14 +1,16 @@
-use crate::action::{Action, ActionWrapper};
-use crate::context::Context;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    instance::RECV_DEFAULT_TIMEOUT_MS,
+    nucleus::{
+        get_capability_with_zome_call, launch_zome_fn_call,
+        ribosome::{api::ZomeApiResult, Runtime},
+        state::NucleusState,
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use crate::instance::RECV_DEFAULT_TIMEOUT_MS;
-use crate::nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::{api::ZomeApiResult, Runtime},
-    state::NucleusState,
-    ZomeFnCall,
-};
 use std::{
     convert::TryFrom,
     sync::{mpsc::channel, Arc},
@@ -161,7 +163,25 @@ pub mod tests {
     extern crate wabt;
 
     use self::tempfile::tempdir;
-    use crate::context::Context;
+    use crate::{
+        context::Context,
+        instance::{
+            tests::{test_instance, TestLogger},
+            Observer, RECV_DEFAULT_TIMEOUT_MS,
+        },
+        nucleus::ribosome::{
+            api::{
+                call::{Action, ActionWrapper, Membrane, ZomeFnCall},
+                tests::{
+                    test_capability, test_function_name, test_parameters,
+                    test_zome_api_function_wasm, test_zome_name,
+                },
+                ZomeApiFunction,
+            },
+            Defn,
+        },
+        persister::SimplePersister,
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -171,22 +191,6 @@ pub mod tests {
     };
     use holochain_net::p2p_network::P2pNetwork;
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-    use crate::instance::{
-        tests::{test_instance, TestLogger},
-        Observer, RECV_DEFAULT_TIMEOUT_MS,
-    };
-    use crate::nucleus::ribosome::{
-        api::{
-            call::{Action, ActionWrapper, Membrane, ZomeFnCall},
-            tests::{
-                test_capability, test_function_name, test_parameters, test_zome_api_function_wasm,
-                test_zome_name,
-            },
-            ZomeApiFunction,
-        },
-        Defn,
-    };
-    use crate::persister::SimplePersister;
     use serde_json;
     use std::sync::{
         mpsc::{channel, RecvTimeoutError},
@@ -228,8 +232,10 @@ pub mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -249,7 +255,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 make_mock_net(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 

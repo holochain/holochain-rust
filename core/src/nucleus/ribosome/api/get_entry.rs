@@ -1,9 +1,9 @@
-use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
 use crate::nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
+use futures::executor::block_on;
+use holochain_core_types::cas::content::Address;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -43,22 +43,24 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
+    use crate::{
+        instance::tests::{test_context_and_logger, test_instance},
+        nucleus::{
+            ribosome::{
+                self,
+                api::{
+                    commit::tests::test_commit_args_bytes,
+                    tests::{test_capability, test_parameters, test_zome_name},
+                },
+            },
+            ZomeFnCall,
+        },
+    };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use crate::instance::tests::{test_context_and_logger, test_instance};
-    use crate::nucleus::{
-        ribosome::{
-            self,
-            api::{
-                commit::tests::test_commit_args_bytes,
-                tests::{test_capability, test_parameters, test_zome_name},
-            },
-        },
-        ZomeFnCall,
     };
     use std::sync::Arc;
 
@@ -195,7 +197,8 @@ mod tests {
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             call_result,
@@ -218,7 +221,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(
@@ -266,7 +270,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(

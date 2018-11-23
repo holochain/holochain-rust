@@ -1,6 +1,8 @@
 use super::call;
-use crate::context::Context;
-use crate::nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult};
+use crate::{
+    context::Context,
+    nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},
+};
 use std::sync::Arc;
 
 pub fn receive(
@@ -16,10 +18,12 @@ pub fn receive(
 pub mod tests {
 
     use super::receive;
-    use crate::instance::tests::test_context;
-    use crate::nucleus::ribosome::{
-        callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
-        Defn,
+    use crate::{
+        instance::tests::test_context,
+        nucleus::ribosome::{
+            callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
+            Defn,
+        },
     };
 
     #[test]
@@ -30,7 +34,8 @@ pub mod tests {
             // anything other than Genesis is fine here
             Callback::MissingNo.as_str(),
             0,
-        ).expect("Test callback instance could not be initialized");
+        )
+        .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
         let result = receive(context, zome, &CallbackParams::Receive);

@@ -1,13 +1,11 @@
-use crate::action::ActionWrapper;
+use crate::{
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+};
 use holochain_core_types::{
     agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_network::P2pNetwork;
-use crate::instance::Observer;
-use crate::logger::Logger;
-use crate::persister::Persister;
-use crate::state::State;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
@@ -106,8 +104,10 @@ pub fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
     Arc::new(Mutex::new(res))
 }
 
@@ -117,12 +117,12 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use crate::context::make_mock_net;
+    use crate::{
+        context::make_mock_net, instance::tests::test_logger, persister::SimplePersister,
+        state::State,
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::Agent;
-    use crate::instance::tests::test_logger;
-    use crate::persister::SimplePersister;
-    use crate::state::State;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
@@ -145,7 +145,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -175,7 +176,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

@@ -1,10 +1,12 @@
-use crate::cli::{
-    package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
-    test::{DIST_DIR_NAME, TEST_DIR_NAME},
-};
 use colored::*;
-use crate::config_files::App as AppConfig;
-use crate::error::DefaultResult;
+use crate::{
+    cli::{
+        package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
+        test::{DIST_DIR_NAME, TEST_DIR_NAME},
+    },
+    config_files::App as AppConfig,
+    error::DefaultResult,
+};
 use serde_json;
 use std::{
     fs::{self, File, OpenOptions},
@@ -75,7 +77,8 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
         &TEST_DIR_NAME,
         &DEFAULT_BUNDLE_FILE_NAME,
         "README.md",
-    ].join("\n");
+    ]
+        .join("\n");
     let mut hcignore_file = File::create(path.join(&IGNORE_FILE_NAME))?;
     hcignore_file.write_all(ignores.as_bytes())?;
 

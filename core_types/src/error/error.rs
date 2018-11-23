@@ -1,7 +1,9 @@
 use self::HolochainError::*;
-use crate::error::{DnaError, RibosomeErrorCode};
+use crate::{
+    error::{DnaError, RibosomeErrorCode},
+    json::*,
+};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use crate::json::*;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -322,7 +324,8 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
-            }.to_string(),
+            }
+            .to_string(),
         );
     }
 

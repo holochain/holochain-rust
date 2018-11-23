@@ -1,8 +1,10 @@
 //! Represents an agent entry in the cas
 
-use crate::cas::content::{Address, AddressableContent, Content};
-use crate::entry::{entry_type::EntryType, Entry, ToEntry};
-use crate::json::JsonString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{entry_type::EntryType, Entry, ToEntry},
+    json::JsonString,
+};
 
 use std::convert::TryFrom;
 

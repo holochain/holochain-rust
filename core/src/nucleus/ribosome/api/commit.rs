@@ -1,4 +1,10 @@
-use crate::agent::actions::commit::*;
+use crate::{
+    agent::actions::commit::*,
+    nucleus::{
+        actions::{build_validation_package::*, validate::*},
+        ribosome::{api::ZomeApiResult, Runtime},
+    },
+};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
     cas::content::Address,
@@ -6,10 +12,6 @@ use holochain_core_types::{
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-};
-use crate::nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -75,15 +77,15 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
+    };
     use holochain_core_types::{
         cas::content::Address,
         entry::{test_entry, SerializedEntry},
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use crate::nucleus::ribosome::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
     };
 
     /// dummy commit args from standard test entry

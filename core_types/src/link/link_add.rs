@@ -1,8 +1,10 @@
-use crate::cas::content::Address;
-use crate::entry::{entry_type::EntryType, Entry, ToEntry};
-use crate::error::HolochainError;
-use crate::json::JsonString;
-use crate::link::{Link, LinkActionKind};
+use crate::{
+    cas::content::Address,
+    entry::{entry_type::EntryType, Entry, ToEntry},
+    error::HolochainError,
+    json::JsonString,
+    link::{Link, LinkActionKind},
+};
 use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
@@ -58,12 +60,14 @@ impl ToEntry for LinkAddEntry {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::cas::content::AddressableContent;
-    use crate::entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry};
-    use crate::json::JsonString;
-    use crate::link::{
-        link_add::LinkAddEntry,
-        tests::{example_link, example_link_action_kind, example_link_tag},
+    use crate::{
+        cas::content::AddressableContent,
+        entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry},
+        json::JsonString,
+        link::{
+            link_add::LinkAddEntry,
+            tests::{example_link, example_link_action_kind, example_link_tag},
+        },
     };
     use std::convert::TryFrom;
 

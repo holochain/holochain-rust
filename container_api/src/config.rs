@@ -234,7 +234,9 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use crate::config::{load_configuration, Configuration, InterfaceProtocol, StorageConfiguration};
+    use crate::config::{
+        load_configuration, Configuration, InterfaceProtocol, StorageConfiguration,
+    };
 
     #[test]
     fn test_agent_load() {

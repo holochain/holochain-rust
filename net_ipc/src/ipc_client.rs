@@ -1,7 +1,6 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
-use crate::socket::IpcSocket;
-use crate::util::get_millis;
+use crate::{socket::IpcSocket, util::get_millis};
 
 use std::{thread, time};
 
@@ -187,7 +186,8 @@ mod tests {
                 }),
                 s,
                 true,
-            ).unwrap(),
+            )
+            .unwrap(),
         );
 
         cli.tick().unwrap();

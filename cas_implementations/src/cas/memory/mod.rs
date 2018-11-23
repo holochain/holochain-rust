@@ -1,6 +1,8 @@
 mod actor;
-use crate::actor::{AskSelf, Protocol};
-use crate::cas::memory::actor::MemoryStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    cas::memory::actor::MemoryStorageActor,
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},

@@ -1,8 +1,10 @@
-use crate::cas::content::{Address, AddressableContent, Content};
-use crate::eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use crate::entry::{test_entry_unique, SerializedEntry};
-use crate::error::HolochainError;
-use crate::json::RawString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    entry::{test_entry_unique, SerializedEntry},
+    error::HolochainError,
+    json::RawString,
+};
 use objekt;
 use std::{
     collections::{HashMap, HashSet},
@@ -435,11 +437,13 @@ impl EavTestSuite {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::{test_content_addressable_storage, StorageTestSuite},
+    use crate::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::{test_content_addressable_storage, StorageTestSuite},
+        },
+        json::{JsonString, RawString},
     };
-    use crate::json::{JsonString, RawString};
 
     /// show that content of different types can round trip through the same storage
     #[test]

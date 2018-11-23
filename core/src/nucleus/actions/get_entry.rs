@@ -36,9 +36,9 @@ pub fn get_entry(
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::tests::test_context_with_state;
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-    use crate::instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {

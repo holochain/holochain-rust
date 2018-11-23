@@ -1,6 +1,4 @@
-use crate::action::ActionWrapper;
-use crate::context::Context;
-use crate::state::State;
+use crate::{action::ActionWrapper, context::Context, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,12 +282,14 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use crate::action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use crate::agent::{
-        chain_store::ChainStore,
-        state::{ActionResponse, AgentState},
+    use crate::{
+        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        agent::{
+            chain_store::ChainStore,
+            state::{ActionResponse, AgentState},
+        },
+        context::Context,
     };
-    use crate::context::Context;
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
@@ -302,13 +302,15 @@ pub mod tests {
     };
     use holochain_net::p2p_network::P2pNetwork;
 
-    use crate::logger::Logger;
-    use crate::nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+    use crate::{
+        logger::Logger,
+        nucleus::{
+            actions::initialize::initialize_application,
+            ribosome::{callback::Callback, Defn},
+        },
+        persister::SimplePersister,
+        state::State,
     };
-    use crate::persister::SimplePersister;
-    use crate::state::State;
 
     use std::{
         sync::{
@@ -346,8 +348,10 @@ pub mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -369,10 +373,12 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
                     make_mock_net(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -410,7 +416,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 make_mock_net(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 
@@ -429,7 +436,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -450,7 +458,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);

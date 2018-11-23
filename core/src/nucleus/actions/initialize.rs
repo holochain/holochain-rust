@@ -9,9 +9,12 @@ use crate::{
         state::NucleusStatus,
     },
 };
-use futures::{executor::block_on, future, Async, Future};
+use futures::{executor::block_on, future::{self, FutureObj, Future}, task::{Poll, LocalWaker}};
 use holochain_core_types::{dna::Dna, entry::ToEntry};
-use std::{sync::Arc, thread, time::*};
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc, thread, time::*
+};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -25,14 +28,14 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub fn initialize_application(
+pub fn initialize_application<'a>(
     dna: Dna,
-    context: Arc<Context>,
-) -> Box<dyn Future<Item = NucleusStatus, Error = String>> {
+    context: &'a Arc<Context>,
+) -> FutureObj<'a, Result<NucleusStatus, String>> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return Box::new(future::err(
+        return FutureObj::new(Box::new(future::err(
             "Can't trigger initialization: Nucleus status is not New".to_string(),
-        ));
+        )));
     }
 
     let context_clone = context.clone();
@@ -120,10 +123,10 @@ pub fn initialize_application(
             .expect("Action channel not usable in initialize_application()");
     });
 
-    Box::new(InitializationFuture {
+    FutureObj::new(Box::new(InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
-    })
+    }))
 }
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
@@ -133,34 +136,35 @@ pub struct InitializationFuture {
     created_at: Instant,
 }
 
+impl Unpin for InitializationFuture {}
+
 impl Future for InitializationFuture {
-    type Item = NucleusStatus;
-    type Error = String;
+    type Output = Result<NucleusStatus, String>;
 
     fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+        self: Pin<&mut Self>,
+        lw: &LocalWaker,
+    ) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
 
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
         {
-            return Err("Timeout while initializing".to_string());
+            return Poll::Ready(Err("Timeout while initializing".to_string()));
         }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
-                NucleusStatus::New => Ok(futures::Async::Pending),
-                NucleusStatus::Initializing => Ok(futures::Async::Pending),
-                NucleusStatus::Initialized => Ok(futures::Async::Ready(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Err(error.clone()),
+                NucleusStatus::New => Poll::Pending,
+                NucleusStatus::Initializing => Poll::Pending,
+                NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
+                NucleusStatus::InitializationFailed(ref error) => Poll::Ready(Err(error.clone())),
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

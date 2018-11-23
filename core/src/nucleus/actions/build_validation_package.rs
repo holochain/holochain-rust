@@ -8,7 +8,7 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
 };
-use futures::{future, Async, Future};
+use futures::{future::{self, FutureObj, Future}, task::{Poll, LocalWaker}};
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,
@@ -17,12 +17,16 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, sync::Arc, thread};
+use std::{
+    pin::{Pin, Unpin},
+    convert::TryInto,
+    sync::Arc, thread
+};
 
-pub fn build_validation_package(
+pub fn build_validation_package<'a>(
     entry: &Entry,
-    context: &Arc<Context>,
-) -> Box<dyn Future<Item = ValidationPackage, Error = HolochainError>> {
+    context: &'a Arc<Context>,
+) -> FutureObj<'a, Result<ValidationPackage, HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
 
     match context
@@ -34,10 +38,10 @@ pub fn build_validation_package(
         .get_zome_name_for_entry_type(&entry.entry_type().to_string())
     {
         None => {
-            return Box::new(future::err(HolochainError::ValidationFailed(format!(
+            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
                 String::from(entry.entry_type().to_owned())
-            ))));
+            )))));
         }
         Some(_) => {
             let id = id.clone();
@@ -119,10 +123,10 @@ pub fn build_validation_package(
         }
     };
 
-    Box::new(ValidationPackageFuture {
+    FutureObj::new(Box::new(ValidationPackageFuture {
         context: context.clone(),
         key: id,
-    })
+    }))
 }
 
 fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
@@ -166,29 +170,32 @@ pub struct ValidationPackageFuture {
     key: snowflake::ProcessUniqueId,
 }
 
+impl Unpin for ValidationPackageFuture {}
+
 impl Future for ValidationPackageFuture {
-    type Item = ValidationPackage;
-    type Error = HolochainError;
+    //type Ok = ValidationPackage;
+    //type Error = HolochainError;
+    type Output = Result<ValidationPackage, HolochainError>;
 
     fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+        self: Pin<&mut Self>,
+        lw: &LocalWaker
+    ) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_packages.get(&self.key) {
                 Some(Ok(validation_package)) => {
-                    Ok(futures::Async::Ready(validation_package.clone()))
+                    Poll::Ready(Ok(validation_package.clone()))
                 }
-                Some(Err(error)) => Err(error.clone()),
-                None => Ok(futures::Async::Pending),
+                Some(Err(error)) => Poll::Ready(Err(error.clone())),
+                None => Poll::Pending,
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

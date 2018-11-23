@@ -5,7 +5,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::callback::{self, CallbackResult},
 };
-use futures::{future, Async, Future};
+use futures::{task::{Poll, LocalWaker}, future::{self, FutureObj, Future}};
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{entry_type::EntryType, Entry},
@@ -14,19 +14,22 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 use snowflake;
-use std::{sync::Arc, thread};
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc, thread,
+};
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn validate_entry(
+pub fn validate_entry<'a>(
     entry_type: EntryType,
     entry: Entry,
     validation_data: ValidationData,
-    context: &Arc<Context>,
-) -> Box<dyn Future<Item = HashString, Error = HolochainError>> {
+    context: &'a Arc<Context>,
+) -> FutureObj<'a, Result<HashString, HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
@@ -39,10 +42,10 @@ pub fn validate_entry(
         .get_zome_name_for_entry_type(&entry_type.to_string())
     {
         None => {
-            return Box::new(future::err(HolochainError::ValidationFailed(format!(
+            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
                 entry_type.to_string(),
-            ))));;
+            )))));
         }
         Some(_) => {
             let id = id.clone();
@@ -81,10 +84,10 @@ pub fn validate_entry(
         }
     };
 
-    Box::new(ValidationFuture {
+    FutureObj::new(Box::new(ValidationFuture {
         context: context.clone(),
         key: (id, address),
-    })
+    }))
 }
 
 /// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).
@@ -94,27 +97,28 @@ pub struct ValidationFuture {
     key: (snowflake::ProcessUniqueId, HashString),
 }
 
+impl Unpin for ValidationFuture {}
+
 impl Future for ValidationFuture {
-    type Item = HashString;
-    type Error = HolochainError;
+    type Output = Result<HashString,HolochainError>;
 
     fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+        self: Pin<&mut Self>,
+        lw: &LocalWaker,
+    ) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
-                Some(Ok(())) => Ok(futures::Async::Ready(self.key.1.clone())),
-                Some(Err(e)) => Err(HolochainError::ValidationFailed(e.clone())),
-                None => Ok(futures::Async::Pending),
+                Some(Ok(())) => Poll::Ready(Ok(self.key.1.clone())),
+                Some(Err(e)) => Poll::Ready(Err(HolochainError::ValidationFailed(e.clone()))),
+                None => Poll::Pending,
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

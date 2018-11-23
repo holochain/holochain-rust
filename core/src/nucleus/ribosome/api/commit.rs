@@ -5,7 +5,7 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
-use futures::{executor::block_on, FutureExt};
+use futures::{executor::block_on, future::TryFutureExt};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},

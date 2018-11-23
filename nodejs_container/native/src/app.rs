@@ -28,7 +28,7 @@ impl Logger for NullLogger {
 
 pub struct App {
     instance: Holochain,
-    hash: String,
+    pub hash: String,
 }
 
 declare_types! {

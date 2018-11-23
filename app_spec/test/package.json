@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "json3": "*",
+    "node-pre-gyp": "^0.12.0",
     "tape": "^4.9.1"
   },
   "scripts": {

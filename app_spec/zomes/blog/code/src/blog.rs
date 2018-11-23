@@ -11,17 +11,18 @@ use hdk::{
     holochain_core_types::entry::entry_type::AppEntryType,
     AGENT_ADDRESS,
 };
+use hdk::holochain_core_types::cas::content::Address;
 
 use post::Post;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct AddressResponse {
-    address: HashString
+    address: Address
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct MultiAddressResponse {
-    addresses: Vec<HashString>
+    addresses: Vec<Address>
 }
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
@@ -104,7 +105,6 @@ pub fn handle_my_posts() -> JsonString {
     }
 }
 
-
 pub fn handle_my_posts_as_commited() -> JsonString {
     // In the current implementation of hdk::query the second parameter
     // specifies the starting index and the third parameter the maximum
@@ -117,6 +117,7 @@ pub fn handle_my_posts_as_commited() -> JsonString {
         Err(hdk_error) => hdk_error.into(),
     }
 }
+
 pub fn handle_get_post(post_address: HashString) -> JsonString {
     // get_entry returns a Result<Option<T>, ZomeApiError>
     // where T is the type that you used to commit the entry, in this case a Blog

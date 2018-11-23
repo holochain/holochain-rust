@@ -10,7 +10,6 @@ use hdk::{
     self,
     entry_definition::ValidatingEntryType,
 };
-use serde_json;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -22,7 +21,6 @@ pub struct Post {
     pub content: String,
     pub date_created: String,
 }
-
 
 /// This is what creates the full definition of our entry type.
 /// The entry! macro is wrapped in a function so that we can have the content

@@ -100,6 +100,7 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
+            None,
             &initialized_context.action_channel.clone(),
             &initialized_context,
         )).expect("Could not commit entry for testing");

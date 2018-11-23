@@ -14,10 +14,11 @@ use std::sync::{mpsc::SyncSender, Arc};
 /// Returns a future that resolves to an ActionResponse.
 pub fn commit_entry(
     entry: Entry,
+    maybe_crud_link: Option<Address>,
     action_channel: &SyncSender<ActionWrapper>,
     context: &Arc<Context>,
 ) -> CommitFuture {
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
+    let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
     dispatch_action(action_channel, action_wrapper.clone());
     CommitFuture {
         context: context.clone(),

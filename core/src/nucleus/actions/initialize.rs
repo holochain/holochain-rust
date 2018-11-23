@@ -47,6 +47,7 @@ pub fn initialize_application(
         let dna_entry = dna.to_entry();
         let dna_commit = block_on(commit_entry(
             dna_entry,
+            None,
             &context_clone.action_channel.clone(),
             &context_clone,
         ));
@@ -72,6 +73,7 @@ pub fn initialize_application(
         let agent_id_entry = context_clone.agent.to_entry();
         let agent_id_commit = block_on(commit_entry(
             agent_id_entry,
+            None,
             &context_clone.action_channel.clone(),
             &context_clone,
         ));

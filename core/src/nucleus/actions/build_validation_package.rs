@@ -54,7 +54,7 @@ pub fn build_validation_package(
                 // and just used for the validation, I don't see why it would be a problem.
                 // If it was a problem, we would have to make sure that the whole commit process
                 // (including validtion) is atomic.
-                agent::state::create_new_chain_header(&entry, &*context.state().unwrap().agent()),
+                agent::state::create_new_chain_header(&entry, &*context.state().unwrap().agent(), &None),
             );
 
             thread::spawn(move || {

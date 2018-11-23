@@ -61,6 +61,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             .and_then(|_| {
                 commit_entry(
                     entry.clone(),
+                    None,
                     &runtime.context.action_channel,
                     &runtime.context,
                 )

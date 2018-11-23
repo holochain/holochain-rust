@@ -70,7 +70,7 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(Entry),
+    Commit((Entry, Option<Address>)),
     /// GetEntry by address
     GetEntry(Address),
     ///
@@ -138,7 +138,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit((test_entry(), None)))
     }
 
     /// dummy action for a get of test_hash()

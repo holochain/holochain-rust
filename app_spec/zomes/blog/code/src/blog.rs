@@ -80,7 +80,7 @@ pub fn handle_create_post(content: String, in_reply_to: HashString) -> JsonStrin
 
             let in_reply_to = in_reply_to;
             if !in_reply_to.to_string().is_empty() {
-                if let Ok(_) = hdk::get_entry_result(in_reply_to.clone(), GetEntryOptions{}) {
+                if let Ok(_) = hdk::get_entry_result(in_reply_to.clone(), GetEntryOptions::default()) {
                     let _ = hdk::link_entries(&in_reply_to, &address, "comments");
                 }
             }

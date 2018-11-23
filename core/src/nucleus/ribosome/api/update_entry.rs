@@ -1,7 +1,7 @@
 use agent::actions::{commit::commit_entry, update_entry::update_entry};
 use futures::{executor::block_on, FutureExt};
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
     hash::HashString,
@@ -34,6 +34,14 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         }
     };
 
+    // Get Current entry Chain Header
+    let src_chain = &runtime.context.state().unwrap().agent().chain();
+    let chain_header_address = src_chain
+        .iter(&None)
+        .find(| header| header.entry_address() == &entry_args.address)
+        .map(|header| header.address().clone())
+        .expect("Modified entry should be in chain");
+
     // Create Chain Entry
     let entry = Entry::from(entry_args.new_entry.clone());
 
@@ -62,6 +70,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|_| {
                 commit_entry(
                     entry.clone(),
+                    Some(chain_header_address),
                     &runtime.context.action_channel,
                     &runtime.context,
                 )

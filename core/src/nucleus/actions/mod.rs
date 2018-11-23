@@ -89,6 +89,7 @@ pub mod tests {
 
         let commit_result = block_on(commit_entry(
             entry.clone(),
+            None,
             &context.clone().action_channel,
             &context.clone(),
         ));

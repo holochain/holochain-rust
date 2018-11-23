@@ -131,7 +131,11 @@ pub enum ActionResponse {
     LinkEntries(Result<SerializedEntry, HolochainError>),
 }
 
-pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+pub fn create_new_chain_header(
+    entry: &Entry,
+    agent_state: &AgentState,
+    crud_link: &Option<Address>,
+) -> ChainHeader {
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
@@ -146,6 +150,7 @@ pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> Chain
             .iter_type(&agent_state.top_chain_header, &entry.entry_type())
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
+        crud_link,
         // @TODO timestamp
         &Iso8601::from(""),
     )
@@ -165,8 +170,8 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, state);
+    let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
+    let chain_header = create_new_chain_header(&entry, state, &maybe_crud_link);
 
     fn response(
         state: &mut AgentState,

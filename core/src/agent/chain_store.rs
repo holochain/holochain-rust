@@ -191,6 +191,7 @@ pub mod tests {
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
+            &None,
             &test_iso_8601(),
         );
 
@@ -231,6 +232,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_a.address()),
             &None,
+            &None,
             &test_iso_8601(),
         );
         // c has same type as a
@@ -241,6 +243,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
+            &None,
             &test_iso_8601(),
         );
 
@@ -301,6 +304,7 @@ pub mod tests {
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
+            &None,
             &test_iso_8601(),
         );
         let entry = test_entry_c();
@@ -310,6 +314,7 @@ pub mod tests {
             &test_signature_c(),
             &Some(chain_header_b.address()),
             &Some(chain_header_b.address()),
+            &None,
             &test_iso_8601(),
         );
 

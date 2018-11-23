@@ -133,7 +133,7 @@ pub(crate) fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
+    let (entry, _maybe_crud_link) = unwrap_to!(action => Action::Commit);
     // Handle sys entries and app entries differently
     if entry.entry_type().to_owned().is_sys() {
         return commit_sys_entry(context, old_store, entry);

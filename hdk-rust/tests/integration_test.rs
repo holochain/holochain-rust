@@ -14,7 +14,6 @@ use holochain_core_types::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::EntryTypeDef,
     },
-    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,

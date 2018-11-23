@@ -28,6 +28,8 @@ pub struct ChainHeader {
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,
+    /// Key to the header of the previous version of this chain header's entry
+    link_crud: Option<Address>,
     /// ISO8601 time stamp
     timestamp: Iso8601,
 }
@@ -53,6 +55,7 @@ impl ChainHeader {
         entry_signature: &Signature,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
+        link_crud: &Option<Address>,
         timestamp: &Iso8601,
     ) -> Self {
         ChainHeader {
@@ -61,6 +64,7 @@ impl ChainHeader {
             entry_signature: entry_signature.to_owned(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
+            link_crud: link_crud.to_owned(),
             timestamp: timestamp.to_owned(),
         }
     }
@@ -88,6 +92,11 @@ impl ChainHeader {
     /// link_same_type getter
     pub fn link_same_type(&self) -> Option<Address> {
         self.link_same_type.clone()
+    }
+
+    /// link_crud getter
+    pub fn link_crud(&self) -> Option<Address> {
+        self.link_crud.clone()
     }
 
     /// entry_signature getter
@@ -126,6 +135,7 @@ pub fn test_chain_header() -> ChainHeader {
         &test_signature(),
         &None,
         &None,
+        &None,
         &test_iso_8601(),
     )
 }
@@ -152,6 +162,7 @@ pub mod tests {
             &test_entry_type_b(),
             &test_entry_b().address(),
             &test_signature_b(),
+            &None,
             &None,
             &None,
             &test_iso_8601(),
@@ -181,12 +192,14 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
+                &None,
                 &test_iso_8601(),
             ),
             ChainHeader::new(
                 &entry_b.entry_type(),
                 &entry_a.address(),
                 &test_signature(),
+                &None,
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -202,6 +215,7 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
+                &None,
                 &test_iso_8601(),
             ),
             ChainHeader::new(
@@ -209,6 +223,7 @@ pub mod tests {
                 &entry.address(),
                 &test_signature(),
                 &Some(test_chain_header().address()),
+                &None,
                 &None,
                 &test_iso_8601(),
             ),
@@ -247,6 +262,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_a.address()),
             &None,
+            &None,
             &test_iso_8601(),
         );
         assert_eq!(None, chain_header_a.link());
@@ -268,6 +284,7 @@ pub mod tests {
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
+            &None,
             &test_iso_8601(),
         );
         let entry_c = test_entry_a();
@@ -277,6 +294,7 @@ pub mod tests {
             &test_signature(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
+            &None,
             &test_iso_8601(),
         );
 
@@ -322,12 +340,14 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &None,
+                &None,
                 &test_iso_8601(),
             ).address(),
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
                 &test_signature(),
+                &None,
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -347,6 +367,7 @@ pub mod tests {
                 &test_signature(),
                 &Some(test_chain_header().address()),
                 &None,
+                &None,
                 &test_iso_8601(),
             ).address(),
         );
@@ -364,6 +385,7 @@ pub mod tests {
                 &test_signature(),
                 &None,
                 &Some(test_chain_header().address()),
+                &None,
                 &test_iso_8601(),
             ).address(),
         );

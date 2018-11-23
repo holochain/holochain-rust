@@ -37,7 +37,6 @@ impl ZomeDefinition {
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
     fn __list_capabilities() -> HashMap<String, Capability>;
-    fn hc_init_globals(encoded_allocation_of_input: u32) -> u32;
 }
 
 #[no_mangle]

@@ -8,7 +8,6 @@ use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serializati
 use std::convert::TryInto;
 
 
-#[no_mangle]
 extern "C" {
     fn hc_init_globals(encoded_allocation_of_input: u32) -> u32;
 }

@@ -2,6 +2,7 @@
 name = "holochain_core"
 version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition="2018"
 
 [dependencies]
 holochain_net = { path = "../net" }

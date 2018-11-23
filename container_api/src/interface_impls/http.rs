@@ -1,14 +1,6 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use Holochain;
+// use holochain_core_types::json::JsonString;
 
-use jsonrpc::JsonRpcRequest;
-use serde_json::{self, Value};
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::sync::Arc;
 use tiny_http::{Response, Server};
 
 use interface::{DispatchRpc, Interface};
@@ -25,8 +17,6 @@ impl HttpInterface {
 
 impl Interface for HttpInterface {
     fn run(&self, _dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
-        unimplemented!();
-
         let server_url = format!("0.0.0.0:{}", self.port);
         let server = Server::http(server_url.as_str()).unwrap();
         for request in server.incoming_requests() {
@@ -35,10 +25,10 @@ impl Interface for HttpInterface {
             let response = Response::from_string(method);
             request.respond(response).unwrap();
         }
-        Ok(())
+        unimplemented!();
     }
 }
 
-fn mk_err(msg: &str) -> JsonString {
-    json!({ "error": Value::from(msg) }).into()
-}
+// fn mk_err(msg: &str) -> JsonString {
+//     json!({ "error": Value::from(msg) }).into()
+// }

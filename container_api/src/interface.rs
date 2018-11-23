@@ -1,15 +1,12 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::json::JsonString;
 use Holochain;
 
 use jsonrpc::{jsonrpc_error, jsonrpc_success, JsonRpcRequest};
-use serde_json::{self, Value};
+use serde_json;
 use std::{
     collections::HashMap,
-    convert::TryFrom,
     sync::{Arc, Mutex},
-    thread,
 };
-use ws::{self, Message, Result as WsResult};
 
 use config::{Configuration, InstanceConfiguration};
 

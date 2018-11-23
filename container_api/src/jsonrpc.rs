@@ -2,14 +2,7 @@ use std::convert::TryFrom;
 
 use serde_json::{self, Value};
 
-use error::{HolochainInstanceError, HolochainResult};
-use holochain::Holochain;
-use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_types::{
-    cas::content::AddressableContent, error::HolochainError, json::JsonString,
-};
-
-use config::InterfaceConfiguration;
+use holochain_core_types::json::JsonString;
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonRpcRequest {

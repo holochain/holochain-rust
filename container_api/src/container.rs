@@ -19,9 +19,8 @@ use std::{
 };
 
 use config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration};
-use interface::{self, DispatchRpc, InstanceMap, Interface, RpcDispatcher};
+use interface::{InstanceMap, Interface, RpcDispatcher};
 use interface_impls;
-use jsonrpc::JsonRpcRequest;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -149,7 +148,7 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
-        let dispatcher = self.make_dispatcher(config);
+        let _dispatcher = self.make_dispatcher(config);
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())
@@ -166,9 +165,9 @@ impl Container {
 
     fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
         let InterfaceConfiguration {
-            id,
-            driver,
-            admin,
+            id: _,
+            driver: _,
+            admin: _,
             instances,
         } = interface_config;
         let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
@@ -340,7 +339,7 @@ pub mod tests {
     fn test_container_load_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        /// TODO: redundant
+        // TODO: redundant
         let mut container = Container::with_config(config.clone());
         container.dna_loader = test_dna_loader();
 

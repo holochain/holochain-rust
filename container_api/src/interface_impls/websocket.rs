@@ -1,15 +1,9 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
-use Holochain;
+use holochain_core_types::json::JsonString;
 
 use jsonrpc::JsonRpcRequest;
-use serde_json::{self, Value};
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    sync::{Arc, Mutex},
-    thread,
-};
-use ws::{self, Message, Result as WsResult};
+use serde_json::Value;
+use std::{convert::TryFrom, sync::Arc};
+use ws::{self, Message};
 
 use interface::{DispatchRpc, Interface};
 

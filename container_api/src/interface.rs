@@ -1,39 +1,88 @@
 use holochain_core_types::json::JsonString;
+use holochain_core::state::State;
 use Holochain;
 
 use jsonrpc::{jsonrpc_error, jsonrpc_success, JsonRpcRequest};
 use serde_json;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    convert::TryFrom,
+    sync::{Arc, RwLock, RwLockReadGuard},
+    thread,
 };
+use jsonrpc_core;
 
 use config::{Configuration, InstanceConfiguration};
 
 pub type InterfaceError = String;
-pub type InstanceMap = HashMap<String, Arc<Mutex<Holochain>>>;
+pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 
 pub trait DispatchRpc {
-    fn dispatch_rpc(&self, rpc: &JsonRpcRequest) -> JsonString;
+    fn dispatch_rpc(&self, rpc_string: &str) -> String;
 }
 
-pub struct RpcDispatcher {
+/// ContainerApiDispatcher exposes some subset of the Container API,
+/// including zome function calls as well as admin functionality.
+/// Each interface has their own dispatcher, and each may be configured differently.
+pub struct ContainerApiDispatcher {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
+    io: Box<jsonrpc_core::IoHandler>,
 }
 
-unsafe impl Send for RpcDispatcher {}
+unsafe impl Send for ContainerApiDispatcher {}
 
-impl RpcDispatcher {
+impl ContainerApiDispatcher {
     pub fn new(config: &Configuration, instances: InstanceMap) -> Self {
         let instance_configs = config
             .instances
             .iter()
             .map(|inst| (inst.id.clone(), inst.clone()))
             .collect();
-        Self {
+        let io = Box::new(jsonrpc_core::IoHandler::new());
+        let self = Self {
             instances,
             instance_configs,
+            io,
+        };
+        self.setup_api();
+        self
+    }
+
+    fn setup_api(&mut self) {
+        self.setup_info_api();
+        self.setup_zome_api();
+    }
+
+    fn setup_info_api(&mut self) {
+        self.io.add_method("info/instances", |_| {
+            Ok(jsonrpc_core::Value::String(("TODO: instances".to_string())))
+        });
+    }
+
+    fn setup_zome_api(&self) {
+        for (instance_id, hc_lock) in self.instances.clone() {
+            let mut hc = hc_lock.write().unwrap();
+            let state: State = hc.state().unwrap();
+            let nucleus = state.nucleus();
+            nucleus.clone().dna.iter().map(|dna| {
+                dna.zomes.iter().for_each(|(zome_name, zome)| {
+                    zome.capabilities.iter().for_each(|(cap_name, cap)| {
+                        cap.functions.iter().for_each(|func| {
+                            let method_name = format!(
+                                "{}/{}/{}/{}",
+                                instance_id,
+                                zome_name,
+                                cap_name,
+                                func.name
+                            );
+                            self.io.add_method(&method_name, |params: jsonrpc_core::Params| {
+                                Ok(jsonrpc_core::Value::String(("hey".to_string())))
+                            });
+                        })
+                    })
+                });
+            });
         }
     }
 }
@@ -42,35 +91,14 @@ impl RpcDispatcher {
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
 /// admin/...                         -> TODO
-impl DispatchRpc for RpcDispatcher {
+impl DispatchRpc for ContainerApiDispatcher {
+
     /// Dispatch to the correct Holochain and `call` it based on the JSONRPC method
-    fn dispatch_rpc(&self, rpc: &JsonRpcRequest) -> JsonString {
-        let matches: Vec<&str> = rpc.method.trim_matches('/').split('/').collect();
-        let result = match matches.as_slice() {
-            // A normal zome function call
-            [instance_id, zome, cap, func] => {
-                let key = instance_id.to_string();
-                self.instances
-                    .get(&key)
-                    .ok_or(format!("No instance with ID: {:?}", key))
-                    .and_then(|hc_mutex| {
-                        let mut hc = hc_mutex.lock().unwrap();
-                        hc.call(zome, cap, func, &rpc.params.to_string())
-                            .map_err(|e| e.to_string())
-                    })
-            }
-
-            // get all instance config info
-            ["info", "instances"] => serde_json::to_string(&self.instance_configs)
-                .map(JsonString::from)
-                .map_err(|e| e.to_string()),
-
-            // unknown method
-            _ => Err(format!("bad rpc method: {}", rpc.method)),
-        };
-        result
-            .map(|r| jsonrpc_success(rpc.id, r))
-            .unwrap_or_else(|e| jsonrpc_error(rpc.id, e))
+    fn dispatch_rpc(&self, rpc_string: &str) -> String {
+        self.io.handle_request_sync(rpc_string).ok_or(jsonrpc_core::Value::String("TODO".into())).and_then(|response: String| {
+            // JsonString::try_from(response)
+            Ok(response)
+        }).unwrap_or_else(|e| "error (TODO)".into())
     }
 }
 

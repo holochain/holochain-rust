@@ -23,9 +23,9 @@ impl Interface for WebsocketInterface {
             // must clone the Arc as we move from outer FnMut to inner FnMut
             let dispatcher = dispatcher.clone();
             move |msg| match msg {
-                Message::Text(s) => match JsonRpcRequest::try_from(s) {
+                Message::Text(s) => match JsonRpcRequest::try_from(s.clone()) {
                     Ok(ref rpc) => {
-                        let response: JsonString = dispatcher.dispatch_rpc(rpc);
+                        let response: String = dispatcher.dispatch_rpc(&s);
                         out.send(Message::Text(response.into()))
                     }
                     Err(err) => out.send(Message::Text(mk_err(&err).to_string())),

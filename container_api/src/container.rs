@@ -19,7 +19,7 @@ use std::{
 };
 
 use config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration};
-use interface::{InstanceMap, Interface, RpcDispatcher};
+use interface::{InstanceMap, Interface, ContainerApiDispatcher};
 use interface_impls;
 
 /// Main representation of the container.
@@ -81,7 +81,7 @@ impl Container {
     pub fn start_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
-            match hc.lock().unwrap().start() {
+            match hc.write().unwrap().start() {
                 Ok(()) => println!("ok"),
                 Err(err) => println!("Error: {}", err),
             }
@@ -92,7 +92,7 @@ impl Container {
     pub fn stop_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
-            match hc.lock().unwrap().stop() {
+            match hc.write().unwrap().stop() {
                 Ok(()) => println!("ok"),
                 Err(err) => println!("Error: {}", err),
             }
@@ -127,7 +127,7 @@ impl Container {
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
                     self.instances
-                        .insert(id.clone(), Arc::new(Mutex::new(holochain)));
+                        .insert(id.clone(), Arc::new(RwLock::new(holochain)));
                     None
                 }
                 Err(error) => Some(format!(
@@ -163,7 +163,7 @@ impl Container {
         Dna::try_from(JsonString::from(contents))
     }
 
-    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> RpcDispatcher {
+    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> ContainerApiDispatcher {
         let InterfaceConfiguration {
             id: _,
             driver: _,
@@ -177,7 +177,7 @@ impl Container {
             .filter(|(id, _)| instance_ids.contains(&id))
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
-        RpcDispatcher::new(&self.config, instance_subset)
+        ContainerApiDispatcher::new(&self.config, instance_subset)
     }
 
     fn spawn_interface_thread(

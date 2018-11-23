@@ -105,6 +105,8 @@ extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
 extern crate ws;
+extern crate jsonrpc_core;
+extern crate jsonrpc_ws_server;
 
 pub mod config;
 pub mod container;

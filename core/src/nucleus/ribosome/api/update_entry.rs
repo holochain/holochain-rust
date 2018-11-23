@@ -39,7 +39,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let chain_header_address = agent_state
         .chain()
         .iter(&agent_state.top_chain_header())
-        .find(| header| header.entry_address() == &entry_args.address)
+        .find(|header| header.entry_address() == &entry_args.address)
         .map(|header| header.address().clone())
         .expect("Modified entry should be in chain");
 

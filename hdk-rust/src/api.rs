@@ -10,7 +10,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind},
-        get_links::{GetLinksArgs,GetLinksResult},
+        get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },

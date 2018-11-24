@@ -1,5 +1,8 @@
 //! File holding all the structs for handling entry types defined by DNA.
 
+use json::JsonString;
+use error::HolochainError;
+
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum Sharing {
@@ -89,7 +92,7 @@ impl LinkedFrom {
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
 pub struct EntryTypeDef {
     /// A description of this entry type.
     #[serde(default)]

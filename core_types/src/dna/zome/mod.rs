@@ -8,6 +8,12 @@ use std::collections::HashMap;
 use json::JsonString;
 use error::HolochainError;
 use entry::entry_type::EntryType;
+use serde::Deserializer;
+use serde::Serializer;
+use serde::ser::SerializeMap;
+use dna::zome::entry_types::EntryTypeDef;
+use std::convert::TryFrom;
+use serde::Deserialize;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -47,6 +53,41 @@ impl Config {
     }
 }
 
+fn serialize_entry_types<S>(
+    entry_types: &HashMap<EntryType, entry_types::EntryTypeDef>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut map = serializer.serialize_map(Some(entry_types.len()))?;
+    for (k, v) in entry_types {
+        map.serialize_entry(
+            &String::from(JsonString::from(k.to_owned())),
+            &String::from(JsonString::from(v.to_owned()))
+        )?;
+    }
+    map.end()
+}
+
+fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<(HashMap<EntryType, entry_types::EntryTypeDef>), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    // type SerializedEntryTypes = ;
+
+    let serialized_entry_types = HashMap::<String, String>::deserialize(deserializer)?;
+
+    let mut map = HashMap::new();
+    for (k, v) in serialized_entry_types {
+        map.insert(
+            EntryType::try_from(JsonString::from(k)).expect("could not deserialize zome EntryType"),
+            EntryTypeDef::try_from(JsonString::from(v)).expect("could not deserialize zome EntryTypeDef"),
+        );
+    }
+    Ok(map)
+}
+
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct Zome {
@@ -62,6 +103,8 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
+    #[serde(serialize_with = "serialize_entry_types")]
+    #[serde(deserialize_with = "deserialize_entry_types")]
     pub entry_types: HashMap<EntryType, entry_types::EntryTypeDef>,
 
     /// An array of capabilities associated with this zome.
@@ -139,9 +182,23 @@ pub mod tests {
 
     #[test]
     fn zome_json_test() {
+        let mut entry_types = HashMap::new();
+        entry_types.insert(EntryType::from("foo"), EntryTypeDef::new());
+        let zome = Zome {
+            entry_types,
+            ..Default::default()
+        };
+
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"{\\\"App\\\":\\\"foo\\\"}\":\"{\\\"description\\\":\\\"\\\",\\\"sharing\\\":\\\"public\\\",\\\"links_to\\\":[],\\\"linked_from\\\":[]}\"},\"capabilities\":{},\"code\":{\"code\":\"\"}}";
+
         assert_eq!(
-            JsonString::from(""),
-            JsonString::from(Zome{ ..Default::default() }),
-        )
+            JsonString::from(expected.clone()),
+            JsonString::from(zome.clone()),
+        );
+
+        assert_eq!(
+            zome,
+            Zome::try_from(JsonString::from(expected)).unwrap(),
+        );
     }
 }

@@ -135,7 +135,7 @@ fn can_commit_entry() {
     );
 }
 
-#[test]
+/*#[test]
 fn can_commit_entry_macro() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
@@ -273,9 +273,9 @@ fn can_invalidate_invalid_commit() {
         result.unwrap(),
         JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
     );
-}
+}*/
 
-/*#[test]
+#[test]
 fn has_populated_validation_data() {
     let (mut hc, _) = start_holochain_instance();
 
@@ -463,4 +463,4 @@ fn can_check_call_with_args() {
             "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
         ))),
     );
-}*/
+}

@@ -26,7 +26,7 @@ use std::sync::{Arc, Mutex};
 use test_utils::*;
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
-   /* let mut capability = Capability::new();
+    let mut capability = Capability::new();
     capability.cap_type.membrane = Membrane::Public;
 
     for fn_name in fn_names {
@@ -34,8 +34,7 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
         fn_decl.name = String::from(fn_name);
         capability.functions.push(fn_decl);
     }
-    capability*/
-    unimplemented!("Remove capability test")
+    capability
 }
 
 fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
@@ -100,7 +99,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     (hc, test_logger)
 }
 
-#[test]
+/*#[test]
 fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
@@ -134,7 +133,7 @@ fn can_commit_entry() {
             "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
         )),
     );
-}
+}*/
 
 #[test]
 fn can_commit_entry_macro() {

@@ -39,7 +39,7 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
 
 fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
-    let wasm =
+    /*let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
     let capabability = create_test_cap_with_fn_names(vec![
         "check_global",
@@ -96,7 +96,8 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    (hc, test_logger)
+    (hc, test_logger)*/
+    unimplemented!("Will this cause linker error")
 }
 
 #[test]

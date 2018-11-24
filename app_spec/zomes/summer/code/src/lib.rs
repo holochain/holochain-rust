@@ -10,6 +10,7 @@ use hdk::holochain_core_types::json::JsonString;
 
 
 fn handle_sum(num1: u32, num2: u32) -> JsonString {
+    hdk::debug("foo").unwrap();
     let sum = num1 + num2;
     return json!({"sum": format!("{}",sum)}).into();
 }

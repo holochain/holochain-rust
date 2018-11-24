@@ -30,22 +30,22 @@ pub mod tests {
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_entry"), EntryTypeDef::new());
+            .insert("package_entry".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_entries"), EntryTypeDef::new());
+            .insert("package_chain_entries".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_headers"), EntryTypeDef::new());
+            .insert("package_chain_headers".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_full"), EntryTypeDef::new());
+            .insert("package_chain_full".into(), EntryTypeDef::new());
 
         let (instance, context) =
             test_instance_and_context(dna).expect("Could not create test instance");

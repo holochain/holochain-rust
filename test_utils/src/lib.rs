@@ -10,6 +10,8 @@ extern crate serde_json;
 
 
 use holochain_core_types::agent::AgentId;
+use holochain_core_types::entry::entry_type::EntryType;
+use holochain_core_types::entry::entry_type::AppEntryType;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::Context, logger::Logger, persister::SimplePersister};
@@ -80,8 +82,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     capabilities.insert(cap_name.to_string(), capability);
 
     let mut entry_types = HashMap::new();
-    entry_types.insert(String::from("testEntryType"), EntryTypeDef::new());
-    entry_types.insert(String::from("testEntryTypeB"), EntryTypeDef::new());
+    entry_types.insert(EntryType::App(AppEntryType::from("testEntryType")), EntryTypeDef::new());
+    entry_types.insert(EntryType::App(AppEntryType::from("testEntryTypeB")), EntryTypeDef::new());
 
     let zome = Zome::new(
         "some zome description",
@@ -126,7 +128,7 @@ pub fn create_test_dna_with_cap(
 
     let etypedef = EntryTypeDef::new();
     let mut entry_types = HashMap::new();
-    entry_types.insert("testEntryType".to_string(), etypedef);
+    entry_types.insert(EntryType::App(AppEntryType::from("testEntryType")), etypedef);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),

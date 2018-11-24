@@ -2,6 +2,8 @@ use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
+use json::JsonString;
+use error::HolochainError;
 
 // Macro for statically concatanating the system entry prefix for entry types of system entries
 macro_rules! sys_prefix {
@@ -39,7 +41,7 @@ impl ToString for AppEntryType {
 
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, DefaultJson)]
 pub enum EntryType {
     App(AppEntryType),
 

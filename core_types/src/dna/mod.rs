@@ -184,7 +184,7 @@ impl Dna {
         // Browse through the zomes
         for (zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, _) in &zome.entry_types {
-                if *zome_entry_type_name == entry_type_name {
+                if *zome_entry_type_name == EntryType::App(AppEntryType::from(entry_type_name.to_string())) {
                     return Some(zome_name.clone());
                 }
             }
@@ -199,7 +199,7 @@ impl Dna {
         // Browse through the zomes
         for (_zome_name, zome) in &self.zomes {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
-                if *zome_entry_type_name == entry_type_name {
+                if *zome_entry_type_name == EntryType::App(AppEntryType::from(entry_type_name.to_string())) {
                     return Some(entry_type_def);
                 }
             }
@@ -243,7 +243,7 @@ pub mod tests {
         let entry_type_def = EntryTypeDef::new();
 
         zome.entry_types
-            .insert(entry_type.to_string(), entry_type_def.clone());
+            .insert(entry_type.into(), entry_type_def.clone());
         dna.zomes.insert("zome".to_string(), zome);
 
         assert_eq!(None, dna.get_entry_type_def("foo"));
@@ -342,7 +342,7 @@ pub mod tests {
         };
         let mut zome = zome::Zome::default();
         zome.entry_types
-            .insert("".to_string(), zome::entry_types::EntryTypeDef::new());
+            .insert("".into(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
 
         let fixture = Dna::try_from(JsonString::from(
@@ -418,7 +418,7 @@ pub mod tests {
                 .get("zome1")
                 .unwrap()
                 .entry_types
-                .get("type1")
+                .get(&"type1".into())
                 .unwrap()
                 .sharing,
             zome::entry_types::Sharing::Public

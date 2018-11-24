@@ -5,6 +5,9 @@ pub mod entry_types;
 
 use dna::wasm::DnaWasm;
 use std::collections::HashMap;
+use json::JsonString;
+use error::HolochainError;
+use entry::entry_type::EntryType;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -45,7 +48,7 @@ impl Config {
 }
 
 /// Represents an individual "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct Zome {
     /// A description of this zome.
     #[serde(default)]
@@ -59,7 +62,7 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: HashMap<String, entry_types::EntryTypeDef>,
+    pub entry_types: HashMap<EntryType, entry_types::EntryTypeDef>,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
@@ -90,7 +93,7 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &HashMap<String, entry_types::EntryTypeDef>,
+        entry_types: &HashMap<EntryType, entry_types::EntryTypeDef>,
         capabilities: &HashMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
@@ -132,5 +135,13 @@ pub mod tests {
         zome.config.error_handling = ErrorHandling::ThrowErrors;
 
         assert_eq!(fixture, zome);
+    }
+
+    #[test]
+    fn zome_json_test() {
+        assert_eq!(
+            JsonString::from(""),
+            JsonString::from(Zome{ ..Default::default() }),
+        )
     }
 }

@@ -7,9 +7,11 @@ use holochain_core_types::{
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
     holochain_core_types::error::RibosomeErrorCode,
+    holochain_core_types::json::JsonString,
+    holochain_core_types::dna::zome::Zome,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
-use serde_json;
+use api::debug;
 use std::collections::HashMap;
 
 trait Ribosome {
@@ -128,12 +130,18 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
     let capabilities = unsafe { __list_capabilities() };
 
-    let json_string = serde_json::to_string(&json!({
-        "entry_types": entry_types,
-        "capabilities": capabilities,
-    })).expect("Can't serialize DNA");
+    let zome = Zome {
+        entry_types,
+        capabilities,
+        ..Default::default()
+    };
 
-    unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32 }
+    debug(format!("zzz: {:?}", &zome)).unwrap();
+
+    let json_string = JsonString::from(zome);
+    debug(format!("iii: {:?}", json_string)).unwrap();
+
+    unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string.to_string()) as u32 }
 }
 
 #[cfg(test)]

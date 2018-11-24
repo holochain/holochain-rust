@@ -99,7 +99,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     (hc, test_logger)
 }
 
-/*#[test]
+#[test]
 fn can_use_globals() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
@@ -133,9 +133,9 @@ fn can_commit_entry() {
             "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
         )),
     );
-}*/
+}
 
-#[test]
+/*#[test]
 fn can_commit_entry_macro() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
@@ -173,7 +173,7 @@ fn can_round_trip() {
     let test_logger = test_logger.lock().unwrap();
 
     println!("{:?}", *test_logger);
-}
+}*/
 
 #[test]
 fn can_get_entry() {

@@ -157,7 +157,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&mut self) -> Result<State, HolochainInstanceError> {
+    pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
 }

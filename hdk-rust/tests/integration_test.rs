@@ -134,8 +134,7 @@ fn can_commit_entry() {
         )),
     );
 }
-
-/*#[test]
+#[test]
 fn can_commit_entry_macro() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
@@ -176,6 +175,7 @@ fn can_round_trip() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn can_get_entry() {
     let (mut hc, _) = start_holochain_instance();
     // Call the exposed wasm function that calls the Commit API function
@@ -250,7 +250,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+    assert_eq!(result.unwrap(), JsonString::null());*/
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn can_invalidate_invalid_commit() {
         result.unwrap(),
         JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
     );
-}*/
+}
 
 #[test]
 fn has_populated_validation_data() {
@@ -364,6 +364,7 @@ fn can_roundtrip_links() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn can_validate_links() {
     let (mut hc, _) = start_holochain_instance();
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;

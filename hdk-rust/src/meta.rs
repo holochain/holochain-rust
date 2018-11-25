@@ -1,4 +1,3 @@
-use api::debug;
 use entry_definition::ValidatingEntryType;
 use globals::G_MEM_STACK;
 use holochain_core_types::{

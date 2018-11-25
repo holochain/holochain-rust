@@ -1,14 +1,16 @@
-use action::{Action, ActionWrapper};
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    instance::RECV_DEFAULT_TIMEOUT_MS,
+    nucleus::{
+        get_capability_with_zome_call, launch_zome_fn_call,
+        ribosome::{api::ZomeApiResult, Runtime},
+        state::NucleusState,
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use instance::RECV_DEFAULT_TIMEOUT_MS;
-use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::{api::ZomeApiResult, Runtime},
-    state::NucleusState,
-    ZomeFnCall,
-};
 use std::{
     convert::TryFrom,
     sync::{mpsc::channel, Arc},
@@ -54,11 +56,11 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
     let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
+    crate::instance::dispatch_action_with_observer(
         &runtime.context.action_channel,
         &runtime.context.observer_channel,
         action_wrapper.clone(),
-        move |state: &::state::State| {
+        move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let maybe_result = state.nucleus().zome_call_result(&zome_call);
             match maybe_result {
@@ -161,7 +163,25 @@ pub mod tests {
     extern crate wabt;
 
     use self::tempfile::tempdir;
-    use context::{Context, mock_network_config};
+    use crate::{
+        context::{Context, mock_network_config},
+        instance::{
+            tests::{test_instance, TestLogger},
+            Observer, RECV_DEFAULT_TIMEOUT_MS,
+        },
+        nucleus::ribosome::{
+            api::{
+                call::{Action, ActionWrapper, Membrane, ZomeFnCall},
+                tests::{
+                    test_capability, test_function_name, test_parameters,
+                    test_zome_api_function_wasm, test_zome_name,
+                },
+                ZomeApiFunction,
+            },
+            Defn,
+        },
+        persister::SimplePersister,
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -170,22 +190,6 @@ pub mod tests {
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-    use instance::{
-        tests::{test_instance, TestLogger},
-        Observer, RECV_DEFAULT_TIMEOUT_MS,
-    };
-    use nucleus::ribosome::{
-        api::{
-            call::{Action, ActionWrapper, Membrane, ZomeFnCall},
-            tests::{
-                test_capability, test_function_name, test_parameters, test_zome_api_function_wasm,
-                test_zome_name,
-            },
-            ZomeApiFunction,
-        },
-        Defn,
-    };
-    use persister::SimplePersister;
     use serde_json;
     use std::sync::{
         mpsc::{channel, RecvTimeoutError},
@@ -236,7 +240,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 mock_network_config(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 
@@ -254,7 +259,7 @@ pub mod tests {
         // let instance = Instance::new();
         let instance = test_instance(dna).expect("Could not initialize test instance");
         let (sender, receiver) = channel();
-        let closure = move |state: &::state::State| {
+        let closure = move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let opt_res = state.nucleus().zome_call_result(&zome_call);
             match opt_res {

@@ -1,14 +1,16 @@
 extern crate serde_json;
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{
+            self,
+            callback::{get_dna, get_wasm, CallbackResult},
+        },
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{
     entry::entry_type::EntryType, error::HolochainError, validation::ValidationPackageDefinition,
-};
-use nucleus::{
-    ribosome::{
-        self,
-        callback::{get_dna, get_wasm, CallbackResult},
-    },
-    ZomeFnCall,
 };
 use std::{convert::TryFrom, sync::Arc};
 

@@ -1,15 +1,17 @@
-use agent::actions::commit::*;
-use futures::{executor::block_on, FutureExt};
+use crate::{
+    agent::actions::commit::*,
+    nucleus::{
+        actions::{build_validation_package::*, validate::*},
+        ribosome::{api::ZomeApiResult, Runtime},
+    },
+};
+use futures::{executor::block_on, future::{self, TryFutureExt}};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
-};
-use nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -41,12 +43,12 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         // 1. Build the context needed for validation of the entry
         build_validation_package(&entry, &runtime.context)
             .and_then(|validation_package| {
-                Ok(ValidationData {
+                future::ready(Ok(ValidationData {
                     package: validation_package,
                     sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Commit,
-                })
+                }))
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
@@ -64,7 +66,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
                     &runtime.context.action_channel,
                     &runtime.context,
                 )
-            }),
+            })
     );
 
     runtime.store_result(task_result)
@@ -75,15 +77,15 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
+    };
     use holochain_core_types::{
         cas::content::Address,
         entry::{test_entry, SerializedEntry},
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use nucleus::ribosome::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
     };
 
     /// dummy commit args from standard test entry

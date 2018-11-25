@@ -1,6 +1,8 @@
 pub mod actor;
-use actor::{AskSelf, Protocol};
-use eav::file::actor::EavFileStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    eav::file::actor::EavFileStorageActor,
+};
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::{HcResult, HolochainError},
@@ -43,7 +45,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use eav::file::EavFileStorage;
+    use crate::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},

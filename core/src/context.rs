@@ -1,13 +1,11 @@
-use action::ActionWrapper;
+use crate::{
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+};
 use holochain_core_types::{
     agent::Agent, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError,
     json::JsonString,
 };
-use instance::Observer;
-use logger::Logger;
-use persister::Persister;
-use state::State;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, RwLock, RwLockReadGuard,
@@ -111,12 +109,12 @@ mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use context::mock_network_config;
+    use crate::{
+        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
+        state::State,
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::Agent;
-    use instance::tests::test_logger;
-    use persister::SimplePersister;
-    use state::State;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
@@ -139,7 +137,8 @@ mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -169,7 +168,8 @@ mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

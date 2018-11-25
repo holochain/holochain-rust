@@ -60,7 +60,7 @@
 //!
 //!```
 
-use error::{HolochainInstanceError, HolochainResult};
+use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,
@@ -87,7 +87,7 @@ impl Holochain {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-        match block_on(initialize_application(dna, context.clone())) {
+        match block_on(initialize_application(dna, &context.clone())) {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
                 let hc = Holochain {
@@ -202,10 +202,12 @@ mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
-                    mock_network_config(),
-                ).unwrap(),
+                    make_mock_net(),
+                )
+                .unwrap(),
             ),
             logger,
         )

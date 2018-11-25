@@ -1,18 +1,20 @@
-use action::ActionWrapper;
-use agent::{
-    chain_store::ChainStore,
-    state::{AgentState, AgentStateSnapshot},
+use crate::{
+    action::ActionWrapper,
+    agent::{
+        chain_store::ChainStore,
+        state::{AgentState, AgentStateSnapshot},
+    },
+    context::Context,
+    dht::dht_store::DhtStore,
+    network::state::NetworkState,
+    nucleus::state::NucleusState,
 };
-use context::Context;
-use dht::dht_store::DhtStore;
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
     entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::{HcResult, HolochainError},
 };
-use network::state::NetworkState;
-use nucleus::state::NucleusState;
 use std::{
     collections::HashSet,
     convert::TryInto,
@@ -69,11 +71,11 @@ impl State {
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
-                HolochainError::ErrorGeneric(
-                    "No DNA entry found in storage while creating state from agent".to_string(),
-                ),
-            )??;
+            let serialized_entry: SerializedEntry =
+                json.map(|e| e.try_into())
+                    .ok_or(HolochainError::ErrorGeneric(
+                        "No DNA entry found in storage while creating state from agent".to_string(),
+                    ))??;
             let entry: Entry = serialized_entry.into();
             Ok(Dna::from_entry(&entry))
         }
@@ -91,17 +93,17 @@ impl State {
 
     pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
-            nucleus: ::nucleus::reduce(
+            nucleus: crate::nucleus::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.nucleus),
                 &action_wrapper,
             ),
-            agent: ::agent::state::reduce(
+            agent: crate::agent::state::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.agent),
                 &action_wrapper,
             ),
-            dht: ::dht::dht_reducers::reduce(
+            dht: crate::dht::dht_reducers::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.dht),
                 &action_wrapper,

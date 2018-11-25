@@ -1,6 +1,4 @@
-use action::ActionWrapper;
-use context::Context;
-use state::State;
+use crate::{action::ActionWrapper, context::Context, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,10 +282,13 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::{
-        chain_store::ChainStore,
-        state::{ActionResponse, AgentState},
+    use crate::{
+        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        agent::{
+            chain_store::ChainStore,
+            state::{ActionResponse, AgentState},
+        },
+        context::Context,
     };
     use context::{Context, mock_network_config};
     use futures::{executor::block_on, FutureExt};
@@ -301,14 +302,16 @@ pub mod tests {
         json::{JsonString, RawString},
     };
 
-    use logger::Logger;
-    use network::actions::initialize_network::initialize_network;
-    use nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+    use crate::{
+        logger::Logger,
+        network::actions::initialize_network::initialize_network,
+        nucleus::{
+            actions::initialize::initialize_application,
+            ribosome::{callback::Callback, Defn},
+        },
+        persister::SimplePersister,
+        state::State,
     };
-    use persister::SimplePersister;
-    use state::State;
 
     use std::{
         sync::{
@@ -357,10 +360,12 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
-                    mock_network_config(),
-                ).unwrap(),
+                    make_mock_net(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -397,8 +402,9 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                mock_network_config(),
-            ).unwrap(),
+                make_mock_net(),
+            )
+            .unwrap(),
         )
     }
 
@@ -416,8 +422,9 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
-        ).unwrap();
+            make_mock_net(),
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -437,8 +444,9 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
-        ).unwrap();
+            make_mock_net(),
+        )
+        .unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
@@ -468,7 +476,7 @@ pub mod tests {
         let context = instance.initialize_context(context);
 
         block_on(
-            initialize_application(dna.clone(), context.clone())
+            initialize_application(dna.clone(), &context.clone())
                 .and_then(|_| {
                     initialize_network(&context)
                 })
@@ -633,7 +641,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
@@ -644,14 +652,14 @@ pub mod tests {
         // the initial state is not intialized
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::Initializing
+            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 

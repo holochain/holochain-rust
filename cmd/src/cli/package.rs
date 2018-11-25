@@ -1,8 +1,6 @@
 use base64;
-use cli::test_context::test_context;
 use colored::*;
-use config_files::Build;
-use error::DefaultResult;
+use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use holochain_core::nucleus::{ribosome, ZomeFnCall};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
@@ -11,7 +9,6 @@ use std::{
     io::{Read, Write},
     path::PathBuf,
 };
-use util;
 
 pub const CODE_DIR_NAME: &str = "code";
 

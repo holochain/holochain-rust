@@ -1,8 +1,13 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use agent::{self, chain_header};
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper},
+    agent::{self, chain_header},
+    context::Context,
+    nucleus::ribosome::callback::{
+        validation_package::get_validation_package_definition, CallbackResult,
+    },
+};
 use futures::{future, Async, Future};
 use holochain_core_types::{
     //cas::content::AddressableContent,
@@ -11,16 +16,17 @@ use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use nucleus::ribosome::callback::{
-    validation_package::get_validation_package_definition, CallbackResult,
-};
 use snowflake;
-use std::{convert::TryInto, sync::Arc, thread};
+use std::{
+    pin::{Pin, Unpin},
+    convert::TryInto,
+    sync::Arc, thread
+};
 
-pub fn build_validation_package(
+pub fn build_validation_package<'a>(
     entry: &Entry,
-    context: &Arc<Context>,
-) -> Box<dyn Future<Item = ValidationPackage, Error = HolochainError>> {
+    context: &'a Arc<Context>,
+) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
     match context
@@ -32,10 +38,14 @@ pub fn build_validation_package(
         .get_zome_name_for_entry_type(&entry.entry_type().to_string())
     {
         None => {
-            return Box::new(future::err(HolochainError::ValidationFailed(format!(
-                "Unknown entry type: '{}'",
-                String::from(entry.entry_type().to_owned())
-            ))));
+            return ValidationPackageFuture {
+                context: context.clone(),
+                key: id,
+                error: Some(HolochainError::ValidationFailed(format!(
+                    "Unknown entry type: '{}'",
+                    String::from(entry.entry_type().to_owned())
+                ))),
+            };
         }
         Some(_) => {
             let id = id.clone();
@@ -117,10 +127,11 @@ pub fn build_validation_package(
         }
     };
 
-    Box::new(ValidationPackageFuture {
+    ValidationPackageFuture {
         context: context.clone(),
         key: id,
-    })
+        error: None,
+    }
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
@@ -154,31 +165,36 @@ fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
 pub struct ValidationPackageFuture {
     context: Arc<Context>,
     key: snowflake::ProcessUniqueId,
+    error: Option<HolochainError>,
 }
 
+impl Unpin for ValidationPackageFuture {}
+
 impl Future for ValidationPackageFuture {
-    type Item = ValidationPackage;
-    type Error = HolochainError;
+    type Output = Result<ValidationPackage, HolochainError>;
 
     fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+        self: Pin<&mut Self>,
+        lw: &LocalWaker
+    ) -> Poll<Self::Output> {
+        if let Some(ref error) = self.error {
+            return Poll::Ready(Err(error.clone()));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_packages.get(&self.key) {
                 Some(Ok(validation_package)) => {
-                    Ok(futures::Async::Ready(validation_package.clone()))
+                    Poll::Ready(Ok(validation_package.clone()))
                 }
-                Some(Err(error)) => Err(error.clone()),
-                None => Ok(futures::Async::Pending),
+                Some(Err(error)) => Poll::Ready(Err(error.clone())),
+                None => Poll::Pending,
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }
@@ -186,7 +202,7 @@ impl Future for ValidationPackageFuture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nucleus::actions::tests::*;
+    use crate::nucleus::actions::tests::*;
 
     use futures::executor::block_on;
     use holochain_core_types::validation::ValidationPackage;

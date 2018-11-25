@@ -1,6 +1,8 @@
 pub mod actor;
-use actor::{AskSelf, Protocol};
-use cas::file::actor::FilesystemStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    cas::file::actor::FilesystemStorageActor,
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -61,7 +63,7 @@ pub mod tests {
     extern crate tempfile;
 
     use self::tempfile::{tempdir, TempDir};
-    use cas::file::FilesystemStorage;
+    use crate::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{
             content::{ExampleAddressableContent, OtherExampleAddressableContent},

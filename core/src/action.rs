@@ -1,16 +1,16 @@
-use agent::state::AgentState;
-use context::Context;
+use crate::{
+    agent::state::AgentState,
+    context::Context,
+    network::state::NetworkState,
+    nucleus::{
+        state::{NucleusState, ValidationResult},
+        ExecuteZomeFnResponse, ZomeFnCall,
+    },
+};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, entry::Entry, error::HolochainError,
     json::JsonString, link::Link,
     validation::ValidationPackage,
-};
-use network::{
-    state::NetworkState,
-};
-use nucleus::{
-    state::{NucleusState, ValidationResult},
-    ExecuteZomeFnResponse, ZomeFnCall,
 };
 use snowflake;
 use std::{
@@ -126,9 +126,11 @@ pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
+    use crate::{
+        action::{Action, ActionWrapper},
+        nucleus::tests::test_call_response,
+    };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
-    use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action

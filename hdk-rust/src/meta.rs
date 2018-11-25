@@ -136,10 +136,7 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
         ..Default::default()
     };
 
-    debug(format!("zzz: {:?}", &zome)).unwrap();
-
     let json_string = JsonString::from(zome);
-    debug(format!("iii: {:?}", json_string)).unwrap();
 
     unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string.to_string()) as u32 }
 }

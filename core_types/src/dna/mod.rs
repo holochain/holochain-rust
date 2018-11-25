@@ -345,6 +345,9 @@ pub mod tests {
             .insert("".into(), zome::entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
 
+        let expected = JsonString::from(dna.clone());
+        println!("{:?}", expected);
+
         let fixture = Dna::try_from(JsonString::from(
             r#"{
                 "name": "",
@@ -362,9 +365,13 @@ pub mod tests {
                         "entry_types": {
                             "": {
                                 "description": "",
-                                "sharing": "public"
+                                "sharing": "public",
+                                "links_to": [],
+                                "linked_from": []
                             }
-                        }
+                        },
+                        "capabilities": {},
+                        "code": {"code": ""}
                     }
                 }
             }"#,

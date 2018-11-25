@@ -12,7 +12,6 @@ use serde::Deserializer;
 use serde::Serializer;
 use serde::ser::SerializeMap;
 use dna::zome::entry_types::EntryTypeDef;
-use std::convert::TryFrom;
 use serde::Deserialize;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -63,8 +62,8 @@ where
     let mut map = serializer.serialize_map(Some(entry_types.len()))?;
     for (k, v) in entry_types {
         map.serialize_entry(
-            &String::from(JsonString::from(k.to_owned())),
-            &String::from(JsonString::from(v.to_owned()))
+            &String::from(k.to_owned()),
+            &v
         )?;
     }
     map.end()
@@ -76,13 +75,13 @@ where
 {
     // type SerializedEntryTypes = ;
 
-    let serialized_entry_types = HashMap::<String, String>::deserialize(deserializer)?;
+    let serialized_entry_types = HashMap::<String, EntryTypeDef>::deserialize(deserializer)?;
 
     let mut map = HashMap::new();
     for (k, v) in serialized_entry_types {
         map.insert(
-            EntryType::try_from(JsonString::from(k)).expect("could not deserialize zome EntryType"),
-            EntryTypeDef::try_from(JsonString::from(v)).expect("could not deserialize zome EntryTypeDef"),
+            EntryType::from(k),
+            v,
         );
     }
     Ok(map)
@@ -152,9 +151,14 @@ impl Zome {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use dna::zome::Zome;
     use serde_json;
+    use std::convert::TryFrom;
+    use dna::zome::ErrorHandling;
+    use std::collections::HashMap;
+    use entry::entry_type::EntryType;
+    use json::JsonString;
+    use dna::zome::entry_types::EntryTypeDef;
 
     pub fn test_zome() -> Zome {
         Zome::default()
@@ -189,7 +193,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"{\\\"App\\\":\\\"foo\\\"}\":\"{\\\"description\\\":\\\"\\\",\\\"sharing\\\":\\\"public\\\",\\\"links_to\\\":[],\\\"linked_from\\\":[]}\"},\"capabilities\":{},\"code\":{\"code\":\"\"}}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"}}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

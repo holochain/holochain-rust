@@ -5,7 +5,7 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
-use futures::{executor::block_on, future::TryFutureExt};
+use futures::{executor::block_on, future::{self, TryFutureExt}};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
@@ -43,12 +43,12 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         // 1. Build the context needed for validation of the entry
         build_validation_package(&entry, &runtime.context)
             .and_then(|validation_package| {
-                Ok(ValidationData {
+                future::ready(Ok(ValidationData {
                     package: validation_package,
                     sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Commit,
-                })
+                }))
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
@@ -66,7 +66,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
                     &runtime.context.action_channel,
                     &runtime.context,
                 )
-            }),
+            })
     );
 
     runtime.store_result(task_result)

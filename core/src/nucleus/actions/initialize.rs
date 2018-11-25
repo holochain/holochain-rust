@@ -9,7 +9,7 @@ use crate::{
         state::NucleusStatus,
     },
 };
-use futures::{executor::block_on, future::{self, FutureObj, Future}, task::{Poll, LocalWaker}};
+use futures::{executor::block_on, future::Future, task::{Poll, LocalWaker}};
 use holochain_core_types::{dna::Dna, entry::ToEntry};
 use std::{
     pin::{Pin, Unpin},
@@ -31,11 +31,13 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 pub fn initialize_application<'a>(
     dna: Dna,
     context: &'a Arc<Context>,
-) -> FutureObj<'a, Result<NucleusStatus, String>> {
+) -> InitializationFuture {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return FutureObj::new(Box::new(future::err(
-            "Can't trigger initialization: Nucleus status is not New".to_string(),
-        )));
+        return InitializationFuture {
+            context: context.clone(),
+            created_at: Instant::now(),
+            error: Some("Can't trigger initialization: Nucleus status is not New".to_string()),
+        };
     }
 
     let context_clone = context.clone();
@@ -123,10 +125,11 @@ pub fn initialize_application<'a>(
             .expect("Action channel not usable in initialize_application()");
     });
 
-    FutureObj::new(Box::new(InitializationFuture {
+    InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
-    }))
+        error: None,
+    }
 }
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
@@ -134,6 +137,7 @@ pub fn initialize_application<'a>(
 pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
+    error: Option<String>
 }
 
 impl Unpin for InitializationFuture {}
@@ -145,6 +149,9 @@ impl Future for InitializationFuture {
         self: Pin<&mut Self>,
         lw: &LocalWaker,
     ) -> Poll<Self::Output> {
+        if let Some(ref error) = self.error {
+            return Poll::Ready(Err(error.clone()));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

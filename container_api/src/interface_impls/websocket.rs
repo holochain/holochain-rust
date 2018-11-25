@@ -24,9 +24,7 @@ impl WebsocketInterface {
 
 impl Interface<ContainerApiDispatcher> for WebsocketInterface {
     fn run(&self, dispatcher: ContainerApiDispatcher) -> Result<(), String> {
-        // let mut io = IoHandler::new();
         let io = dispatcher.handler();
-        // let io: MetaIoHandler<(), middleware::Noop> = dispatcher.handler();
         let url = format!("0.0.0.0:{}", self.port);
         let server = ServerBuilder::new(io)
             .start(&url.parse().unwrap()).unwrap();

@@ -10,7 +10,9 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
     thread,
 };
-use jsonrpc_ws_server::jsonrpc_core::{IoHandler, MetaIoHandler, Metadata, Value};
+use jsonrpc_ws_server::{
+    jsonrpc_core::{self, IoHandler, MetaIoHandler, Metadata, Value}
+};
 
 use config::{Configuration, InstanceConfiguration};
 
@@ -65,22 +67,26 @@ impl ContainerApiDispatcher {
 
     fn setup_zome_api(&mut self) {
         for (instance_id, hc_lock) in self.instances.clone() {
-            let mut hc = hc_lock.write().unwrap();
+            let hc = hc_lock.clone().read().unwrap();
             let state: State = hc.state().unwrap();
             let nucleus = state.nucleus();
-            nucleus.clone().dna.iter().map(|dna| {
+            nucleus.dna.iter().map(|dna| {
                 dna.zomes.iter().for_each(|(zome_name, zome)| {
                     zome.capabilities.iter().for_each(|(cap_name, cap)| {
                         cap.functions.iter().for_each(|func| {
+                            let func_name = &func.name;
                             let method_name = format!(
                                 "{}/{}/{}/{}",
                                 instance_id,
                                 zome_name,
                                 cap_name,
-                                func.name
+                                func_name
                             );
-                            self.io.add_method(&method_name, |params| {
-                                Ok(Value::String("hey".to_string()))
+                            self.io.add_method(&method_name, move |_params| {
+                                let mut hc = hc_lock.write().unwrap();
+                                let response = hc.call(zome_name, cap_name, func_name, "")
+                                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                                Ok(Value::String(response.to_string()))
                             });
                         })
                     })
@@ -96,11 +102,9 @@ impl ContainerApiDispatcher {
 /// admin/...                         -> TODO
 
 impl DispatchRpc for ContainerApiDispatcher {
-
     fn handler(self) -> IoHandler { 
         self.io
     }
-
 }
 
 pub trait Interface<D: DispatchRpc> {

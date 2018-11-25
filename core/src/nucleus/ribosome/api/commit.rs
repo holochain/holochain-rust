@@ -51,7 +51,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             // 2. Validate the entry
             .and_then(|validation_data| {
                 validate_entry(
-                    entry.entry_type().clone(),
                     entry.clone(),
                     validation_data,
                     &runtime.context,

@@ -1,11 +1,16 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use context::Context;
-use futures::{Async, Future, future};
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    instance::dispatch_action,
+};
+use futures::{Future, future, task::{Poll, LocalWaker}};
 use holochain_core_types::{error::HolochainError};
-use instance::dispatch_action;
-use std::sync::Arc;
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc,
+};
 
 
 fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
@@ -19,9 +24,12 @@ fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), Holocha
     Ok((dna_hash, agent_id))
 }
 /// InitNetwork Action Creator
-pub fn initialize_network(context: &Arc<Context>) -> Box<dyn Future<Item = (), Error = HolochainError>>  {
+pub fn initialize_network(context: &Arc<Context>) -> InitNetworkFuture  {
     match get_dna_and_agent(context) {
-        Err(error) => return Box::new(future::err(error)),
+        Err(error) => return InitNetworkFuture{
+            context: context.clone(),
+            error: Some(error),
+        },
         Ok((dna_hash, agent_id)) => {
             let action_wrapper = ActionWrapper::new(
                 Action::InitNetwork((
@@ -32,38 +40,42 @@ pub fn initialize_network(context: &Arc<Context>) -> Box<dyn Future<Item = (), E
                 ));
             dispatch_action(&context.action_channel, action_wrapper.clone());
 
-            Box::new(InitNetworkFuture {
+            InitNetworkFuture {
                 context: context.clone(),
-            })
+                error: None,
+            }
         }
     }
 }
 
 pub struct InitNetworkFuture {
     context: Arc<Context>,
+    error: Option<HolochainError>,
 }
 
 impl Future for InitNetworkFuture {
-    type Item = ();
-    type Error = HolochainError;
+    type Output = Result<(),HolochainError>;
 
     fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+        self: Pin<&mut Self>,
+        lw: &LocalWaker,
+    ) -> Poll<Self::Output> {
+        if let Some(ref error) = self.error {
+            return Poll::Ready(Err(error.clone()));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             if state.network().network.is_some() || state.network().dna_hash.is_some() ||  state.network().agent_id.is_some() {
-                Ok(futures::Async::Ready(()))
+                Poll::Ready(Ok(()))
             } else {
-                Ok(futures::Async::Pending)
+                Poll::Pending
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

@@ -4,7 +4,7 @@ pub mod actions;
 pub mod chain_store;
 pub mod state;
 
-use context::Context;
+use crate::context::Context;
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,

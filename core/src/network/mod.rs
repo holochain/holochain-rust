@@ -2,9 +2,15 @@ pub mod actions;
 pub mod handler;
 pub mod state;
 
-use action::{Action, ActionWrapper, NetworkReduceFn};
-use agent::chain_header;
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper, NetworkReduceFn},
+    agent::chain_header,
+    context::Context,
+    network::{
+        state::NetworkState,
+        handler::create_handler,
+    },
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent},
@@ -21,10 +27,6 @@ use holochain_net_connection::{
         DhtData,
         ProtocolWrapper, TrackAppData,
     }
-};
-use network::{
-    state::NetworkState,
-    handler::create_handler,
 };
 use std::{
     convert::TryInto,

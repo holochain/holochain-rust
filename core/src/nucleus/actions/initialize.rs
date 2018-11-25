@@ -36,7 +36,7 @@ pub fn initialize_application<'a>(
         return InitializationFuture {
             context: context.clone(),
             created_at: Instant::now(),
-            error: Some("Can't trigger initialization: Nucleus status is not New".to_string()),
+            error: Some(HolochainError::ErrorGeneric("Can't trigger initialization: Nucleus status is not New".to_string())),
         };
     }
 
@@ -168,7 +168,7 @@ impl Future for InitializationFuture {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,
                 NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Poll::Ready(Err(error.clone())),
+                NucleusStatus::InitializationFailed(ref error) => Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone()))),
             }
         } else {
             Poll::Pending

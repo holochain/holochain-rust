@@ -205,7 +205,7 @@ mod tests {
                         )
                         .unwrap(),
                     )),
-                    make_mock_net(),
+                    mock_network_config(),
                 )
                 .unwrap(),
             ),

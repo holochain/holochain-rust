@@ -8,7 +8,7 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
 };
-use futures::{future, Async, Future};
+use futures::{Future, task::{Poll, LocalWaker}};
 use holochain_core_types::{
     //cas::content::AddressableContent,
     chain_header::ChainHeader,

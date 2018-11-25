@@ -288,10 +288,9 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::Context,
+        context::{Context, mock_network_config},
     };
-    use context::{Context, mock_network_config};
-    use futures::{executor::block_on, FutureExt};
+    use futures::{executor::block_on, TryFutureExt};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -363,7 +362,7 @@ pub mod tests {
                         )
                         .unwrap(),
                     )),
-                    make_mock_net(),
+                    mock_network_config(),
                 )
                 .unwrap(),
             ),
@@ -402,7 +401,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                make_mock_net(),
+                mock_network_config(),
             )
             .unwrap(),
         )
@@ -422,7 +421,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
+            mock_network_config(),
         )
         .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
@@ -444,7 +443,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
+            mock_network_config(),
         )
         .unwrap();
         let chain_store = ChainStore::new(cas.clone());

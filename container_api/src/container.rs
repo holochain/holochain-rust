@@ -148,7 +148,6 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
-        let _dispatcher = self.make_dispatcher(config);
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())
@@ -187,7 +186,7 @@ impl Container {
         let dispatcher = self.make_dispatcher(&interface_config);
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
-            iface.run(Arc::new(dispatcher))
+            iface.run(dispatcher)
         })
     }
 }
@@ -204,9 +203,9 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface<ContainerApiDispatcher>> {
     match interface_config.driver {
-        InterfaceDriver::Http { port } => Box::new(interface_impls::http::HttpInterface::new(port)),
+        // InterfaceDriver::Http { port } => Box::new(interface_impls::http::HttpInterface::new(port)),
         InterfaceDriver::Websocket { port } => {
             Box::new(interface_impls::websocket::WebsocketInterface::new(port))
         }

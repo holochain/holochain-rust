@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
     thread,
 };
-use jsonrpc_core;
+use jsonrpc_ws_server::jsonrpc_core::{IoHandler, MetaIoHandler, Metadata, Value};
 
 use config::{Configuration, InstanceConfiguration};
 
@@ -18,8 +18,11 @@ pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 
 pub trait DispatchRpc {
-    fn dispatch_rpc(&self, rpc_string: &str) -> String;
+    fn handler(self) -> IoHandler;
 }
+// pub trait DispatchRpc<M: Metadata + Default> {
+//     fn handler(&self) -> MetaIoHandler<M>;
+// }
 
 /// ContainerApiDispatcher exposes some subset of the Container API,
 /// including zome function calls as well as admin functionality.
@@ -27,7 +30,7 @@ pub trait DispatchRpc {
 pub struct ContainerApiDispatcher {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
-    io: Box<jsonrpc_core::IoHandler>,
+    io: IoHandler,
 }
 
 unsafe impl Send for ContainerApiDispatcher {}
@@ -39,14 +42,14 @@ impl ContainerApiDispatcher {
             .iter()
             .map(|inst| (inst.id.clone(), inst.clone()))
             .collect();
-        let io = Box::new(jsonrpc_core::IoHandler::new());
-        let self = Self {
+        let io = IoHandler::new();
+        let mut this = Self {
             instances,
             instance_configs,
             io,
         };
-        self.setup_api();
-        self
+        this.setup_api();
+        this
     }
 
     fn setup_api(&mut self) {
@@ -56,11 +59,11 @@ impl ContainerApiDispatcher {
 
     fn setup_info_api(&mut self) {
         self.io.add_method("info/instances", |_| {
-            Ok(jsonrpc_core::Value::String(("TODO: instances".to_string())))
+            Ok(Value::String("TODO: instances".to_string()))
         });
     }
 
-    fn setup_zome_api(&self) {
+    fn setup_zome_api(&mut self) {
         for (instance_id, hc_lock) in self.instances.clone() {
             let mut hc = hc_lock.write().unwrap();
             let state: State = hc.state().unwrap();
@@ -76,8 +79,8 @@ impl ContainerApiDispatcher {
                                 cap_name,
                                 func.name
                             );
-                            self.io.add_method(&method_name, |params: jsonrpc_core::Params| {
-                                Ok(jsonrpc_core::Value::String(("hey".to_string())))
+                            self.io.add_method(&method_name, |params| {
+                                Ok(Value::String("hey".to_string()))
                             });
                         })
                     })
@@ -91,17 +94,28 @@ impl ContainerApiDispatcher {
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
 /// admin/...                         -> TODO
+
 impl DispatchRpc for ContainerApiDispatcher {
 
-    /// Dispatch to the correct Holochain and `call` it based on the JSONRPC method
-    fn dispatch_rpc(&self, rpc_string: &str) -> String {
-        self.io.handle_request_sync(rpc_string).ok_or(jsonrpc_core::Value::String("TODO".into())).and_then(|response: String| {
-            // JsonString::try_from(response)
-            Ok(response)
-        }).unwrap_or_else(|e| "error (TODO)".into())
+    fn handler(self) -> IoHandler { 
+        self.io
     }
+
 }
 
-pub trait Interface {
-    fn run(&self, Arc<DispatchRpc>) -> Result<(), String>;
+pub trait Interface<D: DispatchRpc> {
+    fn run(&self, D) -> Result<(), String>;
 }
+
+// 
+// impl DispatchRpc<()> for ContainerApiDispatcher {
+// 
+//     fn handler(&self) -> IoHandler<()> { 
+//         self.io.into()
+//     }
+// 
+// }
+// 
+// pub trait Interface<M: Metadata + Default> {
+//     fn run(&self, Arc<DispatchRpc<M>>) -> Result<(), String>;
+// }

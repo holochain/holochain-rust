@@ -250,7 +250,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());*/
+    assert_eq!(result.unwrap(), JsonString::null());
 }
 
 #[test]

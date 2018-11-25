@@ -3,16 +3,12 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use dna::wasm::DnaWasm;
-use std::collections::HashMap;
-use json::JsonString;
-use error::HolochainError;
+use dna::{wasm::DnaWasm, zome::entry_types::EntryTypeDef};
 use entry::entry_type::EntryType;
-use serde::Deserializer;
-use serde::Serializer;
-use serde::ser::SerializeMap;
-use dna::zome::entry_types::EntryTypeDef;
-use serde::Deserialize;
+use error::HolochainError;
+use json::JsonString;
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
+use std::collections::HashMap;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -61,15 +57,14 @@ where
 {
     let mut map = serializer.serialize_map(Some(entry_types.len()))?;
     for (k, v) in entry_types {
-        map.serialize_entry(
-            &String::from(k.to_owned()),
-            &v
-        )?;
+        map.serialize_entry(&String::from(k.to_owned()), &v)?;
     }
     map.end()
 }
 
-fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<(HashMap<EntryType, entry_types::EntryTypeDef>), D::Error>
+fn deserialize_entry_types<'de, D>(
+    deserializer: D,
+) -> Result<(HashMap<EntryType, entry_types::EntryTypeDef>), D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -79,10 +74,7 @@ where
 
     let mut map = HashMap::new();
     for (k, v) in serialized_entry_types {
-        map.insert(
-            EntryType::from(k),
-            v,
-        );
+        map.insert(EntryType::from(k), v);
     }
     Ok(map)
 }
@@ -151,14 +143,11 @@ impl Zome {
 
 #[cfg(test)]
 pub mod tests {
-    use dna::zome::Zome;
-    use serde_json;
-    use std::convert::TryFrom;
-    use dna::zome::ErrorHandling;
-    use std::collections::HashMap;
+    use dna::zome::{entry_types::EntryTypeDef, ErrorHandling, Zome};
     use entry::entry_type::EntryType;
     use json::JsonString;
-    use dna::zome::entry_types::EntryTypeDef;
+    use serde_json;
+    use std::{collections::HashMap, convert::TryFrom};
 
     pub fn test_zome() -> Zome {
         Zome::default()
@@ -200,9 +189,6 @@ pub mod tests {
             JsonString::from(zome.clone()),
         );
 
-        assert_eq!(
-            zome,
-            Zome::try_from(JsonString::from(expected)).unwrap(),
-        );
+        assert_eq!(zome, Zome::try_from(JsonString::from(expected)).unwrap(),);
     }
 }

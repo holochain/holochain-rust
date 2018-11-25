@@ -90,10 +90,11 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
-    dna.zomes.get_mut("test_zome").unwrap().entry_types.insert(
-        "validation_package_tester".into(),
-        EntryTypeDef::new(),
-    );
+    dna.zomes
+        .get_mut("test_zome")
+        .unwrap()
+        .entry_types
+        .insert("validation_package_tester".into(), EntryTypeDef::new());
 
     let (context, test_logger) = test_context_and_logger("alex");
     let mut hc =

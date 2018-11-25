@@ -1,9 +1,9 @@
+use error::HolochainError;
+use json::JsonString;
 use std::{
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
-use json::JsonString;
-use error::HolochainError;
 
 // Macro for statically concatanating the system entry prefix for entry types of system entries
 macro_rules! sys_prefix {

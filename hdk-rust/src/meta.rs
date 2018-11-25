@@ -1,3 +1,4 @@
+use api::debug;
 use entry_definition::ValidatingEntryType;
 use globals::G_MEM_STACK;
 use holochain_core_types::{
@@ -6,12 +7,9 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
-    holochain_core_types::error::RibosomeErrorCode,
-    holochain_core_types::json::JsonString,
-    holochain_core_types::dna::zome::Zome,
+    holochain_core_types::{dna::zome::Zome, error::RibosomeErrorCode, json::JsonString},
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
-use api::debug;
 use std::collections::HashMap;
 
 trait Ribosome {
@@ -138,7 +136,10 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
     let json_string = JsonString::from(zome);
 
-    unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string.to_string()) as u32 }
+    unsafe {
+        store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string.to_string())
+            as u32
+    }
 }
 
 #[cfg(test)]

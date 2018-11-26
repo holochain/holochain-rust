@@ -1,5 +1,14 @@
-use agent::actions::{commit::commit_entry, update_entry::update_entry};
-use futures::{executor::block_on, FutureExt};
+use crate::{
+    nucleus::{
+        actions::{build_validation_package::*, validate::*},
+        ribosome::{api::ZomeApiResult, Runtime},
+    },
+    agent::actions::{commit::commit_entry, update_entry::update_entry}
+};
+use futures::{
+    executor::block_on,
+    future::{self, TryFutureExt},
+};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
@@ -8,10 +17,6 @@ use holochain_core_types::{
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
-use nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
-};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -51,21 +56,16 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         // 1. Build the context needed for validation of the entry
         build_validation_package(&entry, &runtime.context)
             .and_then(|validation_package| {
-                Ok(ValidationData {
+                future::ready(Ok(ValidationData {
                     package: validation_package,
                     sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Commit,
-                })
+                }))
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
-                validate_entry(
-                    entry.entry_type().clone(),
-                    entry.clone(),
-                    validation_data,
-                    &runtime.context,
-                )
+                validate_entry(entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

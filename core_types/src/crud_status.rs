@@ -1,7 +1,9 @@
 use crate::{
-    cas::content::{AddressableContent, Content},
+    cas::content::{AddressableContent, Content, Address},
     error::error::HolochainError,
     json::JsonString,
+    eav::EntityAttributeValue,
+    hash::HashString,
 };
 use std::convert::TryInto;
 

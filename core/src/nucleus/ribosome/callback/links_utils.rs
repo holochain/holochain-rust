@@ -5,7 +5,10 @@ use holochain_core_types::{
     error::HolochainError,
     link::Link,
 };
-use holochain_wasm_utils::api_serialization::validation::LinkDirection;
+use holochain_wasm_utils::api_serialization::{
+    validation::LinkDirection,
+    get_entry::*,
+};
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
@@ -15,13 +18,19 @@ pub fn get_link_entries(
 ) -> Result<(Entry, Entry), HolochainError> {
     let base_address = link.base();
     let target_address = link.target();
-    let base = block_on(get_entry(&context, base_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Base for link not found")),
-    )?;
-    let target = block_on(get_entry(&context, target_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Target for link not found")),
-    )?;
-    Ok((base, target))
+    let entry_args = &GetEntryArgs { address: base_address.clone(), options: GetEntryOptions::default() };
+    let base_result = block_on(get_entry(&context, entry_args))?;
+    if base_result.entries.len() == 0 {
+        return Err(HolochainError::ErrorGeneric(String::from("Base for link not found")));
+    }
+    let base = base_result.entries.iter().next().unwrap();
+    let entry_args = &GetEntryArgs{address: target_address.clone(), options: GetEntryOptions::default()};
+    let target_result = block_on(get_entry(&context, entry_args))?;
+    if target_result.entries.len() == 0 {
+        return Err(HolochainError::ErrorGeneric(String::from("Target for link not found")));
+    }
+    let target = target_result.entries.iter().next().unwrap();
+    Ok((base.deserialize(), target.deserialize()))
 }
 
 /// This is a "path" in the DNA tree.

@@ -63,6 +63,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|_| {
                 commit_entry(
                     entry.clone(),
+                    None,
                     &runtime.context.action_channel,
                     &runtime.context,
                 )
@@ -176,6 +177,7 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
+            None,
             &context.action_channel.clone(),
             &context,
         ))
@@ -203,6 +205,7 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
+            None,
             &context.action_channel.clone(),
             &context,
         ))
@@ -237,6 +240,7 @@ None,
 
         block_on(commit_entry(
             test_entry_b(),
+            None,
             &context.action_channel.clone(),
             &context,
         ))

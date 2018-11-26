@@ -18,7 +18,6 @@ use holochain_core_types::{
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
     error::{CoreError, HcResult, HolochainError, ZomeApiInternalResult},
-error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };

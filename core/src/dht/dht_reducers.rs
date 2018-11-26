@@ -4,6 +4,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     dht::dht_store::DhtStore,
+    nucleus::actions::get_entry::get_entry_rec,
 };
 use holochain_core_types::{
     cas::content::AddressableContent,
@@ -15,7 +16,6 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryOptions, GetEntryResult, StatusRequestKind,
 };
-use nucleus::actions::get_entry::get_entry_rec;
 use std::{collections::HashSet, convert::TryFrom, sync::Arc};
 
 // A function that might return a mutated DhtStore

@@ -79,7 +79,7 @@ pub(crate) fn get_entry_meta_from_dht(
 pub fn get_entry<'a>(
     context: &'a Arc<Context>,
     args: &GetEntryArgs,
-) -> FutureObj<'a, Result<Option<Entry>, HolochainError>>{
+) -> FutureObj<'a, Result<GetEntryResult, HolochainError>>{
     let mut entry_result = GetEntryResult::new();
     match get_entry_rec(
         context,
@@ -87,14 +87,14 @@ pub fn get_entry<'a>(
         args.address.clone(),
         args.options.clone(),
     ) {
-        Err(err) => Box::new(future::err(err)),
-        Ok(_) => Box::new(future::ok(entry_result)),
+        Err(err) => FutureObj::new(Box::new(future::err(err))),
+        Ok(_) => FutureObj::new(Box::new(future::ok(entry_result))),
     }
 }
 
 /// Recursive function for filling GetEntryResult by walking the crud-links
-pub fn get_entry_rec(
-    context: &Arc<Context>,
+pub fn get_entry_rec<'a>(
+    context: &'a Arc<Context>,
     entry_result: &mut GetEntryResult,
     address: Address,
     options: GetEntryOptions,
@@ -140,7 +140,7 @@ pub mod tests {
         entry::test_entry,
     };
     use holochain_wasm_utils::api_serialization::get_entry::*;
-    use instance::tests::test_context_with_state;
+    use crate::instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {

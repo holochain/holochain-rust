@@ -1,7 +1,9 @@
-use dht::actions::remove_entry::remove_entry;
+use crate::{
+    dht::actions::remove_entry::remove_entry,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+};
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 

@@ -1,11 +1,19 @@
 extern crate futures;
 extern crate serde_json;
-use action::{Action, ActionWrapper};
-use context::Context;
-use futures::Future;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    instance::dispatch_action,
+};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use instance::dispatch_action;
-use std::sync::{mpsc::SyncSender, Arc};
+use std::{
+    pin::{Pin, Unpin},
+    sync::{Arc, mpsc::SyncSender},
+};
 
 /// Remove Entry Action Creator
 ///
@@ -30,27 +38,26 @@ pub struct RemoveEntryFuture {
     action: ActionWrapper,
 }
 
-impl Future for RemoveEntryFuture {
-    type Item = ();
-    type Error = HolochainError;
+impl Unpin for RemoveEntryFuture {}
 
-    fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<futures::Async<Self::Item>, Self::Error> {
+
+impl Future for RemoveEntryFuture {
+    type Output = Result<(), HolochainError>;
+
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             match state.dht().actions().get(&self.action) {
-                Some(Ok(_)) => Ok(futures::Async::Ready(())),
-                Some(Err(e)) => Err(e.clone()),
-                None => Ok(futures::Async::Pending),
+                Some(Ok(_)) => Poll::Ready(Ok(())),
+                Some(Err(e)) => Poll::Ready(Err(e.clone())),
+                None => Poll::Pending,
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

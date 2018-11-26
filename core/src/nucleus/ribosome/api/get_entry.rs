@@ -4,7 +4,6 @@ use crate::nucleus::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -39,11 +38,6 @@ mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::tests::{test_context_and_logger, test_instance},
-        cas::content::{Address, AddressableContent},
-        crud_status::CrudStatus,
-        entry::test_entry,
-        error::ZomeApiInternalResult,
-        json::JsonString,
         nucleus::{
         ribosome::{
             self,
@@ -56,6 +50,7 @@ mod tests {
         },
     };
     use holochain_core_types::{
+        crud_status::CrudStatus,
         cas::content::{Address, AddressableContent},
         entry::test_entry,
         error::ZomeApiInternalResult,

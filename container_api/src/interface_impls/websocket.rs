@@ -1,7 +1,4 @@
-
-use jsonrpc_ws_server::{
-    ServerBuilder,
-};
+use jsonrpc_ws_server::ServerBuilder;
 
 use interface::{ContainerApiDispatcher, DispatchRpc, Interface};
 

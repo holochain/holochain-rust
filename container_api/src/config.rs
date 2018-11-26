@@ -246,9 +246,7 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use crate::config::{
-        load_configuration, Configuration, InterfaceDriver, StorageConfiguration,
-    };
+    use crate::config::{load_configuration, Configuration, InterfaceDriver, StorageConfiguration};
 
     #[test]
     fn test_agent_load() {

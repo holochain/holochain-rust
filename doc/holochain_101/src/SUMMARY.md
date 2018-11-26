@@ -10,7 +10,7 @@
   - [Intro to DNA: Code](./intro_to_dna_code.md)
   - [Intro to Command Line Tools](./intro_to_command_line_tools.md)
   - [Create A New Project](./new_project.md)
-  - [(E) Configuring an App](./configuring_an_app.md)
+  - [Configuring an App](./configuring_an_app.md)
   - [(E) Writing in Rust](./zome/rust.md)
   - [(E) Writing in Assemblyscript](./zome/assemblyscript.md)
   - [(E) Intro to WebAssembly](./zome/intro_to_webassembly.md)

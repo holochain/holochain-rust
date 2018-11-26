@@ -45,7 +45,7 @@ pub fn test_context(agent_name: &str) -> Arc<Context> {
             agent,
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            Arc::new(RwLock::new(MemoryStorage::new().unwrap())),
+            Arc::new(RwLock::new(MemoryStorage::new())),
             Arc::new(RwLock::new(EavMemoryStorage::new().unwrap())),
             make_mock_net(),
         ).unwrap(),

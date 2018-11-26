@@ -1,6 +1,3 @@
-mod actor;
-use actor::{AskSelf, Protocol};
-use cas::memory::actor::MemoryStorageActor;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -8,64 +5,50 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use riker::actors::*;
 use uuid::Uuid;
-#[derive(Clone, Debug, PartialEq)]
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
+
+
+
+#[derive(Clone, Debug)]
 pub struct MemoryStorage {
-    actor: ActorRef<Protocol>,
+    storage: Arc<RwLock<HashMap<Address, Content>>>,
     id: Uuid,
 }
 
+impl PartialEq for MemoryStorage {
+    fn eq(&self, other: &MemoryStorage) -> bool{
+        self.id == other.id
+    }
+}
+
 impl MemoryStorage {
-    pub fn new() -> Result<MemoryStorage, HolochainError> {
-        Ok(MemoryStorage {
-            actor: MemoryStorageActor::new_ref()?,
+    pub fn new() -> MemoryStorage {
+        MemoryStorage {
+            storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
-        })
+        }
     }
 }
 
 impl ContentAddressableStorage for MemoryStorage {
     fn add(&mut self, content: &AddressableContent) -> Result<(), HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
-
-        match response {
-            Protocol::CasAddResult(add_result) => add_result,
-            _ => Err(HolochainError::ErrorGeneric(format!(
-                "Expected Protocol::CasAddResult received {:?}",
-                response
-            ))),
-        }
+        let mut map = self.storage.write()?;
+        map.insert(content.address().clone(), content.content().clone());
+        Ok(())
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasContains(address.clone()))?;
-
-        match response {
-            Protocol::CasContainsResult(contains_result) => contains_result,
-            _ => Err(HolochainError::ErrorGeneric(format!(
-                "Expected Protocol::CasContainsResult received {:?}",
-                response
-            ))),
-        }
+        let map = self.storage.read()?;
+        Ok(map.contains_key(address))
     }
 
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-        let response = self
-            .actor
-            .block_on_ask(Protocol::CasFetch(address.clone()))?;
-
-        match response {
-            Protocol::CasFetchResult(fetch_result) => Ok(fetch_result?),
-            _ => Err(HolochainError::ErrorGeneric(format!(
-                "Expected Protocol::CasFetchResult received {:?}",
-                response
-            ))),
-        }
+        let map = self.storage.read()?;
+        Ok(map.get(address).cloned())
     }
 
     fn get_id(&self) -> Uuid {
@@ -85,7 +68,7 @@ pub mod tests {
     };
 
     pub fn test_memory_storage() -> MemoryStorage {
-        MemoryStorage::new().expect("could not create memory storage")
+        MemoryStorage::new()
     }
 
     #[test]

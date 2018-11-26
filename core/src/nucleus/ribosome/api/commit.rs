@@ -5,7 +5,10 @@ use crate::{
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
-use futures::{executor::block_on, future::{self, TryFutureExt}};
+use futures::{
+    executor::block_on,
+    future::{self, TryFutureExt},
+};
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
@@ -61,7 +64,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
                     &runtime.context.action_channel,
                     &runtime.context,
                 )
-            })
+            }),
     );
 
     runtime.store_result(task_result)

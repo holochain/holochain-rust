@@ -4,10 +4,12 @@ use crate::{
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
-    }
+    },
 };
-use futures::{executor::block_on, future::{self, TryFutureExt}};
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use futures::{
+    executor::block_on,
+    future::{self, TryFutureExt},
+};
 use holochain_core_types::{
     cas::content::Address,
     entry::ToEntry,
@@ -15,6 +17,7 @@ use holochain_core_types::{
     link::link_add::LinkAddEntry,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -175,7 +178,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -201,7 +205,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

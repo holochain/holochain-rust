@@ -5,7 +5,10 @@ use crate::{
     context::Context,
     nucleus::ribosome::callback::{self, CallbackResult},
 };
-use futures::{task::{Poll, LocalWaker}, future::{self, FutureObj, Future}};
+use futures::{
+    future::{self, Future, FutureObj},
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{entry_type::EntryType, Entry},
@@ -16,7 +19,8 @@ use holochain_core_types::{
 use snowflake;
 use std::{
     pin::{Pin, Unpin},
-    sync::Arc, thread,
+    sync::Arc,
+    thread,
 };
 
 /// ValidateEntry Action Creator
@@ -42,10 +46,9 @@ pub fn validate_entry<'a>(
             .get_zome_name_for_entry_type(&entry.entry_type().to_string())
             .is_none()
         {
-            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(format!(
-                "Unknown entry type: '{}'",
-                entry.entry_type().to_string(),
-            )))));
+            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+                format!("Unknown entry type: '{}'", entry.entry_type().to_string(),),
+            ))));
         }
     }
 
@@ -100,12 +103,9 @@ pub struct ValidationFuture {
 impl Unpin for ValidationFuture {}
 
 impl Future for ValidationFuture {
-    type Output = Result<HashString,HolochainError>;
+    type Output = Result<HashString, HolochainError>;
 
-    fn poll(
-        self: Pin<&mut Self>,
-        lw: &LocalWaker,
-    ) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

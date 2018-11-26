@@ -9,11 +9,17 @@ use crate::{
         state::NucleusStatus,
     },
 };
-use futures::{executor::block_on, future::Future, task::{Poll, LocalWaker}};
+use futures::{
+    executor::block_on,
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{dna::Dna, entry::ToEntry};
 use std::{
     pin::{Pin, Unpin},
-    sync::Arc, thread, time::*
+    sync::Arc,
+    thread,
+    time::*,
 };
 
 /// Timeout in seconds for initialization process.
@@ -28,10 +34,7 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub fn initialize_application<'a>(
-    dna: Dna,
-    context: &'a Arc<Context>,
-) -> InitializationFuture {
+pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> InitializationFuture {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
         return InitializationFuture {
             context: context.clone(),
@@ -137,7 +140,7 @@ pub fn initialize_application<'a>(
 pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
-    error: Option<String>
+    error: Option<String>,
 }
 
 impl Unpin for InitializationFuture {}
@@ -145,10 +148,7 @@ impl Unpin for InitializationFuture {}
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, String>;
 
-    fn poll(
-        self: Pin<&mut Self>,
-        lw: &LocalWaker,
-    ) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         if let Some(ref error) = self.error {
             return Poll::Ready(Err(error.clone()));
         }

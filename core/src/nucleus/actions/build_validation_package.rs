@@ -8,7 +8,10 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
 };
-use futures::{future::Future, task::{Poll, LocalWaker}};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     chain_header::ChainHeader,
@@ -18,9 +21,10 @@ use holochain_core_types::{
 };
 use snowflake;
 use std::{
-    pin::{Pin, Unpin},
     convert::TryInto,
-    sync::Arc, thread
+    pin::{Pin, Unpin},
+    sync::Arc,
+    thread,
 };
 
 pub fn build_validation_package<'a>(
@@ -175,10 +179,7 @@ impl Unpin for ValidationPackageFuture {}
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
-    fn poll(
-        self: Pin<&mut Self>,
-        lw: &LocalWaker
-    ) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         if let Some(ref error) = self.error {
             return Poll::Ready(Err(error.clone()));
         }
@@ -189,9 +190,7 @@ impl Future for ValidationPackageFuture {
         lw.wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_packages.get(&self.key) {
-                Some(Ok(validation_package)) => {
-                    Poll::Ready(Ok(validation_package.clone()))
-                }
+                Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
                 Some(Err(error)) => Poll::Ready(Err(error.clone())),
                 None => Poll::Pending,
             }

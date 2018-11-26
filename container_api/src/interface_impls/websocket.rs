@@ -1,13 +1,7 @@
-use holochain_core_types::json::JsonString;
 
-use jsonrpc::JsonRpcRequest;
 use jsonrpc_ws_server::{
-    jsonrpc_core::{middleware, IoHandler, MetaIoHandler},
     ServerBuilder,
 };
-use serde_json::Value;
-use std::{convert::TryFrom, sync::Arc};
-use ws::{self, Message};
 
 use interface::{ContainerApiDispatcher, DispatchRpc, Interface};
 

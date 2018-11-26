@@ -1,15 +1,11 @@
 use holochain_core::state::State;
-use holochain_core_types::json::JsonString;
 use Holochain;
 
-use jsonrpc::{jsonrpc_error, jsonrpc_success, JsonRpcRequest};
-use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, MetaIoHandler, Metadata, Value};
+use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
 use serde_json;
 use std::{
     collections::HashMap,
-    convert::TryFrom,
-    sync::{Arc, RwLock, RwLockReadGuard},
-    thread,
+    sync::{Arc, RwLock},
 };
 
 use config::{Configuration, InstanceConfiguration};

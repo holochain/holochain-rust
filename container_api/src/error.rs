@@ -48,7 +48,7 @@ impl From<HolochainError> for HolochainInstanceError {
 #[cfg(test)]
 pub mod tests {
 
-    use error::HolochainInstanceError;
+    use crate::error::HolochainInstanceError;
     use holochain_core_types::error::HolochainError;
     use std::error::Error;
 

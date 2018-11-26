@@ -1,12 +1,14 @@
 pub mod entry_type;
 
-use cas::content::{Address, AddressableContent, Content};
-use entry::entry_type::{
-    test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
-    EntryType,
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::entry_type::{
+        test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
+        EntryType,
+    },
+    error::{error::HcResult, HolochainError},
+    json::{JsonString, RawString, *},
 };
-use error::{error::HcResult, HolochainError};
-use json::{JsonString, RawString, *};
 use snowflake;
 use std::{
     convert::{TryFrom, TryInto},
@@ -46,7 +48,7 @@ impl Entry {
 
 pub trait ToEntry {
     fn to_entry(&self) -> Entry;
-    fn from_entry(&Entry) -> Self;
+    fn from_entry(_: &Entry) -> Self;
 }
 
 impl PartialEq for Entry {
@@ -247,11 +249,13 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cas::{
-        content::{AddressableContent, AddressableContentTestSuite},
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    use crate::{
+        cas::{
+            content::{AddressableContent, AddressableContentTestSuite},
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        },
+        entry::{expected_entry_address, Entry},
     };
-    use entry::{expected_entry_address, Entry};
 
     #[test]
     /// tests for PartialEq

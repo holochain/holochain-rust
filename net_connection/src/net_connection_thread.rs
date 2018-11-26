@@ -105,7 +105,8 @@ mod tests {
         let mut con = NetConnectionThread::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
         con.stop().unwrap();
@@ -136,7 +137,8 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
 
@@ -167,7 +169,8 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         let res = receiver.recv().unwrap();
 

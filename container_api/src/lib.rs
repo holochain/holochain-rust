@@ -113,4 +113,4 @@ pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
 
-pub use holochain::Holochain;
+pub use crate::holochain::Holochain;

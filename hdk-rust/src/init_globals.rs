@@ -2,11 +2,12 @@
 //! which initializes the Zome API Globals with the values it receives from the Ribosome.
 //! It is automatically called at startup of each Zome function call.
 
-use error::{ZomeApiError, ZomeApiResult};
+use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
 use std::convert::TryInto;
 
+#[allow(dead_code)]
 extern "C" {
     fn hc_init_globals(encoded_allocation_of_input: u32) -> u32;
 }

@@ -107,8 +107,10 @@ impl Iterator for ChainStoreIterator {
                     .unwrap()
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
-                    .map(|content| ChainHeader::try_from_content(&content)
-                    .expect("failed to load ChainHeader from Content"))
+                    .map(|content| {
+                        ChainHeader::try_from_content(&content)
+                            .expect("failed to load ChainHeader from Content")
+                    })
             });
         previous
     }
@@ -150,7 +152,10 @@ impl Iterator for ChainStoreTypeIterator {
                 (*storage.read().unwrap())
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
-                    .map(|content| ChainHeader::try_from_content(&content).expect("failed to load ChainHeader from Content"))
+                    .map(|content| {
+                        ChainHeader::try_from_content(&content)
+                            .expect("failed to load ChainHeader from Content")
+                    })
             });
         previous
     }
@@ -160,7 +165,7 @@ impl Iterator for ChainStoreTypeIterator {
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use agent::chain_store::ChainStore;
+    use crate::agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,

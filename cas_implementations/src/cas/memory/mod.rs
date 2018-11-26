@@ -30,14 +30,30 @@ impl ContentAddressableStorage for MemoryStorage {
         let response = self
             .actor
             .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
-        unwrap_to!(response => Protocol::CasAddResult).clone()
+
+        match response {
+            Protocol::CasAddResult(add_result) => add_result,
+            _ => Err(
+                HolochainError::ErrorGeneric(
+                    format!("Expected Protocol::CasAddResult received {:?}", response)
+                )
+            ),
+        }
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
         let response = self
             .actor
             .block_on_ask(Protocol::CasContains(address.clone()))?;
-        unwrap_to!(response => Protocol::CasContainsResult).clone()
+
+        match response {
+            Protocol::CasContainsResult(contains_result) => contains_result,
+            _ => Err(
+                HolochainError::ErrorGeneric(
+                    format!("Expected Protocol::CasContainsResult received {:?}", response)
+                )
+            )
+        }
     }
 
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
@@ -45,7 +61,14 @@ impl ContentAddressableStorage for MemoryStorage {
             .actor
             .block_on_ask(Protocol::CasFetch(address.clone()))?;
 
-        Ok(unwrap_to!(response => Protocol::CasFetchResult).clone()?)
+        match response {
+            Protocol::CasFetchResult(fetch_result) => Ok(fetch_result?),
+            _ => Err(
+                HolochainError::ErrorGeneric(
+                    format!("Expected Protocol::CasFetchResult received {:?}", response),
+                )
+            )
+        }
     }
 
     fn get_id(&self) -> Uuid {

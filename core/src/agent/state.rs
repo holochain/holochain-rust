@@ -73,8 +73,10 @@ impl AgentState {
             .and_then(|chain_header| Some(chain_header.address()))
             .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
-        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?;
-        Ok(Agent::from_entry(&agent_entry.unwrap()))
+        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
+            .ok_or("Agent entry not found".to_string())?;
+
+        Ok(Agent::from_entry(&agent_entry))
     }
 }
 

@@ -290,7 +290,7 @@ pub mod tests {
         },
         context::{Context, mock_network_config},
     };
-    use futures::{executor::block_on, TryFutureExt};
+    use futures::{executor::block_on};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -476,7 +476,7 @@ pub mod tests {
 
         block_on(async{
             await!(initialize_application(dna.clone(), &context.clone()))?;
-            await!(initialize_network(&context))?
+            await!(initialize_network(&context))
         })?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));

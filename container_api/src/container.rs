@@ -75,22 +75,26 @@ impl Container {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        self.instances.iter_mut().map(|(id, hc)| {
-            println!("Starting instance \"{}\"...", id);
-            hc.write().unwrap().start()
-        })
-        .collect::<Result<Vec<()>, _>>()
-        .map(|_| ())
+        self.instances
+            .iter_mut()
+            .map(|(id, hc)| {
+                println!("Starting instance \"{}\"...", id);
+                hc.write().unwrap().start()
+            })
+            .collect::<Result<Vec<()>, _>>()
+            .map(|_| ())
     }
 
     /// Stops all instances
-    pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError>  {
-        self.instances.iter_mut().map(|(id, hc)| {
-            println!("Stopping instance \"{}\"...", id);
-            hc.write().unwrap().stop()
-        })
-        .collect::<Result<Vec<()>, _>>()
-        .map(|_| ())
+    pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        self.instances
+            .iter_mut()
+            .map(|(id, hc)| {
+                println!("Stopping instance \"{}\"...", id);
+                hc.write().unwrap().stop()
+            })
+            .collect::<Result<Vec<()>, _>>()
+            .map(|_| ())
     }
 
     /// Stop and clear all instances
@@ -202,7 +206,6 @@ fn make_interface(
     interface_config: &InterfaceConfiguration,
 ) -> Box<Interface<ContainerApiDispatcher>> {
     match interface_config.driver {
-        // InterfaceDriver::Http { port } => Box::new(interface_impls::http::HttpInterface::new(port)),
         InterfaceDriver::Websocket { port } => {
             Box::new(interface_impls::websocket::WebsocketInterface::new(port))
         }

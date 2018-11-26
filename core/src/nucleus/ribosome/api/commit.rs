@@ -64,7 +64,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
                     &runtime.context.action_channel,
                     &runtime.context,
                 )
-            }),
+            })
+            ,
     );
 
     runtime.store_result(task_result)
@@ -75,9 +76,14 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use crate::nucleus::ribosome::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
+
+
+    use crate::{
+        nucleus::ribosome::{
+            api::{tests::test_zome_api_function, ZomeApiFunction},
+            Defn,
+        },
+        nucleus::actions::tests::*,
     };
     use holochain_core_types::{
         cas::content::Address,
@@ -112,4 +118,23 @@ pub mod tests {
         );
     }
 
+    #[test]
+    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    fn test_commit_with_dht_publish() {
+        let (_instance1,context1) = instance_by_name("jill");
+        let (_instance2,context2) = instance_by_name("jack");
+
+        let header = commit(test_entry_package_entry(),&context1);
+
+        let state = &context2.state().unwrap();
+        let storage = &state.agent().chain().content_storage().clone();
+        let json = storage
+            .read()
+            .unwrap()
+            .fetch(&header.entry_address())
+            .expect("could not fetch from CAS");
+
+        let x:String = json.unwrap().to_string();
+        assert_eq!(x,"fish".to_string());
+    }
 }

@@ -193,8 +193,6 @@ jobs:
     - name: "App-spec"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template
-      before_script:
-        - make build_nodejs_container
       script:
         - make test_app_spec
 

@@ -74,9 +74,9 @@ impl ContainerApiDispatcher {
             let dna = nucleus.dna();
             match dna {
                 Some(dna) => {
-                    dna.zomes.into_iter().for_each(|(zome_name, zome)| {
-                        zome.capabilities.into_iter().for_each(|(cap_name, cap)| {
-                            cap.functions.into_iter().for_each(|func| {
+                    for (zome_name, zome) in dna.zomes {
+                        for (cap_name, cap) in zome.capabilities {
+                            for func in cap.functions {
                                 let func_name = func.name;
                                 let zome_name = zome_name.clone();
                                 let cap_name = cap_name.clone();
@@ -88,18 +88,19 @@ impl ContainerApiDispatcher {
                                     func_name
                                 );
                                 let hc_lock_inner = hc_lock.clone();
-                                self.io.add_method(&method_name, move |_params| {
+                                self.io.add_method(&method_name, move |params| {
                                     let mut hc = hc_lock_inner.write().unwrap();
-                                    let response = hc.call(&zome_name, &cap_name, &func_name, "")
+                                    let params_string = serde_json::to_string(&params)?;
+                                    let response = hc.call(&zome_name, &cap_name, &func_name, &params_string)
                                         .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                                     Ok(Value::String(response.to_string()))
-                                });
-                            })
-                        })
-                    });
+                                })
+                            }
+                        }
+                    }
                 },
                 None => unreachable!()
-            }
+            };
         }
     }
 }

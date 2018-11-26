@@ -81,10 +81,8 @@ impl Container {
     pub fn start_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
-            match hc.write().unwrap().start() {
-                Ok(()) => println!("ok"),
-                Err(err) => println!("Error: {}", err),
-            }
+            hc.write().unwrap()
+                .start().expect("Could not start server") 
         });
     }
 
@@ -92,10 +90,7 @@ impl Container {
     pub fn stop_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
-            match hc.write().unwrap().stop() {
-                Ok(()) => println!("ok"),
-                Err(err) => println!("Error: {}", err),
-            }
+            hc.write().unwrap().stop().expect("Could not stop server") 
         });
     }
 

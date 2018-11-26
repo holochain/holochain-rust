@@ -335,7 +335,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        ).replace(char::is_whitespace, "");
+        )
+        .replace(char::is_whitespace, "");
 
         let dna = Dna::try_from(JsonString::from(fixture.clone())).unwrap();
 
@@ -380,7 +381,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!(dna, fixture);
     }
@@ -390,7 +392,8 @@ pub mod tests {
         let dna = Dna::try_from(JsonString::from(
             r#"{
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert!(dna.uuid.len() > 0);
     }
@@ -403,7 +406,8 @@ pub mod tests {
                     "zome1": {}
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!(
             dna.zomes.get("zome1").unwrap().config.error_handling,
@@ -423,7 +427,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!(
             dna.zomes
@@ -452,7 +457,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!(vec![0, 1, 2, 3], dna.zomes.get("zome1").unwrap().code.code);
     }
@@ -464,7 +470,8 @@ pub mod tests {
             r#"{
                 "name": 42
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -478,7 +485,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -496,7 +504,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -512,7 +521,8 @@ pub mod tests {
                     "obj": {"a": 1, "b": 2}
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         let props = dna.properties.as_object().unwrap();
 
@@ -580,7 +590,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         let wasm = dna.get_wasm_from_zome_name("test zome");
         assert_eq!("AAECAw==", base64::encode(&wasm.unwrap().code));
@@ -626,7 +637,8 @@ pub mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         assert_eq!(
             dna.get_zome_name_for_entry_type("test type").unwrap(),

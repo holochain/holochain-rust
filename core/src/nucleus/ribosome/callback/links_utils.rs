@@ -78,7 +78,8 @@ pub fn find_link_definition_in_dna(
                 })
             }),
         _ => None,
-    }.or(match target_type {
+    }
+    .or(match target_type {
         EntryType::App(app_entry_type) => dna
             .get_entry_type_def(&app_entry_type)
             .ok_or(HolochainError::ErrorGeneric(String::from(
@@ -99,7 +100,7 @@ pub fn find_link_definition_in_dna(
             }),
         _ => None,
     })
-        .ok_or(HolochainError::ErrorGeneric(String::from(
-            "Unknown entry type",
-        )))
+    .ok_or(HolochainError::ErrorGeneric(String::from(
+        "Unknown entry type",
+    )))
 }

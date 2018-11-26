@@ -75,7 +75,8 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
         &TEST_DIR_NAME,
         &DEFAULT_BUNDLE_FILE_NAME,
         "README.md",
-    ].join("\n");
+    ]
+        .join("\n");
     let mut hcignore_file = File::create(path.join(&IGNORE_FILE_NAME))?;
     hcignore_file.write_all(ignores.as_bytes())?;
 

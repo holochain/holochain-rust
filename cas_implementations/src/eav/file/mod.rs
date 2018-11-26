@@ -22,17 +22,15 @@ impl EavFileStorage {
 }
 
 impl EntityAttributeValueStorage for EavFileStorage {
-
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
 
         match response {
             Protocol::EavAddResult(add_result) => add_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::EavAddResult received {:?}", response),
-                )
-            )
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavAddResult received {:?}",
+                response
+            ))),
         }
     }
 
@@ -48,11 +46,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
         match response {
             Protocol::EavFetchResult(fetch_result) => fetch_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::EavFetchResult received {:?}", response)
-                )
-            )
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavFetchResult received {:?}",
+                response
+            ))),
         }
     }
 }

@@ -52,11 +52,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
-                validate_entry(
-                    entry.clone(),
-                    validation_data,
-                    &runtime.context,
-                )
+                validate_entry(entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {
@@ -68,9 +64,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             })
             // 4. Add link to the DHT's meta system so it can actually be retrieved
             //    when looked-up via the base
-            .and_then(|_| {
-                add_link(&input.to_link(), &runtime.context)
-            }),
+            .and_then(|_| add_link(&input.to_link(), &runtime.context)),
     );
 
     runtime.store_result(result)
@@ -177,7 +171,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -203,7 +198,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -228,13 +224,15 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         block_on(commit_entry(
             test_entry_b(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

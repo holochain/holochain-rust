@@ -346,8 +346,10 @@ pub mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -369,10 +371,12 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
                     make_mock_net(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -410,7 +414,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 make_mock_net(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 
@@ -429,7 +434,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -450,7 +456,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);

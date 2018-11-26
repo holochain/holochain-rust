@@ -50,11 +50,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
-                validate_entry(
-                    entry.clone(),
-                    validation_data,
-                    &runtime.context,
-                )
+                validate_entry(entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

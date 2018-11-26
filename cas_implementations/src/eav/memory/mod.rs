@@ -27,11 +27,10 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
         match response {
             Protocol::EavAddResult(add_result) => add_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::EavAddResult received {:?}", response)
-                )
-            ),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavAddResult received {:?}",
+                response
+            ))),
         }
     }
     fn fetch_eav(
@@ -46,11 +45,10 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
         match response {
             Protocol::EavFetchResult(fetch_result) => fetch_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::EavFetchResult received {:?}", response)
-                )
-            ),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavFetchResult received {:?}",
+                response
+            ))),
         }
     }
 }

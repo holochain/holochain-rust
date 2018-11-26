@@ -33,11 +33,10 @@ impl ContentAddressableStorage for MemoryStorage {
 
         match response {
             Protocol::CasAddResult(add_result) => add_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasAddResult received {:?}", response)
-                )
-            ),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasAddResult received {:?}",
+                response
+            ))),
         }
     }
 
@@ -48,11 +47,10 @@ impl ContentAddressableStorage for MemoryStorage {
 
         match response {
             Protocol::CasContainsResult(contains_result) => contains_result,
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasContainsResult received {:?}", response)
-                )
-            )
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasContainsResult received {:?}",
+                response
+            ))),
         }
     }
 
@@ -63,11 +61,10 @@ impl ContentAddressableStorage for MemoryStorage {
 
         match response {
             Protocol::CasFetchResult(fetch_result) => Ok(fetch_result?),
-            _ => Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasFetchResult received {:?}", response),
-                )
-            )
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasFetchResult received {:?}",
+                response
+            ))),
         }
     }
 

@@ -12,7 +12,8 @@ mod tests {
     pub fn fail() -> Result<(), Error> {
         Err(NetworkError::GenericError {
             error: "boink".to_string(),
-        }.into())
+        }
+        .into())
     }
 
     pub fn test_bail() -> Result<(), Error> {

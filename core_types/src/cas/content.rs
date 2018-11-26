@@ -155,7 +155,8 @@ impl AddressableContentTestSuite {
                         &cas.fetch(&f.address())
                             .expect(&fetch_error_message)
                             .expect("could not get json")
-                    ).unwrap()
+                    )
+                    .unwrap()
                 )
             );
         });
@@ -188,7 +189,8 @@ pub mod tests {
             JsonString::from(RawString::from("foo")),
             OtherExampleAddressableContent::try_from_content(&JsonString::from(RawString::from(
                 "foo",
-            ))).unwrap(),
+            )))
+            .unwrap(),
             Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }

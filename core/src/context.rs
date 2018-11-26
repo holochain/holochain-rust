@@ -150,8 +150,10 @@ pub fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
     Arc::new(Mutex::new(res))
 }
 
@@ -189,7 +191,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -219,7 +222,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

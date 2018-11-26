@@ -20,18 +20,24 @@ These dependencies need to be installed in order to compile, and use `hc`:
   - `rustup default nightly`
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
   - `rustup target add wasm32-unknown-unknown --toolchain nightly`
-- [Node.js](https://nodejs.org) version 8 or higher (needed for running tests)
+- [Node.js](https://nodejs.org) version 8 or higher
+  - Tests for Holochain apps are now written in Javascript and executed in Nodejs
+  - To read further, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)
+- [Zmq](http://zeromq.org/intro:get-the-software)
+  - zeromq is a "distributed messaging" software package utilized in the networking stack of Holochain
+  - the link above has common platform installation instructions
+  - without ZMQ the installation command that follows will fail
 
 
-To install the Holochain command line, run the following commands in a terminal
+To install the latest version of the Holochain command line, run the following command in a terminal
 ```shell
-$ git clone https://github.com/holochain/holochain-rust.git
-$ cd holochain-rust/cmd
-$ cargo install -f --path .
+$ cargo install hc --force --git https://github.com/holochain/holochain-rust.git --branch develop
 ```
 
 The command line tools are now available in your command line using the `hc` command.
-Run `hc -V` to confirm.
+
+Run `hc --version` to confirm.
+
 Run `hc help` for help.
 
 ## Usage
@@ -76,8 +82,8 @@ What this did is generate a new folder under `zomes` called `users`. Here is the
 So in every Zome there must be a `code` folder, which can be compiled into a single `WASM` binary with the code for this Zome.
 
 Now that you have your Rust Zome, check out the two sources of documentation about writing Holochain DNA source code:
-1. https://holochain.github.io/holochain-rust
-2. https://holochain.github.io/rust-api/0.0.1/hdk
+1. https://developer.holochain.org/guide/latest
+2. https://developer.holochain.org/api/latest/hdk
 
 In order for Holochain to run your app, you have to build your code into a single packaged file. Those instructions follow.
 

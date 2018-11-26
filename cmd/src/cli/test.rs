@@ -1,8 +1,6 @@
-use cli::package;
 use colored::*;
-use error::DefaultResult;
+use crate::{cli::package, error::DefaultResult, util};
 use std::{fs, path::PathBuf};
-use util;
 
 pub const TEST_DIR_NAME: &str = "test";
 pub const DIST_DIR_NAME: &str = "dist";
@@ -65,7 +63,7 @@ pub fn test(
 pub mod tests {
     use super::*;
     use assert_cmd::prelude::*;
-    use cli::package;
+    use crate::cli::package;
     use std::process::Command;
     use tempfile::{Builder, TempDir};
 

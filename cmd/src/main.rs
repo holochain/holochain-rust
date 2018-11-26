@@ -24,7 +24,7 @@ mod config_files;
 mod error;
 mod util;
 
-use error::{HolochainError, HolochainResult};
+use crate::error::{HolochainError, HolochainResult};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -159,7 +159,8 @@ fn run() -> HolochainResult<()> {
                 &tests_folder,
                 &test_file,
                 skip_build,
-            ).or_else(|err| Err(HolochainError::Default(err)))?
+            )
+            .or_else(|err| Err(HolochainError::Default(err)))?
         }
     }
 

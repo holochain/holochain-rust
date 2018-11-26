@@ -10,7 +10,7 @@
 all: lint build_holochain build_cmd
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
-TOOLS_RUST_VERSION ?= nightly-2018-07-17
+TOOLS_RUST_VERSION ?= nightly-2018-10-12
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
@@ -134,7 +134,7 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests: holochain, command-line tools, app spec, nodejs container, and "C" bindings
-test: test_holochain test_cmd test_app_spec build_nodejs_container c_binding_tests ${C_BINDING_TESTS}
+test: test_holochain test_cmd test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -142,7 +142,7 @@ test_holochain: build_holochain
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
 
-test_app_spec: ensure_wasm_target install_cmd
+test_app_spec: ensure_wasm_target install_cmd build_nodejs_container
 	rustup default ${CORE_RUST_VERSION}
 	cd app_spec && ./build_and_test.sh
 

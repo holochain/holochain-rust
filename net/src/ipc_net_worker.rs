@@ -187,7 +187,8 @@ impl IpcNetWorker {
             self.ipc_relay.send(
                 ProtocolWrapper::SetConfig(ConfigData {
                     config: config.config,
-                }).into(),
+                })
+                .into(),
             )?;
         }
 
@@ -211,8 +212,10 @@ mod tests {
             "socketType": "zmq",
             "ipcUri": "tcp://127.0.0.1:0",
             "blockConnect": false
-        }).into(),
-        ).unwrap();
+        })
+            .into(),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -236,7 +239,8 @@ mod tests {
                     Ok(())
                 }),
                 test_struct,
-            ).unwrap(),
+            )
+            .unwrap(),
         );
 
         cli.tick().unwrap();
@@ -249,7 +253,8 @@ mod tests {
             json!({
             "method": "state",
             "state": "need_config"
-        }).into(),
+        })
+            .into(),
         );
         let data: NamedBinaryData = (&json).into();
         test_send
@@ -274,7 +279,8 @@ mod tests {
             json!({
             "method": "defaultConfig",
             "config": "test_config"
-        }).into(),
+        })
+            .into(),
         );
         let data: NamedBinaryData = (&json).into();
         test_send
@@ -295,7 +301,8 @@ mod tests {
             "state": "ready",
             "id": "test_id",
             "bindings": ["test_binding_1"]
-        }).into(),
+        })
+            .into(),
         );
         let data: NamedBinaryData = (&json).into();
         test_send

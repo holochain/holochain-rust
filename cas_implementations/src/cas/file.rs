@@ -81,7 +81,7 @@ pub mod tests {
     extern crate tempfile;
 
     use self::tempfile::{tempdir, TempDir};
-    use cas::file::FilesystemStorage;
+    use crate::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::{
             content::{ExampleAddressableContent, OtherExampleAddressableContent},

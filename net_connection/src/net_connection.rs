@@ -1,5 +1,5 @@
 use super::NetResult;
-use protocol::Protocol;
+use crate::protocol::Protocol;
 
 /// closure for getting Protocol messages from the p2p abstraction system
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;
@@ -80,7 +80,8 @@ mod tests {
         let mut con = NetConnectionRelay::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
         con.tick().unwrap();
@@ -112,7 +113,8 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
 
@@ -133,7 +135,8 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
-        ).unwrap();
+        )
+        .unwrap();
 
         con.tick().unwrap();
 

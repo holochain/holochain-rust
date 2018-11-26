@@ -70,7 +70,7 @@ impl AgentState {
         let agent_entry_address = self.chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
-            .and_then(|chain_header| Some(chain_header.address()))
+            .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
         let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?

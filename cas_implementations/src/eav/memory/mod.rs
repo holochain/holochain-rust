@@ -26,7 +26,14 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
-        unwrap_to!(response => Protocol::EavAddResult).clone()
+
+        match response {
+            Protocol::EavAddResult(add_result) => add_result,
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavAddResult received {:?}",
+                response
+            ))),
+        }
     }
     fn fetch_eav(
         &self,
@@ -37,7 +44,14 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         let response = self
             .actor
             .block_on_ask(Protocol::EavFetch(entity, attribute, value))?;
-        unwrap_to!(response => Protocol::EavFetchResult).clone()
+
+        match response {
+            Protocol::EavFetchResult(fetch_result) => fetch_result,
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavFetchResult received {:?}",
+                response
+            ))),
+        }
     }
 }
 

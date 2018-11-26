@@ -62,7 +62,7 @@ install_system_libzmq:
 		if ! which apt-get ; then \
 			if which brew ; then \
 				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
-				brew install zmq \
+				brew install zmq; \
 			else \
 				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
 			fi; \
@@ -148,7 +148,7 @@ test_app_spec: ensure_wasm_target install_cmd
 
 build_nodejs_container: core_toolchain
 	rustup default ${CORE_RUST_VERSION}
-	cd nodejs_container && yarn install --ignore-scripts && node ./publish.js
+	./scripts/build_nodejs_container.sh
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build

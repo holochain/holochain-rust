@@ -1,13 +1,15 @@
-use cas::content::{Address, AddressableContent, Content};
-use entry::{
-    entry_type::{test_entry_type, EntryType},
-    test_entry, Entry, ToEntry,
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{
+        entry_type::{test_entry_type, EntryType},
+        test_entry, Entry, ToEntry,
+    },
+    error::HolochainError,
+    json::JsonString,
+    signature::{test_signature, Signature},
+    time::{test_iso_8601, Iso8601},
 };
-use error::HolochainError;
-use json::JsonString;
-use signature::{test_signature, Signature};
 use std::convert::{TryFrom, TryInto};
-use time::{test_iso_8601, Iso8601};
 
 /// ChainHeader of a source chain "Item"
 /// The address of the ChainHeader is used as the Item's key in the source chain hash table
@@ -132,14 +134,16 @@ pub fn test_chain_header() -> ChainHeader {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{Address, AddressableContent};
-    use chain_header::{test_chain_header, ChainHeader};
-    use entry::{
-        entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
-        test_entry, test_entry_a, test_entry_b, ToEntry,
+    use crate::{
+        cas::content::{Address, AddressableContent},
+        chain_header::{test_chain_header, ChainHeader},
+        entry::{
+            entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
+            test_entry, test_entry_a, test_entry_b, ToEntry,
+        },
+        signature::{test_signature, test_signature_b},
+        time::test_iso_8601,
     };
-    use signature::{test_signature, test_signature_b};
-    use time::test_iso_8601;
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {
@@ -323,7 +327,8 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
@@ -331,7 +336,8 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 
@@ -348,7 +354,8 @@ pub mod tests {
                 &Some(test_chain_header().address()),
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 
@@ -365,7 +372,8 @@ pub mod tests {
                 &None,
                 &Some(test_chain_header().address()),
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 

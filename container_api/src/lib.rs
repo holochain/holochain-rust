@@ -109,4 +109,4 @@ pub mod container;
 pub mod error;
 pub mod holochain;
 
-pub use holochain::Holochain;
+pub use crate::holochain::Holochain;

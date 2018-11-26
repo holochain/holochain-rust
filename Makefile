@@ -10,7 +10,7 @@
 all: lint build_holochain build_cmd
 
 CORE_RUST_VERSION ?= nightly-2018-10-12
-TOOLS_RUST_VERSION ?= nightly-2018-07-17
+TOOLS_RUST_VERSION ?= nightly-2018-10-12
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
@@ -62,7 +62,7 @@ install_system_libzmq:
 		if ! which apt-get ; then \
 			if which brew ; then \
 				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
-				brew install zmq \
+				brew install zmq; \
 			else \
 				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
 			fi; \
@@ -133,14 +133,22 @@ ${C_BINDING_DIRS}:
 	qmake -o $@Makefile $@qmake.pro
 	cd $@; $(MAKE)
 
-# execute all tests, both command-line tools holochain and "C" bindings
-test: test_holochain test_cmd c_binding_tests ${C_BINDING_TESTS}
+# execute all tests: holochain, command-line tools, app spec, nodejs container, and "C" bindings
+test: test_holochain test_cmd test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
+
+test_app_spec: ensure_wasm_target install_cmd build_nodejs_container
+	rustup default ${CORE_RUST_VERSION}
+	cd app_spec && ./build_and_test.sh
+
+build_nodejs_container: core_toolchain
+	rustup default ${CORE_RUST_VERSION}
+	./scripts/build_nodejs_container.sh
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
@@ -161,6 +169,10 @@ build_holochain: core_toolchain wasm_build
 .PHONY: build_cmd
 build_cmd: core_toolchain ensure_wasm_target
 	$(CARGO) build -p hc
+
+.PHONY: install_cmd
+install_cmd: build_cmd
+	cd cmd && $(CARGO) install -f --path .
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci

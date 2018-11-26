@@ -1,4 +1,4 @@
-use actor::{Protocol, SYS};
+use crate::actor::{Protocol, SYS};
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, Value},
     error::{HcResult, HolochainError},
@@ -44,7 +44,8 @@ impl EavMemoryStorageActor {
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
             &actor_id(),
-        ).map_err(|actor_create_error| {
+        )
+        .map_err(|actor_create_error| {
             HolochainError::ErrorGeneric(format!(
                 "Failed to create actor in system: {:?}",
                 actor_create_error

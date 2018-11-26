@@ -12,8 +12,6 @@ extern crate lazy_static;
 extern crate riker;
 extern crate riker_default;
 extern crate riker_patterns;
-#[macro_use]
-extern crate unwrap_to;
 extern crate snowflake;
 extern crate walkdir;
 

@@ -11,8 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 
-use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
-use nucleus::ribosome::{
+use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
@@ -22,6 +21,7 @@ use nucleus::ribosome::{
     runtime::Runtime,
     Defn,
 };
+use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -170,11 +170,13 @@ pub mod tests {
     use holochain_core_types::json::JsonString;
     extern crate test_utils;
     use super::ZomeApiFunction;
-    use context::Context;
-    use instance::{tests::test_instance_and_context, Instance};
-    use nucleus::{
-        ribosome::{self, Defn},
-        ZomeFnCall,
+    use crate::{
+        context::Context,
+        instance::{tests::test_instance_and_context, Instance},
+        nucleus::{
+            ribosome::{self, Defn},
+            ZomeFnCall,
+        },
     };
     use std::{str::FromStr, sync::Arc};
 
@@ -263,9 +265,34 @@ pub mod tests {
         (i32.const 0)
     )
 
+    (func
+        (export "__hdk_validate_link")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
 
     (func
         (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__hdk_get_validation_package_for_link")
         (param $allocation i32)
         (result i32)
 
@@ -339,7 +366,8 @@ pub mod tests {
             wasm.clone(),
             &zome_call,
             Some(args_bytes),
-        ).expect("test should be callable")
+        )
+        .expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:

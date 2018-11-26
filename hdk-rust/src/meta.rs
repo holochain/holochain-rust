@@ -1,8 +1,9 @@
-use entry_definition::ValidatingEntryType;
-use globals::G_MEM_STACK;
+use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::dna::zome::capabilities::Capability;
 use holochain_wasm_utils::{
-    api_serialization::validation::EntryValidationArgs,
+    api_serialization::validation::{
+        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
+    },
     holochain_core_types::error::RibosomeErrorCode,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
@@ -41,7 +42,7 @@ extern "C" {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: u32,
 ) -> u32 {
-    ::global_fns::init_global_memory(encoded_allocation_of_input);
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -63,14 +64,14 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
-            ::global_fns::store_and_return_output(package)
+            crate::global_fns::store_and_return_output(package)
         }
     }
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> u32 {
-    ::global_fns::init_global_memory(encoded_allocation_of_input);
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -80,7 +81,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     // Deserialize input
     let maybe_name = load_json(encoded_allocation_of_input);
     if let Err(hc_err) = maybe_name {
-        return ::global_fns::store_and_return_output(hc_err);
+        return crate::global_fns::store_and_return_output(hc_err);
     }
     let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
 
@@ -98,15 +99,89 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
             match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => crate::global_fns::store_and_return_output(fail_string),
             }
         }
     }
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
+pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
+
+    let mut zd = ZomeDefinition::new();
+    unsafe {
+        zome_setup(&mut zd);
+    }
+
+    // Deserialize input
+    let maybe_name = load_json(encoded_allocation_of_input);
+    if let Err(hc_err) = maybe_name {
+        return ::global_fns::store_and_return_output(hc_err);
+    }
+    let link_validation_args: LinkValidationPackageArgs = maybe_name.unwrap();
+
+    zd.entry_types
+        .into_iter()
+        .find(|ref entry_type| entry_type.name == link_validation_args.entry_type)
+        .and_then(|entry_type| {
+            entry_type.links.into_iter().find(|ref link_definition| {
+                link_definition.tag == link_validation_args.tag
+                    && link_definition.link_type == link_validation_args.direction
+            })
+        })
+        .and_then(|mut link_definition| {
+            let package = (*link_definition.package_creator)();
+            Some(::global_fns::store_and_return_output(package))
+        })
+        .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
+    ::global_fns::init_global_memory(encoded_allocation_of_input);
+
+    let mut zd = ZomeDefinition::new();
+    unsafe {
+        zome_setup(&mut zd);
+    }
+
+    // Deserialize input
+    let maybe_name = load_json(encoded_allocation_of_input);
+    if let Err(hc_err) = maybe_name {
+        return ::global_fns::store_and_return_output(hc_err);
+    }
+    let link_validation_args: LinkValidationArgs = maybe_name.unwrap();
+
+    zd.entry_types
+        .into_iter()
+        .find(|ref entry_type| entry_type.name == link_validation_args.entry_type)
+        .and_then(|entry_type_definition| {
+            entry_type_definition
+                .links
+                .into_iter()
+                .find(|link_definition| {
+                    link_definition.tag == *link_validation_args.link.tag()
+                        && link_definition.link_type == link_validation_args.direction
+                })
+        })
+        .and_then(|mut link_definition| {
+            let validation_result = (*link_definition.validator)(
+                link_validation_args.link.base().clone(),
+                link_validation_args.link.target().clone(),
+                link_validation_args.validation_data,
+            );
+            Some(match validation_result {
+                Ok(()) => 0,
+                Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+            })
+        })
+        .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
+    crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -123,7 +198,8 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
     let json_string = serde_json::to_string(&json!({
         "entry_types": entry_types,
         "capabilities": capabilities,
-    })).expect("Can't serialize DNA");
+    }))
+    .expect("Can't serialize DNA");
 
     unsafe { store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string) as u32 }
 }

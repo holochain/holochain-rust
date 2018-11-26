@@ -33,8 +33,10 @@ fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
     Arc::new(Mutex::new(res))
 }
 
@@ -71,7 +73,8 @@ fn main() {
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
         make_mock_net(),
-    ).expect("context is supposed to be created");
+    )
+    .expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 

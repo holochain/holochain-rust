@@ -1,6 +1,8 @@
-use cas::content::{AddressableContent, Content};
-use error::error::HolochainError;
-use json::JsonString;
+use crate::{
+    cas::content::{AddressableContent, Content},
+    error::error::HolochainError,
+    json::JsonString,
+};
 use std::convert::TryInto;
 
 // @TODO are these the correct key names?
@@ -70,15 +72,17 @@ impl AddressableContent for CrudStatus {
 #[cfg(test)]
 mod tests {
     use super::CrudStatus;
-    use cas::{
-        content::{
-            Address, AddressableContent, AddressableContentTestSuite, Content,
-            ExampleAddressableContent,
+    use crate::{
+        cas::{
+            content::{
+                Address, AddressableContent, AddressableContentTestSuite, Content,
+                ExampleAddressableContent,
+            },
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        eav::eav_round_trip_test_runner,
+        json::{JsonString, RawString},
     };
-    use eav::eav_round_trip_test_runner;
-    use json::{JsonString, RawString};
 
     #[test]
     /// test the CrudStatus bit flags as ints
@@ -108,12 +112,13 @@ mod tests {
     fn crud_status_example_eav() {
         let entity_content = ExampleAddressableContent::try_from_content(&JsonString::from(
             RawString::from("example"),
-        )).unwrap();
+        ))
+        .unwrap();
         let attribute = String::from("favourite-badge");
-        let value_content: Content = CrudStatus::try_from_content(&JsonString::from(
-            CrudStatus::REJECTED,
-        )).unwrap()
-            .content();
+        let value_content: Content =
+            CrudStatus::try_from_content(&JsonString::from(CrudStatus::REJECTED))
+                .unwrap()
+                .content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 

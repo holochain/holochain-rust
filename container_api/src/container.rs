@@ -1,10 +1,12 @@
-use config::Configuration;
+use crate::{
+    config::{Configuration, StorageConfiguration},
+    Holochain,
+};
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_core::context::Context;
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
-use Holochain;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::Agent;
@@ -17,8 +19,6 @@ use std::{
 };
 
 use holochain_net::p2p_network::P2pNetwork;
-
-use boolinator::*;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -156,12 +156,11 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            (instance_config.storage.storage_type == "file"
-                && instance_config.storage.path.is_some())
-                .ok_or(String::from("Only file storage supported currently"))?;
-
-            let context = create_context(&agent_config.id, &instance_config.storage.path.unwrap())
-                .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
+            let context: Context = match instance_config.storage {
+                StorageConfiguration::File { path } => create_context(&agent_config.id, &path)
+                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
+                _ => Err("Only file storage supported currently".to_string()),
+            }?;
 
             Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
         })
@@ -185,8 +184,10 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
 
@@ -203,7 +204,7 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use config::load_configuration;
+    use crate::config::load_configuration;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -220,7 +221,7 @@ pub mod tests {
 
     [[dnas]]
     id = "app spec rust"
-    file = "app-spec-rust.hcpkg"
+    file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
@@ -282,7 +283,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app-spec-rust.hcpkg\"".to_string()
+                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
     }

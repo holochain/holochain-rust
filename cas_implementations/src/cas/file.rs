@@ -36,7 +36,6 @@ impl FilesystemStorage {
         })
     }
 
-
     /// builds an absolute path for an AddressableContent address
     fn address_to_path(&self, address: &Address) -> String {
         // using .txt extension because content is arbitrary and controlled by the
@@ -51,7 +50,10 @@ impl ContentAddressableStorage for FilesystemStorage {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;
-        Ok(write(self.address_to_path(&content.address()), content.content().to_string())?)
+        Ok(write(
+            self.address_to_path(&content.address()),
+            content.content().to_string(),
+        )?)
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
@@ -71,7 +73,6 @@ impl ContentAddressableStorage for FilesystemStorage {
     fn get_id(&self) -> Uuid {
         self.id
     }
-
 }
 
 #[cfg(test)]

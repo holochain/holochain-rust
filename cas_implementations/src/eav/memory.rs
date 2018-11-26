@@ -15,7 +15,7 @@ pub struct EavMemoryStorage {
 }
 
 impl PartialEq for EavMemoryStorage {
-    fn eq(&self, other: &EavMemoryStorage) -> bool{
+    fn eq(&self, other: &EavMemoryStorage) -> bool {
         self.id == other.id
     }
 }
@@ -42,7 +42,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-
         let map = self.storage.read()?;
         Ok(map
             .iter()
@@ -82,15 +81,13 @@ pub mod tests {
 
     #[test]
     fn memory_eav_one_to_many() {
-        let eav_storage =
-            EavMemoryStorage::new();
+        let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
     #[test]
     fn memory_eav_many_to_one() {
-        let eav_storage =
-            EavMemoryStorage::new();
+        let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 

@@ -5,13 +5,11 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use uuid::Uuid;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-
-
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct MemoryStorage {
@@ -20,7 +18,7 @@ pub struct MemoryStorage {
 }
 
 impl PartialEq for MemoryStorage {
-    fn eq(&self, other: &MemoryStorage) -> bool{
+    fn eq(&self, other: &MemoryStorage) -> bool {
         self.id == other.id
     }
 }

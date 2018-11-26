@@ -95,8 +95,8 @@ impl EavFileStorage {
         subscript: String,
         eav_constraint: Option<T>,
     ) -> HashSet<HcResult<String>>
-        where
-            T: ToString,
+    where
+        T: ToString,
     {
         let address = eav_constraint
             .map(|e| e.to_string())

@@ -6,12 +6,10 @@ app.start()
 
 test('call', (t) => {
   t.plan(1)
-  console.log('foo');
 
   const num1 = 2
   const num2 = 2
   const params = {num1, num2}
-  console.log(params)
   const result = app.call("blog", "main", "check_sum", params)
 
   t.equal(result.value, JSON.stringify({"sum":"4"}))

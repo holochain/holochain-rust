@@ -36,6 +36,7 @@ stdenv.mkDerivation rec {
     rust-build
 
     nodejs
+    yarn
 
     hc-wasm-build
     hc-test

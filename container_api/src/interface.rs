@@ -31,7 +31,6 @@ pub trait DispatchRpc {
 /// Each interface has their own dispatcher, and each may be configured differently.
 pub struct ContainerApiDispatcher {
     instances: InstanceMap,
-    instance_configs: HashMap<String, InstanceConfiguration>,
     io: IoHandler,
 }
 
@@ -47,21 +46,19 @@ impl ContainerApiDispatcher {
         let io = IoHandler::new();
         let mut this = Self {
             instances,
-            instance_configs,
             io,
         };
-        this.setup_api();
+        this.setup_info_api(instance_configs);
+        this.setup_zome_api();
         this
     }
 
-    fn setup_api(&mut self) {
-        self.setup_info_api();
-        self.setup_zome_api();
-    }
-
-    fn setup_info_api(&mut self) {
-        self.io.add_method("info/instances", |_| {
-            Ok(Value::String("TODO: instances".to_string()))
+    fn setup_info_api(&mut self, instance_configs: HashMap<String, InstanceConfiguration>) {
+        self.io.add_method("info/instances", move |_| {
+            let configs = instance_configs.clone();
+            let config_string = serde_json::to_string(&configs)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            Ok(Value::String(config_string))
         });
     }
 
@@ -90,7 +87,8 @@ impl ContainerApiDispatcher {
                                 let hc_lock_inner = hc_lock.clone();
                                 self.io.add_method(&method_name, move |params| {
                                     let mut hc = hc_lock_inner.write().unwrap();
-                                    let params_string = serde_json::to_string(&params)?;
+                                    let params_string = serde_json::to_string(&params)
+                                        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                                     let response = hc.call(&zome_name, &cap_name, &func_name, &params_string)
                                         .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                                     Ok(Value::String(response.to_string()))

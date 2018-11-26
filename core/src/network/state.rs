@@ -1,19 +1,12 @@
-//use base64;
-//use context::Context;
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    entry::Entry,
-    //error::HolochainError
-};
 use holochain_net::p2p_network::{P2pNetwork};
-use holochain_net_connection::{
-    NetResult,
-    net_connection::NetConnection,
-    protocol_wrapper::{
-        DhtData,
-        ProtocolWrapper, //TrackAppData,
-    }
-};
+//use holochain_net_connection::{
+//    NetResult,
+//    net_connection::NetConnection,
+//    protocol_wrapper::{
+//        DhtData,
+//        ProtocolWrapper, //TrackAppData,
+//    }
+//};
 use snowflake;
 use std::{
     sync::{Arc, Mutex}

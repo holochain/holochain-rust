@@ -5,7 +5,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{Future, future, task::{Poll, LocalWaker}};
+use futures::{Future, task::{Poll, LocalWaker}};
 use holochain_core_types::{error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
@@ -52,6 +52,8 @@ pub struct InitNetworkFuture {
     context: Arc<Context>,
     error: Option<HolochainError>,
 }
+
+impl Unpin for InitNetworkFuture {}
 
 impl Future for InitNetworkFuture {
     type Output = Result<(),HolochainError>;

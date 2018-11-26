@@ -32,8 +32,6 @@ extern crate holochain_core_types;
 extern crate holochain_core_types_derive;
 extern crate holochain_net_connection;
 extern crate base64;
-#[macro_use]
-extern crate failure;
 
 pub mod action;
 pub mod agent;

@@ -128,13 +128,13 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
 
 jobs:
   include:
-    - name: "Holochain tests + code coverage"
+    - name: "Holochain tests [code coverage temporarily deactivated]"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
-      script: make code_coverage
+      script: make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 

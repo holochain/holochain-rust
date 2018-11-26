@@ -51,7 +51,13 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
+        println!("iii run iii");
         let dir_obj_bundle = self.bundle_recurse(&PathBuf::from("."))?;
+
+        println!("iiiiibo: {:?}", &dir_obj_bundle);
+        // if output.to_str().unwrap() == "dist/app_spec.hcpkg" {
+        //     println!("iiiiio: {:?}", &dir_obj_bundle);
+        // }
 
         let out_file = File::create(&output)?;
 
@@ -63,6 +69,7 @@ impl Packager {
     }
 
     fn bundle_recurse(&self, path: &PathBuf) -> DefaultResult<Object> {
+        println!("bundle_recurse");
         let root_dir = WalkBuilder::new(path)
             .max_depth(Some(1))
             .add_custom_ignore_filename(IGNORE_FILE_NAME)
@@ -100,7 +107,10 @@ impl Packager {
             let json_file = fs::read_to_string(json_file_path)?;
 
             // if the json file does not contain an Object at the top level, we can't parse it
-            serde_json::from_str(&json_file).unwrap_or_default()
+            println!("iiiiiiii");
+            let value = serde_json::from_str(&json_file).unwrap_or_default();
+            println!("sdfksdfjsd");
+            value
         } else {
             Object::new()
         };
@@ -109,10 +119,12 @@ impl Packager {
         let mut meta_tree = Object::new();
 
         for node in all_nodes {
+            println!("node: {:?}", &node);
             let file_name = util::file_name_string(&node)?;
 
             // ignore empty main_tree, which results from an unparseable JSON file
             if node.is_file() && !main_tree.is_empty() {
+                println!("a\n");
                 meta_tree.insert(file_name.clone(), META_FILE_ID.into());
 
                 let mut buf = Vec::new();
@@ -121,6 +133,7 @@ impl Packager {
 
                 main_tree.insert(file_name.clone(), encoded_content.into());
             } else if node.is_dir() {
+                println!("b\n");
                 // a folder within this folder has a .build in it, meaning this node
                 // should build the json and insert it for this zome
                 if let Some(dir_with_code) = node
@@ -130,6 +143,7 @@ impl Packager {
                     .filter(|path| path.is_dir())
                     .find(|path| path.join(BUILD_CONFIG_FILE_NAME).exists())
                 {
+                    println!("c\n");
                     meta_tree.insert(file_name.clone(), META_DIR_ID.into());
 
                     let build = Build::from_file(dir_with_code.join(BUILD_CONFIG_FILE_NAME))?;
@@ -137,6 +151,8 @@ impl Packager {
                     let wasm = build.run(&dir_with_code)?;
 
                     let wasm_binary = base64::decode(&wasm)?;
+                    println!("rrr: {:?}", dir_with_code);
+                    // println!("rrr: {:?}", wasm);
 
                     // Instantiating WASM and calling function to get JSON:
                     // ribosome::run_dna is the WASM run-time imported from Holochain core.
@@ -148,6 +164,7 @@ impl Packager {
                     // What we get back is a JSON string with all the entry types and zome functions
                     // defined in that WASM code, constructed through our Rust macros define_zome!
                     // and entry!.
+                    println!("oooz: {:?}", &wasm_binary.len());
                     let call_result = ribosome::run_dna(
                         "HC",
                         context,
@@ -155,12 +172,13 @@ impl Packager {
                         &ZomeFnCall::new("", "", "__hdk_get_json_definition", ""),
                         Some("{}".as_bytes().to_vec()),
                     )?;
-                    println!("ooo: {:?}", call_result);
+                    println!("oooz: {:?}", call_result);
                     let json_from_wasm: Map<String, Value> =
                         serde_json::from_str(&call_result.to_string())?;
-
+                    // println!("ooo json_from_wasm: {:?}", json_from_wasm);
                     let mut sub_tree_content = self.bundle_recurse(&node)?;
                     for key in json_from_wasm.keys() {
+                        println!("key: {:?}", &key);
                         sub_tree_content
                             .insert(key.clone(), json_from_wasm.get(key).unwrap().clone());
                     }
@@ -174,15 +192,23 @@ impl Packager {
                     .map(|e| e.unwrap().path())
                     .find(|path| path.ends_with(BUILD_CONFIG_FILE_NAME))
                 {
+                    println!("d\n filename: {:?}", &file_name);
+                    println!("d\n build config {:?}", &build_config);
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());
 
                     let build = Build::from_file(build_config)?;
 
                     let wasm = build.run(&node)?;
 
+                    println!("wasm: {:?}", wasm.len());
+                    // println!("main_tree: {:?}", &main_tree);
+
                     // here insert the wasm itself
                     main_tree.insert(file_name.clone(), json!({ "code": wasm }));
+                    // main_tree.insert(file_name.clone(), wasm));
+                    // println!("mt: {:?}", &main_tree);
                 } else {
+                    println!("e\n");
                     meta_tree.insert(file_name.clone(), META_DIR_ID.into());
 
                     let sub_tree_content = self.bundle_recurse(&node)?;
@@ -202,6 +228,12 @@ impl Packager {
             }
         }
 
+        println!("path: {:?}", &path);
+        if path.to_str().unwrap() == "./zomes/blog" {
+            // println!("mt: {:?}", &main_tree);
+        }
+        // println!("mt: {:?}", &main_tree);
+
         Ok(main_tree)
     }
 }
@@ -220,7 +252,9 @@ pub fn unpack(path: &PathBuf, to: &PathBuf) -> DefaultResult<()> {
     ensure!(to.is_dir(), "argument \"to\" doesn't point to a directory");
 
     let raw_bundle_content = fs::read_to_string(&path)?;
+    println!("bundle_content_before");
     let bundle_content: Object = serde_json::from_str(&raw_bundle_content)?;
+    println!("bundle_content_after");
 
     unpack_recurse(bundle_content, &to)?;
 

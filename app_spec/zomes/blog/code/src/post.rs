@@ -32,7 +32,6 @@ pub struct Post {
 /// validation_package callback.
 /// The validation_function still has to be defined with the macro below.
 pub fn definition() -> ValidatingEntryType {
-    hdk::debug("bar").unwrap();
     let e = entry!(
         name: "post",
         description: "",
@@ -48,6 +47,6 @@ pub fn definition() -> ValidatingEntryType {
                 .ok_or_else(|| String::from("Content too long"))
         }
     );
-    hdk::debug(format!("{:?}", e.name)).unwrap();
+    hdk::debug(format!("definition {:?}", e.name)).unwrap();
     e
 }

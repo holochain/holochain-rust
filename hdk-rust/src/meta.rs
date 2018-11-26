@@ -6,10 +6,12 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::{
     api_serialization::validation::EntryValidationArgs,
-    holochain_core_types::{dna::zome::Zome, error::RibosomeErrorCode, json::JsonString},
+    holochain_core_types::{error::RibosomeErrorCode, json::JsonString},
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
 use std::collections::HashMap;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::dna::zome::entry_types::EntryTypeDef;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -108,6 +110,12 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, DefaultJson)]
+struct PartialZome {
+    entry_types: HashMap<EntryType, EntryTypeDef>,
+    capabilities: HashMap<String, Capability>,
+}
+
 #[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -127,16 +135,16 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
     let capabilities = unsafe { __list_capabilities() };
 
-    let zome = Zome {
+    let partial_zome = PartialZome {
         entry_types,
         capabilities,
-        ..Default::default()
+        // ..Default::default()
     };
 
-    let json_string = JsonString::from(zome);
+    let json_string = JsonString::from(partial_zome);
 
     unsafe {
-        store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &json_string.to_string())
+        store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &String::from(json_string))
             as u32
     }
 }

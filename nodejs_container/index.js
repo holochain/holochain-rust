@@ -21,7 +21,7 @@ module.exports = {
       console.log("Unable to create Holochain instance");
       throw e;
     }
-    
+
     /*
     Holochain ALWAYS expects and passes
     values serialized as Json. Within Holochain
@@ -35,7 +35,9 @@ module.exports = {
     app._call = app.call;
     app.call = function(zome, trait, fn, params) {
       const stringInput = JSON.stringify(params);
+      console.log('jjjo', stringInput);
       const rawResult = app._call(zome, trait, fn, stringInput);
+      console.log('jjj', rawResult);
       let result;
       try {
         result = JSON.parse(rawResult);

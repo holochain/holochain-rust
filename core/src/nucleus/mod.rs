@@ -114,7 +114,8 @@ pub fn call_and_wait_for_result(
     instance: &mut super::instance::Instance,
 ) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
-
+    // println!("zzzz {:?}", &call_action);
+    // println!("**** {:?}", &instance.state());
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = sync_channel(1);
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
@@ -217,6 +218,7 @@ pub(crate) fn launch_zome_fn_call(
     dna_name: String,
 ) {
     let code = wasm.code.clone();
+    println!("launch_zome_fn_call {:?}", &wasm);
 
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
@@ -247,10 +249,13 @@ fn reduce_execute_zome_function(
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
+    // println!("reduce_execute_zome_function");
     let fn_call = match action_wrapper.action().clone() {
         Action::ExecuteZomeFunction(call) => call,
         _ => unreachable!(),
     };
+    println!("state {:?}", state);
+    println!("fn_call: {:?}", fn_call);
 
     fn dispatch_error_result(
         action_channel: &SyncSender<ActionWrapper>,
@@ -279,6 +284,7 @@ fn reduce_execute_zome_function(
         }
         Some(ref d) => d,
     };
+    // println!("dna {:?}", &dna);
     // Get zome
     let zome = match dna.zomes.get(&fn_call.zome_name) {
         None => {
@@ -294,6 +300,7 @@ fn reduce_execute_zome_function(
         }
         Some(zome) => zome,
     };
+    // println!("zome {:?}", &zome);
     // Get capability
     let capability = match zome.capabilities.get(&fn_call.cap_name) {
         None => {

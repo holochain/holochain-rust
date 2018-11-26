@@ -30,6 +30,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    println!("invoke_call");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -96,6 +97,7 @@ pub(crate) fn reduce_call(
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
+    println!("reduce_call");
     // 1.Checks for correctness of ZomeFnCall
     let fn_call = match action_wrapper.action().clone() {
         Action::Call(call) => call,
@@ -145,6 +147,7 @@ pub(crate) fn reduce_call(
         );
         return;
     }
+    println!("wwww {:?} {:?}", dna, fn_call);
 
     // 3. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());

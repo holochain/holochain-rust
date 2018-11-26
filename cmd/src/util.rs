@@ -1,5 +1,5 @@
 use colored::*;
-use error::DefaultResult;
+use crate::error::DefaultResult;
 use std::{path::PathBuf, process::Command};
 
 pub fn run_cmd(base_path: PathBuf, bin: String, args: Vec<String>) -> DefaultResult<()> {

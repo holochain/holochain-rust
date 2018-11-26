@@ -1,6 +1,14 @@
 extern crate serde_json;
-use super::links_utils;
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{
+            self,
+            callback::{links_utils, CallbackResult},
+        },
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{
     dna::wasm::DnaWasm,
     entry::{entry_type::EntryType, Entry, ToEntry},
@@ -10,10 +18,6 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::validation::{
     EntryValidationArgs, LinkValidationArgs,
-};
-use nucleus::{
-    ribosome::{self, callback::CallbackResult},
-    ZomeFnCall,
 };
 use std::sync::Arc;
 
@@ -65,7 +69,8 @@ fn validate_link_entry(
         link.tag(),
         &target.entry_type(),
         &context,
-    ).map_err(|_| HolochainError::NotImplemented)?;
+    )
+    .map_err(|_| HolochainError::NotImplemented)?;
 
     let wasm = context
         .get_wasm(&link_definition_path.zome_name)

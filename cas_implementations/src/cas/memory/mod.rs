@@ -1,6 +1,8 @@
 mod actor;
-use actor::{AskSelf, Protocol};
-use cas::memory::actor::MemoryStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    cas::memory::actor::MemoryStorageActor,
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -75,7 +77,7 @@ impl ContentAddressableStorage for MemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::memory::MemoryStorage;
+    use crate::cas::memory::MemoryStorage;
     use holochain_core_types::{
         cas::{
             content::{ExampleAddressableContent, OtherExampleAddressableContent},

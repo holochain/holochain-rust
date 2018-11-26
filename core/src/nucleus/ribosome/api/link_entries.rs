@@ -4,10 +4,12 @@ use crate::{
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
-    }
+    },
 };
-use futures::{executor::block_on, FutureExt};
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use futures::{
+    executor::block_on,
+    future::{self, TryFutureExt},
+};
 use holochain_core_types::{
     cas::content::Address,
     entry::ToEntry,
@@ -15,6 +17,7 @@ use holochain_core_types::{
     link::link_add::LinkAddEntry,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -45,12 +48,12 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         // 1. Build the context needed for validation of the entry
         build_validation_package(&link_add_entry.to_entry(), &runtime.context)
             .and_then(|validation_package| {
-                Ok(ValidationData {
+                future::ready(Ok(ValidationData {
                     package: validation_package,
                     sources: vec![Address::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Commit,
-                })
+                }))
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
@@ -175,7 +178,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -201,7 +205,8 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        )).expect("Could not commit entry for testing");
+        ))
+        .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

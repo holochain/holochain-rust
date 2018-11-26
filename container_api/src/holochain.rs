@@ -87,7 +87,7 @@ impl Holochain {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-        match block_on(initialize_application(dna, context.clone())) {
+        match block_on(initialize_application(dna, &context.clone())) {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
                 let hc = Holochain {

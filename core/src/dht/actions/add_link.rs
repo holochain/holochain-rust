@@ -5,9 +5,15 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{Async, Future};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{error::HolochainError, link::Link};
-use std::sync::Arc;
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc,
+};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.
@@ -32,27 +38,25 @@ pub struct AddLinkFuture {
     action: ActionWrapper,
 }
 
-impl Future for AddLinkFuture {
-    type Item = ();
-    type Error = HolochainError;
+impl Unpin for AddLinkFuture {}
 
-    fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+impl Future for AddLinkFuture {
+    type Output = Result<(), HolochainError>;
+
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         if let Some(state) = self.context.state() {
             match state.dht().add_link_actions().get(&self.action) {
-                Some(Ok(())) => Ok(futures::Async::Ready(())),
-                Some(Err(e)) => Err(e.clone()),
-                None => Ok(futures::Async::Pending),
+                Some(Ok(())) => Poll::Ready(Ok(())),
+                Some(Err(e)) => Poll::Ready(Err(e.clone())),
+                None => Poll::Pending,
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

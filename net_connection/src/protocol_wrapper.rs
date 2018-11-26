@@ -325,8 +325,7 @@ mod tests {
             "method": "state",
             "state": "test_state"
         }"#,
-        ))
-        .unwrap();
+        )).unwrap();
         if let ProtocolWrapper::State(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());

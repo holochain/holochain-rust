@@ -98,8 +98,7 @@ pub mod tests {
                 entry,
                 &initialized_context.action_channel.clone(),
                 &initialized_context,
-            ))
-            .expect("Could not commit entry for testing");
+            )).expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
 

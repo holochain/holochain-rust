@@ -171,8 +171,7 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        ))
-        .expect("Could not commit entry for testing");
+        )).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -198,8 +197,7 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        ))
-        .expect("Could not commit entry for testing");
+        )).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -224,15 +222,13 @@ pub mod tests {
             test_entry(),
             &context.action_channel.clone(),
             &context,
-        ))
-        .expect("Could not commit entry for testing");
+        )).expect("Could not commit entry for testing");
 
         block_on(commit_entry(
             test_entry_b(),
             &context.action_channel.clone(),
             &context,
-        ))
-        .expect("Could not commit entry for testing");
+        )).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

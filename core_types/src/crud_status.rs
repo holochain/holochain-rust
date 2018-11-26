@@ -108,13 +108,12 @@ mod tests {
     fn crud_status_example_eav() {
         let entity_content = ExampleAddressableContent::try_from_content(&JsonString::from(
             RawString::from("example"),
-        ))
-        .unwrap();
+        )).unwrap();
         let attribute = String::from("favourite-badge");
-        let value_content: Content =
-            CrudStatus::try_from_content(&JsonString::from(CrudStatus::REJECTED))
-                .unwrap()
-                .content();
+        let value_content: Content = CrudStatus::try_from_content(&JsonString::from(
+            CrudStatus::REJECTED,
+        )).unwrap()
+            .content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 

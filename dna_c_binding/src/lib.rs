@@ -51,8 +51,7 @@ pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
         unsafe {
             Box::from_raw(ptr);
         }
-    })
-    .unwrap_or(());
+    }).unwrap_or(());
 }
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
@@ -88,8 +87,7 @@ pub extern "C" fn holochain_dna_string_free(s: *mut c_char) {
         unsafe {
             CString::from_raw(s);
         }
-    })
-    .unwrap_or(());
+    }).unwrap_or(());
 }
 
 /// This macro takes care boilerplate for getting string accessors over ffi.
@@ -131,8 +129,7 @@ macro_rules! _xa_str {
                 };
                 let val = unsafe { CStr::from_ptr(val).to_string_lossy().into_owned() };
                 arg.$prop = val;
-            })
-            .unwrap_or(());
+            }).unwrap_or(());
         }
     };
 }
@@ -430,8 +427,7 @@ mod tests {
                     }
                 }
             }"#,
-        ))
-        .unwrap();
+        )).unwrap();
 
         let mut cnames = CStringVec {
             len: 0,

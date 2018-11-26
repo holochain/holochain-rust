@@ -66,11 +66,11 @@ impl State {
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry =
-                json.map(|e| e.try_into())
-                    .ok_or(HolochainError::ErrorGeneric(
-                        "No DNA entry found in storage while creating state from agent".to_string(),
-                    ))??;
+            let serialized_entry: SerializedEntry = json.map(|e| e.try_into()).ok_or(
+                HolochainError::ErrorGeneric(
+                    "No DNA entry found in storage while creating state from agent".to_string(),
+                ),
+            )??;
             let entry: Entry = serialized_entry.into();
             Ok(Dna::from_entry(&entry))
         }

@@ -1,9 +1,9 @@
 use crate::{
+    agent::actions::{commit::commit_entry, update_entry::update_entry},
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    agent::actions::{commit::commit_entry, update_entry::update_entry}
 };
 use futures::{
     executor::block_on,

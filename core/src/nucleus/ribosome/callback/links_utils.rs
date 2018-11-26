@@ -5,10 +5,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::Link,
 };
-use holochain_wasm_utils::api_serialization::{
-    validation::LinkDirection,
-    get_entry::*,
-};
+use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDirection};
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
@@ -18,16 +15,26 @@ pub fn get_link_entries(
 ) -> Result<(Entry, Entry), HolochainError> {
     let base_address = link.base();
     let target_address = link.target();
-    let entry_args = &GetEntryArgs { address: base_address.clone(), options: GetEntryOptions::default() };
+    let entry_args = &GetEntryArgs {
+        address: base_address.clone(),
+        options: GetEntryOptions::default(),
+    };
     let base_result = block_on(get_entry(&context, entry_args))?;
     if base_result.entries.len() == 0 {
-        return Err(HolochainError::ErrorGeneric(String::from("Base for link not found")));
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
+        )));
     }
     let base = base_result.entries.iter().next().unwrap();
-    let entry_args = &GetEntryArgs{address: target_address.clone(), options: GetEntryOptions::default()};
+    let entry_args = &GetEntryArgs {
+        address: target_address.clone(),
+        options: GetEntryOptions::default(),
+    };
     let target_result = block_on(get_entry(&context, entry_args))?;
     if target_result.entries.len() == 0 {
-        return Err(HolochainError::ErrorGeneric(String::from("Target for link not found")));
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Target for link not found",
+        )));
     }
     let target = target_result.entries.iter().next().unwrap();
     Ok((base.deserialize(), target.deserialize()))

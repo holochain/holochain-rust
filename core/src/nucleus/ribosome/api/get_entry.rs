@@ -2,8 +2,8 @@ use crate::nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use futures::executor::block_on;
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -16,11 +16,11 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
-    // Exit on error
+        // Exit on error
         Err(_) => {
             println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
-        return ribosome_error_code!(ArgumentDeserializationFailed);
-    }
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
     // Create and block on future
     let future = get_entry(&runtime.context, &input);
@@ -34,28 +34,28 @@ mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use holochain_wasm_utils::api_serialization::get_entry::*;
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::tests::{test_context_and_logger, test_instance},
         nucleus::{
-        ribosome::{
-            self,
-            api::{
-                commit::tests::test_commit_args_bytes,
-                tests::{test_capability, test_parameters, test_zome_name},
+            ribosome::{
+                self,
+                api::{
+                    commit::tests::test_commit_args_bytes,
+                    tests::{test_capability, test_parameters, test_zome_name},
+                },
             },
-        },
-        ZomeFnCall,
+            ZomeFnCall,
         },
     };
     use holochain_core_types::{
-        crud_status::CrudStatus,
         cas::content::{Address, AddressableContent},
+        crud_status::CrudStatus,
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::get_entry::*;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry

@@ -1,9 +1,9 @@
 use crate::{
-    cas::content::{AddressableContent, Content, Address},
-    error::error::HolochainError,
-    json::JsonString,
+    cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValue,
+    error::error::HolochainError,
     hash::HashString,
+    json::JsonString,
 };
 use std::convert::TryInto;
 
@@ -88,11 +88,11 @@ mod tests {
     use super::CrudStatus;
     use crate::{
         cas::{
-        content::{
-            Address, AddressableContent, AddressableContentTestSuite, Content,
-            ExampleAddressableContent,
-        },
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+            content::{
+                Address, AddressableContent, AddressableContentTestSuite, Content,
+                ExampleAddressableContent,
+            },
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
         eav::eav_round_trip_test_runner,
         json::{JsonString, RawString},
@@ -132,7 +132,7 @@ mod tests {
         let value_content: Content =
             CrudStatus::try_from_content(&JsonString::from(CrudStatus::REJECTED))
                 .unwrap()
-            .content();
+                .content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
     }
 

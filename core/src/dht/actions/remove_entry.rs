@@ -12,7 +12,7 @@ use futures::{
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
-    sync::{Arc, mpsc::SyncSender},
+    sync::{mpsc::SyncSender, Arc},
 };
 
 /// Remove Entry Action Creator
@@ -39,7 +39,6 @@ pub struct RemoveEntryFuture {
 }
 
 impl Unpin for RemoveEntryFuture {}
-
 
 impl Future for RemoveEntryFuture {
     type Output = Result<(), HolochainError>;

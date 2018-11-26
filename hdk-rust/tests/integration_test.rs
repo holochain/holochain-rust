@@ -72,9 +72,9 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     {
         let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
         entry_types.insert(
-        String::from("validation_package_tester"),
-        EntryTypeDef::new(),
-    );
+            String::from("validation_package_tester"),
+            EntryTypeDef::new(),
+        );
 
         let test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
         test_entry_type.links_to.push(LinksTo {

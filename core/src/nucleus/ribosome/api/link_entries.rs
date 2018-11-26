@@ -232,7 +232,7 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
-None,
+            None,
             &context.action_channel.clone(),
             &context,
         ))

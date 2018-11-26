@@ -48,7 +48,8 @@ pub(crate) fn get_entry_meta_from_dht(
         .iter()
         .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::DELETED)
         .collect::<HashSet<&EntityAttributeValue>>()
-        .len() > 0;
+        .len()
+        > 0;
     if has_deleted {
         crud_status = CrudStatus::DELETED;
     } else {
@@ -56,7 +57,8 @@ pub(crate) fn get_entry_meta_from_dht(
             .iter()
             .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::MODIFIED)
             .collect::<HashSet<&EntityAttributeValue>>()
-            .len() > 0;
+            .len()
+            > 0;
         if has_modified {
             crud_status = CrudStatus::MODIFIED;
         }
@@ -79,7 +81,7 @@ pub(crate) fn get_entry_meta_from_dht(
 pub fn get_entry<'a>(
     context: &'a Arc<Context>,
     args: &GetEntryArgs,
-) -> FutureObj<'a, Result<GetEntryResult, HolochainError>>{
+) -> FutureObj<'a, Result<GetEntryResult, HolochainError>> {
     let mut entry_result = GetEntryResult::new();
     match get_entry_rec(
         context,
@@ -133,6 +135,7 @@ pub fn get_entry_rec<'a>(
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::tests::test_context_with_state;
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -140,7 +143,6 @@ pub mod tests {
         entry::test_entry,
     };
     use holochain_wasm_utils::api_serialization::get_entry::*;
-    use crate::instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {

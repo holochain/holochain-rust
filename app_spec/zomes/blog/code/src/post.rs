@@ -47,6 +47,5 @@ pub fn definition() -> ValidatingEntryType {
                 .ok_or_else(|| String::from("Content too long"))
         }
     );
-    hdk::debug(format!("definition {:?}", e.name)).unwrap();
     e
 }

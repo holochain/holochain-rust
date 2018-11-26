@@ -48,6 +48,7 @@ impl Container {
     /// Starts all instances
     pub fn start_all(&mut self) {
         let _ = self.instances.iter_mut().for_each(|(id, hc)| {
+            // CLI feedback
             println!("Starting instance \"{}\"...", id);
             match hc.start() {
                 Ok(()) => println!("ok"),
@@ -59,6 +60,7 @@ impl Container {
     /// Stops all instances
     pub fn stop_all(&mut self) {
         let _ = self.instances.iter_mut().for_each(|(id, hc)| {
+            // CLI feedback
             println!("Stopping instance \"{}\"...", id);
             match hc.stop() {
                 Ok(()) => println!("ok"),

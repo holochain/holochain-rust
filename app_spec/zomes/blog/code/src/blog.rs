@@ -26,7 +26,6 @@ struct MultiAddressResponse {
 }
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
-    hdk::debug("yyy zz").unwrap();
     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
     struct SumInput {
         num1: u32,
@@ -37,7 +36,6 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
         num1: num1,
         num2: num2,
     };
-    hdk::debug("xxx bar").unwrap();
     let maybe_result = hdk::call("summer", "main", "sum", call_input.into());
     match maybe_result {
         Ok(result) => result.into(),

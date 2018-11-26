@@ -4,7 +4,7 @@ use crate::{
     nucleus::{
         ribosome::{
             self,
-            callback::{get_dna, get_wasm, links_utils, CallbackResult},
+            callback::{links_utils, CallbackResult},
         },
         ZomeFnCall,
     },

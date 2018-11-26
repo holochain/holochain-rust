@@ -1,4 +1,7 @@
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::actions::get_entry::get_entry,
+};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -6,7 +9,6 @@ use holochain_core_types::{
     link::Link,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
-use nucleus::actions::get_entry::get_entry;
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.

@@ -224,8 +224,8 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
-            &initialized_context.action_channel.clone(),
-            &initialized_context,
+            &context.action_channel.clone(),
+            &context,
         ))
         .expect("Could not commit entry for testing");
 

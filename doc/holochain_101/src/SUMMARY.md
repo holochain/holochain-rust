@@ -5,7 +5,7 @@
   - [How to contribute](./how_to_contribute.md)
 - [Planning a dApp](./planning_a_dapp.md)
 - [Building Holochain Apps: Intro](./building_apps.md)
-  - [(E) Building for Different Platforms](./building_for_different_platforms.md)
+  - [Building for Different Platforms](./building_for_different_platforms.md)
   - [Intro to DNA](./intro_to_dna.md)
   - [Intro to Command Line Tools](./intro_to_command_line_tools.md)
   - [Create A New Project](./new_project.md)

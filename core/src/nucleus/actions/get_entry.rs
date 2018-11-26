@@ -1,6 +1,6 @@
 extern crate serde_json;
-use context::Context;
-use futures::{future, Future};
+use crate::context::Context;
+use futures::future::{self, FutureObj};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
@@ -76,10 +76,10 @@ pub(crate) fn get_entry_meta_from_dht(
 /// GetEntry Action Creator
 ///
 /// Returns a future that resolves to an Ok(GetEntryResult) or an Err(HolochainError).
-pub fn get_entry(
-    context: &Arc<Context>,
+pub fn get_entry<'a>(
+    context: &'a Arc<Context>,
     args: &GetEntryArgs,
-) -> Box<dyn Future<Item = GetEntryResult, Error = HolochainError>> {
+) -> FutureObj<'a, Result<Option<Entry>, HolochainError>>{
     let mut entry_result = GetEntryResult::new();
     match get_entry_rec(
         context,

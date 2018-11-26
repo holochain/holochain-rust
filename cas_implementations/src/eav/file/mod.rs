@@ -1,6 +1,8 @@
 pub mod actor;
-use actor::{AskSelf, Protocol};
-use eav::file::actor::EavFileStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    eav::file::actor::EavFileStorageActor,
+};
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::{HcResult, HolochainError},
@@ -24,8 +26,16 @@ impl EavFileStorage {
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let response = self.actor.block_on_ask(Protocol::EavAdd(eav.clone()))?;
-        unwrap_to!(response => Protocol::EavAddResult).clone()
+
+        match response {
+            Protocol::EavAddResult(add_result) => add_result,
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavAddResult received {:?}",
+                response
+            ))),
+        }
     }
+
     fn fetch_eav(
         &self,
         entity: Option<Entity>,
@@ -35,7 +45,14 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let response = self
             .actor
             .block_on_ask(Protocol::EavFetch(entity, attribute, value))?;
-        unwrap_to!(response => Protocol::EavFetchResult).clone()
+
+        match response {
+            Protocol::EavFetchResult(fetch_result) => fetch_result,
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::EavFetchResult received {:?}",
+                response
+            ))),
+        }
     }
 }
 
@@ -43,7 +60,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use eav::file::EavFileStorage;
+    use crate::eav::file::EavFileStorage;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},

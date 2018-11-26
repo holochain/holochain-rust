@@ -1,6 +1,7 @@
 /// This file holds everything that represents the "post" entry type.
 
 use hdk::holochain_core_types::{
+    cas::content::Address,
     dna::zome::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
@@ -47,6 +48,19 @@ pub fn definition() -> ValidatingEntryType {
         validation: |post: Post, _ctx: hdk::ValidationData| {
             (post.content.len() < 280)
                 .ok_or_else(|| String::from("Content too long"))
-        }
+        },
+
+        links: [
+            from!(
+                "%agent_id",
+                tag: "authored_posts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                    Ok(())
+                }
+            )
+        ]
     )
 }

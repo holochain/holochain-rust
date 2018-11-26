@@ -15,7 +15,6 @@ riker-default = "0.1.7"
 riker-patterns = "0.1.7"
 futures-preview = "0.2.2"
 lazy_static = "1.1.0"
-unwrap_to = "0.1.0"
 snowflake = "1.2"
 walkdir = "2"
 uuid = { version = "0.7", features = ["v4"] }

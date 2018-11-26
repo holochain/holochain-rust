@@ -1,8 +1,6 @@
 use base64;
-use cli::test_context::test_context;
 use colored::*;
-use config_files::Build;
-use error::DefaultResult;
+use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use holochain_core::nucleus::{ribosome, ZomeFnCall};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
@@ -11,7 +9,6 @@ use std::{
     io::{Read, Write},
     path::PathBuf,
 };
-use util;
 
 pub const CODE_DIR_NAME: &str = "code";
 
@@ -71,13 +68,14 @@ impl Packager {
 
         let root: Vec<_> = root_dir
             .filter(|e| e.is_ok())
+            // unwrap safe here due to is_ok() filter above
             .map(|e| e.unwrap().path().to_path_buf())
             .collect();
 
         let maybe_json_file_path = root
             .iter()
             .filter(|e| e.is_file())
-            .find(|e| e.to_str().unwrap().ends_with(".json"));
+            .find(|e| e.to_string_lossy().ends_with(".json"));
 
         // Scan files but discard found json file
         let all_nodes = root.iter().filter(|node_path| {

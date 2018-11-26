@@ -5,16 +5,20 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
+extern crate hdk;
 extern crate holochain_wasm_utils;
 
+use hdk::error::ZomeApiError;
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
     dna::zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::EntryTypeDef,
+        entry_types::{EntryTypeDef, LinksTo},
     },
-    error::{HcResult, ZomeApiInternalResult},
+    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
+    error::{CoreError, HcResult, HolochainError, ZomeApiInternalResult},
+error::{HcResult, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
@@ -48,6 +52,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "commit_validation_package_tester",
         "link_two_entries",
         "links_roundtrip",
+        "link_validation",
         "check_query",
         "check_app_entry_address",
         "check_sys_entry_address",
@@ -59,10 +64,35 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
 
-    dna.zomes.get_mut("test_zome").unwrap().entry_types.insert(
+    // TODO: construct test DNA using the auto-generated JSON feature
+    // The code below is fragile!
+    // We have to manually construct a Dna struct that reflects what we defined using define_zome!
+    // in wasm-test/src/lib.rs.
+    // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
+    // matches up. We should do the same in test.
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        entry_types.insert(
         String::from("validation_package_tester"),
         EntryTypeDef::new(),
     );
+
+        let test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
+        test_entry_type.links_to.push(LinksTo {
+            target_type: String::from("testEntryType"),
+            tag: String::from("test-tag"),
+        });
+    }
+
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        let mut link_validator = EntryTypeDef::new();
+        link_validator.links_to.push(LinksTo {
+            target_type: String::from("link_validator"),
+            tag: String::from("longer"),
+        });
+        entry_types.insert(String::from("link_validator"), link_validator);
+    }
 
     let (context, test_logger) = test_context_and_logger("alex");
     let mut hc =
@@ -108,7 +138,6 @@ fn can_commit_entry() {
         )),
     );
 }
-
 #[test]
 fn can_commit_entry_macro() {
     let (mut hc, _) = start_holochain_instance();
@@ -150,6 +179,7 @@ fn can_round_trip() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn can_get_entry() {
     println!("\n can_get_entry\n");
     let (mut hc, _) = start_holochain_instance();
@@ -249,7 +279,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"84\\\"}\"}}"),
+        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
     );
 }
 
@@ -339,6 +369,34 @@ fn can_roundtrip_links() {
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
+}
+
+#[test]
+#[cfg(not(windows))]
+fn can_validate_links() {
+    let (mut hc, _) = start_holochain_instance();
+    let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
+    let result = hc.call("test_zome", "test_cap", "link_validation", params_ok);
+    assert!(result.is_ok(), "result = {:?}", result);
+
+    let params_not_ok = r#"{"stuff1": "aaa", "stuff2": "aa"}"#;
+    let result = hc.call("test_zome", "test_cap", "link_validation", params_not_ok);
+    assert!(result.is_ok(), "result = {:?}", result);
+    // Yep, the zome call is ok but what we got back should be a ValidationFailed error,
+    // wrapped in a CoreError, wrapped in a ZomeApiError, wrapped in a Result,
+    // serialized to JSON :D
+    let zome_result: Result<(), ZomeApiError> =
+        serde_json::from_str(&result.unwrap().to_string()).unwrap();
+    assert!(zome_result.is_err());
+    if let ZomeApiError::Internal(error) = zome_result.err().unwrap() {
+        let core_error: CoreError = serde_json::from_str(&error).unwrap();
+        assert_eq!(
+            core_error.kind,
+            HolochainError::ValidationFailed("Target stuff is not longer".to_string()),
+        );
+    } else {
+        assert!(false);
+    }
 }
 
 #[test]

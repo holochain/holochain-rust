@@ -1,6 +1,4 @@
-use action::ActionWrapper;
-use context::Context;
-use state::State;
+use crate::{action::ActionWrapper, context::Context, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,12 +282,14 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::{
-        chain_store::ChainStore,
-        state::{ActionResponse, AgentState},
+    use crate::{
+        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        agent::{
+            chain_store::ChainStore,
+            state::{ActionResponse, AgentState},
+        },
+        context::Context,
     };
-    use context::Context;
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
@@ -302,13 +302,15 @@ pub mod tests {
     };
     use holochain_net::p2p_network::P2pNetwork;
 
-    use logger::Logger;
-    use nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+    use crate::{
+        logger::Logger,
+        nucleus::{
+            actions::initialize::initialize_application,
+            ribosome::{callback::Callback, Defn},
+        },
+        persister::SimplePersister,
+        state::State,
     };
-    use persister::SimplePersister;
-    use state::State;
 
     use std::{
         sync::{
@@ -346,8 +348,10 @@ pub mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -369,10 +373,12 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
                     make_mock_net(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -410,7 +416,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 make_mock_net(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 
@@ -429,7 +436,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -450,7 +458,8 @@ pub mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
@@ -479,7 +488,7 @@ pub mod tests {
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
-        block_on(initialize_application(dna.clone(), context.clone()))?;
+        block_on(initialize_application(dna.clone(), &context.clone()))?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -640,7 +649,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
@@ -651,14 +660,14 @@ pub mod tests {
         // the initial state is not intialized
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::Initializing
+            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 

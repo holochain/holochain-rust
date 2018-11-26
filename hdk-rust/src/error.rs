@@ -23,6 +23,12 @@ impl From<ZomeApiError> for HolochainError {
     }
 }
 
+impl From<ZomeApiError> for String {
+    fn from(zome_api_error: ZomeApiError) -> Self {
+        zome_api_error.description().into()
+    }
+}
+
 impl From<HolochainError> for ZomeApiError {
     fn from(holochain_error: HolochainError) -> Self {
         match holochain_error {

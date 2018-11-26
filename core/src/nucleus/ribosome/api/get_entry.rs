@@ -1,9 +1,10 @@
-use futures::executor::block_on;
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
-use nucleus::{
+use crate::nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
+use futures::executor::block_on;
+use holochain_core_types::cas::content::Address;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -16,11 +17,11 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
-        // Exit on error
+    // Exit on error
         Err(_) => {
             println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
+        return ribosome_error_code!(ArgumentDeserializationFailed);
+    }
     };
     // Create and block on future
     let future = get_entry(&runtime.context, &input);
@@ -34,17 +35,16 @@ mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use holochain_wasm_utils::api_serialization::get_entry::*;
     use self::wabt::Wat2Wasm;
-    use holochain_core_types::{
+    use crate::{
+        instance::tests::{test_context_and_logger, test_instance},
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use holochain_wasm_utils::api_serialization::get_entry::*;
-    use instance::tests::{test_context_and_logger, test_instance};
-    use nucleus::{
+        nucleus::{
         ribosome::{
             self,
             api::{
@@ -53,6 +53,13 @@ mod tests {
             },
         },
         ZomeFnCall,
+        },
+    };
+    use holochain_core_types::{
+        cas::content::{Address, AddressableContent},
+        entry::test_entry,
+        error::ZomeApiInternalResult,
+        json::JsonString,
     };
     use std::sync::Arc;
 
@@ -197,7 +204,8 @@ mod tests {
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             call_result,
@@ -220,7 +228,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         let mut entry_result = GetEntryResult::new();
         entry_result.addresses.push(test_entry().address());
@@ -270,7 +279,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(String::from(JsonString::from(

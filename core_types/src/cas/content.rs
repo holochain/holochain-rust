@@ -1,7 +1,7 @@
-use cas::storage::ContentAddressableStorage;
-use error::error::HolochainError;
-use hash::HashString;
-use json::JsonString;
+use crate::{
+    cas::storage::ContentAddressableStorage, error::error::HolochainError, hash::HashString,
+    json::JsonString,
+};
 use multihash::Hash;
 use std::fmt::{Debug, Write};
 
@@ -155,7 +155,8 @@ impl AddressableContentTestSuite {
                         &cas.fetch(&f.address())
                             .expect(&fetch_error_message)
                             .expect("could not get json")
-                    ).unwrap()
+                    )
+                    .unwrap()
                 )
             );
         });
@@ -164,11 +165,13 @@ impl AddressableContentTestSuite {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{
-        Address, AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
-        OtherExampleAddressableContent,
+    use crate::{
+        cas::content::{
+            Address, AddressableContent, AddressableContentTestSuite, ExampleAddressableContent,
+            OtherExampleAddressableContent,
+        },
+        json::{JsonString, RawString},
     };
-    use json::{JsonString, RawString};
 
     #[test]
     /// test the first example
@@ -188,7 +191,8 @@ pub mod tests {
             JsonString::from(RawString::from("foo")),
             OtherExampleAddressableContent::try_from_content(&JsonString::from(RawString::from(
                 "foo",
-            ))).unwrap(),
+            )))
+            .unwrap(),
             Address::from("QmaKze4knhzQPuofhaXfg8kPG3V92MLgDX95xe8g5eafLn"),
         );
     }

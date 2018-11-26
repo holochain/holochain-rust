@@ -4,17 +4,19 @@ pub mod actions;
 pub mod ribosome;
 pub mod state;
 
-use action::{Action, ActionWrapper, NucleusReduceFn};
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper, NucleusReduceFn},
+    context::Context,
+    instance::{dispatch_action_with_observer, Observer},
+    nucleus::{
+        ribosome::api::call::reduce_call,
+        state::{NucleusState, NucleusStatus},
+    },
+};
 use holochain_core_types::{
     dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna},
     error::{DnaError, HcResult, HolochainError},
     json::JsonString,
-};
-use instance::{dispatch_action_with_observer, Observer};
-use nucleus::{
-    ribosome::api::call::reduce_call,
-    state::{NucleusState, NucleusStatus},
 };
 use snowflake;
 use std::{
@@ -430,13 +432,15 @@ fn get_capability_with_zome_call(
 pub mod tests {
     extern crate test_utils;
     use super::*;
-    use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
-    use holochain_core_types::dna::Dna;
-    use instance::{
-        tests::{test_context, test_context_with_channels, test_instance},
-        Instance,
+    use crate::{
+        action::{tests::test_action_wrapper_rzfr, ActionWrapper},
+        instance::{
+            tests::{test_context, test_context_with_channels, test_instance},
+            Instance,
+        },
+        nucleus::state::tests::test_nucleus_state,
     };
-    use nucleus::state::tests::test_nucleus_state;
+    use holochain_core_types::dna::Dna;
     use std::sync::Arc;
 
     use holochain_core_types::json::{JsonString, RawString};

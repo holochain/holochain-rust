@@ -1,8 +1,10 @@
 //! all DHT reducers
 
-use action::{Action, ActionWrapper};
-use context::Context;
-use dht::dht_store::DhtStore;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    dht::dht_store::DhtStore,
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
@@ -432,18 +434,20 @@ pub(crate) fn reduce_get_links(
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
-    use dht::{
-        dht_reducers::{commit_sys_entry, reduce},
-        dht_store::DhtStore,
+    use crate::{
+        action::{Action, ActionWrapper},
+        dht::{
+            dht_reducers::{commit_sys_entry, reduce},
+            dht_store::DhtStore,
+        },
+        instance::tests::test_context,
+        state::test_store,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
         entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
         link::Link,
     };
-    use instance::tests::test_context;
-    use state::test_store;
     use std::sync::{Arc, RwLock};
 
     #[test]

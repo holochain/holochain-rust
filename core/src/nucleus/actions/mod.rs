@@ -8,7 +8,7 @@ pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        instance::{tests::test_instance_and_context, Instance},
+        instance::{tests::test_instance_and_context_by_name, Instance},
     };
     use futures::executor::block_on;
     use holochain_core_types::{
@@ -22,6 +22,11 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
+        instance_by_name("jane")
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn instance_by_name(name: &str) -> (Instance, Arc<Context>) {
         // Setup the holochain instance
         let wasm =
             create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
@@ -50,7 +55,7 @@ pub mod tests {
             .insert(String::from("package_chain_full"), EntryTypeDef::new());
 
         let (instance, context) =
-            test_instance_and_context(dna).expect("Could not create test instance");
+            test_instance_and_context_by_name(dna,name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
 
         (instance, initialized_context)

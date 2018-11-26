@@ -465,11 +465,17 @@ pub mod tests {
         test_instance_and_context(dna).map(|tuple| tuple.0)
     }
 
-    /// create a test instance
+    /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_by_name(dna,"jane")
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_by_name(dna: Dna,name: &str) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context("jane");
+        let context = test_context(name);
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);

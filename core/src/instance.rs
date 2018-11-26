@@ -474,12 +474,10 @@ pub mod tests {
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
 
-        block_on(
-            initialize_application(dna.clone(), &context.clone())
-                .and_then(|_| {
-                    initialize_network(&context)
-                })
-        )?;
+        block_on(async{
+            await!(initialize_application(dna.clone(), &context.clone()))?;
+            await!(initialize_network(&context))?
+        })?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());

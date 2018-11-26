@@ -13,10 +13,12 @@ use std::{
 };
 
 
-fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
+async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
     let state = context.state()
         .ok_or("Network::start() could not get application state".to_string())?;
-    let agent = state.agent().get_agent(&context)?;
+    let agent_state = state.agent();
+
+    let agent = await!(agent_state.get_agent(&context))?;
     let agent_id = agent.key;
 
     let dna = state.nucleus().dna().ok_or("Network::start() called without DNA".to_string())?;
@@ -24,8 +26,8 @@ fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), Holocha
     Ok((dna_hash, agent_id))
 }
 /// InitNetwork Action Creator
-pub fn initialize_network(context: &Arc<Context>) -> InitNetworkFuture  {
-    match get_dna_and_agent(context) {
+pub async fn initialize_network(context: &Arc<Context>) -> InitNetworkFuture  {
+    match await!(get_dna_and_agent(context)) {
         Err(error) => return InitNetworkFuture{
             context: context.clone(),
             error: Some(error),

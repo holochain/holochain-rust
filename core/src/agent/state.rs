@@ -5,7 +5,6 @@ use crate::{
     state::State,
     nucleus::actions::get_entry::get_entry,
 };
-use futures::executor::block_on;
 use holochain_core_types::{
     agent::Agent,
     cas::content::{Address, AddressableContent, Content},
@@ -67,18 +66,15 @@ impl AgentState {
         self.top_chain_header.clone()
     }
 
-    pub fn get_agent(&self, context: &Arc<Context>) -> Result<Agent, HolochainError> {
-        self.chain()
+    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> Result<Agent, HolochainError> {
+        let agent_entry_address = self.chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address()))
-            .and_then(|agent_entry_address| {
-                block_on(get_entry(context, agent_entry_address)).ok()
-            })
-            .and_then(|agent_entry| {
-                Some(Agent::from_entry(&agent_entry.unwrap()))
-            })
-            .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))
+            .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
+
+        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?;
+        Ok(Agent::from_entry(&agent_entry.unwrap()))
     }
 }
 

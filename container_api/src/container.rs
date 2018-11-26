@@ -354,9 +354,9 @@ pub mod tests {
         assert!(container.load_config(&config).is_ok());
         assert_eq!(container.instances.len(), 1);
 
-        container.start_all_instances();
+        container.start_all_instances().unwrap();
         container.start_all_interfaces();
-        container.stop_all_instances();
+        container.stop_all_instances().unwrap();
     }
 
     #[test]

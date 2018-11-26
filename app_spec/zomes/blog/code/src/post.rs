@@ -1,16 +1,15 @@
 /// This file holds everything that represents the "post" entry type.
 
 use hdk::holochain_core_types::{
-    cas::content::Address,
-    dna::zome::entry_types::Sharing,
     error::HolochainError,
+    dna::zome::entry_types::Sharing,
     json::JsonString,
+    cas::content::Address,
 };
-use boolinator::*;
 use hdk::{
-    self,
     entry_definition::ValidatingEntryType,
 };
+use boolinator::Boolinator;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -33,7 +32,7 @@ pub struct Post {
 /// validation_package callback.
 /// The validation_function still has to be defined with the macro below.
 pub fn definition() -> ValidatingEntryType {
-    let e = entry!(
+    entry!(
         name: "post",
         description: "",
         sharing: Sharing::Public,

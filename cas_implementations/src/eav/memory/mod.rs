@@ -1,6 +1,8 @@
 pub mod actor;
-use actor::{AskSelf, Protocol};
-use eav::memory::actor::EavMemoryStorageActor;
+use crate::{
+    actor::{AskSelf, Protocol},
+    eav::memory::actor::EavMemoryStorageActor,
+};
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
@@ -55,7 +57,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
 #[cfg(test)]
 pub mod tests {
-    use eav::memory::EavMemoryStorage;
+    use crate::eav::memory::EavMemoryStorage;
     use holochain_core_types::{
         cas::{
             content::{AddressableContent, ExampleAddressableContent},

@@ -157,7 +157,8 @@ mod tests {
                     }
                 ]
             }"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut entry = EntryTypeDef::new();
         entry.description = String::from("test");

@@ -100,7 +100,7 @@ pub mod tests {
 
     #[test]
     /// show that content of different types can round trip through the same storage
-    /// this is copied straight from the example with a aasdf CAS
+    /// this is copied straight from the example with a file CAS
     fn file_content_round_trip_test() {
         let (cas, _dir) = test_file_cas();
         let test_suite = StorageTestSuite::new(cas);

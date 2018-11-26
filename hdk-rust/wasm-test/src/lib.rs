@@ -20,7 +20,7 @@ use holochain_wasm_utils::{
     api_serialization::get_entry::GetEntryOptions,
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
-        cas::content::Address,
+        cas::content::{Address, AddressableContent},
         entry::{Entry, entry_type::EntryType, SerializedEntry},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
@@ -28,6 +28,7 @@ use holochain_wasm_utils::{
     memory_allocation::*,
     memory_serialization::*,
 };
+use std::convert::TryFrom;
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -336,6 +337,24 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
     }.into()
 }
 
+fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
+    let entry_type = EntryType::from("link_validator");
+    let entry_value1 = JsonString::from(TestEntryType {
+        stuff: stuff1,
+    });
+    let entry_value2 = JsonString::from(TestEntryType {
+        stuff: stuff2,
+    });
+    let entry1 = Entry::new(entry_type.clone(), entry_value1.clone());
+    let entry2 = Entry::new(entry_type.clone(), entry_value2.clone());
+
+    let _ = hdk::commit_entry(&entry1);
+    let _ = hdk::commit_entry(&entry2);
+
+    JsonString::from(hdk::link_entries(&entry1.address(), &entry2.address(), "longer"))
+}
+
+
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
     stuff: String,
@@ -370,7 +389,20 @@ define_zome! {
             validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
-            }
+            },
+
+            links: [
+                to!(
+                    "testEntryType",
+                    tag: "test-tag",
+                    validation_package: || {
+                        hdk::ValidationPackageDefinition::ChainFull
+                    },
+                    validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
+                        Ok(())
+                    }
+                )
+            ]
         ),
 
         entry!(
@@ -386,6 +418,48 @@ define_zome! {
             validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
                 Err(serde_json::to_string(&ctx).unwrap())
             }
+        ),
+
+        entry!(
+            name: "link_validator",
+            description: "asdfda",
+            sharing: Sharing::Public,
+            native_type: TestEntryType,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::Entry
+            },
+
+            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+                Ok(())
+            },
+
+            links: [
+                to!(
+                    "link_validator",
+                    tag: "longer",
+                    validation_package: || {
+                        hdk::ValidationPackageDefinition::Entry
+                    },
+                    validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
+                        let base = TestEntryType::try_from(
+                            hdk::get_entry(base)?
+                            .ok_or("Base not found")?
+                            .value()
+                        )?;
+
+                        let target = TestEntryType::try_from(
+                            hdk::get_entry(target)?
+                            .ok_or("Target not found")?
+                            .value()
+                        )?;
+
+                        (target.stuff.len() > base.stuff.len())
+                            .ok_or("Target stuff is not longer".to_string())
+                    }
+
+                )
+            ]
         )
     ]
 
@@ -433,6 +507,12 @@ define_zome! {
                 inputs: | |,
                 outputs: |result: JsonString|,
                 handler: handle_links_roundtrip
+            }
+
+            link_validation: {
+                inputs: |stuff1: String, stuff2: String|,
+                outputs: |result: JsonString|,
+                handler: handle_link_validation
             }
 
             check_call: {

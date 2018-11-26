@@ -5,7 +5,10 @@ use crate::{
     context::Context,
     instance::dispatch_action,
 };
-use futures::{task::{Poll, LocalWaker}, future::Future};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
@@ -43,10 +46,7 @@ impl Unpin for CommitFuture {}
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;
 
-    fn poll(
-        self: Pin<&mut Self>,
-        lw: &LocalWaker,
-    ) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

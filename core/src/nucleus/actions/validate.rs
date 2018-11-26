@@ -5,7 +5,10 @@ use crate::{
     context::Context,
     nucleus::ribosome::callback::{self, CallbackResult},
 };
-use futures::{task::{Poll, LocalWaker}, future::{self, FutureObj, Future}};
+use futures::{
+    future::{self, Future, FutureObj},
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{entry_type::EntryType, Entry},
@@ -16,7 +19,8 @@ use holochain_core_types::{
 use snowflake;
 use std::{
     pin::{Pin, Unpin},
-    sync::Arc, thread,
+    sync::Arc,
+    thread,
 };
 
 /// ValidateEntry Action Creator
@@ -25,7 +29,6 @@ use std::{
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry<'a>(
-    entry_type: EntryType,
     entry: Entry,
     validation_data: ValidationData,
     context: &'a Arc<Context>,
@@ -33,55 +36,55 @@ pub fn validate_entry<'a>(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
-    match context
-        .state()
-        .unwrap()
-        .nucleus()
-        .dna()
-        .unwrap()
-        .get_zome_name_for_entry_type(&entry_type.to_string())
+    if let EntryType::App(_) = entry.entry_type() {
+        if context
+            .state()
+            .unwrap()
+            .nucleus()
+            .dna()
+            .unwrap()
+            .get_zome_name_for_entry_type(&entry.entry_type().to_string())
+            .is_none()
+        {
+            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+                format!("Unknown entry type: '{}'", entry.entry_type().to_string(),),
+            ))));
+        }
+    }
+
     {
-        None => {
-            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(format!(
-                "Unknown entry type: '{}'",
-                entry_type.to_string(),
-            )))));
-        }
-        Some(_) => {
-            let id = id.clone();
-            let address = address.clone();
-            let entry = entry.clone();
-            let context = context.clone();
-            thread::spawn(move || {
-                let maybe_validation_result = callback::validate_entry::validate_entry(
-                    entry.clone(),
-                    entry_type.clone(),
-                    validation_data.clone(),
-                    context.clone(),
-                );
+        let id = id.clone();
+        let address = address.clone();
+        let entry = entry.clone();
+        let context = context.clone();
+        thread::spawn(move || {
+            let maybe_validation_result = callback::validate_entry::validate_entry(
+                entry.clone(),
+                validation_data.clone(),
+                context.clone(),
+            );
 
-                let result = match maybe_validation_result {
-                    Ok(validation_result) => match validation_result {
-                        CallbackResult::Fail(error_string) => Err(error_string),
-                        CallbackResult::Pass => Ok(()),
-                        CallbackResult::NotImplemented => Err(format!(
-                            "Validation callback not implemented for {:?}",
-                            entry_type.clone()
-                        )),
-                        _ => unreachable!(),
-                    },
-                    Err(error) => Err(error.to_string()),
-                };
+            let result = match maybe_validation_result {
+                Ok(validation_result) => match validation_result {
+                    CallbackResult::Fail(error_string) => Err(error_string),
+                    CallbackResult::Pass => Ok(()),
+                    CallbackResult::NotImplemented => Err(format!(
+                        "Validation callback not implemented for {:?}",
+                        entry.entry_type().clone()
+                    )),
+                    _ => unreachable!(),
+                },
+                Err(error) => Err(error.to_string()),
+            };
 
-                context
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        (id, address),
-                        result,
-                    ))))
-                    .expect("action channel to be open in reducer");
-            });
-        }
+            context
+                .action_channel
+                .send(ActionWrapper::new(Action::ReturnValidationResult((
+                    (id, address),
+                    result,
+                ))))
+                .expect("action channel to be open in reducer");
+        });
     };
 
     FutureObj::new(Box::new(ValidationFuture {
@@ -100,12 +103,9 @@ pub struct ValidationFuture {
 impl Unpin for ValidationFuture {}
 
 impl Future for ValidationFuture {
-    type Output = Result<HashString,HolochainError>;
+    type Output = Result<HashString, HolochainError>;
 
-    fn poll(
-        self: Pin<&mut Self>,
-        lw: &LocalWaker,
-    ) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314

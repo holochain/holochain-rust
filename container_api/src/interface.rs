@@ -67,31 +67,39 @@ impl ContainerApiDispatcher {
 
     fn setup_zome_api(&mut self) {
         for (instance_id, hc_lock) in self.instances.clone() {
-            let hc = hc_lock.clone().read().unwrap();
+            let hc_lock = hc_lock.clone();
+            let hc = hc_lock.read().unwrap();
             let state: State = hc.state().unwrap();
             let nucleus = state.nucleus();
-            nucleus.dna.iter().map(|dna| {
-                dna.zomes.iter().for_each(|(zome_name, zome)| {
-                    zome.capabilities.iter().for_each(|(cap_name, cap)| {
-                        cap.functions.iter().for_each(|func| {
-                            let func_name = &func.name;
-                            let method_name = format!(
-                                "{}/{}/{}/{}",
-                                instance_id,
-                                zome_name,
-                                cap_name,
-                                func_name
-                            );
-                            self.io.add_method(&method_name, move |_params| {
-                                let mut hc = hc_lock.write().unwrap();
-                                let response = hc.call(zome_name, cap_name, func_name, "")
-                                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                                Ok(Value::String(response.to_string()))
-                            });
+            let dna = nucleus.dna();
+            match dna {
+                Some(dna) => {
+                    dna.zomes.into_iter().for_each(|(zome_name, zome)| {
+                        zome.capabilities.into_iter().for_each(|(cap_name, cap)| {
+                            cap.functions.into_iter().for_each(|func| {
+                                let func_name = func.name;
+                                let zome_name = zome_name.clone();
+                                let cap_name = cap_name.clone();
+                                let method_name = format!(
+                                    "{}/{}/{}/{}",
+                                    instance_id,
+                                    zome_name,
+                                    cap_name,
+                                    func_name
+                                );
+                                let hc_lock_inner = hc_lock.clone();
+                                self.io.add_method(&method_name, move |_params| {
+                                    let mut hc = hc_lock_inner.write().unwrap();
+                                    let response = hc.call(&zome_name, &cap_name, &func_name, "")
+                                        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                                    Ok(Value::String(response.to_string()))
+                                });
+                            })
                         })
-                    })
-                });
-            });
+                    });
+                },
+                None => unreachable!()
+            }
         }
     }
 }

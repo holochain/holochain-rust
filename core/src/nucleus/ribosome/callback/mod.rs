@@ -2,13 +2,14 @@
 //! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
 
 pub mod genesis;
+pub mod links_utils;
 pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
 use context::Context;
 use holochain_core_types::{
-    dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna},
+    dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames},
     entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
@@ -24,7 +25,7 @@ use nucleus::{
 };
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use std::{str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -196,43 +197,6 @@ pub(crate) fn run_callback(
     }
 }
 
-pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
-    // In the case of genesis we encounter race conditions with regards to setting the DNA.
-    // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
-    // the state, which can result in this code being executed first.
-    // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
-    // TODO: use a future here
-    let mut dna = None;
-    let mut done = false;
-    let mut tries = 0;
-    while !done {
-        {
-            let state = context
-                .state()
-                .expect("Callback called without application state!");
-            dna = state.nucleus().dna();
-        }
-        match dna {
-            Some(_) => done = true,
-            None => {
-                if tries > 10 {
-                    done = true;
-                } else {
-                    sleep(Duration::from_millis(10));
-                    tries += 1;
-                }
-            }
-        }
-    }
-    dna
-}
-
-pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
-    let dna = get_dna(context).expect("Callback called without DNA set!");
-    dna.get_wasm_from_zome_name(zome)
-        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
-}
-
 pub fn call(
     context: Arc<Context>,
     zome: &str,
@@ -246,7 +210,7 @@ pub fn call(
         params,
     );
 
-    let dna = get_dna(&context).expect("Callback called without DNA set!");
+    let dna = context.get_dna().expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented,

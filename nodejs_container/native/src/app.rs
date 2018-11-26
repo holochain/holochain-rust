@@ -34,11 +34,9 @@ pub struct App {
 declare_types! {
     pub class JsApp for App {
         init(mut ctx) {
-            println!("init");
             let tempdir = tempdir().unwrap();
             let agent_name = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let dna_data = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
-            println!("nnn: {:?} {:?}", agent_name, dna_data);
 
             let agent = AgentId::generate_fake(&agent_name);
             let file_storage = Arc::new(RwLock::new(
@@ -107,30 +105,23 @@ declare_types! {
         }
 
         method call(mut ctx) {
-            // println!("iiiizz");
             let zome = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let cap = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
             let fn_name = ctx.argument::<JsString>(2)?.to_string(&mut ctx)?.value();
             let params = ctx.argument::<JsString>(3)?.to_string(&mut ctx)?.value();
-            // println!("ooo: {:?} {:?} {:?} {:?}", &zome, &cap, &fn_name, &params);
             let mut this = ctx.this();
 
             let call_result = {
                 let guard = ctx.lock();
                 let mut app = this.borrow_mut(&guard);
 
-                // println!("{:?} {:?} {:?} {:?}", &zome, &cap, &fn_name, &params);
                 app.instance.call(&zome, &cap, &fn_name, &params)
             };
-
-            // println!("ppp");
 
             let res_string = call_result.or_else(|e| {
                 let error_string = ctx.string(format!("unable to call zome function: {:?}", &e));
                 ctx.throw(error_string)
             })?;
-
-            println!("jsjs");
 
             let result_string: String = res_string.into();
             Ok(ctx.string(result_string).upcast())

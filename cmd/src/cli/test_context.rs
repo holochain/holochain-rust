@@ -48,6 +48,7 @@ pub fn test_context(agent_name: &str) -> Arc<Context> {
             Arc::new(RwLock::new(MemoryStorage::new().unwrap())),
             Arc::new(RwLock::new(EavMemoryStorage::new().unwrap())),
             make_mock_net(),
-        ).unwrap(),
+        )
+        .unwrap(),
     )
 }

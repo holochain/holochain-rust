@@ -190,7 +190,8 @@ mod tests {
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             call_result,
@@ -213,7 +214,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(
@@ -261,7 +263,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(

@@ -114,8 +114,7 @@ pub fn call_and_wait_for_result(
     instance: &mut super::instance::Instance,
 ) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
-    // println!("zzzz {:?}", &call_action);
-    // println!("**** {:?}", &instance.state());
+
     // Dispatch action with observer closure that waits for a result in the state
     let (sender, receiver) = sync_channel(1);
     instance.dispatch_with_observer(call_action, move |state: &super::state::State| {

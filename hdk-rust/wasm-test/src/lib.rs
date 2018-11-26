@@ -21,19 +21,17 @@ use holochain_wasm_utils::{
     api_serialization::get_entry::GetEntryOptions,
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
-        cas::content::Address,
-        entry::Entry,
-        entry::entry_type::EntryType,
-        error::HolochainError,
-            error::RibosomeErrorCode,
-        json::JsonString,
-        json::RawString,
+        cas::content::{Address, AddressableContent},
+        entry::{Entry, entry_type::EntryType},
+        error::{HolochainError, RibosomeErrorCode},
+        json::{JsonString, RawString},
+        entry::AppEntryValue,
+        entry::entry_type::AppEntryType,
     },
     memory_allocation::*,
     memory_serialization::*,
 };
-use hdk::holochain_core_types::entry::entry_type::AppEntryType;
-use hdk::holochain_core_types::entry::AppEntryValue;
+use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
@@ -338,7 +336,24 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
     }.into()
 }
 
-fn hdk_test_entry_type() -> AppEntryType {
+fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
+    let app_entry_type = AppEntryType::from("link_validator");
+    let entry_value1 = JsonString::from(TestEntryType {
+        stuff: stuff1,
+    });
+    let entry_value2 = JsonString::from(TestEntryType {
+        stuff: stuff2,
+    });
+    let entry1 = Entry::App(app_entry_type.clone(), entry_value1.clone());
+    let entry2 = Entry::App(app_entry_type.clone(), entry_value2.clone());
+
+    let _ = hdk::commit_entry(&entry1);
+    let _ = hdk::commit_entry(&entry2);
+
+    JsonString::from(hdk::link_entries(&entry1.address(), &entry2.address(), "longer"))
+}
+
+fn hdk_test_app_entry_type() -> AppEntryType {
     AppEntryType::from("testEntryType")
 }
 
@@ -349,7 +364,7 @@ fn hdk_test_entry_value() -> AppEntryValue {
 }
 
 fn hdk_test_entry() -> Entry {
-    Entry::App(hdk_test_entry_type(), hdk_test_entry_value())
+    Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
 define_zome! {
@@ -367,7 +382,20 @@ define_zome! {
             validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
-            }
+            },
+
+            links: [
+                to!(
+                    "testEntryType",
+                    tag: "test-tag",
+                    validation_package: || {
+                        hdk::ValidationPackageDefinition::ChainFull
+                    },
+                    validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
+                        Ok(())
+                    }
+                )
+            ]
         ),
 
         entry!(
@@ -383,6 +411,52 @@ define_zome! {
             validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
                 Err(serde_json::to_string(&ctx).unwrap())
             }
+        ),
+
+        entry!(
+            name: "link_validator",
+            description: "asdfda",
+            sharing: Sharing::Public,
+            native_type: TestEntryType,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::Entry
+            },
+
+            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+                Ok(())
+            },
+
+            links: [
+                to!(
+                    "link_validator",
+                    tag: "longer",
+                    validation_package: || {
+                        hdk::ValidationPackageDefinition::Entry
+                    },
+                    validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
+                        let base = match hdk::get_entry(base)? {
+                            Some(entry) => match entry {
+                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                _ => Err("System entry found")?
+                            },
+                            None => Err("Base not found")?,
+                        };
+
+                        let target = match hdk::get_entry(target)? {
+                            Some(entry) => match entry {
+                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                _ => Err("System entry found")?,
+                            }
+                            None => Err("Target not found")?,
+                        };
+
+                        (target.stuff.len() > base.stuff.len())
+                            .ok_or("Target stuff is not longer".to_string())
+                    }
+
+                )
+            ]
         )
     ]
 
@@ -430,6 +504,12 @@ define_zome! {
                 inputs: | |,
                 outputs: |result: JsonString|,
                 handler: handle_links_roundtrip
+            }
+
+            link_validation: {
+                inputs: |stuff1: String, stuff2: String|,
+                outputs: |result: JsonString|,
+                handler: handle_link_validation
             }
 
             check_call: {

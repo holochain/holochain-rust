@@ -147,7 +147,6 @@ pub(crate) fn reduce_call(
         );
         return;
     }
-    println!("wwww {:?} {:?}", dna, fn_call);
 
     // 3. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
@@ -231,8 +230,10 @@ pub mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -252,7 +253,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 make_mock_net(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )
     }
 

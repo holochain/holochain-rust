@@ -34,11 +34,12 @@ impl ContentAddressableStorage for FilesystemStorage {
             .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
         match response {
             Protocol::CasAddResult(add_result) => add_result,
-            _ => return Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasAddResult got {:?}", &response)
-                )
-            )
+            _ => {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Expected Protocol::CasAddResult got {:?}",
+                    &response
+                )))
+            }
         }
     }
 
@@ -48,11 +49,12 @@ impl ContentAddressableStorage for FilesystemStorage {
             .block_on_ask(Protocol::CasContains(address.clone()))?;
         match response {
             Protocol::CasContainsResult(contains_result) => contains_result,
-            _ => return Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasContainsResult got {:?}", &response)
-                )
-            ),
+            _ => {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Expected Protocol::CasContainsResult got {:?}",
+                    &response
+                )))
+            }
         }
     }
 
@@ -63,11 +65,12 @@ impl ContentAddressableStorage for FilesystemStorage {
 
         match response {
             Protocol::CasFetchResult(fetch_result) => Ok(fetch_result?),
-            _ => return Err(
-                HolochainError::ErrorGeneric(
-                    format!("Expected Protocol::CasFetchResult got {:?}", &response)
-                )
-            )
+            _ => {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Expected Protocol::CasFetchResult got {:?}",
+                    &response
+                )))
+            }
         }
     }
 
@@ -94,7 +97,7 @@ pub mod tests {
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
         let dir = tempdir().expect("Could not create a tempdir for CAS testing");
         (
-            FilesystemStorage::new(dir.path().to_string_lossy()).unwrap(),
+            FilesystemStorage::new(&dir.path().to_string_lossy()).unwrap(),
             dir,
         )
     }

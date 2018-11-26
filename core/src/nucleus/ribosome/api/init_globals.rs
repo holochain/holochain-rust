@@ -67,7 +67,6 @@ pub mod tests {
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
-        println!("{:?}", call_result);
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
         let globals =

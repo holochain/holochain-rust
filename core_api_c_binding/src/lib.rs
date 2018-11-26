@@ -67,7 +67,8 @@ fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
     let res = P2pNetwork::new(
         Box::new(|_r| Ok(())),
         &JsonString::from("{\"backend\": \"mock\"}"),
-    ).unwrap();
+    )
+    .unwrap();
     Arc::new(Mutex::new(res))
 }
 

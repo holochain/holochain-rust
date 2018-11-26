@@ -76,10 +76,12 @@ mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "bad"
-            }).to_string()
-                .into(),
-        ).expect_err("should have thrown")
-            .to_string();
+            })
+            .to_string()
+            .into(),
+        )
+        .expect_err("should have thrown")
+        .to_string();
         assert!(res.contains("backend: \"bad\""), "res: {}", res);
     }
 
@@ -94,8 +96,10 @@ mod tests {
                     "ipcUri": "tcp://127.0.0.1:0",
                     "blockConnect": false
                 }
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }
@@ -106,8 +110,10 @@ mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

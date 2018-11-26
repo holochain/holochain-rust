@@ -20,7 +20,6 @@ use std::{sync::Arc, thread};
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn validate_entry(
-    entry_type: EntryType,
     entry: Entry,
     validation_data: ValidationData,
     context: &Arc<Context>,
@@ -28,65 +27,64 @@ pub fn validate_entry(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
-    let app_entry_type = match entry_type {
-        EntryType::App(ref app_entry_type) => app_entry_type.clone(),
-        _ => {
-            return Box::new(future::err(HolochainError::ValidationFailed(format!(
-                "System validation not implemented {:?}",
-                entry_type,
-            ))))
-        }
-    };
-
-    match context
-        .state()
-        .unwrap()
-        .nucleus()
-        .dna()
-        .unwrap()
-        .get_zome_name_for_app_entry_type(&app_entry_type)
-    {
-        None => {
+    if let EntryType::App(_) = entry.entry_type() {
+        if context
+            .state()
+            .unwrap()
+            .nucleus()
+            .dna()
+            .unwrap()
+            .get_zome_name_for_app_entry_type(match &entry.entry_type() {
+                EntryType::App(app_entry_type) => app_entry_type,
+                _ => {
+                    return Box::new(future::err(HolochainError::ValidationFailed(format!(
+                        "Attempted to validate system entry type {:?}",
+                        entry.entry_type()
+                    ))))
+                }
+            })
+            .is_none()
+        {
             return Box::new(future::err(HolochainError::ValidationFailed(format!(
                 "Unknown entry type: '{}'",
-                entry_type.to_string(),
-            ))));;
+                String::from(entry.entry_type().to_owned())
+            ))));
         }
-        Some(_) => {
-            let id = id.clone();
-            let address = address.clone();
-            let entry = entry.clone();
-            let context = context.clone();
-            thread::spawn(move || {
-                let maybe_validation_result = callback::validate_entry::validate_entry(
-                    entry.clone(),
-                    entry_type.clone(),
-                    validation_data.clone(),
-                    context.clone(),
-                );
+    }
 
-                let result = match maybe_validation_result {
-                    Ok(validation_result) => match validation_result {
-                        CallbackResult::Fail(error_string) => Err(error_string),
-                        CallbackResult::Pass => Ok(()),
-                        CallbackResult::NotImplemented => Err(format!(
-                            "Validation callback not implemented for {:?}",
-                            entry_type.clone()
-                        )),
-                        _ => unreachable!(),
-                    },
-                    Err(error) => Err(error.to_string()),
-                };
+    {
+        let id = id.clone();
+        let address = address.clone();
+        let entry = entry.clone();
+        let context = context.clone();
+        thread::spawn(move || {
+            let maybe_validation_result = callback::validate_entry::validate_entry(
+                entry.clone(),
+                validation_data.clone(),
+                context.clone(),
+            );
 
-                context
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnValidationResult((
-                        (id, address),
-                        result,
-                    ))))
-                    .expect("action channel to be open in reducer");
-            });
-        }
+            let result = match maybe_validation_result {
+                Ok(validation_result) => match validation_result {
+                    CallbackResult::Fail(error_string) => Err(error_string),
+                    CallbackResult::Pass => Ok(()),
+                    CallbackResult::NotImplemented => Err(format!(
+                        "Validation callback not implemented for {:?}",
+                        entry.entry_type().clone()
+                    )),
+                    _ => unreachable!(),
+                },
+                Err(error) => Err(error.to_string()),
+            };
+
+            context
+                .action_channel
+                .send(ActionWrapper::new(Action::ReturnValidationResult((
+                    (id, address),
+                    result,
+                ))))
+                .expect("action channel to be open in reducer");
+        });
     };
 
     Box::new(ValidationFuture {

@@ -83,7 +83,6 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        println!("Holochain instance {:?}", &dna);
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
@@ -145,7 +144,6 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        println!("owowow {:?}", &params);
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
@@ -194,8 +192,10 @@ mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -219,10 +219,12 @@ mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
                     make_mock_net(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )

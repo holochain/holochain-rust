@@ -24,15 +24,11 @@ pub fn run_dna(
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
 ) -> ZomeFnResult {
-    // assert!(!wasm.is_empty(), "attempted to run empty wasm");
-    // println!("run_dna {:?} {:?}", &dna_name, &wasm);
-    println!("run_dna {:?} {:?}", &dna_name, &wasm.len());
     // Create wasm module from wasm binary
     let module = match wasmi::Module::from_buffer(wasm) {
         Ok(module) => module,
         Err(e) => return Err(HolochainError::ErrorGeneric(e.into())),
     };
-    println!("xxxx");
 
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions

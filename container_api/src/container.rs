@@ -184,8 +184,10 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
 

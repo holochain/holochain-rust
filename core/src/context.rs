@@ -1,6 +1,9 @@
 use action::ActionWrapper;
 use holochain_core_types::{
-    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    agent::AgentId,
+    cas::storage::ContentAddressableStorage,
+    dna::{wasm::DnaWasm, Dna},
+    eav::EntityAttributeValueStorage,
     error::HolochainError,
 };
 use holochain_net::p2p_network::P2pNetwork;
@@ -8,9 +11,13 @@ use instance::Observer;
 use logger::Logger;
 use persister::Persister;
 use state::State;
-use std::sync::{
-    mpsc::{sync_channel, SyncSender},
-    Arc, Mutex, RwLock, RwLockReadGuard,
+use std::{
+    sync::{
+        mpsc::{sync_channel, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
+    thread::sleep,
+    time::Duration,
 };
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -97,6 +104,43 @@ impl Context {
             Some(ref s) => Some(s.read().unwrap()),
         }
     }
+
+    pub fn get_dna(&self) -> Option<Dna> {
+        // In the case of genesis we encounter race conditions with regards to setting the DNA.
+        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // the state, which can result in this code being executed first.
+        // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+        // TODO: use a future here
+        let mut dna = None;
+        let mut done = false;
+        let mut tries = 0;
+        while !done {
+            {
+                let state = self
+                    .state()
+                    .expect("Callback called without application state!");
+                dna = state.nucleus().dna();
+            }
+            match dna {
+                Some(_) => done = true,
+                None => {
+                    if tries > 10 {
+                        done = true;
+                    } else {
+                        sleep(Duration::from_millis(10));
+                        tries += 1;
+                    }
+                }
+            }
+        }
+        dna
+    }
+
+    pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
+        let dna = self.get_dna().expect("Callback called without DNA set!");
+        dna.get_wasm_from_zome_name(zome)
+            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+    }
 }
 
 /// create a test network
@@ -106,8 +150,10 @@ pub fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
         Box::new(|_r| Ok(())),
         &json!({
             "backend": "mock"
-        }).into(),
-    ).unwrap();
+        })
+        .into(),
+    )
+    .unwrap();
     Arc::new(Mutex::new(res))
 }
 
@@ -145,7 +191,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -175,7 +222,8 @@ mod tests {
                     .unwrap(),
             )),
             make_mock_net(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

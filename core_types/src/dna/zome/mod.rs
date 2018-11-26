@@ -3,7 +3,7 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use dna::wasm::DnaWasm;
+use crate::dna::wasm::DnaWasm;
 use std::collections::HashMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -107,7 +107,7 @@ impl Zome {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use dna::zome::Zome;
+    use crate::dna::zome::Zome;
     use serde_json;
 
     pub fn test_zome() -> Zome {
@@ -125,7 +125,8 @@ pub mod tests {
                 "entry_types": {},
                 "capabilities": {}
             }"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut zome = Zome::default();
         zome.description = String::from("test");

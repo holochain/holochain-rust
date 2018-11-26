@@ -1,4 +1,4 @@
-use context::Context;
+use crate::{context::Context, nucleus::actions::get_entry::get_entry};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -6,7 +6,6 @@ use holochain_core_types::{
     link::Link,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
-use nucleus::actions::get_entry::get_entry;
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
@@ -78,7 +77,8 @@ pub fn find_link_definition_in_dna(
                 })
             }),
         _ => None,
-    }.or(match target_type {
+    }
+    .or(match target_type {
         EntryType::App(app_entry_type) => dna
             .get_entry_type_def(&app_entry_type)
             .ok_or(HolochainError::ErrorGeneric(String::from(
@@ -99,7 +99,7 @@ pub fn find_link_definition_in_dna(
             }),
         _ => None,
     })
-        .ok_or(HolochainError::ErrorGeneric(String::from(
-            "Unknown entry type",
-        )))
+    .ok_or(HolochainError::ErrorGeneric(String::from(
+        "Unknown entry type",
+    )))
 }

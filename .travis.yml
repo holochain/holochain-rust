@@ -140,7 +140,11 @@ jobs:
 
     - name: "windows build & test all"
       <<: *_windows_template
-      <<: *_cargo_cache_template
+      cache:
+        timeout: 1000
+        directories:
+          - $HOME\.cargo
+          # - $TRAVIS_BUILD_DIR/target
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1
@@ -149,13 +153,13 @@ jobs:
       install:
         - rustup target add wasm32-unknown-unknown
       script:
-        # Build WASMs
-        - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-        # Build & test All
-        - cargo test --all
+        # # Build WASMs
+        # - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # # Build & test All
+        # - cargo test --all
 
     - name: "C binding tests"
       <<: *_trusty_bash

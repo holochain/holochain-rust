@@ -22,7 +22,7 @@ pub trait DispatchRpc {
 /// Each interface has their own dispatcher, and each may be configured differently.
 pub struct ContainerApiDispatcher {
     instances: InstanceMap,
-    io: IoHandler,
+    pub io: IoHandler,
 }
 
 unsafe impl Send for ContainerApiDispatcher {}

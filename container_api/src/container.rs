@@ -308,6 +308,13 @@ pub mod tests {
     type = "file"
     path = "tmp-storage"
 
+    [[interfaces]]
+    id = "app spec interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
     "#
     }
 
@@ -359,5 +366,24 @@ pub mod tests {
                 "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_rpc_info_instances() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        // TODO: redundant
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        assert!(container.load_config(&config).is_ok());
+
+        let instance_config = &config.interfaces[0];
+        let dispatcher = container.make_dispatcher(&instance_config);
+        let io = dispatcher.io;
+
+        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\"tmp-storage\"}}}","id":1}"#;
+
+        assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
 }

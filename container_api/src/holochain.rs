@@ -384,7 +384,7 @@ mod tests {
     fn can_get_state() {
         let dna = Dna::new();
         let (context, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
         assert!(result.is_ok());

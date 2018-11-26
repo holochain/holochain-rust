@@ -1,17 +1,15 @@
-use holochain_core_types::json::JsonString;
 use holochain_core::state::State;
+use holochain_core_types::json::JsonString;
 use Holochain;
 
 use jsonrpc::{jsonrpc_error, jsonrpc_success, JsonRpcRequest};
+use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, MetaIoHandler, Metadata, Value};
 use serde_json;
 use std::{
     collections::HashMap,
     convert::TryFrom,
     sync::{Arc, RwLock, RwLockReadGuard},
     thread,
-};
-use jsonrpc_ws_server::{
-    jsonrpc_core::{self, IoHandler, MetaIoHandler, Metadata, Value}
 };
 
 use config::{Configuration, InstanceConfiguration};
@@ -22,9 +20,6 @@ pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
 }
-// pub trait DispatchRpc<M: Metadata + Default> {
-//     fn handler(&self) -> MetaIoHandler<M>;
-// }
 
 /// ContainerApiDispatcher exposes some subset of the Container API,
 /// including zome function calls as well as admin functionality.
@@ -36,6 +31,10 @@ pub struct ContainerApiDispatcher {
 
 unsafe impl Send for ContainerApiDispatcher {}
 
+/// Implements routing for JSON-RPC calls:
+/// {instance_id}/{zome}/{cap}/{func} -> a zome call
+/// info/list_instances               -> Map of InstanceConfigs, keyed by ID
+/// admin/...                         -> TODO
 impl ContainerApiDispatcher {
     pub fn new(config: &Configuration, instances: InstanceMap) -> Self {
         let instance_configs = config
@@ -44,10 +43,7 @@ impl ContainerApiDispatcher {
             .map(|inst| (inst.id.clone(), inst.clone()))
             .collect();
         let io = IoHandler::new();
-        let mut this = Self {
-            instances,
-            io,
-        };
+        let mut this = Self { instances, io };
         this.setup_info_api(instance_configs);
         this.setup_zome_api();
         this
@@ -79,37 +75,33 @@ impl ContainerApiDispatcher {
                                 let cap_name = cap_name.clone();
                                 let method_name = format!(
                                     "{}/{}/{}/{}",
-                                    instance_id,
-                                    zome_name,
-                                    cap_name,
-                                    func_name
+                                    instance_id, zome_name, cap_name, func_name
                                 );
                                 let hc_lock_inner = hc_lock.clone();
                                 self.io.add_method(&method_name, move |params| {
                                     let mut hc = hc_lock_inner.write().unwrap();
-                                    let params_string = serde_json::to_string(&params)
-                                        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-                                    let response = hc.call(&zome_name, &cap_name, &func_name, &params_string)
-                                        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                                    let params_string = serde_json::to_string(&params).map_err(
+                                        |e| jsonrpc_core::Error::invalid_params(e.to_string()),
+                                    )?;
+                                    let response = hc
+                                        .call(&zome_name, &cap_name, &func_name, &params_string)
+                                        .map_err(|e| {
+                                            jsonrpc_core::Error::invalid_params(e.to_string())
+                                        })?;
                                     Ok(Value::String(response.to_string()))
                                 })
                             }
                         }
                     }
-                },
-                None => unreachable!()
+                }
+                None => unreachable!(),
             };
         }
     }
 }
 
-/// Implements routing for JSON-RPC calls:
-/// {instance_id}/{zome}/{cap}/{func} -> a zome call
-/// info/list_instances               -> Map of InstanceConfigs, keyed by ID
-/// admin/...                         -> TODO
-
 impl DispatchRpc for ContainerApiDispatcher {
-    fn handler(self) -> IoHandler { 
+    fn handler(self) -> IoHandler {
         self.io
     }
 }
@@ -117,16 +109,3 @@ impl DispatchRpc for ContainerApiDispatcher {
 pub trait Interface<D: DispatchRpc> {
     fn run(&self, D) -> Result<(), String>;
 }
-
-// 
-// impl DispatchRpc<()> for ContainerApiDispatcher {
-// 
-//     fn handler(&self) -> IoHandler<()> { 
-//         self.io.into()
-//     }
-// 
-// }
-// 
-// pub trait Interface<M: Metadata + Default> {
-//     fn run(&self, Arc<DispatchRpc<M>>) -> Result<(), String>;
-// }

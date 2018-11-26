@@ -19,7 +19,7 @@ use std::{
 };
 
 use config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration};
-use interface::{InstanceMap, Interface, ContainerApiDispatcher};
+use interface::{ContainerApiDispatcher, InstanceMap, Interface};
 use interface_impls;
 
 /// Main representation of the container.
@@ -81,8 +81,7 @@ impl Container {
     pub fn start_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
-            hc.write().unwrap()
-                .start().expect("Could not start server") 
+            hc.write().unwrap().start().expect("Could not start server")
         });
     }
 
@@ -90,7 +89,7 @@ impl Container {
     pub fn stop_all_instances(&mut self) {
         self.instances.iter_mut().for_each(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
-            hc.write().unwrap().stop().expect("Could not stop server") 
+            hc.write().unwrap().stop().expect("Could not stop server")
         });
     }
 
@@ -198,7 +197,9 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface<ContainerApiDispatcher>> {
+fn make_interface(
+    interface_config: &InterfaceConfiguration,
+) -> Box<Interface<ContainerApiDispatcher>> {
     match interface_config.driver {
         // InterfaceDriver::Http { port } => Box::new(interface_impls::http::HttpInterface::new(port)),
         InterfaceDriver::Websocket { port } => {

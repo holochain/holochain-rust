@@ -32,14 +32,13 @@ impl ContentAddressableStorage for FilesystemStorage {
         let response = self
             .actor
             .block_on_ask(Protocol::CasAdd(content.address(), content.content()))?;
+
         match response {
             Protocol::CasAddResult(add_result) => add_result,
-            _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Expected Protocol::CasAddResult got {:?}",
-                    &response
-                )))
-            }
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasAddResult received {:?}",
+                response
+            ))),
         }
     }
 
@@ -49,12 +48,10 @@ impl ContentAddressableStorage for FilesystemStorage {
             .block_on_ask(Protocol::CasContains(address.clone()))?;
         match response {
             Protocol::CasContainsResult(contains_result) => contains_result,
-            _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Expected Protocol::CasContainsResult got {:?}",
-                    &response
-                )))
-            }
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasContainsResult received {:?}",
+                response
+            ))),
         }
     }
 
@@ -65,12 +62,10 @@ impl ContentAddressableStorage for FilesystemStorage {
 
         match response {
             Protocol::CasFetchResult(fetch_result) => Ok(fetch_result?),
-            _ => {
-                return Err(HolochainError::ErrorGeneric(format!(
-                    "Expected Protocol::CasFetchResult got {:?}",
-                    &response
-                )))
-            }
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Protocol::CasFetchResult received {:?}",
+                response
+            ))),
         }
     }
 

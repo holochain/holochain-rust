@@ -14,7 +14,6 @@ extern crate riker_default;
 extern crate riker_patterns;
 extern crate snowflake;
 extern crate walkdir;
-#[macro_use]
 extern crate unwrap_to;
 
 extern crate uuid;

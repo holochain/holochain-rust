@@ -44,7 +44,13 @@ impl Into<ActorMsg<Protocol>> for Protocol {
 lazy_static! {
     pub static ref SYS: ActorSystem<Protocol> = {
         let model: DefaultModel<Protocol> = DefaultModel::new();
-        ActorSystem::new(&model).expect("could not create new ActorSystem")
+        match ActorSystem::new(&model) {
+            Ok(system) => system,
+            Err(e) => {
+                eprintln!("Failed to create ActorSystem with error: {:?}", e);
+                panic!("Failed to create ActorSystem");
+            }
+        }
     };
 }
 

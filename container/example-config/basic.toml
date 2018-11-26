@@ -27,11 +27,3 @@ type = "websocket"
 port = 3000
 [[interfaces.instances]]
 id = "app spec instance"
-
-# [[interfaces]]
-# id = "http interface"
-# [interfaces.driver]
-# type = "http"
-# port = 8008
-# [[interfaces.instances]]
-# id = "app spec instance"

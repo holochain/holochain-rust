@@ -51,7 +51,7 @@ fn main() {
                     container.instances.len()
                 );
                 println!("Starting all of them...");
-                container.start_all_instances();
+                container.start_all_instances().expect("Could not start instances!");
                 println!("Starting interfaces...");
                 container.start_all_interfaces();
                 println!("Done.");

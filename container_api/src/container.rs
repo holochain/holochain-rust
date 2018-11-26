@@ -1,5 +1,6 @@
 use crate::{
     config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
+    error::HolochainInstanceError,
     Holochain,
 };
 use holochain_cas_implementations::{
@@ -65,13 +66,6 @@ impl Container {
             .collect()
     }
 
-    // pub fn stop_all_interfaces(&mut self) {
-    //     self.interface_threads
-    //         .values_mut()
-    //         .for_each(|handle| { handle.join(); })
-    //         // .collect()
-    // }
-
     pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
         self.config
             .interface_by_id(&id)
@@ -80,32 +74,37 @@ impl Container {
     }
 
     /// Starts all instances
-    pub fn start_all_instances(&mut self) {
-        self.instances.iter_mut().for_each(|(id, hc)| {
+    pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        self.instances.iter_mut().map(|(id, hc)| {
             println!("Starting instance \"{}\"...", id);
-            hc.write().unwrap().start().expect("Could not start server")
-        });
+            hc.write().unwrap().start()
+        })
+        .collect::<Result<Vec<()>, _>>()
+        .map(|_| ())
     }
 
     /// Stops all instances
-    pub fn stop_all_instances(&mut self) {
-        self.instances.iter_mut().for_each(|(id, hc)| {
+    pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError>  {
+        self.instances.iter_mut().map(|(id, hc)| {
             println!("Stopping instance \"{}\"...", id);
-            hc.write().unwrap().stop().expect("Could not stop server")
-        });
+            hc.write().unwrap().stop()
+        })
+        .collect::<Result<Vec<()>, _>>()
+        .map(|_| ())
     }
 
     /// Stop and clear all instances
-    pub fn shutdown(&mut self) {
-        self.stop_all_instances();
+    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        self.stop_all_instances()?;
         self.instances = HashMap::new();
+        Ok(())
     }
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
-        self.shutdown();
+        self.shutdown().map_err(|e| e.to_string())?;
         let id_instance_pairs = config
             .instance_ids()
             .clone()
@@ -345,7 +344,7 @@ pub mod tests {
     fn test_container_load_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        // TODO: redundant
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
         container.dna_loader = test_dna_loader();
 
@@ -376,7 +375,7 @@ pub mod tests {
     fn test_rpc_info_instances() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        // TODO: redundant
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
         container.dna_loader = test_dna_loader();
         assert!(container.load_config(&config).is_ok());

@@ -43,8 +43,7 @@ fn exec() -> NetResult<()> {
         }),
         &json!({
             "backend": "mock"
-        })
-        .into(),
+        }).into(),
     )?;
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
@@ -56,24 +55,21 @@ fn exec() -> NetResult<()> {
         }),
         &json!({
             "backend": "mock"
-        })
-        .into(),
+        }).into(),
     )?;
 
     con1.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: "sandwich".to_string(),
             agent_id: "node-1".to_string(),
-        })
-        .into(),
+        }).into(),
     )?;
 
     con2.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: "sandwich".to_string(),
             agent_id: "node-2".to_string(),
-        })
-        .into(),
+        }).into(),
     )?;
 
     con1.send(
@@ -83,8 +79,7 @@ fn exec() -> NetResult<()> {
             from_agent_id: "node-1".to_string(),
             msg_id: "yada".to_string(),
             data: json!("hello"),
-        })
-        .into(),
+        }).into(),
     )?;
 
     let res = ProtocolWrapper::try_from(receiver2.recv()?)?;
@@ -98,8 +93,7 @@ fn exec() -> NetResult<()> {
                 from_agent_id: "node-2".to_string(),
                 msg_id: "yada".to_string(),
                 data: json!(format!("echo: {}", msg.data.to_string())),
-            })
-            .into(),
+            }).into(),
         )?;
     } else {
         panic!("bad msg");

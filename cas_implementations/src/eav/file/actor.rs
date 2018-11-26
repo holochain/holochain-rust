@@ -81,8 +81,7 @@ impl EavFileStorageActor {
             // always return the same reference to the same actor for the same path
             // consistency here provides safety for CAS methods
             &actor_id(&dir_path),
-        )
-        .map_err(|actor_create_error| {
+        ).map_err(|actor_create_error| {
             HolochainError::ErrorGeneric(format!(
                 "Failed to create actor in system: {:?}",
                 actor_create_error

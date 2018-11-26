@@ -58,8 +58,7 @@ fn exec() -> NetResult<()> {
                 "socketType": "zmq",
                 "ipcUri": ipc_uri,
             }
-        })
-        .into(),
+        }).into(),
     )?;
 
     let mut id = "".to_string();
@@ -94,8 +93,7 @@ fn exec() -> NetResult<()> {
     con.send(
         ProtocolWrapper::Connect(ConnectData {
             address: addr.clone(),
-        })
-        .into(),
+        }).into(),
     )?;
 
     // loop waiting for the message
@@ -123,8 +121,7 @@ fn exec() -> NetResult<()> {
             from_agent_id: AGENT_ID.to_string(),
             msg_id: "unique-id".to_string(),
             data: json!("test data"),
-        })
-        .into(),
+        }).into(),
     )?;
 
     let handle_data;
@@ -157,8 +154,7 @@ fn exec() -> NetResult<()> {
             from_agent_id: AGENT_ID.to_string(),
             msg_id: handle_data.msg_id,
             data: json!(format!("echo: {}", handle_data.data)),
-        })
-        .into(),
+        }).into(),
     )?;
 
     // wait for the response to our original message

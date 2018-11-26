@@ -173,8 +173,7 @@ impl MockSingleton {
                 dna_hash: msg.dna_hash.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaHash"),
-            })
-            .into(),
+            }).into(),
         )?;
 
         Ok(())
@@ -219,8 +218,7 @@ impl MockSingleton {
                 dna_hash: msg.dna_hash.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaHash"),
-            })
-            .into(),
+            }).into(),
         )?;
 
         Ok(())
@@ -335,18 +333,15 @@ mod tests {
             MockWorker::new(Box::new(move |r| {
                 handler_send_1.send(r?)?;
                 Ok(())
-            }))
-            .unwrap(),
+            })).unwrap(),
         );
 
         cli1.receive(
             ProtocolWrapper::TrackApp(TrackAppData {
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_1.to_string(),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         // -- setup client 2 -- //
 
@@ -356,18 +351,15 @@ mod tests {
             MockWorker::new(Box::new(move |r| {
                 handler_send_2.send(r?)?;
                 Ok(())
-            }))
-            .unwrap(),
+            })).unwrap(),
         );
 
         cli2.receive(
             ProtocolWrapper::TrackApp(TrackAppData {
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_2.to_string(),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         // -- node 2 node / send / receive -- //
 
@@ -378,10 +370,8 @@ mod tests {
                 from_agent_id: AGENT_ID_1.to_string(),
                 msg_id: "yada".to_string(),
                 data: json!("hello"),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         cli2.tick().unwrap();
 
@@ -395,10 +385,8 @@ mod tests {
                     from_agent_id: AGENT_ID_2.to_string(),
                     msg_id: msg.msg_id,
                     data: json!(format!("echo: {}", msg.data.to_string())),
-                })
-                .into(),
-            )
-            .unwrap();
+                }).into(),
+            ).unwrap();
         } else {
             panic!("bad msg");
         }
@@ -421,10 +409,8 @@ mod tests {
                 dna_hash: DNA_HASH.to_string(),
                 from_agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         cli1.tick().unwrap();
 
@@ -438,10 +424,8 @@ mod tests {
                     agent_id: msg.from_agent_id.clone(),
                     address: msg.address.clone(),
                     content: json!(format!("data-for: {}", msg.address)),
-                })
-                .into(),
-            )
-            .unwrap();
+                }).into(),
+            ).unwrap();
         } else {
             panic!("bad msg");
         }
@@ -465,10 +449,8 @@ mod tests {
                 agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
                 content: json!("test-data"),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         cli1.tick().unwrap();
         cli2.tick().unwrap();
@@ -485,10 +467,8 @@ mod tests {
                     dna_hash: msg.dna_hash.clone(),
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
-                })
-                .into(),
-            )
-            .unwrap();
+                }).into(),
+            ).unwrap();
         } else {
             panic!("bad msg");
         }
@@ -511,10 +491,8 @@ mod tests {
                 from_agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
                 attribute: "link:test".to_string(),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         cli1.tick().unwrap();
 
@@ -529,10 +507,8 @@ mod tests {
                     address: msg.address.clone(),
                     attribute: msg.attribute.clone(),
                     content: json!(format!("meta-data-for: {}", msg.address)),
-                })
-                .into(),
-            )
-            .unwrap();
+                }).into(),
+            ).unwrap();
         } else {
             panic!("bad msg");
         }
@@ -560,10 +536,8 @@ mod tests {
                 address: "hello".to_string(),
                 attribute: "link:test".to_string(),
                 content: json!("test-data"),
-            })
-            .into(),
-        )
-        .unwrap();
+            }).into(),
+        ).unwrap();
 
         cli1.tick().unwrap();
         cli2.tick().unwrap();
@@ -580,10 +554,8 @@ mod tests {
                     dna_hash: msg.dna_hash.clone(),
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
-                })
-                .into(),
-            )
-            .unwrap();
+                }).into(),
+            ).unwrap();
         } else {
             panic!("bad msg");
         }

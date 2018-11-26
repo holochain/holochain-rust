@@ -289,8 +289,7 @@ fn can_invalidate_invalid_commit() {
                     stuff: "FAIL".into(),
                 }),
             )
-        })
-        .to_string(),
+        }).to_string(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);

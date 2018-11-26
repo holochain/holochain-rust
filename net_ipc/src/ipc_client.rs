@@ -187,8 +187,7 @@ mod tests {
                 }),
                 s,
                 true,
-            )
-            .unwrap(),
+            ).unwrap(),
         );
 
         cli.tick().unwrap();

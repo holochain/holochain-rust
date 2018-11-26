@@ -159,8 +159,7 @@ fn run() -> HolochainResult<()> {
                 &tests_folder,
                 &test_file,
                 skip_build,
-            )
-            .or_else(|err| Err(HolochainError::Default(err)))?
+            ).or_else(|err| Err(HolochainError::Default(err)))?
         }
     }
 

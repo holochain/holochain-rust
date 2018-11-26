@@ -59,8 +59,7 @@ pub fn get_validation_package_definition(
                 link_add.link().tag(),
                 &target.entry_type(),
                 &context,
-            )
-            .map_err(|_| HolochainError::NotImplemented)?;
+            ).map_err(|_| HolochainError::NotImplemented)?;
 
             let wasm = context
                 .get_wasm(&link_definition_path.zome_name)

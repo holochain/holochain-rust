@@ -164,8 +164,7 @@ pub mod tests {
                 "entry_types": {},
                 "capabilities": {}
             }"#,
-        )
-        .unwrap();
+        ).unwrap();
 
         let mut zome = Zome::default();
         zome.description = String::from("test");

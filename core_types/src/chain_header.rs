@@ -311,8 +311,7 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            )
-            .address(),
+            ).address(),
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
@@ -320,8 +319,7 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            )
-            .address(),
+            ).address(),
         );
     }
 
@@ -338,8 +336,7 @@ pub mod tests {
                 &Some(test_chain_header().address()),
                 &None,
                 &test_iso_8601(),
-            )
-            .address(),
+            ).address(),
         );
     }
 
@@ -356,8 +353,7 @@ pub mod tests {
                 &None,
                 &Some(test_chain_header().address()),
                 &test_iso_8601(),
-            )
-            .address(),
+            ).address(),
         );
     }
 

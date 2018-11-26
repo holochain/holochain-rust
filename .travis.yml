@@ -144,7 +144,7 @@ jobs:
         timeout: 1000
         directories:
           - $HOME\\.cargo
-          # - $TRAVIS_BUILD_DIR/target
+          - $TRAVIS_BUILD_DIR\\target
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1

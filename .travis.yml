@@ -143,7 +143,7 @@ jobs:
       cache:
         timeout: 1000
         directories:
-          - $HOME\.cargo
+          - $HOME\\.cargo
           # - $TRAVIS_BUILD_DIR/target
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
@@ -154,7 +154,7 @@ jobs:
         - rustup target add wasm32-unknown-unknown
       script:
         - cargo build
-        
+
         # # Build WASMs
         # - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         # - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown

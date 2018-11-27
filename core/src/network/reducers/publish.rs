@@ -13,6 +13,7 @@ use holochain_core_types::cas::content::AddressableContent;
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::protocol_wrapper::ProtocolWrapper;
 use crate::network::actions::ActionResponse;
+use crate::network::EntryWithHeader;
 
 fn entry_from_cas(address: &Address, context: &Arc<Context>,) -> Result<Entry, HolochainError>{
     let json = context.file_storage.read()?.fetch(address)?
@@ -51,13 +52,19 @@ pub fn reduce_publish(
         return;
     }
 
+    let entry_with_header = EntryWithHeader{
+        entry: entry.serialize(),
+        header: maybe_header.unwrap(),
+    };
+
+
     //let header = maybe_header.unwrap();
     let data = DhtData {
         msg_id: "?".to_string(),
         dna_hash: state.dna_hash.clone().unwrap(),
         agent_id: state.agent_id.clone().unwrap(),
         address: entry.address().to_string(),
-        content: serde_json::from_str(&entry.content().to_string()).unwrap(),
+        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
     };
 
     let response = match state.network {

@@ -5,6 +5,7 @@ pub mod validate;
 
 #[cfg(test)]
 pub mod tests {
+    use base64::encode;
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
@@ -14,14 +15,14 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::{Dna, zome::{capabilities::Capability, entry_types::EntryTypeDef}},
+        dna::{
+            zome::{capabilities::Capability, entry_types::EntryTypeDef},
+            Dna,
+        },
         entry::{entry_type::EntryType, Entry, ToEntry},
     };
-    use std::{
-        sync::Arc
-    };
+    use std::sync::Arc;
     use test_utils::*;
-    use base64::encode;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
@@ -62,7 +63,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
         let (instance, context) =
-            test_instance_and_context_by_name(dna,name).expect("Could not create test instance");
+            test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }
@@ -100,10 +101,7 @@ pub mod tests {
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain();
 
-        let commit_result = block_on(commit_entry(
-            entry.clone(),
-            &context.clone(),
-        ));
+        let commit_result = block_on(commit_entry(entry.clone(), &context.clone()));
         assert!(commit_result.is_ok());
 
         let top_header = context.state().unwrap().agent().top_chain_header();
@@ -116,7 +114,7 @@ pub mod tests {
     // smoke test just to make sure our testing code works.
     #[test]
     pub fn can_instantiate_test_instance() {
-        let (instance,_context) = instance();
+        let (instance, _context) = instance();
         assert!(instance.state().nucleus().has_initialized());
     }
 

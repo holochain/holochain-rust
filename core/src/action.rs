@@ -8,9 +8,8 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError,
-    json::JsonString, link::Link,
-    validation::ValidationPackage,
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    link::Link, validation::ValidationPackage,
 };
 use snowflake;
 use std::{

@@ -1,22 +1,25 @@
-use holochain_net_connection::protocol_wrapper::DhtData;
-use crate::agent::chain_header;
-use crate::action::ActionWrapper;
-use crate::network::state::NetworkState;
-use holochain_net_connection::net_connection::NetConnection;
-use crate::context::Context;
-use std::sync::Arc;
-use std::convert::TryInto;
-use holochain_core_types::entry::SerializedEntry;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::cas::content::AddressableContent;
-use holochain_core_types::cas::content::Address;
-use holochain_net_connection::protocol_wrapper::ProtocolWrapper;
-use crate::network::actions::ActionResponse;
-use crate::network::EntryWithHeader;
+use crate::{
+    action::ActionWrapper,
+    agent::chain_header,
+    context::Context,
+    network::{actions::ActionResponse, state::NetworkState, EntryWithHeader},
+};
+use holochain_core_types::{
+    cas::content::{Address, AddressableContent},
+    entry::{Entry, SerializedEntry},
+    error::HolochainError,
+};
+use holochain_net_connection::{
+    net_connection::NetConnection,
+    protocol_wrapper::{DhtData, ProtocolWrapper},
+};
+use std::{convert::TryInto, sync::Arc};
 
-fn entry_from_cas(address: &Address, context: &Arc<Context>,) -> Result<Entry, HolochainError>{
-    let json = context.file_storage.read()?.fetch(address)?
+fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
+    let json = context
+        .file_storage
+        .read()?
+        .fetch(address)?
         .ok_or("Entry not found".to_string())?;
     let s: SerializedEntry = json.try_into()?;
     Ok(s.into())
@@ -27,8 +30,7 @@ pub fn reduce_publish(
     state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
-
-    if state.network.is_none() || state.dna_hash.is_none() ||  state.agent_id.is_none() {
+    if state.network.is_none() || state.dna_hash.is_none() || state.agent_id.is_none() {
         return;
     }
 
@@ -40,7 +42,8 @@ pub fn reduce_publish(
         return;
     };
 
-    let (entry, maybe_header) = result.map(|entry|{
+    let (entry, maybe_header) = result
+        .map(|entry| {
             let header = chain_header(&entry, &context);
             (entry, header)
         })
@@ -52,11 +55,10 @@ pub fn reduce_publish(
         return;
     }
 
-    let entry_with_header = EntryWithHeader{
+    let entry_with_header = EntryWithHeader {
         entry: entry.serialize(),
         header: maybe_header.unwrap(),
     };
-
 
     //let header = maybe_header.unwrap();
     let data = DhtData {
@@ -69,16 +71,17 @@ pub fn reduce_publish(
 
     let response = match state.network {
         None => unreachable!(),
-        Some(ref network) => {
-            network.lock()
-                .unwrap()
-                .send(ProtocolWrapper::PublishDht(data).into())
-        }
+        Some(ref network) => network
+            .lock()
+            .unwrap()
+            .send(ProtocolWrapper::PublishDht(data).into()),
     };
 
-    state.actions.insert(action_wrapper.clone(), ActionResponse::Publish(match response {
-        Ok(_) => Ok(entry.address().to_owned()),
-        Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-    }));
-
+    state.actions.insert(
+        action_wrapper.clone(),
+        ActionResponse::Publish(match response {
+            Ok(_) => Ok(entry.address().to_owned()),
+            Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
+        }),
+    );
 }

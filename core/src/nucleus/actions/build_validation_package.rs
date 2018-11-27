@@ -13,7 +13,6 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    //cas::content::AddressableContent,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, SerializedEntry},
     error::HolochainError,
@@ -27,10 +26,7 @@ use std::{
     thread,
 };
 
-pub fn build_validation_package(
-    entry: &Entry,
-    context: &Arc<Context>,
-) -> ValidationPackageFuture {
+pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
     if let EntryType::App(_) = entry.entry_type() {

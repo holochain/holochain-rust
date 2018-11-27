@@ -1,12 +1,8 @@
 use crate::{
-    nucleus::{
-        ribosome::{api::ZomeApiResult, Runtime},
-    },
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use futures::{
-    executor::block_on,
-};
+use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
@@ -38,9 +34,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     let entry = Entry::from(serialized_entry);
 
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = block_on(
-        author_entry(&entry, &runtime.context)
-    );
+    let task_result: Result<Address, HolochainError> =
+        block_on(author_entry(&entry, &runtime.context));
 
     runtime.store_result(task_result)
 }
@@ -50,12 +45,12 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use crate::{
-        nucleus::ribosome::{
+    use crate::nucleus::{
+        actions::tests::*,
+        ribosome::{
             api::{tests::test_zome_api_function, ZomeApiFunction},
             Defn,
         },
-        nucleus::actions::tests::*,
     };
     use holochain_core_types::{
         cas::content::Address,

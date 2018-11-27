@@ -1,11 +1,10 @@
-use holochain_net::p2p_network::{P2pNetwork};
+use crate::{action::ActionWrapper, network::actions::ActionResponse};
+use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
 use std::{
-    sync::{Arc, Mutex}
+    collections::HashMap,
+    sync::{Arc, Mutex},
 };
-use std::collections::HashMap;
-use crate::action::ActionWrapper;
-use crate::network::actions::ActionResponse;
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
 

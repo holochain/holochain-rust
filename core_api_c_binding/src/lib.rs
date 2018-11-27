@@ -9,7 +9,7 @@ use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
 use holochain_container_api::Holochain;
-use holochain_core::context::{Context, mock_network_config};
+use holochain_core::context::{mock_network_config, Context};
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
 use std::sync::Arc;

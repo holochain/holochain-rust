@@ -1,14 +1,15 @@
-pub mod publish;
 pub mod init;
+pub mod publish;
 
-use crate::network::state::NetworkState;
+use crate::{
+    action::{Action, ActionWrapper, NetworkReduceFn},
+    context::Context,
+    network::{
+        reducers::{init::reduce_init, publish::reduce_publish},
+        state::NetworkState,
+    },
+};
 use std::sync::Arc;
-use crate::action::ActionWrapper;
-use crate::context::Context;
-use crate::network::reducers::init::reduce_init;
-use crate::network::reducers::publish::reduce_publish;
-use crate::action::NetworkReduceFn;
-use crate::action::Action;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
@@ -18,7 +19,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         _ => None,
     }
 }
-
 
 pub fn reduce(
     context: Arc<Context>,

@@ -60,9 +60,8 @@
 //!
 //!```
 
-use futures::{executor::block_on};
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::TryFutureExt;
+use futures::{executor::block_on, TryFutureExt};
 use holochain_core::{
     context::Context,
     instance::Instance,
@@ -91,10 +90,7 @@ impl Holochain {
         let context = instance.initialize_context(context.clone());
         let context2 = context.clone();
         let result = block_on(
-            initialize_application(dna, &context2)
-                .and_then(|_| {
-                    initialize_network(&context)
-                })
+            initialize_application(dna, &context2).and_then(|_| initialize_network(&context)),
         );
         match result {
             Ok(_) => {
@@ -179,7 +175,7 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
-        context::{Context, mock_network_config},
+        context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
@@ -279,7 +275,7 @@ mod tests {
         );
     }
 
-   #[test]
+    #[test]
     fn fails_instantiate_if_genesis_times_out() {
         // let dna = create_test_dna_with_wat(
         //     "test_zome",

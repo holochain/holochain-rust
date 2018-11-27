@@ -165,7 +165,7 @@ pub mod tests {
     };
     use std::{
         convert::TryFrom,
-        sync::{Arc, RwLock}
+        sync::{Arc, RwLock},
     };
 
     #[test]
@@ -181,9 +181,9 @@ pub mod tests {
         let new_dht_store = reduce_hold_entry(
             Arc::clone(&context),
             &store.dht(),
-            &ActionWrapper::new(Action::Hold(sys_entry.clone()))
+            &ActionWrapper::new(Action::Hold(sys_entry.clone())),
         )
-            .expect("there should be a new store for committing a sys entry");
+        .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),
@@ -285,10 +285,7 @@ pub mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
 
-        store.reduce(
-            context.clone(),
-            action_wrapper,
-        );
+        store.reduce(context.clone(), action_wrapper);
 
         let cas = context.file_storage.read().unwrap();
 
@@ -298,11 +295,7 @@ pub mod tests {
             None => panic!("Could not find received entry in CAS"),
         };
 
-        assert_eq!(
-            &entry,
-            &result_entry,
-        );
+        assert_eq!(&entry, &result_entry,);
     }
-
 
 }

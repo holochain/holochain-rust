@@ -26,13 +26,13 @@
 pub mod wasm;
 pub mod zome;
 
-use multihash;
 use crate::{
     dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
     entry::{entry_type::EntryType, Entry, ToEntry},
     error::{DnaError, HolochainError},
     json::JsonString,
 };
+use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,

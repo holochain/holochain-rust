@@ -62,9 +62,11 @@
 
 use futures::{executor::block_on};
 use crate::error::{HolochainInstanceError, HolochainResult};
+use futures::TryFutureExt;
 use holochain_core::{
     context::Context,
     instance::Instance,
+    network::actions::initialize_network::initialize_network,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
@@ -88,7 +90,12 @@ impl Holochain {
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context.clone());
         let context2 = context.clone();
-        let result = block_on(initialize_application(dna, &context2));
+        let result = block_on(
+            initialize_application(dna, &context2)
+                .and_then(|_| {
+                    initialize_network(&context)
+                })
+        );
         match result {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;

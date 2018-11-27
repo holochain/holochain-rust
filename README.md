@@ -23,30 +23,22 @@ This is the home of the Holochain Rust libraries, being rewritten from [Go](http
 
 ## Overview
 
-This `holochain-rust` repository implements three distinct yet overlapping aspects of the Holochain framework.
+This `holochain-rust` repository implements a number of distinct yet overlapping aspects of the Holochain framework.
 
-1. The core Holochain functionality that executes DNAs.
-2. A wrapper used to instantiate, manage, and run DNAs, called *container*
-3. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit, *HDK*
+1. A library for the core Holochain functionality for defining and running DNA instances: [*core*](#core)
+1. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit: [*hdk-rust*](#hdk-rust)
+1. A library for managing instances and connecting them to interfaces: [*container_api](#container-api)
+1. A Rust based container that uses the container_api: [*container*](#rust-container)
+1. A nodejs based container for running tests: [*container*](#nodejs-container)
+1. A command line developer tool: [*hc*](#hc-developer-tool)
+1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 
 Let's elaborate on these three aspects.
 
-### 1 - core
+### Core
 The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
 
-### 2 - container api
-The first aspect only implements the logic for the execution of a single application. Meanwhile, there is a strong need to be able to load and instantiate multiple applications, and possibly even multiple instances of the same application. The [container_api](container_api) folder contains the code that implements this capability. Even then, this code must be employed within some other context to actually run it. Such a thing is called a Holochain "container".
-
-A container is a Holochain utility or service that manages and runs Holochain applications. The first such containers are the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container for test running.
-
-In order to develop a Rust based container toolset we added this crate [container_api](container_api).
-There is another crate [container](container) which is a wrapper around [container_api](container_api) that builds to an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.
-
-If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily.
-
-To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
-
-### 3 - HDK Rust
+### HDK Rust
 Holochain applications have been designed to consist at the low-level of WebAssembly (WASM) running in a virtual machine environment. However, most languages will be easiest to use with some stub code to connect into the WASM runtime environment, because of some constraints with WASM. That is the main reason why a "Developer Kit" for a language exists. It is a library, and a syntax, for writing Zome code in that language.
 
 [`hdk-rust`](./hdk-rust) is a solid reference implementation of this, that enables Zomes to be written in the Rust language (the same, somewhat confusingly, as Holochain Core).
@@ -59,6 +51,24 @@ Any language that compiles to WASM and can serialize/deserialize JSON data can b
 An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is under experimental development at [`hdk-assemblyscript`](https://github.com/holochain/hdk-assemblyscript).
 
 We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://holochain.github.io/holochain-rust/writing_development_kit.html).
+
+### Container API
+*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this an *container*.  The first such containers we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container which we used for running javascript based tests.
+
+These gave us the experience from which we abstracted the [container_api](container_api) crate which specifies and implements a standard way for building containers, including specifying the various interfaces that might be available for executing calls on a particular DNA, i.e. websockets, HTTP, Unix domain sockets, carrier pigeon network, etc...
+
+If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily.
+
+To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
+
+### Rust Container
+The [container crate](container) uses the [container_api](container_api) to implement an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.  Currently the Rust Container
+
+### Nodejs Container
+The [nodejs_cointainer](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
+
+### HC Command-line developer tool.
+The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md)
 
 ## Documentation: The Book on Holochain
 There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).

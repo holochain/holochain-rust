@@ -113,6 +113,7 @@ pub enum Action {
 
     InitNetwork((JsonString, String, String)),
     Publish(Address),
+    Hold(Entry),
 }
 
 /// function signature for action handler functions

@@ -148,7 +148,7 @@ pub fn mock_network_config() -> JsonString {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate tempfile;
     extern crate test_utils;
     use self::tempfile::tempdir;
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn test_state() {
+    fn state_test() {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));

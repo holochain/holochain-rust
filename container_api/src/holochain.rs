@@ -157,7 +157,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&mut self) -> Result<State, HolochainInstanceError> {
+    pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
 }
@@ -388,7 +388,7 @@ mod tests {
     fn can_get_state() {
         let dna = Dna::new();
         let (context, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
         assert!(result.is_ok());

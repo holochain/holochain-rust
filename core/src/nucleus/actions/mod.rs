@@ -57,7 +57,6 @@ pub mod tests {
         let (instance, context) =
             test_instance_and_context_by_name(dna,name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
-
         (instance, initialized_context)
     }
 
@@ -96,7 +95,6 @@ pub mod tests {
 
         let commit_result = block_on(commit_entry(
             entry.clone(),
-            &context.clone().action_channel,
             &context.clone(),
         ));
         assert!(commit_result.is_ok());
@@ -107,4 +105,12 @@ pub mod tests {
             .find(|ref header| *header.entry_address() == entry.address())
             .expect("Couldn't find header in chain for given entry")
     }
+
+    // smoke test just to make sure our testing code works.
+    #[test]
+    pub fn can_instantiate_test_instance() {
+        let (instance,_context) = instance();
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
 }

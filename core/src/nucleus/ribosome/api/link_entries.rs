@@ -63,7 +63,6 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|_| {
                 commit_entry(
                     entry.clone(),
-                    &runtime.context.action_channel,
                     &runtime.context,
                 )
             })
@@ -176,7 +175,6 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
-            &context.action_channel.clone(),
             &context,
         ))
         .expect("Could not commit entry for testing");
@@ -203,7 +201,6 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
-            &context.action_channel.clone(),
             &context,
         ))
         .expect("Could not commit entry for testing");
@@ -229,14 +226,12 @@ pub mod tests {
 
         block_on(commit_entry(
             test_entry(),
-            &context.action_channel.clone(),
             &context,
         ))
         .expect("Could not commit entry for testing");
 
         block_on(commit_entry(
             test_entry_b(),
-            &context.action_channel.clone(),
             &context,
         ))
         .expect("Could not commit entry for testing");

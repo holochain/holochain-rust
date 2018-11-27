@@ -60,8 +60,8 @@
 //!
 //!```
 
+use futures::{executor::block_on};
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     instance::Instance,
@@ -86,8 +86,10 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context);
-        match block_on(initialize_application(dna, &context.clone())) {
+        let context = instance.initialize_context(context.clone());
+        let context2 = context.clone();
+        let result = block_on(initialize_application(dna, &context2));
+        match result {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
                 let hc = Holochain {

@@ -479,9 +479,8 @@ pub mod tests {
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-
         block_on(async{
-            await!(initialize_application(dna.clone(), &context.clone()))?;
+            await!(initialize_application(dna.clone(), &context))?;
             await!(initialize_network(&context))
         })?;
 

@@ -66,13 +66,3 @@ impl Future for HoldEntryFuture {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::nucleus;
-
-    use futures::executor::block_on;
-    use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
-
-}

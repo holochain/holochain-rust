@@ -5,7 +5,6 @@ pub mod validate;
 
 #[cfg(test)]
 pub mod tests {
-    use base64::encode;
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
@@ -19,7 +18,7 @@ pub mod tests {
             zome::{capabilities::Capability, entry_types::EntryTypeDef},
             Dna,
         },
-        entry::{entry_type::EntryType, Entry, ToEntry},
+        entry::{entry_type::EntryType, Entry},
     };
     use std::sync::Arc;
     use test_utils::*;

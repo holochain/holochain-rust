@@ -11,7 +11,6 @@ use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::Agent;
-use holochain_net::p2p_network::P2pNetwork;
 use std::{
     clone::Clone,
     collections::HashMap,

@@ -160,7 +160,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry, SerializedEntry},
+        entry::{test_entry, test_sys_entry, Entry, SerializedEntry},
         link::Link,
     };
     use std::{

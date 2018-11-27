@@ -45,12 +45,9 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use crate::nucleus::{
-        actions::tests::*,
-        ribosome::{
-            api::{tests::test_zome_api_function, ZomeApiFunction},
-            Defn,
-        },
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
     };
     use holochain_core_types::{
         cas::content::Address,

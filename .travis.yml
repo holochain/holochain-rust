@@ -228,19 +228,19 @@ jobs:
       - TRAVIS_NODE_VERSION="8"
 
     # holochain-cmd releases section
-    # - name: "CMD DEPLOY - Linux"
-    #   <<: *_cmd_deploy_template
-    #   env:
-    #     - TARGET=x86_64-unknown-linux-gnu
-    #     - CRATE_NAME=hc
-    #   os: linux
-    # - name: "CMD DEPLOY - OSX"
-    #   <<: *_cmd_deploy_template
-    #   env:
-    #     - TARGET=x86_64-apple-darwin
-    #     - CRATE_NAME=hc
-    #   os: osx
-    - name: "CMD DEPLOY - Windows 64 bit"
+    - name: "CMD DEPLOY - 64 bit Linux"
+      <<: *_cmd_deploy_template
+      env:
+        - TARGET=x86_64-unknown-linux-gnu
+        - CRATE_NAME=hc
+      os: linux
+    - name: "CMD DEPLOY - 64 bit OSX"
+      <<: *_cmd_deploy_template
+      env:
+        - TARGET=x86_64-apple-darwin
+        - CRATE_NAME=hc
+      os: osx
+    - name: "CMD DEPLOY - 64 bit Windows MSVC"
       <<: *_cmd_deploy_template
       os: windows
       rust: nightly-2018-10-12-x86_64-pc-windows-msvc
@@ -250,8 +250,18 @@ jobs:
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+    - name: "CMD DEPLOY - 64 bit Windows GNU"
+      <<: *_cmd_deploy_template
+      os: windows
+      rust: nightly-2018-10-12-x86_64-pc-windows-gnu
+      env:
+        - TARGET=x86_64-pc-windows-gnu
+        - CRATE_NAME=hc
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      before_script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
-    # if this is release tag, the resultant binary will be uploaded to github
+    # holochain-nodejs releases section
     - name: "Linux - Node 8"
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template

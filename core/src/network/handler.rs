@@ -6,8 +6,6 @@ use std::{convert::TryFrom, sync::Arc};
 pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
-        println!("ON AGENT: {:?}", context.agent);
-        println!("HANDLING: {:?}", message);
         let message = message.unwrap();
         let protocol_wrapper = ProtocolWrapper::try_from(message);
         match protocol_wrapper {

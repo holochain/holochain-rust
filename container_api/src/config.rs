@@ -152,7 +152,7 @@ pub struct InstanceConfiguration {
 /// There might be different kinds of loggers in the future.
 /// Currently there is no logger at all.
 /// TODO: make this an enum when it's actually in use
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Default)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     pub logger_type: String,

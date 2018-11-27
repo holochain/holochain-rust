@@ -133,6 +133,7 @@ _cmd_deploy_template: &_cmd_deploy_template
   rust: nightly
   if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
   before_deploy:
+    - make install_system_libzmq
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir $CRATE_NAME-$TRAVIS_TAG-$TARGET
     - cp target/release/hc cmd/LICENSE cmd/README.md $CRATE_NAME-$TRAVIS_TAG-$TARGET/
@@ -226,13 +227,13 @@ jobs:
       - TRAVIS_NODE_VERSION="8"
 
     # holochain-cmd releases section
-    - name: "CMD - Linux"
+    - name: "CMD DEPLOY - Linux"
       <<: *_cmd_deploy_template
       env:
         - TARGET=x86_64-unknown-linux-gnu
         - CRATE_NAME=hc
       os: linux
-    - name: "CMD - OSX"
+    - name: "CMD DEPLOY - OSX"
       <<: *_cmd_deploy_template
       env:
         - TARGET=x86_64-apple-darwin

@@ -11,7 +11,7 @@
   - [Intro to Command Line Tools](./intro_to_command_line_tools.md)
   - [Create A New Project](./new_project.md)
   - [Configuring an App](./configuring_an_app.md)
-  - [(E) Writing in Rust](./zome/rust.md)
+  - [Writing in Rust](./zome/rust.md)
   - [(E) Writing in Assemblyscript](./zome/assemblyscript.md)
   - [(E) Intro to WebAssembly](./zome/intro_to_webassembly.md)
   - [(E) Updating to Alpha 2](./alpha_migrate.md)

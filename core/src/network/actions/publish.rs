@@ -8,7 +8,10 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address};
+use holochain_core_types::{
+    cas::content::Address,
+    error::HolochainError,
+};
 use std::{
     pin::{Pin, Unpin},
     sync::{Arc},
@@ -46,18 +49,20 @@ impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+        let state = self
+            .context
+            .state()
+            .unwrap()
+            .network();
+        if state.network.is_none() || state.dna_hash.is_none() ||  state.agent_id.is_none() {
+            return Poll::Ready(Err(HolochainError::IoError("Network not initialized".to_string())));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match self
-            .context
-            .state()
-            .unwrap()
-            .network()
-            .actions()
-            .get(&self.action)
+        match state.actions().get(&self.action)
         {
             Some(ActionResponse::Publish(result)) => match result {
                 Ok(address) => Poll::Ready(Ok(address.to_owned())),

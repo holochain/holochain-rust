@@ -1,6 +1,6 @@
 # Introduction to DNA: Configuration
 
-As a developer, though you will not have to interact directly with the contents of a DNA file that often, it is quite important to grasp its' role and structure.
+As a developer, you won't have to interact directly with the contents of a DNA file that often. However, it is quite important to grasp its role and structure.
 
 Holochain DNA files are written in a data format known as JSON. It stores sets of key-value pairs, and allows a nested tree structure. It looks like this:
 
@@ -21,7 +21,7 @@ As previously mentioned, you do not need to edit this "master" DNA file directly
 
 ## Configuration
 
-For the configuration related parts of your DNA, they will come from actual JSON files stored in your application folder. There will be multiple JSON files nested in the folder structure. An application folder should have a file in its' root called `app.json`.
+For the configuration-related parts of your DNA, they will come from actual JSON files stored in your application folder. There will be multiple JSON files nested in the folder structure. An application folder should have a file in its root called `app.json`.
 
 This file should define various properties of your application. Some of these properties Holochain fully expects and will not work without, others can be customised to your application.
 

@@ -16,7 +16,7 @@ pub fn reduce_receive(
     _state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
-
+    println!("reduce_receive");
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::Receive);
 

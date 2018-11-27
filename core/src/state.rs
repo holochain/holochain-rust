@@ -108,7 +108,7 @@ impl State {
                 Arc::clone(&self.dht),
                 &action_wrapper,
             ),
-            network: crate::network::reduce(
+            network: crate::network::reducers::reduce(
                 Arc::clone(&context),
                 Arc::clone(&self.network),
                 &action_wrapper,

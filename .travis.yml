@@ -132,7 +132,7 @@ _cmd_deploy_template: &_cmd_deploy_template
   language: rust
   rust: nightly
   if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
-  before_deploy:
+  script:
     - make install_system_libzmq
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir $CRATE_NAME-$TRAVIS_TAG-$TARGET

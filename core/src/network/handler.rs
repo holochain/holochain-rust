@@ -13,7 +13,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 let entry_with_header: EntryWithHeader =
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
-                let maybe_address = block_on(hold_entry(
+                let _maybe_address = block_on(hold_entry(
                     &entry_with_header.entry.deserialize(),
                     &context.clone(),
                 ));

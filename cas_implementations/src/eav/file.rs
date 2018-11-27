@@ -1,27 +1,33 @@
-use crate::actor::{Protocol, SYS};
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
-    eav::{Attribute, Entity, EntityAttributeValue, Value},
+    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::{HcResult, HolochainError},
-    file_validation,
 };
-use riker::actors::*;
 use std::{
     collections::HashSet,
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::MAIN_SEPARATOR,
+    sync::{Arc, RwLock},
 };
+use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
-
-const ACTOR_ID_ROOT: &'static str = "/eav_file_actor/";
 
 const ENTITY_DIR: &str = "e";
 const ATTRIBUTE_DIR: &str = "a";
 const VALUE_DIR: &str = "v";
 
-fn actor_id(dir_path: &str) -> String {
-    format!("{}{}", ACTOR_ID_ROOT, dir_path)
+#[derive(Clone, Debug)]
+pub struct EavFileStorage {
+    dir_path: String,
+    id: Uuid,
+    lock: Arc<RwLock<()>>,
+}
+
+impl PartialEq for EavFileStorage {
+    fn eq(&self, other: &EavFileStorage) -> bool {
+        self.id == other.id
+    }
 }
 
 #[warn(unused_must_use)]
@@ -55,38 +61,12 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String
     }
 }
 
-pub struct EavFileStorageActor {
-    dir_path: String,
-}
-
-impl EavFileStorageActor {
-    pub fn new(dir_path: String) -> EavFileStorageActor {
-        EavFileStorageActor { dir_path }
-    }
-
-    /// actor() for riker
-    fn actor(dir_path: String) -> BoxActor<Protocol> {
-        Box::new(EavFileStorageActor::new(dir_path))
-    }
-
-    /// props() for riker
-    fn props(dir_path: &str) -> BoxActorProd<Protocol> {
-        Props::new_args(Box::new(EavFileStorageActor::actor), dir_path.to_string())
-    }
-
-    pub fn new_ref(dir_path: &str) -> Result<ActorRef<Protocol>, HolochainError> {
-        let dir_path = file_validation::validate_canonical_path(dir_path)?;
-        SYS.actor_of(
-            EavFileStorageActor::props(&dir_path),
-            // always return the same reference to the same actor for the same path
-            // consistency here provides safety for CAS methods
-            &actor_id(&dir_path),
-        )
-        .map_err(|actor_create_error| {
-            HolochainError::ErrorGeneric(format!(
-                "Failed to create actor in system: {:?}",
-                actor_create_error
-            ))
+impl EavFileStorage {
+    pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
+        Ok(EavFileStorage {
+            dir_path,
+            id: Uuid::new_v4(),
+            lock: Arc::new(RwLock::new(())),
         })
     }
 
@@ -140,20 +120,25 @@ impl EavFileStorageActor {
 
         set
     }
+}
 
-    fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+impl EntityAttributeValueStorage for EavFileStorage {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+        let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
         self.write_to_file(ENTITY_DIR.to_string(), eav)
             .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), eav))
             .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))
     }
 
-    fn unthreadable_fetch_eav(
+    fn fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        let _guard = self.lock.read()?;
+
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
         let attribute_set = self
             .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)
@@ -187,36 +172,58 @@ impl EavFileStorageActor {
                     .iter()
                     .cloned()
                     .map(|eav|
-                    // errors filtered out above... unwrap is safe
-                    eav.unwrap())
+                        // errors filtered out above... unwrap is safe
+                        eav.unwrap())
                     .collect())
             }
         }
     }
 }
 
-impl Actor for EavFileStorageActor {
-    type Msg = Protocol;
+#[cfg(test)]
+pub mod tests {
+    extern crate tempfile;
+    use self::tempfile::tempdir;
+    use eav::file::EavFileStorage;
+    use holochain_core_types::{
+        cas::{
+            content::{AddressableContent, ExampleAddressableContent},
+            storage::EavTestSuite,
+        },
+        json::RawString,
+    };
 
-    fn receive(
-        &mut self,
-        context: &Context<Self::Msg>,
-        message: Self::Msg,
-        sender: Option<ActorRef<Self::Msg>>,
-    ) {
-        sender
-            .try_tell(
-                match message {
-                    Protocol::EavAdd(eav) => {
-                        Protocol::EavAddResult(self.unthreadable_add_eav(&eav))
-                    }
-                    Protocol::EavFetch(e, a, v) => {
-                        Protocol::EavFetchResult(self.unthreadable_fetch_eav(e, a, v))
-                    }
-                    _ => unreachable!(),
-                },
-                Some(context.myself()),
-            )
-            .expect("failed to tell FilesystemStorage sender");
+    #[test]
+    fn file_eav_round_trip() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let entity_content =
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
+        let attribute = "favourite-color".to_string();
+        let value_content =
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
+        EavTestSuite::test_round_trip(
+            EavFileStorage::new(temp_path).unwrap(),
+            entity_content,
+            attribute,
+            value_content,
+        )
     }
+
+    #[test]
+    fn file_eav_one_to_many() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+    }
+
+    #[test]
+    fn file_eav_many_to_one() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+    }
+
 }

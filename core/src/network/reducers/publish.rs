@@ -1,29 +1,17 @@
 use crate::{
     action::ActionWrapper,
-    agent::chain_header,
     context::Context,
-    network::{actions::ActionResponse, state::NetworkState, EntryWithHeader},
+    network::{actions::ActionResponse, state::NetworkState, util},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::{Entry, SerializedEntry},
+    cas::content::AddressableContent,
     error::HolochainError,
 };
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{DhtData, ProtocolWrapper},
 };
-use std::{convert::TryInto, sync::Arc};
-
-fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
-    let json = context
-        .file_storage
-        .read()?
-        .fetch(address)?
-        .ok_or("Entry not found".to_string())?;
-    let s: SerializedEntry = json.try_into()?;
-    Ok(s.into())
-}
+use std::sync::Arc;
 
 pub fn reduce_publish(
     context: Arc<Context>,
@@ -37,28 +25,12 @@ pub fn reduce_publish(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::Publish);
 
-    let result = entry_from_cas(address, &context);
-    if result.is_err() {
-        return;
+    let (entry, header) = match util::entry_with_header(&address, &context) {
+        Err(_) => return,
+        Ok(x) => x,
     };
 
-    let (entry, maybe_header) = result
-        .map(|entry| {
-            let header = chain_header(&entry, &context);
-            (entry, header)
-        })
-        .unwrap();
-
-    if maybe_header.is_none() {
-        // We don't have the entry in our source chain?!
-        // Don't publish
-        return;
-    }
-
-    let entry_with_header = EntryWithHeader {
-        entry: entry.serialize(),
-        header: maybe_header.unwrap(),
-    };
+    let entry_with_header = util::EntryWithHeader::from((entry.clone(), header));
 
     //let header = maybe_header.unwrap();
     let data = DhtData {

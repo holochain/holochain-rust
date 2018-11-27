@@ -14,7 +14,7 @@ pub struct App {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Author {
-    indentifier: String,
+    identifier: String,
     public_key_source: String,
     signature: String,
 }
@@ -26,7 +26,7 @@ impl Default for App {
             description: "A Holochain app".into(),
             version: Version::new(0, 1, 0),
             authors: vec![Author {
-                indentifier: "Author Name <author@name.com>".into(),
+                identifier: "Author Name <author@name.com>".into(),
                 public_key_source: "".into(),
                 signature: "".into(),
             }],

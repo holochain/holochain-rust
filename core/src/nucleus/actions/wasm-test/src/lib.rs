@@ -18,6 +18,21 @@ struct TestEntryType {
 define_zome! {
     entries: [
         entry!(
+            name: "testEntryType",
+            description: "asdfda",
+            sharing: Sharing::Public,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::Entry
+            },
+
+            validation: |entry: String, _ctx: hdk::ValidationData| {
+                (entry != "FAIL")
+                    .ok_or_else(|| "FAIL content is not allowed".to_string())
+            }
+        ),
+
+        entry!(
             name: "package_entry",
             description: "asdfda",
             sharing: Sharing::Public,

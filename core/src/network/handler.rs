@@ -10,7 +10,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         let protocol_wrapper = ProtocolWrapper::try_from(message);
         match protocol_wrapper {
             Ok(ProtocolWrapper::StoreDht(dht_data)) => {
-                println!("GOT DHT STORE: {:?}", dht_data);
                 let entry_with_header: EntryWithHeader =
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
@@ -18,7 +17,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     &entry_with_header.entry.deserialize(),
                     &context.clone(),
                 ));
-                println!("STORED {:?}", maybe_address);
             }
             _ => {}
         }

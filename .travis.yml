@@ -136,7 +136,7 @@ _cmd_deploy_template: &_cmd_deploy_template
     - make install_system_libzmq
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir $CRATE_NAME-$TRAVIS_TAG-$TARGET
-    - cp target/release/hc cmd/LICENSE cmd/README.md $CRATE_NAME-$TRAVIS_TAG-$TARGET/
+    - cp target/$TARGET/release/hc cmd/LICENSE cmd/README.md $CRATE_NAME-$TRAVIS_TAG-$TARGET/
     - tar czf $CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz $CRATE_NAME-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases

@@ -13,7 +13,7 @@
   - [Configuring an App](./configuring_an_app.md)
   - [Writing in Rust](./zome/rust.md)
   - [Writing in Assemblyscript](./zome/assemblyscript.md)
-  - [(E) Intro to WebAssembly](./zome/intro_to_webassembly.md)
+  - [Intro to WebAssembly](./zome/intro_to_webassembly.md)
   - [(E) Updating to Alpha 2](./alpha_migrate.md)
   - [Built With Holochain](./built_with_holochain.md)
 - [(E) Building Holochain Apps: Zome Code](./zome/welcome.md)

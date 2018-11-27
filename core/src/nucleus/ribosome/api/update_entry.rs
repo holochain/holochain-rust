@@ -60,7 +60,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     package: validation_package,
                     sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
+                    action: EntryAction::Modify,
                 }))
             })
             // 2. Validate the entry

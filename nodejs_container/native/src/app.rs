@@ -11,7 +11,6 @@ use holochain_cas_implementations::{
     eav::memory::EavMemoryStorage
 };
 use holochain_container_api::Holochain;
-use holochain_net::p2p_network::P2pNetwork;
 use holochain_core_types::{
     dna::Dna,
     agent::Agent,
@@ -32,7 +31,6 @@ impl Logger for NullLogger {
 
 pub struct App {
     instance: Holochain,
-    hash: String,
 }
 
 declare_types! {
@@ -64,7 +62,6 @@ declare_types! {
                     let error_string = ctx.string(format!("Unable to instantiate DNA with error: {}", error));
                     ctx.throw(error_string)
                 })?,
-                hash: "ab83bae71f53b18d7ea8db36193baf48bf82aff392aab4".into(),
             })
         }
 

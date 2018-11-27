@@ -1,4 +1,4 @@
-use crate::{context::Context, dht::actions::hold::hold_entry, network::EntryWithHeader};
+use crate::{context::Context, dht::actions::hold::hold_entry, network::util::EntryWithHeader};
 use futures::executor::block_on;
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};

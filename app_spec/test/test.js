@@ -15,7 +15,7 @@ test('call', (t) => {
   t.equal(result.value, JSON.stringify({"sum":"4"}))
 })
 
-test('get entry address', (t) => {
+test('hash_post', (t) => {
   t.plan(1)
 
   const params = {content: "Holo world"}

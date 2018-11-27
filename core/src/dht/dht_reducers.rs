@@ -324,7 +324,7 @@ pub(crate) fn reduce_remove_entry(
         .iter()
         .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::LIVE)
         .collect::<HashSet<&EntityAttributeValue>>();
-    if status_eavs.len() > 0 {
+    if !status_eavs.is_empty() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(

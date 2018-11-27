@@ -20,7 +20,7 @@ pub fn get_link_entries(
         options: GetEntryOptions::default(),
     };
     let base_result = block_on(get_entry(&context, entry_args))?;
-    if base_result.entries.len() == 0 {
+    if base_result.entries.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
         )));
@@ -31,7 +31,7 @@ pub fn get_link_entries(
         options: GetEntryOptions::default(),
     };
     let target_result = block_on(get_entry(&context, entry_args))?;
-    if target_result.entries.len() == 0 {
+    if target_result.entries.is_empty()  {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",
         )));

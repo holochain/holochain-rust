@@ -61,7 +61,7 @@
 ///                     container.instances.len()
 ///                 );
 ///                 println!("Starting all of them...");
-///                 container.start_all();
+///                 container.start_all_instances();
 ///                 println!("Done.");
 ///                 loop {}
 ///             } else {

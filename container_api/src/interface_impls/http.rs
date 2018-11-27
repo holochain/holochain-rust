@@ -9,6 +9,7 @@ pub struct HttpInterface {
     port: u16,
 }
 
+/// TODO: this is a stub, to be implemented later
 impl HttpInterface {
     pub fn new(port: u16) -> Self {
         Self { port }
@@ -28,7 +29,3 @@ impl Interface for HttpInterface {
         unimplemented!();
     }
 }
-
-// fn mk_err(msg: &str) -> JsonString {
-//     json!({ "error": Value::from(msg) }).into()
-// }

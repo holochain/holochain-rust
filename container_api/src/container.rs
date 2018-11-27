@@ -351,7 +351,7 @@ pub mod tests {
         let mut container = Container::with_config(config.clone());
         container.dna_loader = test_dna_loader();
 
-        assert!(container.load_config(&config).is_ok());
+        container.load_config(&config).unwrap();
         assert_eq!(container.instances.len(), 1);
 
         container.start_all_instances().unwrap();
@@ -381,7 +381,7 @@ pub mod tests {
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
         container.dna_loader = test_dna_loader();
-        assert!(container.load_config(&config).is_ok());
+        container.load_config(&config).unwrap();
 
         let instance_config = &config.interfaces[0];
         let dispatcher = container.make_dispatcher(&instance_config);

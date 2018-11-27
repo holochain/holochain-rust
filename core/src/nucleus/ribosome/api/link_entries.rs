@@ -1,21 +1,14 @@
 use crate::{
-    agent::actions::commit::*,
-    dht::actions::add_link::*,
     nucleus::{
-        actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
+    workflows::author_entry::author_entry,
 };
-use futures::{
-    executor::block_on,
-    future::{self, TryFutureExt},
-};
+use futures::executor::block_on;
 use holochain_core_types::{
-    cas::content::Address,
     entry::ToEntry,
     error::HolochainError,
     link::link_add::LinkAddEntry,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -44,27 +37,9 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let entry = link_add_entry.to_entry();
 
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&link_add_entry.to_entry(), &runtime.context)
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    sources: vec![Address::from("<insert your agent key here>")],
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &runtime.context)
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(entry.clone(), &runtime.context))
-            // 4. Add link to the DHT's meta system so it can actually be retrieved
-            //    when looked-up via the base
-            .and_then(|_| add_link(&input.to_link(), &runtime.context)),
-    );
+    let result: Result<(), HolochainError> =
+        block_on(author_entry(&entry, &runtime.context))
+            .map(|_| ());
 
     runtime.store_result(result)
 }

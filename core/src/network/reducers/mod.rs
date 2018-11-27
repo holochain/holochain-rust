@@ -1,5 +1,4 @@
 pub mod publish;
-pub mod receive;
 pub mod init;
 
 use crate::network::state::NetworkState;
@@ -8,7 +7,6 @@ use crate::action::ActionWrapper;
 use crate::context::Context;
 use crate::network::reducers::init::reduce_init;
 use crate::network::reducers::publish::reduce_publish;
-use crate::network::reducers::receive::reduce_receive;
 use crate::action::NetworkReduceFn;
 use crate::action::Action;
 
@@ -16,7 +14,6 @@ use crate::action::Action;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         crate::action::Action::Publish(_) => Some(reduce_publish),
-        crate::action::Action::Receive(_) => Some(reduce_receive),
         Action::InitNetwork(_) => Some(reduce_init),
         _ => None,
     }

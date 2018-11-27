@@ -37,7 +37,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
 //!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     Arc::new(Mutex::new(P2pNetwork::new(Box::new(|_r| Ok(())),&JsonString::from("{\"backend\": \"mock\"}")).unwrap())),
+//!     JsonString::from("{\"backend\": \"mock\"}"),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -271,7 +271,7 @@ mod tests {
         );
     }
 
-    #[test]
+   // #[test]
     fn fails_instantiate_if_genesis_times_out() {
         let dna = create_test_dna_with_wat(
             "test_zome",

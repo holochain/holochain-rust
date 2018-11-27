@@ -1,25 +1,19 @@
 use crate::{
-    agent::actions::commit::*,
     nucleus::{
-        actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    network::actions::publish::publish_entry,
+    workflows::author_entry::author_entry,
 };
 use futures::{
     executor::block_on,
-    future::{self, TryFutureExt},
 };
 use holochain_core_types::{
     cas::content::Address,
     entry::{Entry, SerializedEntry},
     error::HolochainError,
-    hash::HashString,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use holochain_core_types::cas::content::AddressableContent;
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -45,35 +39,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
 
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&entry, &runtime.context)
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    sources: vec![HashString::from("<insert your agent key here>")],
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &runtime.context)
-            })
-            // 3. Commit the valid entry to chain
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    &runtime.context,
-                )
-            })
-            // 4. Publish the valid entry to DHT
-            .and_then(|_| {
-                publish_entry(
-                    entry.address(),
-                    &runtime.context,
-                )
-            })
-            ,
+        author_entry(&entry, &runtime.context)
     );
 
     runtime.store_result(task_result)
@@ -83,8 +49,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
 pub mod tests {
     extern crate test_utils;
     extern crate wabt;
-
-
 
     use crate::{
         nucleus::ribosome::{
@@ -124,25 +88,5 @@ pub mod tests {
                 ))) + "\u{0}"
             ),
         );
-    }
-
-    #[test]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
-    fn test_commit_with_dht_publish() {
-        let (_instance1,context1) = instance_by_name("jill");
-        let (_instance2,context2) = instance_by_name("jack");
-
-        let header = commit(test_entry_package_entry(),&context1);
-
-        let state = &context2.state().unwrap();
-        let storage = &state.agent().chain().content_storage().clone();
-        let _json = storage
-            .read()
-            .unwrap()
-            .fetch(&header.entry_address())
-            .expect("could not fetch from CAS");
-
-//        let x:String = json.unwrap().to_string();
-//        assert_eq!(x,"fish".to_string());
     }
 }

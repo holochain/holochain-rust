@@ -31,7 +31,7 @@ pub fn get_link_entries(
         options: GetEntryOptions::default(),
     };
     let target_result = block_on(get_entry(&context, entry_args))?;
-    if target_result.entries.is_empty()  {
+    if target_result.entries.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",
         )));

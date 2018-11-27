@@ -130,7 +130,7 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
 # holochain-cmd deploy template
 _cmd_deploy_template: &_cmd_deploy_template
   language: rust
-  rust: stable
+  rust: nightly
   if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
   before_deploy:
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto

@@ -74,12 +74,12 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let entity_content =
-            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).unwrap();
+            ExampleAddressableContent::try_from_content(&RawString::from("foo").into()).expect("could not create ExampleAddressableContent from foo");
         let attribute = "favourite-color".to_string();
         let value_content =
-            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).unwrap();
+            ExampleAddressableContent::try_from_content(&RawString::from("blue").into()).expect("could not create ExampleAddressableContent from blue");
         EavTestSuite::test_round_trip(
-            EavFileStorage::new(temp_path).unwrap(),
+            EavFileStorage::new(temp_path).expect("could not create EavFileStorage from temp path"),
             entity_content,
             attribute,
             value_content,
@@ -89,7 +89,7 @@ pub mod tests {
     #[test]
     fn file_eav_one_to_many() {
         let temp = tempdir().expect("test was supposed to create temp dir");
-        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let temp_path = temp.path().to_string_lossy();
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_one_to_many::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }
@@ -97,7 +97,7 @@ pub mod tests {
     #[test]
     fn file_eav_many_to_one() {
         let temp = tempdir().expect("test was supposed to create temp dir");
-        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let temp_path = temp.path().to_string_lossy();
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
     }

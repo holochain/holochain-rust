@@ -109,7 +109,7 @@ impl Container {
     pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
-        let id_instance_pairs = config
+        let id_instance_pairs: Vec<_> = config
             .instance_ids()
             .clone()
             .into_iter()
@@ -119,9 +119,9 @@ impl Container {
                     instantiate_from_config(&id, config, &mut self.dna_loader),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect();
 
-        let errors = id_instance_pairs
+        let errors: Vec<_> = id_instance_pairs
             .into_iter()
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
@@ -134,7 +134,7 @@ impl Container {
                     id, error
                 )),
             })
-            .collect::<Vec<_>>();
+            .collect();
 
         if errors.len() == 0 {
             Ok(())

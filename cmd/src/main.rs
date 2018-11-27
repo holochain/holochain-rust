@@ -1,4 +1,5 @@
 extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate structopt;
@@ -16,6 +17,7 @@ extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
+extern crate rustyline;
 extern crate tempfile;
 extern crate uuid;
 
@@ -31,15 +33,6 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(about = "A command line for Holochain")]
 enum Cli {
-    #[structopt(
-        name = "web",
-        alias = "w",
-        about = "Starts a web server for the current Holochain app"
-    )]
-    Web {
-        #[structopt(long = "port", short = "p", default_value = "3000")]
-        port: u16,
-    },
     #[structopt(
         name = "agent",
         alias = "a",
@@ -97,20 +90,33 @@ enum Cli {
         language: String,
     },
     #[structopt(
+        name = "run",
+        alias = "r",
+        about = "starts a development container with an open websocket"
+    )]
+    Run {
+        #[structopt(
+            long,
+            short,
+            help = "Automatically package project before running"
+        )]
+        package: bool,
+    },
+    #[structopt(
         name = "test",
         alias = "t",
         about = "Runs tests written in the test folder"
     )]
     Test {
         #[structopt(
-            long = "dir",
-            short = "d",
+            long,
+            short,
             help = "The folder containing the test files, defaults to 'test'"
         )]
         dir: Option<String>,
         #[structopt(
-            long = "testfile",
-            short = "t",
+            long,
+            short,
             help = "The path of the file to test, defaults to 'test/dist/bundle.js'"
         )]
         testfile: Option<String>,
@@ -135,8 +141,7 @@ fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     match args {
-        Cli::Web { port } => cli::web(port).or_else(|err| Err(HolochainError::Default(err)))?,
-        Cli::Agent => cli::agent().or_else(|err| Err(HolochainError::Default(err)))?,
+        Cli::Agent => cli::agent().map_err(|err| HolochainError::Default(err))?,
         Cli::Package { strip_meta, output } => {
             cli::package(strip_meta, output).or_else(|err| Err(HolochainError::Default(err)))?
         }
@@ -147,6 +152,9 @@ fn run() -> HolochainResult<()> {
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).or_else(|err| Err(HolochainError::Default(err)))?
         }
+        Cli::Run { package } => {
+            cli::run(package).or_else(|err| Err(HolochainError::Default(err)))?
+        }
         Cli::Test {
             dir,
             testfile,
@@ -154,13 +162,8 @@ fn run() -> HolochainResult<()> {
         } => {
             let tests_folder = dir.unwrap_or(cli::TEST_DIR_NAME.to_string());
             let test_file = testfile.unwrap_or("test/index.js".to_string());
-            cli::test(
-                &PathBuf::new().join("."),
-                &tests_folder,
-                &test_file,
-                skip_build,
-            )
-            .or_else(|err| Err(HolochainError::Default(err)))?
+            cli::test(&PathBuf::from("."), &tests_folder, &test_file, skip_build)
+                .or_else(|err| Err(HolochainError::Default(err)))?
         }
     }
 

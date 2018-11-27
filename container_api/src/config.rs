@@ -27,7 +27,7 @@ use toml;
 /// References between structs (instance configs pointing to
 /// the agent and DNA to be instantiated) are implemented
 /// via string IDs.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Default)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
@@ -77,35 +77,23 @@ impl Configuration {
     }
 
     /// Returns the agent configuration with the given ID if present
-    pub fn agent_by_id(&self, id: &String) -> Option<AgentConfiguration> {
-        self.agents
-            .iter()
-            .find(|ac| &ac.id == id)
-            .and_then(|agent_config| Some(agent_config.clone()))
+    pub fn agent_by_id(&self, id: &str) -> Option<AgentConfiguration> {
+        self.agents.iter().find(|ac| &ac.id == id).cloned()
     }
 
     /// Returns the DNA configuration with the given ID if present
-    pub fn dna_by_id(&self, id: &String) -> Option<DNAConfiguration> {
-        self.dnas
-            .iter()
-            .find(|dc| &dc.id == id)
-            .and_then(|dna_config| Some(dna_config.clone()))
+    pub fn dna_by_id(&self, id: &str) -> Option<DNAConfiguration> {
+        self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
     /// Returns the instance configuration with the given ID if present
-    pub fn instance_by_id(&self, id: &String) -> Option<InstanceConfiguration> {
-        self.instances
-            .iter()
-            .find(|ic| &ic.id == id)
-            .and_then(|instance_config| Some(instance_config.clone()))
+    pub fn instance_by_id(&self, id: &str) -> Option<InstanceConfiguration> {
+        self.instances.iter().find(|ic| &ic.id == id).cloned()
     }
 
     /// Returns the interface configuration with the given ID if present
-    pub fn interface_by_id(&self, id: &String) -> Option<InterfaceConfiguration> {
-        self.interfaces
-            .iter()
-            .find(|ic| &ic.id == id)
-            .and_then(|interface_config| Some(interface_config.clone()))
+    pub fn interface_by_id(&self, id: &str) -> Option<InterfaceConfiguration> {
+        self.interfaces.iter().find(|ic| &ic.id == id).cloned()
     }
 
     /// Returns all defined instance IDs
@@ -113,7 +101,7 @@ impl Configuration {
         self.instances
             .iter()
             .map(|instance| instance.id.clone())
-            .collect::<Vec<String>>()
+            .collect()
     }
 }
 
@@ -208,15 +196,11 @@ pub struct InterfaceConfiguration {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
-    #[serde(rename = "websocket")]
     Websocket { port: u16 },
-    #[serde(rename = "http")]
     Http { port: u16 },
-    #[serde(rename = "domainsocket")]
     DomainSocket { file: String },
-    #[serde(rename = "custom")]
     Custom(toml::value::Value),
 }
 
@@ -408,7 +392,7 @@ pub mod tests {
     path = "app_spec_storage"
 
     "#;
-        let config = load_configuration::<Configuration>(toml).unwrap();
+        let config: Configuration = load_configuration(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }

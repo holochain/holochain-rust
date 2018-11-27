@@ -1,5 +1,9 @@
 use holochain_core::{
-    context::Context as HolochainContext, logger::Logger, persister::SimplePersister,
+    context::{
+        Context as HolochainContext,
+        mock_network_config,
+    },
+    logger::Logger, persister::SimplePersister,
 };
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage,
@@ -42,12 +46,6 @@ declare_types! {
             let file_storage = Arc::new(RwLock::new(
                 FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
             ));
-            let mock_net = Arc::new(Mutex::new(P2pNetwork::new(
-                Box::new(|_r| Ok(())),
-                &json!({
-                    "backend": "mock"
-                }).into(),
-            ).unwrap()));
 
             let context = HolochainContext::new(
                 agent,
@@ -55,7 +53,7 @@ declare_types! {
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Arc::new(RwLock::new(MemoryStorage::new())),
                 Arc::new(RwLock::new(EavMemoryStorage::new())),
-                mock_net,
+                mock_network_config(),
             ).unwrap();
 
             let dna = Dna::try_from(JsonString::from(dna_data)).expect("unable to parse dna data");

@@ -14,19 +14,22 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-        entry::{entry_type::EntryType, Entry},
+        dna::{Dna, zome::{capabilities::Capability, entry_types::EntryTypeDef}},
+        entry::{entry_type::EntryType, Entry, ToEntry},
     };
-    use std::sync::Arc;
+    use std::{
+        sync::Arc
+    };
     use test_utils::*;
+    use base64::encode;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
-        instance_by_name("jane")
+        instance_by_name("jane", test_dna())
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance_by_name(name: &str) -> (Instance, Arc<Context>) {
+    pub fn test_dna() -> Dna {
         // Setup the holochain instance
         let wasm =
             create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
@@ -53,7 +56,11 @@ pub mod tests {
             .unwrap()
             .entry_types
             .insert(String::from("package_chain_full"), EntryTypeDef::new());
+        dna
+    }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
         let (instance, context) =
             test_instance_and_context_by_name(dna,name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);

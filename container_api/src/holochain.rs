@@ -109,6 +109,7 @@ impl Holochain {
             .load(context.clone())
             .unwrap_or(Some(State::new(context.clone())))
             .unwrap();
+        // TODO get the network state initialized!!
         let mut instance = Instance::from_state(loaded_state);
         instance.start_action_loop(context.clone());
         Ok(Holochain {

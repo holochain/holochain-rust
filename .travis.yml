@@ -130,7 +130,7 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
 # holochain-cmd deploy template
 _cmd_deploy_template: &_cmd_deploy_template
   language: rust
-  rust: nightly
+  rust: nightly-2018-10-12
   if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
   script:
     - make install_system_libzmq

@@ -12,9 +12,10 @@ use holochain_core_types::entry::Entry;
 use holochain_core_types::cas::content::AddressableContent;
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::protocol_wrapper::ProtocolWrapper;
+use crate::network::actions::ActionResponse;
 
 fn entry_from_cas(address: &Address, context: &Arc<Context>,) -> Result<Entry, HolochainError>{
-    let json = context.file_storage.read().unwrap().fetch(address)?
+    let json = context.file_storage.read()?.fetch(address)?
         .ok_or("Entry not found".to_string())?;
     let s: SerializedEntry = json.try_into()?;
     Ok(s.into())
@@ -59,7 +60,7 @@ pub fn reduce_publish(
         content: serde_json::from_str(&entry.content().to_string()).unwrap(),
     };
 
-    let _ = match state.network {
+    let response = match state.network {
         None => unreachable!(),
         Some(ref network) => {
             network.lock()
@@ -67,5 +68,10 @@ pub fn reduce_publish(
                 .send(ProtocolWrapper::PublishDht(data).into())
         }
     };
+
+    state.actions.insert(action_wrapper.clone(), ActionResponse::Publish(match response {
+        Ok(_) => Ok(entry.address().to_owned()),
+        Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
+    }));
 
 }

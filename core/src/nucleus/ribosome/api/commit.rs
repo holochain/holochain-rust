@@ -4,6 +4,7 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
+    network::actions::publish::publish_entry,
 };
 use futures::{
     executor::block_on,
@@ -18,6 +19,7 @@ use holochain_core_types::{
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
+use holochain_core_types::cas::content::AddressableContent;
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -57,10 +59,17 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             .and_then(|validation_data| {
                 validate_entry(entry.clone(), validation_data, &runtime.context)
             })
-            // 3. Commit the valid entry to chain and DHT
+            // 3. Commit the valid entry to chain
             .and_then(|_| {
                 commit_entry(
                     entry.clone(),
+                    &runtime.context,
+                )
+            })
+            // 4. Publish the valid entry to DHT
+            .and_then(|_| {
+                publish_entry(
+                    entry.address(),
                     &runtime.context,
                 )
             })

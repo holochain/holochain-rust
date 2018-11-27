@@ -1,7 +1,6 @@
 extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
-    agent::state::ActionResponse,
     context::Context,
     instance::dispatch_action,
 };
@@ -9,12 +8,13 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use holochain_core_types::{cas::content::Address};
 use std::{
     pin::{Pin, Unpin},
     sync::{Arc},
 };
-//use core::mem::PinMut;
+use holochain_core_types::error::HcResult;
+use crate::network::actions::ActionResponse;
 
 /// Publish Action Creator
 /// This is the high-level publish function that wraps the whole publish process and is what should
@@ -24,7 +24,7 @@ use std::{
 pub async fn publish_entry(
     address: Address,
     context: &Arc<Context>,
-) -> Result<Address, HolochainError> {
+) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     await!(PublishFuture {
@@ -40,10 +40,10 @@ pub struct PublishFuture {
     action: ActionWrapper,
 }
 
-impl Unpin for Publish {}
+impl Unpin for PublishFuture {}
 
-impl Future for Publish {
-    type Output = Result<Address, HolochainError>;
+impl Future for PublishFuture {
+    type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
@@ -60,10 +60,9 @@ impl Future for Publish {
             .get(&self.action)
         {
             Some(ActionResponse::Publish(result)) => match result {
-                Ok(address) => Poll::Ready(Ok(address.clone())),
+                Ok(address) => Poll::Ready(Ok(address.to_owned())),
                 Err(error) => Poll::Ready(Err(error.clone())),
             },
-            Some(_) => unreachable!(),
             None => Poll::Pending,
         }
     }

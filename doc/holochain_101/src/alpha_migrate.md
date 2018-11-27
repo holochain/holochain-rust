@@ -15,7 +15,7 @@ At a very general level:
 
 At the level of the code, in more detail, the changes are as follows (note that this is in reference to Javascript Zomes being ported to Rust Zomes):
 - all camel case function names are now snake case
-- `makeHash` is now named `hash_entry`
+- `makeHash` is now named `entry_address`
 - `commit` is now named `commit_entry`
 - `get` is now named `get_entry`
 - `update` is now named `update_entry`

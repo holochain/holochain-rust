@@ -1,13 +1,26 @@
-# This imports the nix package collection,
-# so we can access the `pkgs` and `stdenv` variables
+{ system ? builtins.currentSystem }:
+
 let
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-  nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
+  nixpkgs = import <nixpkgs> {
+    overlays = [ moz_overlay ];
+    inherit system;
+  };
+  callPackage = nixpkgs.lib.callPackageWith (nixpkgs);
 
   date = "2018-10-12";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
+
+  nodejs-8_13 = nixpkgs.nodejs-8_x.overrideAttrs(oldAttrs: rec {
+    name = "nodejs-${version}";
+    version = "8.13.0";
+    src = nixpkgs.fetchurl {
+      url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
+      sha256 = "1qidcj4smxsz3pmamg3czgk6hlbw71yw537h2jfk7iinlds99a9a";
+    };
+  });
 
   wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
@@ -31,6 +44,10 @@ with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
+  /* buildNodejs {
+    version = "8.13.0";
+  }; */
+
   buildInputs = [
     cmake
     python
@@ -38,7 +55,13 @@ stdenv.mkDerivation rec {
     zeromq
     rust-build
 
-    nodejs
+    /* nodejs */
+    /* buildNodejs */
+    /* nodejs-8_x */
+    /* node */
+    /* nodejs-10_x */
+    /* nodejs */
+    nodejs-8_13
     yarn
 
     hc-wasm-build

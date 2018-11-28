@@ -75,7 +75,7 @@ There is a work-in-progress book of documentation being written about `holochain
 
 ## Installation & Usage
 
-**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/holochain-rust/releases/tag/v0.0.2-dev-preview
+**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/holochain-rust/releases/tag/holochain-cmd-v0.0.2
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 

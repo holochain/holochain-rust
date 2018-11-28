@@ -54,7 +54,7 @@ version_rustup:
 	        [ -t 1 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (y/N) " yes; \
 	        if [[ "$${yes:0:1}" == "y" ]] || [[ "$${yes:0:1}" == "Y" ]]; then \
 	            echo "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
-	            rustup default $(RUST-VERSION); \
+	            rustup default $(RUST_VERSION); \
 	        fi; \
 	    fi; \
 	fi

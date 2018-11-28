@@ -60,7 +60,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 commit_entry(
                     deletion_entry.clone(),
                     None,
-                    &runtime.context.action_channel,
                     &runtime.context,
                 )
             })

@@ -32,7 +32,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> =
-        block_on(author_entry(&entry, &runtime.context)).map(|_| ());
+        block_on(author_entry(&entry, None, &runtime.context)).map(|_| ());
 
     runtime.store_result(result)
 }

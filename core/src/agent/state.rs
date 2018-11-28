@@ -15,6 +15,7 @@ use holochain_core_types::{
     signature::Signature,
     time::Iso8601,
 };
+use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -78,11 +79,12 @@ impl AgentState {
             .ok_or(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
             ))?;
-
-        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
-            .ok_or("Agent entry not found".to_string())?;
-
-        Ok(Agent::from_entry(&agent_entry))
+        let entry_args = GetEntryArgs { address: agent_entry_address, options: GetEntryOptions::default()};
+        let agent_entry_result = await!(get_entry(context, &entry_args))?;
+        if agent_entry_result.entries.is_empty() {
+            return Err(HolochainError::ErrorGeneric("Agent entry not found".to_string()));
+        }
+        Ok(Agent::from_entry(&agent_entry_result.entries.iter().next().unwrap().deserialize()))
     }
 }
 

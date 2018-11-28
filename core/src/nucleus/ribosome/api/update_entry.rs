@@ -72,7 +72,6 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 commit_entry(
                     entry.clone(),
                     Some(chain_header_address),
-                    &runtime.context.action_channel,
                     &runtime.context,
                 )
             })

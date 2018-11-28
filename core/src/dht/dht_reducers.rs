@@ -154,6 +154,218 @@ pub(crate) fn reduce_add_link(
     Some(new_store)
 }
 
+
+//
+pub(crate) fn reduce_update_entry(
+    context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Setup
+    let action = action_wrapper.action();
+    let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
+    let mut new_store = (*old_store).clone();
+    let content_storage = &old_store.content_storage().clone();
+    // pre-condition: Must already have old_entry in local content_storage
+    if !(*content_storage.read().unwrap())
+        .contains(&old_address)
+        .unwrap()
+        {
+            new_store.actions_mut().insert(
+                action_wrapper.clone(),
+                Err(HolochainError::ErrorGeneric(String::from(
+                    "old_entry is not present in DHT's CAS",
+                ))),
+            );
+            return Some(new_store);
+        }
+    //  pre-condition: Must already have new_entry in local content_storage
+    if !(*content_storage.read().unwrap())
+        .contains(&new_address)
+        .unwrap()
+        {
+            new_store.actions_mut().insert(
+                action_wrapper.clone(),
+                Err(HolochainError::ErrorGeneric(String::from(
+                    "new_entry is not present in DHT's CAS",
+                ))),
+            );
+            return Some(new_store);
+        }
+    // pre-condition: old_entry's latest version must have LIVE crud-status
+    // get latest entry
+    let mut entry_result = GetEntryResult::new();
+    let res = get_entry_rec(
+        &context,
+        &mut entry_result,
+        old_address.clone(),
+        GetEntryOptions::new(StatusRequestKind::Latest),
+    );
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    let latest_old_address = entry_result.addresses.iter().last().unwrap();
+    // verify its crud-status
+    if entry_result.crud_status.iter().last().unwrap() != &CrudStatus::LIVE {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "old_entry latest version does not have LIVE crud-status",
+            ))),
+        );
+        return Some(new_store);
+    }
+    // pre-condition: latest entry must not already have a crud-link
+    let maybe_crud_link = entry_result.crud_links.get(latest_old_address);
+    if maybe_crud_link.is_some() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "attempted to add a second crud-link to an entry",
+            ))),
+        );
+        return Some(new_store);
+    }
+
+    // Update crud-status
+    let meta_storage = &new_store.meta_storage().clone();
+    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
+    let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Update crud-link
+    let crud_link_eav = create_crud_link_eav(latest_old_address, new_address);
+    let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Notify Network
+    new_store.network_mut().publish_meta(&new_status_eav);
+    new_store.network_mut().publish_meta(&crud_link_eav);
+    // Done
+    new_store
+        .actions_mut()
+        .insert(action_wrapper.clone(), res.map(|_| new_address.clone()));
+    Some(new_store)
+}
+
+//
+pub(crate) fn reduce_remove_entry(
+    context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Setup
+    let action = action_wrapper.action();
+    let address = unwrap_to!(action => Action::RemoveEntry);
+    let mut new_store = (*old_store).clone();
+
+    // Get latest entry
+    let mut entry_result = GetEntryResult::new();
+    let res = get_entry_rec(
+        &context,
+        &mut entry_result,
+        address.clone(),
+        GetEntryOptions::new(StatusRequestKind::Latest),
+    );
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    let latest_address = entry_result.addresses.iter().last().unwrap();
+
+    // pre-condition: Must already have entry in local content_storage
+    let content_storage = &old_store.content_storage().clone();
+    let maybe_entry = content_storage
+        .read()
+        .unwrap()
+        .fetch(latest_address)
+        .unwrap();
+    if maybe_entry.is_none() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "trying to remove a missing entry",
+            ))),
+        );
+        return Some(new_store);
+    }
+    let ser_entry = SerializedEntry::try_from(maybe_entry.unwrap()).unwrap();
+    let entry = Entry::from(ser_entry);
+    // pre-condition entry_type must not by sys type, since they cannot be deleted
+    if entry.entry_type().to_owned().is_sys() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "trying to remove a system entry type",
+            ))),
+        );
+        return Some(new_store);
+    }
+    // pre-condition: Current status must be LIVE
+    // get current status
+    let meta_storage = &old_store.meta_storage().clone();
+    let maybe_status_eav = meta_storage.read().unwrap().fetch_eav(
+        Some(latest_address.clone()),
+        Some(STATUS_NAME.to_string()),
+        None,
+    );
+    if let Err(err) = maybe_status_eav {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    let status_eavs = maybe_status_eav.unwrap();
+    assert!(!status_eavs.is_empty(), "Entry should have a Status");
+    // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
+    // For now checks if crud-status other than LIVE are present
+    let status_eavs = status_eavs
+        .iter()
+        .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::LIVE)
+        .collect::<HashSet<&EntityAttributeValue>>();
+    if !status_eavs.is_empty() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "entry_status != CrudStatus::LIVE",
+            ))),
+        );
+        return Some(new_store);
+    }
+
+    // Update crud-status
+    let new_status_eav = create_crud_status_eav(latest_address, CrudStatus::DELETED);
+    let meta_storage = &new_store.meta_storage().clone();
+    let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Notify Network
+    new_store.network_mut().publish_meta(&new_status_eav);
+    // Done
+    new_store
+        .actions_mut()
+        .insert(action_wrapper.clone(), res.map(|_| latest_address.clone()));
+    Some(new_store)
+}
+
+//
 #[allow(dead_code)]
 pub(crate) fn reduce_get_links(
     _context: Arc<Context>,

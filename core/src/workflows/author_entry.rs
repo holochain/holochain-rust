@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 pub async fn author_entry<'a>(
     entry: &'a Entry,
+    maybe_crud_link: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     // 1. Build the context needed for validation of the entry
@@ -31,7 +32,7 @@ pub async fn author_entry<'a>(
     // 2. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
     // 3. Commit the entry
-    await!(commit_entry(entry.clone(), &context))?;
+    await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
 
     // 4. Publish the valid entry to DHT
     await!(publish_entry(entry.address(), &context))
@@ -52,7 +53,7 @@ pub mod tests {
         let (_instance1, context1) = instance_by_name("jill", dna.clone());
         let (_instance2, context2) = instance_by_name("jack", dna);
 
-        let entry_address = block_on(author_entry(&test_entry(), &context1));
+        let entry_address = block_on(author_entry(&test_entry(), None, &context1));
 
         println!("AUTHOR ENTRY ADDRESS: {:?}", entry_address);
         let entry_address = entry_address.unwrap();

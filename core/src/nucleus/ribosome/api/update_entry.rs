@@ -76,7 +76,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                     &runtime.context,
                 )
             })
-            // 3. Update the entry in DHT metadata
+            // 4. Update the entry in DHT metadata
             .and_then(|new_address| {
                 update_entry(
                     &runtime.context,

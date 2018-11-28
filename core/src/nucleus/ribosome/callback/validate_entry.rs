@@ -52,6 +52,12 @@ pub fn validate_entry(
             context,
         )?),
 
+        // Deletion entries are not validated currently and always valid
+        // TODO: Specify how Deletion can be commited to chain.
+        EntryType::Delete => {
+            Ok(CallbackResult::Pass)
+        },
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

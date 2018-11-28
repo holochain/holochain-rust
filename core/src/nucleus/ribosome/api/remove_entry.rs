@@ -1,9 +1,22 @@
 use crate::{
     dht::actions::remove_entry::remove_entry,
-    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    agent::actions::commit::commit_entry,
+    nucleus::{
+        actions::{build_validation_package::*, validate::*},
+        ribosome::{api::ZomeApiResult, Runtime},
+    },
 };
-use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
+use futures::{
+    executor::block_on,
+    future::{self, TryFutureExt},
+};
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{ToEntry, deletion_entry::DeletionEntry},
+    error::HolochainError,
+    hash::HashString,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -23,9 +36,43 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         );
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
-    let address = try_address.unwrap();
-    let future = remove_entry(&runtime.context, &runtime.context.action_channel, address);
-    let result = block_on(future);
+    let deleted_entry_address = try_address.unwrap();
+    // Create deletion entry
+    let deletion_entry = DeletionEntry::new(deleted_entry_address.clone()).to_entry();
+    // Resolve future
+    let result: Result<(), HolochainError> = block_on(
+        // 1. Build the context needed for validation of the entry
+        build_validation_package(&deletion_entry, &runtime.context)
+            .and_then(|validation_package| {
+                future::ready(Ok(ValidationData {
+                    package: validation_package,
+                    sources: vec![HashString::from("<insert your agent key here>")],
+                    lifecycle: EntryLifecycle::Chain,
+                    action: EntryAction::Delete,
+                }))
+            })
+            // 2. Validate the entry
+            .and_then(|validation_data| {
+                validate_entry(deletion_entry.clone(), validation_data, &runtime.context)
+            })
+            // 3. Commit the valid entry to chain and DHT
+            .and_then(|_| {
+                commit_entry(
+                    deletion_entry.clone(),
+                    None,
+                    &runtime.context.action_channel,
+                    &runtime.context,
+                )
+            })
+            // 4. Remove the entry in DHT metadata
+            .and_then(|_| {
+                remove_entry(
+                    &runtime.context,
+                    &runtime.context.action_channel,
+                    deleted_entry_address)
+            }),
+    );
+    // Done
     match result {
         Err(_) => ribosome_error_code!(Unspecified),
         Ok(_) => ribosome_success!(),

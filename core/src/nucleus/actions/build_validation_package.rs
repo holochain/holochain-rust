@@ -82,15 +82,15 @@ pub fn build_validation_package<'a>(
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
-                    CallbackResult::Fail(error_string) => {
-                        Err(HolochainError::ErrorGeneric(error_string))
-                    }
-                    CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented => Err(HolochainError::ErrorGeneric(format!(
-                        "ValidationPackage callback not implemented for {:?}",
-                        entry.entry_type().clone()
-                    ))),
-                    _ => unreachable!(),
+                        CallbackResult::Fail(error_string) => {
+                            Err(HolochainError::ErrorGeneric(error_string))
+                        }
+                        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+                        CallbackResult::NotImplemented => Err(HolochainError::ErrorGeneric(format!(
+                            "ValidationPackage callback not implemented for {:?}",
+                            entry.entry_type().clone()
+                        ))),
+                        _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
                     Ok(match package_definition {

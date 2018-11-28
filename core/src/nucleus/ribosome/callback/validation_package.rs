@@ -14,6 +14,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::link_add::LinkAddEntry,
     validation::ValidationPackageDefinition,
+    json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};
@@ -84,7 +85,10 @@ pub fn get_validation_package_definition(
                 &call,
                 Some(call.parameters.into_bytes()),
             )?
-        }
+        },
+        EntryType::Delete => {
+            JsonString::from(ValidationPackageDefinition::ChainFull)
+        },
         _ => Err(HolochainError::NotImplemented)?,
     };
 

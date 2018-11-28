@@ -30,7 +30,7 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 1. A library for managing instances and connecting them to interfaces: [*container_api*](#container-api)
 1. A Rust based container that uses the container_api: [*container*](#rust-container)
 1. A nodejs based container for running tests: [*container*](#nodejs-container)
-1. A command line developer tool: [*hc*](#hc-developer-tool)
+1. A command line developer tool: [*hc*](#hc-command-line-developer-tool)
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 
 Let's elaborate on these three aspects.

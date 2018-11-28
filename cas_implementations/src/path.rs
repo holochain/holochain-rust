@@ -11,9 +11,12 @@ pub fn storage_path(path: &Path, folder_name: &str) -> HcResult<String> {
 
 pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
     if !Path::new(path).exists() {
-        return DirBuilder::new()
-            .create(path)
-            .map_err(|_| HolochainError::IoError("Could not create directory".to_string()));
+        return DirBuilder::new().recursive(true).create(path).map_err(|e| {
+            HolochainError::IoError(format!(
+                "Error while attempting to create directory {}: {}",
+                path, e
+            ))
+        });
     }
     Ok(())
 }
@@ -39,11 +42,9 @@ pub mod tests {
         let bad_path = storage_path(Path::new("/foo"), "bar").unwrap();
         let result = create_path_if_not_exists(&bad_path);
         match result {
-            Ok(()) => unreachable!(),
-            Err(err) => assert_eq!(
-                err,
-                HolochainError::IoError("Could not create directory".to_string())
-            ),
+            Ok(()) => panic!("expected error"),
+            Err(HolochainError::IoError(_)) => (),
+            Err(_) => panic!("expected IoError"),
         };
         let dir = tempdir().unwrap();
         let file_path = dir.path();

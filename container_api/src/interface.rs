@@ -104,5 +104,5 @@ impl DispatchRpc for ContainerApiDispatcher {
 }
 
 pub trait Interface<D: DispatchRpc> {
-    fn run(&self, D) -> Result<(), String>;
+    fn run(&self, d: D) -> Result<(), String>;
 }

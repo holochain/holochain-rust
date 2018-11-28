@@ -6,6 +6,7 @@ use crate::{
     },
     context::Context,
     dht::dht_store::DhtStore,
+    network::state::NetworkState,
     nucleus::state::NucleusState,
 };
 use holochain_core_types::{
@@ -28,6 +29,7 @@ pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
+    network: Arc<NetworkState>,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -44,6 +46,7 @@ impl State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
             dht: Arc::new(DhtStore::new(cas.clone(), eav)),
+            network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
         }
     }
@@ -83,6 +86,7 @@ impl State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
+            network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
         }
     }
@@ -104,6 +108,11 @@ impl State {
                 Arc::clone(&self.dht),
                 &action_wrapper,
             ),
+            network: crate::network::reducers::reduce(
+                Arc::clone(&context),
+                Arc::clone(&self.network),
+                &action_wrapper,
+            ),
             history: self.history.clone(),
         };
 
@@ -121,6 +130,10 @@ impl State {
 
     pub fn dht(&self) -> Arc<DhtStore> {
         Arc::clone(&self.dht)
+    }
+
+    pub fn network(&self) -> Arc<NetworkState> {
+        Arc::clone(&self.network)
     }
 
     pub fn try_from_agent_snapshot(

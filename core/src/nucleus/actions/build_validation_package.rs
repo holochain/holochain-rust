@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    agent,
+    agent::{self, chain_header},
     context::Context,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
@@ -13,7 +13,6 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::AddressableContent,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry, SerializedEntry},
     error::HolochainError,
@@ -27,10 +26,7 @@ use std::{
     thread,
 };
 
-pub fn build_validation_package<'a>(
-    entry: &Entry,
-    context: &'a Arc<Context>,
-) -> ValidationPackageFuture {
+pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
     if let EntryType::App(_) = entry.entry_type() {
@@ -58,7 +54,7 @@ pub fn build_validation_package<'a>(
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
-        let entry_header = chain_header(entry.clone(), &context).unwrap_or(
+        let entry_header = chain_header(&entry.clone(), &context).unwrap_or(
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
             // For an already committed entry (when asked to deliver the validation package to
@@ -130,14 +126,6 @@ pub fn build_validation_package<'a>(
         key: id,
         error: None,
     }
-}
-
-fn chain_header(entry: Entry, context: &Arc<Context>) -> Option<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain
-        .iter(&top_header)
-        .find(|ref header| *header.entry_address() == entry.address())
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {

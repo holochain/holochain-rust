@@ -1,5 +1,9 @@
 use holochain_core::{
-    context::Context as HolochainContext, logger::Logger, persister::SimplePersister,
+    context::{
+        Context as HolochainContext,
+        mock_network_config,
+    },
+    logger::Logger, persister::SimplePersister,
 };
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage,
@@ -7,7 +11,6 @@ use holochain_cas_implementations::{
     eav::memory::EavMemoryStorage
 };
 use holochain_container_api::Holochain;
-use holochain_net::p2p_network::P2pNetwork;
 use holochain_core_types::{
     dna::Dna,
     agent::Agent,
@@ -28,15 +31,6 @@ impl Logger for NullLogger {
 
 pub struct App {
     instance: Holochain,
-    hash: String,
-}
-
-impl App {
-
-    pub fn hash(&self) -> String {
-        self.hash.clone()
-    }
-
 }
 
 declare_types! {
@@ -50,12 +44,6 @@ declare_types! {
             let file_storage = Arc::new(RwLock::new(
                 FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
             ));
-            let mock_net = Arc::new(Mutex::new(P2pNetwork::new(
-                Box::new(|_r| Ok(())),
-                &json!({
-                    "backend": "mock"
-                }).into(),
-            ).unwrap()));
 
             let context = HolochainContext::new(
                 agent,
@@ -63,7 +51,7 @@ declare_types! {
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Arc::new(RwLock::new(MemoryStorage::new())),
                 Arc::new(RwLock::new(EavMemoryStorage::new())),
-                mock_net,
+                mock_network_config(),
             ).unwrap();
 
             let dna = Dna::try_from(JsonString::from(dna_data)).expect("unable to parse dna data");
@@ -74,7 +62,6 @@ declare_types! {
                     let error_string = ctx.string(format!("Unable to instantiate DNA with error: {}", error));
                     ctx.throw(error_string)
                 })?,
-                hash: "ab83bae71f53b18d7ea8db36193baf48bf82aff392aab4".into(),
             })
         }
 

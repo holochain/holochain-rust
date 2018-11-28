@@ -24,17 +24,17 @@ fn cat_dna_agent(dna_hash: &str, agent_id: &str) -> String {
 /// a lazy_static! singleton for routing messages in-memory
 struct MockSingleton {
     // keep track of senders by `dna_hash::agent_id`
-    senders: HashMap<String, mpsc::Sender<Protocol>>,
+    senders: Mutex<HashMap<String, mpsc::Sender<Protocol>>>,
     // keep track of senders as arrays by dna_hash
-    senders_by_dna: HashMap<String, Vec<mpsc::Sender<Protocol>>>,
+    senders_by_dna: Mutex<HashMap<String, Vec<mpsc::Sender<Protocol>>>>,
 }
 
 impl MockSingleton {
     /// create a new mock singleton
     pub fn new() -> Self {
         Self {
-            senders: HashMap::new(),
-            senders_by_dna: HashMap::new(),
+            senders: Mutex::new(HashMap::new()),
+            senders_by_dna: Mutex::new(HashMap::new()),
         }
     }
 
@@ -45,9 +45,9 @@ impl MockSingleton {
         agent_id: &str,
         sender: mpsc::Sender<Protocol>,
     ) -> NetResult<()> {
-        self.senders
+        self.senders.lock().unwrap()
             .insert(cat_dna_agent(dna_hash, agent_id), sender.clone());
-        match self.senders_by_dna.entry(dna_hash.to_string()) {
+        match self.senders_by_dna.lock().unwrap().entry(dna_hash.to_string()) {
             Entry::Occupied(mut e) => {
                 e.get_mut().push(sender.clone());
             }
@@ -110,7 +110,7 @@ impl MockSingleton {
 
     /// send a message to the appropriate channel based on dna_hash::agent_id
     fn priv_send_one(&mut self, dna_hash: &str, agent_id: &str, data: Protocol) -> NetResult<()> {
-        if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_hash, agent_id)) {
+        if let Some(sender) = self.senders.lock().unwrap().get_mut(&cat_dna_agent(dna_hash, agent_id)) {
             sender.send(data)?;
         }
         Ok(())
@@ -118,7 +118,7 @@ impl MockSingleton {
 
     /// send a message to all nodes connected with this dna hash
     fn priv_send_all(&mut self, dna_hash: &str, data: Protocol) -> NetResult<()> {
-        if let Some(arr) = self.senders_by_dna.get_mut(dna_hash) {
+        if let Some(arr) = self.senders_by_dna.lock().unwrap().get_mut(dna_hash) {
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
@@ -154,7 +154,7 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht(&mut self, msg: &GetDhtData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_hash.to_string()) {
+        match self.senders_by_dna.lock().unwrap().entry(msg.dna_hash.to_string()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
@@ -200,7 +200,7 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht_meta(&mut self, msg: &GetDhtMetaData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_hash.to_string()) {
+        match self.senders_by_dna.lock().unwrap().entry(msg.dna_hash.to_string()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];

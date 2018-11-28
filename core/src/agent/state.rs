@@ -2,14 +2,14 @@ use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::ChainStore,
     context::Context,
-    state::State,
     nucleus::actions::get_entry::get_entry,
+    state::State,
 };
 use holochain_core_types::{
     agent::Agent,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry, entry_type::EntryType, ToEntry},
+    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::HolochainError,
     json::*,
     signature::Signature,
@@ -66,12 +66,18 @@ impl AgentState {
         self.top_chain_header.clone()
     }
 
-    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> Result<Agent, HolochainError> {
-        let agent_entry_address = self.chain()
+    pub async fn get_agent<'a>(
+        &'a self,
+        context: &'a Arc<Context>,
+    ) -> Result<Agent, HolochainError> {
+        let agent_entry_address = self
+            .chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
-            .ok_or(HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
+            .ok_or(HolochainError::ErrorGeneric(
+                "Agent entry not found".to_string(),
+            ))?;
 
         let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
             .ok_or("Agent entry not found".to_string())?;
@@ -295,7 +301,6 @@ pub mod tests {
     fn agent_state_new() {
         test_agent_state();
     }
-
 
     #[test]
     /// test for the agent state actions getter

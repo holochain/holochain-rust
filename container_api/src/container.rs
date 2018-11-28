@@ -1,5 +1,6 @@
 use crate::{
-    config::{Configuration, StorageConfiguration},
+    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
+    error::HolochainInstanceError,
     Holochain,
 };
 use holochain_cas_implementations::{
@@ -11,18 +12,23 @@ use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::Agent;
 use std::{
+    clone::Clone,
     collections::HashMap,
     convert::TryFrom,
     fs::File,
     io::prelude::*,
     sync::{Arc, Mutex, RwLock},
+    thread,
 };
+
+use interface::{ContainerApiDispatcher, InstanceMap, Interface};
+use interface_impls;
 
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
-///
+
 /// A primary point in this struct is
-/// ```load_config(&mut self, config: &Configuration) -> Result<(), String>```
+/// `load_config(&mut self, config: &Configuration) -> Result<(), String>`
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
 /// While doing so it has to load DNA files referenced in the configuration.
 /// In order to not bind this code to the assumption that there is a filesystem
@@ -30,54 +36,78 @@ use std::{
 /// a DnaLoader has to be injected on creation.
 /// This is a closure that returns a Dna object for a given path string.
 pub struct Container {
-    pub instances: HashMap<String, Holochain>,
-    dna_loader: DnaLoader,
+    pub instances: InstanceMap,
+    config: Configuration,
+    interface_threads: HashMap<String, InterfaceThreadHandle>,
+    pub dna_loader: DnaLoader,
 }
 
+type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
-    pub fn new() -> Self {
+    pub fn with_config(config: Configuration) -> Self {
         Container {
             instances: HashMap::new(),
+            interface_threads: HashMap::new(),
+            config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
         }
     }
 
+    pub fn start_all_interfaces(&mut self) {
+        self.interface_threads = self
+            .config
+            .interfaces
+            .iter()
+            .map(|ic| (ic.id.clone(), self.spawn_interface_thread(ic.clone())))
+            .collect()
+    }
+
+    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+        self.config
+            .interface_by_id(&id)
+            .ok_or(format!("Interface does not exist: {}", id))
+            .and_then(|config| self.start_interface(&config))
+    }
+
     /// Starts all instances
-    pub fn start_all(&mut self) {
-        let _ = self.instances.iter_mut().for_each(|(id, hc)| {
-            println!("Starting instance \"{}\"...", id);
-            match hc.start() {
-                Ok(()) => println!("ok"),
-                Err(err) => println!("Error: {}", err),
-            }
-        });
+    pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        self.instances
+            .iter_mut()
+            .map(|(id, hc)| {
+                println!("Starting instance \"{}\"...", id);
+                hc.write().unwrap().start()
+            })
+            .collect::<Result<Vec<()>, _>>()
+            .map(|_| ())
     }
 
     /// Stops all instances
-    pub fn stop_all(&mut self) {
-        let _ = self.instances.iter_mut().for_each(|(id, hc)| {
-            println!("Stopping instance \"{}\"...", id);
-            match hc.stop() {
-                Ok(()) => println!("ok"),
-                Err(err) => println!("Error: {}", err),
-            }
-        });
+    pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        self.instances
+            .iter_mut()
+            .map(|(id, hc)| {
+                println!("Stopping instance \"{}\"...", id);
+                hc.write().unwrap().stop()
+            })
+            .collect::<Result<Vec<()>, _>>()
+            .map(|_| ())
     }
 
     /// Stop and clear all instances
-    pub fn shutdown(&mut self) {
-        self.stop_all();
+    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        self.stop_all_instances()?;
         self.instances = HashMap::new();
+        Ok(())
     }
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
-        self.shutdown();
+        self.shutdown().map_err(|e| e.to_string())?;
         let id_instance_pairs = config
             .instance_ids()
             .clone()
@@ -94,7 +124,8 @@ impl Container {
             .into_iter()
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
-                    self.instances.insert(id.clone(), holochain);
+                    self.instances
+                        .insert(id.clone(), Arc::new(RwLock::new(holochain)));
                     None
                 }
                 Err(error) => Some(format!(
@@ -111,6 +142,15 @@ impl Container {
         }
     }
 
+    fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
+        if self.interface_threads.contains_key(&config.id) {
+            return Err(format!("Interface {} already started!", config.id));
+        }
+        let handle = self.spawn_interface_thread(config.clone());
+        self.interface_threads.insert(config.id.clone(), handle);
+        Ok(())
+    }
+
     /// Default DnaLoader that actually reads files from the filesystem
     #[cfg_attr(tarpaulin, skip)] // This function is mocked in tests
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
@@ -119,16 +159,56 @@ impl Container {
         f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from(contents))
     }
+
+    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> ContainerApiDispatcher {
+        let InterfaceConfiguration {
+            id: _,
+            driver: _,
+            admin: _,
+            instances,
+        } = interface_config;
+        let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
+        let instance_subset: InstanceMap = self
+            .instances
+            .iter()
+            .filter(|(id, _)| instance_ids.contains(&id))
+            .map(|(id, val)| (id.clone(), val.clone()))
+            .collect();
+        ContainerApiDispatcher::new(&self.config, instance_subset)
+    }
+
+    fn spawn_interface_thread(
+        &self,
+        interface_config: InterfaceConfiguration,
+    ) -> InterfaceThreadHandle {
+        let dispatcher = self.make_dispatcher(&interface_config);
+        thread::spawn(move || {
+            let iface = make_interface(&interface_config);
+            iface.run(dispatcher)
+        })
+    }
 }
 
 impl<'a> TryFrom<&'a Configuration> for Container {
     type Error = HolochainError;
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
-        let mut container = Container::new();
+        let mut container = Container::with_config((*config).clone());
         container
             .load_config(config)
             .map_err(|string| HolochainError::ConfigError(string))?;
         Ok(container)
+    }
+}
+
+/// This can eventually be dependency injected for third party Interface definitions
+fn make_interface(
+    interface_config: &InterfaceConfiguration,
+) -> Box<Interface<ContainerApiDispatcher>> {
+    match interface_config.driver {
+        InterfaceDriver::Websocket { port } => {
+            Box::new(interface_impls::websocket::WebsocketInterface::new(port))
+        }
+        _ => unimplemented!(),
     }
 }
 
@@ -224,6 +304,13 @@ pub mod tests {
     type = "file"
     path = "tmp-storage"
 
+    [[interfaces]]
+    id = "app spec interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
     "#
     }
 
@@ -250,16 +337,16 @@ pub mod tests {
     fn test_container_load_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
-        let mut container = Container {
-            instances: HashMap::new(),
-            dna_loader: test_dna_loader(),
-        };
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
 
-        assert!(container.load_config(&config).is_ok());
+        container.load_config(&config).unwrap();
         assert_eq!(container.instances.len(), 1);
 
-        container.start_all();
-        container.stop_all();
+        container.start_all_instances().unwrap();
+        container.start_all_interfaces();
+        container.stop_all_instances().unwrap();
     }
 
     #[test]
@@ -275,5 +362,24 @@ pub mod tests {
                 "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_rpc_info_instances() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config(&config).unwrap();
+
+        let instance_config = &config.interfaces[0];
+        let dispatcher = container.make_dispatcher(&instance_config);
+        let io = dispatcher.io;
+
+        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\"tmp-storage\"}}}","id":1}"#;
+
+        assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
 }

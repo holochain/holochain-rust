@@ -164,7 +164,7 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use crate::{
-        context::{Context, mock_network_config},
+        context::{mock_network_config, Context},
         instance::{
             tests::{test_instance, TestLogger},
             Observer, RECV_DEFAULT_TIMEOUT_MS,

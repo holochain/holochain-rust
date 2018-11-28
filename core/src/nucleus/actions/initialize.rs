@@ -32,9 +32,14 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub async fn initialize_application(dna: Dna, context: &Arc<Context>) -> Result<NucleusStatus,HolochainError> {
+pub async fn initialize_application(
+    dna: Dna,
+    context: &Arc<Context>,
+) -> Result<NucleusStatus, HolochainError> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return Err(HolochainError::new("Can't trigger initialization: Nucleus status is not New"));
+        return Err(HolochainError::new(
+            "Can't trigger initialization: Nucleus status is not New",
+        ));
     }
 
     let context_clone = context.clone();
@@ -48,7 +53,7 @@ pub async fn initialize_application(dna: Dna, context: &Arc<Context>) -> Result<
 
     // Commit DNA to chain
     let dna_entry = dna.to_entry();
-    let dna_commit = await!(commit_entry(dna_entry,&context_clone));
+    let dna_commit = await!(commit_entry(dna_entry, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
@@ -65,7 +70,7 @@ pub async fn initialize_application(dna: Dna, context: &Arc<Context>) -> Result<
 
     // Commit AgentId to chain
     let agent_id_entry = context_clone.agent.to_entry();
-    let agent_id_commit = await!(commit_entry(agent_id_entry,&context_clone,));
+    let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -134,14 +139,18 @@ impl Future for InitializationFuture {
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
         {
-            return Poll::Ready(Err(HolochainError::ErrorGeneric("Timeout while initializing".to_string())));
+            return Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string(),
+            )));
         }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,
                 NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone()))),
+                NucleusStatus::InitializationFailed(ref error) => {
+                    Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
+                }
             }
         } else {
             Poll::Pending

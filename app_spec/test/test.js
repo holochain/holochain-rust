@@ -1,8 +1,11 @@
 const test = require('tape');
 const Container = require('../../nodejs_container');
 
-const app = Container.loadAndInstantiate("dist/app_spec.hcpkg")
+const app = Container.instanceFromNameAndDna("bob", "dist/app_spec.hcpkg")
 app.start()
+
+const app2 = Container.instanceFromNameAndDna("alice", "dist/app_spec.hcpkg")
+app2.start()
 
 test('call', (t) => {
   t.plan(1)
@@ -98,4 +101,20 @@ test('get_post with non-existant hash returns null', (t) => {
 
   const entry = result
   t.same(entry, null)
+})
+
+test('scenario test create&publish post -> get from other instanace', (t) => {
+    t.plan(2)
+
+    const content = "Holo world"
+    const in_reply_to = ""
+    const params = {content, in_reply_to}
+    const create_result = app.call("blog", "main", "create_post", params)
+    t.equal(create_result.address.length, 46)
+
+    const post_address = create_result.address
+    const params_get = {post_address}
+    const get_result = app2.call("blog", "main", "get_post", params_get)
+
+    t.equal(get_result.content, content)
 })

@@ -1,5 +1,12 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-#![feature(try_from, pin, arbitrary_self_types, futures_api, async_await, await_macro)]
+#![feature(
+    try_from,
+    pin,
+    arbitrary_self_types,
+    futures_api,
+    async_await,
+    await_macro
+)]
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
@@ -30,8 +37,8 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_core_types_derive;
-extern crate holochain_net_connection;
 extern crate base64;
+extern crate holochain_net_connection;
 
 pub mod action;
 pub mod agent;
@@ -45,3 +52,4 @@ pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
+pub mod workflows;

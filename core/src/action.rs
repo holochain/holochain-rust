@@ -8,9 +8,8 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError,
-    json::JsonString, link::Link,
-    validation::ValidationPackage,
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    link::Link, validation::ValidationPackage,
 };
 use snowflake;
 use std::{
@@ -113,7 +112,7 @@ pub enum Action {
 
     InitNetwork((JsonString, String, String)),
     Publish(Address),
-    Receive(Entry),
+    Hold(Entry),
 }
 
 /// function signature for action handler functions

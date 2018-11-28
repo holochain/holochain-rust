@@ -288,9 +288,9 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{Context, mock_network_config},
+        context::{mock_network_config, Context},
     };
-    use futures::{executor::block_on};
+    use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::Agent,
@@ -468,21 +468,26 @@ pub mod tests {
     /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
-        test_instance_and_context_by_name(dna,"jane")
+        test_instance_and_context_by_name(dna, "jane")
     }
 
     /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance_and_context_by_name(dna: Dna,name: &str) -> Result<(Instance, Arc<Context>), String> {
+    pub fn test_instance_and_context_by_name(
+        dna: Dna,
+        name: &str,
+    ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
         let context = test_context(name);
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-        block_on(async{
-            await!(initialize_application(dna.clone(), &context))?;
-            await!(initialize_network(&context))
-        })?;
+        block_on(
+            async {
+                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_network(&context))
+            },
+        )?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());

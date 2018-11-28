@@ -6,9 +6,7 @@ pub mod state;
 
 use crate::context::Context;
 use holochain_core_types::{
-    cas::content::AddressableContent,
-    chain_header::ChainHeader,
-    entry::Entry,
+    cas::content::AddressableContent, chain_header::ChainHeader, entry::Entry,
 };
 use std::sync::Arc;
 

@@ -3,12 +3,16 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
-extern crate tempfile;
 extern crate serde_json;
+extern crate tempfile;
 
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
-use holochain_core::{context::{Context, mock_network_config}, logger::SimpleLogger, persister::SimplePersister};
+use holochain_core::{
+    context::{mock_network_config, Context},
+    logger::SimpleLogger,
+    persister::SimplePersister,
+};
 use holochain_core_types::{agent::Agent, dna::Dna};
 use std::{
     env,

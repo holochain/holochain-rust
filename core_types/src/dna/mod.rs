@@ -32,9 +32,10 @@ use crate::{
     error::{DnaError, HolochainError},
     json::JsonString,
 };
+use multihash;
 use serde_json::{self, Value};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     convert::TryInto,
     hash::{Hash, Hasher},
 };
@@ -79,7 +80,7 @@ pub struct Dna {
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
-    pub zomes: HashMap<String, zome::Zome>,
+    pub zomes: BTreeMap<String, zome::Zome>,
 }
 
 impl Default for Dna {
@@ -92,7 +93,7 @@ impl Default for Dna {
             uuid: new_uuid(),
             dna_spec_version: String::from("2.0"),
             properties: empty_object(),
-            zomes: HashMap::new(),
+            zomes: BTreeMap::new(),
         }
     }
 }
@@ -204,6 +205,12 @@ impl Dna {
             }
         }
         None
+    }
+
+    pub fn multihash(&self) -> Result<Vec<u8>, HolochainError> {
+        let s = String::from(JsonString::from(self.to_owned()));
+        multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
+            .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
     }
 }
 

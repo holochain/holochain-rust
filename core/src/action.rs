@@ -1,14 +1,15 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
+    network::state::NetworkState,
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, link::Link,
-    validation::ValidationPackage,
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    link::Link, validation::ValidationPackage,
 };
 use snowflake;
 use std::{
@@ -111,12 +112,17 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    InitNetwork((JsonString, String, String)),
+    Publish(Address),
+    Hold(Entry),
 }
 
 /// function signature for action handler functions
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
+pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 

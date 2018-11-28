@@ -34,6 +34,7 @@ use std::convert::TryFrom;
 use handle_crud::{
     handle_update_entry_ok, handle_remove_entry_ok, handle_remove_modified_entry_ok,
 };
+use std::{thread, time};
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {
@@ -192,6 +193,9 @@ fn handle_links_roundtrip() -> JsonString {
         Err(_) => return link_2_result.into(),
     };
     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
+
+    // hotfix - adding some sleep time because result is sensitive to dht network response
+    thread::sleep(time::Duration::from_millis(1 * 1000));
 
     hdk::get_links(&entry1_address, "test-tag").into()
 }
@@ -405,7 +409,7 @@ define_zome! {
                     },
                     validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
                         Ok(())
-            }
+                    }
                 )
             ]
         ),

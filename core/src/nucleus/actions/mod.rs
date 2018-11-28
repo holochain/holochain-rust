@@ -8,13 +8,16 @@ pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        instance::{tests::test_instance_and_context, Instance},
+        instance::{tests::test_instance_and_context_by_name, Instance},
     };
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
+        dna::{
+            zome::{capabilities::Capability, entry_types::EntryTypeDef},
+            Dna,
+        },
         entry::{entry_type::EntryType, Entry},
     };
     use std::sync::Arc;
@@ -22,6 +25,11 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
+        instance_by_name("jane", test_dna())
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_dna() -> Dna {
         // Setup the holochain instance
         let wasm =
             create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
@@ -48,11 +56,14 @@ pub mod tests {
             .unwrap()
             .entry_types
             .insert(String::from("package_chain_full"), EntryTypeDef::new());
+        dna
+    }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
         let (instance, context) =
-            test_instance_and_context(dna).expect("Could not create test instance");
+            test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
-
         (instance, initialized_context)
     }
 
@@ -89,12 +100,7 @@ pub mod tests {
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain();
 
-        let commit_result = block_on(commit_entry(
-            entry.clone(),
-            None,
-            &context.clone().action_channel,
-            &context.clone(),
-        ));
+        let commit_result = block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());
 
         let top_header = context.state().unwrap().agent().top_chain_header();
@@ -103,4 +109,12 @@ pub mod tests {
             .find(|ref header| *header.entry_address() == entry.address())
             .expect("Couldn't find header in chain for given entry")
     }
+
+    // smoke test just to make sure our testing code works.
+    #[test]
+    pub fn can_instantiate_test_instance() {
+        let (instance, _context) = instance();
+        assert!(instance.state().nucleus().has_initialized());
+    }
+
 }

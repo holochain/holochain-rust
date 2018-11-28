@@ -164,7 +164,7 @@ pub mod tests {
 
     use self::tempfile::tempdir;
     use crate::{
-        context::Context,
+        context::{mock_network_config, Context},
         instance::{
             tests::{test_instance, TestLogger},
             Observer, RECV_DEFAULT_TIMEOUT_MS,
@@ -189,7 +189,6 @@ pub mod tests {
         error::{DnaError, HolochainError},
         json::JsonString,
     };
-    use holochain_net::p2p_network::P2pNetwork;
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::sync::{
@@ -225,20 +224,6 @@ pub mod tests {
             .into_bytes()
     }
 
-    /// create a test network
-    #[cfg_attr(tarpaulin, skip)]
-    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-        let res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            })
-            .into(),
-        )
-        .unwrap();
-        Arc::new(Mutex::new(res))
-    }
-
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
@@ -254,7 +239,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                make_mock_net(),
+                mock_network_config(),
             )
             .unwrap(),
         )

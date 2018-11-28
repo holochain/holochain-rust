@@ -132,7 +132,7 @@ where
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite {
             cas_clone: cas.clone(),
-            cas: cas,
+            cas,
         }
     }
 

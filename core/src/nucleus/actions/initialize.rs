@@ -10,15 +10,13 @@ use crate::{
     },
 };
 use futures::{
-    executor::block_on,
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{dna::Dna, entry::ToEntry};
+use holochain_core_types::{dna::Dna, entry::ToEntry, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
-    thread,
     time::*,
 };
 
@@ -34,18 +32,18 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> InitializationFuture {
+pub async fn initialize_application(
+    dna: Dna,
+    context: &Arc<Context>,
+) -> Result<NucleusStatus, HolochainError> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return InitializationFuture {
-            context: context.clone(),
-            created_at: Instant::now(),
-            error: Some("Can't trigger initialization: Nucleus status is not New".to_string()),
-        };
+        return Err(HolochainError::new(
+            "Can't trigger initialization: Nucleus status is not New",
+        ));
     }
 
     let context_clone = context.clone();
 
-    thread::spawn(move || {
         let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
         dispatch_action_and_wait(
             &context_clone.action_channel,
@@ -55,45 +53,30 @@ pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> Initia
 
         // Commit DNA to chain
         let dna_entry = dna.to_entry();
-        let dna_commit = block_on(commit_entry(
-            dna_entry,
-            None,
-            &context_clone.action_channel.clone(),
-            &context_clone,
-        ));
-
+    let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
+    if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
-        #[cfg_attr(tarpaulin, skip)]
-        {
-            if dna_commit.is_err() {
                 context_clone
                     .action_channel
                     .send(ActionWrapper::new(Action::ReturnInitializationResult(
                         Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
-                return;
-            };
+        return Err(HolochainError::new("error committing DNA"));
         }
 
         // Commit AgentId to chain
         let agent_id_entry = context_clone.agent.to_entry();
-        let agent_id_commit = block_on(commit_entry(
-            agent_id_entry,
-            None,
-            &context_clone.action_channel.clone(),
-            &context_clone,
-        ));
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
 
         // Let initialization fail if AgentId could not be committed.
         // Currently this cannot happen since ToEntry for Agent always creates
         // an entry from an Agent object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
-        #[cfg_attr(tarpaulin, skip)]
-        {
+
             if agent_id_commit.is_err() {
                 context_clone
                     .action_channel
@@ -101,8 +84,7 @@ pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> Initia
                         Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
                     )))
                     .expect("Action channel not usable in initialize_application()");
-                return;
-            };
+        return Err(HolochainError::new("error committing Agent"));
         }
 
         // map genesis across every zome
@@ -128,13 +110,11 @@ pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> Initia
                 maybe_error,
             )))
             .expect("Action channel not usable in initialize_application()");
-    });
 
-    InitializationFuture {
+    await!(InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
-        error: None,
-    }
+    })
 }
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
@@ -142,18 +122,14 @@ pub fn initialize_application<'a>(dna: Dna, context: &'a Arc<Context>) -> Initia
 pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
-    error: Option<String>,
 }
 
 impl Unpin for InitializationFuture {}
 
 impl Future for InitializationFuture {
-    type Output = Result<NucleusStatus, String>;
+    type Output = Result<NucleusStatus, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        if let Some(ref error) = self.error {
-            return Poll::Ready(Err(error.clone()));
-        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
@@ -163,14 +139,18 @@ impl Future for InitializationFuture {
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
         {
-            return Poll::Ready(Err("Timeout while initializing".to_string()));
+            return Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string(),
+            )));
         }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,
                 NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Poll::Ready(Err(error.clone())),
+                NucleusStatus::InitializationFailed(ref error) => {
+                    Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
+                }
             }
         } else {
             Poll::Pending

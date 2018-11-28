@@ -8,13 +8,16 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
-futures-preview = "0.2.2"
+futures-preview = "0.3.0-alpha.9"
 tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 toml = "0.4.8"
 boolinator = "2.4"
+tiny_http = "0.6.0"
+jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

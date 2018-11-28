@@ -1,5 +1,7 @@
-use error::error::HolochainError;
-use json::{default_try_from_json, JsonString};
+use crate::{
+    error::error::HolochainError,
+    json::{default_try_from_json, JsonString},
+};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
 use std::{convert::TryFrom, fmt};
@@ -65,8 +67,10 @@ impl HashString {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cas::content::AddressableContent;
-    use entry::{expected_entry_address, test_entry};
+    use crate::{
+        cas::content::AddressableContent,
+        entry::{expected_entry_address, test_entry},
+    };
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()

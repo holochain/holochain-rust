@@ -60,7 +60,7 @@
 //!
 //!```
 
-use error::{HolochainInstanceError, HolochainResult};
+use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
     context::Context,
@@ -87,7 +87,7 @@ impl Holochain {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-        match block_on(initialize_application(dna, context.clone())) {
+        match block_on(initialize_application(dna, &context.clone())) {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;
                 let hc = Holochain {
@@ -157,7 +157,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&mut self) -> Result<State, HolochainInstanceError> {
+    pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
 }
@@ -192,8 +192,10 @@ mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
         Arc::new(Mutex::new(res))
     }
 
@@ -217,10 +219,12 @@ mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
                     make_mock_net(),
-                ).unwrap(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -384,7 +388,7 @@ mod tests {
     fn can_get_state() {
         let dna = Dna::new();
         let (context, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
         assert!(result.is_ok());

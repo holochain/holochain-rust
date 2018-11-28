@@ -1,7 +1,6 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
-use socket::IpcSocket;
-use util::get_millis;
+use crate::{socket::IpcSocket, util::get_millis};
 
 use std::{thread, time};
 
@@ -161,7 +160,7 @@ mod tests {
 
     use std::sync::mpsc;
 
-    use socket::{make_test_channels, MockIpcSocket};
+    use crate::socket::{make_test_channels, MockIpcSocket};
 
     #[test]
     fn it_ipc_message_flow() {
@@ -187,7 +186,8 @@ mod tests {
                 }),
                 s,
                 true,
-            ).unwrap(),
+            )
+            .unwrap(),
         );
 
         cli.tick().unwrap();

@@ -31,6 +31,14 @@ pub struct App {
     hash: String,
 }
 
+impl App {
+
+    pub fn hash(&self) -> String {
+        self.hash.clone()
+    }
+
+}
+
 declare_types! {
     pub class JsApp for App {
         init(mut ctx) {
@@ -53,8 +61,8 @@ declare_types! {
                 agent,
                 Arc::new(Mutex::new(NullLogger {})),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                Arc::new(RwLock::new(MemoryStorage::new().unwrap())),
-                Arc::new(RwLock::new(EavMemoryStorage::new().unwrap())),
+                Arc::new(RwLock::new(MemoryStorage::new())),
+                Arc::new(RwLock::new(EavMemoryStorage::new())),
                 mock_net,
             ).unwrap();
 

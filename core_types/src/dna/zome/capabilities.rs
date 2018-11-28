@@ -222,7 +222,8 @@ mod tests {
                     }
                 ]
             }"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut cap = Capability::new();
         let mut fn_dec = FnDeclaration::new();

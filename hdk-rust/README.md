@@ -5,12 +5,12 @@
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
 
 ## Overview
-`hdk-rust` is a library for Rust-based holochain dApps that makes it easier to develop Holochain Zomes. With Holochain, Zome functions and validation code are represented as WASM binaries. This library provides bindings for Rust.
+`hdk-rust` is a library for Rust-based hApps that makes it easier to develop Holochain Zomes. With Holochain, Zome functions and validation code are represented as WASM binaries. This library provides bindings for Rust.
 
 ## Usage
 First, [Rust](https://www.rust-lang.org/en-US/install.html) must be installed on your computer.
 
-Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate. When you generate Rust based Zomes with [holochain-cmd](https://github.com/holochain/holochain-cmd) it will automatically be added as a dependency, and imported into your code.
+Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate. When you generate Rust based Zomes with [hc](https://github.com/holochain/holochain-rust/tree/develop/cmd) it will automatically be added as a dependency, and imported into your code.
 
 To see the documentation for usage, check out https://holochain.github.io/rust-api/0.0.1/hdk
 

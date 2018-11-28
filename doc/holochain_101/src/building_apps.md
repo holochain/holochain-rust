@@ -8,15 +8,15 @@ However, writing your application in a single file, as a developer, would not be
 
 While there are lots of details to learn about Holochain and DNA, it can be useful to first look from a general perspective.
 
-[TODO: insert note about use of biological language throughout. imperfect but the closest thing]
-
 ## Holochain and DNA
 
 Recall that a goal of Holochain is to enable cryptographically secured, tamper-proof peer-to-peer applications. DNA files play a fundamental role in enabling this. Imagine that we think of an application, and its users, as a game. When people play any game, it's important that they play by the same rules, otherwise, they are actually playing different games. With Holochain, a DNA file contains the complete set of rules and logic for an application. Thus, when users independently run an app with identical DNA, they are playing the same game: running the same application with cryptographic security.
 
 What this allows in technical terms is that these independent users begin sharing data with one another, and validating one anothers data. Thus, users can interact with the data in this distributed peer-to-peer system with full confidence in the integrity of that data.
 
-The key takeaway from this is that if you change the DNA (the configuration, validation rules, and application logic), and a user runs it, they are basically running a different app. If this brings up questions for you about updating your application to different versions, good catch. This concern will be addressed later in this section. For now, take a look at DNA in closer detail.
+The key takeaway from this is that if you change the DNA (the configuration, validation rules, and application logic), and a user runs it, they are basically running a different app. If this brings up questions for you about updating your application to different versions, good catch. This concern will be addressed later in this section.
+
+Before exploring the details of Holochain DNA, take a minute to explore the different platforms that you can target with Holochain.
 
 
 

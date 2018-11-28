@@ -17,11 +17,11 @@ use holochain_core_types::{
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{entry_type::test_entry_type, Entry, SerializedEntry},
-    error::{CoreError, HcResult, HolochainError, ZomeApiInternalResult},
+    error::{CoreError, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+//use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 

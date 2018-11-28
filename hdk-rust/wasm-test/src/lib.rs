@@ -29,7 +29,6 @@ use holochain_wasm_utils::{
     memory_serialization::*,
 };
 use std::convert::TryFrom;
-use std::{thread, time};
 
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> JsonString {

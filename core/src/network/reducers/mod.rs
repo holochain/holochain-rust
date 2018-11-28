@@ -14,8 +14,8 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        crate::action::Action::Publish(_) => Some(reduce_publish),
         Action::InitNetwork(_) => Some(reduce_init),
+        Action::Publish(_) => Some(reduce_publish),
         _ => None,
     }
 }

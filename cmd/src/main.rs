@@ -98,7 +98,7 @@ enum Cli {
         #[structopt(
             long = "port",
             short = "w",
-            help = "The port to run the websocket server at",
+            help = "The port to run the websocket server at"
         )]
         port: Option<u16>,
         #[structopt(

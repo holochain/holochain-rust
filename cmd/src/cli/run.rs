@@ -1,9 +1,6 @@
 use cli::{self, package};
 use error::DefaultResult;
-use holochain_container_api::{
-    config::*,
-    container::Container,
-};
+use holochain_container_api::{config::*, container::Container};
 
 /// Starts a small container with the current application running
 pub fn run(package: bool, port: u16) -> DefaultResult<()> {
@@ -23,7 +20,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     };
 
     let instance_config = InstanceConfiguration {
-        id: "hc-run-instance".into(),
+        id: "test-instance".into(),
         dna: "hc-run-dna".into(),
         agent: "hc-run-agent".into(),
         logger: Default::default(),
@@ -35,7 +32,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
         driver: InterfaceDriver::Websocket { port: port },
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
-            id: "hc-run-instance".into()
+            id: "test-instance".into(),
         }],
     };
 
@@ -47,12 +44,19 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
         ..Default::default()
     };
 
-    let mut container = Container::with_config(base_config);
+    let mut container = Container::with_config(base_config.clone());
+
+    container
+        .load_config(&base_config)
+        .or_else(|err| Err(format_err!("{}", err)))?;
 
     container.start_all_interfaces();
     container.start_all_instances()?;
 
-    println!("Holochain development container started. Running websocket server on port {}", port);
+    println!(
+        "Holochain development container started. Running websocket server on port {}",
+        port
+    );
     println!("Type 'exit' to stop the container and exit the program");
 
     let mut rl = rustyline::Editor::<()>::new();
@@ -62,7 +66,10 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
 
         match readline.as_str() {
             "exit" => break,
-            _ => println!("command {:?} not recognized. Available commands are: exit", readline)
+            _ => println!(
+                "command {:?} not recognized. Available commands are: exit",
+                readline
+            ),
         }
     }
 

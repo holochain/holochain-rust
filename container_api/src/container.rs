@@ -4,10 +4,13 @@ use crate::{
     Holochain,
 };
 use holochain_cas_implementations::{
-    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
+    cas::{file::FilesystemStorage, memory::MemoryStorage},
+    eav::{file::EavFileStorage, memory::EavMemoryStorage},
+    path::create_path_if_not_exists,
 };
 use holochain_core::context::Context;
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use tempfile::tempdir;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::Agent;
@@ -235,10 +238,22 @@ fn instantiate_from_config(
                 ))
             })?;
 
+            let network = P2pNetwork::new(
+                Box::new(|_r| Ok(())),
+                &json!({
+                    "backend": "mock"
+                })
+                .into(),
+            )
+            .unwrap();
+
             let context: Context = match instance_config.storage {
-                StorageConfiguration::File { path } => create_context(&agent_config.id, &path)
+                StorageConfiguration::File { path } => {
+                    create_file_context(&agent_config.id, &path, network)
+                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
+                }
+                StorageConfiguration::Memory => create_memory_context(&agent_config.id, network)
                     .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
-                _ => Err("Only file storage supported currently".to_string()),
             }?;
 
             Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
@@ -252,21 +267,33 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> {
+fn create_memory_context(_: &String, network: P2pNetwork) -> Result<Context, HolochainError> {
+    let agent = Agent::generate_fake("c+bob");
+    let tempdir = tempdir().unwrap();
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
+
+    Context::new(
+        agent,
+        Arc::new(Mutex::new(NullLogger {})),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        Arc::new(RwLock::new(MemoryStorage::new())),
+        Arc::new(RwLock::new(EavMemoryStorage::new())),
+        Arc::new(Mutex::new(network)),
+    )
+}
+
+fn create_file_context(
+    _: &String,
+    path: &String,
+    network: P2pNetwork,
+) -> Result<Context, HolochainError> {
     let agent = Agent::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
-
-    let res = P2pNetwork::new(
-        Box::new(|_r| Ok(())),
-        &json!({
-            "backend": "mock"
-        })
-        .into(),
-    )
-    .unwrap();
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
 
@@ -276,7 +303,7 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         file_storage.clone(),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
-        Arc::new(Mutex::new(res)),
+        Arc::new(Mutex::new(network)),
     )
 }
 

@@ -30,7 +30,10 @@ pub fn reduce_publish(
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
-    if network_state.network.is_none() || network_state.dna_hash.is_none() || network_state.agent_id.is_none() {
+    if network_state.network.is_none()
+        || network_state.dna_hash.is_none()
+        || network_state.agent_id.is_none()
+    {
         return;
     }
 
@@ -89,12 +92,12 @@ pub fn reduce_publish(
 #[cfg(test)]
 mod tests {
 
-    use crate::action::ActionWrapper;
-    use crate::action::Action;
-    use crate::state::test_store;
-    use crate::instance::tests::test_context;
-    use holochain_core_types::cas::content::AddressableContent;
-    use holochain_core_types::entry::test_entry;
+    use crate::{
+        action::{Action, ActionWrapper},
+        instance::tests::test_context,
+        state::test_store,
+    };
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
     pub fn reduce_publish_test() {
@@ -104,11 +107,7 @@ mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
-        store.reduce(
-            context.clone(),
-            action_wrapper,
-        );
-
+        store.reduce(context.clone(), action_wrapper);
     }
 
 }

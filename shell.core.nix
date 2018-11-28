@@ -20,6 +20,9 @@ let
 
   hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
+
+  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
+  hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
@@ -37,6 +40,9 @@ stdenv.mkDerivation rec {
     hc-wasm-build
     hc-test
     hc-test-cmd
+
+    hc-fmt
+    hc-fmt-check
 
     zeromq
   ];

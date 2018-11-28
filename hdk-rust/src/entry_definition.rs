@@ -213,7 +213,7 @@ macro_rules! entry {
                 links: vec![
                     $($(
                         $link_expr
-                    )*),*
+                    ),*)*
                 ],
             }
         }

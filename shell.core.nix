@@ -44,10 +44,6 @@ with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
-  /* buildNodejs {
-    version = "8.13.0";
-  }; */
-
   buildInputs = [
     cmake
     python
@@ -55,12 +51,6 @@ stdenv.mkDerivation rec {
     zeromq
     rust-build
 
-    /* nodejs */
-    /* buildNodejs */
-    /* nodejs-8_x */
-    /* node */
-    /* nodejs-10_x */
-    /* nodejs */
     nodejs-8_13
     yarn
 

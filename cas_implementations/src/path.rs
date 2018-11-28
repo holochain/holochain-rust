@@ -39,7 +39,7 @@ pub mod tests {
 
     #[test]
     fn test_create_path_if_not_exists() {
-        let bad_path = storage_path(Path::new("/foo"), "bar").unwrap();
+        let bad_path = storage_path(Path::new("/*?abc"), "bar").unwrap();
         let result = create_path_if_not_exists(&bad_path);
         match result {
             Ok(()) => panic!("expected error"),

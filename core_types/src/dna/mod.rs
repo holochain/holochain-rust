@@ -32,6 +32,7 @@ use crate::{
     error::{DnaError, HolochainError},
     json::JsonString,
 };
+use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::HashMap,
@@ -204,6 +205,12 @@ impl Dna {
             }
         }
         None
+    }
+
+    pub fn multihash(&self) -> Result<Vec<u8>, HolochainError> {
+        let s = String::from(JsonString::from(self.to_owned()));
+        multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
+            .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
     }
 }
 

@@ -141,6 +141,12 @@ impl From<HolochainError> for String {
     }
 }
 
+impl From<String> for HolochainError {
+    fn from(error: String) -> Self {
+        HolochainError::ErrorGeneric(error)
+    }
+}
+
 /// standard strings for std io errors
 fn reason_for_io_error(error: &IoError) -> String {
     match error.kind() {

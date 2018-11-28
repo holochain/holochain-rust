@@ -3,15 +3,17 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
-extern crate tempfile;
-#[macro_use]
 extern crate serde_json;
+extern crate tempfile;
 
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
-use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
+use holochain_core::{
+    context::{mock_network_config, Context},
+    logger::SimpleLogger,
+    persister::SimplePersister,
+};
 use holochain_core_types::{agent::Agent, dna::Dna};
-use holochain_net::p2p_network::P2pNetwork;
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},
@@ -24,20 +26,6 @@ use tempfile::tempdir;
 fn usage() {
     println!("Usage: holochain_test_bin <identity>");
     std::process::exit(1);
-}
-
-/// create a test network
-#[cfg_attr(tarpaulin, skip)]
-fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-    let res = P2pNetwork::new(
-        Box::new(|_r| Ok(())),
-        &json!({
-            "backend": "mock"
-        })
-        .into(),
-    )
-    .unwrap();
-    Arc::new(Mutex::new(res))
 }
 
 // this is all debug code, no need to track code test coverage
@@ -72,7 +60,7 @@ fn main() {
         Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
-        make_mock_net(),
+        mock_network_config(),
     )
     .expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();

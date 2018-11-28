@@ -153,7 +153,7 @@ macro_rules! entry {
         $(
             ,
             links : [
-                $($link_expr:expr,)*
+                $($link_expr:expr)*
             ]
         )*
 

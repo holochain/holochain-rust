@@ -9,6 +9,7 @@
 
 all: lint build_holochain build_cmd
 
+SHELL = /bin/bash
 CORE_RUST_VERSION ?= nightly-2018-11-28
 TOOLS_RUST_VERSION ?= nightly-2018-11-28
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
@@ -38,18 +39,18 @@ lint: fmt_check clippy
 # Check if Rust version is correct, and offer to uninstall mismatching version.  Requires
 # RUST_VERSION to be set (defaults to CORE_RUST_VERSION; see install_rustup..., below).  We'll
 # export PATH to default Rust installation here in the Makefile, in case this is the first time
-# rustup has been run, and we don't have a rustup-modified .profile loaded yet.  If not a terminal
-# (stin is not a tty), defaults to not replace.
+# rustup has been run, and we don't have a rustup-modified .profile loaded yet.  If connected to a terminal
+# (stdin is a tty) and not running under a Continuous Integration test (CI), defaults to not replace.
 export PATH := $(HOME)/.cargo/bin:$(PATH)
 RUST_VERSION = $(CORE_RUST_VERSION)
 .PHONY: version_rustup
 version_rustup:
 	@if which rustup; then \
-	    echo "\033[0;93m## Current Rust version installed: ##\033[0m"; \
+	    echo "\033[0;93m## Current Rust version installed (need: '$(RUST_VERSION)'): ##\033[0m"; \
 	    if ! rustup show | grep "$(RUST_VERSION)"; then \
 	        rustup show; \
 		echo "\033[0;93m## Replace current Rust version (after rustup self uninstall) with '$(RUST_VERSION)' ##\033[0m"; \
-	        [ -t 0 ] && read -p "Continue? (y/N) " yes; \
+	        [ -t 1 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (y/N) " yes; \
 	        if [[ "$${yes:0:1}" == "y" ]] || [[ "$${yes:0:1}" == "Y" ]]; then \
 	            echo "\033[0;93m## Uninstalling Rust... ##\033[0m"; \
 	            rustup self uninstall || true; \

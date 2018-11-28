@@ -18,6 +18,7 @@ cobertura.xml
 
 .idea
 .DS_Store
+*~
 /**/Makefile
 !/Makefile
 .vs

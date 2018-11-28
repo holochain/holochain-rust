@@ -855,7 +855,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.
-/// entry_type_name: Specify type of entry to retrieve
+/// entry_type_names: Specify type of entry(s) to retrieve, as a Vec<String> of 0 or more names.
 /// limit: Max number of entries to retrieve
 /// # Examples
 /// ```rust
@@ -867,18 +867,18 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 ///
 /// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
-///     hdk::query("post", 0, 0)
+///     hdk::query("post".into(), 0, 0)
 /// }
 /// # }
 /// ```
-pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
+pub fn query(entry_type_names: Vec<String>, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(
         &mut mem_stack,
         QueryArgs {
-            entry_type_name: entry_type_name.to_string(),
+            entry_type_names,
             start,
             limit,
         },

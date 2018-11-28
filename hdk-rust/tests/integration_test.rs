@@ -529,7 +529,7 @@ fn can_check_query() {
         "test_zome",
         "test_cap",
         "check_query",
-        r#"{ "entry_type_name": "testEntryType", "limit": "0" }"#,
+        r#"{ "entry_type_names": ["testEntryType"], "limit": "0" }"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
 

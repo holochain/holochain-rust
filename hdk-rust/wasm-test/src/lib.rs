@@ -168,26 +168,27 @@ fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
+    println!("handle_check_query");
     fn err(s: &str) -> ZomeApiResult<Vec<Address>> {
         Err(ZomeApiError::Internal(s.to_owned()))
     }
 
     // Query DNA entry
-    let addresses = hdk::query(&EntryType::Dna.to_string(), 0, 0).unwrap();
+    let addresses = hdk::query(vec![EntryType::Dna.to_string()], 0, 0).unwrap();
 
     if !addresses.len() == 1 {
         return err("Dna Addresses not length 1");
     }
 
     // Query AgentId entry
-    let addresses = hdk::query(&EntryType::AgentId.to_string(), 0, 0).unwrap();
+    let addresses = hdk::query(vec![EntryType::AgentId.to_string()], 0, 0).unwrap();
 
     if !addresses.len() == 1 {
         return err("AgentId Addresses not length 1");
     }
 
     // Query unknown entry
-    let addresses = hdk::query("bad_type", 0, 0).unwrap();
+    let addresses = hdk::query(vec!["bad_type".to_string()], 0, 0).unwrap();
 
     if !addresses.len() == 0 {
         return err("bad_type Addresses not length 1");
@@ -202,7 +203,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
         .into(),
     ))
     .unwrap();
-    let addresses = hdk::query("testEntryType", 0, 1).unwrap();
+    let addresses = hdk::query(vec!["testEntryType".to_string()], 0, 1).unwrap();
 
     if !addresses.len() == 1 {
         return err("testEntryType Addresses not length 1");
@@ -226,13 +227,13 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     ))
     .unwrap();
 
-    let addresses = hdk::query("testEntryType", 0, 0).unwrap();
+    let addresses = hdk::query(vec!["testEntryType".to_string()], 0, 0).unwrap();
 
     if !addresses.len() == 3 {
         return err("testEntryType Addresses not length 3");
     }
 
-    hdk::query("testEntryType", 0, 1)
+    hdk::query(vec!["testEntryType".to_string()], 0, 1)
 }
 
 fn handle_check_app_entry_address() -> ZomeApiResult<Address> {

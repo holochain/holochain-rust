@@ -357,8 +357,11 @@ pub mod tests {
     #[test]
     fn test_container_load_config() {
         let dir = tempdir().unwrap();
+        println!("TEMPDR");
         let path = dir.path().to_string_lossy().to_string();
+        println!("PATH:{}",path);
         let config = test_configuration(path);
+        println!("CONFIG:{}",config.instances[0].id);
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -370,6 +373,7 @@ pub mod tests {
         container.start_all_instances().unwrap();
         container.start_all_interfaces();
         container.stop_all_instances().unwrap();
+        panic!("fish");
     }
 
     #[test]

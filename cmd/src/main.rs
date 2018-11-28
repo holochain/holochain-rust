@@ -98,9 +98,10 @@ enum Cli {
         #[structopt(
             long,
             short,
-            help = "The port to run the websocket server at"
+            help = "The port to run the websocket server at",
+            default_value = "8888"
         )]
-        port: Option<u16>,
+        port: u16,
         #[structopt(
             long,
             short = "b",
@@ -159,10 +160,8 @@ fn run() -> HolochainResult<()> {
             cli::generate(&zome, &language).map_err(|err| HolochainError::Default(err))?
         }
         Cli::Run { package, port } => {
-            let port_or_default = port.unwrap_or(8888);
-            cli::run(package, port_or_default).map_err(|err| HolochainError::Default(err))?
+            cli::run(package, port).map_err(|err| HolochainError::Default(err))?
         }
-        Cli::Run { package } => cli::run(package).map_err(|err| HolochainError::Default(err))?,
         Cli::Test {
             dir,
             testfile,

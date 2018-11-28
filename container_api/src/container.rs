@@ -301,7 +301,7 @@ pub mod tests {
 
     fn test_toml(storage_path: &str) -> String {
         format!(
-        r#"
+            r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -330,7 +330,9 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,storage_path)
+    "#,
+            storage_path
+        )
     }
 
     //#[test]

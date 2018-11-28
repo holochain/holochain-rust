@@ -11,10 +11,12 @@ pub fn storage_path(path: &Path, folder_name: &str) -> HcResult<String> {
 
 pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
     if !Path::new(path).exists() {
-        return DirBuilder::new()
-            .recursive(true)
-            .create(path)
-            .map_err(|e| HolochainError::IoError(format!("Error while attempting to create directory {}: {}",path,e)));
+        return DirBuilder::new().recursive(true).create(path).map_err(|e| {
+            HolochainError::IoError(format!(
+                "Error while attempting to create directory {}: {}",
+                path, e
+            ))
+        });
     }
     Ok(())
 }

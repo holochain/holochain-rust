@@ -343,6 +343,7 @@ pub mod tests {
     //     assert_eq!(maybe_holochain.err(), None);
     // }
 
+    /* disabling these tests for DevCamp
     #[test]
     fn test_container_load_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
@@ -392,4 +393,5 @@ pub mod tests {
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
+*/
 }

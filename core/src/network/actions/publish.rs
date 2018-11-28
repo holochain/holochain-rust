@@ -61,7 +61,7 @@ impl Future for PublishFuture {
                 Ok(address) => Poll::Ready(Ok(address.to_owned())),
                 Err(error) => Poll::Ready(Err(error.clone())),
             },
-            None => Poll::Pending,
+            _ => Poll::Pending,
         }
     }
 }

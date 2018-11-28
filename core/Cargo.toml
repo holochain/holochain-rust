@@ -30,6 +30,7 @@ holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_net_connection = { path = "../net_connection" }
 base64 = "*"
+boolinator = "2.4.0"
 
 [dev-dependencies]
 wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }

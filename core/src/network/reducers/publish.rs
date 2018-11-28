@@ -1,69 +1,29 @@
+use boolinator::*;
 use crate::{
     action::ActionWrapper,
-    agent::chain_header,
     context::Context,
-    network::{actions::ActionResponse, state::NetworkState, EntryWithHeader},
+    network::{actions::ActionResponse, state::NetworkState, util},
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{Entry, SerializedEntry},
+    chain_header::ChainHeader,
+    entry::{entry_type::EntryType, Entry, ToEntry},
     error::HolochainError,
+    link::link_add::LinkAddEntry,
 };
 use holochain_net_connection::{
     net_connection::NetConnection,
-    protocol_wrapper::{DhtData, ProtocolWrapper},
+    protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper},
 };
-use std::{convert::TryInto, sync::Arc};
+use std::sync::Arc;
 
-fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
-    let json = context
-        .file_storage
-        .read()?
-        .fetch(address)?
-        .ok_or("Entry not found".to_string())?;
-    let s: SerializedEntry = json.try_into()?;
-    Ok(s.into())
-}
-
-pub fn reduce_publish(
-    context: Arc<Context>,
+fn publish_entry(
     network_state: &mut NetworkState,
-    action_wrapper: &ActionWrapper,
-) {
-    if network_state.network.is_none()
-        || network_state.dna_hash.is_none()
-        || network_state.agent_id.is_none()
-    {
-        return;
-    }
+    entry: &Entry,
+    header: &ChainHeader,
+) -> Result<(), HolochainError> {
+    let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
 
-    let action = action_wrapper.action();
-    let address = unwrap_to!(action => crate::action::Action::Publish);
-
-    let result = entry_from_cas(address, &context);
-    if result.is_err() {
-        return;
-    };
-
-    let (entry, maybe_header) = result
-        .map(|entry| {
-            let header = chain_header(&entry, &context);
-            (entry, header)
-        })
-        .unwrap();
-
-    if maybe_header.is_none() {
-        // We don't have the entry in our source chain?!
-        // Don't publish
-        return;
-    }
-
-    let entry_with_header = EntryWithHeader {
-        entry: entry.serialize(),
-        header: maybe_header.unwrap(),
-    };
-
-    //let header = maybe_header.unwrap();
     let data = DhtData {
         msg_id: "?".to_string(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
@@ -72,18 +32,84 @@ pub fn reduce_publish(
         content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
     };
 
-    let response = match network_state.network {
-        None => unreachable!(),
-        Some(ref network) => network
-            .lock()
-            .unwrap()
-            .send(ProtocolWrapper::PublishDht(data).into()),
+    network_state
+        .network
+        .as_mut()
+        .map(|network| {
+            network
+                .lock()
+                .unwrap()
+                .send(ProtocolWrapper::PublishDht(data).into())
+                .map_err(|error| HolochainError::IoError(error.to_string()))
+        })
+        .expect("Network has to be Some because of check above")
+}
+
+fn publish_link(
+    network_state: &mut NetworkState,
+    entry: &Entry,
+    header: &ChainHeader,
+) -> Result<(), HolochainError> {
+    let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
+    let link_add_entry = LinkAddEntry::from_entry(&entry);
+    let link = link_add_entry.link().clone();
+
+    //let header = maybe_header.unwrap();
+    let data = DhtMetaData {
+        msg_id: "?".to_string(),
+        dna_hash: network_state.dna_hash.clone().unwrap(),
+        agent_id: network_state.agent_id.clone().unwrap(),
+        address: link.base().to_string(),
+        attribute: String::from("link"),
+        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
     };
+
+    network_state
+        .network
+        .as_mut()
+        .map(|network| {
+            network
+                .lock()
+                .unwrap()
+                .send(ProtocolWrapper::PublishDhtMeta(data).into())
+                .map_err(|error| HolochainError::IoError(error.to_string()))
+        })
+        .expect("Network has to be Some because of check above")
+}
+
+fn inner(
+    context: &Arc<Context>,
+    network_state: &mut NetworkState,
+    address: &Address,
+) -> Result<(), HolochainError> {
+    (network_state.network.is_some()
+        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
+    .ok_or("Network not initialized".to_string())?;
+
+    let (entry, header) = util::entry_with_header(&address, &context)?;
+
+    match entry.entry_type() {
+        EntryType::App(_) => publish_entry(network_state, &entry, &header),
+        EntryType::LinkAdd => publish_entry(network_state, &entry, &header)
+            .and_then(|_| publish_link(network_state, &entry, &header)),
+        _ => Err(HolochainError::NotImplemented),
+    }
+}
+
+pub fn reduce_publish(
+    context: Arc<Context>,
+    network_state: &mut NetworkState,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let address = unwrap_to!(action => crate::action::Action::Publish);
+
+    let result = inner(&context, network_state, &address);
 
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Publish(match response {
-            Ok(_) => Ok(entry.address().to_owned()),
+        ActionResponse::Publish(match result {
+            Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),
     );

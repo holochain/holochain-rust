@@ -47,7 +47,7 @@ TBD (for now you just have infer from the example!)
 
 ## Limitations
 
-Currently the container only supports the `file` storage configuration, and `websocket` interface.
+Currently the container only supports the `websocket` interface.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.

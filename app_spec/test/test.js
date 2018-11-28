@@ -132,7 +132,7 @@ test('get_post with non-existant hash returns null', (t) => {
 //             ++i,
 //             app2.call("blog", "main", "get_post", params_get)
 //           )
-//         }, 50)
+//         }, 100)
 //       }
 //       else {
 //         t.end()

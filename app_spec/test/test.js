@@ -105,38 +105,38 @@ test('get_post with non-existant hash returns null', (t) => {
 
 // this test is flaky!
 // even when we loop and wait sometimes app2 never sees the published entry
-// test('scenario test create & publish post -> get from other instance', (t) => {
-//     t.plan(3)
-//
-//     const content = "Holo world"
-//     const in_reply_to = ""
-//     const params = {content, in_reply_to}
-//     const create_result = app.call("blog", "main", "create_post", params)
-//
-//     t.equal(create_result.address.length, 46)
-//     t.equal(create_result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
-//
-//     const post_address = create_result.address
-//     const params_get = {post_address}
-//
-//     const check_get_result = function check_get_result (i = 0, get_result) {
-//       t.comment('checking get result for the ' + i + 'th time')
-//       t.comment(get_result + "")
-//
-//       if (get_result) {
-//         t.equal(get_result.content, content)
-//       }
-//       else if (i < 50) {
-//         setTimeout(function() {
-//           check_get_result(
-//             ++i,
-//             app2.call("blog", "main", "get_post", params_get)
-//           )
-//         }, 100)
-//       }
-//       else {
-//         t.end()
-//       }
-//
-//     }()
-// })
+test('scenario test create & publish post -> get from other instance', (t) => {
+    t.plan(3)
+
+    const content = "Holo world"
+    const in_reply_to = ""
+    const params = {content, in_reply_to}
+    const create_result = app.call("blog", "main", "create_post", params)
+
+    t.equal(create_result.address.length, 46)
+    t.equal(create_result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
+
+    const post_address = create_result.address
+    const params_get = {post_address}
+
+    const check_get_result = function check_get_result (i = 0, get_result) {
+      t.comment('checking get result for the ' + i + 'th time')
+      t.comment(get_result + "")
+
+      if (get_result) {
+        t.equal(get_result.content, content)
+      }
+      else if (i < 50) {
+        setTimeout(function() {
+          check_get_result(
+            ++i,
+            app2.call("blog", "main", "get_post", params_get)
+          )
+        }, 100)
+      }
+      else {
+        t.end()
+      }
+
+    }()
+})

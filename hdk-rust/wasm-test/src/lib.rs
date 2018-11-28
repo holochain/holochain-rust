@@ -189,9 +189,6 @@ fn handle_links_roundtrip() -> JsonString {
     };
     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
 
-    // hotfix - adding some sleep time because result is sensitive to dht network response
-    thread::sleep(time::Duration::from_millis(1 * 1000));
-
     hdk::get_links(&entry1_address, "test-tag").into()
 }
 

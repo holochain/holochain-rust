@@ -6,7 +6,7 @@ use holochain_container_api::{
 };
 
 /// Starts a small container with the current application running
-pub fn run(package: bool) -> DefaultResult<()> {
+pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -32,7 +32,7 @@ pub fn run(package: bool) -> DefaultResult<()> {
 
     let interface_config = InterfaceConfiguration {
         id: "websocket-interface".into(),
-        driver: InterfaceDriver::Websocket { port: 8888 },
+        driver: InterfaceDriver::Websocket { port: port },
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: "hc-run-instance".into()
@@ -52,9 +52,8 @@ pub fn run(package: bool) -> DefaultResult<()> {
     container.start_all_interfaces();
     container.start_all_instances()?;
 
-    println!("Holochain development container started!");
+    println!("Holochain development container started. Running websocket server on port {}", port);
     println!("Type 'exit' to stop the container and exit the program");
-    println!();
 
     let mut rl = rustyline::Editor::<()>::new();
 

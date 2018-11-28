@@ -96,6 +96,12 @@ enum Cli {
     )]
     Run {
         #[structopt(
+            long = "port",
+            short = "w",
+            help = "The port to run the websocket server at",
+        )]
+        port: Option<u16>,
+        #[structopt(
             long,
             short,
             help = "Automatically package project before running"
@@ -152,8 +158,9 @@ fn run() -> HolochainResult<()> {
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).or_else(|err| Err(HolochainError::Default(err)))?
         }
-        Cli::Run { package } => {
-            cli::run(package).or_else(|err| Err(HolochainError::Default(err)))?
+        Cli::Run { package, port } => {
+            let port_or_default = port.unwrap_or(8888);
+            cli::run(package, port_or_default).or_else(|err| Err(HolochainError::Default(err)))?
         }
         Cli::Test {
             dir,

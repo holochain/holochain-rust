@@ -303,7 +303,7 @@ fn create_file_context(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    //    use crate::config::load_configuration;
+    use crate::config::load_configuration;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -311,18 +311,18 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    /*    fn test_toml<'a>() -> &'a str {
+    fn test_toml<'a>() -> &'a str {
         r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
     key_file = "holo_tester.key"
-    
+
     [[dnas]]
     id = "app spec rust"
     file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
-    
+
     [[instances]]
     id = "app spec instance"
     dna = "app spec rust"
@@ -331,9 +331,8 @@ pub mod tests {
     type = "simple"
     file = "app_spec.log"
     [instances.storage]
-    type = "file"
-    path = "tmp-storage"
-    
+    type = "memory"
+
     [[interfaces]]
     id = "app spec interface"
     [interfaces.driver]
@@ -343,76 +342,67 @@ pub mod tests {
     id = "app spec instance"
     "#
     }
-     */
 
-    //#[test]
-    // TODO
-    // Deactivating this test because tests running in parallel creating Holochain instances
-    // currently fail with:
-    // "Error creating context: Failed to create actor in system: Failed to create actor.
-    // Cause: An actor at the same path already exists"
-    // This needs to be fixed in another PR.
-    // #[cfg_attr(tarpaulin, skip)]
-    // fn test_instantiate_from_config() {
-    //     let config = load_configuration::<Configuration>(test_toml()).unwrap();
-    //     let maybe_holochain = instantiate_from_config(
-    //         &"app spec instance".to_string(),
-    //         &config,
-    //         &mut test_dna_loader(),
-    //     );
-    //
-    //     assert_eq!(maybe_holochain.err(), None);
-    // }
+    #[test]
+    #[cfg_attr(tarpaulin, skip)]
+    fn test_instantiate_from_config() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let maybe_holochain = instantiate_from_config(
+            &"app spec instance".to_string(),
+            &config,
+            &mut test_dna_loader(),
+        );
 
-    /* disabling these tests for DevCamp
-        #[test]
-        fn test_container_load_config() {
-            let config = load_configuration::<Configuration>(test_toml()).unwrap();
-    
-            // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-            let mut container = Container::with_config(config.clone());
-            container.dna_loader = test_dna_loader();
-    
-            container.load_config(&config).unwrap();
-            assert_eq!(container.instances.len(), 1);
-    
-            container.start_all_instances().unwrap();
-            container.start_all_interfaces();
-            container.stop_all_instances().unwrap();
-        }
-    
-        #[test]
-        fn test_container_try_from_configuration() {
-            let config = load_configuration::<Configuration>(test_toml()).unwrap();
-    
-            let maybe_container = Container::try_from(&config);
-    
-            assert!(maybe_container.is_err());
-            assert_eq!(
-                maybe_container.err().unwrap(),
-                HolochainError::ConfigError(
-                    "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
-                )
-            );
-        }
-    
-        #[test]
-        fn test_rpc_info_instances() {
-            let config = load_configuration::<Configuration>(test_toml()).unwrap();
-    
-            // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-            let mut container = Container::with_config(config.clone());
-            container.dna_loader = test_dna_loader();
-            container.load_config(&config).unwrap();
-    
-            let instance_config = &config.interfaces[0];
-            let dispatcher = container.make_dispatcher(&instance_config);
-            let io = dispatcher.io;
-    
-            let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-            let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\"tmp-storage\"}}}","id":1}"#;
-    
-            assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
-        }
-    */
+        assert_eq!(maybe_holochain.err(), None);
+    }
+
+    #[test]
+    fn test_container_load_config() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
+
+        container.load_config(&config).unwrap();
+        assert_eq!(container.instances.len(), 1);
+
+        container.start_all_instances().unwrap();
+        container.start_all_interfaces();
+        container.stop_all_instances().unwrap();
+    }
+
+    #[test]
+    fn test_container_try_from_configuration() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        let maybe_container = Container::try_from(&config);
+
+        assert!(maybe_container.is_err());
+        assert_eq!(
+            maybe_container.err().unwrap(),
+            HolochainError::ConfigError(
+                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_rpc_info_instances() {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+
+        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
+        let mut container = Container::with_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config(&config).unwrap();
+
+        let instance_config = &config.interfaces[0];
+        let dispatcher = container.make_dispatcher(&instance_config);
+        let io = dispatcher.io;
+
+        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"}}}","id":1}"#;
+
+        assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
+    }
 }

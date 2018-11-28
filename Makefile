@@ -35,36 +35,60 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines
 lint: fmt_check clippy
 
-# idempotent install rustup with the default toolchain set for tooling
-# best for CI based on tools only
-.PHONY: install_rustup
-install_rustup:
-	if ! which rustup ; then \
-		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(CORE_RUST_VERSION) -y; \
+# Check if Rust version is correct, and offer to uninstall mismatching version.  Requires
+# RUST_VERSION to be set (defaults to CORE_RUST_VERSION; see install_rustup..., below).  We'll
+# export PATH to default Rust installation here in the Makefile, in case this is the first time
+# rustup has been run, and we don't have a rustup-modified .profile loaded yet.
+export PATH := $(HOME)/.cargo/bin:$(PATH)
+RUST_VERSION = $(CORE_RUST_VERSION)
+.PHONY: version_rustup
+version_rustup:
+	@if which rustup; then \
+	    echo "\033[0;93m## Current Rust version installed: ##\033[0m"; \
+	    if ! rustup show | grep "$(RUST_VERSION)"; then \
+	        rustup show; \
+		echo "\033[0;93m## Replace current Rust version (using rustup uninstall) with '$(RUST_VERSION)' ##\033[0m"; \
+	        read -p "Continue? (y/N) " yes; \
+	        if [[ "$${yes:0:1}" == "y" ]] || [[ "$${yes:0:1}" == "Y" ]]; then \
+	            echo "\033[0;93m## Uninstalling Rust... ##\033[0m"; \
+	            rustup self uninstall || true; \
+	        fi; \
+	    fi; \
 	fi
-	export PATH="${HOME}/.cargo/bin:${PATH}"
+
+# Actual installation of Rust $(RUST_VERSION) via curl
+.PHONY: curl_rustup
+curl_rustup:
+	@if ! which rustup ; then \
+	    echo "\033[0;93m## Installing Rust $(RUST_VERSION)... ##\033[0m"; \
+	    curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUST_VERSION) -y; \
+	fi
 
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
+.PHONY: install_rustup
+install_rustup:		RUST_VERSION = $(CORE_RUST_VERSION)
+install_rustup: version_rustup curl_rustup
+
+# idempotent install rustup with the default toolchain set for tooling
+# best for CI based on tools only.
 .PHONY: install_rustup_tools
-install_rustup_tools:
-	if ! which rustup ; then \
-		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
-	fi
-	export PATH="${HOME}/.cargo/bin:${PATH}"
+install_rustup_tools:	RUST_VERSION = $(TOOLS_RUST_VERSION)
+install_rustup_tools: version_rustup curl_rustup
+
 
 # idempotent installation of libzmq system library
 # note, this is complicated by our use of travis-ci ubuntu trusty
 # we need to install a newer version than is otherwise available
 .PHONY: install_system_libzmq
 install_system_libzmq:
-	if ! (pkg-config libzmq --libs) ; then \
+	@if ! (pkg-config libzmq --libs) ; then \
 		if ! which apt-get ; then \
 			if which brew ; then \
 				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
 				brew install zmq; \
 			else \
-				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
+				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work ##\033[0m"; \
 			fi; \
 		else \
 			if [ "x${TRAVIS}" = "x" ]; then \

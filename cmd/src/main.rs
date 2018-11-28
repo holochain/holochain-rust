@@ -96,14 +96,14 @@ enum Cli {
     )]
     Run {
         #[structopt(
-            long = "port",
-            short = "w",
+            long,
+            short,
             help = "The port to run the websocket server at"
         )]
         port: Option<u16>,
         #[structopt(
             long,
-            short,
+            short = "b",
             help = "Automatically package project before running"
         )]
         package: bool,

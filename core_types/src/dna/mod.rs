@@ -35,7 +35,7 @@ use crate::{
 use multihash;
 use serde_json::{self, Value};
 use std::{
-    collections::{BTreeMap},
+    collections::BTreeMap,
     convert::TryInto,
     hash::{Hash, Hasher},
 };

@@ -52,6 +52,10 @@ pub fn run(package: bool) -> DefaultResult<()> {
     container.start_all_interfaces();
     container.start_all_instances()?;
 
+    println!("Holochain development container started!");
+    println!("Type 'exit' to stop the container and exit the program");
+    println!();
+
     let mut rl = rustyline::Editor::<()>::new();
 
     loop {

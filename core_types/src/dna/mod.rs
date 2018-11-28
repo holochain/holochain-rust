@@ -35,7 +35,7 @@ use crate::{
 use multihash;
 use serde_json::{self, Value};
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap},
     convert::TryInto,
     hash::{Hash, Hasher},
 };
@@ -80,7 +80,7 @@ pub struct Dna {
 
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
-    pub zomes: HashMap<String, zome::Zome>,
+    pub zomes: BTreeMap<String, zome::Zome>,
 }
 
 impl Default for Dna {
@@ -93,7 +93,7 @@ impl Default for Dna {
             uuid: new_uuid(),
             dna_spec_version: String::from("2.0"),
             properties: empty_object(),
-            zomes: HashMap::new(),
+            zomes: BTreeMap::new(),
         }
     }
 }

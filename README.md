@@ -65,17 +65,19 @@ To implement a container in a C based language, the [core_api_c_binding](./core_
 The [container crate](container) uses the [container_api](container_api) to implement an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.  Currently the Rust Container
 
 ### Nodejs Container
-The [nodejs_cointainer](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
+The [nodejs_container](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
 
 ### HC Command-line developer tool.
-The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md)
+The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md).
 
 ## Documentation: The Book on Holochain
-There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://holochain.github.io/holochain-rust](https://holochain.github.io/holochain-rust). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
+There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://developer.holochain.org/guide/latest](https://developer.holochain.org/guide/latest). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 ## Installation & Usage
 
-**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the Developer Preview pre-release which contains pre-built binaries and instructions: https://github.com/holochain/holochain-rust/releases/tag/holochain-cmd-v0.0.2
+**Important:** for installation of the tools with which you can build Holochain applications, you will want to instead proceed to the instructions on the quick start installation guide.
+
+**https://developer.holochain.org/start.html**
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 

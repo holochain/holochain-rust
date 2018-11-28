@@ -27,7 +27,7 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 
 1. A library for the core Holochain functionality for defining and running DNA instances: [*core*](#core)
 1. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit: [*hdk-rust*](#hdk-rust)
-1. A library for managing instances and connecting them to interfaces: [*container_api](#container-api)
+1. A library for managing instances and connecting them to interfaces: [*container_api*](#container-api)
 1. A Rust based container that uses the container_api: [*container*](#rust-container)
 1. A nodejs based container for running tests: [*container*](#nodejs-container)
 1. A command line developer tool: [*hc*](#hc-developer-tool)

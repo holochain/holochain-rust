@@ -31,6 +31,14 @@ pub struct App {
     hash: String,
 }
 
+impl App {
+
+    pub fn hash(&self) -> String {
+        self.hash.clone()
+    }
+
+}
+
 declare_types! {
     pub class JsApp for App {
         init(mut ctx) {

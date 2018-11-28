@@ -357,7 +357,7 @@ pub mod tests {
     #[test]
     fn test_container_load_config() {
         let dir = tempdir().unwrap();
-        let path = dir.path().to_str().unwrap().to_string();
+        let path = dir.path().to_string_lossy().to_string();
         let config = test_configuration(path);
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
@@ -375,7 +375,7 @@ pub mod tests {
     #[test]
     fn test_container_try_from_configuration() {
         let dir = tempdir().unwrap();
-        let path = dir.path().to_str().unwrap().to_string();
+        let path = dir.path().to_string_lossy().to_string();
         let config = test_configuration(path);
 
         let maybe_container = Container::try_from(&config);
@@ -392,7 +392,7 @@ pub mod tests {
     #[test]
     fn test_rpc_info_instances() {
         let dir = tempdir().unwrap();
-        let path = dir.path().to_str().unwrap().to_string();
+        let path = dir.path().to_string_lossy().to_string();
         let config = test_configuration(path.clone());
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674

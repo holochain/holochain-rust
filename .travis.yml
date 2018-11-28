@@ -4,6 +4,8 @@ branches:
   only:
     - master
     - develop
+    - /^holochain-nodejs-v\d+\.\d+\.\d+/
+    - /^holochain-cmd-v\d+\.\d+\.\d+/
 
 _trusty_nodejs: &_trusty_nodejs
   dist: trusty

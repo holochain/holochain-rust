@@ -103,18 +103,42 @@ test('get_post with non-existant hash returns null', (t) => {
   t.same(entry, null)
 })
 
-test('scenario test create&publish post -> get from other instanace', (t) => {
-    t.plan(2)
+test('scenario test create & publish post -> get from other instance', (t) => {
+    t.plan(3)
 
     const content = "Holo world"
     const in_reply_to = ""
     const params = {content, in_reply_to}
     const create_result = app.call("blog", "main", "create_post", params)
+
+    while (!create_result) {
+      t.comment('waiting for create result');
+    };
+
     t.equal(create_result.address.length, 46)
+    t.equal(create_result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
 
     const post_address = create_result.address
     const params_get = {post_address}
-    const get_result = app2.call("blog", "main", "get_post", params_get)
 
-    t.equal(get_result.content, content)
+    const check_get_result = function check_get_result (i = 0, get_result) {
+      t.comment('checking get result for the ' + i + 'th time')
+
+      if (get_result) {
+        t.equal(get_result.content, content)
+      }
+      else if (i < 50) {
+        setTimeout(function() {
+          check_get_result(
+            ++i,
+            app2.call("blog", "main", "get_post", params_get)
+          )
+        }, 50)
+      }
+      else {
+        t.end()
+      }
+
+    }
+    check_get_result()
 })

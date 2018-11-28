@@ -165,13 +165,11 @@ impl Container {
     }
 
     fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> ContainerApiDispatcher {
-        let InterfaceConfiguration {
-            id: _,
-            driver: _,
-            admin: _,
-            instances,
-        } = interface_config;
-        let instance_ids: Vec<String> = instances.iter().map(|i| i.id.clone()).collect();
+        let instance_ids: Vec<String> = interface_config
+            .instances
+            .iter()
+            .map(|i| i.id.clone())
+            .collect();
         let instance_subset: InstanceMap = self
             .instances
             .iter()

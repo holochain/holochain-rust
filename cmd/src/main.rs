@@ -149,19 +149,20 @@ fn run() -> HolochainResult<()> {
     match args {
         Cli::Agent => cli::agent().map_err(|err| HolochainError::Default(err))?,
         Cli::Package { strip_meta, output } => {
-            cli::package(strip_meta, output).or_else(|err| Err(HolochainError::Default(err)))?
+            cli::package(strip_meta, output).map_err(|err| HolochainError::Default(err))?
         }
         Cli::Unpack { path, to } => {
-            cli::unpack(&path, &to).or_else(|err| Err(HolochainError::Default(err)))?
+            cli::unpack(&path, &to).map_err(|err| HolochainError::Default(err))?
         }
-        Cli::Init { path } => cli::init(&path).or_else(|err| Err(HolochainError::Default(err)))?,
+        Cli::Init { path } => cli::init(&path).map_err(|err| HolochainError::Default(err))?,
         Cli::Generate { zome, language } => {
-            cli::generate(&zome, &language).or_else(|err| Err(HolochainError::Default(err)))?
+            cli::generate(&zome, &language).map_err(|err| HolochainError::Default(err))?
         }
         Cli::Run { package, port } => {
             let port_or_default = port.unwrap_or(8888);
-            cli::run(package, port_or_default).or_else(|err| Err(HolochainError::Default(err)))?
+            cli::run(package, port_or_default).map_err(|err| HolochainError::Default(err))?
         }
+        Cli::Run { package } => cli::run(package).map_err(|err| HolochainError::Default(err))?,
         Cli::Test {
             dir,
             testfile,
@@ -170,7 +171,7 @@ fn run() -> HolochainResult<()> {
             let tests_folder = dir.unwrap_or(cli::TEST_DIR_NAME.to_string());
             let test_file = testfile.unwrap_or("test/index.js".to_string());
             cli::test(&PathBuf::from("."), &tests_folder, &test_file, skip_build)
-                .or_else(|err| Err(HolochainError::Default(err)))?
+                .map_err(|err| HolochainError::Default(err))?
         }
     }
 

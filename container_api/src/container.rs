@@ -282,9 +282,6 @@ fn create_context(_: &String, path: &String) -> Result<Context, HolochainError> 
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    use self::tempfile::tempdir;
-
     use super::*;
     use crate::config::load_configuration;
 
@@ -294,14 +291,8 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    fn test_configuration(tmp_path: String) -> Configuration {
-        let config = load_configuration::<Configuration>(&test_toml(&tmp_path)).unwrap();
-        config
-    }
-
-    fn test_toml(storage_path: &str) -> String {
-        format!(
-            r#"
+    fn test_toml<'a>() -> &'a str {
+        r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -321,7 +312,7 @@ pub mod tests {
     file = "app_spec.log"
     [instances.storage]
     type = "file"
-    path = "{}"
+    path = "tmp-storage"
 
     [[interfaces]]
     id = "app spec interface"
@@ -330,9 +321,7 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,
-            storage_path
-        )
+    "#
     }
 
     //#[test]
@@ -356,9 +345,7 @@ pub mod tests {
 
     #[test]
     fn test_container_load_config() {
-        let dir = tempdir().unwrap();
-        let path = dir.path().to_string_lossy().to_string();
-        let config = test_configuration(path);
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -374,9 +361,7 @@ pub mod tests {
 
     #[test]
     fn test_container_try_from_configuration() {
-        let dir = tempdir().unwrap();
-        let path = dir.path().to_string_lossy().to_string();
-        let config = test_configuration(path);
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
         let maybe_container = Container::try_from(&config);
 
@@ -391,9 +376,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_info_instances() {
-        let dir = tempdir().unwrap();
-        let path = dir.path().to_string_lossy().to_string();
-        let config = test_configuration(path.clone());
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -405,7 +388,7 @@ pub mod tests {
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = format!("{}{}{}",r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\""#,path,r#"\"}}}","id":1}"#);
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\"tmp-storage\"}}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }

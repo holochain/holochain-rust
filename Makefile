@@ -36,24 +36,25 @@ C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.st
 # apply formatting / style guidelines
 lint: fmt_check clippy
 
-# Check if Rust version is correct, and offer to uninstall mismatching version.  Requires
-# RUST_VERSION to be set (defaults to CORE_RUST_VERSION; see install_rustup..., below).  We'll
+# Check if Rust version is correct, and offer to change to the correct version.  Requires
+# RUST_VERSION to be set (defaults to CORE_RUST_VERSION; see install_rustup..., below).  We'll also
 # export PATH to default Rust installation here in the Makefile, in case this is the first time
-# rustup has been run, and we don't have a rustup-modified .profile loaded yet.  If connected to a terminal
-# (stdin is a tty) and not running under a Continuous Integration test (CI), defaults to not replace.
+# rustup has been installed/run, and we don't have a rustup-modified .profile loaded yet.  If
+# connected to a terminal (stdin is a tty) and not running under a Continuous Integration test (CI),
+# defaults to not replace.
 export PATH := $(HOME)/.cargo/bin:$(PATH)
 RUST_VERSION = $(CORE_RUST_VERSION)
 .PHONY: version_rustup
 version_rustup:
 	@if which rustup; then \
 	    echo "\033[0;93m## Current Rust version installed (need: '$(RUST_VERSION)'): ##\033[0m"; \
-	    if ! rustup show | grep "$(RUST_VERSION)"; then \
+	    if ! rustup show 2>/dev/null | grep -qe "$(RUST_VERSION).*(default)"; then \
 	        rustup show; \
-		echo "\033[0;93m## Replace current Rust version (after rustup self uninstall) with '$(RUST_VERSION)' ##\033[0m"; \
+		echo "\033[0;93m## Change current Rust version to '$(RUST_VERSION)' ##\033[0m"; \
 	        [ -t 1 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (y/N) " yes; \
 	        if [[ "$${yes:0:1}" == "y" ]] || [[ "$${yes:0:1}" == "Y" ]]; then \
-	            echo "\033[0;93m## Uninstalling Rust... ##\033[0m"; \
-	            rustup self uninstall || true; \
+	            echo "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
+	            rustup default $(RUST-VERSION); \
 	        fi; \
 	    fi; \
 	fi

@@ -1,12 +1,8 @@
-{ system ? builtins.currentSystem }:
-
 let
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
   nixpkgs = import <nixpkgs> {
     overlays = [ moz_overlay ];
-    inherit system;
   };
-  callPackage = nixpkgs.lib.callPackageWith (nixpkgs);
 
   date = "2018-10-12";
   wasmTarget = "wasm32-unknown-unknown";

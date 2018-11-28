@@ -8,11 +8,11 @@ This crate implements a reference container for serving Holochain DNAs.
 
 ## Install
 
-Our recommended pattern for the installation of the containerto download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+Our recommended pattern for the installation of the container is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
 
 ### Building From Source
 
-These dependencies need to be installed in order to compile, and use `hc`:
+These dependencies need to be installed in order to compile, and use `holochain_container`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
   - needs to be the `nightly` build, so use the following commands, once you have first installed Rust
@@ -33,13 +33,17 @@ $ cargo install holochain_container --force --git https://github.com/holochain/h
 
 The container should then be available from your command line using the `holochain_container` command.
 
-Run `holochain_container --version` to confirm.
+Run `holochain_container --version` to confirm that it built.
 
 ## Usage
 
 The container requires a configuration file to run, you can see a [sample here](https://github.com/holochain/holochain-rust/blob/develop/container/example-config/basic.toml)
 
-You can either put it in `~/.holochain/container_config.toml` or run `holochain_container` explicitly with the `-c` to specify where to find it.
+You can put your configuration file in `~/.holochain/container_config.toml` or run `holochain_container` explicitly with the `-c` to specify where to find it.
+
+## Configuration File Spec
+
+TBD (for now you just have infer from the example!)
 
 ## Limitations
 

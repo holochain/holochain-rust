@@ -37,40 +37,40 @@ pub async fn author_entry<'a>(
     await!(publish_entry(entry.address(), &context))
 }
 
-// #[cfg(test)]
-// pub mod tests {
-//     use super::author_entry;
-//     use crate::nucleus::actions::tests::*;
-//     use futures::executor::block_on;
-//     use holochain_core_types::entry::test_entry;
-//     use std::{thread, time};
-//
-//     #[test]
-//     /// test that a commit will publish and entry to the dht of a connected instance via the mock network
-//     fn test_commit_with_dht_publish() {
-//         let dna = test_dna();
-//         let (_instance1, context1) = instance_by_name("jill", dna.clone());
-//         let (_instance2, context2) = instance_by_name("jack", dna);
-//
-//         let entry_address = block_on(author_entry(&test_entry(), &context1));
-//
-//         println!("AUTHOR ENTRY ADDRESS: {:?}", entry_address);
-//         let entry_address = entry_address.unwrap();
-//         thread::sleep(time::Duration::from_millis(1000));
-//
-//         let state = &context2.state().unwrap();
-//         let json = state
-//             .dht()
-//             .content_storage()
-//             .read()
-//             .unwrap()
-//             .fetch(&entry_address)
-//             .expect("could not fetch from CAS");
-//
-//         let x: String = json.unwrap().to_string();
-//         assert_eq!(
-//             x,
-//             "{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}".to_string()
-//         );
-//     }
-// }
+#[cfg(test)]
+pub mod tests {
+    use super::author_entry;
+    use crate::nucleus::actions::tests::*;
+    use futures::executor::block_on;
+    use holochain_core_types::entry::test_entry;
+    use std::{thread, time};
+
+    #[test]
+    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    fn test_commit_with_dht_publish() {
+        let dna = test_dna();
+        let (_instance1, context1) = instance_by_name("jill", dna.clone());
+        let (_instance2, context2) = instance_by_name("jack", dna);
+
+        let entry_address = block_on(author_entry(&test_entry(), &context1));
+
+        println!("AUTHOR ENTRY ADDRESS: {:?}", entry_address);
+        let entry_address = entry_address.unwrap();
+        thread::sleep(time::Duration::from_millis(1000));
+
+        let state = &context2.state().unwrap();
+        let json = state
+            .dht()
+            .content_storage()
+            .read()
+            .unwrap()
+            .fetch(&entry_address)
+            .expect("could not fetch from CAS");
+
+        let x: String = json.unwrap().to_string();
+        assert_eq!(
+            x,
+            "{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}".to_string()
+        );
+    }
+}

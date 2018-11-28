@@ -4,7 +4,7 @@ pub mod capabilities;
 pub mod entry_types;
 
 use crate::dna::wasm::DnaWasm;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -59,11 +59,11 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: HashMap<String, entry_types::EntryTypeDef>,
+    pub entry_types: BTreeMap<String, entry_types::EntryTypeDef>,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: HashMap<String, capabilities::Capability>,
+    pub capabilities: BTreeMap<String, capabilities::Capability>,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -78,8 +78,8 @@ impl Default for Zome {
         Zome {
             description: String::new(),
             config: Config::new(),
-            entry_types: HashMap::new(),
-            capabilities: HashMap::new(),
+            entry_types: BTreeMap::new(),
+            capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
         }
     }
@@ -90,8 +90,8 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &HashMap<String, entry_types::EntryTypeDef>,
-        capabilities: &HashMap<String, capabilities::Capability>,
+        entry_types: &BTreeMap<String, entry_types::EntryTypeDef>,
+        capabilities: &BTreeMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {

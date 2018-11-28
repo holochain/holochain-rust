@@ -19,6 +19,9 @@ let
   '';
 
   hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
+
+  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container" "cd nodejs_container && yarn install --ignore-scripts && node ./publish.js";
+  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
@@ -36,9 +39,13 @@ stdenv.mkDerivation rec {
     rust-build
 
     nodejs
+    yarn
 
     hc-wasm-build
     hc-test
+
+    hc-install-node-container
+    hc-install-cmd
     hc-test-cmd
 
     hc-fmt
@@ -50,4 +57,7 @@ stdenv.mkDerivation rec {
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   RUSTFLAGS = "-D warnings";
 
+  shellHook = ''
+  export PATH=$PATH:~/.cargo/bin;
+  '';
 }

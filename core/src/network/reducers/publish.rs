@@ -23,11 +23,11 @@ fn entry_from_cas(address: &Address, context: &Arc<Context>,) -> Result<Entry, H
 
 pub fn reduce_publish(
     context: Arc<Context>,
-    state: &mut NetworkState,
+    network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
 
-    if state.network.is_none() || state.dna_hash.is_none() ||  state.agent_id.is_none() {
+    if network_state.network.is_none() || network_state.dna_hash.is_none() ||  network_state.agent_id.is_none() {
         return;
     }
 
@@ -54,13 +54,13 @@ pub fn reduce_publish(
     //let header = maybe_header.unwrap();
     let data = DhtData {
         msg_id: "?".to_string(),
-        dna_hash: state.dna_hash.clone().unwrap(),
-        agent_id: state.agent_id.clone().unwrap(),
+        dna_hash: network_state.dna_hash.clone().unwrap(),
+        agent_id: network_state.agent_id.clone().unwrap(),
         address: entry.address().to_string(),
         content: serde_json::from_str(&entry.content().to_string()).unwrap(),
     };
 
-    let response = match state.network {
+    let response = match network_state.network {
         None => unreachable!(),
         Some(ref network) => {
             network.lock()
@@ -69,9 +69,36 @@ pub fn reduce_publish(
         }
     };
 
-    state.actions.insert(action_wrapper.clone(), ActionResponse::Publish(match response {
+    network_state.actions.insert(action_wrapper.clone(), ActionResponse::Publish(match response {
         Ok(_) => Ok(entry.address().to_owned()),
         Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
     }));
+
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::action::ActionWrapper;
+    use crate::action::Action;
+    use crate::state::test_store;
+    use crate::instance::tests::test_context;
+    use holochain_core_types::cas::content::AddressableContent;
+    use holochain_core_types::entry::test_entry;
+
+    #[test]
+    pub fn reduce_publish_test() {
+        let context = test_context("alice");
+        let store = test_store(context.clone());
+
+        let entry = test_entry();
+        let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
+
+        store.reduce(
+            context.clone(),
+            action_wrapper,
+        );
+
+    }
 
 }

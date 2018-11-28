@@ -1,9 +1,9 @@
+use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
     network::{actions::ActionResponse, state::NetworkState, util},
 };
-use boolinator::*;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
@@ -21,8 +21,7 @@ fn publish_entry(
     network_state: &mut NetworkState,
     entry: &Entry,
     header: &ChainHeader,
-)  -> Result<(), HolochainError> {
-
+) -> Result<(), HolochainError> {
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
 
     let data = DhtData {
@@ -33,10 +32,12 @@ fn publish_entry(
         content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
     };
 
-    network_state.network
+    network_state
+        .network
         .as_mut()
         .map(|network| {
-            network.lock()
+            network
+                .lock()
                 .unwrap()
                 .send(ProtocolWrapper::PublishDht(data).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
@@ -49,7 +50,6 @@ fn publish_link(
     entry: &Entry,
     header: &ChainHeader,
 ) -> Result<(), HolochainError> {
-
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
     let link_add_entry = LinkAddEntry::from_entry(&entry);
     let link = link_add_entry.link().clone();
@@ -64,38 +64,37 @@ fn publish_link(
         content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
     };
 
-    network_state.network
+    network_state
+        .network
         .as_mut()
         .map(|network| {
-            network.lock()
+            network
+                .lock()
                 .unwrap()
                 .send(ProtocolWrapper::PublishDhtMeta(data).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .expect("Network has to be Some because of check above")
-
 }
 
 fn inner(
     context: &Arc<Context>,
     network_state: &mut NetworkState,
-    address: &Address
+    address: &Address,
 ) -> Result<(), HolochainError> {
-    (network_state.network.is_some() && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-        .ok_or("Network not initialized".to_string())?;
+    (network_state.network.is_some()
+        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
+    .ok_or("Network not initialized".to_string())?;
 
     let (entry, header) = util::entry_with_header(&address, &context)?;
 
     match entry.entry_type() {
         EntryType::App(_) => publish_entry(network_state, &entry, &header),
-        EntryType::LinkAdd => {
-            publish_entry(network_state, &entry, &header)
-                .and_then(|_| publish_link(network_state, &entry, &header))
-        },
+        EntryType::LinkAdd => publish_entry(network_state, &entry, &header)
+            .and_then(|_| publish_link(network_state, &entry, &header)),
         _ => Err(HolochainError::NotImplemented),
     }
 }
-
 
 pub fn reduce_publish(
     context: Arc<Context>,

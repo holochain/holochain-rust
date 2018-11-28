@@ -1,7 +1,4 @@
-use crate::{
-    agent::chain_header,
-    context::Context,
-};
+use crate::{agent::chain_header, context::Context};
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
@@ -17,9 +14,10 @@ pub struct EntryWithHeader {
 }
 
 impl From<(Entry, ChainHeader)> for EntryWithHeader {
-    fn from((entry, header): (Entry, ChainHeader)) -> EntryWithHeader{
+    fn from((entry, header): (Entry, ChainHeader)) -> EntryWithHeader {
         EntryWithHeader {
-            entry: entry.serialize(), header,
+            entry: entry.serialize(),
+            header,
         }
     }
 }
@@ -34,10 +32,12 @@ pub fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry
     Ok(s.into())
 }
 
-pub fn entry_with_header(address: &Address, context: &Arc<Context>) -> Result<(Entry, ChainHeader), HolochainError> {
+pub fn entry_with_header(
+    address: &Address,
+    context: &Arc<Context>,
+) -> Result<(Entry, ChainHeader), HolochainError> {
     let entry = entry_from_cas(address, &context)?;
-    let header = chain_header(&entry, &context)
-        .ok_or("No header found for entry".to_string())?;
+    let header = chain_header(&entry, &context).ok_or("No header found for entry".to_string())?;
 
     Ok((entry, header))
 }

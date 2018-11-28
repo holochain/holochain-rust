@@ -1,15 +1,9 @@
 use crate::{
-    nucleus::{
-        ribosome::{api::ZomeApiResult, Runtime},
-    },
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
-use holochain_core_types::{
-    entry::ToEntry,
-    error::HolochainError,
-    link::link_add::LinkAddEntry,
-};
+use holochain_core_types::{entry::ToEntry, error::HolochainError, link::link_add::LinkAddEntry};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -38,8 +32,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> =
-        block_on(author_entry(&entry, &runtime.context))
-            .map(|_| ());
+        block_on(author_entry(&entry, &runtime.context)).map(|_| ());
 
     runtime.store_result(result)
 }

@@ -1,26 +1,25 @@
 extern crate directories;
-extern crate holochain_agent;
 extern crate holochain_cas_implementations;
+extern crate holochain_container_api;
 extern crate holochain_core;
-extern crate holochain_core_api;
 extern crate holochain_core_types;
-extern crate holochain_dna;
+extern crate holochain_net;
 
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
 };
-use holochain_core::context::Context;
-use holochain_core_api::Holochain;
-use holochain_core_types::error::HolochainError;
-use holochain_dna::Dna;
+use holochain_container_api::Holochain;
+use holochain_core::context::{mock_network_config, Context};
+use holochain_core_types::{dna::Dna, error::HolochainError};
+
 use std::sync::Arc;
 
-use holochain_agent::Agent;
 use holochain_core::{logger::Logger, persister::SimplePersister};
+use holochain_core_types::agent::Agent;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
-    sync::Mutex,
+    sync::{Mutex, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -62,18 +61,20 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
 }
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
-    let agent = Agent::from("c_bob".to_string());
+    let agent = Agent::generate_fake("c_bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
-    let agent_path = format!("{}/state", path);
+    let _agent_path = format!("{}/state", path);
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
+    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
     Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(agent_path))),
-        FilesystemStorage::new(&cas_path)?,
-        EavFileStorage::new(eav_path)?,
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
+        mock_network_config(),
     )
 }
 
@@ -132,7 +133,8 @@ pub unsafe extern "C" fn holochain_call(
         function.as_str(),
         parameters.as_str(),
     ) {
-        Ok(string_result) => {
+        Ok(json_string_result) => {
+            let string_result = String::from(json_string_result);
             let string_trim = string_result.trim_right_matches(char::from(0));
             match CString::new(string_trim) {
                 Ok(s) => s.into_raw(),

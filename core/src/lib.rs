@@ -1,14 +1,23 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-
+#![feature(
+    try_from,
+    pin,
+    arbitrary_self_types,
+    futures_api,
+    async_await,
+    await_macro
+)]
 #[macro_use]
 extern crate serde_derive;
 extern crate chrono;
+extern crate futures;
 extern crate multihash;
 extern crate rust_base58;
 extern crate serde;
+// serde macro used in tests only
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
-extern crate futures;
 extern crate snowflake;
 #[cfg(test)]
 extern crate test_utils;
@@ -21,13 +30,15 @@ extern crate num_traits;
 extern crate regex;
 
 extern crate config;
-extern crate holochain_agent;
-extern crate holochain_dna;
 extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
 extern crate holochain_cas_implementations;
 extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
+extern crate base64;
+extern crate holochain_net_connection;
 
 pub mod action;
 pub mod agent;
@@ -37,6 +48,8 @@ pub mod instance;
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;
+pub mod network;
 pub mod nucleus;
 pub mod persister;
 pub mod state;
+pub mod workflows;

@@ -1,11 +1,15 @@
+use crate::{
+    error::error::HolochainError,
+    json::{default_try_from_json, JsonString},
+};
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
-use serde::Serialize;
-use serde_json;
-use std::fmt;
+use std::{convert::TryFrom, fmt};
 
 // HashString newtype for String
-#[derive(PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, Default, Hash)]
+#[derive(
+    PartialOrd, PartialEq, Eq, Ord, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, Hash,
+)]
 pub struct HashString(String);
 
 impl fmt::Display for HashString {
@@ -32,6 +36,13 @@ impl<'a> From<&'a str> for HashString {
     }
 }
 
+impl TryFrom<JsonString> for Vec<HashString> {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
 impl HashString {
     pub fn new() -> HashString {
         HashString("".to_string())
@@ -47,17 +58,19 @@ impl HashString {
         HashString::encode_from_bytes(s.as_bytes(), hash_type)
     }
 
-    /// magic all in one fn, take a serializable something + hash type and get a hashed b58 string back
-    pub fn encode_from_serializable<S: Serialize>(s: S, hash_type: Hash) -> HashString {
-        HashString::encode_from_str(&serde_json::to_string(&s).unwrap(), hash_type)
+    /// magic all in one fn, take a JsonString + hash type and get a hashed b58 string back
+    pub fn encode_from_json_string(json_string: JsonString, hash_type: Hash) -> HashString {
+        HashString::encode_from_str(&String::from(json_string), hash_type)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cas::content::AddressableContent;
-    use entry::{test_entry, test_entry_address};
+    use crate::{
+        cas::content::AddressableContent,
+        entry::{expected_entry_address, test_entry},
+    };
     use multihash::Hash;
 
     /// dummy hash based on the key of test_entry()
@@ -69,7 +82,10 @@ pub mod tests {
     /// show ToString implementation
     /// automatically derived by Rust because fmt::Display is implemented
     fn to_string_test() {
-        assert_eq!(test_hash().to_string(), test_entry_address().to_string(),)
+        assert_eq!(
+            test_hash().to_string(),
+            expected_entry_address().to_string(),
+        )
     }
 
     #[test]
@@ -112,14 +128,15 @@ pub mod tests {
     #[test]
     /// known hash for a serializable something
     fn can_serialize_to_b58_hash() {
-        #[derive(Serialize)]
+        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
         struct Foo {
             foo: u8,
         };
 
         assert_eq!(
             "Qme7Bu4NVYMtpsRtb7e4yyhcbE1zdB9PsrKTdosaqF3Bu3",
-            HashString::encode_from_serializable(Foo { foo: 5 }, Hash::SHA2256).to_string(),
+            HashString::encode_from_json_string(JsonString::from(Foo { foo: 5 }), Hash::SHA2256)
+                .to_string(),
         );
     }
 }

@@ -1,5 +1,3 @@
-dist: trusty
-
 # https://docs.travis-ci.com/user/customizing-the-build/#safelisting-or-blocklisting-branches
 # we build all PRs already, don't need redundant branch builds
 branches:
@@ -7,16 +5,184 @@ branches:
     - master
     - develop
 
+_trusty_nodejs: &_trusty_nodejs
+  dist: trusty
+  language: node_js
+  node_js:
+    - "8"
+
+_trusty_bash: &_trusty_bash
+  dist: trusty
+  # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
+  language: bash
+
+_cargo_cache_template: &_cargo_cache_template
+  # manually cache as we manually install rustup
+  # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+  cache:
+    timeout: 1000
+    directories:
+      - $HOME/.cargo
+      - $TRAVIS_BUILD_DIR/target
+  install:
+    - export PATH=$HOME/.cargo/bin:$PATH
+  before_cache:
+    - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
+    - rm -rf $HOME/.cargo/registry/index
+
+_windows_template: &_windows_template
+  os: windows
+  language: rust
+  rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+  before_install:
+  - choco install nodist
+  - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
+  - nodist add $TRAVIS_NODE_VERSION
+  - nodist $TRAVIS_NODE_VERSION
+  - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
+  - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+  - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
+
+_unix_nodejs_container_template: &_unix_nodejs_container_template
+  before_install:
+    # install our own nodejs to get a reasonable version
+    - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
+    - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
+    - export PATH=$HOME/.yarn/bin:$PATH
+  script:
+    - make build_nodejs_container
+  # manually cache as we manually install rustup
+  # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+  cache:
+    yarn: true
+    timeout: 1000
+    directories:
+      - node_modules
+      - $HOME/.cargo
+      - $TRAVIS_BUILD_DIR/target
+
+# the following is all for nodejs deployment
+_linux_nodejs_template: &_linux_nodejs_template
+  os: linux
+  language: rust
+  rust: nightly
+
+_macosx_nodejs_template: &_macosx_nodejs_template
+  os: osx
+  language: rust
+  rust: nightly
+
+_to_deploy_template: &_to_deploy_template
+  if: tag =~ /^holochain-nodejs-v\d+\.\d+\.\d+/
+
+_env_node_8_deploy_template: &_env_node_8_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="8"
+  - PERFORM_NODE_DEPLOY=1
+
+_env_node_10_deploy_template: &_env_node_10_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="10"
+  - PERFORM_NODE_DEPLOY=1
+
+_env_node_11_deploy_template: &_env_node_11_deploy_template
+  env:
+  - TRAVIS_NODE_VERSION="11"
+  - PERFORM_NODE_DEPLOY=1
+
+_nodejs_deploy_template: &_nodejs_deploy_template
+  cache:
+      yarn: true
+      cargo: true
+      directories:
+          - node_modules
+  script:
+      - ./scripts/build_nodejs_container.sh
+  # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
+  deploy:
+      provider: releases
+      api_key:
+          secure: SfAyYHw8iC74CY8SrSnEsA0GPLxpCwguYziw19ZlBz6Nq+HxqNWoexw87TdrTIkxUKJpNxoLzqeKmigpAzr8Q4Y8j72tD5JyTSLwTnjChclM1BMRh7NR3dL8gTrBRuRZ4ALJr4EP1sxXI16W3lEz7hrS4tyws2e0W3xb80Os7p9fNQHpKCAncON622mDSznPbUXbUCNdosqZq+dZua6RZ9xmMaba1La3+vZn+hzvcNvI2mtiK/KOIDbo4uzZEUf7URtKmtkslilIc+3568iuCjPl5zV1s+/VN2/SEuxcxuVtxXUV6ZVguniF0z4L5YOCwnnadUJtlXYxxQznRu/YT7xvlvitSNulDm81jACiwKZ7LbbXssfzIb+gTBXiTdFyUDJUEHL8U992K7oDJN2nM6jPsqnmjuqalFcV/raVmpZA/gA3eCqyCw8is363NqEFpGgczBnL84h81x63RrXsXb6oZq2E5fQkIHP/4srG/s359achguHmaf/g69NiAnhCz9P2xF15zFqRPZnUA7q9ONpSAJrkOWVxBEntfIsLL6P07y3rCdXhs6A6Q5lh5YcWdOH2zEtsVXaI2/AbVgB4g0CWChts6tpqrNa5QzRIF82LLjhQTZOkpBUwMliunzmHMhIz0ojHMjay0JrCuYF2lbUfQ/f3S4Clnz19Z5DPo/A=
+      file_glob: true
+      file: nodejs_container/bin-package/*.tar.gz
+      skip_cleanup: true
+      # publish only if we're building a tag and if the PERFORM_NODE_DEPLOY is set to 1
+      on:
+          tags: true
+          condition: $PERFORM_NODE_DEPLOY = 1
+      name: $TRAVIS_TAG
+
+_windows_nodejs_container_template: &_windows_nodejs_container_template
+  install:
+    - choco upgrade yarn
+    - export PATH="/c/Program Files (x86)/Yarn/bin:$PATH"
+    # deps for neon, found at https://guides.neon-bindings.com/getting-started/
+    - npm install --scripts-prepend-node-path=true --global --vs2015 --production windows-build-tools
+    - yarn config set python python2.7
+    - npm config set msvs_version 2015
+    - yarn config set msvs_version 2015 --global
+  script:
+      - sh ./scripts/build_nodejs_container.sh
+# nodejs specific deployment templates stop here
+
+# holochain-cmd deploy template
+_cmd_deploy_template: &_cmd_deploy_template
+  language: rust
+  rust: nightly-2018-10-12
+  if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
+  before_script:
+    - make install_system_libzmq
+  script:
+    - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
+    - mkdir $TRAVIS_TAG-$TARGET
+    - cp target/$TARGET/release/hc cmd/LICENSE cmd/README.md $TRAVIS_TAG-$TARGET/
+    - tar czf $TRAVIS_TAG-$TARGET.tar.gz $TRAVIS_TAG-$TARGET/
+  deploy:
+    provider: releases
+    api_key:
+        secure: SfAyYHw8iC74CY8SrSnEsA0GPLxpCwguYziw19ZlBz6Nq+HxqNWoexw87TdrTIkxUKJpNxoLzqeKmigpAzr8Q4Y8j72tD5JyTSLwTnjChclM1BMRh7NR3dL8gTrBRuRZ4ALJr4EP1sxXI16W3lEz7hrS4tyws2e0W3xb80Os7p9fNQHpKCAncON622mDSznPbUXbUCNdosqZq+dZua6RZ9xmMaba1La3+vZn+hzvcNvI2mtiK/KOIDbo4uzZEUf7URtKmtkslilIc+3568iuCjPl5zV1s+/VN2/SEuxcxuVtxXUV6ZVguniF0z4L5YOCwnnadUJtlXYxxQznRu/YT7xvlvitSNulDm81jACiwKZ7LbbXssfzIb+gTBXiTdFyUDJUEHL8U992K7oDJN2nM6jPsqnmjuqalFcV/raVmpZA/gA3eCqyCw8is363NqEFpGgczBnL84h81x63RrXsXb6oZq2E5fQkIHP/4srG/s359achguHmaf/g69NiAnhCz9P2xF15zFqRPZnUA7q9ONpSAJrkOWVxBEntfIsLL6P07y3rCdXhs6A6Q5lh5YcWdOH2zEtsVXaI2/AbVgB4g0CWChts6tpqrNa5QzRIF82LLjhQTZOkpBUwMliunzmHMhIz0ojHMjay0JrCuYF2lbUfQ/f3S4Clnz19Z5DPo/A=
+    file_glob: true
+    file: $TRAVIS_TAG-$TARGET.tar.gz
+    skip_cleanup: true
+    on:
+        tags: true
+    name: $TRAVIS_TAG
+
 jobs:
   include:
-    - name: "C binding tests"
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
-
+    - name: "Holochain tests [code coverage temporarily deactivated]"
+      <<: *_trusty_nodejs
+      <<: *_cargo_cache_template
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
+      script: make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
 
+    - name: "windows build & test all"
+      <<: *_windows_template
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION=8
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      install:
+        - rustup target add wasm32-unknown-unknown
+      script:
+        # Build WASMs
+        - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+        - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+        # Build & test All
+        - cargo test --all 
+
+    - name: "C binding tests"
+      <<: *_trusty_bash
+      # sudo is needed for codecov, && system library install which makes things 20-50s slower
+      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+      sudo: true
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
       cache:
@@ -32,123 +198,136 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Standard tests + code coverage"
-      language: node_js
-      node_js:
-        - "8"
-
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script: make code_coverage
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-      before_cache:
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-        - rm -rf $HOME/.cargo/registry/index
-
-    - name: "Formatting & clippy"
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
-
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
+    - name: "Lint (fmt & _clippy)"
+      <<: *_trusty_bash
+      <<: *_cargo_cache_template
       script:
         - make fmt_check
         # @see #431
         # - make clippy
-      before_cache:
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-        - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Mdbook Build"
-      # https://github.com/travis-ci/travis-ci/issues/5175#issuecomment-215016943
-      language: bash
+    - name: "Command-line tools"
+      <<: *_trusty_nodejs
+      <<: *_cargo_cache_template
+      script:
+        - make test_cmd
+
+    - name: "App-spec"
+      <<: *_trusty_nodejs
+      <<: *_cargo_cache_template
+      script:
+        - make test_app_spec
+
+    - name: "Nodejs Container Test"
+      <<: *_trusty_nodejs
+      <<: *_cargo_cache_template
+      <<: *_unix_nodejs_container_template
       env:
-        - ENCRYPTION_LABEL: "30dd9296640e"
-        - COMMIT_AUTHOR_EMAIL: "connor.turland@holo.host"
+      - TRAVIS_NODE_VERSION="8"
 
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
+    # holochain-cmd releases section
+    - name: "CMD DEPLOY - 64 bit Linux"
+      <<: *_cmd_deploy_template
+      env:
+        - TARGET=x86_64-unknown-linux-gnu
+        - CRATE_NAME=hc
+      os: linux
+    - name: "CMD DEPLOY - 64 bit OSX"
+      <<: *_cmd_deploy_template
+      env:
+        - TARGET=x86_64-apple-darwin
+        - CRATE_NAME=hc
+      os: osx
+    - name: "CMD DEPLOY - 64 bit Windows MSVC"
+      <<: *_cmd_deploy_template
+      os: windows
+      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+      env:
+        - TARGET=x86_64-pc-windows-msvc
+        - CRATE_NAME=hc
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      before_script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+    - name: "CMD DEPLOY - 64 bit Windows GNU"
+      <<: *_cmd_deploy_template
+      os: windows
+      rust: nightly-2018-10-12-x86_64-pc-windows-gnu
+      env:
+        - TARGET=x86_64-pc-windows-gnu
+        - CRATE_NAME=hc
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      before_script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-        - make install_mdbook
-      script: ./travis-update-book.sh
-      before_cache:
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libholochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/.fingerprint/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/holochain*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/test_utils*/
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/holochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libholochain*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/deps/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/libtest_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/test_utils*
-        - rm -rf $TRAVIS_BUILD_DIR/target/debug/incremental/echo_ipc_test*
-        - rm -rf $TRAVIS_BUILD_DIR/target/.rustc_info.json
-        - rm -rf $HOME/.cargo/registry/index
+    # holochain-nodejs releases section
+    - name: "Linux - Node 8"
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_8_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+    - name: "Linux - Node 10"
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_10_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+    - name: "Linux - Node 11"
+      <<: *_linux_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_11_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+
+    - name: "OSX - Node 8"
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_8_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+    - name: "OSX - Node 10"
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_10_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+    - name: "OSX - Node 11"
+      <<: *_macosx_nodejs_template
+      <<: *_to_deploy_template
+      <<: *_env_node_11_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_unix_nodejs_container_template
+
+    - name: "Windows - Node 8"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION="8"
+        - PERFORM_NODE_DEPLOY=1
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    - name: "Windows - Node 10"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION="10"
+        - PERFORM_NODE_DEPLOY=1
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    - name: "Windows - Node 11"
+      <<: *_windows_template
+      <<: *_to_deploy_template
+      <<: *_nodejs_deploy_template
+      <<: *_windows_nodejs_container_template
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION="11"
+        - PERFORM_NODE_DEPLOY=1
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq

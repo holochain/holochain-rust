@@ -1,42 +1,44 @@
 extern crate serde_json;
-use context::Context;
-use futures::{future, Future};
+use crate::context::Context;
+use futures::future::{self, FutureObj};
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
-    entry::Entry,
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
     error::HolochainError,
 };
-use std::sync::Arc;
+use std::{convert::TryInto, sync::Arc};
 
 fn get_entry_from_dht_cas(
     context: &Arc<Context>,
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
     let dht = context.state().unwrap().dht().content_storage();
-    dht.fetch(&address)
+    let storage = &dht.clone();
+    let json = (*storage.read().unwrap()).fetch(&address)?;
+    let entry: Option<Entry> = json
+        .and_then(|js| js.try_into().ok())
+        .map(|s: SerializedEntry| s.into());
+    Ok(entry)
 }
 
 /// GetEntry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn get_entry(
-    context: &Arc<Context>,
+pub fn get_entry<'a>(
+    context: &'a Arc<Context>,
     address: Address,
-) -> Box<dyn Future<Item = Option<Entry>, Error = HolochainError>> {
+) -> FutureObj<'a, Result<Option<Entry>, HolochainError>> {
     match get_entry_from_dht_cas(context, address) {
-        Err(err) => Box::new(future::err(err)),
-        Ok(result) => Box::new(future::ok(result)),
+        Err(err) => FutureObj::new(Box::new(future::err(err))),
+        Ok(result) => FutureObj::new(Box::new(future::ok(result))),
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::tests::test_context_with_state;
     use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        entry::test_entry,
-    };
-    use instance::tests::test_context_with_state;
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
     fn get_entry_from_dht_cas() {
@@ -44,13 +46,8 @@ pub mod tests {
         let context = test_context_with_state();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(None), result);
-        context
-            .state()
-            .unwrap()
-            .dht()
-            .content_storage()
-            .add(&entry)
-            .unwrap();
+        let storage = &context.state().unwrap().dht().content_storage().clone();
+        (*storage.write().unwrap()).add(&entry).unwrap();
         let result = super::get_entry_from_dht_cas(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
@@ -61,13 +58,8 @@ pub mod tests {
         let context = test_context_with_state();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(None), block_on(future));
-        context
-            .state()
-            .unwrap()
-            .dht()
-            .content_storage()
-            .add(&entry)
-            .unwrap();
+        let storage = &context.state().unwrap().dht().content_storage().clone();
+        (*storage.write().unwrap()).add(&entry).unwrap();
         let future = super::get_entry(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), block_on(future));
     }

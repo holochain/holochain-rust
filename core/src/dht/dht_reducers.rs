@@ -1,31 +1,26 @@
 //! all DHT reducers
 
-use action::{Action, ActionWrapper};
-use context::Context;
-use dht::dht_store::DhtStore;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    dht::dht_store::DhtStore,
+};
 use holochain_core_types::{
-    cas::{content::AddressableContent, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::Entry,
+    cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
     error::HolochainError,
 };
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
-type DhtReducer<CAS, EAVS> =
-    fn(Arc<Context>, &DhtStore<CAS, EAVS>, &ActionWrapper) -> Option<DhtStore<CAS, EAVS>>;
+type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
-pub fn reduce<CAS, EAVS>(
+pub fn reduce(
     context: Arc<Context>,
-    old_store: Arc<DhtStore<CAS, EAVS>>,
+    old_store: Arc<DhtStore>,
     action_wrapper: &ActionWrapper,
-) -> Arc<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+) -> Arc<DhtStore> {
     // Get reducer
     let maybe_reducer = resolve_reducer(action_wrapper);
     if maybe_reducer.is_none() {
@@ -33,7 +28,8 @@ where
     }
     let reducer = maybe_reducer.unwrap();
     // Reduce
-    let maybe_new_store = reducer(context, &old_store, &action_wrapper);
+    let store = old_store.clone();
+    let maybe_new_store = reducer(context, &store, &action_wrapper);
     match maybe_new_store {
         None => old_store,
         Some(new_store) => Arc::new(new_store),
@@ -41,13 +37,9 @@ where
 }
 
 /// Maps incoming action to the correct reducer
-fn resolve_reducer<CAS, EAVS>(action_wrapper: &ActionWrapper) -> Option<DhtReducer<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Hold(_) => Some(reduce_hold_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         //Action::GetLinks(_) => Some(reduce_get_links),
@@ -56,118 +48,38 @@ where
 }
 
 //
-pub(crate) fn commit_sys_entry<CAS, EAVS>(
+pub(crate) fn reduce_hold_entry(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
-    entry: &Entry,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
-    // system entry type must be publishable
-    if !entry.entry_type().to_owned().can_publish() {
-        return None;
-    }
-    // Add it local storage
-    let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage_mut().add(entry);
-    if res.is_err() {
-        // TODO #439 - Log the error. Once we have better logging.
-        return None;
-    }
-    // Note: System entry types are not published to the network
-    Some(new_store)
-}
-
-//
-pub(crate) fn commit_app_entry<CAS, EAVS>(
-    context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
-    entry: &Entry,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
-    // pre-condition: if app entry_type must be valid
-    // get entry_type definition
-    let dna = context
-        .state()
-        .expect("context must have a State.")
-        .nucleus()
-        .dna()
-        .expect("context.state must hold DNA in order to commit an app entry.");
-    let maybe_def = dna.get_entry_type_def(&entry.entry_type().to_string());
-    if maybe_def.is_none() {
-        // TODO #439 - Log the error. Once we have better logging.
-        return None;
-    }
-    let entry_type_def = maybe_def.unwrap();
-
-    // app entry type must be publishable
-    if !entry_type_def.sharing.clone().can_publish() {
-        return None;
-    }
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let action = action_wrapper.action();
+    let entry = unwrap_to!(action => Action::Hold);
 
     // Add it to local storage...
-    let mut new_store = (*old_store).clone();
-    let res = new_store.content_storage_mut().add(entry);
+    let new_store = (*old_store).clone();
+    let storage = &new_store.content_storage().clone();
+    let res = (*storage.write().unwrap()).add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
     }
-    // ...and publish to the network if its not private
-    new_store.network_mut().publish(entry);
     // Done
     Some(new_store)
 }
 
 //
-pub(crate) fn reduce_commit_entry<CAS, EAVS>(
-    context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
-    let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
-
-    // pre-condition: Must not already have entry in local storage
-    if old_store
-        .content_storage()
-        .contains(&entry.address())
-        .unwrap()
-    {
-        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
-        return None;
-    }
-
-    // Handle sys entries and app entries differently
-    if entry.entry_type().to_owned().is_sys() {
-        return commit_sys_entry(context, old_store, entry);
-    }
-    return commit_app_entry(context, old_store, entry);
-}
-
-//
-pub(crate) fn reduce_get_entry_from_network<CAS, EAVS>(
+pub(crate) fn reduce_get_entry_from_network(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::GetEntry);
+    let storage = &old_store.content_storage().clone();
     // pre-condition check: Look in local storage if it already has it.
-    if old_store.content_storage().contains(address).unwrap() {
+    if (*storage.read().unwrap()).contains(address).unwrap() {
         // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
         return None;
     }
@@ -177,10 +89,13 @@ where
         .clone()
         .get(address)
         .and_then(|content| {
-            let entry = Entry::from_content(&content);
-            let mut new_store = (*old_store).clone();
+            let entry =
+                Entry::try_from_content(&content).expect("could not load entry from content");
+            let new_store = (*old_store).clone();
+
             // ...and add it to the local storage
-            let res = new_store.content_storage_mut().add(&entry);
+            let storage = &new_store.content_storage().clone();
+            let res = (*storage.write().unwrap()).add(&entry);
             match res {
                 Err(_) => None,
                 Ok(()) => Some(new_store),
@@ -189,22 +104,18 @@ where
 }
 
 //
-pub(crate) fn reduce_add_link<CAS, EAVS>(
+pub(crate) fn reduce_add_link(
     _context: Arc<Context>,
-    old_store: &DhtStore<CAS, EAVS>,
+    old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+) -> Option<DhtStore> {
     // Get Action's input data
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::AddLink);
 
     let mut new_store = (*old_store).clone();
-
-    if !old_store.content_storage().contains(link.base()).unwrap() {
+    let storage = &old_store.content_storage().clone();
+    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
         new_store.add_link_actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -215,9 +126,10 @@ where
     }
 
     let eav =
-        EntityAttributeValue::new(link.base(), &format!("link:{}", link.tag()), link.target());
+        EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
 
-    let result = new_store.meta_storage_mut().add_eav(&eav);
+    let storage = new_store.meta_storage();
+    let result = storage.write().unwrap().add_eav(&eav);
     new_store
         .add_link_actions_mut()
         .insert(action_wrapper.clone(), result);
@@ -225,15 +137,11 @@ where
 }
 
 #[allow(dead_code)]
-pub(crate) fn reduce_get_links<CAS, EAVS>(
+pub(crate) fn reduce_get_links(
     _context: Arc<Context>,
-    _old_store: &DhtStore<CAS, EAVS>,
+    _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
-) -> Option<DhtStore<CAS, EAVS>>
-where
-    CAS: ContentAddressableStorage + Sized + Clone + PartialEq,
-    EAVS: EntityAttributeValueStorage + Sized + Clone + PartialEq,
-{
+) -> Option<DhtStore> {
     // FIXME
     None
 }
@@ -241,63 +149,57 @@ where
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
-    use dht::{
-        dht_reducers::{commit_sys_entry, reduce},
-        dht_store::DhtStore,
+    use crate::{
+        action::{Action, ActionWrapper},
+        dht::{
+            dht_reducers::{reduce, reduce_hold_entry},
+            dht_store::DhtStore,
+        },
+        instance::tests::test_context,
+        state::test_store,
     };
-    use holochain_cas_implementations::eav::file::EavFileStorage;
     use holochain_core_types::{
-        cas::{content::AddressableContent, storage::ContentAddressableStorage},
-        eav::EntityAttributeValueStorage,
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
-        links_entry::Link,
+        cas::content::AddressableContent,
+        entry::{test_entry, test_sys_entry, Entry, SerializedEntry},
+        link::Link,
     };
-    use instance::tests::test_context;
-    use state::test_store;
-    use std::sync::{Arc, RwLock};
+    use std::{
+        convert::TryFrom,
+        sync::{Arc, RwLock},
+    };
 
     #[test]
-    fn commit_sys_entry_test() {
+    fn reduce_hold_entry_test() {
         let context = test_context("bob");
         let store = test_store(context.clone());
-        let entry = test_entry();
-
-        let unpublishable_entry = test_unpublishable_entry();
-
-        let new_dht_store =
-            commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
         // test_entry is not sys so should do nothing
-        assert_eq!(None, new_dht_store);
-        assert_eq!(
-            None,
-            store
-                .dht()
-                .content_storage()
-                .fetch::<Entry>(&entry.address())
-                .expect("could not fetch from cas")
-        );
+        let storage = &store.dht().content_storage().clone();
 
         let sys_entry = test_sys_entry();
 
-        let new_dht_store = commit_sys_entry(Arc::clone(&context), &store.dht(), &sys_entry)
-            .expect("there should be a new store for committing a sys entry");
+        let new_dht_store = reduce_hold_entry(
+            Arc::clone(&context),
+            &store.dht(),
+            &ActionWrapper::new(Action::Hold(sys_entry.clone())),
+        )
+        .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),
-            store
-                .dht()
-                .content_storage()
+            (*storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
+                .map(|s| Entry::try_from_content(&s).unwrap())
         );
+
+        let new_storage = &new_dht_store.content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
-            new_dht_store
-                .content_storage()
+            (*new_storage.read().unwrap())
                 .fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
+                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 
@@ -311,21 +213,23 @@ pub mod tests {
 
         let mut context = (*context).clone();
         context.set_state(locked_state.clone());
-        let _ = context.file_storage.add(&entry);
+        let storage = context.file_storage.clone();
+        let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_, EavFileStorage>;
+        let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-
-        let fetched = new_dht_store
-            .meta_storage()
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage
+            .read()
+            .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());
@@ -334,7 +238,7 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link:{}", link.tag()));
+        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
     }
 
     #[test]
@@ -352,15 +256,16 @@ pub mod tests {
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let new_dht_store: DhtStore<_, EavFileStorage>;
+        let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();
 
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
-
-        let fetched = new_dht_store
-            .meta_storage()
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage
+            .read()
+            .unwrap()
             .fetch_eav(Some(entry.address()), None, None);
 
         assert!(fetched.is_ok());
@@ -370,6 +275,27 @@ pub mod tests {
         let result = new_dht_store.add_link_actions().get(&action).unwrap();
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    pub fn reduce_hold_test() {
+        let context = test_context("bill");
+        let store = test_store(context.clone());
+
+        let entry = test_entry();
+        let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
+
+        store.reduce(context.clone(), action_wrapper);
+
+        let cas = context.file_storage.read().unwrap();
+
+        let maybe_json = cas.fetch(&entry.address()).unwrap();
+        let result_entry = match maybe_json {
+            Some(content) => SerializedEntry::try_from(content).unwrap().deserialize(),
+            None => panic!("Could not find received entry in CAS"),
+        };
+
+        assert_eq!(&entry, &result_entry,);
     }
 
 }

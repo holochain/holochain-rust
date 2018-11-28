@@ -1,19 +1,23 @@
-use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry, Entry, ToEntry};
-use entry_type::{test_entry_type, EntryType};
-use error::HolochainError;
-use json::ToJson;
-use serde_json;
-use signature::{test_signature, Signature};
-use time::{test_iso_8601, Iso8601};
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{
+        entry_type::{test_entry_type, EntryType},
+        test_entry, Entry, ToEntry,
+    },
+    error::HolochainError,
+    json::JsonString,
+    signature::{test_signature, Signature},
+    time::{test_iso_8601, Iso8601},
+};
+use std::convert::{TryFrom, TryInto};
 
 /// ChainHeader of a source chain "Item"
-/// The hash of the ChainHeader is used as the Item's key in the source chain hash table
+/// The address of the ChainHeader is used as the Item's key in the source chain hash table
 /// ChainHeaders are linked to next header in chain and next header of same type in chain
 // @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior
@@ -63,10 +67,6 @@ impl ChainHeader {
         }
     }
 
-    pub fn from_json_str(header_str: &str) -> serde_json::Result<Self> {
-        serde_json::from_str(header_str)
-    }
-
     /// entry_type getter
     pub fn entry_type(&self) -> &EntryType {
         &self.entry_type
@@ -98,36 +98,25 @@ impl ChainHeader {
     }
 }
 
-impl ToJson for ChainHeader {
-    fn to_json(&self) -> Result<String, HolochainError> {
-        Ok(serde_json::to_string(self)?)
-    }
-}
-
 //
 impl ToEntry for ChainHeader {
     fn to_entry(&self) -> Entry {
-        Entry::new(
-            &EntryType::ChainHeader,
-            &self.to_json().expect("entry should be valid"),
-        )
+        Entry::new(EntryType::ChainHeader, self.to_owned())
     }
 
     fn from_entry(entry: &Entry) -> Self {
-        return ChainHeader::from_json_str(&entry.value())
-            .expect("entry is not a valid ChainHeader Entry");
+        ChainHeader::try_from(entry.value().to_owned())
+            .expect("could not deserialize ChainHeader from Entry")
     }
 }
 
 impl AddressableContent for ChainHeader {
     fn content(&self) -> Content {
-        self.to_json()
-            .expect("could not Jsonify ChainHeader as Content")
+        self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        ChainHeader::from_json_str(content)
-            .expect("could not read Json as valid ChainHeader Content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        content.to_owned().try_into()
     }
 }
 
@@ -145,12 +134,16 @@ pub fn test_chain_header() -> ChainHeader {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::content::{Address, AddressableContent};
-    use chain_header::{test_chain_header, ChainHeader};
-    use entry::{test_entry, test_entry_a, test_entry_b, ToEntry};
-    use entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b};
-    use signature::{test_signature, test_signature_b};
-    use time::test_iso_8601;
+    use crate::{
+        cas::content::{Address, AddressableContent},
+        chain_header::{test_chain_header, ChainHeader},
+        entry::{
+            entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
+            test_entry, test_entry_a, test_entry_b, ToEntry,
+        },
+        signature::{test_signature, test_signature_b},
+        time::test_iso_8601,
+    };
 
     /// returns a dummy header for use in tests
     pub fn test_chain_header_a() -> ChainHeader {
@@ -334,7 +327,8 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
@@ -342,7 +336,8 @@ pub mod tests {
                 &None,
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 
@@ -359,7 +354,8 @@ pub mod tests {
                 &Some(test_chain_header().address()),
                 &None,
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 
@@ -376,7 +372,8 @@ pub mod tests {
                 &None,
                 &Some(test_chain_header().address()),
                 &test_iso_8601(),
-            ).address(),
+            )
+            .address(),
         );
     }
 

@@ -1,7 +1,7 @@
 //! This module uses lazy_static! to make the zmq::Context easier to work with
 //! Just make sure to call IpcClient::destroy_context() when ready
 
-use errors::*;
+use crate::errors::*;
 use std;
 use zmq;
 
@@ -26,4 +26,15 @@ pub fn destroy() -> Result<()> {
         Err(_) => bail_generic!("cannot access zmq context"),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_can_create() {
+        socket(zmq::ROUTER).unwrap();
+        //destroy().unwrap();
+    }
 }

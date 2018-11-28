@@ -7,7 +7,7 @@ extern crate serde_derive;
 extern crate boolinator;
 
 use boolinator::Boolinator;
-use hdk::holochain_dna::zome::entry_types::Sharing;
+use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
 
 #[derive(Serialize, Deserialize)]
 struct TestEntryType {
@@ -17,6 +17,21 @@ struct TestEntryType {
 
 define_zome! {
     entries: [
+        entry!(
+            name: "testEntryType",
+            description: "asdfda",
+            sharing: Sharing::Public,
+
+            validation_package: || {
+                hdk::ValidationPackageDefinition::Entry
+            },
+
+            validation: |entry: String, _ctx: hdk::ValidationData| {
+                (entry != "FAIL")
+                    .ok_or_else(|| "FAIL content is not allowed".to_string())
+            }
+        ),
+
         entry!(
             name: "package_entry",
             description: "asdfda",

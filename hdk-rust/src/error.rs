@@ -1,12 +1,12 @@
-use self::ZomeApiError::*;
-use serde_json;
+use holochain_core_types::{
+    error::{HolochainError, RibosomeErrorCode},
+    json::JsonString,
+};
 use std::{error::Error, fmt};
-
-pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
@@ -14,9 +14,51 @@ pub enum ZomeApiError {
     ValidationFailed(String),
 }
 
-impl ZomeApiError {
-    pub fn to_json(&self) -> serde_json::Value {
-        json!({ "error": self })
+impl From<ZomeApiError> for HolochainError {
+    fn from(zome_api_error: ZomeApiError) -> Self {
+        match zome_api_error {
+            ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
+            _ => HolochainError::RibosomeFailed(zome_api_error.description().into()),
+        }
+    }
+}
+
+impl From<ZomeApiError> for String {
+    fn from(zome_api_error: ZomeApiError) -> Self {
+        zome_api_error.description().into()
+    }
+}
+
+impl From<HolochainError> for ZomeApiError {
+    fn from(holochain_error: HolochainError) -> Self {
+        match holochain_error {
+            HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
+            _ => ZomeApiError::Internal(holochain_error.description().into()),
+        }
+    }
+}
+
+impl From<!> for ZomeApiError {
+    fn from(_: !) -> Self {
+        unreachable!();
+    }
+}
+
+impl From<ZomeApiError> for JsonString {
+    fn from(zome_api_error: ZomeApiError) -> JsonString {
+        JsonString::from(json!({ "error": zome_api_error }))
+    }
+}
+
+impl From<String> for ZomeApiError {
+    fn from(s: String) -> ZomeApiError {
+        ZomeApiError::Internal(s)
+    }
+}
+
+impl From<RibosomeErrorCode> for ZomeApiError {
+    fn from(ribosome_error_code: RibosomeErrorCode) -> ZomeApiError {
+        ZomeApiError::from(ribosome_error_code.to_string())
     }
 }
 
@@ -24,10 +66,10 @@ impl Error for ZomeApiError {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     fn description(&self) -> &str {
         match self {
-            Internal(msg)           => &msg,
-            FunctionNotImplemented  => "Function not implemented",
-            HashNotFound            => "Hash not found",
-            ValidationFailed(msg)   => &msg,
+            ZomeApiError::Internal(msg)           => &msg,
+            ZomeApiError::FunctionNotImplemented  => "Function not implemented",
+            ZomeApiError::HashNotFound            => "Hash not found",
+            ZomeApiError::ValidationFailed(msg)   => &msg,
         }
     }
 }
@@ -41,3 +83,5 @@ impl fmt::Display for ZomeApiError {
         write!(f, "{:?}", self)
     }
 }
+
+pub type ZomeApiResult<T> = Result<T, ZomeApiError>;

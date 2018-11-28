@@ -1,16 +1,22 @@
-use action::ActionWrapper;
-use holochain_agent::Agent;
-use holochain_core_types::error::HolochainError;
-use instance::Observer;
-use logger::Logger;
-use persister::Persister;
-use state::State;
-use std::sync::{
-    mpsc::{sync_channel, SyncSender},
-    Arc, Mutex, RwLock, RwLockReadGuard,
+use crate::{
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
 };
-
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_core_types::{
+    agent::Agent,
+    cas::storage::ContentAddressableStorage,
+    dna::{wasm::DnaWasm, Dna},
+    eav::EntityAttributeValueStorage,
+    error::HolochainError,
+    json::JsonString,
+};
+use std::{
+    sync::{
+        mpsc::{sync_channel, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
+    thread::sleep,
+    time::Duration,
+};
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -24,8 +30,9 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
-    pub file_storage: FilesystemStorage,
-    pub eav_storage: EavFileStorage,
+    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    pub network_config: JsonString,
 }
 
 impl Context {
@@ -37,8 +44,9 @@ impl Context {
         agent: Agent,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: FilesystemStorage,
-        eav: EavFileStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -51,6 +59,7 @@ impl Context {
             observer_channel: tx_observer,
             file_storage: cas,
             eav_storage: eav,
+            network_config,
         })
     }
 
@@ -60,8 +69,9 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
         observer_channel: SyncSender<Observer>,
-        cas: FilesystemStorage,
-        eav: EavFileStorage,
+        cas: Arc<RwLock<ContentAddressableStorage>>,
+        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent,
@@ -72,6 +82,7 @@ impl Context {
             observer_channel,
             file_storage: cas,
             eav_storage: eav,
+            network_config,
         })
     }
     // helper function to make it easier to call the logger
@@ -91,19 +102,64 @@ impl Context {
             Some(ref s) => Some(s.read().unwrap()),
         }
     }
+
+    pub fn get_dna(&self) -> Option<Dna> {
+        // In the case of genesis we encounter race conditions with regards to setting the DNA.
+        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // the state, which can result in this code being executed first.
+        // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+        // TODO: use a future here
+        let mut dna = None;
+        let mut done = false;
+        let mut tries = 0;
+        while !done {
+            {
+                let state = self
+                    .state()
+                    .expect("Callback called without application state!");
+                dna = state.nucleus().dna();
+            }
+            match dna {
+                Some(_) => done = true,
+                None => {
+                    if tries > 10 {
+                        done = true;
+                    } else {
+                        sleep(Duration::from_millis(10));
+                        tries += 1;
+                    }
+                }
+            }
+        }
+        dna
+    }
+
+    pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
+        let dna = self.get_dna().expect("Callback called without DNA set!");
+        dna.get_wasm_from_zome_name(zome)
+            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+    }
+}
+
+/// create a test network
+#[cfg_attr(tarpaulin, skip)]
+pub fn mock_network_config() -> JsonString {
+    json!({"backend": "mock"}).into()
 }
 
 #[cfg(test)]
-mod tests {
-    extern crate holochain_agent;
+pub mod tests {
     extern crate tempfile;
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use instance::tests::test_logger;
-    use persister::SimplePersister;
-    use state::State;
-    use std::sync::{Arc, Mutex};
+    use crate::{
+        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
+        state::State,
+    };
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_core_types::agent::Agent;
+    use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
     fn default_buffer_size_test() {
@@ -111,14 +167,22 @@ mod tests {
     }
 
     #[test]
-    fn test_state() {
-        let mut maybe_context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+    fn state_test() {
+        let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap();
+        ));
+        let mut maybe_context = Context::new(
+            Agent::generate_fake("Terence"),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -133,14 +197,23 @@ mod tests {
 
     #[test]
     #[should_panic]
+    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
-        let mut context = Context::new(
-            holochain_agent::Agent::from("Terence".to_string()),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+        let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap();
+        ));
+        let mut context = Context::new(
+            Agent::generate_fake("Terence"),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

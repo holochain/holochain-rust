@@ -1,42 +1,40 @@
-use dht::actions::add_link::*;
+use crate::{
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::author_entry::author_entry,
+};
 use futures::executor::block_on;
-use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::link_entries::{LinkEntriesArgs, LinkEntriesResult};
-use nucleus::ribosome::Runtime;
-use serde_json;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use holochain_core_types::{entry::ToEntry, error::HolochainError, link::link_add::LinkAddEntry};
+use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
-/// Returns a serialized LinkEntriesResult
-pub fn invoke_link_entries(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
+pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
-    let args_str = runtime.load_utf8_from_args(&args);
-    let input: LinkEntriesArgs = match serde_json::from_str(&args_str) {
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => {
+            println!(
+                "invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
+
+    let link = input.to_link();
+    let link_add_entry = LinkAddEntry::from_link(&link);
+    let entry = link_add_entry.to_entry();
 
     // Wait for future to be resolved
-    let task_result: Result<(), HolochainError> =
-        block_on(add_link(&input.to_link(), &runtime.context));
+    let result: Result<(), HolochainError> =
+        block_on(author_entry(&entry, &runtime.context)).map(|_| ());
 
-    let result = LinkEntriesResult {
-        ok: task_result.is_ok(),
-        error: task_result
-            .map_err(|holochain_error| holochain_error.to_string())
-            .err()
-            .unwrap_or(String::from("")),
-    };
-
-    let json = serde_json::to_string(&result).expect("Could not serialize LinkEntriesResult");
-
-    runtime.store_utf8(&json)
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -44,27 +42,55 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use agent::actions::commit::commit_entry;
+    use crate::{
+        agent::actions::commit::commit_entry,
+        context::Context,
+        instance::{
+            tests::{test_context_and_logger, test_instance},
+            Instance,
+        },
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            Defn,
+        },
+    };
     use futures::executor::block_on;
     use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, entry_type::test_entry_type,
+        cas::content::AddressableContent,
+        entry::{entry_type::EntryType, test_entry, Entry},
+        error::{CoreError, ZomeApiInternalResult},
+        json::JsonString,
     };
-    use holochain_wasm_utils::api_serialization::{commit::CommitEntryArgs, link_entries::*};
-    use instance::tests::{test_context_and_logger, test_instance};
-    use nucleus::ribosome::{
-        api::{tests::*, ZomeApiFunction},
-        Defn,
-    };
+    use holochain_wasm_utils::api_serialization::link_entries::*;
     use serde_json;
+    use std::{convert::TryFrom, sync::Arc};
+
+    pub fn test_entry_b() -> Entry {
+        Entry::new(EntryType::App(String::from("testEntryTypeB")), "test")
+    }
 
     /// dummy link_entries args from standard test entry
-    pub fn test_link_args_bytes() -> Vec<u8> {
+    pub fn test_link_args_bytes(tag: String) -> Vec<u8> {
         let entry = test_entry();
 
         let args = LinkEntriesArgs {
             base: entry.address(),
             target: entry.address(),
-            tag: String::from("test-tag"),
+            tag,
+        };
+        serde_json::to_string(&args)
+            .expect("args should serialize")
+            .into_bytes()
+    }
+
+    pub fn test_link_2_args_bytes(tag: String) -> Vec<u8> {
+        let base = test_entry();
+        let target = test_entry_b();
+
+        let args = LinkEntriesArgs {
+            base: base.address(),
+            target: target.address(),
+            tag,
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -73,35 +99,10 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        let entry_type = test_entry_type();
-        let entry = test_entry();
-
-        let args = CommitEntryArgs {
-            entry_type_name: entry_type.to_string(),
-            entry_value: entry.value().to_owned(),
-        };
-        serde_json::to_string(&args)
-            .expect("args should serialize")
-            .into_bytes()
+        JsonString::from(test_entry().serialize()).into_bytes()
     }
 
-    #[test]
-    /// test that we can round trip bytes through a commit action and get the result from WASM
-    fn errors_if_base_is_not_present() {
-        let (call_result, _) = test_zome_api_function(
-            ZomeApiFunction::LinkEntries.as_str(),
-            test_link_args_bytes(),
-        );
-
-        assert_eq!(
-            call_result,
-            r#"{"ok":false,"error":"ErrorGeneric(\"Base for link not found\")"}"#.to_string()
-                + "\u{0}",
-        );
-    }
-
-    #[test]
-    fn returns_ok_if_base_is_present() {
+    fn create_test_instance() -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -109,29 +110,93 @@ pub mod tests {
             wasm.clone(),
         );
 
-        let dna_name = &dna.name.to_string().clone();
         let instance = test_instance(dna).expect("Could not create test instance");
 
         let (context, _) = test_context_and_logger("joan");
         let initialized_context = instance.initialize_context(context);
+        (instance, initialized_context)
+    }
 
-        block_on(commit_entry(
-            test_entry(),
-            &initialized_context.action_channel.clone(),
-            &initialized_context,
-        )).expect("Could not commit entry for testing");
+    #[test]
+    /// test that we can round trip bytes through a commit action and get the result from WASM
+    fn errors_if_base_is_not_present_test() {
+        let (call_result, _) = test_zome_api_function(
+            ZomeApiFunction::LinkEntries.as_str(),
+            test_link_args_bytes(String::from("test-tag")),
+        );
+
+        let result = ZomeApiInternalResult::try_from(call_result)
+            .expect("valid ZomeApiInternalResult JsonString");
+
+        let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
+        assert_eq!("Base for link not found", core_err.kind.to_string(),);
+    }
+
+    #[test]
+    fn returns_ok_if_base_is_present() {
+        let (instance, context) = create_test_instance();
+
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
-            &dna_name,
-            initialized_context,
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
             &instance,
-            &wasm,
-            test_link_args_bytes(),
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_args_bytes(String::from("test-tag")),
         );
 
         assert_eq!(
             call_result,
-            r#"{"ok":true,"error":""}"#.to_string() + "\u{0}",
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            ),
+        );
+    }
+
+    #[test]
+    fn errors_with_wrong_tag() {
+        let (instance, context) = create_test_instance();
+
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
+
+        let call_result = test_zome_api_function_call(
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
+            &instance,
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_args_bytes(String::from("wrong-tag")),
+        );
+
+        let result = ZomeApiInternalResult::try_from(call_result)
+            .expect("valid ZomeApiInternalResult JsonString");
+
+        let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
+        assert_eq!("not implemented", core_err.kind.to_string(),);
+    }
+
+    #[test]
+    fn works_with_linked_from_defined_link() {
+        let (instance, context) = create_test_instance();
+
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
+
+        block_on(commit_entry(test_entry_b(), &context))
+            .expect("Could not commit entry for testing");
+
+        let call_result = test_zome_api_function_call(
+            &context.get_dna().unwrap().name.to_string(),
+            context.clone(),
+            &instance,
+            &context.get_wasm(&test_zome_name()).unwrap().code,
+            test_link_2_args_bytes(String::from("test-tag")),
+        );
+
+        assert_eq!(
+            call_result,
+            JsonString::from(
+                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
+            ),
         );
     }
 

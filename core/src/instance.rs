@@ -1,6 +1,4 @@
-use action::ActionWrapper;
-use context::Context;
-use state::State;
+use crate::{action::ActionWrapper, context::Context, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,29 +282,35 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::{
-        chain_store::ChainStore,
-        state::{ActionResponse, AgentState},
+    use crate::{
+        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        agent::{
+            chain_store::ChainStore,
+            state::{ActionResponse, AgentState},
+        },
+        context::{mock_network_config, Context},
     };
-    use context::Context;
     use futures::executor::block_on;
-    use holochain_agent::Agent;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
+        agent::Agent,
         cas::content::AddressableContent,
-        chain_header::{test_chain_header, ChainHeader},
-        entry::ToEntry,
-        entry_type::EntryType,
+        chain_header::test_chain_header,
+        dna::{zome::Zome, Dna},
+        entry::{entry_type::EntryType, ToEntry},
+        json::{JsonString, RawString},
     };
-    use holochain_dna::{zome::Zome, Dna};
-    use logger::Logger;
-    use nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+
+    use crate::{
+        logger::Logger,
+        network::actions::initialize_network::initialize_network,
+        nucleus::{
+            actions::initialize::initialize_application,
+            ribosome::{callback::Callback, Defn},
+        },
+        persister::SimplePersister,
+        state::State,
     };
-    use persister::SimplePersister;
-    use state::State;
 
     use std::{
         sync::{
@@ -332,81 +336,117 @@ pub mod tests {
     }
 
     /// create a test logger
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_logger() -> Arc<Mutex<TestLogger>> {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = Agent::from(agent_name.to_owned());
+        let agent = Agent::generate_fake(agent_name);
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         let logger = test_logger();
         (
             Arc::new(
                 Context::new(
                     agent,
                     logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                    file_storage.clone(),
+                    Arc::new(RwLock::new(
+                        EavFileStorage::new(
+                            tempdir().unwrap().path().to_str().unwrap().to_string(),
+                        )
                         .unwrap(),
-                ).unwrap(),
+                    )),
+                    mock_network_config(),
+                )
+                .unwrap(),
             ),
             logger,
         )
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context(agent_name: &str) -> Arc<Context> {
         let (context, _) = test_context_and_logger(agent_name);
         context
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
     ) -> Arc<Context> {
-        let agent = Agent::from(agent_name.to_owned());
+        let agent = Agent::generate_fake(agent_name);
         let logger = test_logger();
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new_with_channels(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 action_channel.clone(),
                 observer_channel.clone(),
-                FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            ).unwrap(),
+                file_storage.clone(),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                        .unwrap(),
+                )),
+                mock_network_config(),
+            )
+            .unwrap(),
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_state() -> Arc<Context> {
-        let mut context = Context::new(
-            Agent::from("Florence".to_string()),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+        let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap();
+        ));
+        let mut context = Context::new(
+            Agent::generate_fake("Florence"),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state() -> Arc<Context> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
+        let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
-            Agent::from("Florence".to_string()),
+            Agent::generate_fake("Florence"),
             test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-            file_system.clone(),
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        ).unwrap();
-        let chain_store = ChainStore::new(file_system);
+            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
+            cas.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        )
+        .unwrap();
+        let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
         let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
@@ -425,16 +465,29 @@ pub mod tests {
         test_instance_and_context(dna).map(|tuple| tuple.0)
     }
 
-    /// create a test instance
+    /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_by_name(dna, "jane")
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_by_name(
+        dna: Dna,
+        name: &str,
+    ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context("jane");
+        let context = test_context(name);
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-
-        block_on(initialize_application(dna.clone(), context.clone()))?;
+        block_on(
+            async {
+                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_network(&context))
+            },
+        )?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -595,7 +648,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
@@ -606,14 +659,14 @@ pub mod tests {
         // the initial state is not intialized
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::Initializing
+            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 
@@ -657,9 +710,10 @@ pub mod tests {
             ),
         );
 
-        let instance = test_instance(dna);
-        assert!(instance.is_ok());
-        let instance = instance.unwrap();
+        let maybe_instance = test_instance(dna);
+        assert!(maybe_instance.is_ok());
+
+        let instance = maybe_instance.unwrap();
         assert!(instance.state().nucleus().has_initialized());
     }
 
@@ -674,10 +728,10 @@ pub mod tests {
             (module
                 (memory (;0;) 17)
                 (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 4
+                    i32.const 9
                 )
                 (data (i32.const 0)
-                    "1337"
+                    "1337.0"
                 )
                 (export "memory" (memory 0))
             )
@@ -687,7 +741,10 @@ pub mod tests {
 
         let instance = test_instance(dna);
         assert!(instance.is_err());
-        assert_eq!(instance.err().unwrap(), "1337");
+        assert_eq!(
+            instance.err().unwrap(),
+            String::from(JsonString::from(RawString::from("Genesis")))
+        );
     }
 
     /// Committing a DnaEntry to source chain should work

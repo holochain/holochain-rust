@@ -1,32 +1,29 @@
-use nucleus::ribosome::Runtime;
-use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I32
-pub fn invoke_debug(
-    runtime: &mut Runtime,
-    args: &RuntimeArgs,
-) -> Result<Option<RuntimeValue>, Trap> {
-    let payload = runtime.load_utf8_from_args(args);
+pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let payload = runtime.load_json_string_from_args(args);
     println!("{}", payload);
     // TODO #502 - log in logger as DEBUG log-level
     runtime
         .context
         .log(&format!("zome_log:DEBUG: '{}'", payload))
         .expect("Logger should work");
-
-    // Return Ribosome Success Code
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+    // Done
+    ribosome_success!()
 }
 
 #[cfg(test)]
 pub mod tests {
-    use nucleus::ribosome::{
+    use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::json::JsonString;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {
@@ -43,10 +40,14 @@ pub mod tests {
     fn test_zome_api_function_debug() {
         let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());
-        assert!(call_result.is_empty());
+        println!(
+            "test_zome_api_function_debug call_result: {:?}",
+            call_result
+        );
+        assert_eq!(JsonString::null(), call_result,);
         assert_eq!(
-            "[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]",
-            format!("{}", (*context.logger.lock().unwrap()).dump()),
+            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
+            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
         );
     }
 }

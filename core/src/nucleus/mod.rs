@@ -4,14 +4,19 @@ pub mod actions;
 pub mod ribosome;
 pub mod state;
 
-use action::{Action, ActionWrapper, NucleusReduceFn};
-use context::Context;
-use holochain_core_types::error::{DnaError, HcResult, HolochainError};
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna};
-use instance::{dispatch_action_with_observer, Observer};
-use nucleus::{
-    ribosome::api::call::reduce_call,
-    state::{NucleusState, NucleusStatus},
+use crate::{
+    action::{Action, ActionWrapper, NucleusReduceFn},
+    context::Context,
+    instance::{dispatch_action_with_observer, Observer},
+    nucleus::{
+        ribosome::api::call::reduce_call,
+        state::{NucleusState, NucleusStatus},
+    },
+};
+use holochain_core_types::{
+    dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna},
+    error::{DnaError, HcResult, HolochainError},
+    json::JsonString,
 };
 use snowflake;
 use std::{
@@ -29,11 +34,16 @@ pub struct ZomeFnCall {
     pub zome_name: String,
     pub cap_name: String,
     pub fn_name: String,
-    pub parameters: String,
+    pub parameters: JsonString,
 }
 
 impl ZomeFnCall {
-    pub fn new(zome: &str, capability: &str, function: &str, parameters: &str) -> Self {
+    pub fn new<J: Into<JsonString>>(
+        zome: &str,
+        capability: &str,
+        function: &str,
+        parameters: J,
+    ) -> Self {
         ZomeFnCall {
             // @TODO can we defer to the ActionWrapper id?
             // @see https://github.com/holochain/holochain-rust/issues/198
@@ -41,7 +51,7 @@ impl ZomeFnCall {
             zome_name: zome.to_string(),
             cap_name: capability.to_string(),
             fn_name: function.to_string(),
-            parameters: parameters.to_string(),
+            parameters: parameters.into(),
         }
     }
 
@@ -75,7 +85,7 @@ pub fn call_zome_and_wait_for_result(
     call: ZomeFnCall,
     action_channel: &SyncSender<ActionWrapper>,
     observer_channel: &SyncSender<Observer>,
-) -> Result<String, HolochainError> {
+) -> Result<JsonString, HolochainError> {
     let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
@@ -104,7 +114,7 @@ pub fn call_zome_and_wait_for_result(
 pub fn call_and_wait_for_result(
     call: ZomeFnCall,
     instance: &mut super::instance::Instance,
-) -> Result<String, HolochainError> {
+) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
@@ -124,7 +134,7 @@ pub fn call_and_wait_for_result(
     receiver.recv().expect("local channel to work")
 }
 
-pub type ZomeFnResult = HcResult<String>;
+pub type ZomeFnResult = HcResult<JsonString>;
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {
@@ -133,7 +143,7 @@ pub struct ExecuteZomeFnResponse {
 }
 
 impl ExecuteZomeFnResponse {
-    fn new(call: ZomeFnCall, result: Result<String, HolochainError>) -> Self {
+    fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
         ExecuteZomeFnResponse { call, result }
     }
 
@@ -143,7 +153,7 @@ impl ExecuteZomeFnResponse {
     }
 
     /// read only access to result
-    pub fn result(&self) -> Result<String, HolochainError> {
+    pub fn result(&self) -> Result<JsonString, HolochainError> {
         self.result.clone()
     }
 }
@@ -422,15 +432,18 @@ fn get_capability_with_zome_call(
 pub mod tests {
     extern crate test_utils;
     use super::*;
-    use action::{tests::test_action_wrapper_rzfr, ActionWrapper};
-    use holochain_dna::Dna;
-    use instance::{
-        tests::{test_context, test_context_with_channels, test_instance},
-        Instance,
+    use crate::{
+        action::{tests::test_action_wrapper_rzfr, ActionWrapper},
+        instance::{
+            tests::{test_context, test_context_with_channels, test_instance},
+            Instance,
+        },
+        nucleus::state::tests::test_nucleus_state,
     };
-    use nucleus::state::tests::test_nucleus_state;
+    use holochain_core_types::dna::Dna;
     use std::sync::Arc;
 
+    use holochain_core_types::json::{JsonString, RawString};
     use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall
@@ -459,13 +472,13 @@ pub mod tests {
             &test_zome(),
             &test_capability(),
             &test_function(),
-            &test_parameters(),
+            test_parameters(),
         )
     }
 
     /// dummy function result
     pub fn test_call_response() -> ExecuteZomeFnResponse {
-        ExecuteZomeFnResponse::new(test_zome_call(), Ok("foo".to_string()))
+        ExecuteZomeFnResponse::new(test_zome_call(), Ok("foo".into()))
     }
 
     #[test]
@@ -482,7 +495,7 @@ pub mod tests {
     /// test access to function result's function call
     fn test_zome_call_result() {
         let zome_call = test_zome_call();
-        let call_result = ExecuteZomeFnResponse::new(zome_call.clone(), Ok("foo".to_string()));
+        let call_result = ExecuteZomeFnResponse::new(zome_call.clone(), Ok("foo".into()));
 
         assert_eq!(call_result.call(), zome_call);
     }
@@ -490,7 +503,7 @@ pub mod tests {
     #[test]
     /// test access to the result of function result
     fn test_call_result_result() {
-        assert_eq!(test_call_response().result(), Ok("foo".to_string()));
+        assert_eq!(test_call_response().result(), Ok("foo".into()),);
     }
 
     #[test]
@@ -602,8 +615,9 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", "test_cap", "main", "");
 
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
+
         assert!(result.is_ok());
-        assert_eq!("1337", result.unwrap());
+        assert_eq!(JsonString::from(RawString::from(1337)), result.unwrap());
     }
 
     #[test]

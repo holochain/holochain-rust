@@ -1,0 +1,10 @@
+{
+  "steps": {
+    "cargo": [
+      "build",
+      "--release",
+      "--target=wasm32-unknown-unknown"
+    ]
+  },
+  "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
+}

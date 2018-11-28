@@ -1,12 +1,13 @@
 extern crate serde_json;
-use chain_header::ChainHeader;
-use entry::Entry;
-use hash::HashString;
+use crate::{
+    chain_header::ChainHeader, entry::SerializedEntry, error::HolochainError, hash::HashString,
+    json::JsonString,
+};
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
     pub chain_header: Option<ChainHeader>,
-    pub source_chain_entries: Option<Vec<Entry>>,
+    pub source_chain_entries: Option<Vec<SerializedEntry>>,
     pub source_chain_headers: Option<Vec<ChainHeader>>,
     pub custom: Option<String>,
 }
@@ -22,7 +23,7 @@ impl ValidationPackage {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
     Entry,          //sending only the entry
     ChainEntries,   //sending all (public?) source chain entries
@@ -31,11 +32,25 @@ pub enum ValidationPackageDefinition {
     Custom(String), //sending something custom
 }
 
+/// This structs carries information contextual for the process
+/// of validating an entry of link and is passed in to the according
+/// callbacks.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ValidationData {
+    /// The validation package is data from the entry's/link's
+    /// source agent that is needed to determine the validity
+    /// of a given entry.
+    /// What specific data gets put into the validation package
+    /// has to be defined throught the validation_package
+    /// callbacks in the [entry!](macro.entry.html) and
+    /// [link!](macro.link.html) macros.
     pub package: ValidationPackage,
+    /// The list of authors that have signed this entry.
     pub sources: Vec<HashString>,
+    /// In which lifecycle of the entry creation are we running
+    /// this validation callback?
     pub lifecycle: EntryLifecycle,
+    /// Does the entry get committed, modified or deleted?
     pub action: EntryAction,
 }
 

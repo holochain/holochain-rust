@@ -4,26 +4,30 @@
 pub mod call;
 pub mod commit;
 pub mod debug;
+pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
-pub mod hash_entry;
 pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 
-use holochain_dna::zome::capabilities::ReservedCapabilityNames;
-use nucleus::ribosome::{
+use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
-        get_entry::invoke_get_entry, get_links::invoke_get_links, hash_entry::invoke_hash_entry,
-        init_globals::invoke_init_globals, link_entries::invoke_link_entries, query::invoke_query,
+        entry_address::invoke_entry_address, get_entry::invoke_get_entry,
+        get_links::invoke_get_links, init_globals::invoke_init_globals,
+        link_entries::invoke_link_entries, query::invoke_query,
     },
-    Defn, Runtime,
+    runtime::Runtime,
+    Defn,
 };
+use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
 use wasmi::{RuntimeArgs, RuntimeValue, Trap};
+
+pub type ZomeApiResult = Result<Option<RuntimeValue>, Trap>;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS
@@ -52,7 +56,7 @@ pub enum ZomeApiFunction {
     Debug,
 
     /// Commit an app entry to source chain
-    /// commit_entry(entry_type: String, entry_value: String) -> Hash
+    /// commit_entry(entry_type: String, entry_value: String) -> Address
     CommitAppEntry,
 
     /// Get an app entry from source chain by key (header hash)
@@ -70,7 +74,11 @@ pub enum ZomeApiFunction {
     LinkEntries,
     GetLinks,
     Query,
-    HashEntry,
+
+    /// Pass an entry to retrieve its address
+    /// the address algorithm is specific to the entry, typically sha256 but can differ
+    /// entry_address(entry: Entry) -> Address
+    EntryAddress,
 }
 
 impl Defn for ZomeApiFunction {
@@ -86,22 +94,18 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::LinkEntries => "hc_link_entries",
             ZomeApiFunction::GetLinks => "hc_get_links",
             ZomeApiFunction::Query => "hc_query",
-            ZomeApiFunction::HashEntry => "hc_hash_entry",
+            ZomeApiFunction::EntryAddress => "hc_entry_address",
         }
     }
 
     fn str_to_index(s: &str) -> usize {
-        match ZomeApiFunction::from_str(s) {
-            Ok(i) => i as usize,
-            Err(_) => ZomeApiFunction::MissingNo as usize,
-        }
+        ZomeApiFunction::from_str(s)
+            .map(|i| i as usize)
+            .unwrap_or(ZomeApiFunction::MissingNo as usize)
     }
 
     fn from_index(i: usize) -> Self {
-        match FromPrimitive::from_usize(i) {
-            Some(v) => v,
-            None => ZomeApiFunction::MissingNo,
-        }
+        FromPrimitive::from_usize(i).unwrap_or(ZomeApiFunction::MissingNo)
     }
 
     fn capability(&self) -> ReservedCapabilityNames {
@@ -125,22 +129,21 @@ impl FromStr for ZomeApiFunction {
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             "hc_query" => Ok(ZomeApiFunction::Query),
-            "hc_hash_entry" => Ok(ZomeApiFunction::HashEntry),
+            "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
 }
 
 /// does nothing, escape hatch so the compiler can enforce exhaustive matching in as_fn
-fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap> {
-    // Return Ribosome Success Code
-    Ok(Some(RuntimeValue::I32(0 as i32)))
+fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
+    ribosome_success!()
 }
 
 impl ZomeApiFunction {
     // cannot test this because PartialEq is not implemented for fns
     #[cfg_attr(tarpaulin, skip)]
-    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> Result<Option<RuntimeValue>, Trap>) {
+    pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> ZomeApiResult) {
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
         // @see: https://github.com/holochain/holochain-rust/issues/324
 
@@ -155,27 +158,29 @@ impl ZomeApiFunction {
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
             ZomeApiFunction::Query => invoke_query,
-            ZomeApiFunction::HashEntry => invoke_hash_entry,
+            ZomeApiFunction::EntryAddress => invoke_entry_address,
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    extern crate holochain_agent;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
+    use holochain_core_types::json::JsonString;
     extern crate test_utils;
     use super::ZomeApiFunction;
-    use context::Context;
-    use instance::{tests::test_instance_and_context, Instance};
-    use nucleus::{
-        ribosome::{self, Defn},
-        ZomeFnCall,
+    use crate::{
+        context::Context,
+        instance::{tests::test_instance_and_context, Instance},
+        nucleus::{
+            ribosome::{self, Defn},
+            ZomeFnCall,
+        },
     };
     use std::{str::FromStr, sync::Arc};
 
-    use holochain_dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -260,9 +265,34 @@ pub mod tests {
         (i32.const 0)
     )
 
+    (func
+        (export "__hdk_validate_link")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
 
     (func
         (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__hdk_get_validation_package_for_link")
         (param $allocation i32)
         (result i32)
 
@@ -323,12 +353,12 @@ pub mod tests {
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
-    ) -> String {
+    ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
             &test_capability(),
             &test_function_name(),
-            &test_parameters(),
+            test_parameters(),
         );
         ribosome::run_dna(
             &dna_name,
@@ -336,7 +366,8 @@ pub mod tests {
             wasm.clone(),
             &zome_call,
             Some(args_bytes),
-        ).expect("test should be callable")
+        )
+        .expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:
@@ -347,7 +378,7 @@ pub mod tests {
     pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (String, Arc<Context>) {
+    ) -> (JsonString, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
@@ -377,7 +408,7 @@ pub mod tests {
             ("hc_link_entries", ZomeApiFunction::LinkEntries),
             ("hc_get_links", ZomeApiFunction::GetLinks),
             ("hc_query", ZomeApiFunction::Query),
-            ("hc_hash_entry", ZomeApiFunction::HashEntry),
+            ("hc_entry_address", ZomeApiFunction::EntryAddress),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -403,7 +434,7 @@ pub mod tests {
             (ZomeApiFunction::LinkEntries, "hc_link_entries"),
             (ZomeApiFunction::GetLinks, "hc_get_links"),
             (ZomeApiFunction::Query, "hc_query"),
-            (ZomeApiFunction::HashEntry, "hc_hash_entry"),
+            (ZomeApiFunction::EntryAddress, "hc_entry_address"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -420,7 +451,7 @@ pub mod tests {
             ("hc_link_entries", 7),
             ("hc_get_links", 8),
             ("hc_query", 9),
-            ("hc_hash_entry", 10),
+            ("hc_entry_address", 10),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -437,7 +468,7 @@ pub mod tests {
             (7, ZomeApiFunction::LinkEntries),
             (8, ZomeApiFunction::GetLinks),
             (9, ZomeApiFunction::Query),
-            (10, ZomeApiFunction::HashEntry),
+            (10, ZomeApiFunction::EntryAddress),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

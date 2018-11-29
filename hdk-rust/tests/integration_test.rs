@@ -347,9 +347,9 @@ fn can_link_entries() {
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
-/* This test now fails because handle_links_roundtrip doesn't take into
- account how long it takes for the links to propigate on the network
-the correct test would be to wait for a propigation period
+// This test now fails because handle_links_roundtrip doesn't take into
+// account how long it takes for the links to propigate on the network
+//the correct test would be to wait for a propigation period
 #[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
@@ -373,7 +373,6 @@ fn can_roundtrip_links() {
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }
-*/
 
 #[test]
 #[cfg(not(windows))]

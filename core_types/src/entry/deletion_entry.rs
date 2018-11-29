@@ -48,8 +48,7 @@ pub mod tests {
     use super::*;
     use crate::{
         cas::content::AddressableContent,
-        entry::{test_entry_a, Entry, ToEntry},
-        json::JsonString,
+        entry::{test_entry_a, ToEntry},
     };
 
     pub fn test_deletion_entry() -> DeletionEntry {

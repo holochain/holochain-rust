@@ -115,9 +115,9 @@ install_rust_tools: tools_toolchain
 .PHONY: install_ci
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
-	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-		 $(CARGO_TARPULIN) install cargo-tarpaulin; \
-	fi
+	#if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
+	$(CARGO_TARPULIN) install -f cargo-tarpaulin; \
+	#fi
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain

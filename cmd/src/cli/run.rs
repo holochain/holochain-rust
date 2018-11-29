@@ -70,7 +70,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
                 "command {:?} not recognized. Available commands are: exit",
                 readline
             ),
-            _ => continue
+            _ => continue,
         }
     }
 

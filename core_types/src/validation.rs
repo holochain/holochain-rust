@@ -63,13 +63,13 @@ pub enum EntryLifecycle {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryAction {
-    Commit,
+    Create,
     Modify,
     Delete,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkAction {
-    Commit,
+    Create,
     Delete,
 }

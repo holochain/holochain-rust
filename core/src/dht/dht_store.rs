@@ -1,7 +1,7 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{
-        content::{Address, AddressableContent, Content},
+        content::{Address, Content},
         storage::ContentAddressableStorage,
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
@@ -19,13 +19,6 @@ pub struct Network {
     // FIXME
 }
 impl Network {
-    pub fn publish(&mut self, _content: &AddressableContent) {
-        // FIXME
-    }
-    pub fn publish_meta(&mut self, _meta: &EntityAttributeValue) {
-        // FIXME
-    }
-
     pub fn get(&mut self, _address: &Address) -> Option<Content> {
         // FIXME
         None
@@ -108,9 +101,6 @@ impl DhtStore {
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network
-    }
-    pub(crate) fn network_mut(&mut self) -> &mut Network {
-        &mut self.network
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions

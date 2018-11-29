@@ -26,7 +26,7 @@ pub async fn author_entry<'a>(
         package: validation_package,
         sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
-        action: EntryAction::Commit,
+        action: EntryAction::Create,
     };
     // 2. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;

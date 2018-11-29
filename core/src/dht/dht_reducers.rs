@@ -46,6 +46,7 @@ pub fn reduce(
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
+        Action::Commit(_) => Some(reduce_add_crud_meta),
         Action::Hold(_) => Some(reduce_hold_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::UpdateEntry(_) => Some(reduce_update_entry),
@@ -55,6 +56,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         _ => None,
     }
 }
+
+//
 pub(crate) fn reduce_hold_entry(
     _context: Arc<Context>,
     old_store: &DhtStore,
@@ -71,13 +74,28 @@ pub(crate) fn reduce_hold_entry(
         // TODO #439 - Log the error. Once we have better logging.
         return None;
     }
+    // Done
+    Some(new_store)
+}
+
+//
+pub(crate) fn reduce_add_crud_meta(
+    _context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Get Action input
+    let action = action_wrapper.action();
+    let (entry, _maybe_crud) = unwrap_to!(action => Action::Commit);
+    // Add crud-status metadata to local storage
+    let new_store = (*old_store).clone();
     let meta_storage = &new_store.meta_storage().clone();
     let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
     let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         println!(
-            "commit_app_entry: meta_storage write failed!: {:?}",
+            "reduce_add_crud_meta: meta_storage write failed!: {:?}",
             res.err().unwrap()
         );
         return None;
@@ -249,9 +267,6 @@ pub(crate) fn reduce_update_entry(
             .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
-    // Notify Network
-    new_store.network_mut().publish_meta(&new_status_eav);
-    new_store.network_mut().publish_meta(&crud_link_eav);
     // Done
     new_store
         .actions_mut()
@@ -356,8 +371,6 @@ pub(crate) fn reduce_remove_entry(
             .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
-    // Notify Network
-    new_store.network_mut().publish_meta(&new_status_eav);
     // Done
     new_store
         .actions_mut()

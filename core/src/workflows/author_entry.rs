@@ -28,12 +28,10 @@ pub async fn author_entry<'a>(
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Commit,
     };
-
     // 2. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
     // 3. Commit the entry
     await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
-
     // 4. Publish the valid entry to DHT
     await!(publish_entry(entry.address(), &context))
 }

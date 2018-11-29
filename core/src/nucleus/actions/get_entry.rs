@@ -111,7 +111,7 @@ pub fn get_entry_rec<'a>(
     let entry = maybe_entry.unwrap();
     // 2. try to get entry's meta
     let meta = get_entry_meta_from_dht(context, address.clone())?;
-    let meta = meta.expect("Entry should have meta");
+    let meta = meta.expect("Entry should have crud-status metadata");
     // 3. Add Entry + Meta to GetEntryResult
     entry_result.addresses.push(address.clone());
     entry_result.entries.push(entry.serialize());

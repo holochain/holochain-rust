@@ -8,7 +8,6 @@ use hdk::holochain_core_types::{
 use hdk::{
     entry_definition::ValidatingEntryType,
 };
-// use boolinator::Boolinator;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
